@@ -1,0 +1,234 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", "Inter", sans-serif;
+  --font-manrope: "Manrope", "Inter", sans-serif;
+
+  --color-brand-50: #e8f5ff;
+  --color-brand-100: #b8e0ff;
+  --color-brand-200: #8accff;
+  --color-brand-300: #5cb8ff;
+  --color-brand-400: #2ea3ff;
+  --color-brand-500: #038bfe;
+  --color-brand-600: #026fcb;
+  --color-brand-700: #025398;
+  --color-brand-800: #013866;
+  --color-brand-900: #001c33;
+  --color-brand-950: #000e1a;
+
+  --color-pink-50: #fef2f7;
+  --color-pink-100: #fde6f0;
+  --color-pink-200: #fbcee1;
+  --color-pink-300: #f7a6c9;
+  --color-pink-400: #f08bb5;
+  --color-pink-500: #e879a8;
+  --color-pink-600: #d4538a;
+  --color-pink-700: #b0366b;
+  --color-pink-800: #8d2b56;
+  --color-pink-900: #75264a;
+  --color-pink-950: #45112a;
+
+  --color-neutral-50: #f1f1f4;
+  --color-neutral-100: #e3e3e8;
+  --color-neutral-200: #c6c7d2;
+  --color-neutral-300: #aaabbb;
+  --color-neutral-400: #8e8fa4;
+  --color-neutral-500: #71738e;
+  --color-neutral-600: #5b5c71;
+  --color-neutral-700: #444555;
+  --color-neutral-800: #2d2e39;
+  --color-neutral-900: #17171c;
+  --color-neutral-950: #101014;
+
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+  --color-orange-950: #431407;
+
+  --color-purple-50: #faf4fe;
+  --color-purple-100: #f2e9fd;
+  --color-purple-200: #e5d3fc;
+  --color-purple-300: #d2b4fa;
+  --color-purple-400: #c998f9;
+  --color-purple-500: #c084fc;
+  --color-purple-600: #9a5cd6;
+  --color-purple-700: #7a40b0;
+  --color-purple-800: #5b2d8a;
+  --color-purple-900: #3d1c64;
+  --color-purple-950: #200e3e;
+
+  --color-indigo-50: #f0ebff;
+  --color-indigo-100: #e0d7ff;
+  --color-indigo-200: #c2afff;
+  --color-indigo-300: #a38bff;
+  --color-indigo-400: #b095fc;
+  --color-indigo-500: #a78bfa;
+  --color-indigo-600: #8668e0;
+  --color-indigo-700: #6549c6;
+  --color-indigo-800: #4a319c;
+  --color-indigo-900: #311c72;
+  --color-indigo-950: #1a0d48;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    font-family: "Manrope", "Inter", sans-serif;
+  }
+
+  [id] {
+    scroll-margin-top: 100px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #444555;
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #5b5c71;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #444555 transparent;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 300px;
+  }
+}
+
+@keyframes typing-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+.animate-fade-in-left {
+  animation: fade-in-left 0.6s ease-out forwards;
+}
+.animate-fade-in-right {
+  animation: fade-in-right 0.6s ease-out forwards;
+}
+.animate-scale-in {
+  animation: scale-in 0.5s ease-out forwards;
+}
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out forwards;
+}
+.animate-typing-pulse {
+  animation: typing-pulse 1.2s ease-in-out infinite;
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+.animate-stagger-1 {
+  animation-delay: 0.08s;
+}
+.animate-stagger-2 {
+  animation-delay: 0.16s;
+}
+.animate-stagger-3 {
+  animation-delay: 0.24s;
+}
+.animate-stagger-4 {
+  animation-delay: 0.32s;
+}
+.animate-stagger-5 {
+  animation-delay: 0.4s;
+}
+.animate-stagger-6 {
+  animation-delay: 0.48s;
+}

@@ -1,0 +1,51 @@
+import { NextResponse } from "next/server";
+import { getResend } from "@/lib/resend";
+import { createClient } from "@/lib/supabase/server";
+
+export async function POST(request: Request) {
+  try {
+    const { name, email, subject, message } = await request.json();
+
+    if (!name || !email || !subject || !message) {
+      return NextResponse.json(
+        { error: "All fields are required" },
+        { status: 400 },
+      );
+    }
+
+    const supabase = await createClient();
+    const { error: dbError } = await supabase
+      .from("contact_messages")
+      .insert({ name, email, subject, message });
+
+    if (dbError) {
+      console.error("Failed to store contact message:", dbError);
+    }
+
+    const { error: emailError } = await getResend().emails.send({
+      from: "AgentCloud <onboarding@resend.dev>",
+      to: ["info@agentcloud.io"],
+      subject: `Contact form: ${subject} — from ${name}`,
+      html: `
+        <h2>New contact message</h2>
+        <table style="border-collapse:collapse;width:100%;max-width:600px">
+          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Name</td><td style="padding:8px;border:1px solid #ddd">${name}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Email</td><td style="padding:8px;border:1px solid #ddd">${email}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Subject</td><td style="padding:8px;border:1px solid #ddd">${subject}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Message</td><td style="padding:8px;border:1px solid #ddd">${message}</td></tr>
+        </table>
+      `,
+    });
+
+    if (emailError) {
+      return NextResponse.json({ error: emailError.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
