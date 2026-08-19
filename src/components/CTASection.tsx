@@ -4,8 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLanguage } from "./LanguageProvider";
 
 export default function CTASection() {
+  const { dict } = useLanguage();
   return (
     <section
       id="demo"
@@ -59,9 +61,9 @@ export default function CTASection() {
             visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
           }}
         >
-          Launch your first
+          {dict.cta.titleA}
           <br />
-          <span className="text-brand-400">AI agent workflow.</span>
+          <span className="text-brand-400">{dict.cta.titleB}</span>
         </motion.h2>
 
         <motion.p
@@ -71,8 +73,7 @@ export default function CTASection() {
             visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
           }}
         >
-          Pick an agent, connect your tools, and turn repetitive business work
-          into an automated system.
+          {dict.cta.subtitle}
         </motion.p>
 
         <motion.div
@@ -90,7 +91,7 @@ export default function CTASection() {
               size={18}
               className="transition-transform group-hover:rotate-12"
             />
-            Browse marketplace
+            {dict.cta.browseMarketplace}
             <ArrowRight
               size={18}
               className="transition-transform group-hover:translate-x-1"
@@ -100,7 +101,7 @@ export default function CTASection() {
             href="/dashboard"
             className="inline-flex items-center justify-center rounded-full border border-white/10 bg-neutral-900 px-8 py-4 text-base font-bold text-white shadow-sm transition-all hover:border-white/20 hover:-translate-y-0.5"
           >
-            See dashboard
+            {dict.cta.seeDashboard}
           </Link>
         </motion.div>
       </motion.div>

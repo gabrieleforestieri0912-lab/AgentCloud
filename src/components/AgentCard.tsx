@@ -5,27 +5,37 @@ import { ArrowRight, CheckCircle2, Star, Clock } from "lucide-react";
 import type { Agent } from "@/lib/agents";
 import { isAvailable } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
+import { useLanguage } from "./LanguageProvider";
 
 type AgentCardProps = {
   agent: Agent;
   className?: string;
+  /** Authoritative availability, computed server-side from feature flags. */
+  available?: boolean;
 };
 
-export default function AgentCard({ agent, className = "" }: AgentCardProps) {
-  const available = isAvailable(agent.slug);
+export default function AgentCard({
+  agent,
+  className = "",
+  available,
+}: AgentCardProps) {
+  const { dict } = useLanguage();
+  // Server pages pass the authoritative value; otherwise fall back to the
+  // flags (which resolve to the default vertical in client bundles).
+  const isAgentAvailable = available ?? isAvailable(agent.slug);
 
   return (
     <article
       className={`relative rounded-lg border bg-neutral-900 p-5 shadow-sm transition-all duration-300 ${
-        available
+        isAgentAvailable
           ? "border-white/5 hover:-translate-y-1 hover:border-brand-500/30 hover:shadow-xl hover:shadow-brand-500/10"
           : "border-white/5 opacity-60"
       } ${className}`}
     >
-      {!available && (
+      {!isAgentAvailable && (
         <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-400">
           <Clock size={12} />
-          Prossimamente
+          {dict.agentCard.comingSoon}
         </div>
       )}
 
@@ -34,7 +44,12 @@ export default function AgentCard({ agent, className = "" }: AgentCardProps) {
           <div
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${agent.accent}`}
           >
-            <AgentIcon icon={agent.icon} size={21} className="text-white" />
+            <AgentIcon
+              icon={agent.icon}
+              brand={agent.brand}
+              size={21}
+              className="text-white"
+            />
           </div>
           <div className="min-w-0">
             <h3 className="truncate text-lg font-bold text-white">
@@ -57,7 +72,7 @@ export default function AgentCard({ agent, className = "" }: AgentCardProps) {
           {agent.badge}
         </span>
         <span className="rounded-full bg-neutral-800 px-2.5 py-1 text-xs font-semibold text-neutral-400">
-          {agent.installs} installs
+          {agent.installs} {dict.agentCard.installs}
         </span>
         <span className="rounded-full bg-neutral-800 px-2.5 py-1 text-xs font-semibold text-neutral-400">
           {agent.setupTime}
@@ -83,17 +98,17 @@ export default function AgentCard({ agent, className = "" }: AgentCardProps) {
       <div className="flex items-center justify-between border-t border-white/5 pt-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-            Setup
+            {dict.agentCard.setup}
           </p>
           <p className="text-base font-bold text-white">{agent.price}</p>
         </div>
 
-        {available ? (
+        {isAgentAvailable ? (
           <Link
             href={`/agents/${agent.slug}`}
             className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-brand-400 group"
           >
-            View
+            {dict.agentCard.view}
             <ArrowRight
               size={16}
               className="transition-transform duration-200 group-hover:translate-x-0.5"
@@ -101,7 +116,7 @@ export default function AgentCard({ agent, className = "" }: AgentCardProps) {
           </Link>
         ) : (
           <span className="inline-flex items-center gap-2 rounded-full bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-500 cursor-not-allowed">
-            Coming soon
+            {dict.agentCard.comingSoon}
           </span>
         )}
       </div>

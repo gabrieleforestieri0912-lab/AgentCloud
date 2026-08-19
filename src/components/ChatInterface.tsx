@@ -18,37 +18,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
-
-const RESPONSES: Record<string, string> = {
-  greeting:
-    "Hi! I'm your AgentCloud AI assistant. I can help you automate tasks like emails, support tickets, lead generation, invoicing, and more. What would you like to set up today?",
-
-  email:
-    "I can automate your full email workflow:\n\n• **Smart Replies** — Auto-draft responses to common inquiries\n• **Inbox Prioritization** — Sort and tag emails by urgency\n• **Follow-up Scheduling** — Set rules for automatic follow-ups\n• **Template Management** — Create and apply email templates\n\nWant me to set up email automation for your account?",
-
-  support:
-    "I can optimize your customer support with:\n\n• **Ticket Categorization** — Auto-tag and route incoming tickets\n• **AI Responses** — Answer common questions instantly\n• **Sentiment Analysis** — Flag urgent or unhappy customers\n• **Knowledge Base** — Pull answers from your docs\n\nShall I configure a support agent for you?",
-
-  leads:
-    "I can supercharge your lead generation:\n\n• **Auto-Prospecting** — Find and qualify leads in your area\n• **Smart Outreach** — Personalized first-touch messages\n• **Pipeline Management** — Track leads through your funnel\n• **Follow-up Automation** — Nurture leads until they convert\n\nReady to launch your lead gen agent?",
-
-  finance:
-    "I can handle your financial workflows:\n\n• **Invoice Generation** — Create and send invoices automatically\n• **Payment Reminders** — Automated follow-ups for overdue payments\n• **Expense Tracking** — Categorize and monitor spending\n• **Monthly Reports** — Get AI-generated financial summaries\n\nWould you like to set up finance automation?",
-
-  social:
-    "I can manage your social media presence:\n\n• **Content Scheduling** — Plan and auto-post across platforms\n• **Engagement Auto-Reply** — Respond to comments and DMs\n• **Analytics** — Track performance and suggest improvements\n• **Hashtag Research** — Find trending tags in your niche\n\nWant me to activate your social media agent?",
-
-  campaigns:
-    "I can run multi-channel campaigns:\n\n• **AI Content Generation** — Write copy that converts\n• **Audience Segmentation** — Target the right people\n• **A/B Testing** — Optimize subject lines and CTAs\n• **Performance Dashboard** — Real-time campaign analytics\n\nShall I build a campaign agent for you?",
-
-  data: "I can process and analyze your data:\n\n• **Data Extraction** — Pull info from documents and emails\n• **Report Generation** — Auto-create weekly/monthly summaries\n• **Pattern Detection** — Spot trends and anomalies\n• **Export Automation** — Send data to your tools\n\nWould you like to set up a data processing agent?",
-
-  scheduling:
-    "I can handle your scheduling needs:\n\n• **Smart Calendar** — Auto-schedule meetings based on availability\n• **Reminder System** — Never miss a follow-up or deadline\n• **Time Blocking** — Optimize your daily schedule\n• **Team Coordination** — Find the best times for everyone\n\nReady to set up scheduling automation?",
-
-  default:
-    "That's a great question! Here's what I can help you with:\n\n• **Email & Inbox** — Automate your email workflow\n• **Customer Support** — AI-powered ticket management\n• **Lead Generation** — Find and convert more leads\n• **Finance & Invoicing** — Automate your books\n• **Social Media** — Schedule and engage automatically\n• **Campaigns** — Launch multi-channel campaigns\n• **Data Processing** — Extract and analyze data\n\nWhat area would you like to explore?",
-};
+import { getLocalChatResponse } from "@/lib/chat-responses";
+import { useLanguage } from "./LanguageProvider";
 
 type LocalMessage = {
   id: string;
@@ -64,31 +35,6 @@ type LocalConversation = {
   created_at: string;
 };
 
-function getAIResponse(input: string): string {
-  const lower = input.toLowerCase();
-
-  if (/^(hi|hello|hey|ciao|buongiorno|hola)/.test(lower))
-    return RESPONSES.greeting;
-  if (/\b(mail|email|inbox|draft|reply)\b/.test(lower)) return RESPONSES.email;
-  if (/\b(support|ticket|help desk|customer service|faq)\b/.test(lower))
-    return RESPONSES.support;
-  if (/\b(lead|prospect|customer acquisition|sales)\b/.test(lower))
-    return RESPONSES.leads;
-  if (
-    /\b(finance|invoice|bill|payment|revenue|expense|bookkeeping)\b/.test(lower)
-  )
-    return RESPONSES.finance;
-  if (/\b(social|instagram|linkedin|facebook|tweet|post|content)\b/.test(lower))
-    return RESPONSES.social;
-  if (/\b(campaign|marketing|promo|advertise|launch)\b/.test(lower))
-    return RESPONSES.campaigns;
-  if (/\b(data|analytics|report|analysis|extract|csv|export)\b/.test(lower))
-    return RESPONSES.data;
-  if (/\b(schedule|calendar|meeting|appointment|reminder)\b/.test(lower))
-    return RESPONSES.scheduling;
-  return RESPONSES.default;
-}
-
 function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString([], {
     hour: "2-digit",
@@ -96,9 +42,9 @@ function formatTime(dateStr: string) {
   });
 }
 
-function getConvTitle(messages: LocalMessage[]): string {
+function getConvTitle(messages: LocalMessage[], fallback: string): string {
   const first = messages.find((m) => m.role === "user");
-  if (!first) return "New Chat";
+  if (!first) return fallback;
   return first.content.length > 36
     ? first.content.substring(0, 36) + "..."
     : first.content;
@@ -113,6 +59,7 @@ export default function ChatInterface({
 }: {
   initialQuery?: string;
 }) {
+  const { dict, locale } = useLanguage();
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState(initialQuery || "");
@@ -140,7 +87,7 @@ export default function ChatInterface({
       initializedRef.current = true;
       const conv: LocalConversation = {
         id: generateId(),
-        title: "New Chat",
+        title: dict.chat.newChat,
         messages: [],
         created_at: new Date().toISOString(),
       };
@@ -158,7 +105,7 @@ export default function ChatInterface({
   function handleNewChat() {
     const conv: LocalConversation = {
       id: generateId(),
-      title: "New Chat",
+      title: dict.chat.newChat,
       messages: [],
       created_at: new Date().toISOString(),
     };
@@ -196,7 +143,7 @@ export default function ChatInterface({
           ? {
               ...c,
               messages: [...c.messages, userMsg],
-              title: getConvTitle([...c.messages, userMsg]),
+              title: getConvTitle([...c.messages, userMsg], dict.chat.newChat),
             }
           : c,
       ),
@@ -260,7 +207,7 @@ export default function ChatInterface({
     } catch {
       // Fallback to local responses
       await new Promise((r) => setTimeout(r, 600 + Math.random() * 1200));
-      responseText = getAIResponse(text);
+      responseText = getLocalChatResponse(text, locale);
 
       setConversations((prev) =>
         prev.map((c) =>
@@ -306,8 +253,8 @@ export default function ChatInterface({
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
         className="hidden lg:flex absolute left-4 top-4 z-30 w-8 h-8 items-center justify-center rounded-lg bg-neutral-800 border border-white/5 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all"
-        title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-        aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+        title={sidebarOpen ? dict.chat.closeSidebar : dict.chat.openSidebar}
+        aria-label={sidebarOpen ? dict.chat.closeSidebar : dict.chat.openSidebar}
       >
         {sidebarOpen ? (
           <PanelLeftClose size={16} />
@@ -340,11 +287,11 @@ export default function ChatInterface({
             className="flex-1 flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 text-white text-sm font-semibold py-2.5 px-4 rounded-xl transition-all shadow-lg shadow-brand-500/20"
           >
             <Plus size={16} />
-            New Chat
+            {dict.chat.newChat}
           </button>
           <button
             onClick={() => setMobileSidebarOpen(false)}
-            aria-label="Close sidebar"
+            aria-label={dict.chat.closeSidebar}
             className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg bg-neutral-800 text-neutral-400 hover:text-white"
           >
             <PanelLeftClose size={16} />
@@ -354,29 +301,29 @@ export default function ChatInterface({
         <nav className="px-3 pt-3 pb-1">
           <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
             <Home size={16} />
-            Home
+            {dict.chat.home}
           </button>
           <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20">
             <MessageSquare size={16} />
-            Chat
+            {dict.chat.chat}
           </button>
           <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
             <Wrench size={16} />
-            Tools
+            {dict.chat.tools}
           </button>
           <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
             <Bot size={16} />
-            Agents
+            {dict.chat.agents}
           </button>
         </nav>
 
         <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
           <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
-            Conversations
+            {dict.chat.conversations}
           </p>
           {conversations.length === 0 ? (
             <p className="text-xs font-semibold text-neutral-600 px-3 py-4 text-center">
-              No conversations yet. Start a new chat!
+              {dict.chat.noConversations}
             </p>
           ) : (
             conversations.map((conv) => (
@@ -399,8 +346,8 @@ export default function ChatInterface({
                 <button
                   onClick={(e) => handleDelete(e, conv.id)}
                   className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/20 hover:text-red-400 transition-all shrink-0"
-                  title="Delete conversation"
-                  aria-label="Delete conversation"
+                  title={dict.chat.deleteConversation}
+                  aria-label={dict.chat.deleteConversation}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -458,12 +405,12 @@ export default function ChatInterface({
                 {isTyping ? (
                   <span className="flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
-                    Thinking...
+                    {dict.chat.thinking}
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full" />
-                    Online
+                    {dict.chat.online}
                   </span>
                 )}
               </p>
@@ -493,11 +440,10 @@ export default function ChatInterface({
                 />
               </div>
               <h2 className="text-xl font-semibold text-white mb-2">
-                What would you like to automate?
+                {dict.chat.emptyTitle}
               </h2>
               <p className="text-sm font-semibold text-neutral-400 max-w-sm">
-                Ask me anything about automating your business. I can help with
-                emails, support, leads, and more.
+                {dict.chat.emptySubtitle}
               </p>
             </div>
           ) : (
@@ -589,7 +535,7 @@ export default function ChatInterface({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message your AI Agent..."
+              placeholder={dict.chat.placeholder}
               rows={1}
               className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
               style={{ fieldSizing: "content" } as React.CSSProperties}
@@ -597,16 +543,15 @@ export default function ChatInterface({
             <button
               onClick={handleSend}
               disabled={!input.trim() || isTyping || !activeId}
-              aria-label="Send message"
-              title="Send message"
+              aria-label={dict.chat.sendMessage}
+              title={dict.chat.sendMessage}
               className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed"
             >
               <Send size={16} />
             </button>
           </div>
           <p className="text-[10px] text-neutral-600 text-center mt-2">
-            AgentCloud AI may produce inaccurate information. Verify critical
-            data.
+            {dict.chat.disclaimer}
           </p>
         </div>
       </main>

@@ -422,7 +422,21 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
           return "Nessun prodotto trovato.";
         }
 
-        const results = productEdges.map((edge: any) => {
+        const results = productEdges.map((edge: {
+          node?: {
+            title?: string;
+            handle?: string;
+            onlineStoreUrl?: string;
+            priceRangeV2?: {
+              minVariantPrice?: { amount?: string; currencyCode?: string };
+            };
+            variants?: {
+              edges?: Array<{
+                node?: { id?: string; availableForSale?: boolean };
+              }>;
+            };
+          };
+        }) => {
           const node = edge.node;
           const variant = node?.variants?.edges?.[0]?.node;
           const amount = node?.priceRangeV2?.minVariantPrice?.amount ?? "N/A";
@@ -634,7 +648,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
                     client_secret: clientSecret,
                     grant_type: "refresh_token",
                     refresh_token: refreshToken,
-                  } as any).toString(),
+                  }).toString(),
                 },
               );
               if (tokenRes.ok) {
@@ -648,7 +662,9 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
                   );
                 } catch {}
               }
-            } catch (err) {}
+            } catch {
+              // token refresh failure — fall back to the stored access token
+            }
           }
         }
         const freeBusyResponse = await fetch(
@@ -677,7 +693,10 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
         const busy = freeBusyData.calendars?.[calendarId]?.busy || [];
         const availability = busy.length
           ? busy
-              .map((block: any) => `Busy from ${block.start} to ${block.end}`)
+              .map(
+                (block: { start?: string; end?: string }) =>
+                  `Busy from ${block.start} to ${block.end}`,
+              )
               .join("\n")
           : "No busy slots found in the requested range.";
 
@@ -772,7 +791,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
                     client_secret: clientSecret,
                     grant_type: "refresh_token",
                     refresh_token: refreshToken,
-                  } as any).toString(),
+                  }).toString(),
                 },
               );
               if (tokenRes.ok) {
@@ -786,7 +805,9 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
                   );
                 } catch {}
               }
-            } catch (err) {}
+            } catch {
+              // token refresh failure — fall back to the stored access token
+            }
           }
         }
         const res = await fetch(

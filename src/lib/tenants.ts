@@ -4,8 +4,8 @@ import crypto from "crypto";
 
 export type TenantCredentials = {
   id: string;
-  google?: { calendarId: string; accessToken?: string; refreshToken?: string };
-  shopify?: { shopDomain: string; accessToken: string };
+  google?: { calendarId?: string; accessToken?: string; refreshToken?: string };
+  shopify?: { shopDomain?: string; accessToken?: string };
 };
 
 const STORE_PATH = path.join(process.cwd(), "data", "tenants.json");
@@ -76,7 +76,7 @@ function writeStore(store: Record<string, StoredTenant>) {
     fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), {
       encoding: "utf8",
     });
-  } catch (e) {
+  } catch {
     // ignore
   }
 }
@@ -108,13 +108,17 @@ export function getTenantCredentials(
   if (!s) return undefined;
   const out: TenantCredentials = { id: s.id };
   if (s.google) {
-    const g: any = { calendarId: s.google.calendarId || undefined };
+    const g: NonNullable<TenantCredentials["google"]> = {
+      calendarId: s.google.calendarId || undefined,
+    };
     if (s.google.accessToken) g.accessToken = decrypt(s.google.accessToken);
     if (s.google.refreshToken) g.refreshToken = decrypt(s.google.refreshToken);
     out.google = g;
   }
   if (s.shopify) {
-    const sh: any = { shopDomain: s.shopify.shopDomain || undefined };
+    const sh: NonNullable<TenantCredentials["shopify"]> = {
+      shopDomain: s.shopify.shopDomain || undefined,
+    };
     if (s.shopify.accessToken) sh.accessToken = decrypt(s.shopify.accessToken);
     out.shopify = sh;
   }

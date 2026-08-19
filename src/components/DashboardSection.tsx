@@ -3,20 +3,12 @@
 import Link from "next/link";
 import { Activity, CheckCircle2, Cloud, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-
-const DASHBOARD_AGENTS = [
-  ["Website Chatbot", "Active", "1,284 runs", "98.7%"],
-  ["Invoice Agent", "Active", "346 runs", "96.1%"],
-  ["Campaign Agent", "Paused", "92 runs", "94.8%"],
-];
-
-const EVENTS = [
-  "Captured a qualified lead from pricing page.",
-  "Flagged 2 duplicate invoices for review.",
-  "Prepared 3 subject line variants.",
-];
+import { useLanguage } from "./LanguageProvider";
 
 export default function DashboardSection() {
+  const { dict } = useLanguage();
+  const dashboardAgents = dict.dashboardSection.agents;
+  const events = dict.dashboardSection.events;
   return (
     <section className="overflow-hidden bg-neutral-950 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -30,17 +22,16 @@ export default function DashboardSection() {
           <div className="mb-6 flex items-center justify-center gap-2">
             <Activity size={13} className="text-brand-400" />
             <span className="text-xs font-bold uppercase tracking-[0.08em] text-brand-400">
-              Agent operations
+              {dict.dashboardSection.badge}
             </span>
           </div>
 
           <h2 className="mx-auto max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl">
-            Manage every installed agent from one clean dashboard.
+            {dict.dashboardSection.title}
           </h2>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-neutral-400">
-            Track status, workflow runs, alerts, and integration health without
-            leaving the marketplace.
+            {dict.dashboardSection.subtitle}
           </p>
 
           <Link
@@ -48,7 +39,7 @@ export default function DashboardSection() {
             className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-brand-500/20 transition-all duration-200 hover:bg-brand-400 hover:-translate-y-0.5"
           >
             <Sparkles size={16} />
-            Open dashboard
+            {dict.dashboardSection.openDashboard}
           </Link>
         </motion.div>
 
@@ -76,11 +67,11 @@ export default function DashboardSection() {
                 </div>
                 <span className="text-sm font-bold text-white">AgentCloud</span>
               </div>
-              {["Overview", "Agents", "Integrations", "Runs"].map((item) => (
+              {dict.dashboardSection.sidebar.map((item, idx) => (
                 <div
                   key={item}
                   className={`mb-1 rounded-lg px-3 py-2 text-sm font-semibold ${
-                    item === "Agents"
+                    idx === 1
                       ? "bg-neutral-900 text-brand-400 shadow-sm"
                       : "text-neutral-400"
                   }`}
@@ -92,11 +83,7 @@ export default function DashboardSection() {
 
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-3">
-                {[
-                  ["3", "Installed agents"],
-                  ["1,722", "Total runs"],
-                  ["97.4%", "Avg success"],
-                ].map(([value, label]) => (
+                {dict.dashboardSection.stats.map(([value, label]) => (
                   <div
                     key={label}
                     className="rounded-xl border border-white/5 bg-neutral-800 p-4"
@@ -110,7 +97,7 @@ export default function DashboardSection() {
               </div>
 
               <div className="rounded-xl border border-white/5">
-                {DASHBOARD_AGENTS.map(([name, status, runs, success]) => (
+                {dashboardAgents.map(([name, status, runs, success]) => (
                   <div
                     key={name}
                     className="grid gap-3 border-b border-white/5 p-4 last:border-b-0 sm:grid-cols-[1fr_90px_100px_80px] sm:items-center"
@@ -118,7 +105,7 @@ export default function DashboardSection() {
                     <p className="font-bold text-white">{name}</p>
                     <span
                       className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold ${
-                        status === "Active"
+                        status === "Active" || status === "Attivo"
                           ? "bg-purple-500/20 text-purple-300"
                           : "bg-neutral-800 text-neutral-400"
                       }`}
@@ -137,10 +124,10 @@ export default function DashboardSection() {
             <aside className="rounded-xl border border-white/5 bg-neutral-800 p-4">
               <div className="mb-4 flex items-center gap-2">
                 <CheckCircle2 size={18} className="text-purple-400" />
-                <p className="text-sm font-bold text-white">Recent activity</p>
+                <p className="text-sm font-bold text-white">{dict.dashboardSection.recentActivity}</p>
               </div>
               <div className="space-y-3">
-                {EVENTS.map((event) => (
+                {events.map((event) => (
                   <div
                     key={event}
                     className="rounded-lg bg-neutral-900 p-3 text-sm font-semibold leading-6 text-neutral-300 shadow-sm"

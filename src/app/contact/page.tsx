@@ -13,16 +13,17 @@ import {
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 
-const CONTACT_REASONS = [
-  { label: "General inquiry", icon: MessageSquare },
-  { label: "Sales", icon: Sparkles },
-  { label: "Support", icon: Mail },
-  { label: "Partnership", icon: Sparkles },
-  { label: "Other", icon: MessageSquare },
-];
+const CONTACT_REASON_ICONS = [MessageSquare, Sparkles, Mail, Sparkles, MessageSquare];
 
 export default function ContactPage() {
+  const { dict } = useLanguage();
+  const contactReasons = dict.contact.reasons.map((label, i) => ({
+    label,
+    icon: CONTACT_REASON_ICONS[i] ?? MessageSquare,
+  }));
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
@@ -45,13 +46,13 @@ export default function ContactPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to send message");
+        throw new Error(data.error || dict.contact.failedSend);
       }
 
       setSuccess(true);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
-      else setError("Something went wrong");
+      else setError(dict.contact.somethingWrong);
     } finally {
       setLoading(false);
     }
@@ -69,17 +70,16 @@ export default function ContactPage() {
               <div className="mb-6 flex items-center gap-2">
                 <Sparkles size={13} className="text-brand-400" />
                 <span className="text-xs font-bold uppercase tracking-[0.08em] text-brand-400">
-                  Contact
+                  {dict.contact.badge}
                 </span>
               </div>
 
               <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                Get in touch
+                {dict.contact.title}
               </h1>
 
               <p className="mt-4 max-w-xl text-lg leading-8 text-neutral-400">
-                Have a question about AgentCloud, need help with setup, or want
-                to explore a partnership? We&apos;d love to hear from you.
+                {dict.contact.subtitle}
               </p>
 
               <div className="mt-10 space-y-6">
@@ -88,7 +88,7 @@ export default function ContactPage() {
                     <Mail size={20} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white">Email us</h3>
+                    <h3 className="text-sm font-bold text-white">{dict.contact.emailUs}</h3>
                     <Link
                       href="mailto:info@agentcloud.io"
                       className="text-sm font-semibold text-neutral-400 hover:text-brand-400 transition-colors"
@@ -104,13 +104,13 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">
-                      Schedule a call
+                      {dict.contact.scheduleCall}
                     </h3>
                     <Link
                       href="/demo"
                       className="text-sm font-semibold text-neutral-400 hover:text-brand-400 transition-colors"
                     >
-                      Book a demo
+                      {dict.contact.bookDemo}
                     </Link>
                   </div>
                 </div>
@@ -118,20 +118,20 @@ export default function ContactPage() {
 
               <div className="mt-12 rounded-2xl border border-white/5 bg-neutral-900 p-6">
                 <h3 className="text-sm font-bold text-white">
-                  Response time
+                  {dict.contact.responseTime}
                 </h3>
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-2.5 text-sm text-neutral-400">
                     <Check size={16} className="text-purple-400 shrink-0" />
-                    We reply within 24 hours
+                    {dict.contact.reply24}
                   </div>
                   <div className="flex items-center gap-2.5 text-sm text-neutral-400">
                     <Check size={16} className="text-purple-400 shrink-0" />
-                    Weekdays: typically 2-4 hours
+                    {dict.contact.weekdays}
                   </div>
                   <div className="flex items-center gap-2.5 text-sm text-neutral-400">
                     <Check size={16} className="text-purple-400 shrink-0" />
-                    Enterprise: dedicated support
+                    {dict.contact.enterprise}
                   </div>
                 </div>
               </div>
@@ -140,9 +140,9 @@ export default function ContactPage() {
             {/* Form */}
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-8 shadow-xl shadow-black/30">
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-white">Send a message</h2>
+                <h2 className="text-xl font-bold text-white">{dict.contact.sendMessage}</h2>
                 <p className="mt-1 text-sm text-neutral-400">
-                  Fill in the form and we&apos;ll get back to you shortly.
+                  {dict.contact.sendMessageHint}
                 </p>
               </div>
 
@@ -158,13 +158,13 @@ export default function ContactPage() {
 
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-neutral-300">
-                    Name
+                    {dict.contact.name}
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder={dict.contact.namePh}
                     required
                     disabled={success}
                     className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
@@ -173,13 +173,13 @@ export default function ContactPage() {
 
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-neutral-300">
-                    Email
+                    {dict.contact.email}
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
+                    placeholder={dict.contact.emailPh}
                     required
                     disabled={success}
                     className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
@@ -188,10 +188,10 @@ export default function ContactPage() {
 
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-neutral-300">
-                    Subject
+                    {dict.contact.subject}
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {CONTACT_REASONS.map((r) => {
+                    {contactReasons.map((r) => {
                       const selected = subject === r.label;
                       return (
                         <button
@@ -213,19 +213,19 @@ export default function ContactPage() {
                   </div>
                   {subject && (
                     <p className="mt-1.5 text-xs text-brand-400">
-                      Selected: {subject}
+                      {t(dict.contact.selected, { subject })}
                     </p>
                   )}
                 </div>
 
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-neutral-300">
-                    Message
+                    {dict.contact.message}
                   </label>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Tell us what you need..."
+                    placeholder={dict.contact.messagePh}
                     required
                     disabled={success}
                     rows={5}
@@ -240,7 +240,7 @@ export default function ContactPage() {
                 >
                   {loading && <Loader2 size={16} className="animate-spin" />}
                   <Send size={16} />
-                  Send message
+                  {dict.contact.sendButton}
                 </button>
               </form>
 
@@ -253,17 +253,16 @@ export default function ContactPage() {
                       </div>
                     </div>
                     <h3 className="text-lg font-bold text-white">
-                      Message sent!
+                      {dict.contact.successTitle}
                     </h3>
                     <p className="mt-2 text-sm text-neutral-400">
-                      Thanks, {name}. We&apos;ve received your message and will
-                      reply within 24 hours.
+                      {t(dict.contact.successText, { name })}
                     </p>
                     <button
                       onClick={() => setSuccess(false)}
                       className="mt-6 w-full rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/20"
                     >
-                      Close
+                      {dict.contact.close}
                     </button>
                   </div>
                 </div>

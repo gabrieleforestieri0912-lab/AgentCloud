@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { User } from "@supabase/supabase-js";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -19,4 +20,21 @@ export async function createClient() {
       },
     }
   );
+}
+
+/**
+ * Server-only: resolve the authenticated user from the session cookies.
+ * Returns null when signed out. Never throws — callers can treat null as
+ * "anonymous".
+ */
+export async function getSessionUser(): Promise<User | null> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user;
+  } catch {
+    return null;
+  }
 }

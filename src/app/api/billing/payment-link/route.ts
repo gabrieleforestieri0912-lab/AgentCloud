@@ -1,26 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from "next/server";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
-import { getPricing, getPlan } from "@/lib/billing/pricing";
+import { getPlan } from "@/lib/billing/pricing";
+import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
 /**
  * GET /api/billing/payment-link?agentId=xxx&userId=xxx&email=xxx
  * OR
  * GET /api/billing/payment-link?planId=xxx&vertical=xxx&userId=xxx&email=xxx
  *
- * Returns a Stripe Payment Link for the specified agent or plan.
- * The link includes metadata for automatic tenant activation via webhook.
- *
- * Query params (agent-based):
- * - agentId: The agent slug (required)
- * - userId: Clerk user ID (optional, for logged-in users)
- * - email: Customer email (optional, for guest checkout)
- *
- * Query params (plan-based):
- * - planId: "starter" or "growth" (required)
- * - vertical: "shopify" or "services" (required)
- * - userId: Clerk user ID (optional, for logged-in users)
- * - email: Customer email (optional, for guest checkout)
+ * Returns a redirect to a Stripe Payment Link for the specified agent or plan.
+ * The link includes metadata for automatic activation via the webhook.
  */
 export async function GET(req: Request) {
   try {
@@ -34,6 +23,15 @@ export async function GET(req: Request) {
     const userId = url.searchParams.get("userId");
     const email = url.searchParams.get("email");
 
+    // Basic input validation to avoid echoing arbitrary values into links.
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email && !EMAIL_RE.test(email)) {
+      return NextResponse.json(
+        { error: await apiErrorMessage("invalidEmail") },
+        { status: 400 },
+      );
+    }
+
     let paymentLink: string | null = null;
     const metadata: Record<string, string> = {
       source: "agentcloud",
@@ -43,32 +41,38 @@ export async function GET(req: Request) {
     if (planId && vertical) {
       const plan = getPlan(vertical, planId as "starter" | "growth");
       if (!plan) {
-        return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+        return NextResponse.json(
+          { error: await apiErrorMessage("invalidPlan") },
+          { status: 400 },
+        );
       }
 
-      // Get payment link from environment variable
       const envKey = `STRIPE_PAYMENT_LINK_${vertical.toUpperCase()}_${planId.toUpperCase()}`;
       paymentLink = process.env[envKey] || null;
 
       metadata.plan_id = `${vertical}-${planId}`;
       metadata.vertical = vertical;
-      metadata.conversations = plan.conversations.toString();
+      metadata.tokens = plan.tokens.toString();
     }
     // Agent-based pricing (legacy, for backward compatibility)
     else if (agentId) {
       const config = AGENT_RUNTIME[agentId];
       if (!config) {
-        return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: await apiErrorMessage("agentNotFound") },
+          { status: 404 },
+        );
       }
 
-      // Get payment link from environment variable
-      const envKey = `STRIPE_PAYMENT_LINK_${agentId.replace(/[^a-z0-9]/gi, "_").toUpperCase()}`;
+      const envKey = `STRIPE_PAYMENT_LINK_${agentId
+        .replace(/[^a-z0-9]/gi, "_")
+        .toUpperCase()}`;
       paymentLink = process.env[envKey] || null;
 
       metadata.agent_id = agentId;
     } else {
       return NextResponse.json(
-        { error: "Missing agentId or planId+vertical" },
+        { error: await apiErrorMessage("missingAgentOrPlan") },
         { status: 400 },
       );
     }
@@ -76,7 +80,7 @@ export async function GET(req: Request) {
     if (!paymentLink) {
       console.error(`Missing payment link env var`);
       return NextResponse.json(
-        { error: "Payment link not configured" },
+        { error: await apiErrorMessage("paymentLinkNotConfigured") },
         { status: 500 },
       );
     }
@@ -94,7 +98,6 @@ export async function GET(req: Request) {
       metadata.email = email;
     }
 
-    // Add metadata
     for (const [key, value] of Object.entries(metadata)) {
       paymentUrl.searchParams.set(`metadata[${key}]`, value);
     }
@@ -103,7 +106,7 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("Payment link error:", error);
     return NextResponse.json(
-      { error: "Failed to generate payment link" },
+      { error: await apiErrorMessage("failedToGeneratePaymentLink") },
       { status: 500 },
     );
   }

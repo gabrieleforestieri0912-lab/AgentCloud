@@ -13,17 +13,17 @@ Both verticals share the same pricing structure to keep things simple at launch.
 
 ### E-commerce Vertical (Shopify)
 
-| Plan        | Price    | Conversations/Month | Features                                                                |
-| ----------- | -------- | ------------------- | ----------------------------------------------------------------------- |
-| **Starter** | €29/mese | 300                 | Ricerca prodotti, link carrello, stato ordini, lead capture             |
-| **Growth**  | €69/mese | 1.000               | Tutto del Starter + stato ordini avanzato, priorità supporto, analytics |
+| Plan        | Price    | Token/Month   | Features                                                                |
+| ----------- | -------- | ------------- | ----------------------------------------------------------------------- |
+| **Starter** | €29/mese | 300.000       | Ricerca prodotti, link carrello, stato ordini, lead capture             |
+| **Growth**  | €69/mese | 1.000.000     | Tutto del Starter + stato ordini avanzato, priorità supporto, analytics |
 
 ### Services Vertical (Calendar Booking)
 
-| Plan        | Price    | Conversations/Month | Features                                                              |
-| ----------- | -------- | ------------------- | --------------------------------------------------------------------- |
-| **Starter** | €29/mese | 300                 | Prenotazione appuntamenti, controllo disponibilità, lead capture      |
-| **Growth**  | €69/mese | 1.000               | Tutto del Starter + reminder automatici, priorità supporto, analytics |
+| Plan        | Price    | Token/Month   | Features                                                              |
+| ----------- | -------- | ------------- | --------------------------------------------------------------------- |
+| **Starter** | €29/mese | 300.000       | Prenotazione appuntamenti, controllo disponibilità, lead capture      |
+| **Growth**  | €69/mese | 1.000.000     | Tutto del Starter + reminder automatici, priorità supporto, analytics |
 
 ## Add-ons
 
@@ -157,25 +157,80 @@ Costo medio per conversazione: €0.08
    - `finished_at`
 
 2. **Ogni mese** calcola:
-   - Numero di conversazioni per utente/agente
-   - Token totali consumati
+   - Token totali consumati (input + output) per utente/agente
+   - Numero di conversazioni (informativo)
    - Costo stimato
 
-3. **Se l'utente supera il limite**:
-   - Mostra messaggio: "Hai raggiunto il limite di 300 conversazioni"
-   - Offri upgrade a Growth
-   - Opzionalmente, permetti overage a €0.10/conversazione
+3. **Se l'utente supera il plafond di token**: parte l'**overage billing**
+   (vedi sotto): il run viene permesso e i token extra vengono addebitati
+   automaticamente via Stripe.
 
 ### Enforce limiti
 
 ```typescript
-import { hasExceededLimit } from "@/lib/billing/usage-tracking";
+import { assertRunAllowed } from "@/lib/billing/usage-tracking";
 
-// Prima di ogni conversazione
-const exceeded = await hasExceededLimit(userId, agentSlug);
-if (exceeded) {
-  return "Hai raggiunto il limite del tuo piano. Upgrade a Growth per continuare.";
+// Prima di ogni run:
+const check = await assertRunAllowed(userId, agentSlug);
+if (!check.allowed) {
+  return check.message; // 402 non abbonato / 429 tetto di sicurezza
 }
+// check.allowed === true → il run parte; se check.overage === true il run
+// verrà addebitato come overage dopo l'esecuzione.
+```
+
+Il limite è calcolato sui **token reali (input + output)** sommando le
+`agent_runs` del mese per utente/agente. Per la migrazione, le righe legacy
+che salvano `conversationLimit` vengono mappate automaticamente: 300
+conversazioni → 300.000 token, 1.000 → 1.000.000 token.
+
+## Overage Billing (metered usage)
+
+Quando il plafond token mensile viene superato, l'utente **non viene più
+bloccato**: i token extra vengono addebitati automaticamente via Stripe.
+
+### Come funziona
+
+1. Il customer paga un piano con un **Payment Link** → Stripe crea una
+   subscription ricorrente mensile.
+2. Al checkout il webhook **allega un Price metered** (`STRIPE_OVERAGE_PRICE_ID`)
+   alla subscription e salva l'id del subscription item in
+   `user_agents.config.stripeSubscriptionItemId`.
+3. Ogni run oltre il plafond: `recordUsageAndReportOverage` calcola **solo
+   l'incremento** di token sopra l'allowance e lo riporta come **meter event**
+   (`billing.meterEvents.create`, con `stripe_customer_id` nel payload e
+   `identifier` unico per run contro i retry).
+4. Stripe **somma gli eventi del periodo** e **fattura a fine periodo**
+   insieme al rinnovo, con retry automatici in caso di carta rifiutata
+   (dunning).
+
+### Tariffa e tetto
+
+| Parametro | Valore |
+| --------- | ------ |
+| Tariffa   | **€0,30 per 1.000 token extra** (arrotondata per eccesso all'unità) |
+| Tetto     | **2x il plafond** (es. Starter 300K → blocca a 600K, Growth 1M → 2M) |
+
+- Il prezzo reale vive nel **Price metered** di Stripe (env
+  `STRIPE_OVERAGE_PRICE_ID`); `OVERAGE_RATE_PER_1000_TOKENS` in
+  `pricing.ts` è il mirror per copy UI e calcoli.
+- Se l'overage non è configurabile (nessuna subscription o Price mancante)
+  resta il comportamento legacy: blocco 429 al raggiungimento del plafond.
+- Nota: l'allowance è su mese di calendario, il meter Stripe sul periodo di
+  subscription (mensile). Lo sfasamento è di pochi giorni ed è accettato in v1.
+
+### Codice
+
+```typescript
+import { recordUsageAndReportOverage } from "@/lib/billing/usage-tracking";
+
+await recordUsageAndReportOverage({
+  user_id: userId,
+  agent_slug: agentId,
+  conversation_id: conversationId,
+  tokens_input: inputTokens,
+  tokens_output: outputTokens,
+});
 ```
 
 ## Stripe Configuration
@@ -222,7 +277,7 @@ Aggiungi metadata ai payment link per tracciare il piano:
 ```
 metadata[plan_id]=shopify-starter
 metadata[vertical]=shopify
-metadata[conversations]=300
+metadata[tokens]=300000
 ```
 
 ## Environment Variables
@@ -237,9 +292,9 @@ PRICING_SERVICES_GROWTH_PRICE=6900
 # Add-ons
 PRICING_WEB_SEARCH_ADDON_PRICE=1500
 
-# Usage limits
-USAGE_LIMIT_STARTER=300
-USAGE_LIMIT_GROWTH=1000
+# Usage limits (token mensili)
+USAGE_LIMIT_STARTER=300000
+USAGE_LIMIT_GROWTH=1000000
 ```
 
 ## Migration from Old Pricing
@@ -262,14 +317,15 @@ Se hai clienti esistenti con prezzi vecchi:
 Traccia sempre:
 
 ```typescript
-import { calculateCostPerConversation } from "@/lib/billing/pricing";
+import { calculateCostPerToken } from "@/lib/billing/pricing";
 
-const costPerConversation = calculateCostPerConversation(
+// Costo in centesimi per 1.000 token
+const costPerThousandTokens = calculateCostPerToken(
   planPriceInCents,
-  conversationsThisMonth,
+  tokensThisMonth,
 );
 
-console.log(`Costo per conversazione: €${costPerConversation.toFixed(2)}`);
+console.log(`Costo per 1.000 token: €${(costPerThousandTokens / 100).toFixed(2)}`);
 ```
 
 ### 2. Imposta alert

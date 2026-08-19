@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { getAgentBySlug } from "@/lib/agents";
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
+import { getSiteUrl } from "@/lib/site-url";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const BASE_URL = getSiteUrl();
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export async function GET(_req: Request, { params }: Props) {
+export async function GET(req: Request, { params }: Props) {
   const { slug } = await params;
   const agent = getAgentBySlug(slug) || getAgentRuntimeConfig(slug);
   if (!agent) {
@@ -17,6 +18,12 @@ export async function GET(_req: Request, { params }: Props) {
       headers: { "Content-Type": "application/javascript" },
     });
   }
+
+  // Widget label follows the platform default (Italian); embedders can opt
+  // into English with `?lang=en`.
+  const lang = new URL(req.url).searchParams.get("lang");
+  const widgetLabel =
+    lang === "en" ? "Chat with AI" : "Chatta con l'IA";
 
   const agentUrl = `${BASE_URL}/a/${slug}`;
 
@@ -38,7 +45,7 @@ export async function GET(_req: Request, { params }: Props) {
 
   var label = document.createElement("span");
   label.id = id + "-label";
-  label.textContent = "Chat with AI";
+  label.textContent = "${widgetLabel}";
   label.style.cssText = "display:block;text-align:center;font-size:10px;color:#9ca3af;margin-top:4px;font-weight:500;";
 
   container.appendChild(btn);

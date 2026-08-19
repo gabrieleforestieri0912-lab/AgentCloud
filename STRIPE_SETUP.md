@@ -30,6 +30,38 @@ For each agent, create a Product and Price in Stripe:
 
 Repeat for all agents (26 total).
 
+### Overage Price (Billing Meter) — obbligatorio per l'overage billing
+
+Per addebitare automaticamente i token oltre il plafond mensile servono un
+**Meter** e un **Price metered** dedicati (l'SDK Stripe v22 usa i Billing
+Meters, non più gli usage records classici):
+
+1. **Billing → Meters → Create meter**:
+   - Nome: "AgentCloud Token Overage"
+   - **Event name**: `agentcloud_token_overage` (deve corrispondere a
+     `STRIPE_OVERAGE_METER_EVENT`)
+   - Customer mapping: `stripe_customer_id` (default)
+   - Value: `value`, Aggregation: **Sum**
+2. **Products → Add product** → "AgentCloud Token Overage":
+   - Pricing → **Metered usage** (seleziona il meter creato)
+   - Unit amount: **€0,30**, unit label: **"1.000 tokens"**
+   - Billing period: **Monthly** → Salva
+3. Copia il **Price ID** e l'event name in `.env.local`:
+
+```env
+STRIPE_OVERAGE_PRICE_ID=price_xxxxxxxxxxxx
+STRIPE_OVERAGE_METER_EVENT=agentcloud_token_overage
+```
+
+Come funziona: al checkout il webhook allega questo Price alla subscription
+del cliente (`getOrCreateMeterItem`, idempotente); quando un run supera
+l'allowance i token extra vengono riportati come **meter events**
+(`billing.meterEvents.create`, con `stripe_customer_id` nel payload e un
+`identifier` unico per run contro i retry). Stripe somma gli eventi del
+periodo e fattura a fine periodo insieme al rinnovo. Senza queste env var
+l'overage è disabilitato e il comportamento torna al blocco 429 al
+raggiungimento del plafond.
+
 ## Step 3: Create Payment Links
 
 For each agent price, create a Payment Link:
@@ -117,6 +149,26 @@ Use these slugs for environment variable names:
 - **checkout.session.completed**: Triggered when a customer completes payment. Activates their subscription.
 - **customer.subscription.updated**: Triggered when subscription status changes (e.g., past due, paused).
 - **customer.subscription.deleted**: Triggered when subscription is canceled.
+
+### Customer Billing Portal — per la cancellazione self-service
+
+Per permettere ai clienti di **fermare l'abbonamento da soli** (a fine periodo
+già pagato, il default del portale), cambiare carta e scaricare fatture:
+
+1. Stripe Dashboard → **Settings → Billing → Customer portal**
+2. Abilita il portale, compila i dati business e imposta il **Return URL**:
+   `https://yourdomain.com/dashboard`
+3. Lascia la cancellazione a fine periodo attiva (equa per il cliente)
+
+Il pulsante **"Manage subscription"** nel dashboard apre
+`/api/billing/portal`, che crea una sessione del portale per lo
+`stripe_customer_id` dell'utente e reindirizza lì. Mentre la cancellazione è
+in sospeso (`cancel_at_period_end`), il webhook `customer.subscription.updated`
+lo salva nella config dell'agente e il dashboard mostra il chip
+**"Cancels at period end"**. Quando la subscription scade, il webhook
+`customer.subscription.deleted` (già gestito) passa gli agenti a `canceled`
+e i run vengono bloccati (402). Fino ad allora l'accesso resta attivo fino
+alla fine del periodo pagato.
 
 ## Step 6: Configure Supabase Database
 

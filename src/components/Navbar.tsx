@@ -1,66 +1,105 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useUser, SignOutButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import type { Session } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 import {
   ArrowRight,
-  Cloud,
+  Globe,
   Menu,
   Sparkles,
   X,
-  Calendar,
-  BookOpen,
-  Table,
   LogOut,
 } from "lucide-react";
 import Image from "next/image";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faGoogle,
-  faSlack,
-  faShopify,
-  faStripe,
-} from "@fortawesome/free-brands-svg-icons";
 import AgentIcon from "./AgentIcon";
-import { AVAILABLE_AGENTS } from "@/lib/agents";
+import BrandIcon from "./BrandIcon";
+import { BRANDS } from "@/lib/brands";
+import { AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
+import { useLanguage } from "./LanguageProvider";
 
 type MenuKey = "marketplace" | "solutions" | "integrations" | "pricing";
 
-const MENU_ITEMS: Array<{ key: MenuKey; label: string; href: string }> = [
-  { key: "marketplace", label: "Marketplace", href: "/agents" },
-  { key: "solutions", label: "Solutions", href: "/#solutions" },
-  { key: "integrations", label: "Integrations", href: "/#integrations" },
-];
-
-const SOLUTIONS = [
-  [
-    "Customer Support",
-    "Answer tickets, route issues, and summarize support spikes.",
-  ],
-  ["Sales", "Find leads, enrich contacts, and qualify replies automatically."],
-  ["Finance", "Process invoices, track payments, and generate reports."],
-  ["Restaurant", "Forecast stock, prepare supplier orders, and reduce waste."],
-];
+type NavbarProps = {
+  /**
+   * Marketplace agents to show in the dropdown/mobile menu. Server pages pass
+   * the flag-gated list; when omitted the default vertical's agents are used
+   * (client bundles can't read the server-only AGENTCLOUD_* env vars).
+   */
+  marketplaceAgents?: Agent[];
+};
 
 const INTEGRATIONS = [
-  { name: "Gmail", icon: () => <FontAwesomeIcon icon={faGoogle} size="lg" /> },
-  { name: "Google Calendar", icon: () => <Calendar size={18} /> },
-  { name: "HubSpot", icon: () => <Cloud size={18} /> },
-  { name: "Slack", icon: () => <FontAwesomeIcon icon={faSlack} size="lg" /> },
-  {
-    name: "Shopify",
-    icon: () => <FontAwesomeIcon icon={faShopify} size="lg" />,
-  },
-  { name: "Stripe", icon: () => <FontAwesomeIcon icon={faStripe} size="lg" /> },
-  { name: "Notion", icon: () => <BookOpen size={18} /> },
-  { name: "Sheets", icon: () => <Table size={18} /> },
+  { name: "Gmail", brand: "gmail" },
+  { name: "Google Calendar", brand: "googlecalendar" },
+  { name: "HubSpot", brand: "hubspot" },
+  { name: "WhatsApp", brand: "whatsapp" },
+  { name: "Shopify", brand: "shopify" },
+  { name: "Stripe", brand: "stripe" },
+  { name: "Notion", brand: "notion" },
+  { name: "Google Sheets", brand: "googlesheets" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
-  const { isSignedIn, isLoaded } = useUser();
+  const [session, setSession] = useState<Session | null>(null);
+  // True once the initial session read settles — prevents a one-frame flash of
+  // the "Accedi" button for signed-in users before hydration resolves.
+  const [authLoaded, setAuthLoaded] = useState(false);
+  const router = useRouter();
+  const { locale, setLocale, dict } = useLanguage();
+  // Pages that can resolve the flags server-side pass the authoritative list;
+  // otherwise fall back to the default vertical's agents. Either way the
+  // agents are overlaid with the active locale so dropdown labels never leak
+  // English (localizeAgent is idempotent for already-localized input).
+  const agents = (marketplaceAgents ?? AVAILABLE_AGENTS).map((agent) =>
+    localizeAgent(agent, locale),
+  );
+
+  // Track the Supabase session reactively (initial read + auth state changes).
+  useEffect(() => {
+    let mounted = true;
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) {
+        setSession(data.session);
+        setAuthLoaded(true);
+      }
+    });
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
+        if (mounted) {
+          setSession(nextSession);
+          setAuthLoaded(true);
+        }
+      },
+    );
+    return () => {
+      mounted = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
+
+  const isSignedIn = Boolean(session);
+
+  async function handleSignOut() {
+    await createClient().auth.signOut();
+    router.refresh();
+  }
+
+  const menuItems = [
+    { key: "marketplace" as MenuKey, label: dict.navbar.marketplace, href: "/agents" },
+    { key: "solutions" as MenuKey, label: dict.navbar.solutions, href: "/#solutions" },
+    { key: "integrations" as MenuKey, label: dict.navbar.integrations, href: "/#integrations" },
+  ];
+  const solutions = dict.navbar.solutionsItems.map((s) => [s.title, s.text]);
+
+  function toggleLocale() {
+    setLocale(locale === "it" ? "en" : "it");
+  }
 
   return (
     <>
@@ -86,7 +125,7 @@ export default function Navbar() {
             </Link>
 
             <nav className="hidden items-center gap-1 md:flex">
-              {MENU_ITEMS.map((item) => (
+              {menuItems.map((item) => (
                 <div key={item.key} className="relative">
                   <Link
                     href={item.href}
@@ -113,14 +152,14 @@ export default function Navbar() {
                         {item.key === "marketplace" && (
                           <div className="w-80">
                             <div className="grid grid-cols-2 gap-2">
-                              {AVAILABLE_AGENTS.map((agent) => (
+                              {agents.map((agent) => (
                                   <Link
                                     key={agent.slug}
                                     href={`/agents/${agent.slug}`}
                                     className="flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-white/5"
                                   >
                                     <span className="text-brand-500 shrink-0">
-                                      <AgentIcon icon={agent.icon} size={20} />
+                                      <AgentIcon icon={agent.icon} brand={agent.brand} size={20} />
                                     </span>
                                     <div className="min-w-0">
                                       <p className="text-sm font-bold text-white">
@@ -137,7 +176,7 @@ export default function Navbar() {
                                 href="/agents"
                                 className="mt-2 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-bold text-brand-400 transition-colors hover:bg-brand-500/10"
                               >
-                                Browse all agents
+                                {dict.navbar.browseAllAgents}
                                 <ArrowRight size={14} />
                               </Link>
                             </div>
@@ -145,7 +184,7 @@ export default function Navbar() {
 
                           {item.key === "solutions" && (
                             <div className="grid grid-cols-2 gap-2 w-72">
-                              {SOLUTIONS.map(([title, text]) => (
+                              {solutions.map(([title, text]) => (
                                 <Link
                                   key={title}
                                   href="/agents"
@@ -164,32 +203,28 @@ export default function Navbar() {
 
                           {item.key === "integrations" && (
                             <div className="grid grid-cols-4 gap-1 w-80">
-                              {INTEGRATIONS.map((integration) => (
-                                <Link
-                                  key={integration.name}
-                                  href="/#integrations"
-                                  className="flex flex-col items-center gap-2 rounded-lg px-3 py-4 text-center text-sm font-bold text-neutral-400 transition-colors hover:bg-white/5"
-                                >
-                                  <span className="text-neutral-500">
-                                    {integration.icon()}
-                                  </span>
-                                  {integration.name}
-                                </Link>
-                              ))}
+                              {INTEGRATIONS.map((integration) => {
+                                const brand = BRANDS[integration.brand];
+                                if (!brand) return null;
+                                return (
+                                  <Link
+                                    key={integration.name}
+                                    href="/#integrations"
+                                    className="flex flex-col items-center gap-2 rounded-lg px-3 py-4 text-center text-sm font-bold text-neutral-400 transition-colors hover:bg-white/5"
+                                  >
+                                    <span className="h-5 flex items-center justify-center transition-transform group-hover:scale-110">
+                                      <BrandIcon brand={brand} size={22} />
+                                    </span>
+                                    {integration.name}
+                                  </Link>
+                                );
+                              })}
                             </div>
                           )}
 
                           {item.key === "pricing" && (
                             <div className="grid grid-cols-3 gap-2 w-80">
-                              {[
-                                ["Starter", "€290/mo", "One workflow agent"],
-                                [
-                                  "Growth",
-                                  "€590/mo",
-                                  "Agent plus integrations",
-                                ],
-                                ["Custom", "Custom", "Multi-agent systems"],
-                              ].map(([plan, price, text]) => (
+                              {dict.navbar.pricingItems.map(({ plan, price, text }) => (
                                 <Link
                                   key={plan}
                                   href="/#demo"
@@ -215,15 +250,26 @@ export default function Navbar() {
               ))}
             </nav>
 
-            <div className="hidden items-center gap-4 md:flex">
-              {isLoaded && isSignedIn ? (
+            <div className="hidden items-center gap-3 md:flex">
+              <button
+                onClick={toggleLocale}
+                className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-neutral-300 transition-colors hover:bg-white/5 hover:text-white"
+                aria-label="Switch language"
+              >
+                <Globe size={14} className="text-brand-400" />
+                {locale === "it" ? "IT" : "EN"}
+                <span className="text-neutral-600">/</span>
+                <span className="text-neutral-500">{locale === "it" ? "EN" : "IT"}</span>
+              </button>
+              {authLoaded && (isSignedIn ? (
                 <div className="flex items-center gap-3">
-                  <SignOutButton>
-                    <button className="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400">
-                      <LogOut size={16} />
-                      Log out
-                    </button>
-                  </SignOutButton>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+                  >
+                    <LogOut size={16} />
+                    {dict.navbar.logOut}
+                  </button>
                 </div>
               ) : (
                 <>
@@ -231,17 +277,17 @@ export default function Navbar() {
                     href="/login"
                     className="flex items-center gap-2 rounded-full border border-white/10 px-5 py-2.5 text-sm font-bold text-neutral-300 transition-colors hover:bg-white/5"
                   >
-                    Sign in
+                    {dict.navbar.signIn}
                   </Link>
                   <Link
                     href="/demo"
                     className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
                   >
                     <Sparkles size={16} />
-                    Request demo
+                    {dict.navbar.requestDemo}
                   </Link>
                 </>
-              )}
+              ))}
             </div>
 
             <button
@@ -258,17 +304,17 @@ export default function Navbar() {
           <div className="border-t border-white/5 bg-neutral-950 px-4 py-4 md:hidden max-h-[calc(100vh-5rem)] overflow-y-auto">
             <div className="space-y-1">
               <div className="mb-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                Menu
+                {dict.navbar.menu}
               </div>
               <Link
                 href="/agents"
                 onClick={() => setMobileOpen(false)}
                 className="block rounded-lg px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/5"
               >
-                Marketplace
+                {dict.navbar.marketplace}
               </Link>
               <div className="grid grid-cols-2 gap-1 px-3 pb-2">
-                {AVAILABLE_AGENTS.map((agent) => (
+                {agents.map((agent) => (
                   <Link
                     key={agent.slug}
                     href={`/agents/${agent.slug}`}
@@ -276,7 +322,7 @@ export default function Navbar() {
                     className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold text-neutral-400 hover:bg-white/5 hover:text-white"
                   >
                     <span className="text-brand-500 shrink-0">
-                      <AgentIcon icon={agent.icon} size={14} />
+                      <AgentIcon icon={agent.icon} brand={agent.brand} size={14} />
                     </span>
                     <span className="truncate">{agent.shortName}</span>
                   </Link>
@@ -287,10 +333,10 @@ export default function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className="block rounded-lg px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/5"
               >
-                Solutions
+                {dict.navbar.solutions}
               </Link>
               <div className="grid grid-cols-2 gap-1 px-3 pb-2">
-                {SOLUTIONS.map(([title]) => (
+                {solutions.map(([title]) => (
                   <Link
                     key={title}
                     href="/agents"
@@ -306,17 +352,35 @@ export default function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className="block rounded-lg px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/5"
               >
-                Integrations
+                {dict.navbar.integrations}
               </Link>
             </div>
+            <div className="mt-4 flex items-center justify-center">
+              <button
+                onClick={() => {
+                  toggleLocale();
+                  setMobileOpen(false);
+                }}
+                className="flex items-center gap-1.5 rounded-full border border-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-neutral-300 transition-colors hover:bg-white/5"
+              >
+                <Globe size={14} className="text-brand-400" />
+                {locale === "it" ? "IT" : "EN"}
+                <span className="text-neutral-600">/</span>
+                <span className="text-neutral-500">{locale === "it" ? "EN" : "IT"}</span>
+              </button>
+            </div>
             <div className="mt-4 border-t border-white/5 pt-4">
-              {isLoaded && isSignedIn ? (
+              {authLoaded && (isSignedIn ? (
                 <div className="space-y-2">
-                  <SignOutButton>
-                    <button className="block w-full rounded-full border border-white/10 px-4 py-2.5 text-center text-sm font-bold text-neutral-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400">
-                      Log out
-                    </button>
-                  </SignOutButton>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setMobileOpen(false);
+                    }}
+                    className="block w-full rounded-full border border-white/10 px-4 py-2.5 text-center text-sm font-bold text-neutral-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+                  >
+                    {dict.navbar.logOut}
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -325,17 +389,17 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="block w-full rounded-full bg-brand-500 px-4 py-2.5 text-center text-sm font-bold text-white"
                   >
-                    Request demo
+                    {dict.navbar.requestDemo}
                   </Link>
                   <Link
                     href="/login"
                     onClick={() => setMobileOpen(false)}
                     className="block w-full rounded-full border border-white/10 px-4 py-2.5 text-center text-sm font-bold text-neutral-300 transition-colors hover:bg-white/5"
                   >
-                    Sign in
+                    {dict.navbar.signIn}
                   </Link>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         )}

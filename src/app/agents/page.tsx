@@ -3,57 +3,79 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AgentCard from "@/components/AgentCard";
-import { AVAILABLE_AGENTS, COMING_SOON_AGENTS } from "@/lib/agents";
+import {
+  AVAILABLE_AGENTS,
+  COMING_SOON_AGENTS,
+  isAvailable,
+  localizeAgent,
+} from "@/lib/agents";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 
-export const metadata: Metadata = {
-  title: "AI Agent Marketplace",
-  description:
-    "Browse pre-built AI agents for marketing, operations, support, finance and more. Deploy ready-to-use agents that automate your business workflows.",
-  openGraph: {
-    title: "AI Agent Marketplace | AgentCloud",
-    description:
-      "Browse pre-built AI agents for marketing, operations, support, finance and more.",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const isIt = locale === "it";
+  const title = isIt
+    ? "Marketplace Agenti AI"
+    : "AI Agent Marketplace";
+  const description = isIt
+    ? "Sfoglia agenti AI preconfigurati per marketing, operations, supporto, finanza e altro. Attiva agenti pronti all'uso che automatizzano i workflow aziendali."
+    : "Browse pre-built AI agents for marketing, operations, support, finance and more. Deploy ready-to-use agents that automate your business workflows.";
+  return {
+    title,
+    description,
+    openGraph: {
+      title: `${title} | AgentCloud`,
+      description,
+    },
+  };
+}
 
-export default function AgentsPage() {
+// The listing is gated by the runtime feature flags (server-only env vars),
+// so it must be rendered per-request instead of baked at build time.
+export const dynamic = "force-dynamic";
+
+export default async function AgentsPage() {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const available = AVAILABLE_AGENTS.map((a) => localizeAgent(a, locale));
+  const comingSoon = COMING_SOON_AGENTS.map((a) => localizeAgent(a, locale));
+
   return (
     <main className="min-h-screen bg-neutral-950">
-      <Navbar />
+      <Navbar marketplaceAgents={available} />
 
       <section className="bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-12 grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">
-                Agent marketplace
+                {dict.agentsPage.badge}
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-                AI agents built to automate business workflows.
+                {dict.agentsPage.title}
               </h1>
               <p className="mt-6 text-lg leading-8 text-neutral-400">
-                Choose from pre-configured AI agents for marketing, operations,
-                support, finance and more. Each agent can use research, file
-                uploads and tool actions to get work done.
+                {dict.agentsPage.subtitle}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/chat"
                   className="inline-flex items-center justify-center rounded-full bg-brand-500 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
                 >
-                  Start a chat
+                  {dict.agentsPage.startChat}
                 </Link>
                 <Link
                   href="/demo"
                   className="inline-flex items-center justify-center rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"
                 >
-                  Request a demo
+                  {dict.agentsPage.requestDemo}
                 </Link>
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              {AVAILABLE_AGENTS.map((agent) => (
+              {available.map((agent) => (
                 <div
                   key={agent.slug}
                   className="rounded-3xl border border-white/5 bg-neutral-900 p-6 shadow-sm"
@@ -83,14 +105,23 @@ export default function AgentsPage() {
             </div>
           </div>
 
-          {/* Available agents */}
+          {/* Available agents (gated by the runtime feature flags) */}
           <div className="mb-8">
-            <h2 className="mb-6 text-2xl font-bold text-white">
-              Available now
-            </h2>
+            <div className="mb-6 flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-white">
+                {dict.agentsPage.availableNow}
+              </h2>
+              <span className="rounded-full bg-brand-500/10 px-3 py-1 text-xs font-bold text-brand-300">
+                {t(dict.agentsPage.agentsCount, { count: available.length })}
+              </span>
+            </div>
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {AVAILABLE_AGENTS.map((agent) => (
-                <AgentCard key={agent.slug} agent={agent} />
+              {available.map((agent) => (
+                <AgentCard
+                  key={agent.slug}
+                  agent={agent}
+                  available={isAvailable(agent.slug)}
+                />
               ))}
             </div>
           </div>
@@ -98,14 +129,20 @@ export default function AgentsPage() {
           {/* Coming soon agents */}
           <div>
             <div className="mb-6 flex items-center gap-3">
-              <h2 className="text-2xl font-bold text-white">Coming soon</h2>
+              <h2 className="text-2xl font-bold text-white">
+                {dict.agentsPage.comingSoon}
+              </h2>
               <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs font-bold text-neutral-400">
-                {COMING_SOON_AGENTS.length} agents
+                {t(dict.agentsPage.agentsCount, { count: comingSoon.length })}
               </span>
             </div>
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {COMING_SOON_AGENTS.map((agent) => (
-                <AgentCard key={agent.slug} agent={agent} />
+              {comingSoon.slice(0, 3).map((agent) => (
+                <AgentCard
+                  key={agent.slug}
+                  agent={agent}
+                  available={false}
+                />
               ))}
             </div>
           </div>

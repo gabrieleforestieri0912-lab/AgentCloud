@@ -1,151 +1,229 @@
 # AgentCloud
 
-**v0.2.0** — AI agent marketplace landing page.
+**v0.4.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing Stripe con overage, i18n IT/EN.
 
 ---
 
 ## Stack
 
 - **Next.js 16.2.9** (Turbopack) — framework
-- **React 19.2.4** — UI library
+- **React 19.2.4** — UI
 - **Tailwind CSS v4** — styling (`@theme`-based)
 - **TypeScript ^5** — type safety
-- **Supabase** — demo request storage
-- **Resend** — email notifications
-- **FontAwesome 7** — brand icons (Google, Slack, Shopify, Stripe, social)
-- **Lucide React** — primary icon set
+- **Supabase Auth** — autenticazione (email + password, Google OAuth, sessioni `@supabase/ssr`)
+- **Supabase** — database (billing, usage, rate limits) + form storage
+- **Stripe** — payment links, abbonamenti, customer portal, **overage billing** (Billing Meter)
+- **Anthropic (Claude)** — esecuzione agenti (`/api/agent/run`)
+- **Resend** — email transazionali
+- **Simple Icons** — icone brand originali (integrazioni/hero) · **Lucide** — icone UI
 
 ---
 
-## Project Structure
+## Struttura (sintesi)
 
 ```
 src/
-├── proxy.ts              # Redirects all routes except / and /demo → /demo
+├── proxy.ts                 # Supabase session middleware (route pubbliche vs protette)
 ├── app/
-│   ├── layout.tsx        # Root layout: fonts (Manrope + Inter), bg-black, metadata
-│   ├── page.tsx          # Homepage — assembles all sections
-│   ├── globals.css       # Tailwind theme (brand/pink/orange/purple/indigo/neutral),
-│   │                     # keyframes (fade-in-up, scale-in, typing-pulse, etc.),
-│   │                     # custom scrollbar, stagger delays
-│   ├── demo/page.tsx     # Demo request page (product pitch + form)
-│   ├── chat/page.tsx     # AI chat page (reads ?q=)
-│   ├── dashboard/page.tsx# Agent dashboard (stats, agents, activity)
-│   ├── agents/
-│   │   ├── page.tsx      # Marketplace listing ("Coming soon")
-│   │   ├── [slug]/page.tsx        # Agent detail (description, preview, CTA)
-│   │   └── [slug]/deploy/page.tsx # Agent deploy wizard (configure, connect, review)
+│   ├── layout.tsx           # Metadata dinamici, LanguageProvider
+│   ├── page.tsx             # Homepage (hero + sezioni landing)
+│   ├── dashboard/page.tsx   # Dashboard (server component, dati reali Supabase)
+│   ├── chat/page.tsx        # Chat generica (Ollama → fallback locale)
+│   ├── agents/page.tsx      # Marketplace filtrato dai feature flags
+│   ├── agents/[slug]/page.tsx        # Dettaglio agente (localizzato)
+│   ├── agents/[slug]/deploy/page.tsx # Wizard di deploy
+│   ├── agent/[id]/page.tsx  # Chat di un agente (protetto)
+│   ├── a/[slug]/            # Pagina pubblica agente + chat embed
+│   ├── login | signup | waitlist | demo | contact | privacy | terms
 │   └── api/
-│       ├── demo/request/route.ts  # POST — stores in Supabase + sends email
-│       ├── email/send/route.ts    # POST — send via Resend
-│       └── email/webhook/route.ts # POST/GET — inbound email webhook
-├── components/
-│   ├── Navbar.tsx           # Fixed header with dropdowns (Marketplace, Solutions,
-│   │                        #   Integrations, Pricing) + mobile hamburger
-│   ├── HeroSection.tsx      # Rotating word pills + textarea → /chat
-│   ├── MarketplaceSection.tsx # Agent store pitch + custom agent CTA
-│   ├── FeaturesSection.tsx  # 5 feature cards with embedded mockups
-│   ├── DashboardSection.tsx # Dashboard mockup (sidebar, agents, activity)
-│   ├── IntegrationsSection.tsx # 12 integrations in a tile grid
-│   ├── FAQSection.tsx       # Accordion FAQ (8 items)
-│   ├── CTASection.tsx       # Final CTA banner
-│   ├── Footer.tsx           # Black footer (logo, links, copyright)
-│   ├── AgentCard.tsx        # Marketplace agent card
-│   ├── AgentIcon.tsx        # Maps icon string → Lucide component
-│   ├── AgentPreview.tsx     # Simulated agent preview on detail page
-│   ├── AnimatedSection.tsx  # Scroll-triggered animation wrapper
-│   ├── ChatInterface.tsx    # Full chat UI (sidebar, messages, keyword AI)
-│   ├── ChatSkeleton.tsx     # Skeleton loading states for chat
-│   └── Skeleton.tsx         # Base skeleton primitives
-├── hooks/
-│   └── useInView.ts         # IntersectionObserver hook
+│       ├── agent/run/       # POST — esecuzione Claude + tool, limiti e rate limit
+│       ├── billing/webhook/ # POST — webhook Stripe (attivazione, rinnovo, cancellazione)
+│       ├── billing/payment-link/ · billing/portal/
+│       ├── admin/tenants/   # Admin API (Bearer ADMIN_API_TOKEN)
+│       ├── email/send/      # Admin-only (Bearer ADMIN_API_TOKEN)
+│       ├── email/webhook/ · whatsapp/webhook/ · ollama/chat/ · embed/[slug]/
+│       └── waitlist | contact | demo/request | sitemap
+├── components/              # Navbar, Hero, sezioni landing, ChatInterface, AgentCard…
 └── lib/
-    ├── agents.ts            # Agent type + 8 agent definitions
-    ├── resend.ts            # Resend client singleton
-    └── supabase/
-        ├── client.ts        # Supabase browser client
-        └── server.ts        # Supabase server client (cookies)
+    ├── i18n/                # dictionaries (it/en), locale, api-errors, agentCatalog
+    ├── billing/             # pricing, usage-tracking (limiti token, overage)
+    ├── stripe/              # overage (meter), webhook-helpers
+    ├── agents/              # registry runtime, feature-flags, tools
+    ├── rate-limit.ts        # Rate limiting distribuito (Supabase RPC)
+    ├── request-ip.ts        # Client IP condiviso
+    └── site-url.ts          # getSiteUrl() — unica fonte della URL pubblica
 ```
 
 ---
 
 ## Routes
 
-| Path | Page | Access |
-|------|------|--------|
-| `/` | Homepage | Direct |
-| `/demo` | Demo request | Direct |
-| `/chat` | AI chat | Direct |
-| `/dashboard` | Dashboard | Direct |
-| `/agents` | Marketplace | Proxy → `/demo` |
-| `/agents/[slug]` | Agent detail | Proxy → `/demo` |
-| `/agents/[slug]/deploy` | Deploy wizard | Proxy → `/demo` |
+| Path | Pagina | Accesso |
+|------|--------|---------|
+| `/` | Homepage | Pubblico |
+| `/agents`, `/agents/[slug]`, `/agents/[slug]/deploy` | Marketplace / dettaglio / deploy | Pubblico |
+| `/a/[slug]` | Chat pubblica agente (embed) | Pubblico |
+| `/waitlist`, `/demo`, `/contact`, `/privacy`, `/terms`, `/login`, `/signup` | Landing/legal/auth | Pubblico |
+| `/chat` | Chat generica | Protetto (Supabase) |
+| `/agent/[id]` | Chat agente | Protetto (Supabase) |
+| `/dashboard` | Dashboard | Protetto (Supabase) |
 
-**Proxy behavior** (`src/proxy.ts`): All routes except `/` and `/demo` redirect to `/demo`.
+**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/payment-link`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `ollama/chat`, `embed/[slug]`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `demo/request`, `sitemap`.
+**API protette (Supabase)**: `billing/portal` (ri-verifica sessione + redirect a login).
 
 ---
 
 ## Design System
 
 ### Brand Colors
-- **brand**: `#038bfe` (primary blue) — buttons, links, gradients
-- **pink**: `#e879a8` — secondary accent in gradients
-- **purple**: `#c084fc` — status badges, checkmarks
-- **orange**: `#f97316` — HubSpot/Zapier integrations
-- **indigo**: `#a78bfa` — Slack/Stripe integrations
-- **neutral**: grays — text, borders, backgrounds
+- **brand**: `#038bfe` (blu primario) — bottoni, link, gradienti
+- **pink**: `#e879a8` · **purple**: `#c084fc` · **orange**: `#f97316` · **indigo**: `#a78bfa`
+- **neutral**: grigi — testo, bordi, background
 
 ### Layout
-- `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`
-- Section spacing: `py-24`
-- Border radius: `rounded-xl` (cards), `rounded-2xl` (containers), `rounded-full` (pills)
-- Body: `bg-black` — white content floats on black with `rounded-b-[4rem]` bottom corners
+- `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` · sezioni `py-24` · `rounded-xl/2xl/full`
+- Landing e pagine interne su **dark** (`bg-neutral-950`); deploy su light
 
-### Fonts
-- Primary: **Manrope** (400-900)
-- Fallback: **Inter** (400-900)
-- Small text (`text-xs`, `text-sm`): `font-semibold` by convention
+### Font
+- Primary: **Manrope** (400–900) · Fallback: **Inter**
 
-### Animations
-- Triggered via `AnimatedSection` wrapper (IntersectionObserver with 80px root margin)
-- Variants: `fade-in-up`, `fade-in-left`, `fade-in-right`, `scale-in`
-- Stagger classes: `animate-stagger-1` through `animate-stagger-6` (80ms intervals)
-- Typing indicator: `typing-pulse` (scale + opacity oscillation, 1.2s infinite)
+### Animazioni
+- `fade-in-up`, `fade-in-left`, `fade-in-right`, `scale-in` via `useInView`
+- Stagger `animate-stagger-1..6` (80ms) · typing indicator `typing-pulse`
 
 ---
 
-## Agent Model
+## i18n
 
-8 pre-built agents in `src/lib/agents.ts`:
+- **Default italiano**, switch IT/EN nella navbar (cookie `agentcloud_locale`, URL invariati).
+- Dizionari `it`+`en` in `src/lib/i18n/dictionaries.ts` (`Dictionary = typeof it`, test di allineamento delle shape).
+- Overlay italiani per tutto il catalogo agenti in `agentCatalog.ts` + `localizeAgent`.
+- Errori delle API localizzati via `src/lib/i18n/api-errors.ts` (legge la stessa cookie).
 
-| Slug | Name | Category | Price |
-|------|------|----------|-------|
-| `hiring-agent` | Automated Hiring System | HR | From €490 |
-| `invoice-agent` | Automated Invoice Processing | Finance | From €390 |
-| `website-chatbot` | Website Chatbot | Customer Support | From €290 |
-| `inventory-agent` | Inventory Agent | Restaurant | From €450 |
-| `lead-generation-agent` | Lead Generation Agent | Sales | From €590 |
-| `campaign-agent` | Campaign Agent | Marketing | From €420 |
-| `ecommerce-agent` | E-commerce Agent | E-commerce | From €520 |
-| `analytics-agent` | Analytics Agent | Operations | From €480 |
+## Autenticazione
 
----
-
-## Environment Variables
-
-```
-RESEND_API_KEY=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-DEMO_EMAIL_TO=info@agentcloud.io
-```
+- **Supabase Auth** (email + password e Google OAuth) — guida completa in `SUPABASE_AUTH.md`.
+- Sessioni SSR con `@supabase/ssr`: `src/lib/supabase/server.ts` (server), `client.ts` (browser), proxy in `src/proxy.ts`.
+- `profiles` popolati automaticamente dal trigger `handle_new_user` (vedi `schema.sql`).
+- ID utente = UUID `auth.users.id` (niente più `user_2…` di Clerk).
 
 ---
 
-## Commands
+## Billing
+
+- **Payment links Stripe** → webhook `checkout.session.completed` attiva la subscription e crea le righe in `subscriptions` + `user_agents`.
+- **Limiti sui token** (input+output) mensili per agente (`tokenLimit` in config).
+- **Overage billing**: oltre l'allowance i token extra vanno al Billing Meter (`agentcloud_token_overage`, €0,30/1.000) finché non si raggiunge il **cap di sicurezza a 2x** (429).
+- **Cancellazione self-service** via Customer Portal (`/api/billing/portal`); `cancel_at_period_end` mostrato nel dashboard; alla scadenza il webhook passa gli agenti a `canceled` (blocco 402).
+- Senza `STRIPE_OVERAGE_PRICE_ID` l'overage è disabilitato: si torna al blocco 429 al plafond.
+
+---
+
+## Rate limiting (distribuito)
+
+Backed da **Supabase** (tabella `rate_limits` + RPC atomici) — vale su tutte le istanze, a differenza dei limiti in-memory.
+
+| Endpoint | Limite | Note |
+|----------|--------|------|
+| `/api/agent/run` (anonimi) | **30/min per IP** | burst filter in-memory + limite distribuito; header `Retry-After` |
+| `/api/contact` | **5/h per IP** | 429 localizzato |
+| `/api/demo/request` | **5/h per IP** | 429 localizzato |
+| `/api/waitlist` | **3/h per IP** | email comunque deduplicata dal DB |
+
+- **Fail-open**: se il DB non è raggiungibile la richiesta passa (un guasto al rate limiter non blocca mai il traffico).
+- La pulizia delle finestre scadute avviene opportunisticamente (~1% delle chiamate).
+
+---
+
+## Database
+
+Schema completo in `supabase/schema.sql` (rieseguibile: idempotente). **Dopo il deploy va rieseguito** per creare le nuove tabelle.
+
+| Tabella | Scopo |
+|---------|-------|
+| `profiles` | Profilo utente + `stripe_customer_id` |
+| `agents_registry` | Mirror server-side del catalogo |
+| `subscriptions` | Ledger Stripe (una riga per subscription × agente) |
+| `user_agents` | Ownership autoritativa (limiti e stato per utente × agente) |
+| `agent_runs` | Log di esecuzione + conteggio token |
+| `demo_requests`, `waitlist` | Form pubblici |
+| **`rate_limits`** | **Bucket del rate limiting distribuito** — PK `(bucket, key, window_start)`, RLS deny-all (solo service role) |
+
+**RPC rate limits** (definiti in `schema.sql`):
+- `bump_rate_limit(p_bucket, p_key, p_window_start) → int` — incremento atomico (`insert … on conflict … count+1`), ritorna il nuovo contatore.
+- `cleanup_rate_limits(p_older_than) → void` — elimina le finestre scadute.
+
+Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, colonne `user_id text`); l'app legge/scrive col **service role** e le policy RLS restano come difesa in profondità.
+
+---
+
+## Environment Variables (produzione)
+
+### Client (`NEXT_PUBLIC_*`)
+
+| Variabile | Obbligatoria | Note |
+|-----------|:---:|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | |
+| `NEXT_PUBLIC_SITE_URL` | ✅ (prod) | canonical/sitemap/robots/embed/WhatsApp/portal. Fallback: `NEXT_PUBLIC_URL` → `http://localhost:3000` |
+| `NEXT_PUBLIC_URL` | legacy | fallback di `NEXT_PUBLIC_SITE_URL` (mantenuto per compatibilità) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | – | documentata ma non ancora usata nel codice |
+
+### Server — core
+
+| Variabile | Obbligatoria | Note |
+|-----------|:---:|------|
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | usata per billing/usage/rate limits |
+| `ANTHROPIC_API_KEY` | ✅ | esecuzione agenti |
+| `RESEND_API_KEY` | ✅ | email transazionali |
+| `STRIPE_SECRET_KEY` | ✅ | prod: `sk_live_…` |
+| `STRIPE_WEBHOOK_SECRET` | ✅ | `whsec_…` |
+| `STRIPE_OVERAGE_PRICE_ID` | ⚠️ | senza → overage disabilitato (blocco 429 al plafond) |
+| `STRIPE_OVERAGE_METER_EVENT` | – | default `agentcloud_token_overage` |
+| `ADMIN_API_TOKEN` | ✅ | admin API + `email/send` (fail-closed se assente) |
+| `DEMO_EMAIL_TO` | – | default `info@agentcloud.io` |
+
+### Stripe Payment Links
+
+| Variabile | Note |
+|-----------|------|
+| `STRIPE_PAYMENT_LINK_<AGENTE_UPPER>` | una per agente del catalogo (slug → `_` maiuscolo, es. `STRIPE_PAYMENT_LINK_EXECUTIVE_ASSISTANT`) |
+| `STRIPE_PAYMENT_LINK_<VERTICAL>_<TIER>` | piani: `SHOPIFY_STARTER`, `SHOPIFY_GROWTH`, `SERVICES_STARTER`, `SERVICES_GROWTH` |
+
+### Tools / integrazioni (solo se attivi)
+
+| Variabile | Uso |
+|-----------|-----|
+| `SHOPIFY_SHOP_DOMAIN`, `SHOPIFY_ADMIN_ACCESS_TOKEN` | tool Shopify |
+| `GOOGLE_CALENDAR_ACCESS_TOKEN`, `GOOGLE_CALENDAR_CALENDAR_ID`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | tool Calendar |
+| `LEAD_CAPTURE_ENDPOINT`, `LEAD_CAPTURE_ENRICH_ENDPOINT`, `SLACK_WEBHOOK_URL` | tool Lead capture |
+| `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` | webhook WhatsApp |
+| `OLLAMA_URL` | chat locale (default `http://localhost:11434` — **non settare in produzione** se non vuoi un proxy pubblico) |
+| `TENANT_STORE_KEY` | cifratura tenant store — **mai usare il default `dev-tenant-key` in prod** (store su filesystem: non persistente su serverless) |
+
+### Runtime / feature flags
+
+| Variabile | Default | Note |
+|-----------|---------|------|
+| `AGENT_LLM_PROVIDER` | auto | backend del runtime agenti: `anthropic` (produzione) | `ollama` (locale). Default: Anthropic se `ANTHROPIC_API_KEY` è valida, altrimenti Ollama |
+| `OLLAMA_MODEL` | `llama3` | modello locale usato quando il backend è Ollama (temporaneo in attesa di chiave Anthropic valida) |
+| `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata Claude |
+| `AGENT_ANON_RATE_LIMIT` | `30` | richieste/min per IP per i preview anonimi |
+| `AGENTCLOUD_VERTICAL` | `shopify` | `shopify` \| `services` \| `full` — filtra marketplace e tool |
+| `AGENTCLOUD_FEATURE_FLAGS` | – | JSON: `enabledAgents`, `enabledTools`, `agentToolOverrides`, `enableOptionalToolsByDefault` |
+
+> **Checklist produzione** (dettagli in `SUPABASE_AUTH.md`, `STRIPE_SETUP.md`, `FEATURE_FLAGS.md`, `PRICING.md`):
+> Google OAuth configurato in Supabase, webhook Stripe con i 4 eventi (`checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`), metered price per l'overage, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, riesecuzione di `supabase/schema.sql` (incluso il trigger `handle_new_user`).
+
+---
+
+## Comandi
 
 ```bash
-npm run dev      # Start dev server
-npm run build    # Production build (with TypeScript check)
-npm run lint     # ESLint
+npm run dev       # sviluppo
+npm run build     # build produzione (con typecheck)
+npm run start     # avvio produzione
+npm run lint      # ESLint
+npm run test      # Vitest (117 test)
+npm run typecheck # tsc --noEmit
 ```

@@ -1,4 +1,10 @@
-export function logAudit(action: string, payload: Record<string, any>) {
+import fs from "fs";
+import path from "path";
+
+export function logAudit(
+  action: string,
+  payload: Record<string, unknown>,
+) {
   try {
     const entry = {
       ts: new Date().toISOString(),
@@ -8,8 +14,6 @@ export function logAudit(action: string, payload: Record<string, any>) {
     // Persist to console and to a rotating file (basic implementation)
     console.info("AUDIT", JSON.stringify(entry));
     try {
-      const fs = require("fs");
-      const path = require("path");
       const logDir = path.join(process.cwd(), "logs");
       if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
       const file = path.join(
@@ -17,7 +21,7 @@ export function logAudit(action: string, payload: Record<string, any>) {
         `audit-${new Date().toISOString().slice(0, 10)}.log`,
       );
       fs.appendFileSync(file, JSON.stringify(entry) + "\n");
-    } catch (e) {
+    } catch {
       // ignore file errors in non-server environments
     }
   } catch (e) {

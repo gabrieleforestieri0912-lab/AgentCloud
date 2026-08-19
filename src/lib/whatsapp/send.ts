@@ -1,6 +1,6 @@
 import { logAudit } from "@/lib/audit";
 
-type SendResult = { ok: boolean; status?: number; body?: any };
+type SendResult = { ok: boolean; status?: number; body?: unknown };
 
 export async function sendWhatsApp(
   to: string,

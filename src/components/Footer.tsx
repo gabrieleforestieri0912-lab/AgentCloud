@@ -3,32 +3,42 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-
-const SOCIAL_LINKS = [
-  { label: "X (Twitter)", href: "https://x.com/agentcloud" },
-  { label: "Instagram", href: "https://www.instagram.com/agentcloud/" },
-  { label: "LinkedIn", href: "https://www.linkedin.com/company/agentcloud" },
-];
-
-const COMPANY_LINKS = [
-  { label: "About", href: "/" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Contact", href: "/demo" },
-];
+import { useLanguage } from "./LanguageProvider";
 
 export default function Footer() {
+  const { dict } = useLanguage();
+
+  const socialLinks = [
+    { label: "X (Twitter)", href: "https://x.com/agentcloud" },
+    { label: "Instagram", href: "https://www.instagram.com/agentcloud/" },
+    { label: "LinkedIn", href: "https://www.linkedin.com/company/agentcloud" },
+  ];
+
+  const companyLinks = [
+    { label: dict.footer.about, href: "/" },
+    { label: dict.footer.faq, href: "#faq" },
+    { label: dict.footer.contact, href: "/demo" },
+  ];
   return (
     <motion.footer
       initial={{ opacity: 0, y: 60 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.7, ease: "easeOut" }}
-      className="relative bg-white text-neutral-900"
+      className="relative border-t border-white/5 bg-[#101018] text-white"
     >
-      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500 to-transparent" />
+      {/* Hairline + subtle brand glow so the dark footer reads as a distinct block */}
+      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/70 to-transparent" />
+      <div
+        className="pointer-events-none absolute inset-0 select-none"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 20% 0%, rgba(3,139,254,0.08), transparent 45%), radial-gradient(circle at 85% 100%, rgba(217,70,239,0.05), transparent 50%)",
+        }}
+      />
 
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 py-20 border-b border-neutral-200">
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 py-20 border-b border-white/10">
           <div className="lg:col-span-2 flex flex-col items-start gap-4">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="relative h-8 w-8">
@@ -40,27 +50,27 @@ export default function Footer() {
                   sizes="32px"
                 />
               </div>
-              <span className="text-xl font-bold tracking-tight text-neutral-900">
+              <span className="text-xl font-bold tracking-tight text-white">
                 AgentCloud
               </span>
             </Link>
-            <p className="text-sm font-semibold text-neutral-700 select-none">
-              AgentCloud — The AI Agent Platform
+            <p className="text-sm font-semibold text-neutral-400 select-none">
+              {dict.footer.tagline}
             </p>
           </div>
 
           <div className="flex flex-col gap-3.5">
-            <span className="text-xs font-bold uppercase tracking-widest text-neutral-600">
-              FOLLOW
+            <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+              {dict.footer.follow}
             </span>
             <ul className="flex flex-col gap-3">
-              {SOCIAL_LINKS.map(({ label, href }) => (
+              {socialLinks.map(({ label, href }) => (
                 <li key={label}>
                   <Link
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-base font-bold text-neutral-700 hover:text-neutral-900 transition-colors"
+                    className="text-base font-bold text-neutral-300 hover:text-white transition-colors"
                   >
                     {label}
                   </Link>
@@ -70,15 +80,15 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-col gap-3.5">
-            <span className="text-xs font-bold uppercase tracking-widest text-neutral-600">
-              COMPANY
+            <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+              {dict.footer.company}
             </span>
             <ul className="flex flex-col gap-3">
-              {COMPANY_LINKS.map(({ label, href }) => (
+              {companyLinks.map(({ label, href }) => (
                 <li key={label}>
                   <Link
                     href={href}
-                    className="text-base font-bold text-neutral-700 hover:text-neutral-900 transition-colors"
+                    className="text-base font-bold text-neutral-300 hover:text-white transition-colors"
                   >
                     {label}
                   </Link>
@@ -88,21 +98,19 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="py-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-neutral-600">
-          <span className="select-none">
-            &copy; 2026 AgentCloud. All rights reserved.
-          </span>
+        <div className="py-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-neutral-500">
+          <span className="select-none">{dict.footer.rights}</span>
           <Link
             href="/privacy"
-            className="text-neutral-700 hover:text-neutral-900 transition-colors"
+            className="text-neutral-400 hover:text-brand-400 transition-colors"
           >
-            Privacy
+            {dict.footer.privacy}
           </Link>
           <Link
             href="/terms"
-            className="text-neutral-700 hover:text-neutral-900 transition-colors"
+            className="text-neutral-400 hover:text-brand-400 transition-colors"
           >
-            Terms
+            {dict.footer.terms}
           </Link>
         </div>
       </div>

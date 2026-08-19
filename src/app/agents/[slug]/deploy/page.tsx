@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   ArrowLeft,
   Check,
@@ -20,22 +19,32 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
-import { getAgentBySlug } from "@/lib/agents";
+import { useLanguage } from "@/components/LanguageProvider";
+import { getAgentBySlug, isAvailable, localizeAgent } from "@/lib/agents";
+import { t } from "@/lib/i18n/dictionaries";
 
-const STEPS = ["Configure", "Connect tools", "Review"];
-
-export default function DeployAgentPage() {
+export default function DeployAgentPage() {  const { dict, locale } = useLanguage();
   const params = useParams<{ slug: string }>();
-  const agent = getAgentBySlug(params.slug);
-  const [origin, setOrigin] = useState("https://agentcloud.io");
+  const rawAgent = getAgentBySlug(params.slug);
+  const agent = rawAgent ? localizeAgent(rawAgent, locale) : undefined;
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
 
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
+  const steps = dict.deploy.steps;
+
+  // window.location.origin is only known on the client — subscribe to it
+  // directly (useSyncExternalStore) instead of setState-in-effect.
+  const origin = useSyncExternalStore(
+    subscribeToLocation,
+    getWindowOrigin,
+    getServerOrigin,
+  );
 
   if (!agent) notFound();
+  // Only agents currently offered by the platform can be configured.
+  // isAvailable resolves against the default vertical in client bundles,
+  // which matches the runtime offering for this launch.
+  if (!isAvailable(params.slug)) notFound();
 
   return (
     <main className="min-h-screen bg-white">
@@ -51,7 +60,7 @@ export default function DeployAgentPage() {
               size={16}
               className="transition-transform group-hover:-translate-x-0.5"
             />
-            Back to agent
+            {dict.deploy.backToAgent}
           </Link>
 
           {/* Agent header card */}
@@ -64,13 +73,14 @@ export default function DeployAgentPage() {
                   >
                     <AgentIcon
                       icon={agent.icon}
+                      brand={agent.brand}
                       size={22}
                       className="text-white"
                     />
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold tracking-tight text-neutral-950">
-                      Configure {agent.shortName}
+                      {t(dict.deploy.configureTitle, { name: agent.shortName })}
                     </h1>
                     <p className="mt-0.5 text-sm text-neutral-500">
                       {agent.description}
@@ -80,7 +90,7 @@ export default function DeployAgentPage() {
 
                 {/* Step indicator */}
                 <div className="flex items-center gap-2">
-                  {STEPS.map((step, index) => (
+                  {steps.map((step, index) => (
                     <div key={step} className="flex items-center gap-2">
                       <div
                         className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${
@@ -98,7 +108,7 @@ export default function DeployAgentPage() {
                       >
                         {step}
                       </span>
-                      {index < STEPS.length - 1 && (
+                      {index < steps.length - 1 && (
                         <ChevronRight size={14} className="text-neutral-300" />
                       )}
                     </div>
@@ -119,10 +129,10 @@ export default function DeployAgentPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-neutral-950">
-                      Agent settings
+                      {dict.deploy.agentSettings}
                     </h2>
                     <p className="text-xs text-neutral-500">
-                      Customize how this agent behaves
+                      {dict.deploy.agentSettingsDesc}
                     </p>
                   </div>
                 </div>
@@ -131,7 +141,7 @@ export default function DeployAgentPage() {
                   <label className="block">
                     <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
                       <User size={14} className="text-brand-500" />
-                      Business name
+                      {dict.deploy.businessName}
                     </span>
                     <input
                       defaultValue="Acme Studio"
@@ -141,7 +151,7 @@ export default function DeployAgentPage() {
                   <label className="block">
                     <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
                       <Zap size={14} className="text-brand-500" />
-                      Main goal
+                      {dict.deploy.mainGoal}
                     </span>
                     <input
                       defaultValue={agent.tasks[0]}
@@ -151,31 +161,29 @@ export default function DeployAgentPage() {
                   <label className="block">
                     <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
                       <Volume2 size={14} className="text-brand-500" />
-                      Tone
+                      {dict.deploy.tone}
                     </span>
                     <select
-                      defaultValue="Professional and concise"
+                      defaultValue={dict.deploy.toneOptions[0]}
                       className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm text-neutral-900 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a3a3a3%22%20strokeWidth%3D%222%22%20strokeLinecap%3D%22round%22%20strokeLinejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_14px_center] bg-no-repeat"
                     >
-                      <option>Professional and concise</option>
-                      <option>Friendly and casual</option>
-                      <option>Formal and detailed</option>
-                      <option>Humorous and creative</option>
+                      {dict.deploy.toneOptions.map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
                     </select>
                   </label>
                   <label className="block">
                     <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
                       <Shield size={14} className="text-brand-500" />
-                      Escalation rule
+                      {dict.deploy.escalation}
                     </span>
                     <select
-                      defaultValue="Ask before high-impact actions"
+                      defaultValue={dict.deploy.escalationOptions[0]}
                       className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm text-neutral-900 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a3a3a3%22%20strokeWidth%3D%222%22%20strokeLinecap%3D%22round%22%20strokeLinejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_14px_center] bg-no-repeat"
                     >
-                      <option>Ask before high-impact actions</option>
-                      <option>Auto-approve all actions</option>
-                      <option>Manual approval always required</option>
-                      <option>Notify me but proceed</option>
+                      {dict.deploy.escalationOptions.map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
                     </select>
                   </label>
                 </div>
@@ -189,10 +197,10 @@ export default function DeployAgentPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-neutral-950">
-                      Connect tools
+                      {dict.deploy.connectTools}
                     </h2>
                     <p className="text-xs text-neutral-500">
-                      Link the services this agent will use
+                      {dict.deploy.connectToolsDesc}
                     </p>
                   </div>
                 </div>
@@ -213,12 +221,12 @@ export default function DeployAgentPage() {
                             {integration}
                           </span>
                           <span className="text-xs text-neutral-500">
-                            {index < 2 ? "Recommended" : "Optional"}
+                            {index < 2 ? dict.deploy.recommended : dict.deploy.optional}
                           </span>
                         </span>
                       </span>
                       <span className="rounded-full border border-neutral-200 bg-white px-3.5 py-1 text-xs font-bold text-neutral-600 transition-all hover:border-brand-500 hover:bg-brand-500 hover:text-white">
-                        Connect
+                        {dict.deploy.connect}
                       </span>
                     </button>
                   ))}
@@ -235,25 +243,25 @@ export default function DeployAgentPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-neutral-950">
-                      Deployment summary
+                      {dict.deploy.deploymentSummary}
                     </h2>
                     <p className="text-xs text-neutral-500">
-                      Review before requesting
+                      {dict.deploy.reviewBefore}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-neutral-500">Agent</span>
+                    <span className="text-sm text-neutral-500">{dict.deploy.agent}</span>
                     <span className="text-sm font-bold text-neutral-950">{agent.shortName}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-neutral-500">Category</span>
+                    <span className="text-sm text-neutral-500">{dict.deploy.category}</span>
                     <span className="text-sm font-bold text-neutral-950">{agent.category}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-neutral-500">Setup time</span>
+                    <span className="text-sm text-neutral-500">{dict.deploy.setupTime}</span>
                     <span className="text-sm font-bold text-neutral-950">{agent.setupTime}</span>
                   </div>
                 </div>
@@ -262,7 +270,7 @@ export default function DeployAgentPage() {
                   <div className="rounded-xl border border-neutral-200 bg-white p-3.5 transition-all hover:border-brand-200">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-bold text-neutral-950">Starter</p>
+                        <p className="text-sm font-bold text-neutral-950">{dict.deploy.starter}</p>
                         <p className="text-xs text-neutral-500">€29/mese</p>
                       </div>
                       <span className="text-[10px] font-semibold text-neutral-400">300 conv/mese</span>
@@ -270,21 +278,21 @@ export default function DeployAgentPage() {
                     <ul className="mt-2 space-y-1">
                       <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
                         <Check size={11} className="text-brand-500" />
-                        Tool base del verticale
+                        {dict.deploy.toolsBase}
                       </li>
                       <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
                         <Check size={11} className="text-brand-500" />
-                        Lead capture
+                        {dict.deploy.leadCapture}
                       </li>
                     </ul>
                   </div>
                   <div className="rounded-xl border border-brand-200 bg-brand-50/30 p-3.5 transition-all hover:border-brand-300">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-bold text-neutral-950">Growth</p>
-                        <p className="text-xs text-neutral-500">€69/mese</p>
+                        <p className="text-sm font-bold text-neutral-950">{dict.deploy.growth}</p>
+                        <p className="text-xs text-neutral-500">€39/mese</p>
                       </div>
-                      <span className="rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-700">Popular</span>
+                      <span className="rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-700">{dict.deploy.popular}</span>
                     </div>
                     <div className="mt-2 flex items-center gap-1.5 text-[11px] text-neutral-500">
                       <span className="text-neutral-400">1.000 conv/mese</span>
@@ -292,15 +300,15 @@ export default function DeployAgentPage() {
                     <ul className="mt-1.5 space-y-1">
                       <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
                         <Check size={11} className="text-brand-500" />
-                        Tool completi del verticale
+                        {dict.deploy.fullTools}
                       </li>
                       <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
                         <Check size={11} className="text-brand-500" />
-                        Lead capture
+                        {dict.deploy.leadCapture}
                       </li>
                       <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
                         <Check size={11} className="text-brand-500" />
-                        Supporto prioritario
+                        {dict.deploy.prioritySupport}
                       </li>
                     </ul>
                   </div>
@@ -311,7 +319,7 @@ export default function DeployAgentPage() {
                   className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98]"
                 >
                   <Rocket size={16} />
-                  Request demo
+                  {dict.deploy.requestDemo}
                 </Link>
 
                 <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200/50 bg-amber-50/50 px-3.5 py-2.5">
@@ -320,7 +328,7 @@ export default function DeployAgentPage() {
                     className="mt-0.5 shrink-0 text-amber-600"
                   />
                   <p className="text-xs leading-relaxed text-amber-800">
-                    This flow now routes interested buyers to a live demo request form.
+                    {dict.deploy.flowNote}
                   </p>
                 </div>
               </div>
@@ -333,10 +341,10 @@ export default function DeployAgentPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-neutral-950">
-                      Delivery options
+                      {dict.deploy.deliveryOptions}
                     </h2>
                     <p className="text-xs text-neutral-500">
-                      Choose how your customers reach this agent
+                      {dict.deploy.deliveryOptionsDesc}
                     </p>
                   </div>
                 </div>
@@ -349,15 +357,14 @@ export default function DeployAgentPage() {
                         B
                       </span>
                       <span className="text-sm font-bold text-neutral-900">
-                        Direct link
+                        {dict.deploy.directLink}
                       </span>
                       <span className="ml-auto rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-700">
-                        Recommended
+                        {dict.deploy.recommended}
                       </span>
                     </div>
                     <p className="mb-3 text-xs text-neutral-500">
-                      Share this link anywhere — QR code, Instagram bio, Google
-                      Business Profile, email signature.
+                      {dict.deploy.directLinkDesc}
                     </p>
                     <div className="flex items-center gap-2">
                       <input
@@ -374,7 +381,7 @@ export default function DeployAgentPage() {
                         }}
                         className="shrink-0 h-9 rounded-lg bg-brand-500 px-3 text-xs font-bold text-white hover:bg-brand-400 transition-colors"
                       >
-                        {copiedLink ? "Copied!" : "Copy"}
+                        {copiedLink ? dict.deploy.copied : dict.deploy.copy}
                       </button>
                     </div>
                   </div>
@@ -386,11 +393,11 @@ export default function DeployAgentPage() {
                         A
                       </span>
                       <span className="text-sm font-bold text-neutral-900">
-                        Embed script
+                        {dict.deploy.embedScript}
                       </span>
                     </div>
                     <p className="mb-3 text-xs text-neutral-500">
-                      Paste this snippet just before <code className="bg-neutral-200 px-1 rounded text-[10px]">&lt;/body&gt;</code> on your website.
+                      <span dangerouslySetInnerHTML={{ __html: dict.deploy.embedScriptDesc }} />
                     </p>
                     <div className="relative">
                       <pre className="overflow-x-auto rounded-lg bg-neutral-900 p-3 text-[10px] text-green-300 leading-relaxed">
@@ -404,7 +411,7 @@ export default function DeployAgentPage() {
                         }}
                         className="absolute top-2 right-2 rounded-md bg-white/10 px-2 py-1 text-[10px] font-bold text-white hover:bg-white/20 transition-colors"
                       >
-                        {copiedEmbed ? "Copied!" : "Copy"}
+                        {copiedEmbed ? dict.deploy.copied : dict.deploy.copy}
                       </button>
                     </div>
                   </div>
@@ -418,4 +425,19 @@ export default function DeployAgentPage() {
       <Footer />
     </main>
   );
+}
+
+// --- window.location.origin helpers for useSyncExternalStore ---
+
+function subscribeToLocation() {
+  // origin never changes for a page lifetime — no subscription needed.
+  return () => {};
+}
+
+function getWindowOrigin() {
+  return window.location.origin;
+}
+
+function getServerOrigin() {
+  return "https://agentcloud.io";
 }

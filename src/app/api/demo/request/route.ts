@@ -1,16 +1,33 @@
 import { NextResponse } from "next/server";
 import { getResend } from "@/lib/resend";
 import { createClient } from "@/lib/supabase/server";
+import { apiErrorMessage } from "@/lib/i18n/api-errors";
+import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/request-ip";
 
 const DEMO_EMAIL_TO = process.env.DEMO_EMAIL_TO || "info@agentcloud.io";
 
+// Max requests per IP per hour — prevents DB spam and email abuse.
+const DEMO_LIMIT = 5;
+
 export async function POST(request: Request) {
   try {
+    const rl = await rateLimit("demo-request", getClientIp(request), {
+      limit: DEMO_LIMIT,
+      windowMs: RATE_LIMIT_WINDOWS.HOUR_MS,
+    });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: await apiErrorMessage("rateLimited") },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+      );
+    }
+
     const { name, surname, email } = await request.json();
 
     if (!name || !surname || !email) {
       return NextResponse.json(
-        { error: "All fields are required" },
+        { error: await apiErrorMessage("allFieldsRequired") },
         { status: 400 },
       );
     }
@@ -56,7 +73,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal server error" },
+      {
+        // Provider errors (Resend/Supabase) are surfaced verbatim: their
+        // content is unknown, so we only localize the generic fallback.
+        error:
+          err instanceof Error
+            ? err.message
+            : await apiErrorMessage("internalServerError"),
+      },
       { status: 500 },
     );
   }

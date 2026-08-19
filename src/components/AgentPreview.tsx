@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Bot, CheckCircle2, Loader2, Play, Send, Sparkles } from "lucide-react";
 import type { Agent } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
+import { useLanguage } from "./LanguageProvider";
 
 type AgentPreviewProps = {
   agent: Agent;
@@ -12,11 +13,11 @@ type AgentPreviewProps = {
 type StepStatus = "pending" | "running" | "done";
 
 export default function AgentPreview({ agent }: AgentPreviewProps) {
+  const { dict } = useLanguage();
   const [status, setStatus] = useState<"idle" | "running" | "done">("idle");
   const [stepStatuses, setStepStatuses] = useState<StepStatus[]>(() =>
     agent.workflow.map(() => "pending"),
   );
-  const [currentStep, setCurrentStep] = useState(-1);
   const [showResult, setShowResult] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -27,7 +28,6 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
     const runSteps = async () => {
       for (let i = 0; i < agent.workflow.length; i++) {
         if (cancelled) return;
-        setCurrentStep(i);
         setStepStatuses((prev) =>
           prev.map((s, idx) => (idx === i ? "running" : idx < i ? "done" : "pending")),
         );
@@ -35,7 +35,6 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
       }
       if (cancelled) return;
       setStepStatuses(agent.workflow.map(() => "done"));
-      setCurrentStep(-1);
       await new Promise((r) => setTimeout(r, 300));
       if (cancelled) return;
       setStatus("done");
@@ -52,7 +51,6 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
   function reset() {
     setStatus("idle");
     setStepStatuses(agent.workflow.map(() => "pending"));
-    setCurrentStep(-1);
     setShowResult(false);
   }
 
@@ -62,15 +60,15 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
       <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
         <div className="flex items-center gap-3">
           <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${agent.accent}`}>
-            <AgentIcon icon={agent.icon} size={18} className="text-white" />
+            <AgentIcon icon={agent.icon} brand={agent.brand} size={18} className="text-white" />
           </div>
           <div>
             <p className="text-sm font-bold text-white">{agent.shortName}</p>
-            <p className="text-xs font-semibold text-neutral-500">Live preview</p>
+            <p className="text-xs font-semibold text-neutral-500">{dict.agentPreview.livePreview}</p>
           </div>
         </div>
         <span className="rounded-full bg-brand-500/20 px-2.5 py-1 text-[11px] font-bold text-brand-300">
-          Demo mode
+          {dict.agentPreview.demoMode}
         </span>
       </div>
 
@@ -93,7 +91,7 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
             {status === "idle" && (
               <div className="rounded-2xl rounded-bl-md border border-white/5 bg-neutral-800 px-4 py-3">
                 <p className="text-sm font-semibold leading-relaxed text-neutral-400">
-                  Ready to simulate {agent.shortName} on a real business task.
+                  {dict.agentPreview.readyToSimulate.replace("{name}", agent.shortName)}
                 </p>
               </div>
             )}
@@ -103,7 +101,7 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
               <div className="space-y-2.5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-white">
                   <Loader2 size={14} className="animate-spin text-brand-400" />
-                  Running workflow...
+                  {dict.agentPreview.runningWorkflow}
                 </div>
                 <div className="space-y-1.5">
                   {agent.workflow.map((step, i) => {
@@ -142,7 +140,7 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
               <div ref={resultRef} className="rounded-2xl rounded-bl-md border border-white/5 bg-neutral-800 px-4 py-3.5">
                 <div className="mb-2 flex items-center gap-2 text-xs font-bold text-purple-400">
                   <Sparkles size={13} />
-                  Workflow completed
+                  {dict.agentPreview.workflowCompleted}
                 </div>
                 <div className="space-y-1.5">
                   {agent.workflow.map((step) => (
@@ -175,11 +173,11 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
           className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 transition-all hover:bg-brand-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {status === "running" ? (
-            <><Loader2 size={15} className="animate-spin" /> Running...</>
+            <><Loader2 size={15} className="animate-spin" /> {dict.agentPreview.running}</>
           ) : status === "done" ? (
-            <><Send size={15} /> Run again</>
+            <><Send size={15} /> {dict.agentPreview.runAgain}</>
           ) : (
-            <><Play size={15} /> Run preview</>
+            <><Play size={15} /> {dict.agentPreview.runPreview}</>
           )}
         </button>
       </div>

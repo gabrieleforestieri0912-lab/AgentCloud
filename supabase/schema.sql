@@ -21,6 +21,45 @@
 
 
 -- -----------------------------------------------------------------------------
+-- 0. Migration (run once on existing installs; harmless on fresh installs)
+--
+-- Authentication is handled by Supabase Auth (auth.users), so user
+-- identifiers are UUIDs. The user_id columns remain `text` for backward
+-- compatibility with rows created before the Supabase migration; new rows
+-- store the auth.users UUID as text. The service role key is used server-side
+-- to read/write these tables after Supabase authentication; the user-facing
+-- RLS policies below remain as defense-in-depth for direct access.
+-- -----------------------------------------------------------------------------
+alter table if exists public.user_agents
+  drop constraint if exists user_agents_user_id_fkey;
+alter table if exists public.agent_runs
+  drop constraint if exists agent_runs_user_id_fkey;
+
+alter table if exists public.user_agents
+  alter column user_id type text;
+alter table if exists public.agent_runs
+  alter column user_id type text;
+
+alter table if exists public.subscriptions
+  add column if not exists stripe_customer_id text;
+alter table if exists public.agent_runs
+  add column if not exists conversation_id text;
+
+-- One ledger row per (subscription, agent). Ignore the error when the
+-- constraint already exists on a fresh install (the CREATE TABLE below
+-- includes it).
+do $$
+begin
+  alter table public.subscriptions
+    add constraint uq_subscriptions_sub_agent unique (stripe_subscription_id, agent_id);
+exception
+  when duplicate_object then null;
+  when others then null;
+end
+$$;
+
+
+-- -----------------------------------------------------------------------------
 -- 0. Helpers
 -- -----------------------------------------------------------------------------
 create or replace function public.touch_updated_at()
@@ -48,6 +87,32 @@ create table if not exists public.profiles (
 
 create index if not exists idx_profiles_stripe_customer
   on public.profiles(stripe_customer_id);
+
+-- Auto-create a profile row for every new Supabase auth user (email/password
+-- or Google OAuth). `raw_user_meta_data.full_name` is set by Google and by the
+-- signup form; falls back to NULL when absent.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name)
+  values (
+    new.id,
+    new.email,
+    new.raw_user_meta_data ->> 'full_name'
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 
 alter table public.profiles enable row level security;
 
@@ -115,9 +180,11 @@ create table if not exists public.subscriptions (
   user_id text not null,
   agent_id text not null,
   stripe_subscription_id text,
-  status text default ''active'',
+  stripe_customer_id text,
+  status text default 'active',
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  unique (stripe_subscription_id, agent_id)
 );
 
 create index if not exists idx_subscriptions_user_id
@@ -133,6 +200,9 @@ drop policy if exists "Users can view own subscriptions" on public.subscriptions
 create policy "Users can view own subscriptions"
   on public.subscriptions for select
   using (auth.uid()::text = user_id);
+
+create index if not exists idx_subscriptions_stripe_customer
+  on public.subscriptions(stripe_customer_id);
 
 drop policy if exists "Service role can manage subscriptions" on public.subscriptions;
 create policy "Service role can manage subscriptions"
@@ -153,12 +223,12 @@ create trigger trg_subscriptions_updated_at
 -- -----------------------------------------------------------------------------
 create table if not exists public.user_agents (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id text not null,
   agent_slug text not null,
   stripe_subscription_id text,
   stripe_customer_id text,
-  status text not null default ''active'',
-  config jsonb default ''{}''::jsonb,
+  status text not null default 'active',
+  config jsonb default '{}'::jsonb,
   activated_at timestamptz default now(),
   cancelled_at timestamptz,
   current_period_end timestamptz,
@@ -179,13 +249,13 @@ alter table public.user_agents enable row level security;
 drop policy if exists "Users can view own user_agents" on public.user_agents;
 create policy "Users can view own user_agents"
   on public.user_agents for select
-  using (auth.uid() = user_id);
+  using (auth.uid()::text = user_id);
 
 drop policy if exists "Users can update own user_agents config" on public.user_agents;
 create policy "Users can update own user_agents config"
   on public.user_agents for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using (auth.uid()::text = user_id)
+  with check (auth.uid()::text = user_id);
 
 drop policy if exists "Service role can manage user_agents" on public.user_agents;
 create policy "Service role can manage user_agents"
@@ -205,10 +275,11 @@ create trigger trg_user_agents_updated_at
 -- -----------------------------------------------------------------------------
 create table if not exists public.agent_runs (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id text not null,
   user_agent_id uuid references public.user_agents(id) on delete set null,
   agent_slug text not null,
-  status text default ''running'',
+  conversation_id text,
+  status text default 'running',
   input_tokens integer,
   output_tokens integer,
   started_at timestamptz default now(),
@@ -219,18 +290,20 @@ create index if not exists idx_agent_runs_user
   on public.agent_runs(user_id);
 create index if not exists idx_agent_runs_user_agent
   on public.agent_runs(user_agent_id);
+create index if not exists idx_agent_runs_user_period
+  on public.agent_runs(user_id, agent_slug, started_at);
 
 alter table public.agent_runs enable row level security;
 
 drop policy if exists "Users can view own agent_runs" on public.agent_runs;
 create policy "Users can view own agent_runs"
   on public.agent_runs for select
-  using (auth.uid() = user_id);
+  using (auth.uid()::text = user_id);
 
 drop policy if exists "Users can insert own agent_runs" on public.agent_runs;
 create policy "Users can insert own agent_runs"
   on public.agent_runs for insert
-  with check (auth.uid() = user_id);
+  with check (auth.uid()::text = user_id);
 
 drop policy if exists "Service role can manage agent_runs" on public.agent_runs;
 create policy "Service role can manage agent_runs"
@@ -262,7 +335,7 @@ create policy "Anyone can insert demo requests"
 drop policy if exists "Only authenticated users can view demo requests" on public.demo_requests;
 create policy "Only authenticated users can view demo requests"
   on public.demo_requests for select
-  using (auth.role() = ''authenticated'');
+  using (auth.role() = 'authenticated');
 
 
 -- -----------------------------------------------------------------------------
@@ -289,6 +362,62 @@ create policy "Only authenticated users can view waitlist"
   using (auth.role() = 'authenticated');
 
 
+-- -----------------------------------------------------------------------------
+-- 8. rate_limits
+--    Distributed rate limiting buckets (rate limit helpers in the app).
+--
+--    One row per (bucket, key, window_start). Counters are incremented
+--    atomically via the bump_rate_limit RPC (insert ... on conflict), so the
+--    limit holds across all server instances (serverless included). RLS is
+--    enabled with no policies: only the service role can touch this table,
+--    anon/authenticated clients get deny-all.
+-- -----------------------------------------------------------------------------
+create table if not exists public.rate_limits (
+  bucket text not null,
+  key text not null,
+  window_start timestamptz not null,
+  count integer not null default 0,
+  created_at timestamptz default now(),
+  primary key (bucket, key, window_start)
+);
+
+create index if not exists idx_rate_limits_bucket
+  on public.rate_limits(bucket);
+
+create index if not exists idx_rate_limits_window
+  on public.rate_limits(window_start);
+
+alter table public.rate_limits enable row level security;
+
+-- Atomic increment; returns the new count so the caller can compare it to the
+-- configured limit. Never create a separate select-after-insert (race-prone).
+create or replace function public.bump_rate_limit(
+  p_bucket text,
+  p_key text,
+  p_window_start timestamptz
+) returns int
+language plpgsql
+as $$
+declare v_count int;
+begin
+  insert into public.rate_limits (bucket, key, window_start, count)
+  values (p_bucket, p_key, p_window_start, 1)
+  on conflict (bucket, key, window_start)
+  do update set count = public.rate_limits.count + 1
+  returning count into v_count;
+  return v_count;
+end;
+$$;
+
+-- Opportunistic cleanup of expired windows (called occasionally by the app).
+create or replace function public.cleanup_rate_limits(p_older_than timestamptz)
+returns void
+language sql
+as $$
+  delete from public.rate_limits where window_start < p_older_than;
+$$;
+
+
 -- =============================================================================
 -- Optional: bootstrap agents_registry from the application catalog.
 --
@@ -296,31 +425,31 @@ create policy "Only authenticated users can view waitlist"
 -- re-run schema.sql to refresh the catalog.
 -- =============================================================================
 insert into public.agents_registry (slug, name, short_name, category, price_cents, stripe_price_id, display_price, active) values
-  (''executive-assistant'',  ''Executive Assistant'',         ''Executive Assistant'',  ''Business & Operations'', 7900,  ''price_executive_assistant'',  ''\u20ac79/mo'',  true),
-  (''project-manager'',      ''Project Manager'',             ''Project Manager'',      ''Business & Operations'', 8900,  ''price_project_manager'',      ''\u20ac89/mo'',  true),
-  (''meeting-assistant'',    ''Meeting Assistant'',           ''Meeting Assistant'',    ''Business & Operations'', 5900,  ''price_meeting_assistant'',    ''\u20ac59/mo'',  true),
-  (''crm-assistant'',        ''CRM Assistant'',               ''CRM Assistant'',        ''Business & Operations'', 9900,  ''price_crm_assistant'',        ''\u20ac99/mo'',  true),
-  (''customer-success'',     ''Customer Success Manager'',    ''Customer Success'',     ''Business & Operations'', 11900, ''price_customer_success'',     ''\u20ac119/mo'', true),
-  (''business-manager'',     ''Business Manager'',            ''Business Manager'',     ''Business & Operations'', 12900, ''price_business_manager'',     ''\u20ac129/mo'', true),
-  (''marketing-strategist'', ''Marketing Strategist'',        ''Marketing Strategist'', ''Marketing & Sales'',     9900,  ''price_marketing_strategist'', ''\u20ac99/mo'',  true),
-  (''seo-specialist'',       ''SEO Specialist'',              ''SEO Specialist'',       ''Marketing & Sales'',     6900,  ''price_seo_specialist'',       ''\u20ac69/mo'',  true),
-  (''google-ads-expert'',    ''Google Ads Expert'',           ''Google Ads Expert'',    ''Marketing & Sales'',     8900,  ''price_google_ads_expert'',    ''\u20ac89/mo'',  true),
-  (''social-media-manager'', ''Social Media Manager'',        ''Social Media Manager'', ''Marketing & Sales'',     7900,  ''price_social_media_manager'', ''\u20ac79/mo'',  true),
-  (''cold-email-writer'',    ''Cold Email Writer'',           ''Cold Email Writer'',    ''Marketing & Sales'',     5900,  ''price_cold_email_writer'',    ''\u20ac59/mo'',  true),
-  (''lead-qualification'',   ''Lead Qualification Agent'',    ''Lead Qualification'',   ''Marketing & Sales'',     9900,  ''price_lead_qualification'',   ''\u20ac99/mo'',  true),
-  (''support-agent'',        ''Support Agent'',               ''Support Agent'',        ''Customer Service'',      8900,  ''price_support_agent'',        ''\u20ac89/mo'',  true),
-  (''complaint-manager'',    ''Complaint Manager'',           ''Complaint Manager'',    ''Customer Service'',      6900,  ''price_complaint_manager'',    ''\u20ac69/mo'',  true),
-  (''fullstack-developer'',  ''Full Stack Developer'',        ''Full Stack Developer'', ''Development'',           14900, ''price_fullstack_developer'',  ''\u20ac149/mo'', true),
-  (''api-integration'',      ''API Integration Expert'',      ''API Integration'',      ''Development'',           9900,  ''price_api_integration'',      ''\u20ac99/mo'',  true),
-  (''devops-engineer'',      ''DevOps Engineer'',             ''DevOps Engineer'',      ''Development'',           12900, ''price_devops_engineer'',      ''\u20ac129/mo'', true),
-  (''qa-tester'',            ''QA Tester'',                   ''QA Tester'',            ''Development'',           7900,  ''price_qa_tester'',            ''\u20ac79/mo'',  true),
-  (''prompt-engineer'',      ''Prompt Engineer'',             ''Prompt Engineer'',      ''AI & Data'',             6900,  ''price_prompt_engineer'',      ''\u20ac69/mo'',  true),
-  (''ai-automation'',        ''AI Automation Builder'',       ''AI Automation'',        ''AI & Data'',             11900, ''price_ai_automation'',        ''\u20ac119/mo'', true),
-  (''data-analyst'',         ''Data Analyst'',                ''Data Analyst'',         ''AI & Data'',             9900,  ''price_data_analyst'',         ''\u20ac99/mo'',  true),
-  (''copywriter'',           ''Copywriter'',                  ''Copywriter'',           ''Design & Content'',      7900,  ''price_copywriter'',           ''\u20ac79/mo'',  true),
-  (''blog-writer'',          ''Blog Writer'',                 ''Blog Writer'',          ''Design & Content'',      6900,  ''price_blog_writer'',          ''\u20ac69/mo'',  true),
-  (''ui-designer'',          ''UI Designer'',                 ''UI Designer'',          ''Design & Content'',      8900,  ''price_ui_designer'',          ''\u20ac89/mo'',  true),
-  (''ecommerce-expert'',     ''E-commerce Expert'',           ''E-commerce Expert'',    ''E-commerce & Finance'',  9900,  ''price_ecommerce_expert'',     ''\u20ac99/mo'',  true)
+  ('executive-assistant',  'Executive Assistant',         'Executive Assistant',  'Business & Operations', 7900,  'price_executive_assistant',  '€79/mo',  true),
+  ('project-manager',      'Project Manager',             'Project Manager',      'Business & Operations', 8900,  'price_project_manager',      '€89/mo',  true),
+  ('meeting-assistant',    'Meeting Assistant',           'Meeting Assistant',    'Business & Operations', 5900,  'price_meeting_assistant',    '€59/mo',  true),
+  ('crm-assistant',        'CRM Assistant',               'CRM Assistant',        'Business & Operations', 9900,  'price_crm_assistant',        '€99/mo',  true),
+  ('customer-success',     'Customer Success Manager',    'Customer Success',     'Business & Operations', 11900, 'price_customer_success',     '€119/mo', true),
+  ('business-manager',     'Business Manager',            'Business Manager',     'Business & Operations', 12900, 'price_business_manager',     '€129/mo', true),
+  ('marketing-strategist', 'Marketing Strategist',        'Marketing Strategist', 'Marketing & Sales',     9900,  'price_marketing_strategist', '€99/mo',  true),
+  ('seo-specialist',       'SEO Specialist',              'SEO Specialist',       'Marketing & Sales',     6900,  'price_seo_specialist',       '€69/mo',  true),
+  ('google-ads-expert',    'Google Ads Expert',           'Google Ads Expert',    'Marketing & Sales',     8900,  'price_google_ads_expert',    '€89/mo',  true),
+  ('social-media-manager', 'Social Media Manager',        'Social Media Manager', 'Marketing & Sales',     7900,  'price_social_media_manager', '€79/mo',  true),
+  ('cold-email-writer',    'Cold Email Writer',           'Cold Email Writer',    'Marketing & Sales',     5900,  'price_cold_email_writer',    '€59/mo',  true),
+  ('lead-qualification',   'Lead Qualification Agent',    'Lead Qualification',   'Marketing & Sales',     9900,  'price_lead_qualification',   '€99/mo',  true),
+  ('support-agent',        'Support Agent',               'Support Agent',        'Customer Service',      8900,  'price_support_agent',        '€89/mo',  true),
+  ('complaint-manager',    'Complaint Manager',           'Complaint Manager',    'Customer Service',      6900,  'price_complaint_manager',    '€69/mo',  true),
+  ('fullstack-developer',  'Full Stack Developer',        'Full Stack Developer', 'Development',           14900, 'price_fullstack_developer',  '€149/mo', true),
+  ('api-integration',      'API Integration Expert',      'API Integration',      'Development',           9900,  'price_api_integration',      '€99/mo',  true),
+  ('devops-engineer',      'DevOps Engineer',             'DevOps Engineer',      'Development',           12900, 'price_devops_engineer',      '€129/mo', true),
+  ('qa-tester',            'QA Tester',                   'QA Tester',            'Development',           7900,  'price_qa_tester',            '€79/mo',  true),
+  ('prompt-engineer',      'Prompt Engineer',             'Prompt Engineer',      'AI & Data',             6900,  'price_prompt_engineer',      '€69/mo',  true),
+  ('ai-automation',        'AI Automation Builder',       'AI Automation',        'AI & Data',             11900, 'price_ai_automation',        '€119/mo', true),
+  ('data-analyst',         'Data Analyst',                'Data Analyst',         'AI & Data',             9900,  'price_data_analyst',         '€99/mo',  true),
+  ('copywriter',           'Copywriter',                  'Copywriter',           'Design & Content',      7900,  'price_copywriter',           '€79/mo',  true),
+  ('blog-writer',          'Blog Writer',                 'Blog Writer',          'Design & Content',      6900,  'price_blog_writer',          '€69/mo',  true),
+  ('ui-designer',          'UI Designer',                 'UI Designer',          'Design & Content',      8900,  'price_ui_designer',          '€89/mo',  true),
+  ('ecommerce-expert',     'E-commerce Expert',           'E-commerce Expert',    'E-commerce & Finance',  9900,  'price_ecommerce_expert',     '€99/mo',  true)
 on conflict (slug) do update set
   name           = excluded.name,
   short_name     = excluded.short_name,

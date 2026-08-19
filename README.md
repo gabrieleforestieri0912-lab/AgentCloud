@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgentCloud
 
-## Getting Started
+Piattaforma di **agenti AI** per le aziende: marketplace di agenti pronti al lancio, chat, dashboard con monitoraggio token, abbonamenti Stripe con overage billing. **Default italiano** con switch EN dalla navbar.
 
-First, run the development server:
+## Funzionalità
+
+- 🤖 **Marketplace agenti** — catalogo filtrato dai feature flags (verticale Shopify/Services/full)
+- 💬 **Chat** — chat pubblica per agente (`/a/[slug]`), chat generica e widget embed
+- 📊 **Dashboard** — agenti installati, utilizzo mensile token, stato abbonamento
+- 💳 **Billing Stripe** — payment links, attivazione automatica via webhook, customer portal (cancellazione self-service), **overage billing** con tetto di sicurezza a 2x l'allowance
+- 🌐 **i18n** — italiano di default, inglese via cookie `agentcloud_locale` (niente URL `/en`)
+- 🔐 **Auth Supabase** — email + password e Google OAuth (sessioni `@supabase/ssr`)
+- 🛡️ **Rate limiting distribuito** — Supabase (`rate_limits` + RPC), fail-open
+
+## Stack
+
+Next.js 16 (Turbopack) · React 19 · Tailwind CSS v4 · TypeScript · Supabase (Auth + DB) · Stripe · Anthropic Claude · Resend · Vitest
+
+## Avvio rapido
 
 ```bash
+npm install
+cp .env.local.example .env.local   # se assente: vedi PROJECT.md → Environment Variables
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Script
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Comando | Scopo |
+|---------|-------|
+| `npm run dev` | sviluppo |
+| `npm run build` | build produzione (con typecheck) |
+| `npm run start` | avvio produzione |
+| `npm run lint` | ESLint |
+| `npm run test` | Vitest (117 test) |
+| `npm run typecheck` | `tsc --noEmit` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
 
-## Learn More
+L'elenco completo e aggiornato è in **[PROJECT.md → Environment Variables](PROJECT.md#environment-variables-produzione)**. In sintesi per la produzione:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+# Supabase (Auth + DB) — vedi SUPABASE_AUTH.md per Google OAuth
+NEXT_PUBLIC_SUPABASE_URL=…
+NEXT_PUBLIC_SUPABASE_ANON_KEY=…
+SUPABASE_SERVICE_ROLE_KEY=…
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Site URL (canonical, sitemap, embed, WhatsApp, portal)
+NEXT_PUBLIC_SITE_URL=https://tuodominio.com
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# AI + Email
+ANTHROPIC_API_KEY=sk-ant-…
+RESEND_API_KEY=re_…
 
-## Deploy on Vercel
+# Stripe (live!) — vedi STRIPE_SETUP.md per payment links, webhook e metered price
+STRIPE_SECRET_KEY=sk_live_…
+STRIPE_WEBHOOK_SECRET=whsec_…
+STRIPE_OVERAGE_PRICE_ID=price_…
+STRIPE_PAYMENT_LINK_<AGENTE>=https://buy.stripe.com/…
+STRIPE_PAYMENT_LINK_<VERTICAL>_<TIER>=https://buy.stripe.com/…
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Admin
+ADMIN_API_TOKEN=…
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Facoltativi: AGENTCLOUD_VERTICAL, AGENTCLOUD_FEATURE_FLAGS, tool Shopify/Calendar/Lead/WhatsApp/Ollama, TENANT_STORE_KEY
+```
+
+## Database
+
+Esegui `supabase/schema.sql` (Supabase SQL Editor o `supabase db push`) — **rieseguilo dopo ogni aggiornamento** (idempotente). Include le tabelle di billing/usage (`subscriptions`, `user_agents`, `agent_runs`) e la nuova tabella `rate_limits` con le RPC `bump_rate_limit` / `cleanup_rate_limits` per il rate limiting distribuito.
+
+## Documentazione
+
+- **[PROJECT.md](PROJECT.md)** — architettura, routes, i18n, billing, rate limiting, env vars complete
+- **[SUPABASE_AUTH.md](SUPABASE_AUTH.md)** — setup autenticazione (email/password + Google OAuth)
+- **[STRIPE_SETUP.md](STRIPE_SETUP.md)** — payment links, webhook, overage meter, customer portal
+- **[FEATURE_FLAGS.md](FEATURE_FLAGS.md)** — verticali e configurazione agenti/tool
+- **[PRICING.md](PRICING.md)** — piani e token allowance
+
+## Deploy
+
+Consigliato su Vercel (o qualsiasi host Node). Prima del lancio: Google OAuth configurato in Supabase (vedi `SUPABASE_AUTH.md`), chiavi **live** Stripe, webhook Stripe configurato (4 eventi), `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, `supabase/schema.sql` eseguito.

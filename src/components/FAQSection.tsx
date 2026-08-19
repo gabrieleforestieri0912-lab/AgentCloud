@@ -4,57 +4,25 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-const FAQS = [
-  {
-    q: "What is AgentCloud?",
-    a: "AgentCloud is an AI agent platform designed to help businesses automate operations, reduce overhead, and create room for growth. We offer pre-built and customizable AI agents that integrate with the tools you already use.",
-  },
-  {
-    q: "Who is AgentCloud for?",
-    a: "AgentCloud is built for founders, operations teams, and SMBs who want to leverage AI without hiring developers or building solutions from scratch.",
-  },
-  {
-    q: "What kind of business tasks can AgentCloud automate?",
-    a: "AgentCloud can automate customer support, email management, lead generation, content scheduling, invoice processing, marketing campaigns, and much more.",
-  },
-  {
-    q: "Are these ready-to-use or custom solutions?",
-    a: "Both. You get access to pre-configured agents you can activate immediately, plus the ability to customize them to your specific workflows.",
-  },
-  {
-    q: "How do I know which solution is right for my business?",
-    a: "Book a free demo with our team. We'll analyze your processes and recommend the best agents for your needs.",
-  },
-  {
-    q: "How long does setup take?",
-    a: "Most agents can be activated within hours. More complex configurations with multiple integrations may take 1–3 business days.",
-  },
-  {
-    q: "What tools does AgentCloud integrate with?",
-    a: "AgentCloud integrates with Gmail, Outlook, Slack, Notion, HubSpot, Stripe, Shopify, Zapier, Salesforce, WhatsApp, and many more tools.",
-  },
-  {
-    q: "Do I need technical skills to use it?",
-    a: "No. AgentCloud is designed to be accessible to everyone. No coding or technical expertise is required to set up and use our agents.",
-  },
-];
-
-const faqLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: FAQS.map((faq) => ({
-    "@type": "Question",
-    name: faq.q,
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: faq.a,
-    },
-  })),
-};
+import { useLanguage } from "./LanguageProvider";
 
 export default function FAQSection() {
+  const { dict } = useLanguage();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  const faqs = dict.faq.items;
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.a,
+      },
+    })),
+  };
 
   return (
     <section id="faq" className="py-24 bg-neutral-950">
@@ -74,13 +42,13 @@ export default function FAQSection() {
           <div className="mb-6 flex items-center justify-center gap-2">
             <Sparkles size={13} className="text-brand-400" />
             <span className="text-xs font-bold uppercase tracking-[0.08em] text-brand-400">
-              FAQ
+              {dict.faq.badge}
             </span>
           </div>
           <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">
-            Frequently asked{" "}
+            {dict.faq.titleA}{" "}
             <span className="bg-linear-to-r from-brand-500 to-pink-500 bg-clip-text text-transparent">
-              questions
+              {dict.faq.titleB}
             </span>
           </h2>
         </motion.div>
@@ -100,7 +68,7 @@ export default function FAQSection() {
             },
           }}
         >
-          {FAQS.map((faq, i) => (
+          {faqs.map((faq, i) => (
             <motion.div
               key={i}
               className={`bg-neutral-900 border rounded-2xl overflow-hidden transition-colors duration-200 ${
@@ -166,12 +134,12 @@ export default function FAQSection() {
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <p className="text-sm font-semibold text-neutral-400">
-            Still have questions?{" "}
+            {dict.faq.stillQuestions}{" "}
             <Link
               href="/demo"
               className="text-brand-400 font-bold hover:text-brand-300 transition-colors"
             >
-              Contact support
+              {dict.faq.contactSupport}
             </Link>
           </p>
         </motion.div>

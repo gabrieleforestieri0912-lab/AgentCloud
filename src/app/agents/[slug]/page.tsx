@@ -19,7 +19,15 @@ import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
 import AgentPreview from "@/components/AgentPreview";
 import AgentCard from "@/components/AgentCard";
-import { AGENTS, getAgentBySlug } from "@/lib/agents";
+import {
+  AGENTS,
+  AVAILABLE_AGENTS,
+  getAgentBySlug,
+  isAvailable,
+  localizeAgent,
+} from "@/lib/agents";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 
 type AgentDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -35,9 +43,12 @@ export async function generateMetadata({ params }: AgentDetailPageProps) {
 
   if (!agent) return {};
 
+  const locale = await getLocale();
+  const localized = localizeAgent(agent, locale);
+
   return {
-    title: `${agent.name} | AgentCloud`,
-    description: agent.description,
+    title: `${localized.name} | AgentCloud`,
+    description: localized.description,
   };
 }
 
@@ -54,8 +65,32 @@ const USE_CASE_EXAMPLES: Record<string, string[]> = {
   ],
 };
 
-function getUseCases(slug: string, tasks: string[]): string[] {
-  if (USE_CASE_EXAMPLES[slug]) return USE_CASE_EXAMPLES[slug];
+const USE_CASE_EXAMPLES_IT: Record<string, string[]> = {
+  "executive-assistant": [
+    "Pianifica un consiglio di amministrazione su 8 fusi orari con agenda e documenti di preparazione",
+    "Prepara i report di stato settimanali dai thread Slack e dagli aggiornamenti email",
+    "Organizza un offsite trimestrale includendo viaggio, alloggio e attività",
+  ],
+  "email": [
+    "Rispondi automaticamente alle richieste di supporto comuni con precisione da knowledge base",
+    "Scrivi e invia sequenze di follow-up personalizzate per i lead in entrata",
+    "Riepiloga la casella quotidiana in un briefing da 5 minuti con le azioni da fare",
+  ],
+};
+
+function getUseCases(
+  slug: string,
+  tasks: string[],
+  locale: "it" | "en",
+): string[] {
+  const examples = locale === "it" ? USE_CASE_EXAMPLES_IT : USE_CASE_EXAMPLES;
+  if (examples[slug]) return examples[slug];
+  if (locale === "it") {
+    return tasks.map(
+      (task) =>
+        `Automatizza "${task.toLowerCase()}" dall'inizio alla fine con ${slug.includes("-") ? "i tuoi strumenti connessi" : "workflow basati sull'AI"}`,
+    );
+  }
   return tasks.map(
     (task) =>
       `Automate "${task.toLowerCase()}" end-to-end with ${slug.includes("-") ? "your connected tools" : "AI-powered workflows"}`,
@@ -71,7 +106,19 @@ const AGENT_FAQS: Record<string, [string, string][]> = {
   ],
 };
 
-function getFAQs(slug: string, name: string): [string, string][] {
+function getFAQs(
+  slug: string,
+  name: string,
+  locale: "it" | "en",
+): [string, string][] {
+  if (locale === "it") {
+    return [
+      [`Come si collega ${name} ai miei strumenti?`, `${name} si collega tramite integrazioni API sicure con OAuth 2.0. Approvi ogni connessione una sola volta e l'agente gestisce il resto.`],
+      [`Posso personalizzare cosa automatizza ${name}?`, `Sì. Puoi configurare trigger, azioni e output per adattarli al tuo workflow esatto. L'agente impara dalle tue regolazioni nel tempo.`],
+      [`Quanto tempo serve perché ${name} sia pienamente operativo?`, `Il setup richiede in genere ${name.includes("Assistente") ? "lo stesso giorno" : "1-2 giorni lavorativi"}, inclusa la configurazione delle integrazioni e il primo test del workflow.`],
+      [`I miei dati sono al sicuro con ${name}?`, `Tutti i dati sono crittografati in transito e a riposo. L'agente opera in un ambiente conforme al GDPR con controlli SOC 2.`],
+    ];
+  }
   if (AGENT_FAQS[slug]) return AGENT_FAQS[slug];
   return [
     [`How does ${name} connect to my tools?`, `${name} connects via secure API integrations with OAuth 2.0. You approve each connection once and the agent handles the rest.`],
@@ -83,20 +130,29 @@ function getFAQs(slug: string, name: string): [string, string][] {
 
 export default async function AgentDetailPage({ params }: AgentDetailPageProps) {
   const { slug } = await params;
-  const agent = getAgentBySlug(slug);
-
-  if (!agent) notFound();
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const rawAgent = getAgentBySlug(slug);
+  if (!rawAgent) notFound();
+  const agent = localizeAgent(rawAgent, locale);
+  const available = isAvailable(slug);
 
   const relatedAgents = AGENTS.filter(
     (a) => a.slug !== agent.slug && a.category === agent.category,
-  ).slice(0, 3);
+  )
+    .slice(0, 3)
+    .map((a) => localizeAgent(a, locale));
 
-  const useCases = getUseCases(slug, agent.tasks);
-  const faqs = getFAQs(slug, agent.shortName);
+  const marketplaceAgents = AVAILABLE_AGENTS.map((a) =>
+    localizeAgent(a, locale),
+  );
+
+  const useCases = getUseCases(slug, agent.tasks, locale);
+  const faqs = getFAQs(slug, agent.shortName, locale);
 
   return (
     <main className="min-h-screen bg-neutral-950">
-      <Navbar />
+      <Navbar marketplaceAgents={marketplaceAgents} />
 
       {/* ─── Hero ─── */}
       <section className="bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
@@ -106,14 +162,19 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-neutral-400 transition-colors hover:text-white"
           >
             <ArrowLeft size={16} />
-            Back to marketplace
+            {dict.agentDetail.backToMarketplace}
           </Link>
 
           <div className="grid gap-10 lg:grid-cols-[1fr_420px] lg:items-start">
             <div>
               <div className="mb-5 flex flex-wrap items-center gap-3">
                 <div className={`flex h-13 w-13 items-center justify-center rounded-lg ${agent.accent}`}>
-                  <AgentIcon icon={agent.icon} size={25} className="text-white" />
+                  <AgentIcon
+                    icon={agent.icon}
+                    brand={agent.brand}
+                    size={25}
+                    className="text-white"
+                  />
                 </div>
                 <span className="rounded-full bg-brand-500/20 px-3 py-1 text-sm font-bold text-brand-300">
                   {agent.badge}
@@ -133,22 +194,28 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               {/* Target audience */}
               <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-neutral-500">
                 <Users size={16} className="text-brand-400" />
-                For {agent.industry}
+                {t(dict.agentDetail.forIndustry, { industry: agent.industry })}
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href={`/agents/${agent.slug}/deploy`}
-                  className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
-                >
-                  Configure agent
-                  <ArrowRight size={16} />
-                </Link>
+                {available ? (
+                  <Link
+                    href={`/agents/${agent.slug}/deploy`}
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
+                  >
+                    {dict.agentDetail.configureAgent}
+                    <ArrowRight size={16} />
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-neutral-500">
+                    {dict.common.comingSoon}
+                  </span>
+                )}
                 <a
                   href="#preview"
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:border-white/20"
                 >
-                  Try preview
+                  {dict.agentDetail.tryPreview}
                 </a>
               </div>
             </div>
@@ -157,9 +224,9 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-xl shadow-brand-500/5">
               <div className="mb-5 grid grid-cols-3 gap-3 text-center">
                 {[
-                  [agent.rating, "Rating"],
-                  [agent.installs, "Installs"],
-                  [agent.setupTime, "Setup"],
+                  [agent.rating, dict.agentDetail.rating],
+                  [agent.installs, dict.agentDetail.installs],
+                  [agent.setupTime, dict.agentDetail.setup],
                 ].map(([value, label]) => (
                   <div key={label} className="rounded-lg bg-neutral-800 px-3 py-4">
                     <p className="text-2xl font-bold text-white">{value}</p>
@@ -171,20 +238,20 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-3 rounded-lg bg-neutral-800 p-3 text-neutral-300">
                   <Star size={17} className="text-purple-400 shrink-0" />
-                  Rated by teams using this workflow weekly
+                  {dict.agentDetail.ratedBy}
                 </div>
                 <div className="flex items-center gap-3 rounded-lg bg-neutral-800 p-3 text-neutral-300">
                   <Clock3 size={17} className="text-brand-400 shrink-0" />
-                  Typical launch time: {agent.setupTime}
+                  {t(dict.agentDetail.typicalLaunch, { setupTime: agent.setupTime })}
                 </div>
                 <div className="flex items-center gap-3 rounded-lg bg-neutral-800 p-3 text-neutral-300">
                   <ShieldCheck size={17} className="text-purple-400 shrink-0" />
-                  Built for GDPR-aware business workflows
+                  {dict.agentDetail.gdprNote}
                 </div>
               </div>
 
               <div className="mt-5 border-t border-white/5 pt-5">
-                <p className="text-sm font-semibold text-neutral-400">Setup price</p>
+                <p className="text-sm font-semibold text-neutral-400">{dict.agentDetail.setupPrice}</p>
                 <p className="text-3xl font-bold text-white">{agent.price}</p>
               </div>
             </div>
@@ -200,7 +267,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
               <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
                 <Zap size={22} className="text-brand-400" />
-                What this agent automates
+                {dict.agentDetail.whatAutomates}
               </h2>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 {agent.tasks.map((task) => (
@@ -216,10 +283,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
               <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
                 <RefreshCw size={22} className="text-purple-400" />
-                How it works
+                {dict.agentDetail.howItWorks}
               </h2>
               <p className="mt-2 text-sm font-semibold leading-relaxed text-neutral-400">
-                {agent.shortName} follows a structured workflow to deliver results every time.
+                {t(dict.agentDetail.howItWorksDesc, { name: agent.shortName })}
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {agent.workflow.map((step, index) => (
@@ -242,10 +309,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
               <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
                 <Sparkles size={22} className="text-brand-400" />
-                Use case examples
+                {dict.agentDetail.useCases}
               </h2>
               <p className="mt-2 text-sm font-semibold leading-relaxed text-neutral-400">
-                Real scenarios where {agent.shortName} delivers value out of the box.
+                {t(dict.agentDetail.useCasesDesc, { name: agent.shortName })}
               </p>
               <div className="mt-5 space-y-3">
                 {useCases.map((useCase, i) => (
@@ -268,10 +335,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
               <div className="mb-2 flex items-center gap-2">
                 <Plug size={22} className="text-brand-400" />
-                <h2 className="text-2xl font-bold text-white">Integrations</h2>
+                <h2 className="text-2xl font-bold text-white">{dict.agentDetail.integrationsTitle}</h2>
               </div>
               <p className="text-sm font-semibold leading-relaxed text-neutral-400">
-                {agent.shortName} connects directly with your existing tool stack.
+                {t(dict.agentDetail.integrationsDesc, { name: agent.shortName })}
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 {agent.integrations.map((integration) => (
@@ -287,7 +354,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
 
             {/* FAQ */}
             <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
-              <h2 className="mb-2 text-2xl font-bold text-white">Frequently asked questions</h2>
+              <h2 className="mb-2 text-2xl font-bold text-white">{dict.agentDetail.faqTitle}</h2>
               <div className="mt-5 space-y-4">
                 {faqs.map(([question, answer]) => (
                   <div key={question} className="rounded-lg bg-neutral-800 px-4 py-3.5">
@@ -313,15 +380,19 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             <div className="mb-2 flex items-center gap-2">
               <Layers size={22} className="text-brand-400" />
               <h2 className="text-2xl font-bold text-white">
-                More in {agent.category}
+                {t(dict.agentDetail.moreIn, { category: agent.category })}
               </h2>
             </div>
             <p className="text-sm font-semibold text-neutral-400">
-              Other agents designed for the same workflow area.
+              {dict.agentDetail.relatedDesc}
             </p>
             <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {relatedAgents.map((a) => (
-                <AgentCard key={a.slug} agent={a} />
+                <AgentCard
+                  key={a.slug}
+                  agent={a}
+                  available={isAvailable(a.slug)}
+                />
               ))}
             </div>
           </div>
@@ -332,25 +403,26 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
       <section className="border-t border-white/5 px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Ready to deploy {agent.shortName}?
+            {t(dict.agentDetail.readyToDeploy, { name: agent.shortName })}
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-neutral-400">
-            Set up in minutes, no code required. Start automating your{" "}
-            {agent.category.toLowerCase()} workflows today.
+            {t(dict.agentDetail.readyToDeployDesc, { category: agent.category })}
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
-              href={`/agents/${agent.slug}/deploy`}
-              className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white transition-colors hover:bg-brand-400"
-            >
-              Configure and deploy
-              <ArrowRight size={18} />
-            </Link>
+            {available && (
+              <Link
+                href={`/agents/${agent.slug}/deploy`}
+                className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white transition-colors hover:bg-brand-400"
+              >
+                {dict.agentDetail.configureAndDeploy}
+                <ArrowRight size={18} />
+              </Link>
+            )}
             <Link
               href="/chat"
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-8 py-3.5 text-base font-bold text-white transition-colors hover:border-white/20"
             >
-              Ask our AI
+              {dict.agentDetail.askOurAi}
             </Link>
           </div>
         </div>

@@ -2,45 +2,30 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faSlack,
-  faWhatsapp,
-  faDropbox,
-  faGoogleDrive,
-  faMicrosoft,
-  faHubspot,
-  faShopify,
-  faDiscord,
-  faTrello,
-  faGoogle,
-  faStripe,
-  faGithub,
-  faAmazon,
-  faApple,
-  faAndroid,
-  faWindows,
-} from "@fortawesome/free-brands-svg-icons";
+import BrandIcon from "./BrandIcon";
+import { BRANDS } from "@/lib/brands";
+import { getLocalChatResponse } from "@/lib/chat-responses";
+import { useLanguage } from "./LanguageProvider";
 
-
-
+// Brand slugs reference the central BRANDS registry (src/lib/brands.ts) so the
+// hero uses the same original brand marks as the integrations section.
 const LEFT_BUBBLES = [
-  { top: "12%", left: "10%", size: "w-10 h-10", icon: faGoogle, color: "text-[#4285F4]", delay: "0s", anim: "animate-float-gentle" },
-  { top: "8%", left: "48%", size: "w-14 h-14", icon: faGoogleDrive, color: "text-[#34A853]", delay: "0.4s", anim: "animate-float-reverse" },
-  { top: "10%", left: "76%", size: "w-9 h-9", icon: faApple, color: "text-white", delay: "1.3s", anim: "animate-float-gentle" },
-  { top: "25%", left: "18%", size: "w-14 h-14", icon: faMicrosoft, color: "text-[#0078D4]", delay: "2.0s", anim: "animate-float-gentle" },
-  { top: "22%", left: "68%", size: "w-10 h-10", icon: faGithub, color: "text-white", delay: "0.7s", anim: "animate-float-reverse" },
-  { top: "38%", left: "3%", size: "w-11 h-11", icon: faStripe, color: "text-[#635BFF]", delay: "1.8s", anim: "animate-float-reverse" },
-  { top: "40%", left: "42%", size: "w-14 h-14", icon: faSlack, color: "text-[#4A154B]", delay: "1.1s", anim: "animate-float-gentle" },
-  { top: "36%", left: "80%", size: "w-10 h-10", icon: faAmazon, color: "text-[#FF9900]", delay: "2.5s", anim: "animate-float-gentle" },
-  { top: "54%", left: "24%", size: "w-14 h-14", icon: faDiscord, color: "text-[#5865F2]", delay: "0.3s", anim: "animate-float-reverse" },
-  { top: "56%", left: "66%", size: "w-12 h-12", icon: faWhatsapp, color: "text-[#25D366]", delay: "1.5s", anim: "animate-float-gentle" },
-  { top: "72%", left: "8%", size: "w-11 h-11", icon: faWindows, color: "text-[#00A4EF]", delay: "2.2s", anim: "animate-float-gentle" },
-  { top: "68%", left: "50%", size: "w-12 h-12", icon: faTrello, color: "text-[#0079BF]", delay: "0.9s", anim: "animate-float-reverse" },
-  { top: "70%", left: "84%", size: "w-9 h-9", icon: faAndroid, color: "text-[#3DDC84]", delay: "0.5s", anim: "animate-float-gentle" },
-  { top: "86%", left: "18%", size: "w-13 h-13", icon: faDropbox, color: "text-[#0061FF]", delay: "1.6s", anim: "animate-float-gentle" },
-  { top: "84%", left: "56%", size: "w-12 h-12", icon: faHubspot, color: "text-[#FF7A59]", delay: "2.8s", anim: "animate-float-reverse" },
-  { top: "90%", left: "35%", size: "w-13 h-13", icon: faShopify, color: "text-[#96BF48]", delay: "1.9s", anim: "animate-float-gentle" },
+  { top: "12%", left: "10%", size: "w-10 h-10", brand: "google", delay: "0s", anim: "animate-float-gentle" },
+  { top: "8%", left: "48%", size: "w-14 h-14", brand: "googledrive", delay: "0.4s", anim: "animate-float-reverse" },
+  { top: "10%", left: "76%", size: "w-9 h-9", brand: "apple", delay: "1.3s", anim: "animate-float-gentle" },
+  { top: "25%", left: "18%", size: "w-14 h-14", brand: "facebook", delay: "2.0s", anim: "animate-float-gentle" },
+  { top: "22%", left: "68%", size: "w-10 h-10", brand: "github", delay: "0.7s", anim: "animate-float-reverse" },
+  { top: "38%", left: "3%", size: "w-11 h-11", brand: "stripe", delay: "1.8s", anim: "animate-float-reverse" },
+  { top: "40%", left: "42%", size: "w-14 h-14", brand: "instagram", delay: "1.1s", anim: "animate-float-gentle" },
+  { top: "36%", left: "80%", size: "w-10 h-10", brand: "tiktok", delay: "2.5s", anim: "animate-float-gentle" },
+  { top: "54%", left: "24%", size: "w-14 h-14", brand: "discord", delay: "0.3s", anim: "animate-float-reverse" },
+  { top: "56%", left: "66%", size: "w-12 h-12", brand: "whatsapp", delay: "1.5s", anim: "animate-float-gentle" },
+  { top: "72%", left: "8%", size: "w-11 h-11", brand: "gmail", delay: "2.2s", anim: "animate-float-gentle" },
+  { top: "68%", left: "50%", size: "w-12 h-12", brand: "trello", delay: "0.9s", anim: "animate-float-reverse" },
+  { top: "70%", left: "84%", size: "w-9 h-9", brand: "android", delay: "0.5s", anim: "animate-float-gentle" },
+  { top: "86%", left: "18%", size: "w-13 h-13", brand: "dropbox", delay: "1.6s", anim: "animate-float-gentle" },
+  { top: "84%", left: "56%", size: "w-12 h-12", brand: "hubspot", delay: "2.8s", anim: "animate-float-reverse" },
+  { top: "90%", left: "35%", size: "w-13 h-13", brand: "shopify", delay: "1.9s", anim: "animate-float-gentle" },
 ];
 
 const RIGHT_BUBBLES = [
@@ -58,60 +43,36 @@ const RIGHT_BUBBLES = [
   { top: "84%", left: "48%", size: "w-14 h-14", role: "Course Creator", initials: "CC", avatarBg: "bg-blue-600", delay: "1.6s", anim: "animate-float-reverse" },
 ];
 
-// ─── AI Response Logic (same as ChatInterface) ────────────────────────────
-const HERO_RESPONSES: Record<string, string> = {
-  greeting:
-    "Hi! I'm your AgentCloud AI. I can automate emails, support, leads, invoicing and more. What would you like to set up?",
-  email:
-    "I can automate your full email workflow:\n\n• **Smart Replies** — Auto-draft responses to common inquiries\n• **Inbox Prioritization** — Sort emails by urgency\n• **Follow-up Scheduling** — Automatic follow-up rules\n\nWant me to set up email automation?",
-  support:
-    "I can optimize your customer support:\n\n• **Ticket Categorization** — Auto-tag and route tickets\n• **AI Responses** — Instant answers to common questions\n• **Sentiment Analysis** — Flag urgent customers\n\nShall I configure a support agent?",
-  leads:
-    "I can supercharge your lead generation:\n\n• **Auto-Prospecting** — Find and qualify leads\n• **Smart Outreach** — Personalized first-touch messages\n• **Pipeline Management** — Track leads through your funnel\n\nReady to launch your lead gen agent?",
-  social:
-    "I can manage your social media presence:\n\n• **Content Scheduling** — Plan and auto-post across platforms\n• **Engagement Auto-Reply** — Respond to comments and DMs\n• **Analytics** — Track performance and suggest improvements\n\nWant me to activate your social media agent?",
-  data: "I can process and analyze your data:\n\n• **Data Extraction** — Pull info from documents and emails\n• **Report Generation** — Auto-create weekly summaries\n• **Pattern Detection** — Spot trends and anomalies\n\nWould you like to set up a data processing agent?",
-  default:
-    "Great question! Here's what I can help you automate:\n\n• **Email & Inbox** — Smart replies and prioritization\n• **Customer Support** — AI-powered ticket management\n• **Lead Generation** — Find and convert more leads\n• **Social Media** — Schedule and engage automatically\n• **Data Processing** — Extract and analyze insights\n\nWhat area would you like to explore?",
-};
-
-function getHeroAIResponse(input: string): string {
-  const lower = input.toLowerCase();
-  if (/^(hi|hello|hey|ciao|buongiorno|hola)/.test(lower))
-    return HERO_RESPONSES.greeting;
-  if (/\b(mail|email|inbox|draft|reply)\b/.test(lower))
-    return HERO_RESPONSES.email;
-  if (/\b(support|ticket|help desk|customer service|faq)\b/.test(lower))
-    return HERO_RESPONSES.support;
-  if (/\b(lead|prospect|customer acquisition|sales)\b/.test(lower))
-    return HERO_RESPONSES.leads;
-  if (/\b(social|instagram|linkedin|facebook|tweet|post|content)\b/.test(lower))
-    return HERO_RESPONSES.social;
-  if (/\b(data|analytics|report|analysis|extract|csv|export)\b/.test(lower))
-    return HERO_RESPONSES.data;
-  return HERO_RESPONSES.default;
-}
-
 type HeroMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
   displayedContent?: string;
 };
+
 function heroId() {
   return Math.random().toString(36).substring(2, 11);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────
 export default function HeroSection() {
+  const { dict, locale } = useLanguage();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<HeroMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
+  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasMessages = messages.length > 0 || isTyping;
+
+  // Clean up any running typewriter when the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (typewriterRef.current) clearInterval(typewriterRef.current);
+    };
+  }, []);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -133,6 +94,28 @@ export default function HeroSection() {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
+  function startTypewriter(aiMsgId: string, text: string) {
+    if (typewriterRef.current) clearInterval(typewriterRef.current);
+    let currentIndex = 0;
+    typewriterRef.current = setInterval(() => {
+      currentIndex += 2; // Speed of typewriter
+      if (currentIndex >= text.length) {
+        currentIndex = text.length;
+        if (typewriterRef.current) {
+          clearInterval(typewriterRef.current);
+          typewriterRef.current = null;
+        }
+      }
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMsgId
+            ? { ...msg, displayedContent: text.substring(0, currentIndex) }
+            : msg,
+        ),
+      );
+    }, 20);
+  }
+
   async function handleSend() {
     const text = input.trim();
     if (!text || isTyping) return;
@@ -143,35 +126,85 @@ export default function HeroSection() {
     setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
-    // Simulate AI thinking delay
-    await new Promise((r) => setTimeout(r, 700 + Math.random() * 900));
+    const aiMsgId = heroId();
 
-    const aiContent = getHeroAIResponse(text);
-    const aiMsg: HeroMessage = {
-      id: heroId(),
-      role: "assistant",
-      content: aiContent,
-      displayedContent: "",
-    };
-    setMessages((prev) => [...prev, aiMsg]);
-    setIsTyping(false);
+    // Try the real AI backend (Ollama) first, fall back to local responses.
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch("/api/ollama/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: text }],
+          model: "llama3.2",
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
 
-    // Typewriter effect for AI message
-    let currentIndex = 0;
-    const typeInterval = setInterval(() => {
-      currentIndex += 2; // Speed of typewriter
-      if (currentIndex >= aiContent.length) {
-        currentIndex = aiContent.length;
-        clearInterval(typeInterval);
+      if (!res.ok || !res.body) throw new Error("AI backend unavailable");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let aiText = "";
+      let assistantAppended = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          let json: { type?: string; content?: string };
+          try {
+            json = JSON.parse(line.slice(6));
+          } catch {
+            continue;
+          }
+
+          if (json.type === "text" && typeof json.content === "string") {
+            aiText += json.content;
+            if (!assistantAppended) {
+              assistantAppended = true;
+              setMessages((prev) => [
+                ...prev,
+                { id: aiMsgId, role: "assistant", content: aiText },
+              ]);
+            } else {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === aiMsgId ? { ...msg, content: aiText } : msg,
+                ),
+              );
+            }
+          }
+
+          if (json.type === "done") break;
+        }
       }
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === aiMsg.id
-            ? { ...msg, displayedContent: aiContent.substring(0, currentIndex) }
-            : msg,
-        ),
-      );
-    }, 20);
+
+      // Stream ended without any content — treat as backend failure.
+      if (!aiText.trim()) throw new Error("Empty response");
+      setIsTyping(false);
+    } catch {
+      // Backend unavailable: use the deterministic local response engine.
+      const localText = getLocalChatResponse(text, locale);
+      const aiMsg: HeroMessage = {
+        id: aiMsgId,
+        role: "assistant",
+        content: localText,
+        displayedContent: "",
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+      setIsTyping(false);
+      startTypewriter(aiMsgId, localText);
+    }
 
     textareaRef.current?.focus();
   }
@@ -188,23 +221,17 @@ export default function HeroSection() {
     setTimeout(() => textareaRef.current?.focus(), 0);
   }
 
+  const chips = dict.hero.chips;
+  const roles = dict.hero.roles;
+
+  const hasStreamedContent = messages.some(
+    (m) => m.role === "assistant" && m.content.length > 0,
+  );
+
   return (
     <section className="relative overflow-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)] px-4 pt-36 sm:pt-48 lg:pt-64 pb-12 sm:pb-20 lg:pb-28 h-dvh flex items-center justify-center">
+      {/* Float keyframes live in globals.css (shared with the waitlist page). */}
       <style>{`
-        @keyframes float-gentle {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-12px); }
-        }
-        @keyframes float-reverse {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(12px); }
-        }
-        .animate-float-gentle {
-          animation: float-gentle 6s ease-in-out infinite;
-        }
-        .animate-float-reverse {
-          animation: float-reverse 6s ease-in-out infinite;
-        }
         @keyframes fade-in-up {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -241,7 +268,12 @@ export default function HeroSection() {
         aria-hidden="true"
       >
         {LEFT_BUBBLES.map((b, idx) => {
-          const BrandIcon = b.icon;
+          const brand = BRANDS[b.brand];
+          if (!brand) return null;
+          // Icon scaled to the bubble size (e.g. w-12 = 48px → 20px mark).
+          // The digit in `w-12` is a Tailwind spacing index: px = index × 4.
+          const bubblePx = Number(b.size.match(/\d+/)?.[0] ?? 12) * 4;
+          const iconSize = Math.round(bubblePx * 0.42);
           return (
             <motion.div
               key={idx}
@@ -260,14 +292,7 @@ export default function HeroSection() {
                 },
               }}
             >
-              {BrandIcon && (
-                <div className="scale-100 flex items-center justify-center">
-                  <FontAwesomeIcon
-                    icon={BrandIcon}
-                    className={`text-lg ${b.color}`}
-                  />
-                </div>
-              )}
+              <BrandIcon brand={brand} size={iconSize} />
             </motion.div>
           );
         })}
@@ -301,11 +326,11 @@ export default function HeroSection() {
               },
             }}
           >
-            Run Your Business
+            {dict.hero.titleA}
             <br />
-            with{" "}
+            {dict.hero.titleConnector}{" "}
             <span className="relative inline-block px-6 py-2.5 text-white bg-linear-to-r from-orange-500 to-pink-500 rounded-[28px] rounded-bl-sm shadow-lg shadow-orange-500/25 select-none leading-none align-middle mt-2">
-              AI Execution
+              {dict.hero.titleB}
             </span>
           </motion.h1>
 
@@ -320,8 +345,7 @@ export default function HeroSection() {
               },
             }}
           >
-            Ask for anything. Our AI will plan it, execute it, and connect it to
-            your tools.
+            {dict.hero.subtitle}
           </motion.p>
 
           {/* ── Inline Mini-Chat Box ── */}
@@ -392,7 +416,7 @@ export default function HeroSection() {
                   ))}
 
                   {/* Typing indicator */}
-                  {isTyping && (
+                  {isTyping && !hasStreamedContent && (
                     <div className="flex items-end gap-2.5 justify-start">
                       <div className="w-7 h-7 rounded-full bg-linear-to-br from-brand-500 to-pink-500 flex items-center justify-center shrink-0 shadow-md shadow-brand-500/20">
                         <svg
@@ -440,8 +464,8 @@ export default function HeroSection() {
                   onKeyDown={handleKeyDown}
                   placeholder={
                     hasMessages
-                      ? "Continue the conversation..."
-                      : "Tell us what you'd like to automate..."
+                      ? dict.hero.placeholderContinued
+                      : dict.hero.placeholderEmpty
                   }
                   rows={1}
                   className="flex-1 bg-transparent text-base text-white placeholder-neutral-500 outline-none resize-none leading-relaxed font-medium py-2.5"
@@ -451,7 +475,7 @@ export default function HeroSection() {
                   id="hero-send-btn"
                   onClick={handleSend}
                   disabled={!input.trim() || isTyping}
-                  aria-label="Send message"
+                  aria-label={dict.hero.sendMessage}
                   className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-white text-neutral-900 hover:bg-brand-500 hover:text-white transition-all disabled:bg-neutral-800 disabled:text-neutral-600 disabled:cursor-not-allowed shadow-sm"
                 >
                   <svg
@@ -474,10 +498,12 @@ export default function HeroSection() {
             {hasMessages && (
               <div className="mt-3 text-center">
                 <a
-                  href={`/chat?q=${encodeURIComponent(messages.find((m) => m.role === "user")?.content ?? "")}`}
+                  href={`/chat?q=${encodeURIComponent(
+                    messages.find((m) => m.role === "user")?.content ?? "",
+                  )}`}
                   className="text-xs font-semibold text-neutral-500 hover:text-brand-400 transition-colors inline-flex items-center gap-1.5"
                 >
-                  Open full chat
+                  {dict.hero.openFullChat}
                   <svg
                     width="12"
                     height="12"
@@ -499,38 +525,26 @@ export default function HeroSection() {
           {!hasMessages && (
             <div className="mt-8 flex flex-col items-center gap-3.5">
               <div className="flex flex-wrap justify-center gap-3">
-                <button
-                  onClick={() => handleChipClick("Customer Support")}
-                  className="px-4.5 py-2 bg-neutral-900 hover:bg-neutral-800 border border-white/10 hover:border-brand-500/50 text-sm font-semibold text-neutral-300 hover:text-white rounded-full shadow-sm transition-all cursor-pointer animate-fade-in"
-                >
-                  Customer Support
-                </button>
-                <button
-                  onClick={() => handleChipClick("Email Management")}
-                  className="px-4.5 py-2 bg-neutral-900 hover:bg-neutral-800 border border-white/10 hover:border-brand-500/50 text-sm font-semibold text-neutral-300 hover:text-white rounded-full shadow-sm transition-all cursor-pointer animate-fade-in"
-                >
-                  Email Management
-                </button>
-                <button
-                  onClick={() => handleChipClick("Social Media")}
-                  className="px-4.5 py-2 bg-neutral-900 hover:bg-neutral-800 border border-white/10 hover:border-brand-500/50 text-sm font-semibold text-neutral-300 hover:text-white rounded-full shadow-sm transition-all cursor-pointer animate-fade-in"
-                >
-                  Social Media
-                </button>
+                {chips.slice(0, 3).map((chip) => (
+                  <button
+                    key={chip}
+                    onClick={() => handleChipClick(chip)}
+                    className="px-4.5 py-2 bg-neutral-900 hover:bg-neutral-800 border border-white/10 hover:border-brand-500/50 text-sm font-semibold text-neutral-300 hover:text-white rounded-full shadow-sm transition-all cursor-pointer animate-fade-in"
+                  >
+                    {chip}
+                  </button>
+                ))}
               </div>
               <div className="flex flex-wrap justify-center gap-3">
-                <button
-                  onClick={() => handleChipClick("Sales & Leads Automation")}
-                  className="px-4.5 py-2 bg-neutral-900 hover:bg-neutral-800 border border-white/10 hover:border-brand-500/50 text-sm font-semibold text-neutral-300 hover:text-white rounded-full shadow-sm transition-all cursor-pointer animate-fade-in"
-                >
-                  Sales & Lead
-                </button>
-                <button
-                  onClick={() => handleChipClick("Data Processing & Reports")}
-                  className="px-4.5 py-2 bg-neutral-900 hover:bg-neutral-800 border border-white/10 hover:border-brand-500/50 text-sm font-semibold text-neutral-300 hover:text-white rounded-full shadow-sm transition-all cursor-pointer animate-fade-in"
-                >
-                  Data Processing
-                </button>
+                {chips.slice(3).map((chip) => (
+                  <button
+                    key={chip}
+                    onClick={() => handleChipClick(chip)}
+                    className="px-4.5 py-2 bg-neutral-900 hover:bg-neutral-800 border border-white/10 hover:border-brand-500/50 text-sm font-semibold text-neutral-300 hover:text-white rounded-full shadow-sm transition-all cursor-pointer animate-fade-in"
+                  >
+                    {chip}
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -572,7 +586,7 @@ export default function HeroSection() {
             }}
           >
             <span className="text-[9px] font-bold text-white/70 uppercase tracking-wider whitespace-nowrap mb-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5 leading-none pointer-events-auto">
-              {b.role}
+              {roles[idx] ?? b.role}
             </span>
             <div
               className={`rounded-full border border-white/10 bg-neutral-900 flex items-center justify-center shadow-[0_6px_20px_rgba(0,0,0,0.3)] ${b.size}`}

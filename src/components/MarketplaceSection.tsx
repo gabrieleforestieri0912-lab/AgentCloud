@@ -3,27 +3,10 @@
 import Link from "next/link";
 import { Puzzle, ShoppingCart, Zap } from "lucide-react";
 import { motion } from "framer-motion";
-
-const QUICK_SOLUTIONS = [
-  {
-    title: "Automated Hiring System",
-    description: "Screen, shortlist, and schedule candidates",
-  },
-  {
-    title: "Automated Invoice Processing",
-    description: "Automated invoice handling",
-  },
-  {
-    title: "Website Chatbot",
-    description: "AI chat for your website",
-  },
-  {
-    title: "Inventory Agent",
-    description: "Real-time restaurant inventory management",
-  },
-];
+import { useLanguage } from "./LanguageProvider";
 
 export default function MarketplaceSection() {
+  const { dict } = useLanguage();
   return (
     <section id="marketplace" className="bg-neutral-950 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -39,19 +22,18 @@ export default function MarketplaceSection() {
             <div className="mb-5 flex items-center gap-2">
               <ShoppingCart size={13} className="text-brand-400" />
               <span className="text-xs font-bold uppercase tracking-[0.08em] text-brand-400">
-                AI Agent Store
+                {dict.marketplace.badge}
               </span>
             </div>
             <h2 className="max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              Pick an agent.
+              {dict.marketplace.titleA}
               <br />
-              Deploy a business workflow.
+              {dict.marketplace.titleB}
             </h2>
           </div>
 
           <p className="max-w-2xl text-lg leading-8 text-neutral-400 lg:ml-auto">
-            A marketplace of ready-to-launch AI agents that plan tasks, execute
-            workflows, and connect to the tools your team already uses.
+            {dict.marketplace.subtitle}
           </p>
         </motion.div>
 
@@ -70,7 +52,7 @@ export default function MarketplaceSection() {
             },
           }}
         >
-          {QUICK_SOLUTIONS.map((solution) => (
+          {dict.marketplace.quickSolutions.map((solution) => (
             <motion.div
               key={solution.title}
               variants={{
@@ -109,7 +91,7 @@ export default function MarketplaceSection() {
             href="/agents"
             className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-sm font-bold text-white shadow-xl shadow-brand-500/20 transition-all duration-200 hover:bg-brand-400 hover:-translate-y-0.5 active:scale-[0.98]"
           >
-            Browse all agents
+            {dict.marketplace.browseAll}
           </Link>
         </motion.div>
 
@@ -127,11 +109,10 @@ export default function MarketplaceSection() {
             </div>
             <div>
               <h3 className="text-lg font-bold text-white">
-                Need a custom agent?
+                {dict.marketplace.customTitle}
               </h3>
               <p className="mt-1 text-sm leading-6 text-neutral-400">
-                Tell us the workflow. We design the agent, connect your tools,
-                and ship the automation.
+                {dict.marketplace.customText}
               </p>
             </div>
           </div>
@@ -141,7 +122,7 @@ export default function MarketplaceSection() {
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 hover:shadow-lg hover:shadow-brand-500/30 active:scale-[0.98] sm:mt-0"
           >
             <Zap size={16} />
-            Build custom
+            {dict.marketplace.buildCustom}
           </Link>
         </motion.div>
       </div>

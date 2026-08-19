@@ -1,11 +1,10 @@
 import { logAudit } from "@/lib/audit";
+import { getSiteUrl } from "@/lib/site-url";
 // use global fetch available in Next.js server runtime
 
-async function forwardToOrchestrator(message: any) {
+async function forwardToOrchestrator(message: string) {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_URL || "http://localhost:3000"}/api/agent/run`,
-      {
+    const res = await fetch(`${getSiteUrl()}/api/agent/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -35,7 +34,9 @@ export async function GET(req: Request) {
     ) {
       return new Response(challenge || "", { status: 200 });
     }
-  } catch (e) {}
+  } catch {
+    // verification failure — fall through to 400
+  }
   return new Response("", { status: 400 });
 }
 

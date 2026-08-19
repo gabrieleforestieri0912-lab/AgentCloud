@@ -12,6 +12,8 @@ import {
   FileText,
 } from "lucide-react";
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
+import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 
 type StreamEvent =
   | { type: "text"; content: string }
@@ -34,6 +36,7 @@ function formatTime(d: Date) {
 
 export default function AgentChatPage() {
   const params = useParams<{ id: string }>();
+  const { dict } = useLanguage();
   const agent = getAgentRuntimeConfig(params.id);
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -162,7 +165,7 @@ export default function AgentChatPage() {
               const updated = [...prev];
               const last = updated[updated.length - 1];
               if (last.role === "assistant") {
-                last.content += `\n\n⚠️ Error: ${data.message}`;
+                last.content += `\n\n⚠️ ${data.message}`;
               }
               return updated;
             });
@@ -175,7 +178,7 @@ export default function AgentChatPage() {
         const updated = [...prev];
         const last = updated[updated.length - 1];
         if (last.role === "assistant") {
-          last.content += "\n\n⚠️ Connection error. Please try again.";
+          last.content += `\n\n⚠️ ${dict.agentChat.connectionError}`;
         }
         return updated;
       });
@@ -200,10 +203,10 @@ export default function AgentChatPage() {
         <div className="text-center">
           <Bot size={48} className="mx-auto text-neutral-600 mb-4" />
           <h1 className="text-2xl font-bold text-white mb-2">
-            Agent not found
+            {dict.agentChat.notFoundTitle}
           </h1>
           <p className="text-neutral-400">
-            This agent does not exist or has been removed.
+            {dict.agentChat.notFoundSubtitle}
           </p>
         </div>
       </div>
@@ -237,7 +240,7 @@ export default function AgentChatPage() {
             <div className="mt-6 flex items-center gap-2 px-4 py-2 bg-neutral-900 rounded-full border border-white/5">
               <Sparkles size={14} className="text-brand-400" />
               <span className="text-xs text-neutral-500">
-                Start typing to interact with this agent
+                {dict.agentChat.startTyping}
               </span>
             </div>
           </div>
@@ -284,7 +287,7 @@ export default function AgentChatPage() {
                           ) : (
                             <span className="text-green-400">✓</span>
                           )}
-                          <span>Using {tool.name}</span>
+                          <span>{dict.agentChat.using} {tool.name}</span>
                         </div>
                       ))}
                     </div>
@@ -346,7 +349,7 @@ export default function AgentChatPage() {
                   sendMessage();
                 }
               }}
-              placeholder={`Message ${agent.name}...`}
+              placeholder={t(dict.agentChat.messagePlaceholder, { name: agent.name })}
               rows={1}
               className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
               style={{ fieldSizing: "content" } as React.CSSProperties}
@@ -372,10 +375,10 @@ export default function AgentChatPage() {
                 className="hidden"
                 accept=".txt,.csv,.md,.json,.html"
               />
-              Attach file
+              {dict.agentChat.attachFile}
             </label>
             <p className="text-[10px] text-neutral-600">
-              AgentCloud AI may produce inaccurate information
+              {dict.agentChat.disclaimer}
             </p>
           </div>
           {Object.keys(files).length > 0 && (

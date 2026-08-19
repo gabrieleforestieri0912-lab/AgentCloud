@@ -50,7 +50,7 @@ Implemented Stripe Payment Links system for AgentCloud billing as requested. Thi
 **Parameters:**
 
 - `agentId` (required): Agent slug (e.g., `executive-assistant`)
-- `userId` (optional): Clerk user ID for logged-in users
+- `userId` (optional): Supabase user ID (`auth.users` UUID) for logged-in users
 - `email` (optional): Customer email for guest checkout
 
 **Response:** Redirects to Stripe payment page with metadata
@@ -150,7 +150,7 @@ The webhook updates these Supabase tables:
 
 ### subscriptions
 
-- `user_id`: Customer identifier (Clerk ID or email)
+- `user_id`: Customer identifier (Supabase user ID or email)
 - `agent_id`: Agent slug
 - `stripe_subscription_id`: Stripe subscription ID
 - `status`: "active", "canceled", "past_due", etc.

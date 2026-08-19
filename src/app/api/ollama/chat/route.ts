@@ -1,4 +1,5 @@
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
+import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
 export const runtime = "edge";
 
@@ -30,6 +31,10 @@ export async function POST(req: Request) {
     if (!response.ok) {
       throw new Error(`Ollama API error: ${response.statusText}`);
     }
+
+    // Precompute the localized stream error message (locale read happens once,
+    // before the stream — avoids a cookie read at the worst moment).
+    const streamErrorMessage = await apiErrorMessage("ollamaStreamError");
 
     // Create a readable stream for SSE
     const encoder = new TextEncoder();
@@ -71,10 +76,13 @@ export async function POST(req: Request) {
               }
             }
           }
-        } catch (error) {
+        } catch {
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: "error", message: "Stream error" })}\n\n`,
+              `data: ${JSON.stringify({
+                type: "error",
+                message: streamErrorMessage,
+              })}\n\n`,
             ),
           );
         } finally {
@@ -93,10 +101,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Ollama chat error:", error);
     return Response.json(
-      {
-        error:
-          "Failed to connect to Ollama. Make sure it's running on localhost:11434",
-      },
+      { error: await apiErrorMessage("ollamaConnectionFailed") },
       { status: 500 },
     );
   }

@@ -6,12 +6,19 @@
  * Web Search is an add-on only
  */
 
+/**
+ * Default monthly token allowance used when no plan is configured
+ * (e.g. legacy agent-based purchases or development environments).
+ * Tokens are counted as input + output across all agent runs in the month.
+ */
+export const DEFAULT_TOKEN_LIMIT = 300_000;
+
 export type Plan = {
   id: string;
   name: string;
   price: number; // in cents
   priceDisplay: string;
-  conversations: number; // max conversations per month
+  tokens: number; // max tokens per month (input + output)
   features: string[];
   addons?: {
     webSearch?: {
@@ -42,9 +49,9 @@ export const SHOPIFY_PRICING: VerticalPricing = {
       name: "Starter",
       price: 2900, // €29/month
       priceDisplay: "€29/mese",
-      conversations: 300,
+      tokens: 300_000,
       features: [
-        "Fino a 300 conversazioni/mese",
+        "Fino a 300.000 token/mese",
         "Ricerca prodotti Shopify",
         "Link carrello diretti",
         "Stato ordini",
@@ -62,11 +69,11 @@ export const SHOPIFY_PRICING: VerticalPricing = {
     growth: {
       id: "shopify-growth",
       name: "Growth",
-      price: 6900, // €69/month
-      priceDisplay: "€69/mese",
-      conversations: 1000,
+      price: 3900, // €39/month
+      priceDisplay: "€39/mese",
+      tokens: 1_000_000,
       features: [
-        "Fino a 1.000 conversazioni/mese",
+        "Fino a 1.000.000 token/mese",
         "Tutto del piano Starter",
         "Stato ordini avanzato",
         "Priorità supporto",
@@ -95,9 +102,9 @@ export const SERVICES_PRICING: VerticalPricing = {
       name: "Starter",
       price: 2900, // €29/month
       priceDisplay: "€29/mese",
-      conversations: 300,
+      tokens: 300_000,
       features: [
-        "Fino a 300 conversazioni/mese",
+        "Fino a 300.000 token/mese",
         "Prenotazione appuntamenti",
         "Controllo disponibilità",
         "Lead capture",
@@ -114,11 +121,11 @@ export const SERVICES_PRICING: VerticalPricing = {
     growth: {
       id: "services-growth",
       name: "Growth",
-      price: 6900, // €69/month
-      priceDisplay: "€69/mese",
-      conversations: 1000,
+      price: 3900, // €39/month
+      priceDisplay: "€39/mese",
+      tokens: 1_000_000,
       features: [
-        "Fino a 1.000 conversazioni/mese",
+        "Fino a 1.000.000 token/mese",
         "Tutto del piano Starter",
         "Reminder automatici",
         "Priorità supporto",
@@ -160,15 +167,15 @@ export function getPlan(
 }
 
 /**
- * Calculate cost per conversation
- * Used for monitoring profitability
+ * Calculate cost per 1000 tokens (cents)
+ * Used for monitoring profitability against plan allowances.
  */
-export function calculateCostPerConversation(
+export function calculateCostPerToken(
   planPrice: number, // in cents
-  conversations: number,
+  tokens: number, // monthly token allowance
 ): number {
-  if (conversations === 0) return 0;
-  return planPrice / conversations;
+  if (tokens === 0) return 0;
+  return (planPrice / tokens) * 1000;
 }
 
 /**
@@ -182,10 +189,20 @@ export function isWithinLimit(
 }
 
 /**
- * Get overage rate (cost per additional conversation)
- * Used for billing overages
+ * Overage billing.
+ *
+ * Usage beyond the monthly token allowance is no longer blocked with 429:
+ * it is billed automatically through a metered Price attached to the
+ * customer's Stripe subscription (Stripe invoices it at the end of the
+ * billing period, together with the renewal).
+ *
+ * - `OVERAGE_RATE_PER_1000_TOKENS`: amount charged per 1.000 extra tokens
+ *   (cents). The actual price that gets billed lives in Stripe as a metered
+ *   Price (`STRIPE_OVERAGE_PRICE_ID`); this constant mirrors it for UI copy
+ *   and invoice fallbacks.
+ * - `OVERAGE_HARD_CAP_MULTIPLIER`: even with overage billing, runs are blocked
+ *   again (429) once usage reaches this multiple of the allowance, as a
+ *   safety net against runaway agent loops.
  */
-export function getOverageRate(plan: Plan): number {
-  // Overage rate: 10% of plan price per 100 conversations
-  return Math.round(plan.price * 0.1);
-}
+export const OVERAGE_RATE_PER_1000_TOKENS = 30; // €0,30 per 1.000 token (cents)
+export const OVERAGE_HARD_CAP_MULTIPLIER = 2;

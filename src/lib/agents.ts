@@ -1,3 +1,9 @@
+import { getFeatureFlags } from "./agents/feature-flags";
+import {
+  getAgentLocalization,
+  localizeSetupTime,
+} from "./i18n/agentCatalog";
+
 export type AgentCategory =
   | "Business & Operations"
   | "Marketing & Sales"
@@ -33,6 +39,9 @@ export type AgentIconKey =
   | "file-text-dollar"
   | "bot";
 
+/** Brand whose official logo is rendered instead of the generic Lucide icon. */
+export type AgentBrand = "shopify";
+
 export type Agent = {
   slug: string;
   name: string;
@@ -40,6 +49,7 @@ export type Agent = {
   category: AgentCategory;
   industry: string;
   icon: AgentIconKey;
+  brand?: AgentBrand;
   price: string;
   priceCents: number;
   stripePriceId: string;
@@ -981,6 +991,7 @@ const SEEDS: AgentSeed[] = [
     category: "E-commerce & Finance",
     industry: "Shopify stores",
     icon: "shopping-cart",
+    brand: "shopify",
     price: "€119/mo",
     priceCents: 11900,
     stripePriceId: "price_shopify_agent",
@@ -1051,19 +1062,59 @@ export function getAgentBySlug(slug: string) {
   return AGENTS.find((agent) => agent.slug === slug);
 }
 
+/**
+ * Returns a copy of the agent with the user-facing fields overlaid in the
+ * given locale. English (the canonical catalog) is returned unchanged;
+ * Italian overlays come from `./i18n/agentCatalog`.
+ */
+export function localizeAgent(agent: Agent, locale: "it" | "en"): Agent {
+  const localized = getAgentLocalization(agent.slug, locale);
+  if (!localized) return agent;
+  return {
+    ...agent,
+    name: localized.name,
+    shortName: localized.shortName,
+    category: localized.category as AgentCategory,
+    industry: localized.industry,
+    setupTime: localizeSetupTime(agent.setupTime, locale),
+    // The badge overlay carries localized display text ("Popolare", "Novità",
+    // "Consigliato") that doesn't fit the English union type — safe because
+    // badge is rendered as display-only text everywhere in the UI.
+    badge: localized.badge as Agent["badge"],
+    description: localized.description,
+    longDescription: localized.longDescription,
+    tasks: localized.tasks,
+    workflow: localized.workflow,
+    previewPrompt: localized.previewPrompt,
+    previewResult: localized.previewResult,
+  };
+}
+
 export const SELLABLE_AGENTS: string[] = AGENTS.map((agent) => agent.slug);
 
-const AVAILABLE_SLUGS = ["shopify-agent", "calendar-booking"];
-const COMING_SOON_SLUGS = ["support-agent", "lead-capture"];
+// ─── Flag-driven marketplace ──────────────────────────────────────────────
+// Which agents the marketplace offers is controlled by the runtime feature
+// flags (see ./agents/feature-flags). Agents enabled by the flags are
+// "available"; the rest of the catalog is shown as "coming soon".
+//
+// NOTE: `AGENTCLOUD_VERTICAL` / `AGENTCLOUD_FEATURE_FLAGS` are server-only env
+// vars, so client bundles evaluate these with the default (shopify) config.
+// Server components (e.g. /agents) see the real flags; pass the result down
+// to client components via props when the value must be authoritative.
+
+/** Slugs enabled by the active feature flags. */
+export function getEnabledAgentSlugs(): string[] {
+  return getFeatureFlags().enabledAgents;
+}
 
 export function isAvailable(slug: string): boolean {
-  return AVAILABLE_SLUGS.includes(slug);
+  return getEnabledAgentSlugs().includes(slug);
 }
 
 export const AVAILABLE_AGENTS: Agent[] = AGENTS.filter((a) =>
-  AVAILABLE_SLUGS.includes(a.slug),
+  isAvailable(a.slug),
 );
 
 export const COMING_SOON_AGENTS: Agent[] = AGENTS.filter((a) =>
-  COMING_SOON_SLUGS.includes(a.slug),
+  !isAvailable(a.slug),
 );

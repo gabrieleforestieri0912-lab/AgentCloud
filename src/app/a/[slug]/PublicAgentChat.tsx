@@ -10,6 +10,8 @@ import {
   MessageSquare,
   Sparkles,
 } from "lucide-react";
+import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 
 type Message = {
   role: "user" | "assistant";
@@ -28,6 +30,7 @@ function formatTime(d: Date) {
 }
 
 export default function PublicAgentChat({ slug, name, description }: Props) {
+  const { dict } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
@@ -72,11 +75,36 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
           agentId: slug,
           messages: apiMessages,
           files: Object.keys(files).length > 0 ? files : undefined,
-          userId: "anonymous",
         }),
       });
 
-      if (!res.body) return;
+      // The endpoint returns JSON for errors (agent not found, subscription
+      // required, monthly limit reached, rate limited). Surface those instead
+      // of hanging on an empty stream.
+      if (!res.ok) {
+        let message = dict.publicChat.somethingWentWrong;
+        try {
+          const data = await res.json();
+          if (data && typeof data.error === "string") message = data.error;
+        } catch {
+          // ignore malformed error bodies
+        }
+        setMessages((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (last.role === "assistant") {
+            last.content = `\n\n⚠️ ${message}`;
+          }
+          return updated;
+        });
+        setIsRunning(false);
+        return;
+      }
+
+      if (!res.body) {
+        setIsRunning(false);
+        return;
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -141,7 +169,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
         const updated = [...prev];
         const last = updated[updated.length - 1];
         if (last.role === "assistant") {
-          last.content += "\n\n⚠️ Connection error. Please try again.";
+          last.content += `\n\n⚠️ ${dict.publicChat.connectionError}`;
         }
         return updated;
       });
@@ -177,7 +205,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
           <div>
             <h1 className="text-sm font-bold text-white">{name}</h1>
             <p className="text-xs text-neutral-500">
-              Powered by <span className="text-brand-400">AgentCloud</span>
+              {dict.publicChat.poweredBy}{" "}<span className="text-brand-400">AgentCloud</span>
             </p>
           </div>
         </div>
@@ -201,7 +229,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
             <div className="mt-6 flex items-center gap-2 px-4 py-2 bg-neutral-900 rounded-full border border-white/5">
               <Sparkles size={14} className="text-brand-400" />
               <span className="text-xs text-neutral-500">
-                Ask me anything — I&apos;m here to help
+                {dict.publicChat.askMe}
               </span>
             </div>
           </div>
@@ -273,7 +301,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={`Ask ${name}...`}
+              placeholder={t(dict.publicChat.messagePlaceholder, { name })}
               rows={1}
               className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
               style={{ fieldSizing: "content" } as React.CSSProperties}
@@ -299,10 +327,10 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
                 className="hidden"
                 accept=".txt,.csv,.md,.json,.html"
               />
-              Attach file
+              {dict.publicChat.attachFile}
             </label>
             <p className="text-[10px] text-neutral-600">
-              Powered by AgentCloud
+              {dict.publicChat.poweredBy} AgentCloud
             </p>
           </div>
           {Object.keys(files).length > 0 && (
