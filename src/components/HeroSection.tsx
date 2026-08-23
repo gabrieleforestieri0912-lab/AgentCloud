@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import BrandIcon from "./BrandIcon";
+import BrandLogo from "./BrandLogo";
 import { BRANDS } from "@/lib/brands";
 import { getLocalChatResponse } from "@/lib/chat-responses";
 import { useLanguage } from "./LanguageProvider";
@@ -268,8 +268,7 @@ export default function HeroSection() {
         aria-hidden="true"
       >
         {LEFT_BUBBLES.map((b, idx) => {
-          const brand = BRANDS[b.brand];
-          if (!brand) return null;
+          if (!BRANDS[b.brand]) return null;
           // Icon scaled to the bubble size (e.g. w-12 = 48px → 20px mark).
           // The digit in `w-12` is a Tailwind spacing index: px = index × 4.
           const bubblePx = Number(b.size.match(/\d+/)?.[0] ?? 12) * 4;
@@ -292,7 +291,7 @@ export default function HeroSection() {
                 },
               }}
             >
-              <BrandIcon brand={brand} size={iconSize} />
+              <BrandLogo slug={b.brand} size={iconSize} />
             </motion.div>
           );
         })}
