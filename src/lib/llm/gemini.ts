@@ -15,56 +15,111 @@ import type {
  * `gemini-3.6-flash` (override with `AGENT_LLM_MODEL`).
  *
  * This module is server-only. Never import it from client components.
+ *
+ * ## Thought signatures
+ *
+ * Gemini 3.x models return encrypted `thought_signature` fields inside
+ * `functionCall` parts. These MUST be preserved and echoed back exactly as-is
+ * in subsequent requests, or the API returns 400 errors. To support this, the
+ * provider stores raw Gemini `Content` objects from each response (keyed by the
+ * tool-uses array reference, which the agent runtime preserves across turns) and
+ * replays them verbatim when building the next request's `contents`.
  */
 
 const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
 
 // ---------------------------------------------------------------------------
-// Message normalization: LLMMessage → Gemini Content
+// Raw-response cache (thought-signature preservation)
 // ---------------------------------------------------------------------------
 
-/** Convert a shared message into Gemini's { role, parts } content format. */
-function normalizeMessage(message: LLMMessage): Content {
-  const role = message.role === "assistant" ? "model" : "user";
+/**
+ * Map from the `toolUses` array reference (from the LLMResponse returned to
+ * the agent runtime) to the raw Gemini `Content` that was in the model's
+ * response. Because the agent route does `{ role: "assistant", content: response.toolUses }`,
+ * the same array reference flows back on the next turn.
+ */
+const rawResponseByToolUses = new WeakMap<object, Content>();
 
-  if (typeof message.content === "string") {
-    return { role, parts: [{ text: message.content } as Part] };
-  }
+// ---------------------------------------------------------------------------
+// Message normalization: LLMMessage[] → Gemini Content[]
+// ---------------------------------------------------------------------------
 
-  if (message.role === "assistant" && Array.isArray(message.content)) {
-    // Assistant tool calls → Gemini functionCall parts
-    const toolUses = message.content as {
-      id: string;
-      name: string;
-      input: Record<string, unknown>;
-    }[];
-    const parts: Part[] = toolUses.map((use) => ({
-      functionCall: {
-        name: use.name,
-        args: use.input,
-      },
-    }));
-    return { role: "model", parts };
-  }
-
-  // User tool results → Gemini functionResponse parts
-  const results = message.content as { id: string; content: string }[];
-  const parts: Part[] = results.map((r) => {
-    let responsePayload: Record<string, unknown>;
-    try {
-      responsePayload = JSON.parse(r.content);
-    } catch {
-      // If the result is plain text, wrap it so Gemini accepts it.
-      responsePayload = { output: r.content };
+/**
+ * Convert the full conversation into Gemini's `Content[]` format.
+ *
+ * For assistant messages containing tool uses, the cached raw `Content` (with
+ * thought_signatures) is used instead of a synthetic reconstruction. This is
+ * critical for Gemini 3.x models which reject function calls without valid
+ * thought signatures.
+ *
+ * For user messages containing tool results, the function name is resolved
+ * from the preceding assistant message (Gemini requires the actual function
+ * name, not our synthetic tool-use id).
+ */
+function normalizeMessages(messages: LLMMessage[]): Content[] {
+  // Build a map: tool_use_id → function_name, extracted from assistant tool calls.
+  const toolNameById = new Map<string, string>();
+  for (const msg of messages) {
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      const toolUses = msg.content as unknown as {
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }[];
+      for (const use of toolUses) {
+        toolNameById.set(use.id, use.name);
+      }
     }
-    return {
-      functionResponse: {
-        name: r.id, // Gemini expects the function name; we use the tool id
-        response: responsePayload,
-      },
-    };
+  }
+
+  return messages.map((message) => {
+    const role = message.role === "assistant" ? "model" : "user";
+
+    if (typeof message.content === "string") {
+      return { role, parts: [{ text: message.content } as Part] };
+    }
+
+    if (message.role === "assistant" && Array.isArray(message.content)) {
+      const toolUses = message.content as unknown as {
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }[];
+
+      // If we have a cached raw Content for this tool-uses array (same
+      // reference from the previous LLMResponse), replay it verbatim —
+      // this preserves thought_signatures.
+      const raw = rawResponseByToolUses.get(toolUses);
+      if (raw) return raw;
+
+      // Fallback: construct synthetic functionCall parts (no signatures).
+      const parts: Part[] = toolUses.map((use) => ({
+        functionCall: {
+          name: use.name,
+          args: use.input,
+        },
+      }));
+      return { role: "model", parts };
+    }
+
+    // User tool results → Gemini functionResponse parts
+    const results = message.content as { id: string; content: string }[];
+    const parts: Part[] = results.map((r) => {
+      let responsePayload: Record<string, unknown>;
+      try {
+        responsePayload = JSON.parse(r.content);
+      } catch {
+        responsePayload = { output: r.content };
+      }
+      return {
+        functionResponse: {
+          name: toolNameById.get(r.id) ?? r.id,
+          response: responsePayload,
+        },
+      };
+    });
+    return { role: "user", parts };
   });
-  return { role: "user", parts };
 }
 
 // ---------------------------------------------------------------------------
@@ -114,10 +169,7 @@ export function createGeminiProvider(options?: {
 
   /** Map non-Gemini model names to the configured Gemini default. */
   function resolveModel(requestedModel: string): string {
-    // If the caller passed a Gemini-compatible model, use it as-is.
     if (requestedModel.startsWith("gemini")) return requestedModel;
-    // Otherwise the model is from another provider (e.g. claude-sonnet-5 from
-    // the agent registry) — fall back to the Gemini default.
     return model;
   }
 
@@ -129,7 +181,7 @@ export function createGeminiProvider(options?: {
 
       const response = await getClient().models.generateContent({
         model: resolvedModel,
-        contents: params.messages.map(normalizeMessage),
+        contents: normalizeMessages(params.messages),
         config: {
           systemInstruction: params.system,
           maxOutputTokens: params.maxTokens,
@@ -137,7 +189,7 @@ export function createGeminiProvider(options?: {
         },
       });
 
-      // Extract text from response candidates
+      // Extract text and tool uses from the response
       const textParts: string[] = [];
       const toolUses: LLMResponse["toolUses"] = [];
       let stopReason: LLMResponse["stopReason"] = "end_turn";
@@ -150,8 +202,6 @@ export function createGeminiProvider(options?: {
           }
           if (part.functionCall) {
             toolUses.push({
-              // Gemini doesn't provide a call id; generate one for the
-              // Anthropic-compatible tool loop in the agent runtime.
               id: `toolu_gemini_${toolUses.length}`,
               name: part.functionCall.name ?? "unknown",
               input: (part.functionCall.args ?? {}) as Record<string, unknown>,
@@ -170,6 +220,14 @@ export function createGeminiProvider(options?: {
         stopReason = "stop";
       } else if (toolUses.length > 0) {
         stopReason = "tool_use";
+      }
+
+      // Cache the raw response Content keyed by the toolUses array reference.
+      // The agent runtime passes this same array back as the assistant message
+      // content, so we can look it up on the next turn to replay the raw
+      // Content (with thought_signatures) verbatim.
+      if (candidate?.content && toolUses.length > 0) {
+        rawResponseByToolUses.set(toolUses, candidate.content);
       }
 
       return {
