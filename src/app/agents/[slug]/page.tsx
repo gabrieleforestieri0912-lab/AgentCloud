@@ -28,6 +28,7 @@ import {
 } from "@/lib/agents";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
+import { pageSeo } from "@/lib/seo";
 
 type AgentDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -46,10 +47,12 @@ export async function generateMetadata({ params }: AgentDetailPageProps) {
   const locale = await getLocale();
   const localized = localizeAgent(agent, locale);
 
-  return {
-    title: `${localized.name} | AgentCloud`,
+  return pageSeo({
+    title: localized.name,
     description: localized.description,
-  };
+    path: `/agents/${slug}`,
+    locale,
+  });
 }
 
 const USE_CASE_EXAMPLES: Record<string, string[]> = {

@@ -77,18 +77,45 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "Organization",
+      "@id": `${BASE_URL}/#organization`,
       name: "AgentCloud",
       url: BASE_URL,
       logo: `${BASE_URL}/agentcloud.png`,
+      image: `${BASE_URL}/opengraph-image`,
+      slogan: "Agenti AI che automatizzano la tua azienda",
       description:
-        "Deploy AI agents to automate your workflows, manage communications, and scale your operations — no code required.",
+        "AgentCloud è la piattaforma che distribuisce agenti AI per automatizzare i tuoi workflow, gestire le comunicazioni e far crescere le operazioni — senza codice.",
+      email: "info@agentcloud.io",
+      areaServed: [
+        { "@type": "Country", name: "Italy" },
+        "Worldwide",
+      ],
+      address: {
+        "@type": "PostalAddress",
+        addressCountry: "IT",
+      },
+      availableLanguage: ["it", "en"],
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "sales",
+        email: "info@agentcloud.io",
+        areaServed: "Worldwide",
+        availableLanguage: ["it", "en"],
+      },
+      // SameAs anchors the entity for generative engines (ChatGPT, Perplexity,
+      // Gemini) and traditional knowledge graphs. Only real, verifiable
+      // profiles are listed.
+      sameAs: ["https://github.com/gabrieleforestieri0912-lab/AgentCloud"],
     },
     {
       "@type": "WebSite",
+      "@id": `${BASE_URL}/#website`,
       url: BASE_URL,
       name: "AgentCloud",
       description:
-        "AI agent platform that automates business workflows, support, sales, and operations.",
+        "Piattaforma di agenti AI che automatizza workflow aziendali, supporto, vendite e operazioni.",
+      inLanguage: ["it", "en"],
+      publisher: { "@id": `${BASE_URL}/#organization` },
       potentialAction: {
         "@type": "SearchAction",
         target: {
@@ -96,6 +123,47 @@ const jsonLd = {
           urlTemplate: `${BASE_URL}/agents?q={search_term_string}`,
         },
         "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: "AgentCloud",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: BASE_URL,
+      description:
+        "Piattaforma no-code di agenti AI per automatizzare workflow, supporto clienti, vendite e operazioni aziendali.",
+      availableLanguage: ["it", "en"],
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "EUR",
+        url: `${BASE_URL}/agents`,
+        availability: "https://schema.org/InStock",
+      },
+      provider: { "@id": `${BASE_URL}/#organization` },
+    },
+    {
+      "@type": "Service",
+      name: "Agenti AI per le aziende",
+      serviceType: "AI agent automation",
+      areaServed: [
+        { "@type": "Country", name: "Italy" },
+        "Worldwide",
+      ],
+      availableLanguage: ["it", "en"],
+      provider: { "@id": `${BASE_URL}/#organization` },
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: "Agenti AI AgentCloud",
+        itemListElement: {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "SoftwareApplication",
+            name: "AgentCloud",
+            applicationCategory: "BusinessApplication",
+          },
+          url: `${BASE_URL}/agents`,
+        },
       },
     },
   ],

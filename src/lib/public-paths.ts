@@ -34,7 +34,7 @@ export const PUBLIC_PATHS = [
   // Public API endpoints
   "/api/billing/payment-link",
   "/api/embed",
-  "/api/ollama/chat",
+  "/api/chat",
   "/api/agent/run",
   "/api/demo/request",
   "/api/waitlist",

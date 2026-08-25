@@ -28,7 +28,7 @@ export const AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
       "Write SEO-optimized content with keyword research and competitor analysis",
     price: 2900,
     stripePriceId: "price_seo_agent",
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-5",
     tools: ["web_search", "scrape_page", "read_file", "write_file"],
     defaultTools: ["read_file", "write_file"],
     optionalTools: ["web_search", "scrape_page"],
@@ -54,7 +54,7 @@ Guidelines:
       "Executive assistant for reporting, scheduling, and strategic analysis",
     price: 2900,
     stripePriceId: "price_business_manager",
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-5",
     tools: [
       "web_search",
       "read_file",
@@ -93,7 +93,7 @@ Guidelines:
       "Personal assistant for daily tasks, research, and organization",
     price: 2900,
     stripePriceId: "price_personal_assistant",
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-5",
     tools: ["web_search", "scrape_page", "read_file", "write_file"],
     defaultTools: ["read_file", "write_file"],
     optionalTools: ["web_search", "scrape_page"],
@@ -124,7 +124,7 @@ Guidelines:
     description: "Search products and check order status via Shopify Admin API",
     price: 2900,
     stripePriceId: "price_shopify_agent",
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-5",
     tools: [
       "shopify_search_products",
       "shopify_get_order_status",
@@ -142,10 +142,11 @@ Guidelines:
     systemPrompt: `You are a Shopify commerce operations specialist.
 
 For every request:
-1. DETERMINE INTENT: Decide whether the user wants to search products, check an order, or build a cart link.
+1. DETERMINE INTENT: Decide whether the user wants to search products, check an order, or act on their store.
 2. USE TOOLS: Prefer the Shopify tools for product search and order status. Always require both order number and email for order lookup.
-3. RESPOND CLEARLY: Provide product details, availability, pricing, and cart links when possible. For order status, include payment, fulfillment, tracking, and status page information.
-4. SECURITY: Never expose or infer private data. If order information is missing email or order number, ask the user to provide both.
+3. ACT DIRECTLY ON THE USER'S STORE: When the user wants to buy or add something to the cart, use shopify_build_cart_url to generate a direct cart link for THEIR connected Shopify storefront (the link adds the variant to the cart server-side, so it is a real action on the user's application, not just a suggestion). Present that link as the primary call to action.
+4. RESPOND CLEARLY: Provide product details, availability, pricing, and cart links when possible. For order status, include payment, fulfillment, tracking, and status page information.
+5. SECURITY: Never expose or infer private data. If order information is missing email or order number, ask the user to provide both.
 
 Guidelines:
 - Write in Italian unless the user asks otherwise
@@ -160,7 +161,7 @@ Guidelines:
     description: "Find availability and book meetings on your calendar.",
     price: 2900,
     stripePriceId: "price_calendar_booking",
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-5",
     tools: [
       "calendar_search_availability",
       "calendar_book_event",
@@ -193,7 +194,7 @@ Guidelines:
     description: "Capture, enrich, and notify sales about new leads.",
     price: 2900,
     stripePriceId: "price_lead_capture",
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-5",
     tools: [
       "lead_capture_submit",
       "lead_capture_enrich",

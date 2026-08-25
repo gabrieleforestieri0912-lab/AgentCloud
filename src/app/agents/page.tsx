@@ -11,24 +11,16 @@ import {
 } from "@/lib/agents";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
+import { pageSeo } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const isIt = locale === "it";
-  const title = isIt
-    ? "Marketplace Agenti AI"
-    : "AI Agent Marketplace";
+  const title = isIt ? "Marketplace Agenti AI" : "AI Agent Marketplace";
   const description = isIt
     ? "Sfoglia agenti AI preconfigurati per marketing, operations, supporto, finanza e altro. Attiva agenti pronti all'uso che automatizzano i workflow aziendali."
     : "Browse pre-built AI agents for marketing, operations, support, finance and more. Deploy ready-to-use agents that automate your business workflows.";
-  return {
-    title,
-    description,
-    openGraph: {
-      title: `${title} | AgentCloud`,
-      description,
-    },
-  };
+  return pageSeo({ title, description, path: "/agents", locale });
 }
 
 // The listing is gated by the runtime feature flags (server-only env vars),

@@ -4,20 +4,16 @@ import Navbar from "@/components/Navbar";
 import ChatInterface from "@/components/ChatInterface";
 import { getLocale } from "@/lib/i18n/locale";
 import { getSessionUser } from "@/lib/supabase/server";
+import { pageSeo } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  return locale === "it"
-    ? {
-        title: "Chatta con l'AI",
-        description:
-          "Chiedi alla nostra AI di automatizzare email, ticket di supporto, generazione lead, social media e altro. Descrivi cosa ti serve e lo costruiremo.",
-      }
-    : {
-        title: "Chat with AI",
-        description:
-          "Ask our AI to automate emails, support tickets, lead generation, social media, and more. Describe what you need and we'll build it.",
-      };
+  const isIt = locale === "it";
+  const title = isIt ? "Chatta con l'AI" : "Chat with AI";
+  const description = isIt
+    ? "Chiedi alla nostra AI di automatizzare email, ticket di supporto, generazione lead, social media e altro. Descrivi cosa ti serve e lo costruiremo."
+    : "Ask our AI to automate emails, support tickets, lead generation, social media, and more. Describe what you need and we'll build it.";
+  return pageSeo({ title, description, path: "/chat", locale });
 }
 
 export default async function ChatPage(props: { searchParams?: Promise<{ q?: string }> }) {

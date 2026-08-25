@@ -10,7 +10,7 @@ afterEach(() => {
 
 function baseParams(overrides?: Partial<LLMChatParams>): LLMChatParams {
   return {
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-5",
     system: "You are an assistant.",
     messages: [{ role: "user", content: "Ciao" }],
     tools: [],
@@ -79,7 +79,7 @@ describe("anthropic provider", () => {
 
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
         max_tokens: 4096,
         system: "You are an assistant.",
       }),

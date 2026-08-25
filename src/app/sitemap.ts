@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
 import { getSiteUrl } from "@/lib/site-url";
+import { AGENTS } from "@/lib/agents";
 
 const BASE_URL = getSiteUrl();
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
+  const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: BASE_URL,
       lastModified: new Date(),
@@ -24,16 +25,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
-      url: `${BASE_URL}/dashboard`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
-    {
       url: `${BASE_URL}/demo`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/waitlist`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
     {
       url: `${BASE_URL}/login`,
@@ -60,4 +61,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.1,
     },
   ];
+
+  // Every published agent gets its own indexable, canonical URL.
+  const agentRoutes: MetadataRoute.Sitemap = AGENTS.map((agent) => ({
+    url: `${BASE_URL}/agents/${agent.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly",
+    priority: 0.8,
+  }));
+
+  return [...staticRoutes, ...agentRoutes];
 }

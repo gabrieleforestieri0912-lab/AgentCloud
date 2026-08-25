@@ -195,7 +195,14 @@ export async function POST(req: Request) {
               const result = await executeTool(
                 use.name,
                 use.input as Record<string, string>,
-                { userId, files: files as Record<string, string> | undefined },
+                {
+                  userId,
+                  // Tenant id === authenticated user id: this is what lets the
+                  // Shopify (and other) tools read the user's own connected
+                  // store credentials instead of falling back to env vars.
+                  tenantId: userId,
+                  files: files as Record<string, string> | undefined,
+                },
               );
 
               send({ type: "tool_done", toolName: use.name });

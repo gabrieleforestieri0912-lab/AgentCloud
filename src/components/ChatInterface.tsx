@@ -151,10 +151,11 @@ export default function ChatInterface({
 
     setIsTyping(true);
 
-    // Try Ollama first, fallback to local responses
+    // Try the provider-based chat (Anthropic/API key or local Ollama),
+    // fallback to local responses on failure.
     let responseText = "";
     try {
-      const ollamaRes = await fetch("/api/ollama/chat", {
+      const ollamaRes = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

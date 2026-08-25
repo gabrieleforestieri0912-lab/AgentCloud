@@ -22,7 +22,7 @@ export async function sendMessage(
   const client = getAnthropicClient();
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-5",
     max_tokens: 4096,
     system: systemPrompt,
     messages,
