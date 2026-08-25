@@ -39,61 +39,29 @@ export default async function AgentsPage() {
 
       <section className="bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-12 grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">
-                {dict.agentsPage.badge}
-              </p>
-              <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-                {dict.agentsPage.title}
-              </h1>
-              <p className="mt-6 text-lg leading-8 text-neutral-400">
-                {dict.agentsPage.subtitle}
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href="/chat"
-                  className="inline-flex items-center justify-center rounded-full bg-brand-500 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
-                >
-                  {dict.agentsPage.startChat}
-                </Link>
-                <Link
-                  href="/demo"
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"
-                >
-                  {dict.agentsPage.requestDemo}
-                </Link>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {available.map((agent) => (
-                <div
-                  key={agent.slug}
-                  className="rounded-3xl border border-white/5 bg-neutral-900 p-6 shadow-sm"
-                >
-                  <div className="mb-4 flex items-center gap-3">
-                    <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-2xl ${agent.accent}`}
-                    >
-                      <span className="text-white text-lg font-bold">
-                        {agent.name.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-base font-bold text-white">
-                        {agent.name}
-                      </p>
-                      <p className="text-sm text-neutral-500">
-                        {agent.category}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-sm leading-6 text-neutral-400">
-                    {agent.description}
-                  </p>
-                </div>
-              ))}
+          <div className="mb-12 max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">
+              {dict.agentsPage.badge}
+            </p>
+            <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+              {dict.agentsPage.title}
+            </h1>
+            <p className="mt-6 text-lg leading-8 text-neutral-400">
+              {dict.agentsPage.subtitle}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/chat"
+                className="inline-flex items-center justify-center rounded-full bg-brand-500 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
+              >
+                {dict.agentsPage.startChat}
+              </Link>
+              <Link
+                href="/demo"
+                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"
+              >
+                {dict.agentsPage.requestDemo}
+              </Link>
             </div>
           </div>
 

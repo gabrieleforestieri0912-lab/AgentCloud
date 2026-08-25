@@ -2,11 +2,10 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Loader2, Mail } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import BrandIcon from "@/components/BrandIcon";
-import { BRANDS } from "@/lib/brands";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Home, Loader2, Mail } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
+import HeroBubbles from "@/components/HeroBubbles";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createClient } from "@/lib/supabase/client";
 
@@ -15,6 +14,8 @@ import { createClient } from "@/lib/supabase/client";
 // (useSearchParams requires one during static prerender of /login).
 function CallbackErrorNotice() {
   const { dict } = useLanguage();
+  const searchParams = useSearchParams();
+  if (searchParams.get("error") !== "auth_callback") return null;
   return (
     <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
       {dict.auth.errors.authCallbackFailed}
@@ -34,7 +35,6 @@ export default function LoginPage() {
   const [resetting, setResetting] = useState(false);
 
   const a = dict.auth;
-  const google = BRANDS.google;
 
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -111,11 +111,34 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black">
-      <Navbar />
-      <section className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-4 pt-24 pb-16">
+    <main className="relative min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
+      {/* Decorative background — same visual language as the hero */}
+      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
+      <div
+        className="absolute inset-0 opacity-[0.35] pointer-events-none select-none"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 10% 20%, rgba(3,139,254,.15), transparent 30%), radial-gradient(circle at 90% 16%, rgba(234,67,53,.15), transparent 26%)",
+        }}
+      />
+
+      {/* Floating app + agent constellations, flanking the form */}
+      <HeroBubbles />
+
+      <section className="relative z-10 flex min-h-dvh items-center justify-center px-4">
         <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
+          {/* Back to home — the navbar is not rendered on this page */}
+          <div className="mb-6 flex justify-center">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/60 px-4 py-2 text-xs font-bold text-neutral-300 transition-colors hover:border-white/25 hover:text-white"
+            >
+              <Home size={14} className="text-brand-400" />
+              {dict.legal.terms.backHome}
+            </Link>
+          </div>
+
+          <div className="mb-6 text-center">
             <h1 className="text-3xl font-bold tracking-tight text-white">
               {a.login.title}
             </h1>
@@ -211,7 +234,7 @@ export default function LoginPage() {
               {googleLoading ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
-                google && <BrandIcon brand={google} size={17} />
+                <BrandLogo slug="google" size={17} />
               )}
               {a.login.google}
             </button>

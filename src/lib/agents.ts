@@ -114,9 +114,9 @@ const SEEDS: AgentSeed[] = [
     installs: "1.4k",
     badge: "Popular",
     description:
-      "Your AI right hand for calendar, email, meetings, and follow-ups.",
+      "Triage your inbox, schedule across time zones, and never miss a follow-up.",
     longDescription:
-      "An executive assistant agent that triages your inbox, schedules meetings across time zones, drafts replies, prepares daily briefings, and keeps your action items in order.",
+      "The Executive Assistant agent becomes your AI right hand. It prioritizes your inbox so urgent emails never bury what matters, drafts on-brand replies for approval, schedules meetings across time zones, prepares a daily briefing of decisions and action items, and tracks every follow-up until it's done. It connects to Gmail, Google Calendar, Outlook, and Notion so you save 5–10 hours a week on coordination and focus on decisions instead of logistics.",
     tasks: [
       "Inbox triage",
       "Calendar scheduling",
@@ -151,9 +151,9 @@ const SEEDS: AgentSeed[] = [
     installs: "920",
     badge: "Popular",
     description:
-      "Plans, assigns, and follows up on tasks across your team automatically.",
+      "Turn goals into milestones, owners, and blockers — with automatic follow-ups.",
     longDescription:
-      "A project manager agent that turns goals into milestones, assigns owners, tracks blockers, and pings the right people when something is slipping.",
+      "The Project Manager agent turns a high-level goal into a realistic milestone plan: it breaks work into tasks, assigns owners based on workload, sets deadlines, tracks blockers, and pings the right person when something is slipping. It integrates with Notion, Asana, Slack, and Linear to keep your team aligned and your deliveries on time, so every launch ships with clear ownership instead of a scramble at the end.",
     tasks: [
       "Milestone planning",
       "Task assignment",
@@ -187,9 +187,9 @@ const SEEDS: AgentSeed[] = [
     installs: "1.1k",
     badge: "Fast setup",
     description:
-      "Transcribes meetings, extracts action items, and sends follow-ups.",
+      "Join every call, transcribe it, and never miss an action item again.",
     longDescription:
-      "A meeting assistant that joins your calls, transcribes the conversation, extracts decisions and action items, and emails a structured recap to every participant.",
+      "The Meeting Assistant attends your calls so nobody has to take notes. It transcribes the conversation in real time, extracts decisions and ownerships, and emails a structured recap to every participant with action items, owners, and deadlines. Integrated with Google Meet, Zoom, Slack, and HubSpot, it keeps a searchable decision log that makes everyone accountable — no more 'can you send me the notes from that call?'. ",
     tasks: [
       "Live transcription",
       "Action item extraction",
@@ -223,9 +223,9 @@ const SEEDS: AgentSeed[] = [
     installs: "780",
     badge: "New",
     description:
-      "Keeps your CRM clean, updated, and full of next-step reminders.",
+      "Auto-log every call and email, and keep your pipeline moving forward.",
     longDescription:
-      "A CRM assistant that logs calls and emails automatically, enriches contacts, flags stale deals, and tells your reps what to do next to close more revenue.",
+      "The CRM Assistant keeps your CRM clean without any manual entry. It automatically logs calls and emails, enriches contacts with firmographic and intent data, flags stale deals before they die, and tells each rep the exact next step to move a deal forward. Connected to HubSpot, Salesforce, Gmail, and Apollo, it gives your sales team a pipeline they trust — so forecasting is accurate and revenue isn't lost to forgotten follow-ups.",
     tasks: [
       "Auto-logging",
       "Contact enrichment",
@@ -258,9 +258,10 @@ const SEEDS: AgentSeed[] = [
     rating: "4.8",
     installs: "540",
     badge: "New",
-    description: "Onboards new customers, tracks health, and prevents churn.",
+    description:
+      "Track account health and save customers before they churn.",
     longDescription:
-      "A customer success agent that monitors product usage, triggers onboarding sequences, runs NPS check-ins, and alerts your team when an account is at risk of churning.",
+      "The Customer Success Manager agent keeps every account healthy. It monitors product usage in real time, triggers personalized onboarding sequences, runs NPS check-ins, scores account health, and alerts your team the moment an account shows churn risk — with the exact usage pattern and a suggested save play. Connected to Intercom, HubSpot, Stripe, and Mixpanel, it turns reactive firefighting into a predictable retention motion that protects recurring revenue.",
     tasks: [
       "Onboarding flows",
       "Health scoring",
@@ -289,9 +290,9 @@ const SEEDS: AgentSeed[] = [
     installs: "870",
     badge: "Popular",
     description:
-      "Plans campaigns, content calendars, and channel mix end-to-end.",
+      "Turn business goals into a channel plan, calendar, and budget.",
     longDescription:
-      "A marketing strategist agent that turns business goals into channel plans, editorial calendars, budget allocations, and weekly performance reviews.",
+      "The Marketing Strategist agent turns a business goal into an executable marketing plan: it picks the right channels, allocates budget, builds an editorial calendar, and reviews weekly performance against KPIs. Connected to Notion, Google Ads, Meta Ads, and Mailchimp, it gives your team a clear roadmap and a feedback loop — so campaigns launch on time, on budget, and continuously improve instead of guessing from month to month.",
     tasks: [
       "Campaign planning",
       "Editorial calendar",
@@ -325,9 +326,9 @@ const SEEDS: AgentSeed[] = [
     installs: "1.3k",
     badge: "Popular",
     description:
-      "Researches keywords, audits content, and writes SEO-optimized articles.",
+      "Research keywords, audit your content, and climb Google's rankings.",
     longDescription:
-      "An SEO specialist that performs keyword research, audits existing content, analyzes competitors, and produces articles with proper structure, meta data, and internal linking.",
+      "The SEO Specialist agent runs the full on-page SEO motion. It researches ranking opportunities, audits your existing pages, analyzes competitors, and produces fully optimized articles with proper heading structure, meta data, and internal linking. Integrated with WordPress, Webflow, Ahrefs, and Google Search Console, it turns vague 'we need more traffic' into a prioritized list of pages to fix and keywords to target — so organic growth becomes systematic, not sporadic.",
     tasks: [
       "Keyword research",
       "Content audit",
@@ -356,9 +357,9 @@ const SEEDS: AgentSeed[] = [
     installs: "1.2k",
     badge: "Popular",
     description:
-      "Researches topics, plans SEO structure, and writes content optimized for search.",
+      "Write structured, keyword-driven articles that actually rank.",
     longDescription:
-      "An SEO content agent that analyzes keyword opportunity, inspects competitors, drafts structured articles, and adds metadata so your content ranks and converts.",
+      "The SEO Content agent researches topics, inspects what competitors rank for, and produces structured, keyword-optimized articles end-to-end. It plans H1/H2 architecture, includes target keywords naturally, and adds meta descriptions and internal links automatically. Connected to Ahrefs, Google Search Console, WordPress, and Notion, it helps your content team publish more, rank faster, and convert readers — with every piece aimed at a real search intent rather than guesswork.",
     tasks: [
       "Keyword research",
       "Content structure",
@@ -388,9 +389,9 @@ const SEEDS: AgentSeed[] = [
     installs: "2.0k",
     badge: "Fast setup",
     description:
-      "Organizes your day, handles small tasks, and keeps your schedule on track.",
+      "Plan your day, clear your task list, and reclaim hours each week.",
     longDescription:
-      "A personal assistant agent that manages task lists, plans meetings, summarizes notes, and keeps your workday efficient with proactive suggestions.",
+      "The Personal Assistant agent organizes your day the way a great EA would. It plans your schedule, manages task lists, summarizes meeting notes and documents, books time for deep work, and proactively suggests what to tackle next. Connected to Google Calendar, Gmail, Notion, and Slack, it keeps a busy professional or solopreneur on track — helping you reclaim several hours a week by removing the small logistics of the workday.",
     tasks: ["Schedule planning", "Task management", "Research", "Drafting"],
     integrations: ["Google Calendar", "Gmail", "Notion", "Slack"],
     workflow: ["Collect requests", "Plan day", "Draft actions", "Follow up"],
@@ -414,9 +415,10 @@ const SEEDS: AgentSeed[] = [
     rating: "4.8",
     installs: "610",
     badge: "New",
-    description: "Builds, restructures, and optimizes Google Ads campaigns.",
+    description:
+      "Build, restructure, and optimize Google Ads campaigns for profit.",
     longDescription:
-      "A Google Ads expert that designs campaign structure, writes responsive ad copy, picks keywords and negatives, and recommends budget shifts based on performance.",
+      "The Google Ads Expert agent manages your account like a senior PPC specialist. It designs campaign and ad-group structure, writes responsive ad copy, picks target keywords and negatives, monitors quality score, and recommends budget shifts where spend actually converts. Connected to Google Ads, Google Analytics, Looker, and Slack, it cuts wasted spend and improves ROI — turning a messy account into a predictable acquisition channel.",
     tasks: [
       "Campaign structure",
       "Ad copy",
@@ -445,9 +447,9 @@ const SEEDS: AgentSeed[] = [
     installs: "2.1k",
     badge: "Popular",
     description:
-      "Plans, drafts, and schedules posts across Instagram, TikTok, LinkedIn, and X.",
+      "Plan, write, and schedule platform-native content across all your channels.",
     longDescription:
-      "A social media manager that builds a multi-platform content calendar, writes platform-native copy, suggests hashtags, and schedules posts at the best times.",
+      "The Social Media Manager agent runs your content calendar across Instagram, TikTok, LinkedIn, and X. It plans the week, writes copy tailored to each platform's style and audience, researches hashtags, and schedules posts at peak times. Integrated with Buffer and your brand accounts, it turns posting into a consistent, multi-channel system — so your brand shows up regularly without you or your team spending hours each day creating and publishing.",
     tasks: [
       "Content calendar",
       "Platform-native copy",
@@ -475,9 +477,10 @@ const SEEDS: AgentSeed[] = [
     rating: "4.8",
     installs: "1.7k",
     badge: "Fast setup",
-    description: "Writes personalized cold email sequences that get replies.",
+    description:
+      "Write personalized cold sequences that book meetings, not silence.",
     longDescription:
-      "A cold email writer that researches each prospect, personalizes subject lines and openings, builds multi-step follow-up sequences, and adapts tone to your buyer persona.",
+      "The Cold Email Writer agent builds outbound sequences that get replies. It researches each prospect, personalizes subject lines and openings around their actual company and role, structures multi-step follow-ups with the right cadence, and adapts tone to your buyer persona. Connected to Apollo, LinkedIn, HubSpot, and Instantly, it turns a generic blast into a targeted pipeline-builder — giving your sales team a higher reply rate and more qualified meetings.",
     tasks: [
       "Prospect research",
       "Personalization",
@@ -506,9 +509,10 @@ const SEEDS: AgentSeed[] = [
     rating: "4.8",
     installs: "730",
     badge: "Customizable",
-    description: "Scores inbound leads and routes the best ones to your reps.",
+    description:
+      "Score inbound leads on fit and intent, and book meetings for your reps.",
     longDescription:
-      "A lead qualification agent that enriches inbound leads, scores them on fit and intent, asks qualifying questions, and books meetings for your sales team.",
+      "The Lead Qualification agent decides which inbound leads deserve your reps' time. It enriches every lead, scores them on fit and buying intent, asks qualifying questions through chat, and automatically books meetings for the highest-potential ones. Integrated with HubSpot, Salesforce, Calendly, and Slack, it keeps your team from chasing tire-kickers — focusing them on the small set of leads most likely to become customers.",
     tasks: [
       "Lead enrichment",
       "Fit scoring",
@@ -537,9 +541,9 @@ const SEEDS: AgentSeed[] = [
     installs: "820",
     badge: "Fast setup",
     description:
-      "Find availability and book meetings quickly on your calendar.",
+      "Find free time, book meetings, and send invites automatically.",
     longDescription:
-      "A calendar booking agent that searches availability, proposes suitable meeting slots, and schedules events with attendees and video links.",
+      "The Calendar Booking agent handles scheduling end-to-end. It searches availability across attendees' calendars, proposes the best slots, books the meeting, confirms attendees, and attaches a video link. Connected to Google Calendar, Outlook, Zoom, and Slack, it removes the endless 'when works for you?' back-and-forth — a real time-saver for consultative sales, services businesses, and any team that lives on booked calls.",
     tasks: [
       "Find availability",
       "Schedule meetings",
@@ -566,16 +570,17 @@ const SEEDS: AgentSeed[] = [
     category: "Marketing & Sales",
     industry: "Sales and lead generation",
     icon: "mail",
-    price: "€69/mo",
-    priceCents: 6900,
+    price: "€29/mo",
+    priceCents: 2900,
     stripePriceId: "price_lead_capture",
     setupTime: "Same day",
     rating: "4.7",
     installs: "660",
     badge: "New",
-    description: "Capture and route qualified leads automatically.",
+    description:
+      "Capture every lead, enrich it, and alert sales in seconds.",
     longDescription:
-      "A lead capture agent that collects prospect details, enriches contacts, and notifies your sales team with the right context.",
+      "The Lead Capture agent never lets a prospect slip through. It collects prospect details from forms, chats, and your site, enriches contacts with firmographic and context data, and notifies your sales team with a Slack alert and recommended next step. Connected to Slack, HubSpot, Salesforce, and Zapier, it turns your lead sources into an always-on pipeline — so sales reacts fast, and no inbound inquiry goes unanswered.",
     tasks: [
       "Capture leads",
       "Enrich profiles",
@@ -605,9 +610,9 @@ const SEEDS: AgentSeed[] = [
     installs: "3.2k",
     badge: "Popular",
     description:
-      "Answers tickets 24/7 and escalates only what truly needs a human.",
+      "Answer every ticket 24/7 and escalate only what needs a human.",
     longDescription:
-      "A support agent trained on your knowledge base that responds to tickets in seconds, drafts replies, categorizes issues, and escalates complex cases to your human team.",
+      "The Support Agent resolves your customers' issues around the clock. Trained on your knowledge base, it answers tickets in seconds, drafts accurate replies, categorizes each issue, and escalates to your human team only when a case genuinely needs a person. Connected to Zendesk, Intercom, Help Scout, and Slack, it dramatically cuts first-response time and ticket backlog — letting you deliver fast, consistent support without scaling headcount.",
     tasks: [
       "24/7 responses",
       "Ticket categorization",
@@ -636,9 +641,9 @@ const SEEDS: AgentSeed[] = [
     installs: "410",
     badge: "Customizable",
     description:
-      "Turns angry customers into loyal ones with smart, empathetic replies.",
+      "Detect negative sentiment early and win back frustrated customers.",
     longDescription:
-      "A complaint manager that detects negative sentiment, prioritizes urgent cases, drafts empathetic replies, and triggers the right retention play based on customer value.",
+      "The Complaint Manager agent turns unhappy customers into retained ones. It detects negative sentiment across your support channels, prioritizes urgent or high-value cases, drafts empathetic and on-brand replies, and triggers the right retention play based on customer value. Connected to Zendesk, Intercom, HubSpot, and Stripe, it helps you recover revenue that would otherwise walk out the door — responding with the right tone and the right offer, fast.",
     tasks: [
       "Sentiment detection",
       "Urgent prioritization",
@@ -667,9 +672,9 @@ const SEEDS: AgentSeed[] = [
     installs: "1.9k",
     badge: "Popular",
     description:
-      "Scaffolds apps, writes components, and ships full features faster.",
+      "Scaffold apps, build features, and ship in days, not weeks.",
     longDescription:
-      "A full stack developer agent that scaffolds Next.js, React, and Node projects, generates components, builds CRUD APIs, and writes tests so your team ships in days, not weeks.",
+      "The Full Stack Developer agent accelerates your build. It scaffolds Next.js, React, and Node projects, generates components, builds CRUD APIs, and writes tests — taking a feature from idea to shipped code. Integrated with GitHub, Vercel, Supabase, and Postgres, it amplifies small teams by handling the boilerplate and boring parts, so your developers focus on product logic and you ship features in days rather than release cycles.",
     tasks: [
       "App scaffolding",
       "Component generation",
@@ -699,9 +704,9 @@ const SEEDS: AgentSeed[] = [
     installs: "640",
     badge: "Customizable",
     description:
-      "Connects your tools with secure, well-documented APIs and webhooks.",
+      "Connect your tools with secure, well-documented APIs and webhooks.",
     longDescription:
-      "An API integration agent that designs and builds connectors, handles OAuth flows, sets up webhooks, writes retries and error handling, and keeps everything documented.",
+      "The API Integration agent builds the connectors that tie your stack together. It designs API integrations, handles OAuth authentication, sets up webhooks, adds retries and error handling, and documents everything. Working with Postman, GitHub, Zapier, and Make.com, it delivers production-ready connectors you can trust — so your apps share data reliably and your team never has to read three SDK docs to make two systems talk.",
     tasks: [
       "Connector design",
       "OAuth setup",
@@ -731,9 +736,9 @@ const SEEDS: AgentSeed[] = [
     installs: "520",
     badge: "New",
     description:
-      "Sets up CI/CD, Docker, observability, and reliable deployments.",
+      "Ship faster with CI/CD, Docker, observability, and reliable deploys.",
     longDescription:
-      "A DevOps engineer agent that provisions infrastructure, writes GitHub Actions pipelines, containerizes apps with Docker, and adds monitoring and alerting on top of it.",
+      "The DevOps Engineer agent sets up the engineering backbone behind fast, reliable releases. It provisions cloud infrastructure, writes GitHub Actions pipelines, containerizes apps with Docker, and adds monitoring and alerting. Connected to GitHub, Docker, AWS, and Datadog, it turns manual, error-prone deploys into an automated pipeline — so your team ships more often with confidence and notices problems before your users do.",
     tasks: [
       "CI/CD pipelines",
       "Docker setup",
@@ -761,9 +766,10 @@ const SEEDS: AgentSeed[] = [
     rating: "4.7",
     installs: "490",
     badge: "Fast setup",
-    description: "Writes test plans, finds bugs, and keeps your releases safe.",
+    description:
+      "Catch bugs before users do with automated test coverage.",
     longDescription:
-      "A QA tester that generates test plans, writes automated tests (unit, integration, e2e), reproduces bugs from reports, and triages issues before they ship.",
+      "The QA Tester agent protects your releases. It generates test plans, writes automated tests (unit, integration, and e2e), reproduces bugs from reports, and triages issues before they reach production. Integrated with GitHub, Playwright, Jira, and Linear, it gives your engineering team a safety net — so regressions are caught automatically, releases ship with confidence, and your developers spend time on features instead of manual testing.",
     tasks: [
       "Test plans",
       "Automated tests",
@@ -792,9 +798,9 @@ const SEEDS: AgentSeed[] = [
     installs: "1.1k",
     badge: "Popular",
     description:
-      "Optimizes prompts and system instructions for any LLM in your stack.",
+      "Make your LLM outputs cheaper, faster, and more reliable.",
     longDescription:
-      "A prompt engineer that rewrites your prompts to be more reliable, cheaper, and more deterministic, with eval suites to measure improvements over time.",
+      "The Prompt Engineer agent optimizes the prompts behind your AI features. It rewrites prompts and system instructions to be more reliable, cheaper, and more deterministic, and sets up evaluation suites to measure improvements over time. Working with OpenAI, Anthropic, LangSmith, and Notion, it translates rough AI experiments into production-grade behavior — cutting token costs, reducing broken outputs, and giving your product team confidence in every LLM call.",
     tasks: [
       "Prompt rewriting",
       "Eval suites",
@@ -823,9 +829,9 @@ const SEEDS: AgentSeed[] = [
     installs: "960",
     badge: "Popular",
     description:
-      "Designs and ships automations across Zapier, Make.com, and n8n.",
+      "Turn a workflow idea into an automation that runs on its own.",
     longDescription:
-      "An AI automation builder that turns a workflow description into a production-ready automation, picks the right tools, and handles error cases, retries, and logging.",
+      "The AI Automation Builder turns a rough workflow description into a production-ready automation. It designs the workflow, picks the right tools, and handles the hard parts — error cases, retries, and logging. Working across Zapier, Make.com, n8n, and Slack, it ships automations your team can actually rely on: from a Stripe-to-Slack alert to a full customer onboarding flow that runs end-to-end without someone babysitting it.",
     tasks: [
       "Workflow design",
       "Tool selection",
@@ -855,9 +861,9 @@ const SEEDS: AgentSeed[] = [
     installs: "1.4k",
     badge: "New",
     description:
-      "Writes SQL, builds dashboards, and explains your numbers in plain English.",
+      "Query your data and get answers in plain English, not raw SQL.",
     longDescription:
-      "A data analyst agent that queries your warehouse, builds SQL models, creates dashboards, and writes executive-ready summaries of what's happening in the business.",
+      "The Data Analyst agent turns raw data into decisions. It queries your warehouse, builds SQL models, creates dashboards, and writes plain-English executive summaries of what's happening in the business. Connected to BigQuery, Snowflake, Metabase, and Slack, it answers questions like 'why did revenue drop last week?' in minutes — putting analysis in everyone's hands without building a data team or waiting days for a BI ticket.",
     tasks: [
       "SQL queries",
       "Dashboards",
@@ -886,9 +892,9 @@ const SEEDS: AgentSeed[] = [
     installs: "2.3k",
     badge: "Popular",
     description:
-      "Writes landing pages, ads, emails, and product copy that converts.",
+      "Write copy that converts across landing pages, ads, and email.",
     longDescription:
-      "A copywriter agent that produces platform-aware copy for landing pages, ads, emails, and product UI, with multiple variants for A/B testing.",
+      "The Copywriter agent writes the words that turn visitors into customers. It produces platform-aware copy for landing pages, ads, email, and product UI — with multiple variants ready for A/B testing. Integrated with Webflow, WordPress, Mailchimp, and Notion, it removes the bottleneck of waiting on freelance briefs, giving your marketing team on-brand copy in minutes and the volume of variants they need to actually optimize conversion.",
     tasks: ["Landing copy", "Ad copy", "Email copy", "UI microcopy"],
     integrations: ["Webflow", "WordPress", "Mailchimp", "Notion"],
     workflow: ["Brief", "Draft variants", "Refine", "Hand off"],
@@ -912,9 +918,9 @@ const SEEDS: AgentSeed[] = [
     installs: "1.6k",
     badge: "Popular",
     description:
-      "Researches and writes long-form articles that rank and read well.",
+      "Research and write long-form articles that rank and read well.",
     longDescription:
-      "A blog writer agent that researches a topic, outlines the article, writes long-form content with sources, and produces SEO meta data and social snippets.",
+      "The Blog Writer agent produces long-form articles end-to-end. It researches the topic, outlines the piece, writes with cited sources, and adds SEO meta data and social snippets. Connected to WordPress, Webflow, Ahrefs, and Notion, it lets a small content team publish consistently — turning a content calendar from an aspiration into a regular output of rank-ready articles your audience actually wants to read.",
     tasks: [
       "Topic research",
       "Article outlining",
@@ -942,9 +948,10 @@ const SEEDS: AgentSeed[] = [
     rating: "4.8",
     installs: "720",
     badge: "New",
-    description: "Generates UI concepts, design tokens, and polished mockups.",
+    description:
+      "Turn product briefs into polished mockups and dev-ready specs.",
     longDescription:
-      "A UI designer agent that produces mockups, suggests design tokens, builds component specs, and writes handoff notes for engineering.",
+      "The UI Designer agent takes a product brief from concept to handoff. It produces polished mockups, defines a design-token system, writes component specs with all their states, and prepares clear notes for engineering. Integrated with Figma, Notion, Linear, and GitHub, it speeds up feature delivery — reducing the design-to-development gap so your team ships better interfaces faster, without waiting on a busy design department.",
     tasks: ["Mockups", "Design tokens", "Component specs", "Handoff notes"],
     integrations: ["Figma", "Notion", "Linear", "GitHub"],
     workflow: ["Brief", "Mock", "Spec", "Handoff"],
@@ -968,9 +975,9 @@ const SEEDS: AgentSeed[] = [
     installs: "880",
     badge: "Popular",
     description:
-      "Optimizes listings, recovers carts, and answers product questions.",
+      "Recover abandoned carts and turn listings into sales.",
     longDescription:
-      "An e-commerce expert that audits your store, writes product descriptions, recovers abandoned carts, handles product Q&A, and surfaces upsell opportunities.",
+      "The E-commerce Expert agent optimizes your store for revenue. It audits your shop, writes better product descriptions, recovers abandoned carts with personalized follow-ups, answers product questions, and surfaces upsell opportunities. Connected to Shopify, WooCommerce, Klaviyo, and Stripe, it attacks the biggest revenue leaks in e-commerce — so more visitors convert, more carts are recovered, and average order value grows.",
     tasks: [
       "Product descriptions",
       "Cart recovery",
@@ -992,17 +999,17 @@ const SEEDS: AgentSeed[] = [
     industry: "Shopify stores",
     icon: "shopping-cart",
     brand: "shopify",
-    price: "€119/mo",
-    priceCents: 11900,
+    price: "€39/mo",
+    priceCents: 3900,
     stripePriceId: "price_shopify_agent",
     setupTime: "Same day",
     rating: "4.9",
     installs: "630",
     badge: "New",
     description:
-      "Search products, generate cart links, and check order status on Shopify.",
+      "Search products, build cart links, and check orders on your store.",
     longDescription:
-      "A Shopify agent that looks up products, builds direct cart links, and checks order status securely with order number and email.",
+      "The Shopify agent runs conversational commerce for your store. It searches your catalog, builds direct cart links for specific variants, checks order status securely using order number and email, and reports availability in seconds. Connected to your Shopify store, Stripe, Slack, and email, it gives shoppers the answer and the next step instantly — turning a product question from your customers into a completed order link rather than a dead-end conversation.",
     tasks: [
       "Search products",
       "Generate cart links",
@@ -1035,9 +1042,10 @@ const SEEDS: AgentSeed[] = [
     rating: "4.8",
     installs: "320",
     badge: "Customizable",
-    description: "Your COO in a chat: reports, planning, and decision support.",
+    description:
+      "A COO in chat: reports, planning, and decision support.",
     longDescription:
-      "A business manager agent that reads your operational data, drafts executive reports, coordinates cross-functional work, and helps you make faster, better decisions.",
+      "The Business Manager agent acts as a chief of staff for owners and founders. It reads your operational data, drafts executive reports, coordinates work across teams, and supports planning and decisions. Connected to Google Calendar, Gmail, Sheets, and Slack, it turns scattered spreadsheets and status updates into a clear picture of the business — so leaders get the numbers and the narrative they need to decide faster and run a growing company without dropping balls.",
     tasks: [
       "Executive reports",
       "Strategic planning",

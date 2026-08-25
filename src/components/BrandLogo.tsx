@@ -10,6 +10,11 @@ const MULTICOLOR = new Set([
   "google",
   "googledrive",
   "gmail",
+  "googlecalendar",
+  "googlesheets",
+  "googlemeet",
+  "googleads",
+  "whatsapp",
   "instagram",
   "tiktok",
 ]);

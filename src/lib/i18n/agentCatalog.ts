@@ -28,9 +28,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Assistente Esecutivo",
     category: "Business & Operations",
     badge: "Popolare",
-    description: "Il tuo braccio destro AI per calendario, email, riunioni e follow-up.",
+    description:
+      "Smista la casella, pianifica tra fusi orari e non dimentichi mai un follow-up.",
     longDescription:
-      "Un assistente esecutivo che smista la casella, pianifica riunioni tra fusi orari, scrive risposte, prepara briefing quotidiani e tiene in ordine le tue azioni.",
+      "L'assistente esecutivo diventa il tuo braccio destro AI. Dà priorità alla casella così le email urgenti non seppelliscono ciò che conta, scrive risposte in linea col tuo stile da approvare, pianifica riunioni tra fusi orari, prepara ogni giorno un briefing con decisioni e azioni e segue ogni follow-up fino a completarlo. Si collega a Gmail, Google Calendar, Outlook e Notion: risparmi 5–10 ore a settimana di coordinamento e ti concentri sulle decisioni invece che sulla logistica.",
     industry: "Founder e dirigenti",
     tasks: [
       "Smistamento casella",
@@ -55,9 +56,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Project Manager",
     category: "Business & Operations",
     badge: "Popolare",
-    description: "Trasforma gli obiettivi in traguardi e tiene il team allineato.",
+    description:
+      "Trasforma gli obiettivi in traguardi, responsabili e blocchi — con follow-up automatici.",
     longDescription:
-      "Un agente project manager che trasforma gli obiettivi in traguardi, assegna i responsabili, traccia i blocchi e avvisa le persone giuste quando qualcosa rischia di slittare.",
+      "L'agente Project Manager trasforma un obiettivo generico in un piano a tappe realistico: divide il lavoro in compiti, assegna i responsabili in base al carico, fissa le scadenze, traccia i blocchi e avvisa la persona giusta quando qualcosa rischia di slittare. Si integra con Notion, Asana, Slack e Linear per mantenere il team allineato e le consegne puntuali, così ogni lancio parte con ruoli chiari invece di una corsa finale all'ultimo minuto.",
     industry: "Team operations e delivery",
     tasks: [
       "Pianificazione traguardi",
@@ -82,9 +84,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Assistente Riunioni",
     category: "Business & Operations",
     badge: "Novità",
-    description: "Partecipa alle call, trascrive e invia il riepilogo a tutti.",
+    description:
+      "Entra in ogni call, trascrivila e non perdere mai più un'azione.",
     longDescription:
-      "Un assistente riunioni che partecipa alle tue call, trascrive la conversazione, estrae decisioni e azioni e invia un riepilogo strutturato a ogni partecipante.",
+      "L'assistente riunioni partecipa alle tue call così nessuno deve prendere appunti. Trascrive la conversazione in tempo reale, estrae decisioni e proprietari e invia a ogni partecipante un riepilogo strutturato con azioni, responsabili e scadenze. Integrato con Google Meet, Zoom, Slack e HubSpot, mantiene un registro decisionale ricercabile che rende tutti responsabili — niente più 'mi mandi gli appunti di quella riunione?'.",
     industry: "Team customer-facing e interni",
     tasks: [
       "Trascrizione live",
@@ -109,9 +112,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Assistente CRM",
     category: "Business & Operations",
     badge: "Consigliato",
-    description: "Registra le attività, arricchisce i contatti e aggiorna le trattative.",
+    description:
+      "Registra ogni chiamata e email e mantieni la pipeline in movimento.",
     longDescription:
-      "Un assistente CRM che registra automaticamente chiamate ed email, arricchisce i contatti, segnala le trattative ferme e dice ai tuoi commerciali cosa fare dopo per chiudere più ricavi.",
+      "L'assistente CRM mantiene pulito il tuo CRM senza inserimenti manuali. Registra automaticamente chiamate ed email, arricchisce i contatti con dati firmografici e di intento, segnala le trattative ferme prima che muoiano e indica a ogni commerciale il passo esatto successivo per avanzare. Collegato a HubSpot, Salesforce, Gmail e Apollo, dà al team vendite una pipeline che può davvero aspettare la chiusura — così le previsioni sono accurate e il fatturato non si perde in follow-up dimenticati.",
     industry: "Team vendite e account",
     tasks: [
       "Registrazione automatica",
@@ -136,9 +140,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Customer Success",
     category: "Business & Operations",
     badge: "Popolare",
-    description: "Monitora l'utilizzo e interviene prima che un account vada perso.",
+    description:
+      "Monitora la salute degli account e salva i clienti prima che se ne vadano.",
     longDescription:
-      "Un agente customer success che monitora l'utilizzo del prodotto, attiva i percorsi di onboarding, esegue i check-in NPS e allerta il team quando un account rischia di andarsene.",
+      "L'agente Customer Success mantiene sano ogni account. Monitora l'utilizzo del prodotto in tempo reale, attiva percorsi di onboarding personalizzati, esegue i check-in NPS, calcola lo score di salute e avvisa il team al primo segnale di rischio churn — con il pattern di utilizzo esatto e una strategia di salvataggio suggerita. Integrato con Intercom, HubSpot, Stripe e Mixpanel, trasforma l'azione reattiva in una retention prevedibile che protegge i ricavi ricorrenti.",
     industry: "B2B SaaS e servizi",
     tasks: [
       "Flussi di onboarding",
@@ -163,9 +168,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Business Manager",
     category: "Business & Operations",
     badge: "Consigliato",
-    description: "Legge i tuoi dati operativi e produce report dirigenziali.",
+    description:
+      "Un COO in chat: report, pianificazione e supporto alle decisioni.",
     longDescription:
-      "Un agente business manager che legge i tuoi dati operativi, redige report dirigenziali, coordina il lavoro tra funzioni e ti aiuta a prendere decisioni più veloci e migliori.",
+      "L'agente Business Manager funge da capo di gabinetto per imprenditori e founder. Legge i tuoi dati operativi, redige report dirigenziali, coordina il lavoro tra team e supporta pianificazione e decisioni. Collegato a Google Calendar, Gmail, Sheets e Slack, trasforma fogli sparsi e aggiornamenti di stato in un quadro chiaro del business — così i leader hanno numeri e narrativa per decidere più in fretta e far crescere l'azienda senza lasciare nulla per strada.",
     industry: "PMI e founder",
     tasks: [
       "Report dirigenziali",
@@ -190,9 +196,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Marketing Strategist",
     category: "Marketing & Sales",
     badge: "Popolare",
-    description: "Trasforma gli obiettivi in piani di canale e calendari editoriali.",
+    description:
+      "Trasforma un obiettivo di business in piano canali, calendario e budget.",
     longDescription:
-      "Un agente marketing strategist che trasforma gli obiettivi di business in piani di canale, calendari editoriali, allocazioni di budget e revisioni settimanali delle performance.",
+      "L'agente Marketing Strategist trasforma un obiettivo aziendale in un piano marketing eseguibile: sceglie i canali giusti, alloca il budget, costruisce il calendario editoriale e rivede ogni settimana le performance rispetto ai KPI. Collegato a Notion, Google Ads, Meta Ads e Mailchimp, dà al team una roadmap chiara e un ciclo di feedback — così le campagne partono in orario, entro budget e migliorano di continuo invece di essere improvvisate di mese in mese.",
     industry: "Growth marketer",
     tasks: [
       "Pianificazione campagne",
@@ -217,9 +224,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "SEO Specialist",
     category: "Marketing & Sales",
     badge: "Consigliato",
-    description: "Ricerca keyword, analizza i competitor e ottimizza i contenuti.",
+    description:
+      "Ricerca le keyword, analizza i contenuti e scala nelle classifiche di Google.",
     longDescription:
-      "Uno specialista SEO che esegue la ricerca delle keyword, controlla i contenuti esistenti, analizza i competitor e produce articoli con struttura corretta, meta dati e link interni.",
+      "Lo specialista SEO gestisce l'intero processo di ottimizzazione on-page. Ricerca le opportunità di posizionamento, analizza le pagine esistenti, studia i competitor e produce articoli completamente ottimizzati con struttura heading corretta, meta dati e link interni. Integrato con WordPress, Webflow, Ahrefs e Google Search Console, trasforma un vago 'ci serve più traffico' in una lista prioritaria di pagine da sistemare e keyword da targetizzare — così la crescita organica diventa sistematica, non sporadica.",
     industry: "Team contenuti",
     tasks: [
       "Ricerca keyword",
@@ -244,9 +252,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Agente SEO",
     category: "Marketing & Sales",
     badge: "Novità",
-    description: "Scrive contenuti SEO con ricerca keyword e analisi dei competitor.",
+    description:
+      "Scrivi articoli strutturati e orientati alle keyword che si posizionano davvero.",
     longDescription:
-      "Un agente contenuti SEO che analizza le opportunità di keyword, ispeziona i competitor, scrive articoli strutturati e aggiunge i meta dati perché i tuoi contenuti indicizzino e convertano.",
+      "L'agente contenuti SEO ricerca gli argomenti, analizza per cosa si posizionano i competitor e produce articoli completi e ottimizzati per le keyword. Pianifica l'architettura H1/H2, inserisce le keyword target in modo naturale e aggiunge automaticamente meta description e link interni. Collegato ad Ahrefs, Google Search Console, WordPress e Notion, aiuta il team contenuti a pubblicare di più, posizionarsi prima e convertire meglio — con ogni pezzo mirato a una reale intenzione di ricerca.",
     industry: "Team content marketing",
     tasks: [
       "Ricerca keyword",
@@ -271,9 +280,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Assistente Personale",
     category: "Business & Operations",
     badge: "Consigliato",
-    description: "Gestisce liste di attività, riunioni, note e ricerche.",
+    description:
+      "Pianifica la giornata, svuota la lista attività e recupera ore ogni settimana.",
     longDescription:
-      "Un assistente personale che gestisce le liste di attività, pianifica le riunioni, riassume le note e rende la tua giornata più efficiente con suggerimenti proattivi.",
+      "L'assistente personale organizza la tua giornata come farebbe un grande supporto. Pianifica il calendario, gestisce le liste di attività, riassume note e documenti, blocca tempo per il lavoro profondo e suggerisce in modo proattivo cosa affrontare per primo. Collegato a Google Calendar, Gmail, Notion e Slack, tiene sulla giusta rotta professionisti e solopreneur impegnati — aiutandoti a recuperare diverse ore a settimana togliendoti le piccole logiche operative della giornata.",
     industry: "Professionisti e solopreneur",
     tasks: [
       "Pianificazione giornata",
@@ -298,9 +308,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Google Ads Expert",
     category: "Marketing & Sales",
     badge: "Popolare",
-    description: "Progetta campagne, scrive gli annunci e ottimizza il budget.",
+    description:
+      "Costruisci, ristruttura e ottimizza le campagne Google Ads a scopo di profitto.",
     longDescription:
-      "Un esperto Google Ads che progetta la struttura delle campagne, scrive gli annunci responsive, sceglie keyword e negative e consiglia spostamenti di budget in base alle performance.",
+      "L'esperto Google Ads gestisce il tuo account come un senior specialist PPC. Progetta struttura di campagne e gruppi di annunci, scrive copy responsive, sceglie le keyword target e le negative, monitora il quality score e consiglia spostamenti di budget dove la spesa converte davvero. Collegato a Google Ads, Google Analytics, Looker e Slack, taglia la spesa sprecata e migliora il ROI — trasformando un account caotico in un canale di acquisizione prevedibile.",
     industry: "Team performance marketing",
     tasks: [
       "Struttura campagne",
@@ -325,9 +336,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Social Media Manager",
     category: "Marketing & Sales",
     badge: "Consigliato",
-    description: "Costruisce il calendario e programma i post al momento giusto.",
+    description:
+      "Pianifica, scrivi e programma contenuti nativi su tutti i tuoi canali.",
     longDescription:
-      "Un social media manager che costruisce un calendario di contenuti multicanale, scrive copy adatti a ogni piattaforma, suggerisce gli hashtag e programma i post nei momenti migliori.",
+      "L'agente Social Media Manager gestisce il tuo calendario contenuti su Instagram, TikTok, LinkedIn e X. Pianifica la settimana, scrive copy adattato allo stile e al pubblico di ogni piattaforma, ricerca gli hashtag e programma i post nelle fasce orarie di picco. Integrato con Buffer e i tuoi account brand, trasforma la pubblicazione in un sistema multicanale costante — così il brand è sempre presente senza che tu e il team passiate ore ogni giorno a creare e pubblicare.",
     industry: "Brand e creator",
     tasks: [
       "Calendario contenuti",
@@ -352,9 +364,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Cold Email Writer",
     category: "Marketing & Sales",
     badge: "Novità",
-    description: "Ricerca i prospect, personalizza gli oggetti e costruisce i follow-up.",
+    description:
+      "Scrivi sequenze cold personalizzate che prenotano riunioni, non ottenendo silenzi.",
     longDescription:
-      "Un redattore di cold email che ricerca ogni prospect, personalizza oggetto e apertura, costruisce sequenze di follow-up in più passaggi e adatta il tono alla tua buyer persona.",
+      "L'agente Cold Email Writer costruisce sequenze di outbound che ottengono risposte. Ricerca ogni prospect, personalizza oggetto e apertura attorno all'azienda e al ruolo reali, struttura i follow-up in più passaggi con la cadenza giusta e adatta il tono alla tua buyer persona. Collegato ad Apollo, LinkedIn, HubSpot e Instantly, trasforma una massiva generica in un costruttore di pipeline mirato — con un tasso di risposta più alto e più riunioni qualificate per il team vendite.",
     industry: "Team vendite B2B",
     tasks: [
       "Ricerca prospect",
@@ -379,9 +392,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Qualificazione Lead",
     category: "Marketing & Sales",
     badge: "Consigliato",
-    description: "Arricchisce i lead, li valuta e prenota riunioni per le vendite.",
+    description:
+      "Valuta i lead inbound su fit e intento e prenota riunioni per i tuoi commerciali.",
     longDescription:
-      "Un agente di qualificazione lead che arricchisce i lead in entrata, li valuta su fit e intento, fa le domande di qualifica e prenota le riunioni per il tuo team vendite.",
+      "L'agente Qualificazione Lead decide quali lead in entrata meritano il tempo dei tuoi commerciali. Arricchisce ogni lead, li valuta su fit e intento di acquisto, fa le domande di qualifica tramite chat e prenota automaticamente le riunioni per quelli ad alto potenziale. Integrato con HubSpot, Salesforce, Calendly e Slack, evita che il team insegua chi non comprerà mai — concentrandoli sul piccolo gruppo di lead più probabili a diventare clienti.",
     industry: "Team vendite inbound",
     tasks: [
       "Arricchimento lead",
@@ -406,9 +420,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Calendario",
     category: "Business & Operations",
     badge: "Popolare",
-    description: "Cerca la disponibilità e prenota riunioni sul calendario.",
+    description:
+      "Trova gli orari liberi, prenota le riunioni e invia gli inviti in automatico.",
     longDescription:
-      "Un agente di prenotazione che cerca la disponibilità, propone gli slot migliori e pianifica gli eventi con partecipanti e link video.",
+      "L'agente Prenotazioni gestisce la pianificazione end-to-end. Cerca la disponibilità sui calendari dei partecipanti, propone gli slot migliori, prenota la riunione, conferma i presenti e allega il link video. Collegato a Google Calendar, Outlook, Zoom e Slack, elimina l'interminabile botta e risposta 'quando ti va?' — un vero risparmio di tempo per vendite consulenziali, servizi e qualsiasi team che vive di chiamate prenotate.",
     industry: "Team scheduling e riunioni",
     tasks: [
       "Cerca disponibilità",
@@ -433,9 +448,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Lead Capture",
     category: "Marketing & Sales",
     badge: "Consigliato",
-    description: "Cattura i lead, arricchisce i contatti e avvisa le vendite.",
+    description:
+      "Cattura ogni lead, arricchiscilo e avvisa le vendite in pochi secondi.",
     longDescription:
-      "Un agente lead capture che raccoglie i dettagli dei prospect, arricchisce i contatti e avvisa il team vendite con il giusto contesto.",
+      "L'agente Lead Capture non lascia mai scappare un prospect. Raccoglie i dettagli da form, chat e sito, arricchisce i contatti con dati firmografici e contestuali e avvisa il team vendite con un alert su Slack e il prossimo passo consigliato. Collegato a Slack, HubSpot, Salesforce e Zapier, trasforma le tue fonti di lead in una pipeline sempre attiva — così le vendite reagiscono subito e nessuna richiesta in entrata resta senza risposta.",
     industry: "Vendite e lead generation",
     tasks: [
       "Cattura lead",
@@ -460,9 +476,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Support Agent",
     category: "Customer Service",
     badge: "Popolare",
-    description: "Risponde ai ticket in secondi e passa i casi complessi agli umani.",
+    description:
+      "Rispondi a ogni ticket 24/7 ed escalada solo ciò che richiede un umano.",
     longDescription:
-      "Un agente supporto addestrato sulla tua knowledge base che risponde ai ticket in pochi secondi, scrive le risposte, classifica i problemi ed escalada i casi complessi al tuo team umano.",
+      "L'agente Supporto risolve i problemi dei tuoi clienti 24 ore su 24. Addestrato sulla tua knowledge base, risponde ai ticket in pochi secondi, scrive risposte accurate, classifica ogni problema ed escalada al tuo team umano solo quando il caso richiede davvero una persona. Collegato a Zendesk, Intercom, Help Scout e Slack, riduce nettamente il tempo di prima risposta e il backlog dei ticket — permettendoti un supporto rapido e costante senza aumentare l'organico.",
     industry: "Team assistenza clienti",
     tasks: [
       "Risposte 24/7",
@@ -487,9 +504,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Complaint Manager",
     category: "Customer Service",
     badge: "Novità",
-    description: "Rileva il sentiment, prioritizza e attiva la retention giusta.",
+    description:
+      "Rileva il sentiment negativo fin da subito e riconquista i clienti insoddisfatti.",
     longDescription:
-      "Un gestore reclami che rileva il sentiment negativo, dà priorità ai casi urgenti, scrive risposte empatiche e attiva il piano di retention corretto in base al valore del cliente.",
+      "L'agente Gestore Reclami trasforma i clienti arrabbiati in clienti mantenuti. Rileva il sentiment negativo su tutti i tuoi canali di supporto, dà priorità ai casi urgenti o ad alto valore, scrive risposte empatiche e in linea col brand e attiva il piano di retention giusto in base al valore del cliente. Collegato a Zendesk, Intercom, HubSpot e Stripe, ti aiuta a recuperare ricavi che altrimenti uscirebbero dalla porta — rispondendo con tono e offerta giusti, e in fretta.",
     industry: "Supporto e customer success",
     tasks: [
       "Rilevamento sentiment",
@@ -514,9 +532,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Full Stack Dev",
     category: "Development",
     badge: "Popolare",
-    description: "Crea app, componenti, API e test — in giorni, non settimane.",
+    description:
+      "Crea app, costruisci feature e rilascia in giorni, non settimane.",
     longDescription:
-      "Uno sviluppatore full stack che avvia progetti Next.js, React e Node, genera componenti, costruisce API CRUD e scrive i test, così il tuo team rilascia in giorni, non settimane.",
+      "Lo sviluppatore full stack accelera la tua build. Avvia progetti Next.js, React e Node, genera componenti, costruisce API CRUD e scrive i test — portando una feature dall'idea al codice rilasciato. Integrato con GitHub, Vercel, Supabase e Postgres, amplifica i piccoli team gestendo il boilerplate e le parti noiose, così i tuoi sviluppatori si concentrano sulla logica di prodotto e rilasci le feature in giorni invece che in sprint interi.",
     industry: "Team engineering",
     tasks: [
       "Scaffolding app",
@@ -541,9 +560,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "API Integration",
     category: "Development",
     badge: "Consigliato",
-    description: "Progetta connettori, gestisce OAuth e documenta tutto.",
+    description:
+      "Collega i tuoi strumenti con API e webhook sicuri e ben documentati.",
     longDescription:
-      "Un esperto di integrazioni API che progetta e costruisce connettori, gestisce i flussi OAuth, configura i webhook, scrive retry e gestione errori e tiene tutto documentato.",
+      "L'esperto Integrazioni API costruisce i connettori che tengono insieme il tuo stack. Progetta le integrazioni, gestisce l'autenticazione OAuth, configura i webhook, aggiunge retry e gestione errori e documenta ogni cosa. Con Postman, GitHub, Zapier e Make.com, consegna connettori affidabili e pronti per la produzione — così le tue app condividono i dati senza problemi e il team non deve leggere tre documentazioni per far parlare due sistemi.",
     industry: "Team engineering e ops",
     tasks: [
       "Progettazione connettori",
@@ -568,9 +588,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "DevOps Engineer",
     category: "Development",
     badge: "Popolare",
-    description: "Provisiona infrastruttura, CI/CD e monitoraggio.",
+    description:
+      "Rilascia più in fretta con CI/CD, Docker, osservabilità e deploy affidabili.",
     longDescription:
-      "Un ingegnere DevOps che provisiona l'infrastruttura, scrive pipeline GitHub Actions, containerizza le app con Docker e aggiunge monitoraggio e alerting.",
+      "L'ingegnere DevOps configura la base ingegneristica dietro rilasci veloci e affidabili. Provisiona l'infrastruttura cloud, scrive le pipeline GitHub Actions, containerizza le app con Docker e aggiunge monitoraggio e alerting. Collegato a GitHub, Docker, AWS e Datadog, trasforma i deploy manuali e pieni di errori in una pipeline automatica — così il team rilascia più spesso con fiducia e nota i problemi prima dei tuoi utenti.",
     industry: "Team platform e SRE",
     tasks: [
       "Pipeline CI/CD",
@@ -595,9 +616,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "QA Tester",
     category: "Development",
     badge: "Consigliato",
-    description: "Genera piani di test e scrive test automatici prima del rilascio.",
+    description:
+      "Cattura i bug prima degli utenti con la copertura dei test automatici.",
     longDescription:
-      "Un QA tester che genera piani di test, scrive test automatici (unit, integration, e2e), riproduce i bug dai report e fa triage dei problemi prima che vadano in produzione.",
+      "L'agente QA tester protegge i tuoi rilasci. Genera i piani di test, scrive test automatici (unit, integration ed e2e), riproduce i bug dai report e fa triage dei problemi prima che arrivino in produzione. Integrato con GitHub, Playwright, Jira e Linear, dà al team engineering una rete di sicurezza — così le regressioni vengono individuate da sole, i rilasci partono con fiducia e gli sviluppatori lavorano sulle feature invece che sui test manuali.",
     industry: "Team engineering",
     tasks: [
       "Piani di test",
@@ -622,9 +644,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Prompt Engineer",
     category: "AI & Data",
     badge: "Novità",
-    description: "Rende i tuoi prompt più affidabili, economici e deterministici.",
+    description:
+      "Rendi gli output del tuo LLM più economici, rapidi e affidabili.",
     longDescription:
-      "Un prompt engineer che riscrive i tuoi prompt per renderli più affidabili, economici e deterministici, con suite di valutazione per misurare i miglioramenti nel tempo.",
+      "L'agente Prompt Engineer ottimizza i prompt dietro le tue funzionalità AI. Riscrive prompt e istruzioni di sistema per renderli più affidabili, economici e deterministici, e imposta suite di valutazione per misurare i miglioramenti nel tempo. Con OpenAI, Anthropic, LangSmith e Notion, trasforma gli esperimenti AI approssimativi in un comportamento pronto per la produzione — tagliando i costi dei token, riducendo gli output errati e dando al team prodotto fiducia in ogni chiamata LLM.",
     industry: "Team AI e prodotto",
     tasks: [
       "Riscrittura prompt",
@@ -649,9 +672,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "AI Automation",
     category: "AI & Data",
     badge: "Popolare",
-    description: "Trasforma una descrizione in un'automazione pronta per la produzione.",
+    description:
+      "Trasforma un'idea di workflow in un'automazione che gira da sola.",
     longDescription:
-      "Un builder di automazioni AI che trasforma la descrizione di un workflow in un'automazione pronta per la produzione, sceglie gli strumenti giusti e gestisce errori, retry e logging.",
+      "L'AI Automation Builder trasforma una descrizione approssimativa di workflow in un'automazione pronta per la produzione. Progetta il flusso, sceglie gli strumenti giusti e gestisce le parti difficili — casi di errore, retry e logging. Con Zapier, Make.com, n8n e Slack, consegna automazioni su cui il team può davvero contare: da un alert Stripe-to-Slack a un flusso completo di onboarding clienti che gira end-to-end senza bisogno di qualcuno che lo sorvegli.",
     industry: "Ops e AI builder",
     tasks: [
       "Progettazione workflow",
@@ -676,9 +700,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Data Analyst",
     category: "AI & Data",
     badge: "Consigliato",
-    description: "Interroga il warehouse, crea dashboard e report esecutivi.",
+    description:
+      "Interroga i tuoi dati e ottieni risposte in linguaggio semplice, non in SQL.",
     longDescription:
-      "Un data analyst che interroga il tuo warehouse, costruisce modelli SQL, crea dashboard e scrive riepiloghi executive su ciò che sta accadendo nel business.",
+      "L'agente Data Analyst trasforma i dati grezzi in decisioni. Interroga il tuo warehouse, costruisce modelli SQL, crea dashboard e scrive riepiloghi executive in linguaggio semplice su cosa sta accadendo nel business. Collegato a BigQuery, Snowflake, Metabase e Slack, risponde in minuti a domande come 'perché le vendite sono calate la scorsa settimana?' — mettendo l'analisi nelle mani di tutti senza costruire un team dati o aspettare giorni una richiesta BI.",
     industry: "Team dati e ops",
     tasks: [
       "Query SQL",
@@ -703,9 +728,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Copywriter",
     category: "Design & Content",
     badge: "Popolare",
-    description: "Copy per landing, ads, email e UI con varianti per gli A/B test.",
+    description:
+      "Scrivi copy che convertono su landing, annunci ed email.",
     longDescription:
-      "Un copywriter che produce copy adatti alla piattaforma per landing page, annunci, email e UI di prodotto, con più varianti per i test A/B.",
+      "L'agente Copywriter scrive le parole che trasformano i visitatori in clienti. Produce copy adattato alla piattaforma per landing page, annunci, email e UI di prodotto — con più varianti pronte per i test A/B. Integrato con Webflow, WordPress, Mailchimp e Notion, elimina l'attesa del freelance e dei brief, dando al team marketing copy in linea col brand in pochi minuti e la varietà di varianti necessaria per ottimizzare davvero la conversione.",
     industry: "Team marketing e prodotto",
     tasks: [
       "Copy landing",
@@ -730,9 +756,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Blog Writer",
     category: "Design & Content",
     badge: "Consigliato",
-    description: "Ricerca, delinea e scrive articoli long-form con fonti.",
+    description:
+      "Ricerca e scrivi articoli long-form che si posizionano e si leggono bene.",
     longDescription:
-      "Un blog writer che ricerca il tema, delinea l'articolo, scrive contenuti long-form con fonti e produce meta dati SEO e snippet social.",
+      "L'agente Blog Writer produce articoli long-form end-to-end. Ricerca il tema, delinea il pezzo, scrive con fonti citate e aggiunge meta dati SEO e snippet social. Collegato a WordPress, Webflow, Ahrefs e Notion, permette a un piccolo team contenuti di pubblicare con costanza — trasformando un calendario editoriale da aspirazione a produzione regolare di articoli pronti per il ranking che il tuo pubblico vuole davvero leggere.",
     industry: "Team contenuti e solopreneur",
     tasks: [
       "Ricerca del tema",
@@ -757,9 +784,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "UI Designer",
     category: "Design & Content",
     badge: "Novità",
-    description: "Genera mockup, design token e specifiche per l'engineering.",
+    description:
+      "Trasforma i brief di prodotto in mockup curati e spec pronte per lo sviluppo.",
     longDescription:
-      "Un UI designer che produce mockup, suggerisce design token, costruisce specifiche dei componenti e scrive note di consegna per l'engineering.",
+      "L'agente UI Designer porta un brief di prodotto dal concept alla consegna. Produce mockup curati, definisce un sistema di design token, scrive le specifiche dei componenti con tutti i loro stati e prepara note di consegna chiare per l'engineering. Integrato con Figma, Notion, Linear e GitHub, accelera la consegna delle feature — riducendo il divario design-sviluppo così il team rilascia interfacce migliori più in fretta, senza aspettare un dipartimento design sempre occupato.",
     industry: "Team prodotto",
     tasks: [
       "Mockup",
@@ -784,9 +812,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "E-commerce Expert",
     category: "E-commerce & Finance",
     badge: "Popolare",
-    description: "Audit dello store, descrizioni prodotto e recupero carrelli abbandonati.",
+    description:
+      "Recupera i carrelli abbandonati e trasforma le schede prodotto in vendite.",
     longDescription:
-      "Un esperto e-commerce che controlla il tuo store, scrive descrizioni prodotto, recupera i carrelli abbandonati, gestisce le domande sui prodotti e fa emergere le opportunità di upsell.",
+      "L'esperto E-commerce ottimizza lo store per i ricavi. Controlla il negozio, scrive descrizioni prodotto migliori, recupera i carrelli abbandonati con follow-up personalizzati, risponde alle domande sui prodotti e fa emergere le opportunità di upsell. Collegato a Shopify, WooCommerce, Klaviyo e Stripe, attacca le più grandi perdite di ricavo nell'e-commerce — così più visitatori convertono, più carrelli vengono recuperati e lo scontrino medio cresce.",
     industry: "Venditori Shopify, WooCommerce e Amazon",
     tasks: [
       "Descrizioni prodotto",
@@ -811,9 +840,10 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     shortName: "Agente Shopify",
     category: "E-commerce & Finance",
     badge: "Consigliato",
-    description: "Cerca prodotti, crea link al carrello e controlla gli ordini.",
+    description:
+      "Cerca i prodotti, crea link al carrello e controlla gli ordini del tuo store.",
     longDescription:
-      "Un agente Shopify che cerca i prodotti, costruisce link diretti al carrello e controlla lo stato degli ordini in modo sicuro con numero ordine ed email.",
+      "L'agente Shopify gestisce il commerce conversazionale del tuo negozio. Cerca nel catalogo, costruisce link diretti al carrello per specifiche varianti, controlla lo stato degli ordini in modo sicuro con numero ordine ed email e segnala la disponibilità in pochi secondi. Collegato al tuo store Shopify, a Stripe, Slack ed email, dà allo shopper la risposta e il passo successivo all'istante — trasformando una domanda sui prodotti in un link d'acquisto a tutti gli effetti invece che in una conversazione senza sbocco.",
     industry: "Negozi Shopify",
     tasks: [
       "Ricerca prodotti",

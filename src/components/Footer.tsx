@@ -9,9 +9,9 @@ export default function Footer() {
   const { dict } = useLanguage();
 
   const socialLinks = [
-    { label: "X (Twitter)", href: "https://x.com/agentcloud" },
-    { label: "Instagram", href: "https://www.instagram.com/agentcloud/" },
-    { label: "LinkedIn", href: "https://www.linkedin.com/company/agentcloud" },
+    { label: "X (Twitter)", href: "https://x.com/AgentCloud2k" },
+    { label: "Instagram", href: "https://www.instagram.com/_agentcloud/" },
+    { label: "LinkedIn", href: "https://www.linkedin.com/in/agent-cloud-323218431/" },
   ];
 
   const companyLinks = [

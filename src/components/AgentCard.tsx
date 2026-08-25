@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Star, Clock } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock } from "lucide-react";
 import type { Agent } from "@/lib/agents";
 import { isAvailable } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
@@ -37,9 +37,7 @@ export default function AgentCard({
           <Clock size={12} />
           {dict.agentCard.comingSoon}
         </div>
-      )}
-
-      <div className="mb-5 flex items-start justify-between gap-4">
+      )}        <div className="mb-5 flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <div
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${agent.accent}`}
@@ -60,23 +58,6 @@ export default function AgentCard({
             </p>
           </div>
         </div>
-
-        <div className="flex shrink-0 items-center gap-1 rounded-full bg-neutral-800 px-2.5 py-1 text-sm font-semibold text-neutral-300">
-          <Star size={14} className="fill-purple-400 text-purple-400" />
-          {agent.rating}
-        </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        <span className="rounded-full bg-brand-500/20 px-2.5 py-1 text-xs font-semibold text-brand-300">
-          {agent.badge}
-        </span>
-        <span className="rounded-full bg-neutral-800 px-2.5 py-1 text-xs font-semibold text-neutral-400">
-          {agent.installs} {dict.agentCard.installs}
-        </span>
-        <span className="rounded-full bg-neutral-800 px-2.5 py-1 text-xs font-semibold text-neutral-400">
-          {agent.setupTime}
-        </span>
       </div>
 
       <p className="mb-5 text-sm font-semibold leading-6 text-neutral-400">
@@ -104,22 +85,26 @@ export default function AgentCard({
         </div>
 
         {isAgentAvailable ? (
-          <Link
-            href={`/agents/${agent.slug}`}
-            className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-brand-400 group"
-          >
+          <span className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200">
             {dict.agentCard.view}
-            <ArrowRight
-              size={16}
-              className="transition-transform duration-200 group-hover:translate-x-0.5"
-            />
-          </Link>
+            <ArrowRight size={16} />
+          </span>
         ) : (
           <span className="inline-flex items-center gap-2 rounded-full bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-500 cursor-not-allowed">
             {dict.agentCard.comingSoon}
           </span>
         )}
       </div>
+
+      {/* The whole card is clickable for available agents (an absolute Link
+          overlay avoids nesting a <Link> inside a <Link>). */}
+      {isAgentAvailable && (
+        <Link
+          href={`/agents/${agent.slug}`}
+          aria-label={`${dict.agentCard.view} ${agent.name}`}
+          className="absolute inset-0 rounded-lg"
+        />
+      )}
     </article>
   );
 }

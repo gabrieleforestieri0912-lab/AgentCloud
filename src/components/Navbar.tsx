@@ -15,8 +15,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
-import BrandIcon from "./BrandIcon";
-import { BRANDS } from "@/lib/brands";
+import BrandLogo from "./BrandLogo";
 import { AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { useLanguage } from "./LanguageProvider";
 
@@ -31,15 +30,17 @@ type NavbarProps = {
   marketplaceAgents?: Agent[];
 };
 
+// Apps the platform is already connected to link to the integrations section;
+// the rest are not available yet and redirect to the demo request page.
 const INTEGRATIONS = [
-  { name: "Gmail", brand: "gmail" },
-  { name: "Google Calendar", brand: "googlecalendar" },
-  { name: "HubSpot", brand: "hubspot" },
-  { name: "WhatsApp", brand: "whatsapp" },
-  { name: "Shopify", brand: "shopify" },
-  { name: "Stripe", brand: "stripe" },
-  { name: "Notion", brand: "notion" },
-  { name: "Google Sheets", brand: "googlesheets" },
+  { name: "Gmail", brand: "gmail", available: false },
+  { name: "Google Calendar", brand: "googlecalendar", available: false },
+  { name: "HubSpot", brand: "hubspot", available: false },
+  { name: "WhatsApp", brand: "whatsapp", available: false },
+  { name: "Shopify", brand: "shopify", available: true },
+  { name: "Stripe", brand: "stripe", available: false },
+  { name: "Notion", brand: "notion", available: false },
+  { name: "Google Sheets", brand: "googlesheets", available: false },
 ];
 
 export default function Navbar({ marketplaceAgents }: NavbarProps) {
@@ -95,7 +96,21 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     { key: "solutions" as MenuKey, label: dict.navbar.solutions, href: "/#solutions" },
     { key: "integrations" as MenuKey, label: dict.navbar.integrations, href: "/#integrations" },
   ];
-  const solutions = dict.navbar.solutionsItems.map((s) => [s.title, s.text]);
+  // Solutions link to their agent when the platform already offers it; the
+  // rest are not available yet and redirect to the demo request page.
+  const SOLUTION_LINKS: Record<string, string> = {
+    "E-commerce & Shopify": "/agents/shopify-agent",
+    "Shopify & E-commerce": "/agents/shopify-agent",
+    "Acquisizione lead": "/agents/lead-capture",
+    "Lead Capture": "/agents/lead-capture",
+    "Assistenza prodotti e ordini": "/agents/shopify-agent",
+    "Product & Order Support": "/agents/shopify-agent",
+  };
+  const solutions = dict.navbar.solutionsItems.map((s) => ({
+    title: s.title,
+    text: s.text,
+    href: SOLUTION_LINKS[s.title] ?? "/demo",
+  }));
 
   function toggleLocale() {
     setLocale(locale === "it" ? "en" : "it");
@@ -158,8 +173,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                                     href={`/agents/${agent.slug}`}
                                     className="flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-white/5"
                                   >
-                                    <span className="text-brand-500 shrink-0">
-                                      <AgentIcon icon={agent.icon} brand={agent.brand} size={20} />
+                                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${agent.accent}`}>
+                                      <AgentIcon icon={agent.icon} brand={agent.brand} size={16} className="text-white" />
                                     </span>
                                     <div className="min-w-0">
                                       <p className="text-sm font-bold text-white">
@@ -184,10 +199,10 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
 
                           {item.key === "solutions" && (
                             <div className="grid grid-cols-2 gap-2 w-72">
-                              {solutions.map(([title, text]) => (
+                              {solutions.map(({ title, text, href }) => (
                                 <Link
                                   key={title}
-                                  href="/agents"
+                                  href={href}
                                   className="rounded-lg p-3 transition-colors hover:bg-white/5"
                                 >
                                   <p className="text-sm font-bold text-white">
@@ -203,22 +218,18 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
 
                           {item.key === "integrations" && (
                             <div className="grid grid-cols-4 gap-1 w-80">
-                              {INTEGRATIONS.map((integration) => {
-                                const brand = BRANDS[integration.brand];
-                                if (!brand) return null;
-                                return (
-                                  <Link
-                                    key={integration.name}
-                                    href="/#integrations"
-                                    className="flex flex-col items-center gap-2 rounded-lg px-3 py-4 text-center text-sm font-bold text-neutral-400 transition-colors hover:bg-white/5"
-                                  >
-                                    <span className="h-5 flex items-center justify-center transition-transform group-hover:scale-110">
-                                      <BrandIcon brand={brand} size={22} />
-                                    </span>
-                                    {integration.name}
-                                  </Link>
-                                );
-                              })}
+                              {INTEGRATIONS.map((integration) => (
+                                <Link
+                                  key={integration.name}
+                                  href={integration.available ? "/#integrations" : "/demo"}
+                                  className="flex flex-col items-center gap-2 rounded-lg px-3 py-4 text-center text-sm font-bold text-neutral-400 transition-colors hover:bg-white/5"
+                                >
+                                  <span className="h-5 flex items-center justify-center transition-transform group-hover:scale-110">
+                                    <BrandLogo slug={integration.brand} size={22} />
+                                  </span>
+                                  {integration.name}
+                                </Link>
+                              ))}
                             </div>
                           )}
 
@@ -321,8 +332,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold text-neutral-400 hover:bg-white/5 hover:text-white"
                   >
-                    <span className="text-brand-500 shrink-0">
-                      <AgentIcon icon={agent.icon} brand={agent.brand} size={14} />
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${agent.accent}`}>
+                      <AgentIcon icon={agent.icon} brand={agent.brand} size={12} className="text-white" />
                     </span>
                     <span className="truncate">{agent.shortName}</span>
                   </Link>
@@ -336,10 +347,10 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                 {dict.navbar.solutions}
               </Link>
               <div className="grid grid-cols-2 gap-1 px-3 pb-2">
-                {solutions.map(([title]) => (
+                {solutions.map(({ title, href }) => (
                   <Link
                     key={title}
-                    href="/agents"
+                    href={href}
                     onClick={() => setMobileOpen(false)}
                     className="rounded-lg px-2 py-2 text-xs font-semibold text-neutral-400 hover:bg-white/5 hover:text-white"
                   >

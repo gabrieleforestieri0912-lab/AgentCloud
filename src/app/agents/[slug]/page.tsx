@@ -7,12 +7,12 @@ import {
   Clock3,
   Plug,
   ShieldCheck,
-  Star,
   Users,
   Sparkles,
   Zap,
   RefreshCw,
   Layers,
+  Rocket,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -158,43 +158,54 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
       <Navbar marketplaceAgents={marketplaceAgents} />
 
       {/* ─── Hero ─── */}
-      <section className="bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+        {/* Soft brand glow behind the header */}
+        <div
+          className="pointer-events-none absolute inset-0 select-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 15% 10%, rgba(3,139,254,0.10), transparent 40%), radial-gradient(circle at 85% 25%, rgba(217,70,239,0.06), transparent 45%)",
+          }}
+        />
+        <div className="relative mx-auto max-w-7xl">
           <Link
             href="/agents"
-            className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-neutral-400 transition-colors hover:text-white"
+            className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm font-bold text-neutral-400 backdrop-blur transition-colors hover:border-white/20 hover:text-white"
           >
             <ArrowLeft size={16} />
             {dict.agentDetail.backToMarketplace}
           </Link>
 
-          <div className="grid gap-10 lg:grid-cols-[1fr_420px] lg:items-start">
+          <div className="grid gap-10 lg:grid-cols-[1fr_400px] lg:items-start">
             <div>
-              <div className="mb-5 flex flex-wrap items-center gap-3">
-                <div className={`flex h-13 w-13 items-center justify-center rounded-lg ${agent.accent}`}>
+              <div className="mb-6 flex flex-wrap items-center gap-3">
+                <div
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg shadow-black/20 ${agent.accent}`}
+                >
                   <AgentIcon
                     icon={agent.icon}
                     brand={agent.brand}
-                    size={25}
+                    size={26}
                     className="text-white"
                   />
                 </div>
-                <span className="rounded-full bg-brand-500/20 px-3 py-1 text-sm font-bold text-brand-300">
-                  {agent.badge}
-                </span>
-                <span className="rounded-full bg-neutral-800 px-3 py-1 text-sm font-bold text-neutral-400">
-                  {agent.category}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-bold text-brand-300">
+                    {agent.category}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-neutral-900/70 px-3 py-1 text-xs font-bold text-neutral-400">
+                    {agent.badge}
+                  </span>
+                </div>
               </div>
 
-              <h1 className="max-w-4xl text-5xl font-bold tracking-tight text-white sm:text-6xl">
+              <h1 className="max-w-4xl text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
                 {agent.name}
               </h1>
               <p className="mt-6 max-w-3xl text-lg leading-8 text-neutral-400">
                 {agent.longDescription}
               </p>
 
-              {/* Target audience */}
               <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-neutral-500">
                 <Users size={16} className="text-brand-400" />
                 {t(dict.agentDetail.forIndustry, { industry: agent.industry })}
@@ -204,60 +215,144 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 {available ? (
                   <Link
                     href={`/agents/${agent.slug}/deploy`}
-                    className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35"
                   >
                     {dict.agentDetail.configureAgent}
                     <ArrowRight size={16} />
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-neutral-500">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-7 py-3.5 text-sm font-bold text-neutral-500">
                     {dict.common.comingSoon}
                   </span>
                 )}
                 <a
                   href="#preview"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:border-white/20"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-7 py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:border-white/20"
                 >
                   {dict.agentDetail.tryPreview}
                 </a>
               </div>
             </div>
 
-            {/* Stats sidebar */}
-            <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-xl shadow-brand-500/5">
-              <div className="mb-5 grid grid-cols-3 gap-3 text-center">
-                {[
-                  [agent.rating, dict.agentDetail.rating],
-                  [agent.installs, dict.agentDetail.installs],
-                  [agent.setupTime, dict.agentDetail.setup],
-                ].map(([value, label]) => (
-                  <div key={label} className="rounded-lg bg-neutral-800 px-3 py-4">
-                    <p className="text-2xl font-bold text-white">{value}</p>
-                    <p className="text-xs font-semibold text-neutral-400">{label}</p>
+            {/* Sticky sidebar — only real info: price, setup, integrations */}
+            <aside className="lg:sticky lg:top-24 lg:self-start">
+              <div className="space-y-6">
+                {/* Price + plan card */}
+                <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
+                  <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
+                      <Rocket size={18} />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-white">
+                        {dict.agentDetail.setupPrice}
+                      </h2>
+                      <p className="text-xs font-semibold text-neutral-500">
+                        {dict.deploy.flowNote}
+                      </p>
+                    </div>
                   </div>
-                ))}
-              </div>
 
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3 rounded-lg bg-neutral-800 p-3 text-neutral-300">
-                  <Star size={17} className="text-purple-400 shrink-0" />
-                  {dict.agentDetail.ratedBy}
-                </div>
-                <div className="flex items-center gap-3 rounded-lg bg-neutral-800 p-3 text-neutral-300">
-                  <Clock3 size={17} className="text-brand-400 shrink-0" />
-                  {t(dict.agentDetail.typicalLaunch, { setupTime: agent.setupTime })}
-                </div>
-                <div className="flex items-center gap-3 rounded-lg bg-neutral-800 p-3 text-neutral-300">
-                  <ShieldCheck size={17} className="text-purple-400 shrink-0" />
-                  {dict.agentDetail.gdprNote}
-                </div>
-              </div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-3xl font-bold text-white">
+                        {agent.price}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-neutral-500">
+                        {dict.agentDetail.setup}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-300">
+                      <Clock3 size={13} className="text-brand-400" />
+                      {agent.setupTime}
+                    </div>
+                  </div>
 
-              <div className="mt-5 border-t border-white/5 pt-5">
-                <p className="text-sm font-semibold text-neutral-400">{dict.agentDetail.setupPrice}</p>
-                <p className="text-3xl font-bold text-white">{agent.price}</p>
+                  <div className="mt-5 space-y-2.5">
+                    {agent.tasks.slice(0, 3).map((task) => (
+                      <div
+                        key={task}
+                        className="flex items-center gap-2.5 text-sm font-semibold text-neutral-300"
+                      >
+                        <CheckCircle2 size={16} className="shrink-0 text-brand-400" />
+                        {task}
+                      </div>
+                    ))}
+                  </div>
+
+                  <Link
+                    href={available ? `/agents/${agent.slug}/deploy` : "/demo"}
+                    className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition-all ${
+                      available
+                        ? "bg-brand-500 shadow-lg shadow-brand-500/20 hover:bg-brand-400"
+                        : "bg-neutral-800 text-neutral-400"
+                    }`}
+                  >
+                    {available ? (
+                      <>
+                        {dict.agentDetail.configureAndDeploy}
+                        <ArrowRight size={16} />
+                      </>
+                    ) : (
+                      dict.common.comingSoon
+                    )}
+                  </Link>
+
+                  <Link
+                    href="/chat"
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"
+                  >
+                    {dict.agentDetail.askOurAi}
+                  </Link>
+                </div>
+
+                {/* Integrations card */}
+                <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
+                  <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
+                      <Plug size={18} />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-white">
+                        {dict.agentDetail.integrationsTitle}
+                      </h2>
+                      <p className="text-xs font-semibold text-neutral-500">
+                        {t(dict.agentDetail.integrationsDesc, { name: agent.shortName })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {agent.integrations.map((integration) => (
+                      <span
+                        key={integration}
+                        className="rounded-full border border-white/10 bg-neutral-800 px-3.5 py-1.5 text-xs font-semibold text-neutral-300"
+                      >
+                        {integration}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Trust card */}
+                <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+                      <ShieldCheck size={18} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">
+                        {dict.agentDetail.gdprNote}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold leading-5 text-neutral-500">
+                        {locale === "it"
+                          ? "Configurazione guidata senza codice: colleghi i tuoi strumenti e attivi l'agente in pochi minuti."
+                          : "Code-free guided setup: connect your tools and deploy the agent in minutes."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </aside>
           </div>
         </div>
       </section>
@@ -267,15 +362,20 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_420px]">
           <div className="space-y-8">
             {/* What this agent automates */}
-            <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
+            <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/20">
               <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
-                <Zap size={22} className="text-brand-400" />
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
+                  <Zap size={18} />
+                </span>
                 {dict.agentDetail.whatAutomates}
               </h2>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {agent.tasks.map((task) => (
-                  <div key={task} className="flex items-center gap-3 rounded-lg bg-neutral-800 p-4">
-                    <CheckCircle2 size={18} className="text-purple-400 shrink-0" />
+                  <div
+                    key={task}
+                    className="flex items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/60 p-4 transition-colors hover:border-brand-500/20"
+                  >
+                    <CheckCircle2 size={18} className="shrink-0 text-brand-400" />
                     <span className="text-sm font-semibold text-neutral-200">{task}</span>
                   </div>
                 ))}
@@ -283,9 +383,11 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             </div>
 
             {/* How it works */}
-            <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
+            <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/20">
               <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
-                <RefreshCw size={22} className="text-purple-400" />
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
+                  <RefreshCw size={18} />
+                </span>
                 {dict.agentDetail.howItWorks}
               </h2>
               <p className="mt-2 text-sm font-semibold leading-relaxed text-neutral-400">
@@ -293,8 +395,11 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {agent.workflow.map((step, index) => (
-                  <div key={step} className="relative rounded-lg border border-white/5 bg-neutral-800 p-4">
-                    <p className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
+                  <div
+                    key={step}
+                    className="relative rounded-xl border border-white/5 bg-neutral-800/60 p-4 transition-colors hover:border-brand-500/20"
+                  >
+                    <p className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-brand-500 to-purple-500 text-sm font-bold text-white shadow-lg shadow-brand-500/20">
                       {index + 1}
                     </p>
                     <p className="text-sm font-bold text-neutral-200">{step}</p>
@@ -309,9 +414,11 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             </div>
 
             {/* Use cases */}
-            <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
+            <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/20">
               <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
-                <Sparkles size={22} className="text-brand-400" />
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-pink-500/15 text-pink-400">
+                  <Sparkles size={18} />
+                </span>
                 {dict.agentDetail.useCases}
               </h2>
               <p className="mt-2 text-sm font-semibold leading-relaxed text-neutral-400">
@@ -321,9 +428,9 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 {useCases.map((useCase, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-3 rounded-lg border border-white/5 bg-neutral-800 px-4 py-3.5"
+                    className="flex items-start gap-3 rounded-xl border border-white/5 bg-neutral-800/60 px-4 py-3.5 transition-colors hover:border-brand-500/20"
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500/20 text-xs font-bold text-brand-300">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300">
                       {i + 1}
                     </span>
                     <span className="text-sm font-semibold leading-relaxed text-neutral-200">
@@ -334,36 +441,27 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               </div>
             </div>
 
-            {/* Integrations */}
-            <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
-              <div className="mb-2 flex items-center gap-2">
-                <Plug size={22} className="text-brand-400" />
-                <h2 className="text-2xl font-bold text-white">{dict.agentDetail.integrationsTitle}</h2>
-              </div>
-              <p className="text-sm font-semibold leading-relaxed text-neutral-400">
-                {t(dict.agentDetail.integrationsDesc, { name: agent.shortName })}
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {agent.integrations.map((integration) => (
-                  <span
-                    key={integration}
-                    className="rounded-full border border-white/5 bg-neutral-800 px-3.5 py-1.5 text-sm font-semibold text-neutral-300"
-                  >
-                    {integration}
-                  </span>
-                ))}
-              </div>
-            </div>
-
             {/* FAQ */}
-            <div className="rounded-xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
-              <h2 className="mb-2 text-2xl font-bold text-white">{dict.agentDetail.faqTitle}</h2>
-              <div className="mt-5 space-y-4">
+            <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/20">
+              <h2 className="mb-2 text-2xl font-bold text-white">
+                {dict.agentDetail.faqTitle}
+              </h2>
+              <div className="mt-5 space-y-3">
                 {faqs.map(([question, answer]) => (
-                  <div key={question} className="rounded-lg bg-neutral-800 px-4 py-3.5">
-                    <p className="text-sm font-bold text-white">{question}</p>
-                    <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">{answer}</p>
-                  </div>
+                  <details
+                    key={question}
+                    className="group rounded-xl border border-white/5 bg-neutral-800/60 px-4 py-3.5 transition-colors hover:border-white/10"
+                  >
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-white">
+                      {question}
+                      <span className="text-neutral-500 transition-transform group-open:rotate-45">
+                        +
+                      </span>
+                    </summary>
+                    <p className="mt-2.5 text-sm leading-relaxed text-neutral-400">
+                      {answer}
+                    </p>
+                  </details>
                 ))}
               </div>
             </div>
@@ -381,7 +479,9 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
         <section className="border-t border-white/5 px-4 py-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="mb-2 flex items-center gap-2">
-              <Layers size={22} className="text-brand-400" />
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
+                <Layers size={18} />
+              </span>
               <h2 className="text-2xl font-bold text-white">
                 {t(dict.agentDetail.moreIn, { category: agent.category })}
               </h2>
@@ -415,7 +515,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             {available && (
               <Link
                 href={`/agents/${agent.slug}/deploy`}
-                className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white transition-colors hover:bg-brand-400"
+                className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
               >
                 {dict.agentDetail.configureAndDeploy}
                 <ArrowRight size={18} />

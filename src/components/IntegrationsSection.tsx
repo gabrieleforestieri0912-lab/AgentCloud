@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import BrandIcon from "./BrandIcon";
-import { BRANDS } from "@/lib/brands";
+import BrandLogo from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
 
 const INTEGRATIONS = [
@@ -71,37 +70,33 @@ export default function IntegrationsSection() {
             },
           }}
         >
-          {INTEGRATIONS.map((int) => {
-            const brand = BRANDS[int.brand];
-            if (!brand) return null;
-            return (
-              <motion.div
-                key={int.name}
-                className="flex items-center gap-4 p-3 rounded-2xl bg-neutral-900/50 hover:bg-neutral-900 hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.3)] border border-white/5 hover:border-white/10 transition-all duration-300 cursor-pointer group"
-                variants={{
-                  hidden: { opacity: 0, scale: 0.95 },
-                  visible: {
-                    opacity: 1,
-                    scale: 1,
-                    transition: { duration: 0.4, ease: "easeOut" },
-                  },
-                }}
-              >
-                <div className="w-16 h-16 shrink-0 bg-neutral-900 rounded-2xl border border-white/5 shadow-[0_8px_20px_-4px_rgba(0,0,0,0.3)] flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-                  <BrandIcon brand={brand} size={28} />
-                </div>
+          {INTEGRATIONS.map((int) => (
+            <motion.div
+              key={int.name}
+              className="flex items-center gap-4 p-3 rounded-2xl bg-neutral-900/50 hover:bg-neutral-900 hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.3)] border border-white/5 hover:border-white/10 transition-all duration-300 cursor-pointer group"
+              variants={{
+                hidden: { opacity: 0, scale: 0.95 },
+                visible: {
+                  opacity: 1,
+                  scale: 1,
+                  transition: { duration: 0.4, ease: "easeOut" },
+                },
+              }}
+            >
+              <div className="w-16 h-16 shrink-0 bg-neutral-900 rounded-2xl border border-white/5 shadow-[0_8px_20px_-4px_rgba(0,0,0,0.3)] flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <BrandLogo slug={int.brand} size={28} />
+              </div>
 
-                <div className="flex flex-col min-w-0">
-                  <span className="font-semibold text-white group-hover:text-brand-400 transition-colors text-sm sm:text-base truncate">
-                    {int.name}
-                  </span>
-                  <span className="text-xs text-neutral-500 truncate">
-                    {(dict.integrations.categories as Record<string, string>)[int.category] ?? int.category}
-                  </span>
-                </div>
-              </motion.div>
-            );
-          })}
+              <div className="flex flex-col min-w-0">
+                <span className="font-semibold text-white group-hover:text-brand-400 transition-colors text-sm sm:text-base truncate">
+                  {int.name}
+                </span>
+                <span className="text-xs text-neutral-500 truncate">
+                  {(dict.integrations.categories as Record<string, string>)[int.category] ?? int.category}
+                </span>
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
 
         <motion.div
