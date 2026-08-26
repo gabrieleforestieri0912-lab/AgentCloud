@@ -8,14 +8,13 @@ import { createClient } from "@/lib/supabase/client";
 import {
   ArrowRight,
   Globe,
-  Menu,
   Sparkles,
-  X,
   LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
 import BrandLogo from "./BrandLogo";
+import MobileNav from "./MobileNav";
 import { AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { useLanguage } from "./LanguageProvider";
 
@@ -318,119 +317,9 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
               ))}
             </div>
 
-            <button
-              className="p-2 text-neutral-400 md:hidden"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Toggle navigation"
-            >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
+            <MobileNav marketplaceAgents={marketplaceAgents} />
           </div>
         </div>
-
-        {mobileOpen && (
-          <div className="border-t border-white/5 bg-neutral-950 px-4 py-4 md:hidden max-h-[calc(100vh-5rem)] overflow-y-auto">
-            <div className="space-y-1">
-              <div className="mb-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                {dict.navbar.menu}
-              </div>
-              <Link
-                href="/agents"
-                onClick={() => setMobileOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/5"
-              >
-                {dict.navbar.marketplace}
-              </Link>
-              <div className="grid grid-cols-2 gap-1 px-3 pb-2">
-                {agents.map((agent) => (
-                  <Link
-                    key={agent.slug}
-                    href={`/agents/${agent.slug}`}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold text-neutral-400 hover:bg-white/5 hover:text-white"
-                  >
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${agent.accent}`}>
-                      <AgentIcon icon={agent.icon} brand={agent.brand} size={12} className="text-white" />
-                    </span>
-                    <span className="truncate">{agent.shortName}</span>
-                  </Link>
-                ))}
-              </div>
-              <Link
-                href="/#solutions"
-                onClick={() => setMobileOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/5"
-              >
-                {dict.navbar.solutions}
-              </Link>
-              <div className="grid grid-cols-2 gap-1 px-3 pb-2">
-                {solutions.map(({ title, href }) => (
-                  <Link
-                    key={title}
-                    href={href}
-                    onClick={() => setMobileOpen(false)}
-                    className="rounded-lg px-2 py-2 text-xs font-semibold text-neutral-400 hover:bg-white/5 hover:text-white"
-                  >
-                    {title}
-                  </Link>
-                ))}
-              </div>
-              <Link
-                href="/#integrations"
-                onClick={() => setMobileOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/5"
-              >
-                {dict.navbar.integrations}
-              </Link>
-            </div>
-            <div className="mt-4 flex items-center justify-center">
-              <button
-                onClick={() => {
-                  toggleLocale();
-                  setMobileOpen(false);
-                }}
-                className="flex items-center gap-1.5 rounded-full border border-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-neutral-300 transition-colors hover:bg-white/5"
-              >
-                <Globe size={14} className="text-brand-400" />
-                {locale === "it" ? "IT" : "EN"}
-                <span className="text-neutral-600">/</span>
-                <span className="text-neutral-500">{locale === "it" ? "EN" : "IT"}</span>
-              </button>
-            </div>
-            <div className="mt-4 border-t border-white/5 pt-4">
-              {authLoaded && (isSignedIn ? (
-                <div className="space-y-2">
-                  <button
-                    onClick={() => {
-                      handleSignOut();
-                      setMobileOpen(false);
-                    }}
-                    className="block w-full rounded-full border border-white/10 px-4 py-2.5 text-center text-sm font-bold text-neutral-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
-                  >
-                    {dict.navbar.logOut}
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Link
-                    href="/demo"
-                    onClick={() => setMobileOpen(false)}
-                    className="block w-full rounded-full bg-brand-500 px-4 py-2.5 text-center text-sm font-bold text-white"
-                  >
-                    {dict.navbar.requestDemo}
-                  </Link>
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileOpen(false)}
-                    className="block w-full rounded-full border border-white/10 px-4 py-2.5 text-center text-sm font-bold text-neutral-300 transition-colors hover:bg-white/5"
-                  >
-                    {dict.navbar.signIn}
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </header>
     </>
   );
