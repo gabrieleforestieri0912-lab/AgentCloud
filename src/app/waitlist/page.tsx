@@ -24,7 +24,7 @@ const FLOATING_BUBBLES: FloatingBubble[] = [
 ];
 
 export default function WaitlistPage() {
-  const { dict } = useLanguage();
+  const { dict, locale } = useLanguage();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -173,9 +173,40 @@ export default function WaitlistPage() {
                 <h3 className="text-lg font-bold text-white mb-2">
                   {dict.waitlist.successTitle}
                 </h3>
-                <p className="text-neutral-400 text-sm">
+                <p className="text-neutral-400 text-sm mb-4">
                   {dict.waitlist.successText}
                 </p>
+                <p className="text-xs font-semibold text-neutral-500 mb-3">
+                  {locale === "it"
+                    ? "Seguici per gli aggiornamenti:"
+                    : "Follow us for updates:"}
+                </p>
+                <div className="flex items-center justify-center gap-4">
+                  <a
+                    href="https://www.instagram.com/_agentcloud/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-neutral-400 hover:text-white transition-colors"
+                  >
+                    Instagram
+                  </a>
+                  <a
+                    href="https://www.linkedin.com/in/agent-cloud-323218431/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-neutral-400 hover:text-white transition-colors"
+                  >
+                    LinkedIn
+                  </a>
+                  <a
+                    href="https://x.com/AgentCloud2k"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-neutral-400 hover:text-white transition-colors"
+                  >
+                    X
+                  </a>
+                </div>
               </motion.div>
             ) : isFull ? (
               <motion.div

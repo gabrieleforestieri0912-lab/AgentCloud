@@ -48,6 +48,23 @@ async function resolveSession(request: NextRequest) {
 }
 
 export async function proxy(request: NextRequest) {
+  // ─── Waitlist phase: lock down the platform ───────────────────────
+  // During the waitlist phase, redirect every page to /waitlist so the
+  // platform is locked down. API routes, static assets, and the waitlist
+  // page itself are excluded.
+  const { pathname } = request.nextUrl;
+  const isWaitlistRoute = pathname === "/waitlist";
+  const isApiOrAsset =
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next/") ||
+    pathname.includes(".");
+
+  if (!isWaitlistRoute && !isApiOrAsset) {
+    const waitlistUrl = request.nextUrl.clone();
+    waitlistUrl.pathname = "/waitlist";
+    return NextResponse.redirect(waitlistUrl);
+  }
+
   // Local development without Supabase keys: allow everything through so the
   // app is usable before keys are configured. In production this bypass is
   // never taken — missing keys fail closed (protected routes → /login).
