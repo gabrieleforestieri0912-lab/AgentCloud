@@ -29,6 +29,7 @@ export default function DeployAgentPage() {  const { dict, locale } = useLanguag
   const agent = rawAgent ? localizeAgent(rawAgent, locale) : undefined;
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const steps = dict.deploy.steps;
 
@@ -314,13 +315,32 @@ export default function DeployAgentPage() {  const { dict, locale } = useLanguag
                   </div>
                 </div>
 
-                <Link
-                  href={`/demo?source=deploy&agent=${agent.slug}`}
-                  className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98]"
+                <button
+                  type="button"
+                  disabled={isCheckingOut}
+                  onClick={async () => {
+                    setIsCheckingOut(true);
+                    try {
+                      const res = await fetch("/api/checkout", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ agentId: agent.slug }),
+                      });
+                      const data = await res.json();
+                      if (data.url) {
+                        window.location.href = data.url;
+                      }
+                    } catch {
+                      // user stays on page on error
+                    } finally {
+                      setIsCheckingOut(false);
+                    }
+                  }}
+                  className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98] disabled:opacity-50"
                 >
                   <Rocket size={16} />
-                  {dict.deploy.requestDemo}
-                </Link>
+                  {isCheckingOut ? dict.common.close : dict.deploy.requestDemo}
+                </button>
 
                 <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200/50 bg-amber-50/50 px-3.5 py-2.5">
                   <AlertTriangle
