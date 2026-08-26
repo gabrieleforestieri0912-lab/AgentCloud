@@ -1007,25 +1007,25 @@ const SEEDS: AgentSeed[] = [
     installs: "630",
     badge: "New",
     description:
-      "Search products, build cart links, and check orders on your store.",
+      "Manage your entire Shopify store — create products, discounts, track sales, and drive revenue.",
     longDescription:
-      "The Shopify agent runs conversational commerce for your store. It searches your catalog, builds direct cart links for specific variants, checks order status securely using order number and email, and reports availability in seconds. Connected to your Shopify store, Stripe, Slack, and email, it gives shoppers the answer and the next step instantly — turning a product question from your customers into a completed order link rather than a dead-end conversation.",
+      "The Shopify Agent is your full e-commerce command center. Whether you're launching your first store or scaling an existing one, it handles everything: creating products with optimized descriptions, setting up discount codes that convert, managing collections and inventory, analyzing sales performance, and generating direct cart links to close sales. It also tracks customer behavior and order status. New to Shopify? The agent guides you through store setup and connects your store in minutes. Already selling? It analyzes your analytics, suggests revenue-boosting actions, and executes them for you — turning conversations into revenue.",
     tasks: [
-      "Search products",
-      "Generate cart links",
-      "Check order status",
-      "Report availability",
+      "Create & manage products",
+      "Set up discount codes",
+      "Track sales analytics",
+      "Manage inventory & collections",
     ],
-    integrations: ["Shopify", "Stripe", "Slack", "Email"],
+    integrations: ["Shopify"],
     workflow: [
-      "Search catalog",
-      "Build cart link",
-      "Verify order",
-      "Deliver summary",
+      "Connect store",
+      "Analyze performance",
+      "Create products & promotions",
+      "Drive revenue",
     ],
-    previewPrompt: "Find a running shoe product and generate a cart link.",
+    previewPrompt: "Create a summer collection and set up a 20% launch discount.",
     previewResult:
-      "Ho trovato 4 prodotti disponibili, ho generato il link al carrello per la variante più economica e ho fornito il prezzo e l'URL del prodotto.",
+      "Ho creato 3 nuovi prodotti nella collezione Estate, ho configurato il codice sconto ESTATE20 al 20%, e ho generato i link diretti al carrello per condividerli sui social.",
     accent: "bg-green-500",
   },
   {

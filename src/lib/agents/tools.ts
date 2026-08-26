@@ -1,6 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { logAudit } from "@/lib/audit";
-import { getTenantCredentials, updateTenantGoogleTokens } from "@/lib/tenants";
+import {
+  getTenantCredentials,
+  updateTenantGoogleTokens,
+  updateTenantShopifyCredentials,
+} from "@/lib/tenants";
 
 export const TOOL_DEFINITIONS: Record<string, Anthropic.Tool> = {
   web_search: {
@@ -120,6 +124,200 @@ export const TOOL_DEFINITIONS: Record<string, Anthropic.Tool> = {
         quantity: { type: "integer", description: "Quantity to add to cart" },
       },
       required: ["variant_id"],
+    },
+  },
+
+  shopify_setup_store: {
+    name: "shopify_setup_store",
+    description:
+      "Connect a Shopify store by saving the shop domain and admin access token. Use this when the user does NOT yet have a store connected or wants to change their store.",
+    input_schema: {
+      type: "object",
+      properties: {
+        shop_domain: {
+          type: "string",
+          description:
+            "The Shopify shop domain (e.g. my-store.myshopify.com)",
+        },
+        access_token: {
+          type: "string",
+          description:
+            "The Shopify Admin API access token (starts with shpat_)",
+        },
+      },
+      required: ["shop_domain", "access_token"],
+    },
+  },
+
+  shopify_list_customers: {
+    name: "shopify_list_customers",
+    description:
+      "List customers from the connected Shopify store. Returns name, email, total orders, total spent, and creation date.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description:
+            'Optional search query (e.g. email, name, or tag). Leave empty for all customers.',
+        },
+        limit: {
+          type: "integer",
+          description: 'Max customers to return (default 10, max 50).',
+        },
+      },
+    },
+  },
+
+  shopify_get_analytics: {
+    name: "shopify_get_analytics",
+    description:
+      "Get store analytics: total sales, orders count, top products, and recent activity for a given date range.",
+    input_schema: {
+      type: "object",
+      properties: {
+        period: {
+          type: "string",
+          description:
+            'Time period: "today", "7d", "30d", or "90d". Default: "30d".',
+        },
+      },
+    },
+  },
+
+  shopify_create_product: {
+    name: "shopify_create_product",
+    description:
+      "Create a new product on the connected Shopify store with title, description, price, and optional image URL.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string",
+          description: "Product title",
+        },
+        description: {
+          type: "string",
+          description: "Product description (HTML allowed)",
+        },
+        price: {
+          type: "string",
+          description: "Price as a decimal string (e.g. '29.99')",
+        },
+        compare_at_price: {
+          type: "string",
+          description:
+            "Original price before discount (optional, e.g. '49.99')",
+        },
+        image_url: {
+          type: "string",
+          description: "Product image URL (optional)",
+        },
+        tags: {
+          type: "string",
+          description: "Comma-separated tags (optional)",
+        },
+      },
+      required: ["title", "price"],
+    },
+  },
+
+  shopify_create_discount: {
+    name: "shopify_create_discount",
+    description:
+      "Create a discount code on the connected Shopify store.",
+    input_schema: {
+      type: "object",
+      properties: {
+        code: {
+          type: "string",
+          description: "Discount code text (e.g. 'SUMMER20')",
+        },
+        type: {
+          type: "string",
+          description:
+            'Type of discount: "percentage" or "fixed_amount"',
+        },
+        value: {
+          type: "string",
+          description:
+            'Discount value: percentage (e.g. "20" for 20%) or fixed amount (e.g. "10.00")',
+        },
+        usage_limit: {
+          type: "integer",
+          description:
+            "Max number of times this code can be used (optional)",
+        },
+        starts_at: {
+          type: "string",
+          description: "Start date in ISO format (optional)",
+        },
+        ends_at: {
+          type: "string",
+          description: "End date in ISO format (optional)",
+        },
+      },
+      required: ["code", "type", "value"],
+    },
+  },
+
+  shopify_list_collections: {
+    name: "shopify_list_collections",
+    description:
+      "List all product collections (categories) on the connected Shopify store.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "integer",
+          description: 'Max collections to return (default 20, max 50).',
+        },
+      },
+    },
+  },
+
+  shopify_manage_collection: {
+    name: "shopify_manage_collection",
+    description:
+      "Add or remove products from a collection on the connected Shopify store.",
+    input_schema: {
+      type: "object",
+      properties: {
+        collection_id: {
+          type: "string",
+          description: "The collection GID",
+        },
+        product_ids: {
+          type: "string",
+          description:
+            "Comma-separated product GIDs to add or remove",
+        },
+        action: {
+          type: "string",
+          description: '"add" to add products, "remove" to remove products',
+        },
+      },
+      required: ["collection_id", "product_ids", "action"],
+    },
+  },
+
+  shopify_update_inventory: {
+    name: "shopify_update_inventory",
+    description:
+      "Update inventory quantity for a specific product variant.",
+    input_schema: {
+      type: "object",
+      properties: {
+        variant_id: {
+          type: "string",
+          description: "The variant GID (e.g. gid://shopify/ProductVariant/123)",
+        },
+        quantity: {
+          type: "integer",
+          description: "New available quantity",
+        },
+      },
+      required: ["variant_id", "quantity"],
     },
   },
 
@@ -246,6 +444,57 @@ function sanitizeText(value: string, maxLength = 1000): string {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, maxLength);
+}
+
+/**
+ * Resolve Shopify credentials: first try tenant (per-user), then env vars.
+ * Returns null when no credentials are available.
+ */
+function getShopifyCredentials(tenantId?: string): {
+  shopDomain: string;
+  accessToken: string;
+} | null {
+  let shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
+  let accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+  if (tenantId) {
+    const creds = getTenantCredentials(tenantId);
+    if (creds?.shopify) {
+      shopDomain = creds.shopify.shopDomain || shopDomain;
+      accessToken = creds.shopify.accessToken || accessToken;
+    }
+  }
+  if (!shopDomain || !accessToken) return null;
+  return { shopDomain, accessToken };
+}
+
+/** Execute a Shopify GraphQL Admin API query/mutation. */
+async function shopifyGraphQL(
+  shopDomain: string,
+  accessToken: string,
+  query: string,
+  variables: Record<string, unknown> = {},
+): Promise<{ ok: boolean; data?: unknown; errors?: unknown; statusText?: string; raw?: string }> {
+  try {
+    const res = await fetch(
+      `https://${shopDomain}/admin/api/2024-10/graphql.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": accessToken,
+        },
+        body: JSON.stringify({ query, variables }),
+      },
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      return { ok: false, statusText: `${res.status} ${res.statusText}`, raw: text };
+    }
+    const json = await res.json();
+    return { ok: true, data: json.data, errors: json.errors };
+  } catch (e) {
+    return { ok: false, statusText: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 function isValidEmail(email: string): boolean {
@@ -579,6 +828,532 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
         return `Invalid variant_id: ${variantId}`;
       }
       return `https://${shopDomain}/cart/${match[1]}:${quantity}`;
+    }
+
+    case "shopify_setup_store": {
+      const shopDomain = sanitizeText(input.shop_domain || "", 200).replace(
+        /^https?:\/\//,
+        "",
+      );
+      const accessToken = sanitizeText(input.access_token || "", 200);
+
+      if (!shopDomain) {
+        return "shop_domain is required (e.g. my-store.myshopify.com).";
+      }
+      if (!accessToken) {
+        return "access_token is required.";
+      }
+      if (!shopDomain.includes(".myshopify.com")) {
+        return "The shop_domain must be a valid Shopify domain (e.g. my-store.myshopify.com).";
+      }
+      if (!accessToken.startsWith("shpat_")) {
+        return "The access_token should start with 'shpat_' — please use a valid Shopify Admin API access token.";
+      }
+
+      // Save credentials for this tenant (user)
+      if (context.tenantId) {
+        updateTenantShopifyCredentials(context.tenantId, shopDomain, accessToken);
+      }
+
+      // Verify the token works by making a test query
+      const test = await shopifyGraphQL(
+        shopDomain,
+        accessToken,
+        `query { shop { name primaryDomain { host } } }`,
+      );
+
+      if (!test.ok) {
+        return `Connection failed: ${test.statusText}. Please check your domain and access token.`;
+      }
+      if (test.errors) {
+        return `Connection error: ${JSON.stringify(test.errors)}. The token may lack the required permissions (read_products, read_orders, write_products, write_discounts).`;
+      }
+
+      const shop = (test.data as { shop?: { name?: string; primaryDomain?: { host?: string } } })?.shop;
+      return `Store connected successfully!
+Store name: ${shop?.name ?? "N/A"}
+Domain: ${shop?.primaryDomain?.host ?? shopDomain}
+
+I now have full access to your Shopify store. I can help you with:
+• Searching and managing products
+• Creating new products and discount codes
+• Managing collections and inventory
+• Viewing customer data and sales analytics
+• Generating cart links for customers
+• Checking order status
+
+What would you like to do first?`;
+    }
+
+    case "shopify_list_customers": {
+      const creds = getShopifyCredentials(context.tenantId);
+      if (!creds) {
+        return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
+      }
+
+      const limit = Math.min(50, Math.max(1, Number(input.limit) || 10));
+      const query = input.query || "";
+
+      const searchFilter = query ? `query: "${sanitizeText(query, 100)}"` : "";
+      const graphql = `
+        query listCustomers($first: Int!) {
+          customers(first: $first${searchFilter ? `, query: "${sanitizeText(query, 100)}"` : ""}) {
+            edges {
+              node {
+                firstName
+                lastName
+                email
+                ordersCount { quantity }
+                totalSpent { amount currencyCode }
+                createdAt
+                tags
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { first: limit });
+      if (!result.ok) return `Shopify API error: ${result.statusText}`;
+      if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
+
+      const edges = (
+        (result.data as { customers?: { edges?: unknown[] } })?.customers?.edges || []
+      ) as Array<{
+        node?: {
+          firstName?: string;
+          lastName?: string;
+          email?: string;
+          ordersCount?: { quantity?: number };
+          totalSpent?: { amount?: string; currencyCode?: string };
+          createdAt?: string;
+          tags?: string[];
+        };
+      }>;
+
+      if (!edges.length) return query ? `No customers found for "${query}".` : "No customers found.";
+
+      const results = edges.map((e) => {
+        const n = e.node;
+        const name = [n?.firstName, n?.lastName].filter(Boolean).join(" ") || "N/A";
+        return [
+          `Name: ${name}`,
+          `Email: ${n?.email ?? "N/A"}`,
+          `Orders: ${n?.ordersCount?.quantity ?? 0}`,
+          `Total spent: ${n?.totalSpent?.amount ?? "0"} ${n?.totalSpent?.currencyCode ?? ""}`,
+          `Created: ${n?.createdAt ?? "N/A"}`,
+          n?.tags?.length ? `Tags: ${n.tags.join(", ")}` : null,
+        ].filter(Boolean).join("\n");
+      });
+
+      return `Found ${edges.length} customer(s):\n\n${results.join("\n\n")}`;
+    }
+
+    case "shopify_get_analytics": {
+      const creds = getShopifyCredentials(context.tenantId);
+      if (!creds) {
+        return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
+      }
+
+      const period = input.period || "30d";
+      const days = period === "today" ? 1 : period === "7d" ? 7 : period === "90d" ? 90 : 30;
+      const since = new Date(Date.now() - days * 86400000).toISOString();
+
+      const graphql = `
+        query getAnalytics($since: String!) {
+          orders(first: 250, query: "created_at:>=$since") {
+            edges {
+              node {
+                totalPrice { amount currencyCode }
+                createdAt
+                lineItems(first: 5) {
+                  edges {
+                    node {
+                      title
+                      quantity
+                      originalTotalPrice { amount }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          shop {
+            name
+            primaryDomain { host }
+          }
+        }
+      `;
+
+      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { since });
+      if (!result.ok) return `Shopify API error: ${result.statusText}`;
+      if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
+
+      const data = result.data as {
+        orders?: { edges?: Array<{ node?: { totalPrice?: { amount?: string; currencyCode?: string }; lineItems?: { edges?: Array<{ node?: { title?: string; quantity?: number; originalTotalPrice?: { amount?: string } } }> } } }> };
+        shop?: { name?: string };
+      };
+
+      const orderEdges = data?.orders?.edges || [];
+      let totalRevenue = 0;
+      const productSales: Record<string, number> = {};
+
+      for (const edge of orderEdges) {
+        const n = edge.node;
+        const amount = parseFloat(n?.totalPrice?.amount || "0");
+        totalRevenue += amount;
+        for (const li of n?.lineItems?.edges || []) {
+          const title = li.node?.title || "Unknown";
+          const qty = li.node?.quantity || 0;
+          productSales[title] = (productSales[title] || 0) + qty;
+        }
+      }
+
+      const topProducts = Object.entries(productSales)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([title, qty], i) => `  ${i + 1}. ${title} (×${qty})`)
+        .join("\n");
+
+      const currency = orderEdges[0]?.node?.totalPrice?.currencyCode || "EUR";
+
+      return [
+        `📊 Analytics for ${data?.shop?.name ?? "your store"} — last ${days} day(s)`,
+        ``,
+        `Total orders: ${orderEdges.length}`,
+        `Total revenue: ${totalRevenue.toFixed(2)} ${currency}`,
+        `Average order value: ${orderEdges.length ? (totalRevenue / orderEdges.length).toFixed(2) : "0.00"} ${currency}`,
+        ``,
+        topProducts ? `Top products:\n${topProducts}` : "No product data yet.",
+      ].join("\n");
+    }
+
+    case "shopify_create_product": {
+      const creds = getShopifyCredentials(context.tenantId);
+      if (!creds) {
+        return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
+      }
+
+      const title = sanitizeText(input.title || "", 250);
+      const descriptionHtml = sanitizeText(input.description || "", 5000);
+      const price = sanitizeText(input.price || "0", 20);
+      const compareAt = sanitizeText(input.compare_at_price || "", 20);
+      const imageUrl = sanitizeText(input.image_url || "", 500);
+      const tags = sanitizeText(input.tags || "", 500);
+
+      if (!title) return "Product title is required.";
+      if (isNaN(parseFloat(price))) return "Price must be a valid number.";
+
+      const graphql = `
+        mutation productCreate($input: ProductInput!) {
+          productCreate(input: $input) {
+            product {
+              id
+              title
+              handle
+              onlineStoreUrl
+              priceRangeV2 { minVariantPrice { amount currencyCode } }
+            }
+            userErrors { field message }
+          }
+        }
+      `;
+
+      const productInput: Record<string, unknown> = {
+        title,
+        descriptionHtml,
+        variants: [{
+          price,
+          ...(compareAt && parseFloat(compareAt) > 0 ? { compareAtPrice: compareAt } : {}),
+        }],
+        ...(tags ? { tags: tags.split(",").map((t: string) => t.trim()).filter(Boolean) } : {}),
+      };
+
+      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { input: productInput });
+      if (!result.ok) return `Shopify API error: ${result.statusText}`;
+      if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
+
+      const productResult = result.data as {
+        productCreate?: {
+          product?: { id?: string; title?: string; handle?: string; onlineStoreUrl?: string };
+          userErrors?: Array<{ field?: string; message?: string }>;
+        };
+      };
+
+      const errors = productResult?.productCreate?.userErrors;
+      if (errors?.length) {
+        return `Product creation failed: ${errors.map((e) => e.message).join(", ")}`;
+      }
+
+      const p = productResult?.productCreate?.product;
+      return [
+        `✅ Product created successfully!`,
+        `Title: ${p?.title ?? title}`,
+        `Price: ${price}`,
+        compareAt ? `Compare at: ${compareAt}` : null,
+        `Handle: ${p?.handle ?? "N/A"}`,
+        p?.onlineStoreUrl ? `URL: ${p.onlineStoreUrl}` : null,
+        ``,
+        `The product is now live on your store. You can manage it from your Shopify admin.`,
+      ].filter(Boolean).join("\n");
+    }
+
+    case "shopify_create_discount": {
+      const creds = getShopifyCredentials(context.tenantId);
+      if (!creds) {
+        return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
+      }
+
+      const code = sanitizeText(input.code || "", 50).toUpperCase();
+      const type = input.type || "percentage";
+      const value = sanitizeText(input.value || "0", 20);
+      const usageLimit = Number(input.usage_limit) || undefined;
+      const startsAt = input.starts_at || undefined;
+      const endsAt = input.ends_at || undefined;
+
+      if (!code) return "Discount code is required.";
+      if (type !== "percentage" && type !== "fixed_amount") {
+        return "Discount type must be 'percentage' or 'fixed_amount'.";
+      }
+      if (isNaN(parseFloat(value))) return "Discount value must be a valid number.";
+
+      const graphql = `
+        mutation discountCodeBasicCreate($basicCodeDiscountInput: DiscountCodeBasicInput!) {
+          discountCodeBasicCreate(basicCodeDiscountInput: $basicCodeDiscountInput) {
+            codeDiscountNode {
+              id
+              codeDiscount {
+                ... on DiscountCodeBasic {
+                  codes(first: 1) {
+                    edges { node { code } }
+                  }
+                  startsAt
+                  endsAt
+                }
+              }
+            }
+            userErrors { field message }
+          }
+        }
+      `;
+
+      const discountInput: Record<string, unknown> = {
+        title: code,
+        code: code,
+        startsAt: startsAt || new Date().toISOString(),
+        ...(endsAt ? { endsAt } : {}),
+        ...(usageLimit ? { usageLimit } : {}),
+        customerGets: {
+          value: {
+            ...(type === "percentage"
+              ? { discountPercentage: parseFloat(value) / 100 }
+              : { discountAmount: { amount: value, appliesOnEachItem: false } }),
+          },
+          items: { all: true },
+        },
+        customerSelection: { all: true },
+      };
+
+      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { basicCodeDiscountInput: discountInput });
+      if (!result.ok) return `Shopify API error: ${result.statusText}`;
+      if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
+
+      const dcResult = result.data as {
+        discountCodeBasicCreate?: {
+          codeDiscountNode?: { id?: string };
+          userErrors?: Array<{ field?: string; message?: string }>;
+        };
+      };
+
+      const errors = dcResult?.discountCodeBasicCreate?.userErrors;
+      if (errors?.length) {
+        return `Discount creation failed: ${errors.map((e) => e.message).join(", ")}`;
+      }
+
+      return [
+        `✅ Discount code created!`,
+        `Code: ${code}`,
+        `Type: ${type === "percentage" ? `${value}% off` : `€${value} off`}`,
+        usageLimit ? `Usage limit: ${usageLimit}` : null,
+        startsAt ? `Starts: ${startsAt}` : null,
+        endsAt ? `Ends: ${endsAt}` : null,
+        ``,
+        `Share this code with your customers to boost sales!`,
+      ].filter(Boolean).join("\n");
+    }
+
+    case "shopify_list_collections": {
+      const creds = getShopifyCredentials(context.tenantId);
+      if (!creds) {
+        return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
+      }
+
+      const limit = Math.min(50, Math.max(1, Number(input.limit) || 20));
+      const graphql = `
+        query listCollections($first: Int!) {
+          collections(first: $first) {
+            edges {
+              node {
+                id
+                title
+                handle
+                productsCount { count }
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { first: limit });
+      if (!result.ok) return `Shopify API error: ${result.statusText}`;
+      if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
+
+      const edges = (
+        (result.data as { collections?: { edges?: unknown[] } })?.collections?.edges || []
+      ) as Array<{
+        node?: { id?: string; title?: string; handle?: string; productsCount?: { count?: number } };
+      }>;
+
+      if (!edges.length) return "No collections found.";
+
+      const results = edges.map((e, i) => {
+        const n = e.node;
+        return `  ${i + 1}. ${n?.title ?? "N/A"} (${n?.productsCount?.count ?? 0} products) — ID: ${n?.id ?? "N/A"}`;
+      });
+
+      return `Found ${edges.length} collection(s):\n\n${results.join("\n")}`;
+    }
+
+    case "shopify_manage_collection": {
+      const creds = getShopifyCredentials(context.tenantId);
+      if (!creds) {
+        return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
+      }
+
+      const collectionId = sanitizeText(input.collection_id || "", 200);
+      const productIdsRaw = sanitizeText(input.product_ids || "", 2000);
+      const action = input.action || "add";
+
+      if (!collectionId) return "collection_id is required.";
+      if (!productIdsRaw) return "product_ids is required (comma-separated GIDs).";
+      if (action !== "add" && action !== "remove") return "action must be 'add' or 'remove'.";
+
+      const productIds = productIdsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+
+      // Use collectionAddProducts / collectionRemoveProducts mutations
+      const mutationName = action === "add" ? "collectionAddProducts" : "collectionRemoveProducts";
+      const graphql = `
+        mutation ${mutationName}($id: ID!, $productIds: [ID!]!) {
+          ${mutationName}(id: $id, productIds: $productIds) {
+            collection { id title }
+            userErrors { field message }
+          }
+        }
+      `;
+
+      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, {
+        id: collectionId,
+        productIds,
+      });
+      if (!result.ok) return `Shopify API error: ${result.statusText}`;
+      if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
+
+      const resData = result.data as Record<string, { collection?: { title?: string }; userErrors?: Array<{ message?: string }> }>;
+      const opResult = resData?.[mutationName];
+      const errors = opResult?.userErrors;
+      if (errors?.length) {
+        return `Operation failed: ${errors.map((e) => e.message).join(", ")}`;
+      }
+
+      return [
+        `✅ Collection updated!`,
+        `Collection: ${opResult?.collection?.title ?? collectionId}`,
+        `Action: ${action === "add" ? "Added" : "Removed"} ${productIds.length} product(s)`,
+      ].join("\n");
+    }
+
+    case "shopify_update_inventory": {
+      const creds = getShopifyCredentials(context.tenantId);
+      if (!creds) {
+        return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
+      }
+
+      const variantId = sanitizeText(input.variant_id || "", 200);
+      const quantity = Number(input.quantity);
+
+      if (!variantId) return "variant_id is required (e.g. gid://shopify/ProductVariant/123).";
+      if (isNaN(quantity) || quantity < 0) return "quantity must be a non-negative number.";
+
+      // First, find the inventory item for this variant
+      const graphqlVariant = `
+        query getVariant($id: ID!) {
+          productVariant(id: $id) {
+            id
+            title
+            inventoryItem { id inventoryLevel { location { name } available } }
+            product { title }
+          }
+        }
+      `;
+
+      const variantResult = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphqlVariant, { id: variantId });
+      if (!variantResult.ok) return `Shopify API error: ${variantResult.statusText}`;
+      if (variantResult.errors) return `Shopify GraphQL error: ${JSON.stringify(variantResult.errors)}`;
+
+      const variantData = (variantResult.data as {
+        productVariant?: {
+          id?: string;
+          title?: string;
+          inventoryItem?: { id?: string; inventoryLevel?: { location?: { name?: string }; available?: number } };
+          product?: { title?: string };
+        };
+      })?.productVariant;
+
+      if (!variantData) return `Variant not found: ${variantId}`;
+
+      const inventoryItemId = variantData.inventoryItem?.id;
+      if (!inventoryItemId) return `No inventory item found for variant ${variantData.title}."`;
+
+      // Get the location to set inventory at
+      const graphqlLocations = `
+        query { locations(first: 1) { edges { node { id name } } } }
+      `;
+      const locResult = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphqlLocations);
+      const locationId = (
+        (locResult.data as { locations?: { edges?: Array<{ node?: { id?: string } }> } })?.locations?.edges?.[0]?.node?.id
+      );
+
+      if (!locationId) return "No location found in your Shopify store.";
+
+      // Set inventory level
+      const graphqlSetInventory = `
+        mutation inventoryAdjustQuantityAtLocation($inventoryItemId: ID!, $locationId: ID!, $delta: Int!) {
+          inventoryAdjustQuantityAtLocation(
+            inventoryItemId: $inventoryItemId,
+            locationId: $locationId,
+            delta: $delta
+          ) {
+            inventoryLevel { available }
+          }
+        }
+      `;
+
+      const currentAvailable = variantData.inventoryItem?.inventoryLevel?.available || 0;
+      const delta = quantity - currentAvailable;
+
+      const invResult = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphqlSetInventory, {
+        inventoryItemId,
+        locationId,
+        delta,
+      });
+      if (!invResult.ok) return `Shopify API error: ${invResult.statusText}`;
+      if (invResult.errors) return `Shopify GraphQL error: ${JSON.stringify(invResult.errors)}`;
+
+      return [
+        `✅ Inventory updated!`,
+        `Product: ${variantData.product?.title ?? "N/A"}`,
+        `Variant: ${variantData.title ?? "Default"}`,
+        `Previous: ${currentAvailable} units`,`New: ${quantity} units`,`Delta: ${delta >= 0 ? "+" : ""}${delta} units` ].join("\n");
     }
 
     case "calendar_search_availability": {

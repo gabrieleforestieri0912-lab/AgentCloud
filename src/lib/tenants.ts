@@ -138,3 +138,17 @@ export function updateTenantGoogleTokens(
   store[tenantId] = s;
   writeStore(store);
 }
+
+export function updateTenantShopifyCredentials(
+  tenantId: string,
+  shopDomain?: string,
+  accessToken?: string,
+) {
+  const store = readStore();
+  const s = store[tenantId] || { id: tenantId };
+  s.shopify = s.shopify || {};
+  if (shopDomain) s.shopify.shopDomain = shopDomain;
+  if (accessToken) s.shopify.accessToken = encrypt(accessToken);
+  store[tenantId] = s;
+  writeStore(store);
+}
