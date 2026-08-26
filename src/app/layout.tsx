@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-page-custom-font */
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { getSiteUrl } from "@/lib/site-url";
@@ -197,6 +198,7 @@ export default async function RootLayout({
         <LanguageProvider key={locale} initialLocale={locale}>
           {children}
         </LanguageProvider>
+        <Analytics />
       </body>
     </html>
   );
