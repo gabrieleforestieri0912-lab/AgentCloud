@@ -1,6 +1,0 @@
-{"ts":"2026-08-25T14:04:09.417Z","action":"tool_invocation","payload":{"tool":"shopify_search_products","userId":"anonymous","tenantId":"anonymous","inputKeys":["query"]}}
-{"ts":"2026-08-25T14:07:01.000Z","action":"tool_invocation","payload":{"tool":"shopify_search_products","userId":"anonymous","tenantId":"anonymous","inputKeys":["query"]}}
-{"ts":"2026-08-25T14:07:57.469Z","action":"tool_invocation","payload":{"tool":"shopify_search_products","userId":"anonymous","tenantId":"anonymous","inputKeys":["query"]}}
-{"ts":"2026-08-25T14:08:44.039Z","action":"tool_invocation","payload":{"tool":"shopify_search_products","userId":"anonymous","tenantId":"anonymous","inputKeys":["query"]}}
-{"ts":"2026-08-25T14:14:06.065Z","action":"tool_invocation","payload":{"tool":"shopify_search_products","userId":"anonymous","tenantId":"anonymous","inputKeys":["query"]}}
-{"ts":"2026-08-25T14:44:40.202Z","action":"tool_invocation","payload":{"tool":"shopify_search_products","userId":"anonymous","tenantId":"anonymous","inputKeys":["query"]}}

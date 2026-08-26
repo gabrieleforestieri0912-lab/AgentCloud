@@ -31,9 +31,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
-
-# vercel
+.env*# vercel
 .vercel
 
 # typescript
@@ -42,9 +40,17 @@ next-env.d.ts
 
 tsconfig.tsbuildinfo
 
+# build artifacts
+.esbuild-test-out.mjs
+
+# logs
+logs/
+
+# database backups
+supabase/schema.sql.bak
 
 # clerk configuration (can include secrets)
 /.clerk/
-.clerk 
-.env.local 
+.clerk
+.env.local
 .env.local.example 
