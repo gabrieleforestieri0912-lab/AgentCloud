@@ -60,27 +60,27 @@ export default function CountdownTimer({ locale = "it" }: { locale?: string }) {
       </div>
 
       {/* Timer blocks */}
-      <div className="flex items-center justify-center gap-3 sm:gap-4">
+      <div className="flex items-center justify-center gap-2">
         {units.map((unit, i) => (
-          <div key={unit.label} className="flex items-center gap-3 sm:gap-4">
+          <div key={unit.label} className="flex items-center gap-2">
             <div className="flex flex-col items-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-xl bg-neutral-900 border border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-lg bg-neutral-900 border border-white/10 shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
                 <motion.span
                   key={unit.value}
-                  initial={{ y: -6, opacity: 0 }}
+                  initial={{ y: -4, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.2 }}
-                  className="text-3xl sm:text-4xl font-extrabold text-white tabular-nums leading-none"
+                  className="text-xl sm:text-2xl font-extrabold text-white tabular-nums leading-none"
                 >
                   {String(unit.value).padStart(2, "0")}
                 </motion.span>
               </div>
-              <span className="mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+              <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                 {locale === "it" ? unit.labelIt : unit.label}
               </span>
             </div>
             {i < units.length - 1 && (
-              <span className="text-2xl font-bold text-brand-400/40 self-start mt-5 sm:mt-6">:</span>
+              <span className="text-lg font-bold text-brand-400/40 self-start mt-3">:</span>
             )}
           </div>
         ))}
