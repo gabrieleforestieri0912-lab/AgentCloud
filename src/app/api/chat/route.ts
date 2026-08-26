@@ -3,8 +3,6 @@ import { getLLMProvider } from "@/lib/llm";
 import type { LLMMessage } from "@/lib/llm";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
-export const runtime = "edge";
-
 /**
  * POST /api/chat
  *
