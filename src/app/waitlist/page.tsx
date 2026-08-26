@@ -6,6 +6,7 @@ import Image from "next/image";
 import FloatingBrandBubbles, {
   type FloatingBubble,
 } from "@/components/FloatingBrandBubbles";
+import CountdownTimer from "@/components/CountdownTimer";
 import { useLanguage } from "@/components/LanguageProvider";
 
 const MAX_SPOTS = 7;
@@ -128,6 +129,9 @@ export default function WaitlistPage() {
             <p className="text-neutral-400 text-center mb-6">
               {dict.waitlist.subtitle}
             </p>
+
+            {/* Countdown Timer */}
+            <CountdownTimer locale={locale} />
 
             {/* Spots Counter */}
             <div className="bg-neutral-800/50 border border-white/5 rounded-2xl p-4 mb-6">
