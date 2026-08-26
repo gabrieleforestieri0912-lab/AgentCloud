@@ -26,26 +26,33 @@ export default function AgentCard({
 
   return (
     <article
-      className={`relative rounded-lg border bg-neutral-900 p-5 shadow-sm transition-all duration-300 ${
+      className={`relative group rounded-xl border bg-neutral-900 p-6 shadow-sm transition-all duration-300 ${
         isAgentAvailable
-          ? "border-white/5 hover:-translate-y-1 hover:border-brand-500/30 hover:shadow-xl hover:shadow-brand-500/10"
+          ? "border-white/5 hover:-translate-y-2 hover:border-brand-500/40 hover:shadow-2xl hover:shadow-brand-500/15"
           : "border-white/5 opacity-60"
       } ${className}`}
     >
+      {/* Subtle gradient overlay on hover for available agents */}
+      {isAgentAvailable && (
+        <div className="absolute inset-0 rounded-xl bg-linear-to-br from-brand-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      )}
+
       {!isAgentAvailable && (
-        <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-400">
+        <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-400">
           <Clock size={12} />
           {dict.agentCard.comingSoon}
         </div>
-      )}        <div className="mb-5 flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
+      )}
+
+      <div className="relative mb-6 flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <div
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${agent.accent}`}
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${agent.accent}`}
           >
             <AgentIcon
               icon={agent.icon}
               brand={agent.brand}
-              size={21}
+              size={24}
               className="text-white"
             />
           </div>
@@ -60,15 +67,15 @@ export default function AgentCard({
         </div>
       </div>
 
-      <p className="mb-5 text-sm font-semibold leading-6 text-neutral-400">
+      <p className="relative mb-6 text-sm font-semibold leading-6 text-neutral-400">
         {agent.description}
       </p>
 
-      <div className="mb-5 space-y-2">
+      <div className="relative mb-6 space-y-2.5">
         {agent.tasks.slice(0, 3).map((task) => (
           <div
             key={task}
-            className="flex items-center gap-2 text-sm text-neutral-300"
+            className="flex items-center gap-3 text-sm text-neutral-300"
           >
             <CheckCircle2 size={16} className="text-purple-400" />
             {task}
@@ -76,21 +83,21 @@ export default function AgentCard({
         ))}
       </div>
 
-      <div className="flex items-center justify-between border-t border-white/5 pt-5">
+      <div className="relative flex items-center justify-between border-t border-white/5 pt-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
             {dict.agentCard.setup}
           </p>
-          <p className="text-base font-bold text-white">{agent.price}</p>
+          <p className="text-xl font-bold text-white">{agent.price}</p>
         </div>
 
         {isAgentAvailable ? (
-          <span className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200">
+          <span className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 group-hover:bg-brand-400 group-hover:shadow-lg group-hover:shadow-brand-500/25">
             {dict.agentCard.view}
-            <ArrowRight size={16} />
+            <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
           </span>
         ) : (
-          <span className="inline-flex items-center gap-2 rounded-full bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-500 cursor-not-allowed">
+          <span className="inline-flex items-center gap-2 rounded-full bg-neutral-800 px-5 py-2.5 text-sm font-semibold text-neutral-500 cursor-not-allowed">
             {dict.agentCard.comingSoon}
           </span>
         )}
@@ -102,7 +109,7 @@ export default function AgentCard({
         <Link
           href={`/agents/${agent.slug}`}
           aria-label={`${dict.agentCard.view} ${agent.name}`}
-          className="absolute inset-0 rounded-lg"
+          className="absolute inset-0 rounded-xl"
         />
       )}
     </article>

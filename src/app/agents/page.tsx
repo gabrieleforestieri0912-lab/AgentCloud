@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import AgentCard from "@/components/AgentCard";
+import MarketplaceGrid from "@/components/MarketplaceGrid";
 import {
   AVAILABLE_AGENTS,
   COMING_SOON_AGENTS,
@@ -66,47 +66,16 @@ export default async function AgentsPage() {
             </div>
           </div>
 
-          {/* Available agents (gated by the runtime feature flags) */}
-          <div className="mb-8">
-            <div className="mb-6 flex items-center gap-3">
-              <h2 className="text-2xl font-bold text-white">
-                {dict.agentsPage.availableNow}
-              </h2>
-              <span className="rounded-full bg-brand-500/10 px-3 py-1 text-xs font-bold text-brand-300">
-                {t(dict.agentsPage.agentsCount, { count: available.length })}
-              </span>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {available.map((agent) => (
-                <AgentCard
-                  key={agent.slug}
-                  agent={agent}
-                  available={isAvailable(agent.slug)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Coming soon agents */}
-          <div>
-            <div className="mb-6 flex items-center gap-3">
-              <h2 className="text-2xl font-bold text-white">
-                {dict.agentsPage.comingSoon}
-              </h2>
-              <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs font-bold text-neutral-400">
-                {t(dict.agentsPage.agentsCount, { count: comingSoon.length })}
-              </span>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {comingSoon.slice(0, 3).map((agent) => (
-                <AgentCard
-                  key={agent.slug}
-                  agent={agent}
-                  available={false}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Marketplace grid with search and filters */}
+          <MarketplaceGrid
+            availableAgents={available}
+            comingSoonAgents={comingSoon}
+            availableCount={available.length}
+            comingSoonCount={comingSoon.length}
+            availableLabel={dict.agentsPage.availableNow}
+            comingSoonLabel={dict.agentsPage.comingSoon}
+            countLabel={(count) => t(dict.agentsPage.agentsCount, { count })}
+          />
 
           {/* Custom agent CTA — prominent so users who can't find what
               they need know we'll build it for them. */}
