@@ -112,18 +112,7 @@ export default function WaitlistPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {/* Live badge */}
-            <div className="flex justify-center mb-5">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-950/60 px-3.5 py-1.5 text-xs font-bold tracking-wide text-neutral-300">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-400" />
-                </span>
-                {dict.waitlist.limitedAccess}
-              </span>
-            </div>
-
-            <h1 className="text-3xl font-extrabold text-white mb-3 text-center">
+            <h1 className="text-3xl font-extrabold text-white mb-2 text-center">
               {dict.waitlist.title} <span className="text-brand-400">{dict.waitlist.titleAccent}</span>
             </h1>
             <p className="text-neutral-400 text-center mb-6">
@@ -133,19 +122,17 @@ export default function WaitlistPage() {
             {/* Countdown Timer */}
             <CountdownTimer locale={locale} />
 
-            {/* Spots Counter */}
-            <div className="bg-neutral-800/50 border border-white/5 rounded-2xl p-4 mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-neutral-300">
-                  {dict.waitlist.remainingSpots}
-                </span>
-                <span className="text-2xl font-bold text-brand-400">
-                  {remainingSpots}/{MAX_SPOTS}
-                </span>
-              </div>
-              <div className="w-full bg-neutral-700 rounded-full h-2">
+            {/* Spots — compact inline */}
+            <div className="flex items-center justify-center gap-2 mb-5">
+              <span className="text-xs font-semibold text-neutral-500">
+                {dict.waitlist.remainingSpots}:
+              </span>
+              <span className="text-sm font-bold text-brand-400">
+                {remainingSpots}/{MAX_SPOTS}
+              </span>
+              <div className="w-20 bg-neutral-700 rounded-full h-1.5">
                 <motion.div
-                  className="bg-linear-to-r from-brand-500 to-pink-500 h-2 rounded-full"
+                  className="bg-linear-to-r from-brand-500 to-pink-500 h-1.5 rounded-full"
                   initial={{ width: "100%" }}
                   animate={{ width: `${(remainingSpots / MAX_SPOTS) * 100}%` }}
                   transition={{ duration: 0.5 }}
