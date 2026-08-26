@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
@@ -112,6 +112,20 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     href: SOLUTION_LINKS[s.title] ?? "/demo",
   }));
 
+  // Grace period so the dropdown stays open while the mouse travels from
+  // the trigger link to the dropdown panel (they are separated by a small
+  // gap that would otherwise fire onMouseLeave and close the menu).
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function openMenu(key: MenuKey) {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setActiveMenu(key);
+  }
+
+  function scheduleClose() {
+    closeTimer.current = setTimeout(() => setActiveMenu(null), 120);
+  }
+
   function toggleLocale() {
     setLocale(locale === "it" ? "en" : "it");
   }
@@ -120,7 +134,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     <>
       <header
         className="fixed left-0 right-0 top-0 z-50"
-        onMouseLeave={() => setActiveMenu(null)}
       >
         <div className="mx-auto mt-3 max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between rounded-full border border-white/10 bg-neutral-950/90 px-6 shadow-lg shadow-black/20 backdrop-blur-xl">
@@ -141,10 +154,14 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
 
             <nav className="hidden items-center gap-1 md:flex">
               {menuItems.map((item) => (
-                <div key={item.key} className="relative">
+                <div
+                  key={item.key}
+                  className="relative"
+                  onMouseLeave={scheduleClose}
+                >
                   <Link
                     href={item.href}
-                    onMouseEnter={() => setActiveMenu(item.key)}
+                    onMouseEnter={() => openMenu(item.key)}
                     className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
                       activeMenu === item.key
                         ? "bg-white/10 text-white"
@@ -161,7 +178,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                   {activeMenu === item.key && (
                     <div
                       className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50"
-                      onMouseEnter={() => setActiveMenu(item.key)}
+                      onMouseEnter={() => openMenu(item.key)}
                     >
                       <div className="rounded-xl border border-white/5 bg-neutral-950 shadow-xl shadow-black/30 animate-fade-in-up p-3">
                         {item.key === "marketplace" && (
