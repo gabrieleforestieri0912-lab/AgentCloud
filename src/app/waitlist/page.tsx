@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link";
 import Image from "next/image";
 import FloatingBrandBubbles, {
   type FloatingBubble,
@@ -90,7 +89,7 @@ export default function WaitlistPage() {
         transition={{ duration: 0.6 }}
       >
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 justify-center mb-8">
+        <div className="flex items-center gap-2.5 justify-center mb-8">
           <div className="relative h-10 w-10">
             <Image
               src="/agentcloud.png"
@@ -103,7 +102,7 @@ export default function WaitlistPage() {
           <span className="text-2xl font-bold tracking-tight text-white">
             AgentCloud
           </span>
-        </Link>
+        </div>
 
         {/* Card */}
         <div className="bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-[0_12px_36px_rgba(0,0,0,0.4)]">
