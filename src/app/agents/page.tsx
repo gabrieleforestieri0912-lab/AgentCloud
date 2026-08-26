@@ -32,6 +32,7 @@ export default async function AgentsPage() {
   const dict = getDictionary(locale);
   const available = AVAILABLE_AGENTS.map((a) => localizeAgent(a, locale));
   const comingSoon = COMING_SOON_AGENTS.map((a) => localizeAgent(a, locale));
+  const isIt = locale === "it";
 
   return (
     <main className="min-h-screen bg-neutral-950">
@@ -104,6 +105,47 @@ export default async function AgentsPage() {
                   available={false}
                 />
               ))}
+            </div>
+          </div>
+
+          {/* Custom agent CTA — prominent so users who can't find what
+              they need know we'll build it for them. */}
+          <div className="relative mt-16 overflow-hidden rounded-3xl border border-white/5 bg-neutral-900 p-10 text-center shadow-xl shadow-black/20 sm:p-14">
+            <div
+              className="pointer-events-none absolute inset-0 select-none"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 30% 20%, rgba(3,139,254,0.15), transparent 45%), radial-gradient(circle at 70% 80%, rgba(168,85,247,0.10), transparent 45%)",
+              }}
+            />
+            <div className="relative">
+              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-brand-400">
+                {isIt ? "Su misura" : "Custom"}
+              </p>
+              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                {isIt
+                  ? "Non trovi l'agente che cerchi?"
+                  : "Can't find the agent you need?"}
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-neutral-400">
+                {isIt
+                  ? "Contattaci e lo progettiamo su misura per il tuo business. Colleghiamo i tuoi strumenti e consegniamo l'automazione pronta all'uso."
+                  : "Contact us and we'll design it custom for your business. We connect your tools and deliver the automation ready to use."}
+              </p>
+              <div className="mt-8 flex flex-wrap justify-center gap-4">
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
+                >
+                  {isIt ? "Contattaci" : "Contact us"}
+                </Link>
+                <Link
+                  href="/chat"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-800 px-8 py-3.5 text-base font-bold text-white transition-colors hover:border-white/20"
+                >
+                  {isIt ? "Chiedi alla nostra AI" : "Ask our AI"}
+                </Link>
+              </div>
             </div>
           </div>
         </div>
