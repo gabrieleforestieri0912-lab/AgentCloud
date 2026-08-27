@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronRight, Globe } from "lucide-react";
+import { Menu, X, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
 import { AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { useLanguage } from "./LanguageProvider";
+import LanguageToggle from "./LanguageToggle";
 
 type MobileNavProps = {
   marketplaceAgents?: Agent[];
@@ -16,7 +17,7 @@ type MobileNavProps = {
 export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const { locale, setLocale, dict } = useLanguage();
+  const { locale, dict } = useLanguage();
 
   const agents = (marketplaceAgents ?? AVAILABLE_AGENTS).map((agent) =>
     localizeAgent(agent, locale),
@@ -208,13 +209,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
 
               {/* Language switcher */}
               <div className="border-t border-white/10 p-4">
-                <button
-                  onClick={() => setLocale(locale === "it" ? "en" : "it")}
-                  className="flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-bold text-neutral-300 transition-colors hover:bg-white/5"
-                >
-                  <Globe size={16} className="text-brand-400" />
-                  {locale === "it" ? "Italiano" : "English"}
-                </button>
+                <LanguageToggle variant="mobile" />
               </div>
 
               {/* Auth buttons */}

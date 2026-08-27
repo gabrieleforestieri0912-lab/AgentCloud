@@ -7,7 +7,6 @@ import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import {
   ArrowRight,
-  Globe,
   Sparkles,
   LogOut,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import BrandLogo from "./BrandLogo";
 import MobileNav from "./MobileNav";
 import { AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { useLanguage } from "./LanguageProvider";
+import LanguageToggle from "./LanguageToggle";
 
 type MenuKey = "marketplace" | "solutions" | "integrations" | "pricing";
 
@@ -50,7 +50,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   // the "Accedi" button for signed-in users before hydration resolves.
   const [authLoaded, setAuthLoaded] = useState(false);
   const router = useRouter();
-  const { locale, setLocale, dict } = useLanguage();
+  const { locale, dict } = useLanguage();
   // Pages that can resolve the flags server-side pass the authoritative list;
   // otherwise fall back to the default vertical's agents. Either way the
   // agents are overlaid with the active locale so dropdown labels never leak
@@ -123,10 +123,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
 
   function scheduleClose() {
     closeTimer.current = setTimeout(() => setActiveMenu(null), 120);
-  }
-
-  function toggleLocale() {
-    setLocale(locale === "it" ? "en" : "it");
   }
 
   return (
@@ -278,16 +274,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
             </nav>
 
             <div className="hidden items-center gap-3 md:flex">
-              <button
-                onClick={toggleLocale}
-                className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-neutral-300 transition-colors hover:bg-white/5 hover:text-white"
-                aria-label="Switch language"
-              >
-                <Globe size={14} className="text-brand-400" />
-                {locale === "it" ? "IT" : "EN"}
-                <span className="text-neutral-600">/</span>
-                <span className="text-neutral-500">{locale === "it" ? "EN" : "IT"}</span>
-              </button>
+              <LanguageToggle />
               {authLoaded && (isSignedIn ? (
                 <div className="flex items-center gap-3">
                   <button

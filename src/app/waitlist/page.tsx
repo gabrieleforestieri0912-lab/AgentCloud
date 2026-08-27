@@ -7,6 +7,7 @@ import FloatingBrandBubbles, {
   type FloatingBubble,
 } from "@/components/FloatingBrandBubbles";
 import CountdownTimer from "@/components/CountdownTimer";
+import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageProvider";
 
 const MAX_SPOTS = 7;
@@ -79,6 +80,11 @@ export default function WaitlistPage() {
             "radial-gradient(circle at 15% 20%, rgba(3,139,254,.18), transparent 32%), radial-gradient(circle at 85% 15%, rgba(234,67,53,.14), transparent 28%), radial-gradient(circle at 50% 92%, rgba(168,85,247,.14), transparent 36%)",
         }}
       />
+
+      {/* Language toggle */}
+      <div className="absolute right-4 top-4 z-20">
+        <LanguageToggle />
+      </div>
 
       {/* Floating brand constellation */}
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
