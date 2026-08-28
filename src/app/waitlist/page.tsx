@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail } from "lucide-react";
@@ -39,6 +39,14 @@ export default function WaitlistPage() {
   );
   const [error, setError] = useState("");
   const [remainingSpots, setRemainingSpots] = useState(MAX_SPOTS);
+
+  // Error messages are transient alerts: auto-clear after a few seconds so they
+  // only briefly warn the user without blocking the form.
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(""), 4000);
+    return () => clearTimeout(t);
+  }, [error]);
   // Derived — the waitlist is full when no spots are left (no separate setter).
   const isFull = remainingSpots <= 0;
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -272,7 +280,10 @@ export default function WaitlistPage() {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (error) setError("");
+                    }}
                     placeholder={dict.waitlist.placeholder}
                     className="w-full bg-neutral-800 border border-white/10 rounded-full px-5 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
                     disabled={isSubmitting}
