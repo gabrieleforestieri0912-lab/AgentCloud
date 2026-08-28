@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin-access";
 import { getPreviewViewer } from "@/lib/preview";
+import ShopifyConnect from "@/components/ShopifyConnect";
+import { listShopifyConnections } from "@/lib/shopify/connections";
 import {
   Activity,
   AlertCircle,
@@ -156,6 +158,10 @@ export default async function DashboardPage({
   const email = user.email ?? "";
   const isAdmin = isAdminEmail(user.email);
 
+  const shopifyConnections = await listShopifyConnections(user.id).catch(
+    () => [],
+  );
+
   const statCards: Array<[string, string, typeof Zap]> = [
     [String(installed.length), dict.dashboard.statInstalledAgents, Zap],
     [formatCount(totalRuns), dict.dashboard.statRunsThisMonth, Activity],
@@ -225,6 +231,13 @@ export default async function DashboardPage({
               </div>
             ))}
           </div>
+
+          <ShopifyConnect
+            connected={shopifyConnections.map((c) => ({
+              shopDomain: c.shopDomain,
+              connected: c.connected,
+            }))}
+          />
 
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
             <div className="rounded-lg border border-white/5 bg-neutral-900 shadow-sm">
