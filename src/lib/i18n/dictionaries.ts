@@ -795,19 +795,22 @@ const it = {
     privacy: {
       backHome: "Torna alla home",
       title: "Informativa Privacy",
-      lastUpdated: "Ultimo aggiornamento: luglio 2026",
+      lastUpdated: "Ultimo aggiornamento: agosto 2026",
       sections: [
         {
           heading: "1. Informazioni che raccogliamo",
           paragraphs: [
-            "Quando ti registri su AgentCloud raccogliamo il tuo nome e la tua email. Usiamo Clerk per l'autenticazione, che gestisce la tua email per l'accesso con magic link. Non memorizziamo password.",
+            "Quando crei un account su AgentCloud raccogliamo il tuo nome e la tua email. L'autenticazione è gestita da Supabase Auth: puoi registrarti con email e password oppure con il tuo account Google (in tal caso riceviamo nome ed email dal tuo profilo Google). Non memorizziamo le password in chiaro.",
+            "Quando sottoscrivi un abbonamento, i pagamenti vengono processati da Stripe. Memorizziamo i dati di fatturazione: piano sottoscritto, importi, fatture, stato del pagamento e metodo di pagamento utilizzato. I numeri di carta non transitano mai sui nostri server.",
+            "Raccogliamo i dati di utilizzo necessari a erogare il servizio e a calcolare i costi: contenuti delle chat con i tuoi agenti, strumenti utilizzati e consumo di token.",
             "Quando invii una richiesta demo, raccogliamo nome, cognome ed email per contattarti sui nostri servizi.",
           ],
         },
         {
           heading: "2. Come usiamo i tuoi dati",
           paragraphs: [
-            "Usiamo i tuoi dati per fornire e migliorare i servizi AgentCloud, processare le transazioni tramite Stripe, inviarti email transazionali (benvenuto, fatturazione, supporto) e comunicare sul tuo account.",
+            "Usiamo i tuoi dati per fornire e migliorare i servizi AgentCloud, processare pagamenti e rimborsi tramite Stripe, applicare i limiti del tuo piano (consumo di token), inviarti email transazionali (benvenuto, fatturazione, supporto) e comunicare sul tuo account.",
+            "Il contenuto delle chat viene inviato al fornitore AI (Google Gemini) esclusivamente per generare le risposte dell'agente. Non utilizziamo i contenuti delle chat per addestrare i nostri modelli.",
             "Non vendiamo mai i tuoi dati personali a terze parti.",
           ],
         },
@@ -815,33 +818,33 @@ const it = {
           heading: "3. Condivisione dei dati",
           paragraphs: [
             "Condividiamo i dati solo con i fornitori di servizi essenziali:",
-            "Clerk — autenticazione e gestione utenti; Stripe — elaborazione pagamenti; Supabase — hosting database; Resend — consegna email transazionali.",
+            "Supabase — autenticazione e database; Stripe — pagamenti, fatturazione e rimborsi; Resend — consegna email transazionali; Google — accesso con account Google (OAuth) ed elaborazione delle conversazioni tramite Gemini; Shopify e Google Calendar — solo se colleghi queste integrazioni ai tuoi agenti.",
           ],
         },
         {
           heading: "4. Conservazione dei dati",
           paragraphs: [
-            "Conserviamo i tuoi dati finché il tuo account è attivo. Puoi richiedere la cancellazione del tuo account e dei dati associati in qualsiasi momento contattandoci.",
+            "Conserviamo i tuoi dati finché il tuo account è attivo e per il tempo necessario a fornirti il servizio e a gestire fatturazione e supporto.",
+            "I dati contabili e fiscali (fatture e transazioni) vengono conservati per il periodo previsto dalla legge applicabile, anche dopo la chiusura dell'account. Puoi richiedere la cancellazione del tuo account e dei dati associati in qualsiasi momento; i dati che la legge ci impone di conservare verranno mantenuti nel solo limite richiesto.",
           ],
         },
         {
           heading: "5. I tuoi diritti",
           paragraphs: [
-            "Ai sensi del GDPR, hai il diritto di accedere, rettificare o cancellare i tuoi dati personali. Puoi anche limitare o opporti al trattamento e richiedere la portabilità dei dati. Per esercitare questi diritti, scrivici a privacy@agentcloud.io.",
+            "Ai sensi del GDPR, hai il diritto di accedere, rettificare o cancellare i tuoi dati personali, di limitare o opporti al trattamento e di richiedere la portabilità dei dati. Per esercitare questi diritti, scrivici a privacy@agentcloud.io.",
+            "Hai inoltre il diritto di proporre reclamo all'autorità di controllo competente (in Italia, il Garante per la protezione dei dati personali).",
           ],
         },
         {
           heading: "6. Contatti",
-          paragraphs: [
-            "Per richieste relative alla privacy: privacy@agentcloud.io",
-          ],
+          paragraphs: ["Per richieste relative alla privacy: privacy@agentcloud.io"],
         },
       ],
     },
     terms: {
       backHome: "Torna alla home",
       title: "Termini di Servizio",
-      lastUpdated: "Ultimo aggiornamento: luglio 2026",
+      lastUpdated: "Ultimo aggiornamento: agosto 2026",
       sections: [
         {
           heading: "1. Accettazione dei Termini",
@@ -858,36 +861,51 @@ const it = {
         {
           heading: "3. Registrazione dell'account",
           paragraphs: [
-            "Devi fornire un indirizzo email valido per creare un account. Sei responsabile della riservatezza dell'accesso al tuo account. L'autenticazione è gestita tramite Clerk con verifica email tramite magic link.",
+            "Devi fornire un indirizzo email valido per creare un account. Sei responsabile della riservatezza dell'accesso al tuo account. L'autenticazione è gestita da Supabase Auth: puoi registrarti con email e password oppure con il tuo account Google.",
           ],
         },
         {
           heading: "4. Abbonamenti e fatturazione",
           paragraphs: [
-            "I costi di abbonamento vengono addebitati mensilmente tramite Stripe. Tutti i prezzi sono in EUR e IVA esclusa. Puoi annullare l'abbonamento in qualsiasi momento; la cancellazione ha effetto alla fine del periodo di fatturazione corrente.",
+            "Ogni agente è venduto come abbonamento mensile separato, al prezzo indicato nella pagina dell'agente. Tutti i prezzi sono in EUR e IVA esclusa; l'IVA viene applicata ove richiesta dalla legge. Il canone viene addebitato in anticipo ogni mese tramite Stripe e l'abbonamento si rinnova automaticamente finché non viene annullato.",
+            "Puoi annullare l'abbonamento in qualsiasi momento dalla dashboard o dal portale di fatturazione. La cancellazione ha effetto alla fine del periodo di fatturazione corrente: continuerai ad accedere all'agente fino a quella data e non verrai più addebitato.",
+            "Ogni piano include un'allowance mensile di token. Il consumo oltre l'allowance viene addebitato a consumo al costo di €0,30 per 1.000 token aggiuntivi, fino a un tetto di sicurezza pari a 2 volte l'allowance del piano, oltre il quale le esecuzioni vengono sospese.",
+            "Se un pagamento viene rifiutato o non va a buon fine, potremmo riprovare l'addebito sulla carta in archivio. In caso di mancato pagamento ci riserviamo il diritto di sospendere l'accesso all'agente e di terminare l'abbonamento, previa comunicazione.",
+            "I prezzi e le condizioni dei piani possono cambiare nel tempo; le variazioni verranno comunicate in anticipo e si applicheranno a partire dal rinnovo successivo.",
           ],
         },
         {
-          heading: "5. Uso consentito",
+          heading: "5. Rimborsi e diritto di recesso",
+          paragraphs: [
+            "AgentCloud fornisce servizi digitali: ai sensi della normativa europea sui diritti dei consumatori hai diritto di recesso entro 14 giorni dall'acquisto, ma tale diritto decade non appena il servizio inizia con il tuo consenso. Sottoscrivendo un abbonamento acconsenti all'avvio immediato del servizio: di conseguenza, gli abbonamenti già attivati non sono rimborsabili.",
+            "I rimborsi vengono riconosciuti nei seguenti casi: addebiti errati o duplicati; prolungata indisponibilità del servizio imputabile ad AgentCloud (in tal caso il rimborso è proporzionale al periodo non usufruito).",
+            "Le allowance di token non utilizzate non vengono riportate al mese successivo né rimborsate; i consumi a eccedenza già addebitati non sono rimborsabili.",
+            "I rimborsi spettanti vengono erogati tramite il metodo di pagamento originale entro un termine ragionevole dall'accoglimento della richiesta. Per richiedere un rimborso scrivi a legal@agentcloud.io indicando l'email dell'account e l'importo contestato.",
+          ],
+        },
+        {
+          heading: "6. Uso consentito",
           paragraphs: [
             "Accetti di non: utilizzare il Servizio per scopi illegali; tentare di aggirare l'autenticazione o i controlli di accesso; effettuare reverse engineering, decompilazione o estrazione del codice sorgente dei nostri agenti; utilizzare il Servizio per generare spam, molestie o contenuti dannosi.",
           ],
         },
         {
-          heading: "6. Limitazione di responsabilità",
+          heading: "7. Limitazione di responsabilità",
           paragraphs: [
             "AgentCloud è fornito \"così com'è\" senza garanzie di alcun tipo. Non siamo responsabili di eventuali danni derivanti dall'uso degli agenti AI, inclusi a titolo esemplificativo perdita di dati, interruzione dell'attività o decisioni automatiche errate.",
           ],
         },
         {
-          heading: "7. Modifiche ai Termini",
+          heading: "8. Modifiche ai Termini",
           paragraphs: [
             "Possiamo aggiornare questi termini in qualsiasi momento. L'uso continuato del Servizio dopo le modifiche costituisce accettazione dei nuovi termini.",
           ],
         },
         {
-          heading: "8. Contatti",
-          paragraphs: ["Per domande su questi termini: legal@agentcloud.io"],
+          heading: "9. Contatti",
+          paragraphs: [
+            "Per domande su questi termini, fatturazione o rimborsi: legal@agentcloud.io",
+          ],
         },
       ],
     },
@@ -1760,19 +1778,22 @@ export const en: Dictionary = {
     privacy: {
       backHome: "Back to home",
       title: "Privacy Policy",
-      lastUpdated: "Last updated: July 2026",
+      lastUpdated: "Last updated: August 2026",
       sections: [
         {
           heading: "1. Information We Collect",
           paragraphs: [
-            "When you sign up for AgentCloud, we collect your name and email address. We use Clerk for authentication, which processes your email for magic link login. We do not store passwords.",
+            "When you create an AgentCloud account, we collect your name and email address. Authentication is handled by Supabase Auth: you can sign up with email and password, or with your Google account (in which case we receive your name and email from your Google profile). We do not store passwords in plain text.",
+            "When you subscribe, payments are processed by Stripe. We store billing data: subscribed plan, amounts, invoices, payment status, and the payment method used. Card numbers never pass through our servers.",
+            "We collect the usage data needed to provide the service and calculate costs: chat content with your agents, tools used, and token consumption.",
             "When you submit a demo request, we collect your name, surname, and email to contact you about our services.",
           ],
         },
         {
           heading: "2. How We Use Your Data",
           paragraphs: [
-            "We use your data to provide and improve AgentCloud services, process transactions via Stripe, send you transactional emails (welcome, billing, support), and communicate about your account.",
+            "We use your data to provide and improve AgentCloud services, process payments and refunds via Stripe, enforce your plan limits (token usage), send you transactional emails (welcome, billing, support), and communicate about your account.",
+            "Chat content is sent to the AI provider (Google Gemini) solely to generate the agent's responses. We do not use chat content to train our models.",
             "We never sell your personal data to third parties.",
           ],
         },
@@ -1780,33 +1801,33 @@ export const en: Dictionary = {
           heading: "3. Data Sharing",
           paragraphs: [
             "We share data only with essential service providers:",
-            "Clerk — authentication and user management; Stripe — payment processing; Supabase — database hosting; Resend — transactional email delivery.",
+            "Supabase — authentication and database; Stripe — payments, billing, and refunds; Resend — transactional email delivery; Google — Google account sign-in (OAuth) and conversation processing via Gemini; Shopify and Google Calendar — only if you connect these integrations to your agents.",
           ],
         },
         {
           heading: "4. Data Retention",
           paragraphs: [
-            "We retain your data for as long as your account is active. You may request deletion of your account and associated data at any time by contacting us.",
+            "We retain your data for as long as your account is active and for as long as needed to provide the service and manage billing and support.",
+            "Accounting and tax records (invoices and transactions) are retained for the period required by applicable law, even after account closure. You may request deletion of your account and associated data at any time; data we are legally required to keep will be retained only to the extent required.",
           ],
         },
         {
           heading: "5. Your Rights",
           paragraphs: [
-            "Under GDPR, you have the right to access, rectify, or erase your personal data. You may also restrict or object to processing, and request data portability. To exercise these rights, contact us at privacy@agentcloud.io.",
+            "Under GDPR, you have the right to access, rectify, or erase your personal data, to restrict or object to processing, and to request data portability. To exercise these rights, contact us at privacy@agentcloud.io.",
+            "You also have the right to lodge a complaint with the competent supervisory authority.",
           ],
         },
         {
           heading: "6. Contact",
-          paragraphs: [
-            "For privacy-related inquiries: privacy@agentcloud.io",
-          ],
+          paragraphs: ["For privacy-related inquiries: privacy@agentcloud.io"],
         },
       ],
     },
     terms: {
       backHome: "Back to home",
       title: "Terms of Service",
-      lastUpdated: "Last updated: July 2026",
+      lastUpdated: "Last updated: August 2026",
       sections: [
         {
           heading: "1. Acceptance of Terms",
@@ -1823,36 +1844,51 @@ export const en: Dictionary = {
         {
           heading: "3. Account Registration",
           paragraphs: [
-            "You must provide a valid email address to create an account. You are responsible for maintaining the confidentiality of your account access. Authentication is handled via Clerk using magic link email verification.",
+            "You must provide a valid email address to create an account. You are responsible for maintaining the confidentiality of your account access. Authentication is handled by Supabase Auth: you can sign up with email and password, or with your Google account.",
           ],
         },
         {
           heading: "4. Subscriptions and Billing",
           paragraphs: [
-            "Subscription fees are billed monthly via Stripe. All prices are in EUR and exclusive of applicable taxes. You may cancel your subscription at any time. Cancellation takes effect at the end of the current billing period.",
+            "Each agent is sold as a separate monthly subscription at the price shown on the agent page. All prices are in EUR and exclusive of applicable taxes; VAT is applied where required by law. Fees are billed in advance each month via Stripe and subscriptions renew automatically until cancelled.",
+            "You may cancel your subscription at any time from the dashboard or billing portal. Cancellation takes effect at the end of the current billing period: you keep access to the agent until that date and are not charged again.",
+            "Each plan includes a monthly token allowance. Usage beyond the allowance is billed on a metered basis at €0.30 per 1,000 extra tokens, up to a safety cap of 2x the plan allowance, beyond which executions are suspended.",
+            "If a payment is declined or fails, we may retry the charge on the card on file. In case of non-payment we reserve the right to suspend access to the agent and terminate the subscription, with prior notice.",
+            "Prices and plan terms may change over time; changes will be communicated in advance and apply from the next renewal.",
           ],
         },
         {
-          heading: "5. Acceptable Use",
+          heading: "5. Refunds and Withdrawal Right",
+          paragraphs: [
+            "AgentCloud provides digital services: under EU consumer law you have a withdrawal right within 14 days of purchase, but it lapses as soon as the service begins with your consent. By subscribing you consent to the immediate start of the service: accordingly, activated subscriptions are non-refundable.",
+            "Refunds are granted in the following cases: incorrect or duplicate charges; prolonged service unavailability attributable to AgentCloud (in which case the refund is prorated for the unused period).",
+            "Unused token allowances do not carry over to the next month and are not refunded; metered overage charges already billed are non-refundable.",
+            "Due refunds are issued via the original payment method within a reasonable time after approval. To request a refund, write to legal@agentcloud.io with the account email and the disputed amount.",
+          ],
+        },
+        {
+          heading: "6. Acceptable Use",
           paragraphs: [
             "You agree not to: use the Service for any illegal purpose; attempt to bypass authentication or access controls; reverse-engineer, decompile, or extract the source code of our agents; use the Service to generate spam, harassment, or harmful content.",
           ],
         },
         {
-          heading: "6. Limitation of Liability",
+          heading: "7. Limitation of Liability",
           paragraphs: [
             "AgentCloud is provided \u201cas is\u201d without warranty of any kind. We are not liable for any damages arising from the use of AI agents, including but not limited to data loss, business interruption, or incorrect automated decisions.",
           ],
         },
         {
-          heading: "7. Changes to Terms",
+          heading: "8. Changes to Terms",
           paragraphs: [
             "We may update these terms at any time. Continued use of the Service after changes constitutes acceptance of the new terms.",
           ],
         },
         {
-          heading: "8. Contact",
-          paragraphs: ["For questions about these terms: legal@agentcloud.io"],
+          heading: "9. Contact",
+          paragraphs: [
+            "For questions about these terms, billing, or refunds: legal@agentcloud.io",
+          ],
         },
       ],
     },
