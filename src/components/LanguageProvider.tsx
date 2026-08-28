@@ -6,7 +6,6 @@ import {
   useContext,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 import { LOCALE_COOKIE, type Locale } from "@/lib/i18n/constants";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries";
 
@@ -20,8 +19,9 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 /**
  * Provides the active locale (read from the cookie by the server layout) and
- * a setter that persists the choice in a cookie and refreshes the server
- * tree, so server-rendered pages re-render in the new language.
+ * a setter that persists the choice in a cookie and updates the React context
+ * immediately, so the UI switches language in place with no server round-trip.
+ * The cookie keeps the choice for server-rendered pages on the next navigation.
  */
 export function LanguageProvider({
   initialLocale,
@@ -31,15 +31,13 @@ export function LanguageProvider({
   children: React.ReactNode;
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
-  const router = useRouter();
 
   const setLocale = useCallback(
     (next: Locale) => {
       setLocaleState(next);
       document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-      router.refresh();
     },
-    [router],
+    [],
   );
 
   return (
