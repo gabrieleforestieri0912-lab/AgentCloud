@@ -10,6 +10,10 @@ import type { NextRequest } from "next/server";
 export const SHOPIFY_STATE_COOKIE = "ac_shopify_state";
 export const SHOPIFY_STATE_MAX_AGE = 60 * 10; // 10 minutes
 
+/** Agent slug that triggers the in-chat Shopify connection prompt. */
+export const SHOPIFY_AGENT_SLUG =
+  process.env.SHOPIFY_AGENT_SLUG || "shopify-agent";
+
 /** Default scopes proposed in the spec (Phase 0). Override via SHOPIFY_SCOPES. */
 const DEFAULT_SCOPES =
   "read_products write_products read_orders write_orders read_inventory write_inventory";
