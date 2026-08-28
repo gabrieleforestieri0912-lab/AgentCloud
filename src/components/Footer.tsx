@@ -15,7 +15,7 @@ export default function Footer() {
   ];
 
   const companyLinks = [
-    { label: dict.footer.about, href: "/" },
+    { label: dict.footer.about, href: "/about" },
     { label: dict.footer.faq, href: "#faq" },
     { label: dict.footer.contact, href: "/demo" },
   ];

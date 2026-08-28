@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
+import { SUPPORT_EMAIL, FEEDBACK_EMAIL, FROM_EMAIL } from "@/lib/email-config";
 
 // Max submissions per IP per hour — prevents DB spam and email abuse.
 const CONTACT_LIMIT = 5;
@@ -40,8 +41,12 @@ export async function POST(request: Request) {
     }
 
     const { error: emailError } = await getResend().emails.send({
-      from: "AgentCloud <onboarding@resend.dev>",
-      to: ["agentcloud206@gmail.com"],
+      from: FROM_EMAIL,
+      to: [SUPPORT_EMAIL],
+      ...(FEEDBACK_EMAIL && FEEDBACK_EMAIL !== SUPPORT_EMAIL
+        ? { cc: [FEEDBACK_EMAIL] }
+        : {}),
+      replyTo: email,
       subject: `Contact form: ${subject} — from ${name}`,
       html: `
         <h2>New contact message</h2>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getResend } from "@/lib/resend";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
+import { FROM_EMAIL } from "@/lib/email-config";
 
 /**
  * POST /api/email/send
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await getResend().emails.send({
-      from: from || "AgentCloud <onboarding@resend.dev>",
+      from: from || FROM_EMAIL,
       to: Array.isArray(to) ? to : [to],
       subject,
       html: html || undefined,

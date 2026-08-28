@@ -913,6 +913,57 @@ const it = {
       cta: "Gestisci abbonamento",
     },
   },
+
+  about: {
+    backHome: "Torna alla home",
+    badge: "Il nostro team",
+    titleA: "Chi siamo:",
+    titleB: "il team dietro AgentCloud",
+    subtitle:
+      "Siamo un team di giovani intraprendenti che ha deciso di aiutare le persone a risparmiare tempo su lavoro e studio grazie agli agenti cloud.",
+    missionTitle: "La nostra missione",
+    missionText:
+      "Vogliamo rendere l'intelligenza artificiale utile nella vita reale: agenti cloud che ti affiancano nel lavoro e ti supportano nello studio, così puoi concentrarti su ciò che conta davvero.",
+    teamIntro:
+      "Dietro AgentCloud c'è un piccolo team unito dalla voglia di costruire strumenti semplici e davvero utili. Ognuno di noi contribuisce con le proprie competenze per portare gli agenti cloud a chiunque ne abbia bisogno.",
+    members: [
+      {
+        name: "Il tuo nome",
+        role: "Co-fondatore & CEO",
+        bio: "Visione di prodotto e strategia.",
+      },
+      {
+        name: "Il tuo nome",
+        role: "Co-fondatore & CTO",
+        bio: "Tecnologia e sviluppo degli agenti cloud.",
+      },
+      {
+        name: "Il tuo nome",
+        role: "Co-fondatore & COO",
+        bio: "Operazioni, supporto e crescita.",
+      },
+    ],
+    valuesTitle: "Cosa ci guida",
+    values: [
+      {
+        title: "Semplicità",
+        text: "Crediamo che l'AI debba essere per tutti, senza codice né complessità.",
+      },
+      {
+        title: "Utilità reale",
+        text: "Ogni agente cloud nasce per risolvere un problema concreto di lavoro o studio.",
+      },
+      {
+        title: "Crescita delle persone",
+        text: "Aiutiamo chi studia e chi lavora a fare di più, con meno fatica.",
+      },
+    ],
+    ctaTitle: "Costruiamo il futuro del lavoro e dello studio, insieme.",
+    ctaText:
+      "Scopri i nostri agenti cloud o parlane direttamente con il team: siamo qui per aiutarti.",
+    ctaDemo: "Prenota una demo",
+    ctaContact: "Contattaci",
+  },
 };
 
 export type Dictionary = typeof it;
@@ -1803,6 +1854,57 @@ export const en: Dictionary = {
         "Hi {name}, your AgentCloud subscription for {agent} will end on {date}. If you want to keep using it, reactivate it from the billing page.",
       cta: "Manage subscription",
     },
+  },
+
+  about: {
+    backHome: "Back to home",
+    badge: "Our team",
+    titleA: "About:",
+    titleB: "the team behind AgentCloud",
+    subtitle:
+      "We are a team of enterprising young people who decided to help others save time on work and study through cloud agents.",
+    missionTitle: "Our mission",
+    missionText:
+      "We want to make artificial intelligence useful in real life: cloud agents that support you at work and assist you in your studies, so you can focus on what truly matters.",
+    teamIntro:
+      "Behind AgentCloud is a small team united by the desire to build simple, genuinely useful tools. Each of us contributes our skills to bring cloud agents to anyone who needs them.",
+    members: [
+      {
+        name: "Your name",
+        role: "Co-founder & CEO",
+        bio: "Product vision and strategy.",
+      },
+      {
+        name: "Your name",
+        role: "Co-founder & CTO",
+        bio: "Technology and cloud agent development.",
+      },
+      {
+        name: "Your name",
+        role: "Co-founder & COO",
+        bio: "Operations, support and growth.",
+      },
+    ],
+    valuesTitle: "What guides us",
+    values: [
+      {
+        title: "Simplicity",
+        text: "We believe AI should be for everyone — no code, no complexity.",
+      },
+      {
+        title: "Real usefulness",
+        text: "Every cloud agent is built to solve a concrete work or study problem.",
+      },
+      {
+        title: "People's growth",
+        text: "We help students and workers do more, with less effort.",
+      },
+    ],
+    ctaTitle: "Let's build the future of work and study, together.",
+    ctaText:
+      "Explore our cloud agents or talk to the team directly — we're here to help.",
+    ctaDemo: "Book a demo",
+    ctaContact: "Contact us",
   },
 };
 

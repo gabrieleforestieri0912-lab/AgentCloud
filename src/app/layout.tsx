@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import ScrollToTop from "@/components/ScrollToTop";
 import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { getSiteUrl } from "@/lib/site-url";
+import { SUPPORT_EMAIL } from "@/lib/email-config";
 
 const BASE_URL = getSiteUrl();
 
@@ -88,7 +89,7 @@ const jsonLd = {
       slogan: "Agenti AI che automatizzano la tua azienda",
       description:
         "AgentCloud è la piattaforma che distribuisce agenti AI per automatizzare i tuoi workflow, gestire le comunicazioni e far crescere le operazioni — senza codice.",
-      email: "info@agentcloud.io",
+      email: SUPPORT_EMAIL,
       areaServed: [
         { "@type": "Country", name: "Italy" },
         "Worldwide",
@@ -101,14 +102,19 @@ const jsonLd = {
       contactPoint: {
         "@type": "ContactPoint",
         contactType: "sales",
-        email: "info@agentcloud.io",
+        email: SUPPORT_EMAIL,
         areaServed: "Worldwide",
         availableLanguage: ["it", "en"],
       },
       // SameAs anchors the entity for generative engines (ChatGPT, Perplexity,
       // Gemini) and traditional knowledge graphs. Only real, verifiable
       // profiles are listed.
-      sameAs: ["https://github.com/gabrieleforestieri0912-lab/AgentCloud"],
+      sameAs: [
+        "https://github.com/gabrieleforestieri0912-lab/AgentCloud",
+        "https://x.com/AgentCloud2k",
+        "https://www.instagram.com/_agentcloud/",
+        "https://www.linkedin.com/in/agent-cloud-323218431/",
+      ],
     },
     {
       "@type": "WebSite",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 
 const LAUNCH_DATE = new Date("2026-09-15T16:00:00");
@@ -9,6 +9,15 @@ interface TimeUnit {
   value: number;
   label: string;
   labelIt: string;
+}
+
+function getTimeUnits(days: number, hours: number, minutes: number, seconds: number): TimeUnit[] {
+  return [
+    { value: days, label: "Days", labelIt: "Giorni" },
+    { value: hours, label: "Hours", labelIt: "Ore" },
+    { value: minutes, label: "Minutes", labelIt: "Minuti" },
+    { value: seconds, label: "Seconds", labelIt: "Secondi" },
+  ];
 }
 
 function getTimeLeft(): TimeUnit[] {
@@ -20,26 +29,41 @@ function getTimeLeft(): TimeUnit[] {
   const minutes = Math.floor((diff / (1000 * 60)) % 60);
   const seconds = Math.floor((diff / 1000) % 60);
 
-  return [
-    { value: days, label: "Days", labelIt: "Giorni" },
-    { value: hours, label: "Hours", labelIt: "Ore" },
-    { value: minutes, label: "Minutes", labelIt: "Minuti" },
-    { value: seconds, label: "Seconds", labelIt: "Secondi" },
-  ];
+  return getTimeUnits(days, hours, minutes, seconds);
+}
+
+const ZERO = getTimeUnits(0, 0, 0, 0);
+
+// Cached snapshot so `getSnapshot` returns a stable reference between ticks
+// (required by useSyncExternalStore to avoid render loops).
+let snapshot: TimeUnit[] = ZERO;
+
+function subscribe(callback: () => void): () => void {
+  const id = setInterval(callback, 1000);
+  return () => clearInterval(id);
+}
+
+function getSnapshot(): TimeUnit[] {
+  const next = getTimeLeft();
+  if (
+    next[0].value !== snapshot[0].value ||
+    next[1].value !== snapshot[1].value ||
+    next[2].value !== snapshot[2].value ||
+    next[3].value !== snapshot[3].value
+  ) {
+    snapshot = next;
+  }
+  return snapshot;
+}
+
+// Stable on the server so server and client HTML match (no hydration mismatch).
+function getServerSnapshot(): TimeUnit[] {
+  return ZERO;
 }
 
 export default function CountdownTimer({ locale = "it" }: { locale?: string }) {
-  const [timeLeft, setTimeLeft] = useState<TimeUnit[]>(getTimeLeft());
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const timer = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const isLaunched = timeLeft.every((u) => u.value === 0);
-  const units = mounted ? timeLeft : getTimeLeft();
+  const units = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const isLaunched = units.every((u) => u.value === 0);
 
   return (
     <motion.div

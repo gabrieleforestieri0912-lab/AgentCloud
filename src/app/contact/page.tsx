@@ -90,10 +90,10 @@ export default function ContactPage() {
                   <div>
                     <h3 className="text-sm font-bold text-white">{dict.contact.emailUs}</h3>
                     <Link
-                      href="mailto:info@agentcloud.io"
+                      href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@agentcloud.agency"}`}
                       className="text-sm font-semibold text-neutral-400 hover:text-brand-400 transition-colors"
                     >
-                      info@agentcloud.io
+                      {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@agentcloud.agency"}
                     </Link>
                   </div>
                 </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail } from "lucide-react";
 import Image from "next/image";
 import FloatingBrandBubbles, {
   type FloatingBubble,
@@ -9,8 +10,9 @@ import FloatingBrandBubbles, {
 import CountdownTimer from "@/components/CountdownTimer";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageProvider";
+import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 
-const MAX_SPOTS = 7;
+const MAX_SPOTS = 10;
 
 // Floating brand marks echoing the hero constellation — ties the waitlist into
 // the landing page's visual language.
@@ -34,6 +36,18 @@ export default function WaitlistPage() {
   const [remainingSpots, setRemainingSpots] = useState(MAX_SPOTS);
   // Derived — the waitlist is full when no spots are left (no separate setter).
   const isFull = remainingSpots <= 0;
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleEmailSend = () => {
+    const subject =
+      locale === "it" ? "Richiesta AgentCloud" : "AgentCloud inquiry";
+    window.location.href = `mailto:${PUBLIC_SUPPORT_EMAIL}?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(message)}`;
+    setShowEmailModal(false);
+    setMessage("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,11 +95,6 @@ export default function WaitlistPage() {
         }}
       />
 
-      {/* Language toggle */}
-      <div className="absolute right-4 top-4 z-20">
-        <LanguageToggle />
-      </div>
-
       {/* Floating brand constellation */}
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
@@ -113,6 +122,11 @@ export default function WaitlistPage() {
 
         {/* Card */}
         <div className="bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-[0_12px_36px_rgba(0,0,0,0.4)]">
+          {/* Language toggle — inline so it never overlaps content on mobile */}
+          <div className="mb-5 flex justify-end">
+            <LanguageToggle />
+          </div>
+
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -232,6 +246,14 @@ export default function WaitlistPage() {
                 <p className="text-neutral-400 text-sm">
                   {dict.waitlist.fullText}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailModal(true)}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:opacity-90 hover:-translate-y-0.5"
+                >
+                  <Mail size={16} />
+                  {dict.waitlist.emailButton}
+                </button>
               </motion.div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -264,6 +286,60 @@ export default function WaitlistPage() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Email popup — shown when the waitlist is full */}
+      <AnimatePresence>
+        {showEmailModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowEmailModal(false)}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-md rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl">
+                <h3 className="mb-1 text-lg font-bold text-white">
+                  {dict.waitlist.emailModalTitle}
+                </h3>
+                <p className="mb-4 text-sm text-neutral-400">
+                  {PUBLIC_SUPPORT_EMAIL}
+                </p>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder={dict.waitlist.emailModalPlaceholder}
+                  rows={5}
+                  className="w-full resize-none rounded-xl border border-white/10 bg-neutral-800 px-4 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                />
+                <div className="mt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailModal(false)}
+                    className="flex-1 rounded-full border border-white/10 px-4 py-2.5 text-sm font-semibold text-neutral-300 transition-colors hover:bg-white/5"
+                  >
+                    {dict.waitlist.emailModalCancel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleEmailSend}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:opacity-90"
+                  >
+                    <Mail size={16} />
+                    {dict.waitlist.emailModalSend}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

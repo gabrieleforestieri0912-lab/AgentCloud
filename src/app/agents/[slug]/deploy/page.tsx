@@ -21,6 +21,7 @@ import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getAgentBySlug, isAvailable, localizeAgent } from "@/lib/agents";
+import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
 
 export default function DeployAgentPage() {  const { dict, locale } = useLanguage();
@@ -459,5 +460,5 @@ function getWindowOrigin() {
 }
 
 function getServerOrigin() {
-  return "https://agentcloud.io";
+  return getSiteUrl();
 }

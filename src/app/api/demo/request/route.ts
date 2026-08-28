@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
+import { SUPPORT_EMAIL, FROM_EMAIL } from "@/lib/email-config";
 
-const DEMO_EMAIL_TO = process.env.DEMO_EMAIL_TO || "info@agentcloud.io";
+const DEMO_EMAIL_TO = process.env.DEMO_EMAIL_TO || SUPPORT_EMAIL;
 
 // Max requests per IP per hour — prevents DB spam and email abuse.
 const DEMO_LIMIT = 5;
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
 
     // Send email notification
     const { error: emailError } = await getResend().emails.send({
-      from: "AgentCloud <onboarding@resend.dev>",
+      from: FROM_EMAIL,
       to: [DEMO_EMAIL_TO],
       subject: `New demo request from ${name} ${surname}`,
       html: `
