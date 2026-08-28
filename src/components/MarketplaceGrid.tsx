@@ -5,6 +5,7 @@ import { Search, X, SlidersHorizontal, Grid3X3, List } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import AgentCard from "./AgentCard";
 import { isAvailable, type Agent } from "@/lib/agents";
+import { t } from "@/lib/i18n/dictionaries";
 
 type MarketplaceGridProps = {
   availableAgents: Agent[];
@@ -13,7 +14,6 @@ type MarketplaceGridProps = {
   comingSoonCount: number;
   availableLabel: string;
   comingSoonLabel: string;
-  countLabel: (count: number) => string;
 };
 
 export default function MarketplaceGrid({
@@ -23,9 +23,8 @@ export default function MarketplaceGrid({
   comingSoonCount,
   availableLabel,
   comingSoonLabel,
-  countLabel,
 }: MarketplaceGridProps) {
-  const { locale } = useLanguage();
+  const { locale, dict } = useLanguage();
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -83,7 +82,7 @@ export default function MarketplaceGrid({
         <div className="mb-6 flex items-center gap-3">
           <h2 className="text-2xl font-bold text-white">{availableLabel}</h2>
           <span className="rounded-full bg-brand-500/10 px-3 py-1 text-xs font-bold text-brand-300">
-            {countLabel(availableCount)}
+            {t(dict.agentsPage.agentsCount, { count: availableCount })}
           </span>
         </div>
 
@@ -204,7 +203,7 @@ export default function MarketplaceGrid({
           <div className="mb-6 flex items-center gap-3">
             <h2 className="text-2xl font-bold text-white">{comingSoonLabel}</h2>
             <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs font-bold text-neutral-400">
-              {countLabel(comingSoonCount)}
+              {t(dict.agentsPage.agentsCount, { count: comingSoonCount })}
             </span>
           </div>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">

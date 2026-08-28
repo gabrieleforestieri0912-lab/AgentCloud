@@ -10,7 +10,7 @@ import {
   localizeAgent,
 } from "@/lib/agents";
 import { getLocale } from "@/lib/i18n/locale";
-import { getDictionary, t } from "@/lib/i18n/dictionaries";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -74,7 +74,6 @@ export default async function AgentsPage() {
             comingSoonCount={comingSoon.length}
             availableLabel={dict.agentsPage.availableNow}
             comingSoonLabel={dict.agentsPage.comingSoon}
-            countLabel={(count) => t(dict.agentsPage.agentsCount, { count })}
           />
 
           {/* Custom agent CTA — prominent so users who can't find what
