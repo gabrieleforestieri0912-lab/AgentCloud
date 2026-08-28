@@ -13,6 +13,10 @@ import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin-access";
+import {
+  buildActionNotification,
+  createAgentNotification,
+} from "@/lib/agents/notifications";
 
 const MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const MAX_ITERATIONS = 10;
@@ -209,6 +213,27 @@ export async function POST(req: Request) {
                   files: files as Record<string, string> | undefined,
                 },
               );
+
+              // Surface important actions (file created, product published,
+              // event booked, lead captured, ...) as in-app notifications so
+              // the user always knows what their agents did. Best-effort and
+              // only for real accounts — anonymous preview callers have no
+              // inbox. Read-only tool calls never notify.
+              if (userId !== "anonymous") {
+                const action = buildActionNotification(
+                  use.name,
+                  use.input as Record<string, string>,
+                  result,
+                );
+                if (action) {
+                  await createAgentNotification({
+                    userId,
+                    agentSlug: agentId,
+                    kind: action.kind,
+                    params: action.params,
+                  }).catch(() => {});
+                }
+              }
 
               send({ type: "tool_done", toolName: use.name });
 

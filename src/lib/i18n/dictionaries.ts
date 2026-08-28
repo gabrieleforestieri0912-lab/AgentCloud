@@ -901,6 +901,29 @@ const it = {
     cancelling: "L'abbonamento di {agent} è in cancellazione",
     cancellingOn: "Termina il {date}",
     manage: "Gestisci abbonamento",
+    agentActions: {
+      file_created: "{agent} ha creato il file {filename}",
+      product_created:
+        "{agent} ha pubblicato il prodotto \"{title}\" a €{price}",
+      discount_created:
+        "{agent} ha creato il codice sconto {code} ({value})",
+      collection_updated:
+        "{agent} ha aggiornato la collezione \"{collection}\" ({action} {count} prodotti)",
+      inventory_updated:
+        "{agent} ha aggiornato l'inventario di \"{product}\": {previous} → {new} unità",
+      event_booked: "{agent} ha prenotato \"{title}\" ({start})",
+      lead_submitted: "{agent} ha registrato un nuovo lead: {lead}",
+      lead_notified: "{agent} ha avvisato il team vendite di un nuovo lead",
+    },
+    actions: {
+      add: "aggiunti",
+      remove: "rimossi",
+    },
+    markAllRead: "Segna tutte come lette",
+    justNow: "adesso",
+    minutesAgo: "{n} min",
+    hoursAgo: "{n} h",
+    daysAgo: "{n} g",
     email: {
       expiringSubject: "Il tuo abbonamento AgentCloud scade a breve",
       cancellingSubject: "Il tuo abbonamento AgentCloud è in cancellazione",
@@ -1843,6 +1866,30 @@ export const en: Dictionary = {
     cancelling: "{agent} subscription is being cancelled",
     cancellingOn: "Ends on {date}",
     manage: "Manage subscription",
+    agentActions: {
+      file_created: "{agent} created the file {filename}",
+      product_created:
+        "{agent} published the product \"{title}\" at €{price}",
+      discount_created:
+        "{agent} created the discount code {code} ({value})",
+      collection_updated:
+        "{agent} updated the collection \"{collection}\" ({action} {count} products)",
+      inventory_updated:
+        "{agent} updated inventory for \"{product}\": {previous} → {new} units",
+      event_booked: "{agent} booked \"{title}\" ({start})",
+      lead_submitted: "{agent} captured a new lead: {lead}",
+      lead_notified:
+        "{agent} alerted the sales team about a new lead",
+    },
+    actions: {
+      add: "added",
+      remove: "removed",
+    },
+    markAllRead: "Mark all as read",
+    justNow: "just now",
+    minutesAgo: "{n} min",
+    hoursAgo: "{n} h",
+    daysAgo: "{n} d",
     email: {
       expiringSubject: "Your AgentCloud subscription expires soon",
       cancellingSubject: "Your AgentCloud subscription is being cancelled",

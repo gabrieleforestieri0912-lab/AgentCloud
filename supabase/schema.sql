@@ -11,6 +11,9 @@
 --   4. user_agents         — owned agent instances (one per user x agent)
 --   5. agent_runs          — activity log for runs/conversations on owned agents
 --   6. demo_requests       — public demo contact form submissions
+--   7. waitlist            — public waitlist signups
+--   8. rate_limits         — distributed rate limiting buckets
+--   9. agent_notifications — important actions performed by agents (in-app bell)
 --
 -- Auth:
 --   - Authentication is handled by Supabase Auth (auth.users).
@@ -363,7 +366,47 @@ create policy "Only authenticated users can view waitlist"
 
 
 -- -----------------------------------------------------------------------------
--- 8. rate_limits
+-- 8. agent_notifications
+--    Important actions performed by agents on behalf of the user (file
+--    created, product published, event booked, lead captured, ...). Written
+--    server-side by the agent run loop, read in the in-app bell. Users can
+--    mark their own rows as read; the service role writes new rows.
+-- -----------------------------------------------------------------------------
+create table if not exists public.agent_notifications (
+  id uuid default gen_random_uuid() primary key,
+  user_id text not null,
+  agent_slug text not null,
+  kind text not null,
+  params jsonb default '{}'::jsonb,
+  read boolean default false,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_agent_notifications_user
+  on public.agent_notifications(user_id, created_at desc);
+
+alter table public.agent_notifications enable row level security;
+
+drop policy if exists "Users can view own agent_notifications" on public.agent_notifications;
+create policy "Users can view own agent_notifications"
+  on public.agent_notifications for select
+  using (auth.uid()::text = user_id);
+
+drop policy if exists "Users can update own agent_notifications" on public.agent_notifications;
+create policy "Users can update own agent_notifications"
+  on public.agent_notifications for update
+  using (auth.uid()::text = user_id)
+  with check (auth.uid()::text = user_id);
+
+drop policy if exists "Service role can manage agent_notifications" on public.agent_notifications;
+create policy "Service role can manage agent_notifications"
+  on public.agent_notifications for all
+  using (true)
+  with check (true);
+
+
+-- -----------------------------------------------------------------------------
+-- 9. rate_limits
 --    Distributed rate limiting buckets (rate limit helpers in the app).
 --
 --    One row per (bucket, key, window_start). Counters are incremented

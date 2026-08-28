@@ -70,7 +70,7 @@ ADMIN_API_TOKEN=…
 Ci sono **due schemi Supabase separati**, uno per fase:
 
 - **`supabase/schema-waitlist.sql`** — fase waitlist: registra solo l'utente (`profiles` + trigger auth), raccoglie le email (`waitlist`) e include `rate_limits` con le RPC per il rate limiting dell'endpoint waitlist.
-- **`supabase/schema.sql`** — piattaforma completa (quando è disponibile): aggiunge agenti, billing/usage (`subscriptions`, `user_agents`, `agent_runs`), `demo_requests`, `waitlist`, `rate_limits` e il bootstrap di `agents_registry`.
+- **`supabase/schema.sql`** — piattaforma completa (quando è disponibile): aggiunge agenti, billing/usage (`subscriptions`, `user_agents`, `agent_runs`), notifiche azioni agenti (`agent_notifications`), `demo_requests`, `waitlist`, `rate_limits` e il bootstrap di `agents_registry`.
 
 Esegui lo schema scelto (Supabase SQL Editor o `supabase db push`) — **rieseguilo dopo ogni aggiornamento** (idempotente).
 

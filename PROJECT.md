@@ -147,6 +147,7 @@ Schema completo in `supabase/schema.sql` (rieseguibile: idempotente). **Dopo il 
 | `user_agents` | Ownership autoritativa (limiti e stato per utente × agente) |
 | `agent_runs` | Log di esecuzione + conteggio token |
 | `demo_requests`, `waitlist` | Form pubblici |
+| `agent_notifications` | Azioni importanti compiute dagli agenti (file creato, prodotto pubblicato, evento prenotato, lead catturato…) — campanella in-app, `read` per il badge |
 | **`rate_limits`** | **Bucket del rate limiting distribuito** — PK `(bucket, key, window_start)`, RLS deny-all (solo service role) |
 
 **RPC rate limits** (definiti in `schema.sql`):

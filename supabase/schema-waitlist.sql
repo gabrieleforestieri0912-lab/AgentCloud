@@ -13,7 +13,7 @@
 --
 -- When the platform is fully available, run `schema.sql` instead (the full
 -- schema with agents_registry, subscriptions, user_agents, agent_runs,
--- demo_requests, waitlist and rate_limits).
+-- agent_notifications, demo_requests, waitlist and rate_limits).
 --
 -- Auth:
 --   - Authentication is handled by Supabase Auth (auth.users).
