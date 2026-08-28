@@ -226,4 +226,28 @@ npm run start     # avvio produzione
 npm run lint      # ESLint
 npm run test      # Vitest (117 test)
 npm run typecheck # tsc --noEmit
+
+---
+
+## Shopify (OAuth multi-tenant) — distribuzione PUBLIC APP
+
+Il codice (`src/lib/shopify/*`, `/api/shopify/*`) supporta un'app **pubblica**
+installabile da qualsiasi merchant. Passi manuali nel **Shopify Partner Dashboard**
+(non automatizzabili da codice):
+
+1. **App setup → App URL** = `NEXT_PUBLIC_URL`; in **Allowed redirection URLs**
+   aggiungi `https://<host>/api/shopify/callback`.
+2. Imposta la **distribuzione su "Public"** e invia l'app per la **review Shopify**.
+3. **Scopes**: quelli in `SHOPIFY_SCOPES` (default: read/write products, orders,
+   inventory). Chiedi solo ciò che serve.
+4. **Webhook**: l'endpoint `https://<host>/api/shopify/webhooks` è
+   **auto-registrato** a ogni install (APP_UNINSTALLED + 3 GDPR). In alternativa
+   configurali nel Dashboard.
+5. Inserisci **privacy policy** e **termini** richiesti da Shopify.
+6. Usa `SHOPIFY_API_KEY` / `SHOPIFY_API_SECRET` del Partner Dashboard.
+
+Flusso runtime: `/api/shopify/install` (CSRF state + redirect) →
+`/api/shopify/callback` (verifica HMAC + exchange token, cifrato AES-256-GCM in
+`shopify_connections`) → i tool dell'agente leggono il token cifrato e lo
+revocano su 401 (APP_UNINSTALLED / shop/redact).
 ```
