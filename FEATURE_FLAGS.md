@@ -4,7 +4,7 @@
 
 AgentCloud uses feature flags to control which agents and tools are available in your deployment. This allows you to:
 
-- **Launch with 2-3 agents** instead of all 26
+- **Launch with a few agents** instead of the whole 30-agent catalog
 - **Reduce surface area** for initial demos
 - **Gradually roll out** features to specific customers
 - **Test new agents** with specific customers before full launch
@@ -20,10 +20,12 @@ By default, AgentCloud launches with the **Shopify e-commerce vertical**:
 AGENTCLOUD_VERTICAL=shopify
 ```
 
-This enables only:
+This enables:
 
 - **Shopify Agent** - Product search, order status, cart links
 - **Lead Capture Agent** - Capture and notify sales
+- **Support Agent** - 24/7 ticket answers, KB-driven replies, smart escalation
+- **Copywriter** - Conversion copy for landing pages, ads, and email
 
 ### Change Vertical
 
@@ -52,6 +54,8 @@ AGENTCLOUD_VERTICAL=full
 
 - `shopify-agent` - Shopify Commerce Agent
 - `lead-capture` - Lead Capture Agent
+- `support-agent` - Support Agent (24/7 support)
+- `copywriter` - Copywriter (conversion copy)
 
 **Enabled Tools:**
 
@@ -60,12 +64,13 @@ AGENTCLOUD_VERTICAL=full
 - `shopify_build_cart_url` - Generate direct cart links
 - `lead_capture_submit` - Capture lead details
 - `lead_capture_notify_sales` - Send Slack/webhook notifications
+- `read_file` / `write_file` - Knowledge base / brand files for Support and Copywriter
+- `web_search` / `scrape_page` - Available to Support and Copywriter as *optional* tools
 
 **Disabled Tools:**
 
-- `web_search` - Prevents unexpected web searches
-- `scrape_page` - Prevents unexpected page scraping
-- `read_file` / `write_file` - Not needed for basic Shopify operations
+- `web_search` / `scrape_page` - Optional, off by default for Support/Copywriter
+- `read_file` / `write_file` - Not needed for basic Shopify/Lead operations
 - `lead_capture_enrich` - Optional enrichment disabled by default
 
 **Use Case:**
@@ -85,6 +90,8 @@ B: €149 (link) - Product C: €79 (link)"
 
 - `calendar-booking` - Calendar Booking Agent
 - `lead-capture` - Lead Capture Agent
+- `support-agent` - Support Agent (24/7 support)
+- `copywriter` - Copywriter (conversion copy)
 
 **Enabled Tools:**
 
@@ -92,11 +99,13 @@ B: €149 (link) - Product C: €79 (link)"
 - `calendar_book_event` - Book meetings on calendar
 - `lead_capture_submit` - Capture lead details
 - `lead_capture_notify_sales` - Send Slack/webhook notifications
+- `read_file` / `write_file` - Knowledge base / brand files for Support and Copywriter
+- `web_search` / `scrape_page` - Available to Support and Copywriter as *optional* tools
 
 **Disabled Tools:**
 
-- `web_search` - Prevents unexpected searches
-- All other tools not related to booking/leads
+- `web_search` / `scrape_page` - Optional, off by default for Support/Copywriter
+- All other tools not related to booking/leads/support/content
 
 **Use Case:**
 
@@ -115,13 +124,15 @@ calendar_book_event to book] "Confirmed! Your table is booked for tomorrow at
 
 **Enabled Agents:**
 
-- All 6 core agents:
+- All 8 runtime agents:
   - `seo-agent` - SEO Content Agent
   - `business-manager` - Business Manager Agent
   - `personal-assistant` - Personal AI Assistant
   - `shopify-agent` - Shopify Commerce Agent
   - `calendar-booking` - Calendar Booking Agent
   - `lead-capture` - Lead Capture Agent
+  - `support-agent` - Support Agent (24/7 support)
+  - `copywriter` - Copywriter (conversion copy)
 
 **Enabled Tools:**
 

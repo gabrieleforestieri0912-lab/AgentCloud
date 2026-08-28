@@ -6,7 +6,7 @@ import {
 } from "./registry";
 
 describe("AGENT_RUNTIME", () => {
-  it("exposes the six runtime agents", () => {
+  it("exposes the eight runtime agents", () => {
     for (const slug of [
       "seo-agent",
       "business-manager",
@@ -14,6 +14,8 @@ describe("AGENT_RUNTIME", () => {
       "shopify-agent",
       "calendar-booking",
       "lead-capture",
+      "support-agent",
+      "copywriter",
     ]) {
       expect(AGENT_RUNTIME[slug]).toBeDefined();
     }

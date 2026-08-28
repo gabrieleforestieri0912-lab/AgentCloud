@@ -9,6 +9,42 @@ AgentCloud offers simple, transparent pricing for two verticals:
 
 Both verticals share the same pricing structure to keep things simple at launch.
 
+## Agent Pricing (abbonamento singolo)
+
+Ogni agente del marketplace può anche essere attivato singolarmente con un
+abbonamento mensile dedicato (checkout diretto dalla card dell'agente). I
+prezzi riflettono la complessità del compito e sono allineati tra catalogo
+(`src/lib/agents.ts`), runtime (`src/lib/agents/registry.ts`) e bootstrap del
+DB (`supabase/schema.sql`).
+
+| Agente                                  | Prezzo mensile | Categoria            | Compito principale                |
+| --------------------------------------- | -------------- | -------------------- | --------------------------------- |
+| Shopify Agent                           | €39/mese       | E-commerce & Finance | Gestione store e vendite          |
+| Lead Capture Agent                      | €29/mese       | Marketing & Sales    | Cattura e notifica lead           |
+| **Support Agent**                       | **€49/mese**   | Customer Service    | Assistenza clienti 24/7           |
+| **Copywriter**                          | **€39/mese**   | Design & Content    | Copy che converte                 |
+| Executive Assistant                     | €39/mese       | Business & Ops       | Smistamento e pianificazione      |
+| Personal Assistant                      | €29/mese       | Business & Ops       | Organizzazione giornata           |
+| SEO Specialist / SEO Content            | €39/mese       | Marketing & Sales    | Contenuti e posizionamento        |
+| Social Media Manager                    | €39/mese       | Marketing & Sales    | Contenuti social                  |
+| Calendar Booking Agent                  | €39/mese       | Business & Ops       | Prenotazioni e slot               |
+| Full Stack Developer                    | €49/mese       | Development          | Sviluppo feature                  |
+| Data Analyst                            | €49/mese       | AI & Data            | Analisi e report                  |
+
+La tariffa base è **€29/mese** (agenti a basso carico operativo: meeting,
+blog, cold email, lead capture, prompt engineering), **€39/mese** per gli
+agenti di contenuto e operazioni standard, **€49/mese** per gli agenti ad
+alto valore (supporto 24/7, sviluppo, lead qualification, dati) e
+**€59/mese** per gli agenti strategici/cross-team (CRM, customer success,
+marketing strategist, DevOps, AI automation, business manager). I nuovi
+agenti disponibili — **Support Agent (€49/mese)** e **Copywriter
+(€39/mese)** — sono allineati a questa scala.
+
+> **Nota:** questi prezzi sono quelli effettivamente addebitati via
+> `/api/checkout` (campo `priceCents` del catalogo). In passato il bootstrap
+> `agents_registry` riportava valori divergenti (es. €79-149): il seed è stato
+> riallineato al catalogo.
+
 ## Pricing Plans
 
 ### E-commerce Vertical (Shopify)

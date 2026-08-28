@@ -24,6 +24,8 @@ describe("flag-driven marketplace", () => {
     const mod = await loadAgentsModule();
     expect(mod.isAvailable("shopify-agent")).toBe(true);
     expect(mod.isAvailable("lead-capture")).toBe(true);
+    expect(mod.isAvailable("support-agent")).toBe(true);
+    expect(mod.isAvailable("copywriter")).toBe(true);
     // Not part of the default shopify vertical.
     expect(mod.isAvailable("calendar-booking")).toBe(false);
     expect(mod.isAvailable("seo-agent")).toBe(false);
@@ -62,10 +64,12 @@ describe("flag-driven marketplace", () => {
       "shopify-agent",
       "calendar-booking",
       "lead-capture",
+      "support-agent",
+      "copywriter",
     ]) {
       expect(mod.isAvailable(slug)).toBe(true);
     }
-    expect(mod.AVAILABLE_AGENTS.length).toBe(6);
+    expect(mod.AVAILABLE_AGENTS.length).toBe(8);
   });
 
   it("respects a custom JSON feature-flag override", async () => {

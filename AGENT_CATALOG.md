@@ -8,7 +8,7 @@
 
 ### 1. Shopify Commerce Agent
 
-**Prezzo:** €29/mese  
+**Prezzo:** €39/mese  
 **Categoria:** E-commerce & Finance  
 **Descrizione:** Agente specializzato per negozi Shopify che ricerca prodotti, controlla lo stato degli ordini e genera link diretti al carrello.
 
@@ -66,7 +66,7 @@
 
 ### 3. Calendar Booking Agent
 
-**Prezzo:** €29/mese  
+**Prezzo:** €39/mese  
 **Categoria:** Business & Operations  
 **Descrizione:** Agente che gestisce la prenotazione di appuntamenti, controlla disponibilità e invia conferme automatiche.
 
@@ -93,9 +93,49 @@
 
 ## 💼 Altri Agenti Disponibili (Non Attivi di Default)
 
-### 4. SEO Content Agent
+### 4. Support Agent ✅ Disponibile
 
-**Prezzo:** €29/mese  
+**Prezzo:** €49/mese  
+**Categoria:** Customer Service  
+**Descrizione:** Agente che risponde ai ticket 24/7, addestrato sulla knowledge base, ed escalada solo i casi che richiedono un umano.
+
+**Funzionalità principali:**
+
+- Risposte 24/7 con knowledge base
+- Classificazione automatica dei ticket
+- Bozze di risposta pronte all'approvazione
+- Escalation dei casi complessi al team umano
+
+**Tools default:** read_file, write_file  
+**Tools opzionali:** web_search, scrape_page
+
+**Ideale per:** Team di assistenza clienti che vogliono abbattere tempi di risposta e backlog senza aumentare l'organico
+
+---
+
+### 5. Copywriter ✅ Disponibile
+
+**Prezzo:** €39/mese  
+**Categoria:** Design & Content  
+**Descrizione:** Scrive copy che convertono su landing page, annunci ed email, con più varianti pronte per i test A/B.
+
+**Funzionalità principali:**
+
+- Copy landing page
+- Copy annunci
+- Copy email
+- Microcopy UI
+
+**Tools default:** read_file, write_file  
+**Tools opzionali:** web_search, scrape_page
+
+**Ideale per:** Team marketing che vogliono copy on-brand in pochi minuti e varianti per ottimizzare la conversione
+
+---
+
+### 6. SEO Content Agent
+
+**Prezzo:** €39/mese  
 **Categoria:** Marketing & Sales  
 **Descrizione:** Scrive contenuti SEO-ottimizzati con keyword research e analisi competitor.
 
@@ -104,9 +144,9 @@
 
 ---
 
-### 5. Business Manager Agent
+### 7. Business Manager Agent
 
-**Prezzo:** €29/mese  
+**Prezzo:** €59/mese  
 **Categoria:** Business & Operations  
 **Descrizione:** Assistente executive per reporting, scheduling e analisi strategica.
 
@@ -115,7 +155,7 @@
 
 ---
 
-### 6. Personal AI Assistant
+### 8. Personal AI Assistant
 
 **Prezzo:** €29/mese  
 **Categoria:** Business & Operations  

@@ -28,7 +28,7 @@ For each agent, create a Product and Price in Stripe:
    - **Pricing**: Recurring → Monthly → Set price in EUR
 3. Save the **Price ID** (starts with `price_`)
 
-Repeat for all agents (26 total).
+Repeat for all agents (30 total).
 
 ### Overage Price (Billing Meter) — obbligatorio per l'overage billing
 
@@ -92,7 +92,7 @@ NEXT_PUBLIC_URL=http://localhost:3000
 # Payment Links (one per agent)
 STRIPE_PAYMENT_LINK_EXECUTIVE_ASSISTANT=https://buy.stripe.com/...
 STRIPE_PAYMENT_LINK_PROJECT_MANAGER=https://buy.stripe.com/...
-# ... (repeat for all 26 agents)
+# ... (repeat for all 30 agents)
 ```
 
 ### Agent Slug Mapping
@@ -222,7 +222,7 @@ stripe trigger checkout.session.completed
 
 AgentCloud supports feature flags to control which agents and tools are available. This is useful for:
 
-- Launching with only 2-3 agents instead of all 26
+- Launching with only a few agents instead of the whole 30-agent catalog
 - Reducing surface area for initial demos
 - Gradually rolling out features to specific customers
 - Testing new agents with specific customers before full launch
@@ -279,7 +279,7 @@ AGENTCLOUD_FEATURE_FLAGS={
 
 #### Full Platform
 
-- **Agents**: All 6 core agents
+- **Agents**: All 8 runtime agents (SEO, Business Manager, Personal Assistant, Shopify, Calendar Booking, Lead Capture, Support Agent, Copywriter)
 - **Tools**: All tools enabled
 - **Use case**: Existing customers, full launch
 

@@ -15,7 +15,7 @@ Implemented Stripe Payment Links system for AgentCloud billing as requested. Thi
 
 ### 2. Modified Files
 
-- **`.env.local.example`**: Added 26 environment variables for payment links (one per agent)
+- **`.env.local.example`**: Added 30 environment variables for payment links (one per agent)
 - **`src/app/api/billing/webhook/route.ts`**: Enhanced webhook to handle payment link metadata and auto-activate subscriptions
 - **`src/proxy.ts`**: Removed `/checkout` from public routes (no longer needed)
 
@@ -105,7 +105,7 @@ NEXT_PUBLIC_URL=http://localhost:3000
 # Payment Links (one per agent)
 STRIPE_PAYMENT_LINK_EXECUTIVE_ASSISTANT=https://buy.stripe.com/...
 STRIPE_PAYMENT_LINK_PROJECT_MANAGER=https://buy.stripe.com/...
-# ... (26 total)
+# ... (30 total)
 ```
 
 ### Creating Payment Links in Stripe
@@ -213,8 +213,8 @@ curl "http://localhost:3000/api/billing/payment-link?agentId=executive-assistant
 ## Next Steps
 
 1. Create Stripe account (or use existing)
-2. Create 26 Products and Prices in Stripe
-3. Create 26 Payment Links in Stripe
+2. Create 30 Products and Prices in Stripe
+3. Create 30 Payment Links in Stripe
 4. Add payment links to `.env.local`
 5. Configure webhook endpoint in Stripe
 6. Run Supabase schema migration

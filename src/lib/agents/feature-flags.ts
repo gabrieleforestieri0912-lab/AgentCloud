@@ -2,7 +2,7 @@
  * Feature flags for controlling which agents and tools are available.
  *
  * This allows you to:
- * - Launch with only 2-3 agents instead of all 26
+ * - Launch with only a few agents instead of the whole 30-agent catalog
  * - Control which tools are enabled per agent
  * - Gradually roll out features to specific customers
  * - Reduce surface area for initial demos
@@ -27,18 +27,30 @@ export type FeatureFlags = {
 
 /**
  * Default configuration for Shopify e-commerce vertical launch.
- * Only 2 agents enabled: Shopify Agent + Lead Capture
+ * 4 agents enabled: Shopify Agent + Lead Capture + Support Agent + Copywriter
  */
 export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
-  enabledAgents: ["shopify-agent", "lead-capture"],
+  enabledAgents: [
+    "shopify-agent",
+    "lead-capture",
+    "support-agent",
+    "copywriter",
+  ],
 
-  // Only enable Shopify and Lead Capture tools
+  // Enable Shopify, Lead Capture, and the general tools used by the
+  // Support and Copywriter agents. Optional tools (web_search, scrape_page)
+  // stay off for Shopify/Lead agents because enableOptionalToolsByDefault is
+  // false — the global list only widens what a given agent can reach.
   enabledTools: [
     "shopify_search_products",
     "shopify_get_order_status",
     "shopify_build_cart_url",
     "lead_capture_submit",
     "lead_capture_notify_sales",
+    "web_search",
+    "scrape_page",
+    "read_file",
+    "write_file",
   ],
 
   // No agent-specific overrides needed
@@ -50,16 +62,25 @@ export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
 
 /**
  * Configuration for services vertical (restaurants, professionals, real estate)
- * Only 2 agents enabled: Calendar Booking + Lead Capture
+ * 4 agents enabled: Calendar Booking + Lead Capture + Support Agent + Copywriter
  */
 export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
-  enabledAgents: ["calendar-booking", "lead-capture"],
+  enabledAgents: [
+    "calendar-booking",
+    "lead-capture",
+    "support-agent",
+    "copywriter",
+  ],
 
   enabledTools: [
     "calendar_search_availability",
     "calendar_book_event",
     "lead_capture_submit",
     "lead_capture_notify_sales",
+    "web_search",
+    "scrape_page",
+    "read_file",
+    "write_file",
   ],
 
   agentToolOverrides: {},
@@ -79,6 +100,8 @@ export const FULL_PLATFORM_CONFIG: FeatureFlags = {
     "shopify-agent",
     "calendar-booking",
     "lead-capture",
+    "support-agent",
+    "copywriter",
   ],
 
   enabledTools: [

@@ -61,7 +61,20 @@ describe("isAgentEnabled", () => {
     delete process.env.AGENTCLOUD_FEATURE_FLAGS;
     expect(isAgentEnabled("shopify-agent")).toBe(true);
     expect(isAgentEnabled("lead-capture")).toBe(true);
+    expect(isAgentEnabled("support-agent")).toBe(true);
+    expect(isAgentEnabled("copywriter")).toBe(true);
     expect(isAgentEnabled("seo-agent")).toBe(false);
+  });
+
+  it("enables support-agent and copywriter across every preset", () => {
+    for (const config of [
+      SHOPIFY_LAUNCH_CONFIG,
+      SERVICES_LAUNCH_CONFIG,
+      FULL_PLATFORM_CONFIG,
+    ]) {
+      expect(config.enabledAgents).toContain("support-agent");
+      expect(config.enabledAgents).toContain("copywriter");
+    }
   });
 });
 
@@ -72,6 +85,20 @@ describe("getEnabledToolsForAgent", () => {
     const tools = getEnabledToolsForAgent("shopify-agent");
     expect(tools).toContain("shopify_search_products");
     expect(tools).not.toContain("web_search");
+  });
+
+  it("gives support-agent and copywriter their core tools under the default config", () => {
+    delete process.env.AGENTCLOUD_VERTICAL;
+    delete process.env.AGENTCLOUD_FEATURE_FLAGS;
+    const supportTools = getEnabledToolsForAgent("support-agent");
+    expect(supportTools).toContain("read_file");
+    expect(supportTools).toContain("write_file");
+    expect(supportTools).not.toContain("web_search");
+
+    const copywriterTools = getEnabledToolsForAgent("copywriter");
+    expect(copywriterTools).toContain("read_file");
+    expect(copywriterTools).toContain("write_file");
+    expect(copywriterTools).not.toContain("web_search");
   });
 
   it("enables optional tools under the full config", () => {
