@@ -1,10 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { logAudit } from "@/lib/audit";
+import { getTenantCredentials, updateTenantGoogleTokens } from "@/lib/tenants";
 import {
-  getTenantCredentials,
-  updateTenantGoogleTokens,
-  updateTenantShopifyCredentials,
-} from "@/lib/tenants";
+  getShopifyConnection,
+  revokeShopifyConnection,
+} from "@/lib/shopify/connections";
 
 export const TOOL_DEFINITIONS: Record<string, Anthropic.Tool> = {
   web_search: {
@@ -447,24 +447,23 @@ function sanitizeText(value: string, maxLength = 1000): string {
 }
 
 /**
- * Resolve Shopify credentials: first try tenant (per-user), then env vars.
- * Returns null when no credentials are available.
+ * Resolve Shopify credentials for a tenant (user):
+ *   1. the encrypted OAuth connection stored in `shopify_connections` (Phase 5),
+ *   2. legacy environment variables (SHOPIFY_SHOP_DOMAIN / SHOPIFY_ADMIN_ACCESS_TOKEN).
+ * Returns null when no connection is available.
  */
-function getShopifyCredentials(tenantId?: string): {
+async function resolveShopifyCredentials(tenantId?: string): Promise<{
   shopDomain: string;
   accessToken: string;
-} | null {
-  let shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
-  let accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+} | null> {
   if (tenantId) {
-    const creds = getTenantCredentials(tenantId);
-    if (creds?.shopify) {
-      shopDomain = creds.shopify.shopDomain || shopDomain;
-      accessToken = creds.shopify.accessToken || accessToken;
-    }
+    const conn = await getShopifyConnection(tenantId).catch(() => null);
+    if (conn) return conn;
   }
-  if (!shopDomain || !accessToken) return null;
-  return { shopDomain, accessToken };
+  const shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
+  const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+  if (shopDomain && accessToken) return { shopDomain, accessToken };
+  return null;
 }
 
 /** Execute a Shopify GraphQL Admin API query/mutation. */
@@ -473,7 +472,16 @@ async function shopifyGraphQL(
   accessToken: string,
   query: string,
   variables: Record<string, unknown> = {},
-): Promise<{ ok: boolean; data?: unknown; errors?: unknown; statusText?: string; raw?: string }> {
+  opts?: { userId?: string },
+): Promise<{
+  ok: boolean;
+  status?: number;
+  revoked?: boolean;
+  data?: unknown;
+  errors?: unknown;
+  statusText?: string;
+  raw?: string;
+}> {
   try {
     const res = await fetch(
       `https://${shopDomain}/admin/api/2024-10/graphql.json`,
@@ -487,14 +495,64 @@ async function shopifyGraphQL(
       },
     );
     if (!res.ok) {
+      const unauthorized = res.status === 401;
+      if (unauthorized && opts?.userId) {
+        await revokeShopifyConnection(opts.userId, shopDomain).catch(() => {});
+      }
       const text = await res.text();
-      return { ok: false, statusText: `${res.status} ${res.statusText}`, raw: text };
+      return {
+        ok: false,
+        status: res.status,
+        revoked: unauthorized,
+        statusText: `${res.status} ${res.statusText}`,
+        raw: text,
+      };
     }
     const json = await res.json();
     return { ok: true, data: json.data, errors: json.errors };
   } catch (e) {
     return { ok: false, statusText: e instanceof Error ? e.message : String(e) };
   }
+}
+
+/**
+ * Run a Shopify GraphQL call for a tenant, resolving credentials and handling
+ * token revocation: a 401 means the token was uninstalled/expired, so we mark
+ * the connection revoked and return a friendly, reconnect-oriented message.
+ */
+async function shopifyCall(
+  userId: string | undefined,
+  query: string,
+  variables: Record<string, unknown> = {},
+): Promise<{ data?: unknown; shopDomain?: string; error?: string }> {
+  const creds = await resolveShopifyCredentials(userId);
+  if (!creds) {
+    return {
+      error:
+        "Shopify non configurato. Collega il tuo store dal pannello 'Connetti Shopify' (OAuth) o imposta SHOPIFY_SHOP_DOMAIN e SHOPIFY_ADMIN_ACCESS_TOKEN nell'ambiente.",
+    };
+  }
+  const result = await shopifyGraphQL(
+    creds.shopDomain,
+    creds.accessToken,
+    query,
+    variables,
+    { userId },
+  );
+  if (result.status === 401) {
+    if (userId) {
+      await revokeShopifyConnection(userId, creds.shopDomain).catch(() => {});
+    }
+    return {
+      error:
+        "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.",
+    };
+  }
+  if (!result.ok) return { error: `Shopify API error: ${result.statusText}` };
+  if (result.errors) {
+    return { error: `Shopify GraphQL error: ${JSON.stringify(result.errors)}` };
+  }
+  return { data: result.data, shopDomain: creds.shopDomain };
 }
 
 function isValidEmail(email: string): boolean {
@@ -605,20 +663,6 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
     }
 
     case "shopify_search_products": {
-      const tenantId = context.tenantId;
-      let shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
-      let accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-      if (tenantId) {
-        const creds = getTenantCredentials(tenantId);
-        if (creds?.shopify) {
-          shopDomain = creds.shopify.shopDomain;
-          accessToken = creds.shopify.accessToken;
-        }
-      }
-      if (!shopDomain || !accessToken) {
-        return "Shopify tool not configured. Set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
-      }
-
       const query = input.query;
       const limit = Math.min(20, Math.max(1, Number(input.limit) || 5));
       const graphql = `
@@ -641,32 +685,23 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       `;
 
       try {
-        const res = await fetch(
-          `https://${shopDomain}/admin/api/2024-10/graphql.json`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": accessToken,
-            },
-            body: JSON.stringify({
-              query: graphql,
-              variables: { query, first: limit },
-            }),
-          },
-        );
+        const call = await shopifyCall(context.tenantId, graphql, { query, first: limit });
+        if (call.error) return call.error;
 
-        if (!res.ok) {
-          const text = await res.text();
-          return `Shopify product search failed: ${res.status} ${res.statusText} - ${text}`;
-        }
-
-        const data = await res.json();
-        if (data.errors) {
-          return `Shopify product search error: ${JSON.stringify(data.errors)}`;
-        }
-
-        const productEdges = data.data?.products?.edges || [];
+        const shopDomain = call.shopDomain!;
+        const productEdges = (call.data as {
+          products?: {
+            edges?: Array<{
+              node?: {
+                title?: string;
+                handle?: string;
+                onlineStoreUrl?: string;
+                priceRangeV2?: { minVariantPrice?: { amount?: string; currencyCode?: string } };
+                variants?: { edges?: Array<{ node?: { id?: string; availableForSale?: boolean } }> };
+              };
+            }>;
+          };
+        } | undefined)?.products?.edges || [];
         if (!productEdges.length) {
           return "Nessun prodotto trovato.";
         }
@@ -715,20 +750,6 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
     }
 
     case "shopify_get_order_status": {
-      const tenantId = context.tenantId;
-      let shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
-      let accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-      if (tenantId) {
-        const creds = getTenantCredentials(tenantId);
-        if (creds?.shopify) {
-          shopDomain = creds.shopify.shopDomain || shopDomain;
-          accessToken = creds.shopify.accessToken || accessToken;
-        }
-      }
-      if (!shopDomain || !accessToken) {
-        return "Shopify tool not configured. Set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment or register tenant credentials.";
-      }
-
       const orderNumber = input.order_number || "";
       const email = input.email || "";
       if (!orderNumber || !email) {
@@ -758,32 +779,31 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       `;
 
       try {
-        const res = await fetch(
-          `https://${shopDomain}/admin/api/2024-10/graphql.json`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": accessToken,
-            },
-            body: JSON.stringify({
-              query: graphql,
-              variables: { query: searchQuery },
-            }),
-          },
+        const creds = await resolveShopifyCredentials(context.tenantId);
+        if (!creds) {
+          return "Shopify non configurato. Collega il tuo store dal pannello 'Connetti Shopify' (OAuth) o imposta SHOPIFY_SHOP_DOMAIN e SHOPIFY_ADMIN_ACCESS_TOKEN nell'ambiente.";
+        }
+        const result = await shopifyGraphQL(
+          creds.shopDomain,
+          creds.accessToken,
+          graphql,
+          { query: searchQuery },
+          { userId: context.tenantId },
         );
-
-        if (!res.ok) {
-          const text = await res.text();
-          return `Shopify order status failed: ${res.status} ${res.statusText} - ${text}`;
+        if (result.status === 401) {
+          return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
         }
+        if (!result.ok) return `Shopify order status failed: ${result.statusText}`;
+        if (result.errors) return `Shopify order status error: ${JSON.stringify(result.errors)}`;
 
-        const data = await res.json();
-        if (data.errors) {
-          return `Shopify order status error: ${JSON.stringify(data.errors)}`;
-        }
-
-        const edge = data.data?.orders?.edges?.[0];
+        type OrderNode = {
+          name?: string;
+          displayFinancialStatus?: string;
+          displayFulfillmentStatus?: string;
+          statusPageUrl?: string;
+          fulfillments?: Array<{ trackingInfo?: Array<{ number?: string; url?: string; company?: string }> }>;
+        };
+        const edge = (result.data as { orders?: { edges?: Array<{ node?: OrderNode }> } } | undefined)?.orders?.edges?.[0];
         if (!edge) {
           return `Nessun ordine trovato per ${normalized} e ${email}.`;
         }
@@ -812,15 +832,11 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
     }
 
     case "shopify_build_cart_url": {
-      const tenantId = context.tenantId;
-      let shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
-      if (tenantId) {
-        const creds = getTenantCredentials(tenantId);
-        if (creds?.shopify) shopDomain = creds.shopify.shopDomain || shopDomain;
+      const creds = await resolveShopifyCredentials(context.tenantId);
+      if (!creds) {
+        return "Shopify non configurato. Collega il tuo store dal pannello 'Connetti Shopify' (OAuth) o imposta SHOPIFY_SHOP_DOMAIN nell'ambiente.";
       }
-      if (!shopDomain) {
-        return "Shopify tool not configured. Set SHOPIFY_SHOP_DOMAIN in your environment or register tenant credentials.";
-      }
+      const shopDomain = creds.shopDomain;
       const variantId = input.variant_id || "";
       const quantity = Number(input.quantity) || 1;
       const match = variantId.match(/ProductVariant\/(\d+)/);
@@ -831,62 +847,15 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
     }
 
     case "shopify_setup_store": {
-      const shopDomain = sanitizeText(input.shop_domain || "", 200).replace(
-        /^https?:\/\//,
-        "",
-      );
-      const accessToken = sanitizeText(input.access_token || "", 200);
-
-      if (!shopDomain) {
-        return "shop_domain is required (e.g. my-store.myshopify.com).";
-      }
-      if (!accessToken) {
-        return "access_token is required.";
-      }
-      if (!shopDomain.includes(".myshopify.com")) {
-        return "The shop_domain must be a valid Shopify domain (e.g. my-store.myshopify.com).";
-      }
-      if (!accessToken.startsWith("shpat_")) {
-        return "The access_token should start with 'shpat_' — please use a valid Shopify Admin API access token.";
-      }
-
-      // Save credentials for this tenant (user)
-      if (context.tenantId) {
-        updateTenantShopifyCredentials(context.tenantId, shopDomain, accessToken);
-      }
-
-      // Verify the token works by making a test query
-      const test = await shopifyGraphQL(
-        shopDomain,
-        accessToken,
-        `query { shop { name primaryDomain { host } } }`,
-      );
-
-      if (!test.ok) {
-        return `Connection failed: ${test.statusText}. Please check your domain and access token.`;
-      }
-      if (test.errors) {
-        return `Connection error: ${JSON.stringify(test.errors)}. The token may lack the required permissions (read_products, read_orders, write_products, write_discounts).`;
-      }
-
-      const shop = (test.data as { shop?: { name?: string; primaryDomain?: { host?: string } } })?.shop;
-      return `Store connected successfully!
-Store name: ${shop?.name ?? "N/A"}
-Domain: ${shop?.primaryDomain?.host ?? shopDomain}
-
-I now have full access to your Shopify store. I can help you with:
-• Searching and managing products
-• Creating new products and discount codes
-• Managing collections and inventory
-• Viewing customer data and sales analytics
-• Generating cart links for customers
-• Checking order status
-
-What would you like to do first?`;
+      // Connection is handled securely via the OAuth panel in the chat UI
+      // (see SHOPIFY_AGENT_SLUG + /api/shopify/install). We intentionally do
+      // NOT accept a raw Admin API token in chat: that would expose the secret
+      // in conversation history and bypass the encrypted-at-rest store.
+      return "La connessione allo store avviene in modo sicuro dal pannello 'Connetti Shopify' nella chat (OAuth), non inserendo un token manualmente. Apri il pannello e autorizza il tuo store *.myshopify.com, poi riprova.";
     }
 
     case "shopify_list_customers": {
-      const creds = getShopifyCredentials(context.tenantId);
+      const creds = await resolveShopifyCredentials(context.tenantId);
       if (!creds) {
         return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
       }
@@ -914,6 +883,10 @@ What would you like to do first?`;
       `;
 
       const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { first: limit });
+      if (result.status === 401) {
+        if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
+        return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
+      }
       if (!result.ok) return `Shopify API error: ${result.statusText}`;
       if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
 
@@ -950,7 +923,7 @@ What would you like to do first?`;
     }
 
     case "shopify_get_analytics": {
-      const creds = getShopifyCredentials(context.tenantId);
+      const creds = await resolveShopifyCredentials(context.tenantId);
       if (!creds) {
         return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
       }
@@ -986,6 +959,10 @@ What would you like to do first?`;
       `;
 
       const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { since });
+      if (result.status === 401) {
+        if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
+        return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
+      }
       if (!result.ok) return `Shopify API error: ${result.statusText}`;
       if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
 
@@ -1029,7 +1006,7 @@ What would you like to do first?`;
     }
 
     case "shopify_create_product": {
-      const creds = getShopifyCredentials(context.tenantId);
+      const creds = await resolveShopifyCredentials(context.tenantId);
       if (!creds) {
         return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
       }
@@ -1067,9 +1044,14 @@ What would you like to do first?`;
           ...(compareAt && parseFloat(compareAt) > 0 ? { compareAtPrice: compareAt } : {}),
         }],
         ...(tags ? { tags: tags.split(",").map((t: string) => t.trim()).filter(Boolean) } : {}),
+        ...(imageUrl ? { images: [{ src: imageUrl }] } : {}),
       };
 
       const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { input: productInput });
+      if (result.status === 401) {
+        if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
+        return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
+      }
       if (!result.ok) return `Shopify API error: ${result.statusText}`;
       if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
 
@@ -1099,7 +1081,7 @@ What would you like to do first?`;
     }
 
     case "shopify_create_discount": {
-      const creds = getShopifyCredentials(context.tenantId);
+      const creds = await resolveShopifyCredentials(context.tenantId);
       if (!creds) {
         return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
       }
@@ -1155,6 +1137,10 @@ What would you like to do first?`;
       };
 
       const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { basicCodeDiscountInput: discountInput });
+      if (result.status === 401) {
+        if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
+        return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
+      }
       if (!result.ok) return `Shopify API error: ${result.statusText}`;
       if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
 
@@ -1183,7 +1169,7 @@ What would you like to do first?`;
     }
 
     case "shopify_list_collections": {
-      const creds = getShopifyCredentials(context.tenantId);
+      const creds = await resolveShopifyCredentials(context.tenantId);
       if (!creds) {
         return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
       }
@@ -1205,6 +1191,10 @@ What would you like to do first?`;
       `;
 
       const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { first: limit });
+      if (result.status === 401) {
+        if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
+        return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
+      }
       if (!result.ok) return `Shopify API error: ${result.statusText}`;
       if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
 
@@ -1225,7 +1215,7 @@ What would you like to do first?`;
     }
 
     case "shopify_manage_collection": {
-      const creds = getShopifyCredentials(context.tenantId);
+      const creds = await resolveShopifyCredentials(context.tenantId);
       if (!creds) {
         return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
       }
@@ -1255,6 +1245,10 @@ What would you like to do first?`;
         id: collectionId,
         productIds,
       });
+      if (result.status === 401) {
+        if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
+        return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
+      }
       if (!result.ok) return `Shopify API error: ${result.statusText}`;
       if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
 
@@ -1273,7 +1267,7 @@ What would you like to do first?`;
     }
 
     case "shopify_update_inventory": {
-      const creds = getShopifyCredentials(context.tenantId);
+      const creds = await resolveShopifyCredentials(context.tenantId);
       if (!creds) {
         return "Shopify not configured. Use shopify_setup_store to connect your store first, or set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment.";
       }

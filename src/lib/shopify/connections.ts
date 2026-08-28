@@ -77,6 +77,45 @@ export async function getShopifyToken(
   return decryptShopifyToken(data.access_token as ShopifyTokenEnvelope);
 }
 
+/**
+ * Resolve the active connection for a user (latest non-revoked shop).
+ * Used by the agent tools (Phase 5) so they read the OAuth-stored, encrypted
+ * token instead of the legacy in-memory tenant store. Returns null when the
+ * user has no connected store.
+ */
+export async function getShopifyConnection(
+  userId: string,
+): Promise<{ shopDomain: string; accessToken: string } | null> {
+  const admin = createAdminClient();
+  if (!admin) return null;
+  const { data, error } = await admin
+    .from("shopify_connections")
+    .select("shop_domain, access_token, uninstalled_at, installed_at")
+    .eq("user_id", userId)
+    .is("uninstalled_at", null)
+    .order("installed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const token = decryptShopifyToken(data.access_token as ShopifyTokenEnvelope);
+  if (!token) return null;
+  return { shopDomain: data.shop_domain, accessToken: token };
+}
+
+/** Revoke (mark uninstalled) a specific user+shop connection (e.g. on 401). */
+export async function revokeShopifyConnection(
+  userId: string,
+  shopDomain: string,
+): Promise<void> {
+  const admin = createAdminClient();
+  if (!admin) return;
+  await admin
+    .from("shopify_connections")
+    .update({ uninstalled_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("shop_domain", shopDomain);
+}
+
 export type ShopifyConnectionSummary = {
   shopDomain: string;
   scope: string | null;

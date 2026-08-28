@@ -8,6 +8,7 @@ import {
   SHOPIFY_STATE_COOKIE,
 } from "@/lib/shopify/oauth";
 import { upsertShopifyConnection } from "@/lib/shopify/connections";
+import { registerShopifyWebhooks } from "@/lib/shopify/webhooks";
 
 /**
  * Phase 3 — Shopify OAuth callback + token exchange.
@@ -95,6 +96,10 @@ export async function GET(req: NextRequest) {
   } catch {
     return dashboardError("store");
   }
+
+  // 6. Best-effort: register mandatory webhooks (app/uninstalled + GDPR).
+  // Non-fatal — missing webhooks only degrade uninstall/revocation handling.
+  void registerShopifyWebhooks(shop, accessToken).catch(() => {});
 
   const res = NextResponse.redirect(
     new URL("/dashboard?shopify=connected", req.url),

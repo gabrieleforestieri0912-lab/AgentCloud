@@ -50,6 +50,35 @@ export function getShopifyRedirectUri(): string {
   );
 }
 
+/** Public base URL used for webhook subscription callbacks. */
+export function getShopifyWebhookAddress(): string {
+  return (
+    process.env.SHOPIFY_WEBHOOK_ADDRESS ||
+    `${process.env.NEXT_PUBLIC_URL ?? ""}/api/shopify/webhooks`
+  );
+}
+
+/**
+ * Verify a Shopify webhook HMAC: Shopify sends `X-Shopify-Hmac-SHA256`, the
+ * base64 of the HMAC-SHA256 of the *raw* request body computed with the app
+ * secret. Computed value must match the header in constant time.
+ */
+export function verifyShopifyWebhookHmac(
+  rawBody: string,
+  hmacHeader: string,
+  secret: string,
+): boolean {
+  if (!hmacHeader) return false;
+  const computed = createHmac("sha256", secret)
+    .update(rawBody, "utf8")
+    .digest("base64");
+  try {
+    return timingSafeEqual(Buffer.from(computed), Buffer.from(hmacHeader));
+  } catch {
+    return false;
+  }
+}
+
 /** Build the Shopify authorize URL the user is redirected to. */
 export function buildAuthorizeUrl(shop: string, state: string): string {
   const params = new URLSearchParams({
