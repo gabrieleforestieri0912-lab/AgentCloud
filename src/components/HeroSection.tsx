@@ -91,7 +91,7 @@ export default function HeroSection() {
 
     const aiMsgId = heroId();
 
-    // Try the real AI backend (Ollama) first, fall back to local responses.
+    // Try the Gemini-backed chat endpoint first, fall back to local responses.
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
@@ -100,7 +100,6 @@ export default function HeroSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [{ role: "user", content: text }],
-          model: "llama3.2",
         }),
         signal: controller.signal,
       });

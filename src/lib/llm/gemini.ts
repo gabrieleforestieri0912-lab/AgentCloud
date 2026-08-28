@@ -134,7 +134,7 @@ function normalizeTools(tools: LLMTool[]): Tool[] {
       functionDeclarations: tools.map((tool) => ({
         name: tool.name,
         description: tool.description,
-        parameters: tool.input_schema as any,
+        parameters: tool.input_schema as Record<string, unknown>,
       })),
     },
   ];

@@ -4,12 +4,13 @@ import type Anthropic from "@anthropic-ai/sdk";
  * Provider-agnostic LLM layer for agent execution.
  *
  * The agent runtime talks to a generic provider instead of hard-coding the
- * Anthropic SDK. Two implementations exist:
+ * Anthropic SDK. Implementations:
  *
- *  - `anthropic`: the production provider. Ready to use — activate it by
- *    setting `AGENT_LLM_PROVIDER=anthropic` and a valid `ANTHROPIC_API_KEY`.
- *  - `ollama`: local fallback (llama3 etc.) used while no valid Anthropic key
- *    is configured. This is the temporary development path.
+ *  - `gemini`: the production provider. Activate it by setting
+ *    `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) and optionally
+ *    `AGENT_LLM_PROVIDER=gemini`. Default model: `gemini-3.6-flash`.
+ *  - `anthropic`: explicit override via `AGENT_LLM_PROVIDER=anthropic` plus a
+ *    valid `ANTHROPIC_API_KEY`.
  *
  * The route (`src/app/api/agent/run/route.ts`) only depends on the types
  * below, so switching providers never touches the request/SSE logic.
@@ -66,7 +67,7 @@ export type LLMChatParams = {
   maxTokens: number;
 };
 
-export type LLMProviderName = "anthropic" | "gemini" | "ollama";
+export type LLMProviderName = "anthropic" | "gemini";
 
 export interface LLMProvider {
   name: LLMProviderName;

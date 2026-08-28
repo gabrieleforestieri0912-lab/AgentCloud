@@ -11,7 +11,7 @@ import type {
  *
  * Fully implemented and ready: activate it by setting
  * `AGENT_LLM_PROVIDER=anthropic` plus a valid `ANTHROPIC_API_KEY`. It stays
- * dormant by default (the resolver prefers `ollama`) so the platform keeps
+ * dormant unless explicitly selected via `AGENT_LLM_PROVIDER=anthropic` (the
  * working while no valid key is configured.
  *
  * This module is server-only. Never import it from client components.

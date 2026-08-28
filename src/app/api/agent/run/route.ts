@@ -47,9 +47,9 @@ function isAnonRateLimited(ip: string): boolean {
  * checks; anonymous callers (public agent pages / embeds) are allowed as
  * previews but have no usage quota.
  *
- * The model backend is selected via `getLLMProvider()`: the production
- * Anthropic provider once `ANTHROPIC_API_KEY` is configured, otherwise the
- * local Ollama fallback.
+ * The model backend is selected via `getLLMProvider()`: the Gemini backend
+ * (production) when `GEMINI_API_KEY` / `GOOGLE_API_KEY` is configured, or an
+ * explicit `AGENT_LLM_PROVIDER=anthropic` override.
  */
 export async function POST(req: Request) {
   const locale = await getLocale();
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
     .map((tool) => TOOL_DEFINITIONS[tool])
     .filter(Boolean);
 
-  // Resolve the model backend once per request (Anthropic or local Ollama).
+  // Resolve the model backend once per request (Gemini or Anthropic).
   const provider = getLLMProvider();
 
   // Normalize inbound messages into the shared LLMMessage shape. The client

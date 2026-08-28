@@ -41,7 +41,7 @@ src/
 │       ├── billing/payment-link/ · billing/portal/
 │       ├── admin/tenants/   # Admin API (Bearer ADMIN_API_TOKEN)
 │       ├── email/send/      # Admin-only (Bearer ADMIN_API_TOKEN)
-│       ├── email/webhook/ · whatsapp/webhook/ · ollama/chat/ · embed/[slug]/
+│       ├── email/webhook/ · whatsapp/webhook/ · chat/ · embed/[slug]/
 │       └── waitlist | contact | demo/request | sitemap
 ├── components/              # Navbar, Hero, sezioni landing, ChatInterface, AgentCard…
 └── lib/
@@ -68,7 +68,7 @@ src/
 | `/agent/[id]` | Chat agente | Protetto (Supabase) |
 | `/dashboard` | Dashboard | Protetto (Supabase) |
 
-**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/payment-link`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `ollama/chat`, `embed/[slug]`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `demo/request`, `sitemap`.
+**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/payment-link`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `chat`, `embed/[slug]`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `demo/request`, `sitemap`.
 **API protette (Supabase)**: `billing/portal` (ri-verifica sessione + redirect a login).
 
 ---
@@ -205,8 +205,8 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 
 | Variabile | Default | Note |
 |-----------|---------|------|
-| `AGENT_LLM_PROVIDER` | auto | backend del runtime agenti: `anthropic` (produzione) | `ollama` (locale). Default: Anthropic se `ANTHROPIC_API_KEY` è valida, altrimenti Ollama |
-| `OLLAMA_MODEL` | `llama3` | modello locale usato quando il backend è Ollama (temporaneo in attesa di chiave Anthropic valida) |
+| `AGENT_LLM_PROVIDER` | `gemini` | backend del runtime agenti: `gemini` (produzione, default) | `anthropic` (override esplicito). Default: Gemini se `GEMINI_API_KEY`/`GOOGLE_API_KEY` è valida |
+| `AGENT_LLM_MODEL` | `gemini-3.6-flash` | modello usato dal backend Gemini quando non specificato per-request |
 | `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata Claude |
 | `AGENT_ANON_RATE_LIMIT` | `30` | richieste/min per IP per i preview anonimi |
 | `AGENTCLOUD_VERTICAL` | `shopify` | `shopify` \| `services` \| `full` — filtra marketplace e tool |

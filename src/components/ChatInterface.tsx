@@ -151,21 +151,19 @@ export default function ChatInterface({
 
     setIsTyping(true);
 
-    // Try the provider-based chat (Anthropic/API key or local Ollama),
-    // fallback to local responses on failure.
+    // Try the Gemini-backed chat endpoint, fallback to local responses on failure.
     let responseText = "";
     try {
-      const ollamaRes = await fetch("/api/chat", {
+      const providerRes = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [{ role: "user", content: text }],
-          model: "llama3.2",
         }),
       });
 
-      if (ollamaRes.ok) {
-        const reader = ollamaRes.body?.getReader();
+      if (providerRes.ok) {
+        const reader = providerRes.body?.getReader();
         if (reader) {
           while (true) {
             const { done, value } = await reader.read();
@@ -203,7 +201,7 @@ export default function ChatInterface({
           }
         }
       } else {
-        throw new Error("Ollama not available");
+        throw new Error("AI backend unavailable");
       }
     } catch {
       // Fallback to local responses

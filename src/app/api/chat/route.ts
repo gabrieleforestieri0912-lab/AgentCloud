@@ -10,11 +10,10 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
  *
  * Body: { messages, model?, agentId? }
  *
- * The model backend is resolved via `getLLMProvider()` — Anthropic when a valid
- * `ANTHROPIC_API_KEY` is configured (production), otherwise the local Ollama
- * backend. This is what makes the chat "work via an API key": drop in a key
- * and a suitable model (override with `AGENT_LLM_MODEL`) and the assistant
- * answers with a real LLM instead of the local fallback.
+ * The model backend is resolved via `getLLMProvider()` — the Gemini backend
+ * (production) when `GEMINI_API_KEY` / `GOOGLE_API_KEY` is configured, or an
+ * explicit `AGENT_LLM_PROVIDER=anthropic` override. The default model is
+ * `gemini-3.6-flash` (override with `AGENT_LLM_MODEL`).
  *
  * Streams SSE: `data: { type: "text", content }` chunks, then
  * `data: { type: "done" }` (or `type: "error"` on failure).
@@ -38,17 +37,13 @@ export async function POST(req: Request) {
       resolvedModel = AGENT_RUNTIME[agentId].model;
     }
 
-    // The hero/full chat default to "llama3.2" (the Ollama model). When a real
-    // provider is in use that model name is invalid, so fall back to a suitable
-    // configured default (provider-specific).
-    const fallbackModel =
-      getLLMProvider().name === "gemini"
-        ? "gemini-3.6-flash"
-        : "claude-sonnet-5";
+    // Clients may send a model name (e.g. from an agent config). If it isn't a
+    // Gemini model, the Gemini provider maps it to the configured default, so
+    // here we always pass a valid Gemini model to the backend.
     const finalModel =
-      resolvedModel && resolvedModel !== "llama3.2"
+      resolvedModel && resolvedModel.startsWith("gemini")
         ? resolvedModel
-        : (process.env.AGENT_LLM_MODEL || fallbackModel);
+        : (process.env.AGENT_LLM_MODEL || "gemini-3.6-flash");
 
     const conversationMessages: LLMMessage[] = (messages as unknown[]).map(
       (m) => {
@@ -63,7 +58,7 @@ export async function POST(req: Request) {
 
     const provider = getLLMProvider();
     const encoder = new TextEncoder();
-    const streamErrorMessage = await apiErrorMessage("ollamaStreamError");
+    const streamErrorMessage = await apiErrorMessage("aiStreamError");
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -99,7 +94,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Chat error:", error);
     return Response.json(
-      { error: await apiErrorMessage("ollamaConnectionFailed") },
+      { error: await apiErrorMessage("aiConnectionFailed") },
       { status: 500 },
     );
   }

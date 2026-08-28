@@ -48,9 +48,9 @@ const it = {
     alreadyOnWaitlist: "Questa email è già in waitlist",
     failedToJoinWaitlist: "Iscrizione alla waitlist non riuscita",
     allFieldsRequired: "Tutti i campi sono obbligatori",
-    ollamaStreamError: "Errore durante la generazione della risposta",
-    ollamaConnectionFailed:
-      "Impossibile connettersi a Ollama. Verifica che sia in esecuzione su localhost:11434",
+    aiStreamError: "Errore durante la generazione della risposta",
+    aiConnectionFailed:
+      "Impossibile contattare il backend AI. Riprova più tardi.",
     internalServerError: "Errore interno del server",
   },
 
@@ -1008,9 +1008,9 @@ export const en: Dictionary = {
     alreadyOnWaitlist: "This email is already on the waitlist",
     failedToJoinWaitlist: "Failed to join waitlist",
     allFieldsRequired: "All fields are required",
-    ollamaStreamError: "Error while streaming the response",
-    ollamaConnectionFailed:
-      "Failed to connect to Ollama. Make sure it's running on localhost:11434",
+    aiStreamError: "Error while streaming the response",
+    aiConnectionFailed:
+      "Could not reach the AI backend. Please try again later.",
     internalServerError: "Internal server error",
   },
 

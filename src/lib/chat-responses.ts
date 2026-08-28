@@ -3,7 +3,7 @@
  *
  * Used by both the hero widget (HeroSection) and the full chat page
  * (ChatInterface) as a deterministic fallback when no AI backend
- * (Ollama / Anthropic) is reachable.
+ * (Gemini) is reachable.
  *
  * Kept framework-agnostic so it can be unit tested without React.
  * The platform defaults to Italian; callers pass their active locale
