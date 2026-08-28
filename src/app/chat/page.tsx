@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import ChatInterface from "@/components/ChatInterface";
 import { getLocale } from "@/lib/i18n/locale";
 import { getSessionUser } from "@/lib/supabase/server";
+import { isPreviewMode } from "@/lib/preview";
 import { pageSeo } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,7 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ChatPage(props: { searchParams?: Promise<{ q?: string }> }) {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  const isPreview = !user && (await isPreviewMode());
+  if (!user && !isPreview) redirect("/login");
 
   const searchParams = await props.searchParams;
   const initialQuery = searchParams?.q;

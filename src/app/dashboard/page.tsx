@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin-access";
+import { getPreviewViewer } from "@/lib/preview";
 import {
   Activity,
   AlertCircle,
@@ -71,7 +72,7 @@ export default async function DashboardPage({
   const dict = getDictionary(locale);
 
   // Supabase session: resolve the user server-side from the cookies.
-  const user = await getSessionUser();
+  const user = (await getSessionUser()) ?? (await getPreviewViewer());
   if (!user) redirect("/login");
   const userId = user.id;
 
