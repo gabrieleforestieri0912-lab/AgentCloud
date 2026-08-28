@@ -12,6 +12,7 @@ import type { LLMMessage, LLMToolResult } from "@/lib/llm";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/admin-access";
 
 const MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const MAX_ITERATIONS = 10;
@@ -84,8 +85,13 @@ export async function POST(req: Request) {
   const sessionUser = await getSessionUser();
   const userId = sessionUser?.id ?? "anonymous";
 
-  // Enforce subscription + plan limits for real users (skipped for anonymous).
-  const check = await assertRunAllowed(userId, agentId, locale);
+  // Admin status is derived from the verified session email only — never from
+  // the request body — so it cannot be spoofed via the public waitlist.
+  const isAdmin = isAdminEmail(sessionUser?.email);
+
+  // Enforce subscription + plan limits for real users (skipped for anonymous
+  // and for admins, who get full, unlimited access).
+  const check = await assertRunAllowed(userId, agentId, locale, isAdmin);
   if (!check.allowed) {
     return Response.json(
       { error: check.message, code: check.code },

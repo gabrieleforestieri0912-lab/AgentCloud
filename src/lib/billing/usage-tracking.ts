@@ -150,7 +150,14 @@ export async function assertRunAllowed(
   userId: string,
   agentSlug: string,
   locale: Locale = DEFAULT_LOCALE,
+  isAdmin = false,
 ): Promise<RunCheck> {
+  // Admin accounts (verified server-side via the session email) get full,
+  // unlimited access to every agent without a subscription or plan cap.
+  if (isAdmin) {
+    return { allowed: true, overage: false };
+  }
+
   if (!userId || userId === "anonymous") {
     return { allowed: true, overage: false };
   }

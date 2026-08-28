@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/admin-access";
 import {
   Activity,
   AlertCircle,
@@ -152,6 +153,7 @@ export default async function DashboardPage({
     ? t(dict.dashboard.welcomeBack, { name: firstName })
     : dict.dashboard.welcomeBackGeneric;
   const email = user.email ?? "";
+  const isAdmin = isAdminEmail(user.email);
 
   const statCards: Array<[string, string, typeof Zap]> = [
     [String(installed.length), dict.dashboard.statInstalledAgents, Zap],
@@ -178,8 +180,13 @@ export default async function DashboardPage({
                   {dict.dashboard.myAgents}
                 </span>
               </div>
-              <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+              <h1 className="flex flex-wrap items-center gap-3 text-4xl font-bold tracking-tight text-white sm:text-5xl">
                 {greeting}
+                {isAdmin && (
+                  <span className="rounded-full border border-brand-500/40 bg-brand-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-300">
+                    Admin
+                  </span>
+                )}
               </h1>
               <p className="mt-2 text-sm text-neutral-500">{email}</p>
               <p className="mt-2 max-w-2xl text-lg leading-8 text-neutral-400">
