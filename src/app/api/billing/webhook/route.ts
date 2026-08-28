@@ -8,6 +8,7 @@ import {
   getOrCreateMeterItem,
   isOverageBillingEnabled,
 } from "@/lib/stripe/overage";
+import { isExpiringSoon } from "@/lib/billing/subscription-notifications";
 
 /**
  * The generated Stripe SDK v22 types are heavily restructured; these narrow
@@ -231,10 +232,16 @@ export async function POST(req: Request) {
         .eq("stripe_subscription_id", subscription.id);
 
       for (const agent of agents ?? []) {
-        const config = {
-          ...((agent.config ?? {}) as Record<string, unknown>),
+        const existing = (agent.config ?? {}) as Record<string, unknown>;
+        const config: Record<string, unknown> = {
+          ...existing,
           cancelAtPeriodEnd,
         };
+        // A renewed / extended period is a fresh billing cycle, so allow the
+        // expiry notification to fire again next time it enters the window.
+        if (!periodEnd || !isExpiringSoon(periodEnd, Date.now())) {
+          delete config.renewalNotifiedAt;
+        }
         await db
           .from("user_agents")
           .update({

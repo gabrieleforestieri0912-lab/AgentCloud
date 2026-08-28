@@ -17,6 +17,7 @@ import MobileNav from "./MobileNav";
 import { AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { useLanguage } from "./LanguageProvider";
 import LanguageToggle from "./LanguageToggle";
+import NotificationBell from "./NotificationBell";
 
 type MenuKey = "marketplace" | "solutions" | "integrations" | "pricing";
 
@@ -84,6 +85,17 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   }, []);
 
   const isSignedIn = Boolean(session);
+
+  const userMeta = session?.user?.user_metadata as
+    | { full_name?: string }
+    | undefined;
+  const accountInitials =
+    (userMeta?.full_name || session?.user?.email || "?")
+      .split(/[\s@.]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((s) => s[0]?.toUpperCase())
+      .join("") || "?";
 
   async function handleSignOut() {
     await createClient().auth.signOut();
@@ -277,6 +289,14 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
               <LanguageToggle />
               {authLoaded && (isSignedIn ? (
                 <div className="flex items-center gap-3">
+                  <Link
+                    href="/dashboard"
+                    aria-label="Account"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-brand-500/15 text-sm font-bold text-brand-300 transition-colors hover:border-brand-500/40 hover:bg-brand-500/25"
+                  >
+                    {accountInitials}
+                  </Link>
+                  <NotificationBell />
                   <button
                     onClick={handleSignOut}
                     className="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"

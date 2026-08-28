@@ -397,6 +397,7 @@ const it = {
     installs: "installazioni",
     setup: "Setup",
     view: "Vedi",
+    buy: "Acquista",
   },
 
   agentPreview: {
@@ -662,6 +663,11 @@ const it = {
     successText: "Ti avviseremo quando AgentCloud sarà pronto.",
     fullTitle: "Waitlist piena",
     fullText: "Tutti i posti sono occupati. Riprova più tardi!",
+    emailButton: "Scrivici via email",
+    emailModalTitle: "Scrivici un messaggio",
+    emailModalPlaceholder: "Scrivi qui il tuo messaggio...",
+    emailModalSend: "Invia email",
+    emailModalCancel: "Annulla",
     placeholder: "Inserisci la tua email",
     joining: "Ti stai iscrivendo...",
     joinWaitlist: "Entra in waitlist",
@@ -884,6 +890,27 @@ const it = {
           paragraphs: ["Per domande su questi termini: legal@agentcloud.io"],
         },
       ],
+    },
+  },
+
+  notifications: {
+    title: "Notifiche",
+    empty: "Nessuna notifica al momento",
+    expiring: "L'abbonamento di {agent} scade tra {days} giorni",
+    expiringOn: "Scade il {date}",
+    cancelling: "L'abbonamento di {agent} è in cancellazione",
+    cancellingOn: "Termina il {date}",
+    manage: "Gestisci abbonamento",
+    email: {
+      expiringSubject: "Il tuo abbonamento AgentCloud scade a breve",
+      cancellingSubject: "Il tuo abbonamento AgentCloud è in cancellazione",
+      expiringHeading: "Il tuo abbonamento sta per scadere",
+      expiringBody:
+        "Ciao {name}, il tuo abbonamento AgentCloud per {agent} scadrà il {date} (tra {days} giorni). Per continuare a usare i tuoi agenti, rinnova l'abbonamento dalla pagina di gestione.",
+      cancellingHeading: "Il tuo abbonamento è in cancellazione",
+      cancellingBody:
+        "Ciao {name}, il tuo abbonamento AgentCloud per {agent} terminerà il {date}. Se vuoi continuare a usarlo, riattivalo dalla pagina di gestione.",
+      cta: "Gestisci abbonamento",
     },
   },
 };
@@ -1269,6 +1296,7 @@ export const en: Dictionary = {
     installs: "installs",
     setup: "Setup",
     view: "View",
+    buy: "Buy",
   },
 
   agentPreview: {
@@ -1532,6 +1560,11 @@ export const en: Dictionary = {
     successText: "We'll notify you when AgentCloud is ready.",
     fullTitle: "Waitlist is Full",
     fullText: "All spots have been taken. Check back later!",
+    emailButton: "Email us",
+    emailModalTitle: "Send us a message",
+    emailModalPlaceholder: "Write your message here...",
+    emailModalSend: "Send email",
+    emailModalCancel: "Cancel",
     placeholder: "Enter your email",
     joining: "Joining...",
     joinWaitlist: "Join Waitlist",
@@ -1748,6 +1781,27 @@ export const en: Dictionary = {
           paragraphs: ["For questions about these terms: legal@agentcloud.io"],
         },
       ],
+    },
+  },
+
+  notifications: {
+    title: "Notifications",
+    empty: "No notifications right now",
+    expiring: "{agent} subscription expires in {days} days",
+    expiringOn: "Expires on {date}",
+    cancelling: "{agent} subscription is being cancelled",
+    cancellingOn: "Ends on {date}",
+    manage: "Manage subscription",
+    email: {
+      expiringSubject: "Your AgentCloud subscription expires soon",
+      cancellingSubject: "Your AgentCloud subscription is being cancelled",
+      expiringHeading: "Your subscription is about to expire",
+      expiringBody:
+        "Hi {name}, your AgentCloud subscription for {agent} will expire on {date} (in {days} days). To keep using your agents, renew your subscription from the billing page.",
+      cancellingHeading: "Your subscription is being cancelled",
+      cancellingBody:
+        "Hi {name}, your AgentCloud subscription for {agent} will end on {date}. If you want to keep using it, reactivate it from the billing page.",
+      cta: "Manage subscription",
     },
   },
 };
