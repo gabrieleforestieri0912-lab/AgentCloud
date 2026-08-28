@@ -174,7 +174,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | Variabile | Obbligatoria | Note |
 |-----------|:---:|------|
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | usata per billing/usage/rate limits |
-| `ANTHROPIC_API_KEY` | ✅ | esecuzione agenti |
+| `GEMINI_API_KEY` | ✅ | esecuzione agenti (backend Gemini) |
 | `RESEND_API_KEY` | ✅ | email transazionali |
 | `STRIPE_SECRET_KEY` | ✅ | prod: `sk_live_…` |
 | `STRIPE_WEBHOOK_SECRET` | ✅ | `whsec_…` |
@@ -205,7 +205,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 
 | Variabile | Default | Note |
 |-----------|---------|------|
-| `AGENT_LLM_PROVIDER` | `gemini` | backend del runtime agenti: `gemini` (produzione, default) | `anthropic` (override esplicito). Default: Gemini se `GEMINI_API_KEY`/`GOOGLE_API_KEY` è valida |
+| `AGENT_LLM_PROVIDER` | `gemini` | backend del runtime agenti (unico supportato: Gemini). Default: Gemini se `GEMINI_API_KEY`/`GOOGLE_API_KEY` è valida |
 | `AGENT_LLM_MODEL` | `gemini-3.6-flash` | modello usato dal backend Gemini quando non specificato per-request |
 | `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata Claude |
 | `AGENT_ANON_RATE_LIMIT` | `30` | richieste/min per IP per i preview anonimi |

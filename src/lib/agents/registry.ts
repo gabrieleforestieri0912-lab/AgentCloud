@@ -28,7 +28,7 @@ export const AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
       "Write SEO-optimized content with keyword research and competitor analysis",
     price: 2900,
     stripePriceId: "price_seo_agent",
-    model: "claude-sonnet-5",
+    model: "gemini-3.6-flash",
     tools: ["web_search", "scrape_page", "read_file", "write_file"],
     defaultTools: ["read_file", "write_file"],
     optionalTools: ["web_search", "scrape_page"],
@@ -54,7 +54,7 @@ Guidelines:
       "Executive assistant for reporting, scheduling, and strategic analysis",
     price: 2900,
     stripePriceId: "price_business_manager",
-    model: "claude-sonnet-5",
+    model: "gemini-3.6-flash",
     tools: [
       "web_search",
       "read_file",
@@ -93,7 +93,7 @@ Guidelines:
       "Personal assistant for daily tasks, research, and organization",
     price: 2900,
     stripePriceId: "price_personal_assistant",
-    model: "claude-sonnet-5",
+    model: "gemini-3.6-flash",
     tools: ["web_search", "scrape_page", "read_file", "write_file"],
     defaultTools: ["read_file", "write_file"],
     optionalTools: ["web_search", "scrape_page"],
@@ -124,7 +124,7 @@ Guidelines:
     description: "Full Shopify store management — products, discounts, inventory, customers, analytics, and cart links",
     price: 2900,
     stripePriceId: "price_shopify_agent",
-    model: "claude-sonnet-5",
+    model: "gemini-3.6-flash",
     tools: [
       "shopify_setup_store",
       "shopify_search_products",
@@ -216,7 +216,7 @@ Guidelines:
     description: "Find availability and book meetings on your calendar.",
     price: 2900,
     stripePriceId: "price_calendar_booking",
-    model: "claude-sonnet-5",
+    model: "gemini-3.6-flash",
     tools: [
       "calendar_search_availability",
       "calendar_book_event",
@@ -249,7 +249,7 @@ Guidelines:
     description: "Capture, enrich, and notify sales about new leads.",
     price: 2900,
     stripePriceId: "price_lead_capture",
-    model: "claude-sonnet-5",
+    model: "gemini-3.6-flash",
     tools: [
       "lead_capture_submit",
       "lead_capture_enrich",

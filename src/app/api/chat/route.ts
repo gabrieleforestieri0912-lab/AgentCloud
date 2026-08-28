@@ -11,8 +11,8 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
  * Body: { messages, model?, agentId? }
  *
  * The model backend is resolved via `getLLMProvider()` — the Gemini backend
- * (production) when `GEMINI_API_KEY` / `GOOGLE_API_KEY` is configured, or an
- * explicit `AGENT_LLM_PROVIDER=anthropic` override. The default model is
+ * (production) when `GEMINI_API_KEY` / `GOOGLE_API_KEY` is configured. The
+ * default model is
  * `gemini-3.6-flash` (override with `AGENT_LLM_MODEL`).
  *
  * Streams SSE: `data: { type: "text", content }` chunks, then

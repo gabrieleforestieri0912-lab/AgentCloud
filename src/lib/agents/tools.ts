@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type { LLMTool } from "@/lib/llm";
 import { logAudit } from "@/lib/audit";
 import {
   getTenantCredentials,
@@ -6,7 +6,7 @@ import {
   updateTenantShopifyCredentials,
 } from "@/lib/tenants";
 
-export const TOOL_DEFINITIONS: Record<string, Anthropic.Tool> = {
+export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   web_search: {
     name: "web_search",
     description: "Search the internet for up-to-date information on any topic",
