@@ -285,9 +285,10 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
               ))}
             </nav>
 
-            <div className="hidden items-center gap-3 md:flex">
+            <div className="flex items-center gap-2 sm:gap-3">
               <LanguageToggle />
-              {authLoaded && (isSignedIn ? (
+              <div className="hidden items-center gap-3 md:flex">
+                {authLoaded && (isSignedIn ? (
                 <div className="flex items-center gap-3">
                   <Link
                     href="/dashboard"
@@ -322,6 +323,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                   </Link>
                 </>
               ))}
+              </div>
             </div>
 
             <MobileNav marketplaceAgents={marketplaceAgents} />

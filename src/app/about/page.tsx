@@ -79,7 +79,7 @@ export default async function AboutPage() {
           </p>
 
           {/* Mission */}
-          <div className="mt-14 rounded-2xl border border-white/5 bg-white/[0.02] p-8">
+          <div className="mt-14 rounded-2xl border border-white/5 bg-white/[0.02] p-6 sm:p-8">
             <h2 className="text-xl font-bold text-white">
               {about.missionTitle}
             </h2>
@@ -135,7 +135,7 @@ export default async function AboutPage() {
           </div>
 
           {/* CTA */}
-          <div className="mt-16 rounded-2xl border border-brand-500/20 bg-brand-500/[0.04] p-8 text-center">
+          <div className="mt-16 rounded-2xl border border-brand-500/20 bg-brand-500/[0.04] p-6 sm:p-8 text-center">
             <h2 className="text-2xl font-bold text-white">{about.ctaTitle}</h2>
             <p className="mx-auto mt-3 max-w-xl text-neutral-400">
               {about.ctaText}

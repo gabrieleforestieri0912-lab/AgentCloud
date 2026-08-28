@@ -138,7 +138,7 @@ export default function ContactPage() {
             </div>
 
             {/* Form */}
-            <div className="rounded-2xl border border-white/5 bg-neutral-900 p-8 shadow-xl shadow-black/30">
+            <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 sm:p-8 shadow-xl shadow-black/30">
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-white">{dict.contact.sendMessage}</h2>
                 <p className="mt-1 text-sm text-neutral-400">

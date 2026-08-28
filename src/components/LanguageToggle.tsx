@@ -3,10 +3,12 @@
 import { Globe } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 
-const LABELS: Record<string, { current: string; other: string }> = {
-  it: { current: "IT", other: "EN" },
-  en: { current: "EN", other: "IT" },
-};
+const LOCALES = [
+  { code: "it", short: "IT", long: "Italiano" },
+  { code: "en", short: "EN", long: "English" },
+] as const;
+
+type LocaleCode = (typeof LOCALES)[number]["code"];
 
 export default function LanguageToggle({
   variant = "desktop",
@@ -14,32 +16,37 @@ export default function LanguageToggle({
   variant?: "desktop" | "mobile";
 }) {
   const { locale, setLocale } = useLanguage();
-  const label = LABELS[locale] ?? LABELS.en;
 
-  const onClick = () => setLocale(locale === "it" ? "en" : "it");
+  const segment = (active: boolean) =>
+    `relative z-10 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+      active
+        ? "bg-brand-500 text-white shadow-sm"
+        : "text-neutral-400 hover:text-neutral-200"
+    }`;
 
-  if (variant === "mobile") {
-    return (
-      <button
-        onClick={onClick}
-        className="flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-bold text-neutral-300 transition-colors hover:bg-white/5"
-      >
-        <Globe size={16} className="text-brand-400" />
-        {locale === "it" ? "Italiano" : "English"}
-      </button>
-    );
-  }
+  const container = `relative flex items-center rounded-full border border-white/10 bg-neutral-900/60 p-0.5 backdrop-blur ${
+    variant === "mobile" ? "w-full" : ""
+  }`;
 
   return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-neutral-300 transition-colors hover:bg-white/5 hover:text-white"
-      aria-label="Switch language"
-    >
-      <Globe size={14} className="text-brand-400" />
-      {label.current}
-      <span className="text-neutral-600">/</span>
-      <span className="text-neutral-500">{label.other}</span>
-    </button>
+    <div className={container} role="group" aria-label="Language">
+      <Globe size={14} className="ml-2 mr-1 shrink-0 text-brand-400" aria-hidden />
+      {LOCALES.map((l) => (
+        <button
+          key={l.code}
+          type="button"
+          onClick={() => setLocale(l.code as LocaleCode)}
+          aria-pressed={locale === l.code}
+          aria-label={l.long}
+          className={
+            variant === "mobile"
+              ? `flex-1 ${segment(locale === l.code)}`
+              : segment(locale === l.code)
+          }
+        >
+          {variant === "mobile" ? l.long : l.short}
+        </button>
+      ))}
+    </div>
   );
 }

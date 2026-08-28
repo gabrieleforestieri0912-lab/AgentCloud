@@ -121,7 +121,7 @@ export default function WaitlistPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-[0_12px_36px_rgba(0,0,0,0.4)]">
+        <div className="bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-8 shadow-[0_12px_36px_rgba(0,0,0,0.4)]">
           {/* Language toggle — inline so it never overlaps content on mobile */}
           <div className="mb-5 flex justify-end">
             <LanguageToggle />
