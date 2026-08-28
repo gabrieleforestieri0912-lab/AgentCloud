@@ -22,54 +22,19 @@
  */
 
 import { cookies } from "next/headers";
-import { createHmac, timingSafeEqual } from "crypto";
 import type { User } from "@supabase/supabase-js";
-import { isAdminEmail } from "@/lib/admin-access";
+import {
+  PREVIEW_COOKIE_NAME,
+  PREVIEW_MAX_AGE,
+  issuePreviewToken,
+  verifyPreviewToken,
+} from "@/lib/preview-token";
 
-export const PREVIEW_COOKIE_NAME = "ac_preview_v1";
-export const PREVIEW_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
-
-function getSecret(): string | undefined {
-  const secret = process.env.PREVIEW_MODE_SECRET;
-  return secret && secret.length > 0 ? secret : undefined;
-}
-
-function sign(payload: string): string {
-  const secret = getSecret();
-  if (!secret) return "";
-  return createHmac("sha256", secret).update(payload).digest("base64url");
-}
-
-/** Build a signed preview token for an admin email, or null if disabled. */
-export function issuePreviewToken(email: string): string | null {
-  const secret = getSecret();
-  if (!secret) return null;
-  if (!isAdminEmail(email)) return null;
-  const emailN = email.trim().toLowerCase();
-  const expiry = Date.now() + PREVIEW_MAX_AGE * 1000;
-  const payload = `${emailN}.${expiry}`;
-  return `${payload}.${sign(payload)}`;
-}
-
-function verifyToken(value: string | undefined): boolean {
-  const secret = getSecret();
-  if (!secret || !value) return false;
-  const parts = value.split(".");
-  if (parts.length !== 3) return false;
-  const [emailN, expiryStr, sig] = parts;
-  const expected = sign(`${emailN}.${expiryStr}`);
-  if (!sig || !expected) return false;
-  if (sig.length !== expected.length) return false;
-  if (!timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
-  if (!isAdminEmail(emailN)) return false;
-  const expiry = Number(expiryStr);
-  if (!Number.isFinite(expiry) || expiry < Date.now()) return false;
-  return true;
-}
+export { PREVIEW_COOKIE_NAME, PREVIEW_MAX_AGE, issuePreviewToken, verifyPreviewToken };
 
 export async function isPreviewMode(): Promise<boolean> {
   const store = await cookies();
-  return verifyToken(store.get(PREVIEW_COOKIE_NAME)?.value);
+  return verifyPreviewToken(store.get(PREVIEW_COOKIE_NAME)?.value);
 }
 
 /**
@@ -80,7 +45,7 @@ export async function isPreviewMode(): Promise<boolean> {
 export async function getPreviewViewer(): Promise<User | null> {
   const store = await cookies();
   const value = store.get(PREVIEW_COOKIE_NAME)?.value;
-  if (!verifyToken(value)) return null;
+  if (!(await verifyPreviewToken(value))) return null;
   const email = value!.split(".")[0];
   return {
     id: "preview",

@@ -43,11 +43,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // Owner preview mode: the admin email on the waitlist is NOT stored. Instead
-    // we issue a signed, httpOnly preview cookie so the owner can browse the
-    // app without authenticating. Gated by ADMIN_EMAILS + PREVIEW_MODE_SECRET.
+    // Owner preview mode: the admin email is recorded in the waitlist AND we
+    // issue a signed, httpOnly preview cookie so the owner can browse the app
+    // without authenticating. Gated by ADMIN_EMAILS + PREVIEW_MODE_SECRET.
     if (isAdminEmail(email)) {
-      const token = issuePreviewToken(email);
+      const token = await issuePreviewToken(email);
+
+      // Record the owner signup too, so every waitlist entry is persisted.
+      const supabase = await createClient();
+      const { error: dbError } = await supabase
+        .from("waitlist")
+        .insert({ email });
+      if (dbError && dbError.code !== "23505") {
+        console.error("Failed to store admin waitlist entry:", dbError);
+      }
+
       const res = NextResponse.json({ success: true, preview: Boolean(token) });
       if (token) {
         res.cookies.set(PREVIEW_COOKIE_NAME, token, {

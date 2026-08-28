@@ -7,6 +7,10 @@ import {
   LOCALE_COOKIE,
 } from "@/lib/i18n/constants";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import {
+  PREVIEW_COOKIE_NAME,
+  verifyPreviewToken,
+} from "@/lib/preview-token";
 
 /**
  * Refresh the Supabase session cookies on the way through the proxy and
@@ -58,6 +62,13 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
     pathname.includes(".");
+
+  // Owner preview mode: if the signed preview cookie is present, the owner can
+  // browse the whole app (the waitlist lockdown is bypassed). Individual
+  // mutation routes still enforce a real Supabase session where required.
+  if (await verifyPreviewToken(request.cookies.get(PREVIEW_COOKIE_NAME)?.value)) {
+    return NextResponse.next();
+  }
 
   if (!isWaitlistRoute && !isApiOrAsset) {
     const waitlistUrl = request.nextUrl.clone();
