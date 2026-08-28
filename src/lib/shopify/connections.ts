@@ -76,3 +76,37 @@ export async function getShopifyToken(
   if (data.uninstalled_at) return null;
   return decryptShopifyToken(data.access_token as ShopifyTokenEnvelope);
 }
+
+export type ShopifyConnectionSummary = {
+  shopDomain: string;
+  scope: string | null;
+  connected: boolean;
+  installedAt: string | null;
+};
+
+/** List a user's Shopify connections (for the dashboard UI). */
+export async function listShopifyConnections(
+  userId: string,
+): Promise<ShopifyConnectionSummary[]> {
+  const admin = createAdminClient();
+  if (!admin) return [];
+  const { data, error } = await admin
+    .from("shopify_connections")
+    .select("shop_domain, scope, installed_at, uninstalled_at")
+    .eq("user_id", userId)
+    .order("installed_at", { ascending: false });
+  if (error || !data) return [];
+  return (
+    data as Array<{
+      shop_domain: string;
+      scope: string | null;
+      installed_at: string | null;
+      uninstalled_at: string | null;
+    }>
+  ).map((r) => ({
+    shopDomain: r.shop_domain,
+    scope: r.scope,
+    connected: !r.uninstalled_at,
+    installedAt: r.installed_at,
+  }));
+}
