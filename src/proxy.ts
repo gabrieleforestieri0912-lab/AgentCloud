@@ -68,12 +68,6 @@ export async function proxy(request: NextRequest) {
     pathname === "/reset-password" ||
     pathname === "/auth/callback";
 
-  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
-    const waitlistUrl = request.nextUrl.clone();
-    waitlistUrl.pathname = "/waitlist";
-    return NextResponse.redirect(waitlistUrl);
-  }
-
   // Local development without Supabase keys: allow everything through so the
   // app is usable before keys are configured. In production this bypass is
   // never taken — missing keys fail closed (protected routes → /login).
@@ -83,6 +77,22 @@ export async function proxy(request: NextRequest) {
   );
   if (!supabaseConfigured && process.env.NODE_ENV !== "production") {
     return NextResponse.next();
+  }
+
+  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
+    // Waitlist members who joined get access to the platform via the join cookie.
+    const joined = request.cookies.get("ac_wl_joined")?.value === "1";
+    if (!joined) {
+      // Authenticated users (e.g. the owner/admin) also pass through. resolveSession
+      // validates the session and carries refreshed auth cookies on `response`.
+      const { response, user } = await resolveSession(request);
+      if (!user) {
+        const waitlistUrl = request.nextUrl.clone();
+        waitlistUrl.pathname = "/waitlist";
+        return NextResponse.redirect(waitlistUrl);
+      }
+      return response;
+    }
   }
 
   if (isPublicPath(request.nextUrl.pathname)) {

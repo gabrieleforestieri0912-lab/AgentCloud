@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail } from "lucide-react";
 import Image from "next/image";
@@ -222,6 +223,12 @@ export default function WaitlistPage() {
                     X
                   </a>
                 </div>
+                <Link
+                  href="/dashboard"
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:opacity-90 hover:-translate-y-0.5"
+                >
+                  {locale === "it" ? "Accedi alla piattaforma" : "Enter the platform"}
+                </Link>
               </motion.div>
             ) : isFull ? (
               <motion.div
