@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import ChatInterface from "@/components/ChatInterface";
 import { getLocale } from "@/lib/i18n/locale";
 import { getSessionUser } from "@/lib/supabase/server";
-import { isPreviewMode } from "@/lib/preview";
+
 import { pageSeo } from "@/lib/seo";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
@@ -23,8 +23,7 @@ export default async function ChatPage(props: {
   searchParams?: Promise<{ q?: string; agent?: string }>;
 }) {
   const user = await getSessionUser();
-  const isPreview = !user && (await isPreviewMode());
-  if (!user && !isPreview) redirect("/login");
+  if (!user) redirect("/login");
 
   const searchParams = await props.searchParams;
   const initialQuery = searchParams?.q;

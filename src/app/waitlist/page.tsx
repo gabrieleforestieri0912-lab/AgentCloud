@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail } from "lucide-react";
 import Image from "next/image";
@@ -30,10 +29,13 @@ const FLOATING_BUBBLES: FloatingBubble[] = [
 
 export default function WaitlistPage() {
   const { dict, locale } = useLanguage();
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(
+    () =>
+      typeof document !== "undefined" &&
+      document.cookie.includes("ac_wl_joined=1"),
+  );
   const [error, setError] = useState("");
   const [remainingSpots, setRemainingSpots] = useState(MAX_SPOTS);
   // Derived — the waitlist is full when no spots are left (no separate setter).
@@ -72,12 +74,6 @@ export default function WaitlistPage() {
           setError(data.error || dict.waitlist.somethingWrong);
         }
         setIsSubmitting(false);
-        return;
-      }
-
-      // Owner preview mode: drop straight into the site to browse (no auth).
-      if (data.preview) {
-        router.push("/");
         return;
       }
 

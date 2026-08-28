@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
-import { isAdminEmail } from "@/lib/admin-access";
-import {
-  issuePreviewToken,
-  PREVIEW_COOKIE_NAME,
-  PREVIEW_MAX_AGE,
-} from "@/lib/preview";
 
 // Max signups per IP per hour (emails are additionally deduped by the DB).
 const WAITLIST_LIMIT = 3;
+
+// Cookie flag so the waitlist page can show the "joined" state after a refresh.
+const JOINED_COOKIE = "ac_wl_joined";
 
 export async function POST(request: Request) {
   try {
@@ -43,45 +41,26 @@ export async function POST(request: Request) {
       );
     }
 
-    // Owner preview mode: the admin email is recorded in the waitlist AND we
-    // issue a signed, httpOnly preview cookie so the owner can browse the app
-    // without authenticating. Gated by ADMIN_EMAILS + PREVIEW_MODE_SECRET.
-    if (isAdminEmail(email)) {
-      const token = await issuePreviewToken(email);
-
-      // Record the owner signup too, so every waitlist entry is persisted.
-      const supabase = await createClient();
-      const { error: dbError } = await supabase
-        .from("waitlist")
-        .insert({ email });
-      if (dbError && dbError.code !== "23505") {
-        console.error("Failed to store admin waitlist entry:", dbError);
-      }
-
-      const res = NextResponse.json({ success: true, preview: Boolean(token) });
-      if (token) {
-        res.cookies.set(PREVIEW_COOKIE_NAME, token, {
-          httpOnly: true,
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          maxAge: PREVIEW_MAX_AGE,
-        });
-      }
-      return res;
-    }
-
-    const supabase = await createClient();
+    // Insert with the service-role client so signups are always persisted,
+    // regardless of RLS on the public `waitlist` table. Falls back to the
+    // anon client (RLS-dependent) only if the service role key is missing.
+    const supabase = createAdminClient() ?? (await createClient());
     const { error: dbError } = await supabase
       .from("waitlist")
       .insert({ email });
 
     if (dbError) {
       if (dbError.code === "23505") {
-        return NextResponse.json(
+        const res = NextResponse.json(
           { error: await apiErrorMessage("alreadyOnWaitlist") },
           { status: 409 },
         );
+        res.cookies.set(JOINED_COOKIE, "1", {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 365,
+          sameSite: "lax",
+        });
+        return res;
       }
       console.error("Failed to store waitlist entry:", dbError);
       return NextResponse.json(
@@ -90,7 +69,13 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    const res = NextResponse.json({ success: true });
+    res.cookies.set(JOINED_COOKIE, "1", {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+    return res;
   } catch (err) {
     return NextResponse.json(
       {

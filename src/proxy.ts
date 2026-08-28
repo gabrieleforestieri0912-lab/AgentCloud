@@ -7,10 +7,6 @@ import {
   LOCALE_COOKIE,
 } from "@/lib/i18n/constants";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import {
-  PREVIEW_COOKIE_NAME,
-  verifyPreviewToken,
-} from "@/lib/preview-token";
 
 /**
  * Refresh the Supabase session cookies on the way through the proxy and
@@ -63,14 +59,16 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/_next/") ||
     pathname.includes(".");
 
-  // Owner preview mode: if the signed preview cookie is present, the owner can
-  // browse the whole app (the waitlist lockdown is bypassed). Individual
-  // mutation routes still enforce a real Supabase session where required.
-  if (await verifyPreviewToken(request.cookies.get(PREVIEW_COOKIE_NAME)?.value)) {
-    return NextResponse.next();
-  }
+  // Auth routes stay reachable during the waitlist phase so the owner (and any
+  // pre-provisioned account) can sign in. The rest of the app stays locked down
+  // to the waitlist page until the phase is lifted.
+  const isAuthRoute =
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/reset-password" ||
+    pathname === "/auth/callback";
 
-  if (!isWaitlistRoute && !isApiOrAsset) {
+  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
     const waitlistUrl = request.nextUrl.clone();
     waitlistUrl.pathname = "/waitlist";
     return NextResponse.redirect(waitlistUrl);
