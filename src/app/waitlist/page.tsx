@@ -106,6 +106,11 @@ export default function WaitlistPage() {
       {/* Floating brand constellation */}
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
+      {/* Language toggle — top-right of the page */}
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageToggle />
+      </div>
+
       <motion.div
         className="relative z-10 m-auto w-full max-w-md"
         initial={{ opacity: 0, y: 20 }}
@@ -130,11 +135,6 @@ export default function WaitlistPage() {
 
         {/* Card */}
         <div className="bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-8 shadow-[0_12px_36px_rgba(0,0,0,0.4)]">
-          {/* Language toggle — inline so it never overlaps content on mobile */}
-          <div className="mb-5 flex justify-end">
-            <LanguageToggle />
-          </div>
-
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
