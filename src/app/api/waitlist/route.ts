@@ -10,6 +10,7 @@ import {
   MAX_SPOTS,
   getRemainingSpots,
   provisionAuthUser,
+  syncAuthUsers,
 } from "@/lib/waitlist";
 
 // Max signups per IP per hour (emails are additionally deduped by the DB).
@@ -123,6 +124,9 @@ export async function POST(request: Request) {
         // re-gaining access isn't blocked by the duplicate (409) response.
         if (isAdminEmail(email)) {
           res.cookies.set(ADMIN_COOKIE, "1", COOKIE_OPTIONS);
+          // Admin backfill: while here, repair any earlier waitlist rows that
+          // never got an Auth user, so they show up in Authentication → Users.
+          await syncAuthUsers();
         }
         return res;
       }
@@ -143,6 +147,9 @@ export async function POST(request: Request) {
     res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
     if (isAdminEmail(email)) {
       res.cookies.set(ADMIN_COOKIE, "1", COOKIE_OPTIONS);
+      // Admin backfill: repair any earlier waitlist rows that never got an
+      // Auth user, so they show up in Authentication → Users.
+      await syncAuthUsers();
     }
     return res;
   } catch (err) {
