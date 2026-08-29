@@ -6,12 +6,10 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { isAdminEmail } from "@/lib/admin-access";
+import { MAX_SPOTS, getRemainingSpots } from "@/lib/waitlist";
 
 // Max signups per IP per hour (emails are additionally deduped by the DB).
 const WAITLIST_LIMIT = 3;
-
-// Total available waitlist spots (mirrors MAX_SPOTS in the waitlist page).
-const MAX_SPOTS = 10;
 
 // Cookie flag so the waitlist page can show the "joined" state after a refresh.
 const JOINED_COOKIE = "ac_wl_joined";
@@ -30,21 +28,6 @@ const COOKIE_OPTIONS = {
   maxAge: 60 * 60 * 24 * 365,
   sameSite: "lax" as const,
 };
-
-/**
- * Authoritative remaining spots: MAX_SPOTS minus the real number of signups
- * currently stored (waitlist emails are unique, so each row is one person).
- * Uses the service-role client so RLS on the table (select = authenticated
- * only) doesn't hide rows; falls back to the anon client in dev.
- */
-async function getRemainingSpots(): Promise<number> {
-  const supabase = createAdminClient() ?? (await createClient());
-  const { count, error } = await supabase
-    .from("waitlist")
-    .select("id", { count: "exact", head: true });
-  if (error) throw error;
-  return Math.max(MAX_SPOTS - (count ?? 0), 0);
-}
 
 export async function GET() {
   try {
