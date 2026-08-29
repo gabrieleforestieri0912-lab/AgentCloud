@@ -127,9 +127,9 @@ export default function WaitlistPage() {
         setRemainingSpots(data.remaining);
       }
       // Only the admin (verified server-side by email) is let into the
-      // platform — straight to the marketplace, no success card needed.
+      // platform — straight to the landing page, no success card needed.
       if (data.adminAccess) {
-        window.location.href = "/agents";
+        window.location.href = "/";
         return;
       }
       setIsSuccess(true);
