@@ -38,7 +38,23 @@ export default function WaitlistPage() {
       document.cookie.includes("ac_wl_joined=1"),
   );
   const [error, setError] = useState("");
+  // Starts at MAX_SPOTS (client fallback); the authoritative value is loaded
+  // from the database on mount so the count survives a page refresh.
   const [remainingSpots, setRemainingSpots] = useState(MAX_SPOTS);
+
+  // Sync the remaining-spots counter with the database on mount.
+  useEffect(() => {
+    fetch("/api/waitlist")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data.remaining === "number") {
+          setRemainingSpots(data.remaining);
+        }
+      })
+      .catch(() => {
+        // keep the client-side fallback on network errors
+      });
+  }, []);
 
   // Error messages are transient alerts: auto-clear after a few seconds so they
   // only briefly warn the user without blocking the form.
@@ -77,6 +93,11 @@ export default function WaitlistPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        // The 409 response carries the authoritative remaining count too, so
+        // the counter stays in sync even when the join was a duplicate.
+        if (typeof data.remaining === "number") {
+          setRemainingSpots(data.remaining);
+        }
         if (res.status === 409) {
           setError(dict.waitlist.alreadyOnList);
         } else {
@@ -86,7 +107,9 @@ export default function WaitlistPage() {
         return;
       }
 
-      setRemainingSpots((prev) => prev - 1);
+      if (typeof data.remaining === "number") {
+        setRemainingSpots(data.remaining);
+      }
       setIsSuccess(true);
       setEmail("");
     } catch {

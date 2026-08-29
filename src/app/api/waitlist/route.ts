@@ -8,8 +8,39 @@ import { getClientIp } from "@/lib/request-ip";
 // Max signups per IP per hour (emails are additionally deduped by the DB).
 const WAITLIST_LIMIT = 3;
 
+// Total available waitlist spots (mirrors MAX_SPOTS in the waitlist page).
+const MAX_SPOTS = 10;
+
 // Cookie flag so the waitlist page can show the "joined" state after a refresh.
 const JOINED_COOKIE = "ac_wl_joined";
+
+/**
+ * Authoritative remaining spots: MAX_SPOTS minus the real number of signups
+ * currently stored (waitlist emails are unique, so each row is one person).
+ * Uses the service-role client so RLS on the table (select = authenticated
+ * only) doesn't hide rows; falls back to the anon client in dev.
+ */
+async function getRemainingSpots(): Promise<number> {
+  const supabase = createAdminClient() ?? (await createClient());
+  const { count, error } = await supabase
+    .from("waitlist")
+    .select("id", { count: "exact", head: true });
+  if (error) throw error;
+  return Math.max(MAX_SPOTS - (count ?? 0), 0);
+}
+
+export async function GET() {
+  try {
+    const remaining = await getRemainingSpots();
+    return NextResponse.json({ maxSpots: MAX_SPOTS, remaining });
+  } catch (err) {
+    console.error("Failed to count waitlist entries:", err);
+    return NextResponse.json(
+      { error: await apiErrorMessage("failedToJoinWaitlist") },
+      { status: 500 },
+    );
+  }
+}
 
 /**
  * Provision a Supabase Auth user for the waitlist email (idempotent,
@@ -91,8 +122,9 @@ export async function POST(request: Request) {
         // have failed silently) — try to create the user anyway; it's a no-op
         // when the account already exists.
         await provisionAuthUser(email);
+        const remaining = await getRemainingSpots();
         const res = NextResponse.json(
-          { error: await apiErrorMessage("alreadyOnWaitlist") },
+          { error: await apiErrorMessage("alreadyOnWaitlist"), remaining },
           { status: 409 },
         );
         res.cookies.set(JOINED_COOKIE, "1", {
@@ -112,7 +144,10 @@ export async function POST(request: Request) {
     // Provision the Auth user so the signup shows up in Authentication → Users.
     await provisionAuthUser(email);
 
-    const res = NextResponse.json({ success: true });
+    const res = NextResponse.json({
+      success: true,
+      remaining: await getRemainingSpots(),
+    });
     res.cookies.set(JOINED_COOKIE, "1", {
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
