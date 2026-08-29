@@ -97,7 +97,7 @@ export default function WaitlistPage() {
   };
 
   return (
-    <section className="relative flex min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)] px-4 py-10 sm:py-14">
+    <section className="relative flex min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)] px-4 py-6 sm:py-10">
       {/* Decorative background — same language as the hero section */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/30 to-transparent" />
       <div

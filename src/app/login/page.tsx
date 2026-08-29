@@ -125,7 +125,7 @@ export default function LoginPage() {
       {/* Floating app + agent constellations, flanking the form */}
       <HeroBubbles />
 
-      <section className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-10 sm:py-14">
+      <section className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-6 sm:py-10">
         <div className="w-full max-w-md">
           {/* Back to home — the navbar is not rendered on this page */}
           <div className="mb-6 flex justify-center">
