@@ -118,6 +118,12 @@ export async function POST(request: Request) {
         );
         res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
         res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
+        // An admin email that's already in the waitlist still regains its
+        // access cookie (same contract as the fresh-signup path) so the owner
+        // re-gaining access isn't blocked by the duplicate (409) response.
+        if (isAdminEmail(email)) {
+          res.cookies.set(ADMIN_COOKIE, "1", COOKIE_OPTIONS);
+        }
         return res;
       }
       console.error("Failed to store waitlist entry:", dbError);
