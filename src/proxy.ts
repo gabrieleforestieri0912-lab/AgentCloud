@@ -80,11 +80,14 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
-    // Waitlist members who joined get access to the platform via the join cookie.
-    const joined = request.cookies.get("ac_wl_joined")?.value === "1";
-    if (!joined) {
-      // Authenticated users (e.g. the owner/admin) also pass through. resolveSession
-      // validates the session and carries refreshed auth cookies on `response`.
+    // Only the admin (verified email on waitlist signup) gets through the
+    // waitlist gate via cookie. Regular waitlist members stay locked out —
+    // their ac_wl_joined cookie only records the signup, it grants no access.
+    const isAdminVisitor = request.cookies.get("ac_wl_admin")?.value === "1";
+    if (!isAdminVisitor) {
+      // Authenticated users (e.g. the owner/admin signed in) also pass through.
+      // resolveSession validates the session and carries refreshed auth cookies
+      // on `response`.
       const { response, user } = await resolveSession(request);
       if (!user) {
         const waitlistUrl = request.nextUrl.clone();

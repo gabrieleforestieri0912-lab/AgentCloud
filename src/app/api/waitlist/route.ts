@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
+import { isAdminEmail } from "@/lib/admin-access";
 
 // Max signups per IP per hour (emails are additionally deduped by the DB).
 const WAITLIST_LIMIT = 3;
@@ -18,6 +19,11 @@ const JOINED_COOKIE = "ac_wl_joined";
 // the database (e.g. after the owner deletes entries) instead of trusting the
 // client-side cookie forever.
 const JOINED_EMAIL_COOKIE = "ac_wl_email";
+// Grants platform access during the waitlist phase — set ONLY when the
+// submitted email is one of the admin emails (checked server-side). The
+// proxy lets holders through the waitlist gate; everyone else stays on
+// /waitlist until the phase is lifted.
+const ADMIN_COOKIE = "ac_wl_admin";
 
 const COOKIE_OPTIONS = {
   path: "/",
@@ -170,15 +176,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Provision the Auth user so the signup shows up in Authentication → Users.
-    await provisionAuthUser(email);
-
+    // Provision the Auth user so the signup shows up in Authentication → Users.    await provisionAuthUser(email);
     const res = NextResponse.json({
       success: true,
       remaining: await getRemainingSpots(),
+      adminAccess: isAdminEmail(email),
     });
     res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
     res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
+    if (isAdminEmail(email)) {
+      res.cookies.set(ADMIN_COOKIE, "1", COOKIE_OPTIONS);
+    }
     return res;
   } catch (err) {
     return NextResponse.json(
