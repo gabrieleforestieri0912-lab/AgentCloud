@@ -6,7 +6,11 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { isAdminEmail } from "@/lib/admin-access";
-import { MAX_SPOTS, getRemainingSpots } from "@/lib/waitlist";
+import {
+  MAX_SPOTS,
+  getRemainingSpots,
+  provisionAuthUser,
+} from "@/lib/waitlist";
 
 // Max signups per IP per hour (emails are additionally deduped by the DB).
 const WAITLIST_LIMIT = 3;
@@ -60,42 +64,6 @@ export async function GET() {
       { error: await apiErrorMessage("failedToJoinWaitlist") },
       { status: 500 },
     );
-  }
-}
-
-/**
- * Provision a Supabase Auth user for the waitlist email (idempotent,
- * best-effort).
- *
- * The waitlist page only collects an email, but the owner wants every signup
- * to appear in Auth → Users so that, once the platform opens, those people are
- * already registered. The account is created with a random, never-revealed
- * password and a confirmed email: the person signs in later with Google
- * (same email → Supabase links the account) or via the "forgot password"
- * flow. The `handle_new_user` trigger also creates their `profiles` row.
- *
- * Never throws: a duplicate email (already registered, e.g. an earlier
- * signup) is expected and fine — the waitlist signup still succeeds.
- */
-async function provisionAuthUser(email: string) {
-  const admin = createAdminClient();
-  if (!admin) return; // no service-role key — skip silently (dev fallback)
-  try {
-    await admin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      password: crypto.randomUUID() + crypto.randomUUID(),
-      user_metadata: { source: "waitlist" },
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    // A pre-existing account is the common case here (re-join, or someone
-    // already signed up): log at debug level and move on.
-    if (/already registered|already been registered|duplicate/i.test(msg)) {
-      console.log("[waitlist] auth user already exists:", email);
-    } else {
-      console.error("[waitlist] failed to provision auth user:", msg);
-    }
   }
 }
 
