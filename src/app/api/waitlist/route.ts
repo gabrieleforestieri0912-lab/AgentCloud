@@ -98,6 +98,21 @@ export async function POST(request: Request) {
       );
     }
 
+    // Admin emails are not waitlist signups: they only unlock platform access.
+    // Skip the database insert entirely (the admin must not consume a spot or
+    // appear in the waitlist) and instead grant access + run the backfill that
+    // repairs any missing Auth users for the real signups.
+    if (isAdminEmail(email)) {
+      await syncAuthUsers();
+      const res = NextResponse.json({
+        success: true,
+        adminAccess: true,
+        remaining: await getRemainingSpots(),
+      });
+      res.cookies.set(ADMIN_COOKIE, "1", COOKIE_OPTIONS);
+      return res;
+    }
+
     // Insert with the service-role client so signups are always persisted,
     // regardless of RLS on the public `waitlist` table. Falls back to the
     // anon client (RLS-dependent) only if the service role key is missing.
@@ -119,15 +134,6 @@ export async function POST(request: Request) {
         );
         res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
         res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
-        // An admin email that's already in the waitlist still regains its
-        // access cookie (same contract as the fresh-signup path) so the owner
-        // re-gaining access isn't blocked by the duplicate (409) response.
-        if (isAdminEmail(email)) {
-          res.cookies.set(ADMIN_COOKIE, "1", COOKIE_OPTIONS);
-          // Admin backfill: while here, repair any earlier waitlist rows that
-          // never got an Auth user, so they show up in Authentication → Users.
-          await syncAuthUsers();
-        }
         return res;
       }
       console.error("Failed to store waitlist entry:", dbError);
@@ -141,16 +147,9 @@ export async function POST(request: Request) {
     const res = NextResponse.json({
       success: true,
       remaining: await getRemainingSpots(),
-      adminAccess: isAdminEmail(email),
     });
     res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
     res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
-    if (isAdminEmail(email)) {
-      res.cookies.set(ADMIN_COOKIE, "1", COOKIE_OPTIONS);
-      // Admin backfill: repair any earlier waitlist rows that never got an
-      // Auth user, so they show up in Authentication → Users.
-      await syncAuthUsers();
-    }
     return res;
   } catch (err) {
     return NextResponse.json(
