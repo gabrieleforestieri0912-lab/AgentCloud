@@ -11,13 +11,56 @@ export { MAX_SPOTS };
  * Uses the service-role client so RLS on the table (select = authenticated
  * only) doesn't hide rows; falls back to the anon client in dev.
  */
-export async function getRemainingSpots(): Promise<number> {
+// Metadata marker set on every waitlist-provisioned Auth user, so we can count
+// only the signups that actually occupy a spot.
+const WAITLIST_SOURCE = "waitlist";
+
+/**
+ * Count the Auth users provisioned from the waitlist (metadata source=
+ * "waitlist"). Deleting one of them in Authentication → Users frees a spot.
+ * Falls back to the `waitlist` table count when the service-role key is
+ * missing (dev) or the Auth API is unreachable.
+ */
+async function countTakenSpots(): Promise<number> {
+  const admin = createAdminClient();
+  if (admin) {
+    try {
+      let taken = 0;
+      let page = 1;
+      let total: number | undefined;
+      do {
+        const { data, error } = await admin.auth.admin.listUsers({ page });
+        if (error) throw error;
+        const users = data?.users ?? [];
+        taken += users.filter(
+          (u) => u.user_metadata?.source === WAITLIST_SOURCE,
+        ).length;
+        total = data?.total;
+        page += 1;
+      } while (total !== undefined && page <= Math.max(1, Math.ceil(total / 50)));
+      return taken;
+    } catch (err) {
+      console.error("[waitlist] failed to count Auth users:", err);
+    }
+  }
+
+  // Dev / fallback: count waitlist rows as a proxy for taken spots.
   const supabase = createAdminClient() ?? (await createClient());
   const { count, error } = await supabase
     .from("waitlist")
     .select("id", { count: "exact", head: true });
   if (error) throw error;
-  return Math.max(MAX_SPOTS - (count ?? 0), 0);
+  return count ?? 0;
+}
+
+/**
+ * Authoritative remaining spots: MAX_SPOTS minus the real number of signups
+ * that occupy a spot. Today a "taken" spot is an Auth user provisioned from
+ * the waitlist (so deleting a user in Authentication → Users frees the spot).
+ */
+export async function getRemainingSpots(): Promise<number> {
+  const taken = await countTakenSpots();
+  return Math.max(MAX_SPOTS - taken, 0);
 }
 
 /**
