@@ -6,12 +6,7 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { isAdminEmail } from "@/lib/admin-access";
-import {
-  MAX_SPOTS,
-  getRemainingSpots,
-  provisionAuthUser,
-  syncAuthUsers,
-} from "@/lib/waitlist";
+import { MAX_SPOTS, getRemainingSpots, provisionAuthUser } from "@/lib/waitlist";
 
 // Max signups per IP per hour (emails are additionally deduped by the DB).
 const WAITLIST_LIMIT = 3;
@@ -100,10 +95,9 @@ export async function POST(request: Request) {
 
     // Admin emails are not waitlist signups: they only unlock platform access.
     // Skip the database insert entirely (the admin must not consume a spot or
-    // appear in the waitlist) and instead grant access + run the backfill that
-    // repairs any missing Auth users for the real signups.
+    // appear in the waitlist) and just grant access — Auth users for the real
+    // signups are provisioned at signup time, so no backfill runs here.
     if (isAdminEmail(email)) {
-      await syncAuthUsers();
       const res = NextResponse.json({
         success: true,
         adminAccess: true,
