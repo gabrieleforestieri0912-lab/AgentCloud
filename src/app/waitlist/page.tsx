@@ -15,6 +15,10 @@ import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 
 const MAX_SPOTS = 10;
 
+// Cookie flags (mirrors the server-side constants in /api/waitlist).
+const JOINED_COOKIE = "ac_wl_joined";
+const JOINED_EMAIL_COOKIE = "ac_wl_email";
+
 // Floating brand marks echoing the hero constellation — ties the waitlist into
 // the landing page's visual language.
 const FLOATING_BUBBLES: FloatingBubble[] = [
@@ -42,17 +46,28 @@ export default function WaitlistPage() {
   // from the database on mount so the count survives a page refresh.
   const [remainingSpots, setRemainingSpots] = useState(MAX_SPOTS);
 
-  // Sync the remaining-spots counter with the database on mount.
+  // Sync with the database on mount: authoritative spots count, and (when a
+  // previous join is remembered) whether the signup still exists. If the owner
+  // deleted the entry, clear the cookies so the form shows again instead of
+  // a stale success message.
   useEffect(() => {
     fetch("/api/waitlist")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data && typeof data.remaining === "number") {
+        if (!data) return;
+        if (typeof data.remaining === "number") {
           setRemainingSpots(data.remaining);
+        }
+        if (data.verified === true && data.joined === false) {
+          document.cookie = `${JOINED_COOKIE}=; max-age=0; path=/`;
+          document.cookie = `${JOINED_EMAIL_COOKIE}=; max-age=0; path=/`;
+          setIsSuccess(false);
+        } else if (data.joined === true) {
+          setIsSuccess(true);
         }
       })
       .catch(() => {
-        // keep the client-side fallback on network errors
+        // keep the client-side state on network errors
       });
   }, []);
 

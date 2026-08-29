@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
@@ -13,6 +14,16 @@ const MAX_SPOTS = 10;
 
 // Cookie flag so the waitlist page can show the "joined" state after a refresh.
 const JOINED_COOKIE = "ac_wl_joined";
+// Remembers which email joined, so the server can re-verify the signup against
+// the database (e.g. after the owner deletes entries) instead of trusting the
+// client-side cookie forever.
+const JOINED_EMAIL_COOKIE = "ac_wl_email";
+
+const COOKIE_OPTIONS = {
+  path: "/",
+  maxAge: 60 * 60 * 24 * 365,
+  sameSite: "lax" as const,
+};
 
 /**
  * Authoritative remaining spots: MAX_SPOTS minus the real number of signups
@@ -32,9 +43,30 @@ async function getRemainingSpots(): Promise<number> {
 export async function GET() {
   try {
     const remaining = await getRemainingSpots();
-    return NextResponse.json({ maxSpots: MAX_SPOTS, remaining });
+
+    // If this browser previously joined, verify the signup still exists in the
+    // database (the owner may have deleted entries). `verified` is true only
+    // when the check actually ran: on verification errors we keep the cookie
+    // state (fail-safe) instead of dropping someone's access on a hiccup.
+    let joined = false;
+    let verified = false;
+    const joinedEmail = (await cookies()).get(JOINED_EMAIL_COOKIE)?.value;
+    if (joinedEmail) {
+      const supabase = createAdminClient() ?? (await createClient());
+      const { data, error } = await supabase
+        .from("waitlist")
+        .select("id")
+        .eq("email", joinedEmail)
+        .maybeSingle();
+      if (!error) {
+        verified = true;
+        joined = Boolean(data);
+      }
+    }
+
+    return NextResponse.json({ maxSpots: MAX_SPOTS, remaining, joined, verified });
   } catch (err) {
-    console.error("Failed to count waitlist entries:", err);
+    console.error("Failed to read waitlist state:", err);
     return NextResponse.json(
       { error: await apiErrorMessage("failedToJoinWaitlist") },
       { status: 500 },
@@ -127,11 +159,8 @@ export async function POST(request: Request) {
           { error: await apiErrorMessage("alreadyOnWaitlist"), remaining },
           { status: 409 },
         );
-        res.cookies.set(JOINED_COOKIE, "1", {
-          path: "/",
-          maxAge: 60 * 60 * 24 * 365,
-          sameSite: "lax",
-        });
+        res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
+        res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
         return res;
       }
       console.error("Failed to store waitlist entry:", dbError);
@@ -148,11 +177,8 @@ export async function POST(request: Request) {
       success: true,
       remaining: await getRemainingSpots(),
     });
-    res.cookies.set(JOINED_COOKIE, "1", {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-    });
+    res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
+    res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
     return res;
   } catch (err) {
     return NextResponse.json(
