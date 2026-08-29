@@ -30,8 +30,8 @@ Supabase Dashboard → **Authentication → Providers**:
 ### 2. Abilita Google
 
 1. Google Cloud Console → crea un progetto (o usane uno esistente) → **APIs & Services → Credentials → Create credentials → OAuth client ID** (tipo **Web application**)
-   - **Authorized JavaScript origins**: `https://<tudominio>.supabase.co` (URL del progetto Supabase)
-   - **Authorized redirect URIs**: `https://<tudominio>.supabase.co/auth/v1/callback`
+   - **Authorized JavaScript origins**: `https://<ref>.supabase.co` (URL del progetto Supabase, es. `https://umnvmlfzclkuorwnevpu.supabase.co`)
+   - **Authorized redirect URIs**: `https://<ref>.supabase.co/auth/v1/callback`
 2. Supabase Dashboard → **Authentication → Providers → Google**: inserisci **Client ID** e **Client Secret**, salva.
 
 ### 3. Redirect URLs
@@ -39,10 +39,14 @@ Supabase Dashboard → **Authentication → Providers**:
 OAuth Google, conferma email e recovery passano dalla route **`/auth/callback`**
 (`src/app/auth/callback/route.ts`), che scambia il codice PKCE con una sessione
 via `exchangeCodeForSession` e reindirizza alla destinazione (`next`). In
-**Authentication → URL Configuration → Redirect URLs** aggiungi:
+**Authentication → URL Configuration → Redirect URLs** aggiungi **entrambe** le
+varianti del dominio: in produzione `agentcloud.agency` fa un redirect 308 verso
+`www.agentcloud.agency`, quindi la variante `www` è quella effettivamente usata
+(il client costruisce `redirectTo` da `window.location.origin`):
 
 ```
-https://tudominio.com/auth/callback
+https://www.agentcloud.agency/auth/callback
+https://agentcloud.agency/auth/callback
 http://localhost:3000/auth/callback   (per lo sviluppo)
 ```
 
@@ -52,7 +56,9 @@ http://localhost:3000/auth/callback   (per lo sviluppo)
 
 ### 4. Sito/email
 
-- In **Authentication → URL Configuration** imposta il **Site URL**: `https://tudominio.com`
+- In **Authentication → URL Configuration** imposta il **Site URL**: `https://www.agentcloud.agency`
+  (o `https://agentcloud.agency`: il redirect 308 verso `www` continua a funzionare, ma il valore
+  canonico evita redirect superflui nei link delle email)
 - Per le email transazionali di Supabase (conferma account) personalizza il mittente con un dominio verificato (Auth → SMTP o Branding)
 
 ## Variabili d'ambiente
@@ -96,3 +102,5 @@ Non serve alcuna chiave OAuth nel frontend: il flusso Google è gestito interame
 - **"Invalid login credentials"**: email non confermata (controlla la casella spam) o password errata
 - **La navbar non vede la sessione**: la sessione Supabase è in cookie `sb-…-auth-token`; dopo il login il client aggiorna via `onAuthStateChange`. Se il cookie è mancante, controlla che `NEXT_PUBLIC_SUPABASE_ANON_KEY` punti al progetto giusto
 - **Redirect dopo Google**: controlla i **Redirect URLs** nel dashboard Supabase
+- **"Error 403: redirect_uri_mismatch"**: la URL di redirect nel Google Cloud Console non è `https://<ref>.supabase.co/auth/v1/callback` (quella di Supabase, non il tuo dominio)
+- **Redirect URLs non accettati da Supabase**: in produzione la variante effettiva è `www` (redirect 308 da `agentcloud.agency`); se manca `https://www.agentcloud.agency/auth/callback` il flusso fallisce con "Invalid redirect"
