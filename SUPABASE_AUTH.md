@@ -87,6 +87,19 @@ Non serve alcuna chiave OAuth nel frontend: il flusso Google è gestito interame
 - `profiles` (id → `auth.users`, email, full_name, stripe_customer_id) + **trigger `handle_new_user`**
 - RLS: gli utenti vedono/aggiornano solo il proprio profilo; il service role gestisce tutto
 
+## Waitlist → utenti già registrati
+
+Chi inserisce l'email nella waitlist viene **subito registrato in Supabase Auth**: il
+route `/api/waitlist` crea l'utente con `auth.admin.createUser` (email confermata,
+password casuale mai rivelata, `user_metadata.source = "waitlist"`), quindi compare in
+**Authentication → Users** e il trigger `handle_new_user` crea anche la riga in
+`profiles`. All'apertura della piattaforma queste persone sono già utenti:
+- **Login con Google** (stessa email) → Supabase collega l'account automaticamente
+- **Password dimenticata** → impostano una password propria e accedono
+
+Se l'email è già registrata (es. un utente che aveva già un account) la creazione viene
+saltata senza errori: l'iscrizione alla waitlist riesce comunque.
+
 ## Migrazione da Clerk
 
 > ⚠️ Gli ID utente cambiano: Clerk usava `user_2…`, Supabase usa UUID (`auth.users.id`).

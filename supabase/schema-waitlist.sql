@@ -7,7 +7,8 @@
 --
 --   1. profiles     — one row per registered user (auto-created by Supabase
 --                     Auth trigger), so login/signup keep working
---   2. waitlist     — public email-only signups from the waitlist page
+--   2. waitlist     — waitlist signups (the app also provisions a Supabase
+--                     Auth user per email, so signups appear in Auth → Users)
 --   3. rate_limits  — distributed rate limiting buckets + RPCs (used by the
 --                     /api/waitlist endpoint)
 --
@@ -106,7 +107,9 @@ create trigger trg_profiles_updated_at
 
 -- -----------------------------------------------------------------------------
 -- 2. waitlist
---    Public waitlist signups (email-only collection).
+--    Public waitlist signups. The app also provisions a Supabase Auth user for
+--    each email (via `/api/waitlist`) so signups appear in Auth → Users and
+--    are already registered when the platform opens.
 -- -----------------------------------------------------------------------------
 create table if not exists public.waitlist (
   id uuid default gen_random_uuid() primary key,

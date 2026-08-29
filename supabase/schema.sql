@@ -343,7 +343,9 @@ create policy "Only authenticated users can view demo requests"
 
 -- -----------------------------------------------------------------------------
 -- 7. waitlist
---    Public waitlist signups (email-only collection).
+--    Public waitlist signups. The app also provisions a Supabase Auth user for
+--    each email (via `/api/waitlist`) so signups appear in Auth → Users and
+--    are already registered when the platform opens.
 -- -----------------------------------------------------------------------------
 create table if not exists public.waitlist (
   id uuid default gen_random_uuid() primary key,
