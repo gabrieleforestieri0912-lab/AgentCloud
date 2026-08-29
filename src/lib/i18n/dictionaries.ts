@@ -550,6 +550,10 @@ const it = {
     leadCapture: "Lead capture",
     fullTools: "Strumenti completi del verticale",
     prioritySupport: "Supporto prioritario",
+    consentPrefix: "Accetto i",
+    consentTerms: "Termini di Servizio",
+    consentConjunction: "e la",
+    consentPrivacy: "Privacy Policy",
   },
 
   dashboard: {
@@ -1540,6 +1544,10 @@ export const en: Dictionary = {
     leadCapture: "Lead capture",
     fullTools: "Full vertical tools",
     prioritySupport: "Priority support",
+    consentPrefix: "I accept the",
+    consentTerms: "Terms of Service",
+    consentConjunction: "and the",
+    consentPrivacy: "Privacy Policy",
   },
 
   dashboard: {

@@ -31,6 +31,7 @@ export default function DeployAgentPage() {  const { dict, locale } = useLanguag
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const steps = dict.deploy.steps;
 
@@ -316,9 +317,35 @@ export default function DeployAgentPage() {  const { dict, locale } = useLanguag
                   </div>
                 </div>
 
+                <label className="mt-6 flex cursor-pointer items-start gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-neutral-300 text-brand-500 accent-brand-500"
+                  />
+                  <span className="text-xs leading-relaxed text-neutral-500">
+                    {dict.deploy.consentPrefix}{" "}
+                    <Link
+                      href="/terms"
+                      className="font-semibold text-brand-600 hover:underline"
+                    >
+                      {dict.deploy.consentTerms}
+                    </Link>{" "}
+                    {dict.deploy.consentConjunction}{" "}
+                    <Link
+                      href="/privacy"
+                      className="font-semibold text-brand-600 hover:underline"
+                    >
+                      {dict.deploy.consentPrivacy}
+                    </Link>
+                    .
+                  </span>
+                </label>
+
                 <button
                   type="button"
-                  disabled={isCheckingOut}
+                  disabled={isCheckingOut || !acceptedTerms}
                   onClick={async () => {
                     setIsCheckingOut(true);
                     try {
@@ -337,7 +364,7 @@ export default function DeployAgentPage() {  const { dict, locale } = useLanguag
                       setIsCheckingOut(false);
                     }
                   }}
-                  className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98] disabled:opacity-50"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Rocket size={16} />
                   {isCheckingOut ? dict.common.close : dict.deploy.requestDemo}
