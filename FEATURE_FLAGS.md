@@ -126,11 +126,11 @@ calendar_book_event to book] "Confirmed! Your table is booked for tomorrow at
 
 **Enabled Agents:**
 
-- All 8 agents of the full preset (the other runtime agents, incl. Email
-  Manager, stay off unless added via `AGENTCLOUD_FEATURE_FLAGS`):
+- All 9 runtime agents of the full preset:
   - `seo-agent` - SEO Content Agent
   - `business-manager` - Business Manager Agent
   - `personal-assistant` - Personal AI Assistant
+  - `email-manager` - Email Manager
   - `shopify-agent` - Shopify Commerce Agent
   - `calendar-booking` - Calendar Booking Agent
   - `lead-capture` - Lead Capture Agent

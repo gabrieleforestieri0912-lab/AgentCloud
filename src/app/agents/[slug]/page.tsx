@@ -56,16 +56,6 @@ export async function generateMetadata({ params }: AgentDetailPageProps) {
 }
 
 const USE_CASE_EXAMPLES: Record<string, string[]> = {
-  "executive-assistant": [
-    "Schedule a board meeting across 8 time zones with agenda and prep docs",
-    "Draft weekly status reports from Slack threads and email updates",
-    "Organize a quarterly offsite including travel, accommodation, and activities",
-  ],
-  "email": [
-    "Auto-reply to common support inquiries with knowledge-base accuracy",
-    "Draft and send personalized follow-up sequences for inbound leads",
-    "Summarize daily inbox into a 5-minute briefing with action items",
-  ],
   "email-manager": [
     "Triage a week of unread email into priorities, folders, and drafts",
     "Extract every commitment and deadline hidden in my inbox threads",
@@ -74,16 +64,6 @@ const USE_CASE_EXAMPLES: Record<string, string[]> = {
 };
 
 const USE_CASE_EXAMPLES_IT: Record<string, string[]> = {
-  "executive-assistant": [
-    "Pianifica un consiglio di amministrazione su 8 fusi orari con agenda e documenti di preparazione",
-    "Prepara i report di stato settimanali dai thread Slack e dagli aggiornamenti email",
-    "Organizza un offsite trimestrale includendo viaggio, alloggio e attività",
-  ],
-  "email": [
-    "Rispondi automaticamente alle richieste di supporto comuni con precisione da knowledge base",
-    "Scrivi e invia sequenze di follow-up personalizzate per i lead in entrata",
-    "Riepiloga la casella quotidiana in un briefing da 5 minuti con le azioni da fare",
-  ],
   "email-manager": [
     "Smista una settimana di email non lette in priorità, cartelle e bozze",
     "Estrai ogni impegno e scadenza nascosti nelle conversazioni della casella",

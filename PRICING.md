@@ -23,23 +23,17 @@ DB (`supabase/schema.sql`).
 | Lead Capture Agent                      | €29/mese       | Marketing & Sales    | Cattura e notifica lead           |
 | **Support Agent**                       | **€49/mese**   | Customer Service    | Assistenza clienti 24/7           |
 | **Copywriter**                          | **€39/mese**   | Design & Content    | Copy che converte                 |
-| Executive Assistant                     | €39/mese       | Business & Ops       | Smistamento e pianificazione      |
-| Email Manager                           | €39/mese       | Business & Ops       | Smistamento posta, bozze e impegni|
+| **Email Manager**                       | **€39/mese**   | Business & Ops       | Smistamento posta, bozze e impegni|
 | Personal Assistant                      | €29/mese       | Business & Ops       | Organizzazione giornata           |
-| SEO Specialist / SEO Content            | €39/mese       | Marketing & Sales    | Contenuti e posizionamento        |
-| Social Media Manager                    | €39/mese       | Marketing & Sales    | Contenuti social                  |
+| SEO Content Agent                       | €39/mese       | Marketing & Sales    | Contenuti e posizionamento        |
 | Calendar Booking Agent                  | €39/mese       | Business & Ops       | Prenotazioni e slot               |
-| Full Stack Developer                    | €49/mese       | Development          | Sviluppo feature                  |
-| Data Analyst                            | €49/mese       | AI & Data            | Analisi e report                  |
+| Business Manager                        | €59/mese       | Business & Ops       | Report, pianificazione e decisioni|
 
-La tariffa base è **€29/mese** (agenti a basso carico operativo: meeting,
-blog, cold email, lead capture, prompt engineering), **€39/mese** per gli
-agenti di contenuto e operazioni standard, **€49/mese** per gli agenti ad
-alto valore (supporto 24/7, sviluppo, lead qualification, dati) e
-**€59/mese** per gli agenti strategici/cross-team (CRM, customer success,
-marketing strategist, DevOps, AI automation, business manager). Gli agenti
-più recenti — **Support Agent (€49/mese)**, **Copywriter (€39/mese)** ed
-**Email Manager (€39/mese)** — sono allineati a questa scala.
+La tariffa base è **€29/mese** (Lead Capture, Personal Assistant),
+**€39/mese** per gli agenti di contenuto e operazioni (Shopify, SEO Content,
+Email Manager, Calendar Booking, Copywriter), **€49/mese** per l'agente ad
+alto valore (**Support Agent** 24/7) e **€59/mese** per l'agente strategico
+(**Business Manager**).
 
 > **Nota:** questi prezzi sono quelli effettivamente addebitati via
 > `/api/checkout` (campo `priceCents` del catalogo). In passato il bootstrap

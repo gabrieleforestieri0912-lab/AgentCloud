@@ -2,7 +2,7 @@
  * Feature flags for controlling which agents and tools are available.
  *
  * This allows you to:
- * - Launch with only a few agents instead of the whole 30-agent catalog
+ * - Launch with only a few agents instead of the whole 9-agent catalog
  * - Control which tools are enabled per agent
  * - Gradually roll out features to specific customers
  * - Reduce surface area for initial demos
@@ -91,7 +91,9 @@ export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
 };
 
 /**
- * Full platform configuration (all agents enabled)
+ * Full platform configuration (all 9 agents enabled: SEO, Business Manager,
+ * Personal Assistant, Email Manager, Shopify, Calendar Booking, Lead Capture,
+ * Support Agent, Copywriter)
  * Use this for existing customers or when you're ready to launch everything
  */
 export const FULL_PLATFORM_CONFIG: FeatureFlags = {
@@ -99,6 +101,7 @@ export const FULL_PLATFORM_CONFIG: FeatureFlags = {
     "seo-agent",
     "business-manager",
     "personal-assistant",
+    "email-manager",
     "shopify-agent",
     "calendar-booking",
     "lead-capture",

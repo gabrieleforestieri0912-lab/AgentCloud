@@ -29,7 +29,7 @@ describe("flag-driven marketplace", () => {
     // Not part of the default shopify vertical.
     expect(mod.isAvailable("calendar-booking")).toBe(false);
     expect(mod.isAvailable("seo-agent")).toBe(false);
-    expect(mod.isAvailable("executive-assistant")).toBe(false);
+    expect(mod.isAvailable("business-manager")).toBe(false);
   });
 
   it("AVAILABLE_AGENTS and COMING_SOON_AGENTS partition the whole catalog", async () => {
@@ -61,6 +61,7 @@ describe("flag-driven marketplace", () => {
       "seo-agent",
       "business-manager",
       "personal-assistant",
+      "email-manager",
       "shopify-agent",
       "calendar-booking",
       "lead-capture",
@@ -69,7 +70,7 @@ describe("flag-driven marketplace", () => {
     ]) {
       expect(mod.isAvailable(slug)).toBe(true);
     }
-    expect(mod.AVAILABLE_AGENTS.length).toBe(8);
+    expect(mod.AVAILABLE_AGENTS.length).toBe(9);
   });
 
   it("respects a custom JSON feature-flag override", async () => {

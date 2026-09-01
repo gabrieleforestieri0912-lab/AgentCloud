@@ -23,7 +23,7 @@ For each agent, create a Product and Price in Stripe:
 
 1. Go to **Products → Add Product**
 2. Product details:
-   - **Name**: Agent name (e.g., "Executive Assistant")
+   - **Name**: Agent name (e.g., "Shopify Agent")
    - **Description**: Agent description
    - **Pricing**: Recurring → Monthly → Set price in EUR
 3. Save the **Price ID** (starts with `price_`)
@@ -100,39 +100,17 @@ STRIPE_PAYMENT_LINK_EMAIL_MANAGER=https://buy.stripe.com/...
 
 Use these slugs for environment variable names:
 
-| Agent                | Slug                   | Env Variable                               |
-| -------------------- | ---------------------- | ------------------------------------------ |
-| Executive Assistant  | `executive-assistant`  | `STRIPE_PAYMENT_LINK_EXECUTIVE_ASSISTANT`  |
-| Email Manager        | `email-manager`        | `STRIPE_PAYMENT_LINK_EMAIL_MANAGER`        |
-| Project Manager      | `project-manager`      | `STRIPE_PAYMENT_LINK_PROJECT_MANAGER`      |
-| Calendar Booking     | `calendar-booking`     | `STRIPE_PAYMENT_LINK_CALENDAR_BOOKING`     |
-| Lead Capture         | `lead-capture`         | `STRIPE_PAYMENT_LINK_LEAD_CAPTURE`         |
-| SEO Content          | `seo-agent`            | `STRIPE_PAYMENT_LINK_SEO_AGENT`            |
-| Personal Assistant   | `personal-assistant`   | `STRIPE_PAYMENT_LINK_PERSONAL_ASSISTANT`   |
-| Meeting Assistant    | `meeting-assistant`    | `STRIPE_PAYMENT_LINK_MEETING_ASSISTANT`    |
-| CRM Assistant        | `crm-assistant`        | `STRIPE_PAYMENT_LINK_CRM_ASSISTANT`        |
-| Customer Success     | `customer-success`     | `STRIPE_PAYMENT_LINK_CUSTOMER_SUCCESS`     |
-| Business Manager     | `business-manager`     | `STRIPE_PAYMENT_LINK_BUSINESS_MANAGER`     |
-| Marketing Strategist | `marketing-strategist` | `STRIPE_PAYMENT_LINK_MARKETING_STRATEGIST` |
-| SEO Specialist       | `seo-specialist`       | `STRIPE_PAYMENT_LINK_SEO_SPECIALIST`       |
-| Google Ads Expert    | `google-ads-expert`    | `STRIPE_PAYMENT_LINK_GOOGLE_ADS_EXPERT`    |
-| Social Media Manager | `social-media-manager` | `STRIPE_PAYMENT_LINK_SOCIAL_MEDIA_MANAGER` |
-| Cold Email Writer    | `cold-email-writer`    | `STRIPE_PAYMENT_LINK_COLD_EMAIL_WRITER`    |
-| Lead Qualification   | `lead-qualification`   | `STRIPE_PAYMENT_LINK_LEAD_QUALIFICATION`   |
-| Support Agent        | `support-agent`        | `STRIPE_PAYMENT_LINK_SUPPORT_AGENT`        |
-| Complaint Manager    | `complaint-manager`    | `STRIPE_PAYMENT_LINK_COMPLAINT_MANAGER`    |
-| Full Stack Developer | `fullstack-developer`  | `STRIPE_PAYMENT_LINK_FULLSTACK_DEVELOPER`  |
-| API Integration      | `api-integration`      | `STRIPE_PAYMENT_LINK_API_INTEGRATION`      |
-| DevOps Engineer      | `devops-engineer`      | `STRIPE_PAYMENT_LINK_DEVOPS_ENGINEER`      |
-| QA Tester            | `qa-tester`            | `STRIPE_PAYMENT_LINK_QA_TESTER`            |
-| Prompt Engineer      | `prompt-engineer`      | `STRIPE_PAYMENT_LINK_PROMPT_ENGINEER`      |
-| AI Automation        | `ai-automation`        | `STRIPE_PAYMENT_LINK_AI_AUTOMATION`        |
-| Data Analyst         | `data-analyst`         | `STRIPE_PAYMENT_LINK_DATA_ANALYST`         |
-| Copywriter           | `copywriter`           | `STRIPE_PAYMENT_LINK_COPYWRITER`           |
-| Blog Writer          | `blog-writer`          | `STRIPE_PAYMENT_LINK_BLOG_WRITER`          |
-| UI Designer          | `ui-designer`          | `STRIPE_PAYMENT_LINK_UI_DESIGNER`          |
-| E-commerce Expert    | `ecommerce-expert`     | `STRIPE_PAYMENT_LINK_ECOMMERCE_EXPERT`     |
-| Shopify Agent        | `shopify-agent`        | `STRIPE_PAYMENT_LINK_SHOPIFY_AGENT`        |
+| Agent              | Slug                    | Env Variable                              |
+| ------------------ | ----------------------- | ----------------------------------------- |
+| Email Manager      | `email-manager`         | `STRIPE_PAYMENT_LINK_EMAIL_MANAGER`       |
+| Business Manager   | `business-manager`      | `STRIPE_PAYMENT_LINK_BUSINESS_MANAGER`    |
+| Personal Assistant | `personal-assistant`    | `STRIPE_PAYMENT_LINK_PERSONAL_ASSISTANT`  |
+| Calendar Booking   | `calendar-booking`      | `STRIPE_PAYMENT_LINK_CALENDAR_BOOKING`    |
+| SEO Content        | `seo-agent`             | `STRIPE_PAYMENT_LINK_SEO_AGENT`           |
+| Lead Capture       | `lead-capture`          | `STRIPE_PAYMENT_LINK_LEAD_CAPTURE`        |
+| Support Agent      | `support-agent`         | `STRIPE_PAYMENT_LINK_SUPPORT_AGENT`       |
+| Copywriter         | `copywriter`            | `STRIPE_PAYMENT_LINK_COPYWRITER`          |
+| Shopify Agent      | `shopify-agent`         | `STRIPE_PAYMENT_LINK_SHOPIFY_AGENT`       |
 
 ## Step 5: Configure Stripe Webhook
 
@@ -287,7 +265,7 @@ AGENTCLOUD_FEATURE_FLAGS={
 
 #### Full Platform
 
-- **Agents**: All 8 agents of the full preset (SEO, Business Manager, Personal Assistant, Shopify, Calendar Booking, Lead Capture, Support Agent, Copywriter)
+- **Agents**: All 9 agents of the full preset (SEO, Business Manager, Personal Assistant, Email Manager, Shopify, Calendar Booking, Lead Capture, Support Agent, Copywriter)
 - **Tools**: All tools enabled
 - **Use case**: Existing customers, full launch
 

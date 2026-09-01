@@ -61,7 +61,7 @@ export default function MarketplaceGrid({
 
   // Filter coming soon agents (only by query, not category)
   const filteredComingSoon = useMemo(() => {
-    if (!query.trim()) return comingSoonAgents.slice(0, 3);
+    if (!query.trim()) return comingSoonAgents;
 
     const lowerQuery = query.toLowerCase();
     return comingSoonAgents

@@ -120,15 +120,15 @@ describe("API error messages", () => {
 
 describe("agent catalog localization", () => {
   it("localizes an Italian entry for a known agent", () => {
-    const agent = AGENTS.find((a) => a.slug === "executive-assistant")!;
+    const agent = AGENTS.find((a) => a.slug === "email-manager")!;
     const localized = localizeAgent(agent, "it");
-    expect(localized.name).toBe("Assistente Esecutivo");
+    expect(localized.name).toBe("Email Manager");
     expect(localized.description).not.toBe(agent.description);
     expect(localized.tasks.length).toBe(agent.tasks.length);
   });
 
   it("keeps English data unchanged for the en locale", () => {
-    const agent = AGENTS.find((a) => a.slug === "executive-assistant")!;
+    const agent = AGENTS.find((a) => a.slug === "email-manager")!;
     const localized = localizeAgent(agent, "en");
     expect(localized).toBe(agent);
   });
