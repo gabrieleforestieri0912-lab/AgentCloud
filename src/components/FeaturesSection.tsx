@@ -20,7 +20,7 @@ export default function FeaturesSection() {
   const features = dict.features.items;
 
   return (
-    <section id="solutions" className="py-24 bg-neutral-950">
+    <section id="solutions" className="py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center mb-16"

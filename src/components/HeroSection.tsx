@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { getLocalChatResponse } from "@/lib/chat-responses";
 import { useLanguage } from "./LanguageProvider";
-import HeroBubbles from "./HeroBubbles";
 
 type HeroMessage = {
   id: string;
@@ -190,7 +189,17 @@ export default function HeroSection() {
   );
 
   return (
-    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)] px-4 pt-36 sm:pt-48 lg:pt-64 pb-12 sm:pb-20 lg:pb-28 h-dvh flex items-center justify-center">
+    <section
+      className={`relative overflow-hidden px-4 pt-36 sm:pt-48 lg:pt-64 min-h-dvh flex items-center justify-center ${
+        hasMessages ? "pb-20 sm:pb-28 lg:pb-36" : "pb-12 sm:pb-20 lg:pb-28"
+      }`}
+    >
+      {/*
+        The hero is viewport-tall and vertically centered while the chat is
+        compact. `min-h-dvh` (instead of `h-dvh`) lets the section grow when
+        the chat expands, so the page dilates downward instead of clipping —
+        the hero keeps its resting look and nothing gets cut under the navbar.
+      */}
       {/* Float keyframes live in globals.css (shared with the waitlist page). */}
       <style>{`
         @keyframes fade-in-up {
@@ -202,18 +211,8 @@ export default function HeroSection() {
         }
       `}</style>
 
-      {/* Decorative background grid/gradients */}
+      {/* Decorative top hairline */}
       <div className="absolute inset-x-0 top-16 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
-      <div
-        className="absolute inset-0 opacity-[0.35] pointer-events-none select-none"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 10% 20%, rgba(3,139,254,.15), transparent 30%), radial-gradient(circle at 90% 16%, rgba(234,67,53,.15), transparent 26%)",
-        }}
-      />
-
-      {/* Floating app + agent constellations (shared with the hero) */}
-      <HeroBubbles />
 
       {/* Outer Wide Screen Flex Wrapper */}
       <div className="w-full max-w-7xl mx-auto flex items-center justify-between relative">

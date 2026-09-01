@@ -26,6 +26,7 @@ This enables:
 - **Lead Capture Agent** - Capture and notify sales
 - **Support Agent** - 24/7 ticket answers, KB-driven replies, smart escalation
 - **Copywriter** - Conversion copy for landing pages, ads, and email
+- **Email Manager** - Inbox triage, reply drafting, and commitment tracking
 
 ### Change Vertical
 
@@ -56,6 +57,7 @@ AGENTCLOUD_VERTICAL=full
 - `lead-capture` - Lead Capture Agent
 - `support-agent` - Support Agent (24/7 support)
 - `copywriter` - Copywriter (conversion copy)
+- `email-manager` - Email Manager (inbox triage and commitment tracking)
 
 **Enabled Tools:**
 

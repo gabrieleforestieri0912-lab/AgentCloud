@@ -137,6 +137,43 @@ const SEEDS: AgentSeed[] = [
     accent: "bg-brand-500",
   },
   {
+    slug: "email-manager",
+    name: "Email Manager",
+    shortName: "Email Manager",
+    category: "Business & Operations",
+    industry: "Founders, executives and busy professionals",
+    icon: "mail",
+    price: "€39/mo",
+    priceCents: 3900,
+    stripePriceId: "price_email_manager",
+    setupTime: "Same day",
+    rating: "4.8",
+    installs: "980",
+    badge: "New",
+    description:
+      "Tidy your inbox, never miss an important commitment, and get a daily digest.",
+    longDescription:
+      "The Email Manager agent brings order to your inbox and keeps every commitment on track. It triages incoming mail, labels and files what matters, drafts clear replies for your approval, and watches for deadlines, meetings, and follow-ups hidden inside threads — turning them into tracked commitments with reminders. It summarizes your day into a short digest, flags what needs a decision, and follows up until things are done. Connected to Gmail, Google Calendar, Outlook, and Slack, it cuts hours of email admin every week so you answer what matters and never let an important appointment slip.",
+    tasks: [
+      "Inbox triage",
+      "Reply drafting",
+      "Commitment tracking",
+      "Daily email digest",
+    ],
+    integrations: ["Gmail", "Google Calendar", "Outlook", "Slack"],
+    workflow: [
+      "Scan inbox",
+      "Triage and file",
+      "Track commitments",
+      "Deliver digest",
+    ],
+    previewPrompt:
+      "Tidy up my inbox and remind me of the commitments coming up this week.",
+    previewResult:
+      "I triaged 42 emails into 6 folders, flagged 3 that need your reply, and set reminders for 5 commitments due this week.",
+    accent: "bg-emerald-500",
+  },
+  {
     slug: "project-manager",
     name: "Project Manager",
     shortName: "Project Manager",

@@ -32,7 +32,7 @@ export default function Footer() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.7, ease: "easeOut" }}
-      className="relative border-t border-white/5 bg-[#101018] text-white"
+      className="relative border-t border-white/5 text-white"
     >
       {/* Hairline + subtle brand glow so the dark footer reads as a distinct block */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/70 to-transparent" />

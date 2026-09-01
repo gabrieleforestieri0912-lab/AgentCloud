@@ -27,7 +27,8 @@ export type FeatureFlags = {
 
 /**
  * Default configuration for Shopify e-commerce vertical launch.
- * 4 agents enabled: Shopify Agent + Lead Capture + Support Agent + Copywriter
+ * 5 agents enabled: Shopify Agent + Lead Capture + Support Agent + Copywriter
+ * + Email Manager
  */
 export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
   enabledAgents: [
@@ -35,6 +36,7 @@ export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
     "lead-capture",
     "support-agent",
     "copywriter",
+    "email-manager",
   ],
 
   // Enable Shopify, Lead Capture, and the general tools used by the

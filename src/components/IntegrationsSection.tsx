@@ -28,7 +28,7 @@ const INTEGRATIONS = [
 export default function IntegrationsSection() {
   const { dict } = useLanguage();
   return (
-    <section className="py-24 bg-neutral-950">
+    <section className="py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center mb-16"

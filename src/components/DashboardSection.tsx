@@ -10,7 +10,7 @@ export default function DashboardSection() {
   const dashboardAgents = dict.dashboardSection.agents;
   const events = dict.dashboardSection.events;
   return (
-    <section className="overflow-hidden bg-neutral-950 py-24">
+    <section className="overflow-hidden py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           className="mb-12 text-center"

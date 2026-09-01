@@ -51,6 +51,35 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     example:
       "Ho gestito 45 email, pianificato 8 riunioni e preparato 5 briefing prima delle 9:00.",
   },
+  "email-manager": {
+    name: "Email Manager",
+    shortName: "Email Manager",
+    category: "Business & Operations",
+    badge: "Novità",
+    description:
+      "Metti in ordine la casella, non perdere mai un impegno importante e ricevi un riepilogo quotidiano.",
+    longDescription:
+      "L'agente Email Manager porta ordine nella tua casella e tiene sotto controllo ogni impegno. Smista i messaggi in arrivo, etichetta e archivia ciò che conta, scrive risposte chiare da approvare e sorveglia scadenze, riunioni e follow-up nascosti nelle conversazioni — trasformandoli in impegni tracciati con promemoria. Riepiloga la giornata in un breve digest, segnala ciò che richiede una decisione e segue ogni follow-up fino a conclusione. Collegato a Gmail, Google Calendar, Outlook e Slack, ti fa risparmiare ore di gestione email ogni settimana: rispondi a ciò che conta e nessun appuntamento importante ti sfugge.",
+    industry: "Founder, dirigenti e professionisti",
+    tasks: [
+      "Smistamento casella",
+      "Bozze di risposta",
+      "Monitoraggio impegni",
+      "Riepilogo email quotidiano",
+    ],
+    workflow: [
+      "Analizza la casella",
+      "Smista e archivia",
+      "Traccia gli impegni",
+      "Consegna il riepilogo",
+    ],
+    previewPrompt:
+      "Metti in ordine la mia casella e ricordami gli impegni della settimana.",
+    previewResult:
+      "Ho smistato 42 email in 6 cartelle, segnalato 3 che richiedono la tua risposta e impostato promemoria per 5 impegni della settimana.",
+    example:
+      "Gestisco 50 email al giorno e riduco i tempi di gestione della casella del 70%.",
+  },
   "project-manager": {
     name: "Project Manager",
     shortName: "Project Manager",

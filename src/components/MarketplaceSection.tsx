@@ -8,7 +8,7 @@ import { useLanguage } from "./LanguageProvider";
 export default function MarketplaceSection() {
   const { dict } = useLanguage();
   return (
-    <section id="marketplace" className="bg-neutral-950 py-24">
+    <section id="marketplace" className="py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header animation */}
         <motion.div

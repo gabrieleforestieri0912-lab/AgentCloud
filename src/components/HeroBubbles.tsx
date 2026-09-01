@@ -43,19 +43,29 @@ const RIGHT_BUBBLES = [
 ];
 
 /**
- * Decorative floating constellations from the hero — app brand marks on the
- * left, agent avatars on the right. Absolutely positioned so the parent must
- * be `relative`; hidden below `lg`. Float keyframes live in globals.css.
+ * Decorative floating constellations — app brand marks on the left, agent
+ * avatars on the right. Absolutely positioned so the parent must be
+ * `relative`; hidden below `lg`. Float keyframes live in globals.css.
+ *
+ * `stretch` anchors the columns to the top of the parent and stretches them
+ * to its full height — used by the landing page so the bubbles float over the
+ * whole page as a background decoration. Without it the columns are centered
+ * in the parent (hero / login / signup look).
  */
-export default function HeroBubbles() {
+export default function HeroBubbles({ stretch = false }: { stretch?: boolean }) {
   const { dict } = useLanguage();
   const roles = dict.hero.roles;
+  const column =
+    "hidden lg:block absolute w-80 xl:w-96 pointer-events-none select-none z-0";
+  const vertical = stretch
+    ? "top-0 h-full"
+    : "top-1/2 -translate-y-1/2 h-150";
 
   return (
     <>
       {/* LEFT FLOATING CONSTELLATION (apps) */}
       <motion.div
-        className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-80 xl:w-96 h-150 pointer-events-none select-none z-0"
+        className={`${column} left-0 ${vertical}`}
         initial="hidden"
         animate="visible"
         variants={{
@@ -101,7 +111,7 @@ export default function HeroBubbles() {
 
       {/* RIGHT FLOATING CONSTELLATION (agents) */}
       <motion.div
-        className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-80 xl:w-96 h-150 pointer-events-none select-none z-0"
+        className={`${column} right-0 ${vertical}`}
         initial="hidden"
         animate="visible"
         variants={{

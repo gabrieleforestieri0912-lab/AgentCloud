@@ -11,7 +11,7 @@ export default function CTASection() {
   return (
     <section
       id="demo"
-      className="relative overflow-hidden bg-neutral-950 px-4 py-24 sm:px-6 lg:px-8"
+      className="relative overflow-hidden px-4 py-24 sm:px-6 lg:px-8"
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
 

@@ -66,6 +66,11 @@ const USE_CASE_EXAMPLES: Record<string, string[]> = {
     "Draft and send personalized follow-up sequences for inbound leads",
     "Summarize daily inbox into a 5-minute briefing with action items",
   ],
+  "email-manager": [
+    "Triage a week of unread email into priorities, folders, and drafts",
+    "Extract every commitment and deadline hidden in my inbox threads",
+    "Send a morning digest with what needs my decision today",
+  ],
 };
 
 const USE_CASE_EXAMPLES_IT: Record<string, string[]> = {
@@ -78,6 +83,11 @@ const USE_CASE_EXAMPLES_IT: Record<string, string[]> = {
     "Rispondi automaticamente alle richieste di supporto comuni con precisione da knowledge base",
     "Scrivi e invia sequenze di follow-up personalizzate per i lead in entrata",
     "Riepiloga la casella quotidiana in un briefing da 5 minuti con le azioni da fare",
+  ],
+  "email-manager": [
+    "Smista una settimana di email non lette in priorità, cartelle e bozze",
+    "Estrai ogni impegno e scadenza nascosti nelle conversazioni della casella",
+    "Invia un digest mattutino con ciò che richiede oggi la tua decisione",
   ],
 };
 
