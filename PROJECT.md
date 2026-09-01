@@ -1,6 +1,6 @@
 # AgentCloud
 
-**v0.4.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing Stripe con overage, i18n IT/EN.
+**v0.5.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing Stripe con overage, backend Gemini, Shopify OAuth multi-tenant e i18n IT/EN.
 
 ---
 
@@ -13,7 +13,7 @@
 - **Supabase Auth** — autenticazione (email + password, Google OAuth, sessioni `@supabase/ssr`)
 - **Supabase** — database (billing, usage, rate limits) + form storage
 - **Stripe** — payment links, abbonamenti, customer portal, **overage billing** (Billing Meter)
-- **Anthropic (Claude)** — esecuzione agenti (`/api/agent/run`)
+- **Google Gemini** — backend LLM unico (agenti `/api/agent/run`, chat `/api/chat`)
 - **Resend** — email transazionali
 - **Simple Icons** — icone brand originali (integrazioni/hero) · **Lucide** — icone UI
 
@@ -28,7 +28,7 @@ src/
 │   ├── layout.tsx           # Metadata dinamici, LanguageProvider
 │   ├── page.tsx             # Homepage (hero + sezioni landing)
 │   ├── dashboard/page.tsx   # Dashboard (server component, dati reali Supabase)
-│   ├── chat/page.tsx        # Chat generica (Ollama → fallback locale)
+│   ├── chat/page.tsx        # Chat generica (Gemini → fallback locale)
 │   ├── agents/page.tsx      # Marketplace filtrato dai feature flags
 │   ├── agents/[slug]/page.tsx        # Dettaglio agente (localizzato)
 │   ├── agents/[slug]/deploy/page.tsx # Wizard di deploy
@@ -36,12 +36,15 @@ src/
 │   ├── a/[slug]/            # Pagina pubblica agente + chat embed
 │   ├── login | signup | waitlist | demo | contact | privacy | terms
 │   └── api/
-│       ├── agent/run/       # POST — esecuzione Claude + tool, limiti e rate limit
+│       ├── agent/run/       # POST — esecuzione agente (Gemini) + tool, limiti e rate limit
 │       ├── billing/webhook/ # POST — webhook Stripe (attivazione, rinnovo, cancellazione)
-│       ├── billing/payment-link/ · billing/portal/
-│       ├── admin/tenants/   # Admin API (Bearer ADMIN_API_TOKEN)
+│       ├── billing/payment-link/ · billing/portal/ · billing/notify-expiring/
+│       ├── checkout/        # Stripe Checkout Session (prezzo dinamico da priceCents)
+│       ├── admin/           # Admin API (Bearer ADMIN_API_TOKEN)
 │       ├── email/send/      # Admin-only (Bearer ADMIN_API_TOKEN)
 │       ├── email/webhook/ · whatsapp/webhook/ · chat/ · embed/[slug]/
+│       ├── notifications/   # Campanella in-app (elenco + read per il badge)
+│       ├── shopify/         # OAuth multi-tenant install/callback/webhooks/status
 │       └── waitlist | contact | demo/request | sitemap
 ├── components/              # Navbar, Hero, sezioni landing, ChatInterface, AgentCard…
 └── lib/
@@ -68,7 +71,7 @@ src/
 | `/agent/[id]` | Chat agente | Protetto (Supabase) |
 | `/dashboard` | Dashboard | Protetto (Supabase) |
 
-**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/payment-link`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `chat`, `embed/[slug]`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `demo/request`, `sitemap`.
+**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/payment-link`, `checkout`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `chat`, `embed/[slug]`, `notifications`, `shopify/install`, `shopify/callback`, `shopify/webhooks`, `shopify/status`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `demo/request`, `sitemap`.
 **API protette (Supabase)**: `billing/portal` (ri-verifica sessione + redirect a login).
 
 ---
@@ -137,7 +140,7 @@ Backed da **Supabase** (tabella `rate_limits` + RPC atomici) — vale su tutte l
 
 ## Database
 
-Schema completo in `supabase/schema.sql` (rieseguibile: idempotente). **Dopo il deploy va rieseguito** per creare le nuove tabelle.
+Schema completo in `supabase/schema.sql` (rieseguibile: idempotente). **Dopo il deploy va rieseguito** per creare le nuove tabelle. Per la fase waitlist esiste `supabase/schema-waitlist.sql`; le tabelle dell'OAuth Shopify (`shopify_connections`) vivono in `supabase/schema-shopify-oauth.sql` (vedi sezione Shopify).
 
 | Tabella | Scopo |
 |---------|-------|
@@ -199,7 +202,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `GOOGLE_CALENDAR_ACCESS_TOKEN`, `GOOGLE_CALENDAR_CALENDAR_ID`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | tool Calendar |
 | `LEAD_CAPTURE_ENDPOINT`, `LEAD_CAPTURE_ENRICH_ENDPOINT`, `SLACK_WEBHOOK_URL` | tool Lead capture |
 | `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` | webhook WhatsApp |
-| `OLLAMA_URL` | chat locale (default `http://localhost:11434` — **non settare in produzione** se non vuoi un proxy pubblico) |
+| `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SHOPIFY_SCOPES` | OAuth multi-tenant dell'App pubblica Shopify (vedi sezione Shopify) |
 | `TENANT_STORE_KEY` | cifratura tenant store — **mai usare il default `dev-tenant-key` in prod** (store su filesystem: non persistente su serverless) |
 
 ### Runtime / feature flags
@@ -208,7 +211,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 |-----------|---------|------|
 | `AGENT_LLM_PROVIDER` | `gemini` | backend del runtime agenti (unico supportato: Gemini). Default: Gemini se `GEMINI_API_KEY`/`GOOGLE_API_KEY` è valida |
 | `AGENT_LLM_MODEL` | `gemini-3.6-flash` | modello usato dal backend Gemini quando non specificato per-request |
-| `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata Claude |
+| `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata LLM (Gemini) |
 | `AGENT_ANON_RATE_LIMIT` | `30` | richieste/min per IP per i preview anonimi |
 | `AGENTCLOUD_VERTICAL` | `shopify` | `shopify` \| `services` \| `full` — filtra marketplace e tool |
 | `AGENTCLOUD_FEATURE_FLAGS` | – | JSON: `enabledAgents`, `enabledTools`, `agentToolOverrides`, `enableOptionalToolsByDefault` |
@@ -225,7 +228,7 @@ npm run dev       # sviluppo
 npm run build     # build produzione (con typecheck)
 npm run start     # avvio produzione
 npm run lint      # ESLint
-npm run test      # Vitest (117 test)
+npm run test      # Vitest (149 test)
 npm run typecheck # tsc --noEmit
 
 ---
@@ -250,5 +253,7 @@ installabile da qualsiasi merchant. Passi manuali nel **Shopify Partner Dashboar
 Flusso runtime: `/api/shopify/install` (CSRF state + redirect) →
 `/api/shopify/callback` (verifica HMAC + exchange token, cifrato AES-256-GCM in
 `shopify_connections`) → i tool dell'agente leggono il token cifrato e lo
-revocano su 401 (APP_UNINSTALLED / shop/redact).
+revocano su 401 (APP_UNINSTALLED / shop/redact). La tabella
+`shopify_connections` è creata da `supabase/schema-shopify-oauth.sql`
+(rieseguire dopo il deploy).
 ```

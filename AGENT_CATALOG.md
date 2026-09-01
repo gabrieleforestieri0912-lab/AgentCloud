@@ -14,19 +14,29 @@
 
 **Funzionalità principali:**
 
-- Ricerca prodotti nel catalogo Shopify
-- Controllo stato ordini (richiede numero ordine + email)
+- Creazione e gestione prodotti (titoli, descrizioni, prezzi, immagini)
+- Codici sconto e promozioni per guidare le vendite
+- Gestione collezioni e inventario
+- Analisi vendite, clienti e ordini (stato pagamento, spedizione, tracking)
 - Generazione link carrello diretti
-- Risposte in italiano su prodotti, prezzi, disponibilità
+- Guida alla connessione del negozio (OAuth sicuro, niente token da incollare in chat)
 
 **Tools attivi (default):**
 
 - `shopify_search_products` - Cerca prodotti per nome, categoria, tag
 - `shopify_get_order_status` - Recupera stato pagamento, spedizione, tracking
 - `shopify_build_cart_url` - Genera link diretto al carrello
+- `shopify_list_customers` - Elenca clienti con storico acquisti
+- `shopify_get_analytics` - Vendite, ordini e prodotti top
+- `shopify_create_product` - Crea prodotti in store
+- `shopify_create_discount` - Crea codici sconto percentuale/fisso
+- `shopify_list_collections` - Elenca le collezioni del catalogo
+- `shopify_manage_collection` - Aggiunge/rimuove prodotti dalle collezioni
+- `shopify_update_inventory` - Aggiorna le giacenze delle varianti
 
 **Tools opzionali (disattivati):**
 
+- `shopify_setup_store` - Setup store (legacy: la connessione ora passa dal pannello OAuth in chat)
 - `web_search` - Ricerche web generiche
 - `read_file` / `write_file` - Lettura/scrittura file
 
@@ -91,9 +101,34 @@
 
 ---
 
+### 4. Email Manager ✅ Disponibile
+
+**Prezzo:** €39/mese  
+**Categoria:** Business & Operations  
+**Descrizione:** Agente che mette in ordine la casella di posta, traccia gli impegni che contano e fornisce un digest giornaliero.
+
+**Funzionalità principali:**
+
+- Smistamento e archiviazione della posta in arrivo
+- Bozze di risposta pronte per l'approvazione (mai inviate senza consenso esplicito)
+- Estrazione e tracciamento di scadenze, riunioni e follow-up nascosti nelle email
+- Digest giornaliero: cosa richiede una decisione, cosa è in attesa, cosa arriva
+
+**Tools attivi (default):**
+
+- `read_file` / `write_file` - Lettura/scrittura file (note e promemoria)
+
+**Tools opzionali (disattivati):**
+
+- `web_search` / `scrape_page` - Ricerche web
+
+**Ideale per:** Founder ed executive che vogliono risparmiare ore di gestione email e non perdere impegni importanti
+
+---
+
 ## 💼 Altri Agenti Disponibili (Non Attivi di Default)
 
-### 4. Support Agent ✅ Disponibile
+### 5. Support Agent ✅ Disponibile
 
 **Prezzo:** €49/mese  
 **Categoria:** Customer Service  
@@ -113,7 +148,7 @@
 
 ---
 
-### 5. Copywriter ✅ Disponibile
+### 6. Copywriter ✅ Disponibile
 
 **Prezzo:** €39/mese  
 **Categoria:** Design & Content  
@@ -133,7 +168,7 @@
 
 ---
 
-### 6. SEO Content Agent
+### 7. SEO Content Agent
 
 **Prezzo:** €39/mese  
 **Categoria:** Marketing & Sales  
@@ -144,7 +179,7 @@
 
 ---
 
-### 7. Business Manager Agent
+### 8. Business Manager Agent
 
 **Prezzo:** €59/mese  
 **Categoria:** Business & Operations  
@@ -155,7 +190,7 @@
 
 ---
 
-### 8. Personal AI Assistant
+### 9. Personal AI Assistant
 
 **Prezzo:** €29/mese  
 **Categoria:** Business & Operations  
@@ -171,55 +206,35 @@
 | Piano                 | Prezzo    | Conversazioni/Mese | Agenti Inclusi | Tools               |
 | --------------------- | --------- | ------------------ | -------------- | ------------------- |
 | **Starter**           | €29/mese  | 300                | 1 a scelta     | Solo default        |
-| **Growth**            | €69/mese  | 1.000              | 1 a scelta     | Default + opzionali |
+| **Growth**            | €39/mese  | 1.000              | 1 a scelta     | Default + opzionali |
 | **Add-on Web Search** | +€15/mese | -                  | Qualsiasi      | + web_search        |
 
 ## 🎯 Verticali
 
 ### Shopify E-commerce
 
-- **Agenti:** Shopify Agent + Lead Capture
-- **Tools:** Product search, order status, cart links, lead capture
-- **Prezzo:** €29-69/mese
+- **Agenti:** Shopify Agent + Lead Capture + Support Agent + Copywriter + Email Manager
+- **Tools:** Product search, order status, cart links, gestione prodotti/discount/inventario, lead capture, email
+- **Prezzo:** €29-49/mese
 
 ### Services
 
-- **Agenti:** Calendar Booking + Lead Capture
-- **Tools:** Calendar search, booking, lead capture
-- **Prezzo:** €29-69/mese
+- **Agenti:** Calendar Booking + Lead Capture + Support Agent + Copywriter
+- **Tools:** Calendar search, booking, lead capture, supporto, copy
+- **Prezzo:** €29-49/mese
 
 ## 💡 Note per Notion
 
 **Costo variabile per conversazione:**
 
-- LLM (Claude/GPT/Gemini): ~€0.05-0.15
+- LLM (Gemini): ~€0.05-0.15
 - Tavily (se attivo): ~€0.01-0.05
 - **Senza web search:** ~€0.05-0.08
 
 **Margine stimato:**
 
 - Starter: €9-19/mese
-- Growth: €19-44/mese
-
-**Founder pricing:** Primi 10-15 clienti a prezzi bloccati a vita
-
----
-
-**Formato pronto per copiare in Notion** ✅
-
-
-## 💡 Note per Notion
-
-**Costo variabile per conversazione:**
-
-- LLM (Claude/GPT/Gemini): ~€0.05-0.15
-- Tavily (se attivo): ~€0.01-0.05
-- **Senza web search:** ~€0.05-0.08
-
-**Margine stimato:**
-
-- Starter: €9-19/mese
-- Growth: €19-44/mese
+- Growth: €9-14/mese
 
 **Founder pricing:** Primi 10-15 clienti a prezzi bloccati a vita
 

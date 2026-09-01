@@ -11,16 +11,17 @@ Piattaforma di **agenti AI** per le aziende: marketplace di agenti pronti al lan
 - 🌐 **i18n** — italiano di default, inglese via cookie `agentcloud_locale` (niente URL `/en`)
 - 🔐 **Auth Supabase** — email + password e Google OAuth (sessioni `@supabase/ssr`)
 - 🛡️ **Rate limiting distribuito** — Supabase (`rate_limits` + RPC), fail-open
+- 🔌 **Shopify OAuth multi-tenant** — App pubblica installabile da qualsiasi merchant (install/callback/webhooks, token cifrati AES-256-GCM)
 
 ## Stack
 
-Next.js 16 (Turbopack) · React 19 · Tailwind CSS v4 · TypeScript · Supabase (Auth + DB) · Stripe · Anthropic Claude · Resend · Vitest
+Next.js 16 (Turbopack) · React 19 · Tailwind CSS v4 · TypeScript · Supabase (Auth + DB) · Stripe · Google Gemini · Resend · Vitest
 
 ## Avvio rapido
 
 ```bash
 npm install
-cp .env.local.example .env.local   # se assente: vedi PROJECT.md → Environment Variables
+cp .env .env.local                 # adatta i valori: vedi PROJECT.md → Environment Variables
 npm run dev
 ```
 
@@ -32,7 +33,7 @@ npm run dev
 | `npm run build` | build produzione (con typecheck) |
 | `npm run start` | avvio produzione |
 | `npm run lint` | ESLint |
-| `npm run test` | Vitest (117 test) |
+| `npm run test` | Vitest (149 test) |
 | `npm run typecheck` | `tsc --noEmit` |
 
 ## Environment Variables
@@ -62,15 +63,16 @@ STRIPE_PAYMENT_LINK_<VERTICAL>_<TIER>=https://buy.stripe.com/…
 # Admin
 ADMIN_API_TOKEN=…
 
-# Facoltativi: AGENTCLOUD_VERTICAL, AGENTCLOUD_FEATURE_FLAGS, tool Shopify/Calendar/Lead/WhatsApp/Ollama, TENANT_STORE_KEY
+# Facoltativi: AGENTCLOUD_VERTICAL, AGENTCLOUD_FEATURE_FLAGS, tool Shopify/Calendar/Lead/WhatsApp, SHOPIFY_API_KEY/SECRET/SCOPES, TENANT_STORE_KEY
 ```
 
 ## Database
 
-Ci sono **due schemi Supabase separati**, uno per fase:
+Gli schemi Supabase sono separati per fase:
 
 - **`supabase/schema-waitlist.sql`** — fase waitlist: registra solo l'utente (`profiles` + trigger auth), raccoglie le email (`waitlist`) e include `rate_limits` con le RPC per il rate limiting dell'endpoint waitlist.
 - **`supabase/schema.sql`** — piattaforma completa (quando è disponibile): aggiunge agenti, billing/usage (`subscriptions`, `user_agents`, `agent_runs`), notifiche azioni agenti (`agent_notifications`), `demo_requests`, `waitlist`, `rate_limits` e il bootstrap di `agents_registry`.
+- **`supabase/schema-shopify-oauth.sql`** — tabelle dell'OAuth multi-tenant Shopify (`shopify_connections`, token cifrati).
 
 Esegui lo schema scelto (Supabase SQL Editor o `supabase db push`) — **rieseguilo dopo ogni aggiornamento** (idempotente).
 

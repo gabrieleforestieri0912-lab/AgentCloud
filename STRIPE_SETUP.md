@@ -28,7 +28,8 @@ For each agent, create a Product and Price in Stripe:
    - **Pricing**: Recurring → Monthly → Set price in EUR
 3. Save the **Price ID** (starts with `price_`)
 
-Repeat for all agents (30 total).
+Ripeti per ogni agente del catalogo (per gli slug aggiornati vedi la tabella
+"Agent Slug Mapping" qui sotto).
 
 ### Overage Price (Billing Meter) — obbligatorio per l'overage billing
 
@@ -90,9 +91,9 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 NEXT_PUBLIC_URL=http://localhost:3000
 
 # Payment Links (one per agent)
-STRIPE_PAYMENT_LINK_EXECUTIVE_ASSISTANT=https://buy.stripe.com/...
-STRIPE_PAYMENT_LINK_PROJECT_MANAGER=https://buy.stripe.com/...
-# ... (repeat for all 30 agents)
+STRIPE_PAYMENT_LINK_SHOPIFY_AGENT=https://buy.stripe.com/...
+STRIPE_PAYMENT_LINK_EMAIL_MANAGER=https://buy.stripe.com/...
+# ... (one per catalog agent, slug → uppercase with underscores)
 ```
 
 ### Agent Slug Mapping
@@ -102,7 +103,12 @@ Use these slugs for environment variable names:
 | Agent                | Slug                   | Env Variable                               |
 | -------------------- | ---------------------- | ------------------------------------------ |
 | Executive Assistant  | `executive-assistant`  | `STRIPE_PAYMENT_LINK_EXECUTIVE_ASSISTANT`  |
+| Email Manager        | `email-manager`        | `STRIPE_PAYMENT_LINK_EMAIL_MANAGER`        |
 | Project Manager      | `project-manager`      | `STRIPE_PAYMENT_LINK_PROJECT_MANAGER`      |
+| Calendar Booking     | `calendar-booking`     | `STRIPE_PAYMENT_LINK_CALENDAR_BOOKING`     |
+| Lead Capture         | `lead-capture`         | `STRIPE_PAYMENT_LINK_LEAD_CAPTURE`         |
+| SEO Content          | `seo-agent`            | `STRIPE_PAYMENT_LINK_SEO_AGENT`            |
+| Personal Assistant   | `personal-assistant`   | `STRIPE_PAYMENT_LINK_PERSONAL_ASSISTANT`   |
 | Meeting Assistant    | `meeting-assistant`    | `STRIPE_PAYMENT_LINK_MEETING_ASSISTANT`    |
 | CRM Assistant        | `crm-assistant`        | `STRIPE_PAYMENT_LINK_CRM_ASSISTANT`        |
 | Customer Success     | `customer-success`     | `STRIPE_PAYMENT_LINK_CUSTOMER_SUCCESS`     |
@@ -136,6 +142,7 @@ Use these slugs for environment variable names:
    - **Endpoint URL**: `https://yourdomain.com/api/billing/webhook`
    - **Events to listen to**:
      - `checkout.session.completed`
+     - `invoice.paid`
      - `customer.subscription.updated`
      - `customer.subscription.deleted`
 4. Copy the **Webhook Secret** (starts with `whsec_`)
@@ -147,7 +154,8 @@ Use these slugs for environment variable names:
 ### Webhook Events Explained
 
 - **checkout.session.completed**: Triggered when a customer completes payment. Activates their subscription.
-- **customer.subscription.updated**: Triggered when subscription status changes (e.g., past due, paused).
+- **invoice.paid**: Aggiorna i periodi di fatturazione e salva `current_period_end`.
+- **customer.subscription.updated**: Triggered when subscription status changes (e.g., past due, paused, cancel_at_period_end).
 - **customer.subscription.deleted**: Triggered when subscription is canceled.
 
 ### Customer Billing Portal — per la cancellazione self-service
@@ -191,7 +199,7 @@ This creates:
 ### Test Payment Link Generation
 
 ```bash
-curl "http://localhost:3000/api/billing/payment-link?agentId=executive-assistant&userId=user_123&email=test@example.com"
+curl "http://localhost:3000/api/billing/payment-link?agentId=email-manager&userId=user_123&email=test@example.com"
 ```
 
 Should redirect to Stripe payment page with metadata.
@@ -222,7 +230,7 @@ stripe trigger checkout.session.completed
 
 AgentCloud supports feature flags to control which agents and tools are available. This is useful for:
 
-- Launching with only a few agents instead of the whole 30-agent catalog
+- Launching with only a few agents instead of the whole catalog
 - Reducing surface area for initial demos
 - Gradually rolling out features to specific customers
 - Testing new agents with specific customers before full launch
@@ -267,19 +275,19 @@ AGENTCLOUD_FEATURE_FLAGS={
 
 #### Shopify E-commerce (Default)
 
-- **Agents**: Shopify Agent, Lead Capture
-- **Tools**: Product search, order status, cart links, lead capture
+- **Agents**: Shopify Agent, Lead Capture, Support Agent, Copywriter, Email Manager
+- **Tools**: Gestione prodotti/discount/inventario, product search, order status, cart links, lead capture
 - **Use case**: E-commerce stores on Shopify
 
 #### Services
 
-- **Agents**: Calendar Booking, Lead Capture
+- **Agents**: Calendar Booking, Lead Capture, Support Agent, Copywriter
 - **Tools**: Calendar search, booking, lead capture
 - **Use case**: Restaurants, professionals, real estate
 
 #### Full Platform
 
-- **Agents**: All 8 runtime agents (SEO, Business Manager, Personal Assistant, Shopify, Calendar Booking, Lead Capture, Support Agent, Copywriter)
+- **Agents**: All 8 agents of the full preset (SEO, Business Manager, Personal Assistant, Shopify, Calendar Booking, Lead Capture, Support Agent, Copywriter)
 - **Tools**: All tools enabled
 - **Use case**: Existing customers, full launch
 
@@ -342,7 +350,7 @@ The API adds metadata to payment links via URL parameters:
 https://buy.stripe.com/...?
   client_reference_id=user_123&
   prefilled_email=customer@example.com&
-  metadata[agent_id]=executive-assistant&
+  metadata[agent_id]=email-manager&
   metadata[source]=agentcloud
 ```
 
@@ -385,12 +393,6 @@ Stripe passes this metadata to the webhook, allowing automatic activation.
 - Payment Links are free to create
 
 ## Support
-
-- Stripe Docs: https://stripe.com/docs/payment-links
-- Stripe Support: https://support.stripe.com
-
-- Stripe Docs: <https://stripe.com/docs/payment-links>
-- Stripe Support: <https://support.stripe.com>
 
 - Stripe Docs: <https://stripe.com/docs/payment-links>
 - Stripe Support: <https://support.stripe.com>

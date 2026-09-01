@@ -126,7 +126,8 @@ calendar_book_event to book] "Confirmed! Your table is booked for tomorrow at
 
 **Enabled Agents:**
 
-- All 8 runtime agents:
+- All 8 agents of the full preset (the other runtime agents, incl. Email
+  Manager, stay off unless added via `AGENTCLOUD_FEATURE_FLAGS`):
   - `seo-agent` - SEO Content Agent
   - `business-manager` - Business Manager Agent
   - `personal-assistant` - Personal AI Assistant
@@ -341,8 +342,8 @@ AGENTCLOUD_VERTICAL=shopify
 
 This gives you:
 
-- 2 focused agents
-- 5 tools total
+- 5 agents (Shopify, Lead Capture, Support, Copywriter, Email Manager)
+- 9 tools total
 - Predictable behavior
 - Easy demo flow
 
@@ -475,8 +476,8 @@ AGENTCLOUD_VERTICAL=shopify
 
 **Result:**
 
-- Only 2 agents enabled (Shopify + Lead Capture)
-- Only 5 tools enabled
+- Only 5 agents enabled (Shopify + Lead Capture + Support + Copywriter + Email Manager)
+- Only 9 tools enabled
 - Reduced surface area
 - More predictable demos
 
@@ -501,44 +502,6 @@ AGENTCLOUD_VERTICAL=services
 - Different tool set
 
 ### Adding a New Agent
-
-**Before:**
-
-```env
-AGENTCLOUD_VERTICAL=shopify
-```
-
-**After:**
-
-```env
-AGENTCLOUD_FEATURE_FLAGS={
-  "enabledAgents": ["shopify-agent", "lead-capture", "calendar-booking"],
-  "enabledTools": [
-    "shopify_search_products",
-    "shopify_get_order_status",
-    "shopify_build_cart_url",
-    "lead_capture_submit",
-    "lead_capture_notify_sales",
-    "calendar_search_availability",
-    "calendar_book_event"
-  ],
-  "agentToolOverrides": {},
-  "enableOptionalToolsByDefault": false
-}
-```
-
-**Result:**
-
-- 3 agents enabled
-- 7 tools enabled
-- No code changes needed
-
-## Support
-
-- Main docs: **STRIPE_SETUP.md**
-- Implementation: **PAYMENT_IMPLEMENTATION.md**
-- Agent registry: `src/lib/agents/registry.ts`
-- Feature flags: `src/lib/agents/feature-flags.ts`
 
 **Before:**
 

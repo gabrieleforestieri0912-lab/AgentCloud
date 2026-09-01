@@ -19,9 +19,9 @@ Implemented Stripe Payment Links system for AgentCloud billing as requested. Thi
 - **`src/app/api/billing/webhook/route.ts`**: Enhanced webhook to handle payment link metadata and auto-activate subscriptions
 - **`src/proxy.ts`**: Removed `/checkout` from public routes (no longer needed)
 
-### 3. Deleted Files
+### 3. Deleted Files (poi reintrodotti in altra forma)
 
-- **`src/app/api/billing/checkout/route.ts`**: Removed old checkout endpoint that redirected to demo page
+- **`src/app/api/billing/checkout/route.ts`**: Il vecchio checkout che reindirizzava alla demo è stato rimosso; il checkout è poi stato reintrodotto come **`src/app/api/checkout/route.ts`** — Stripe Checkout Session con **prezzo dinamico** derivato da `priceCents` del catalogo (nessun prodotto Stripe pre-creato necessario) e metadata per l'attivazione via webhook. Oggi coesistono: **payment links** (prezzi pre-creati, vendita manuale via email) e **checkout dinamico** (dalla card dell'agente).
 
 ## How It Works
 
@@ -49,7 +49,7 @@ Implemented Stripe Payment Links system for AgentCloud billing as requested. Thi
 
 **Parameters:**
 
-- `agentId` (required): Agent slug (e.g., `executive-assistant`)
+- `agentId` (required): Agent slug (e.g., `shopify-agent`, `email-manager`)
 - `userId` (optional): Supabase user ID (`auth.users` UUID) for logged-in users
 - `email` (optional): Customer email for guest checkout
 
@@ -58,7 +58,7 @@ Implemented Stripe Payment Links system for AgentCloud billing as requested. Thi
 **Example:**
 
 ```bash
-GET /api/billing/payment-link?agentId=executive-assistant&userId=user_123&email=customer@example.com
+GET /api/billing/payment-link?agentId=email-manager&userId=user_123&email=customer@example.com
 ```
 
 **Redirects to:**
@@ -67,7 +67,7 @@ GET /api/billing/payment-link?agentId=executive-assistant&userId=user_123&email=
 https://buy.stripe.com/...?
   client_reference_id=user_123&
   prefilled_email=customer@example.com&
-  metadata[agent_id]=executive-assistant&
+  metadata[agent_id]=email-manager&
   metadata[source]=agentcloud
 ```
 
@@ -75,7 +75,7 @@ https://buy.stripe.com/...?
 
 **POST** `/api/billing/webhook`
 
-Handles three Stripe events:
+Handles four Stripe events:
 
 1. **checkout.session.completed**: Activates subscription when payment is complete
    - Reads `agent_id` from metadata
@@ -83,10 +83,12 @@ Handles three Stripe events:
    - Creates/updates subscription in Supabase
    - Creates/updates user_agents entry
 
-2. **customer.subscription.updated**: Updates subscription status
-   - Handles status changes (past due, paused, etc.)
+2. **invoice.paid**: Aggiorna i periodi di fatturazione e salva `current_period_end`
 
-3. **customer.subscription.deleted**: Marks subscription as canceled
+3. **customer.subscription.updated**: Updates subscription status
+   - Handles status changes (past due, paused, cancel_at_period_end, etc.)
+
+4. **customer.subscription.deleted**: Marks subscription as canceled
    - Updates status to "canceled"
 
 ## Configuration
@@ -103,9 +105,9 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 NEXT_PUBLIC_URL=http://localhost:3000
 
 # Payment Links (one per agent)
-STRIPE_PAYMENT_LINK_EXECUTIVE_ASSISTANT=https://buy.stripe.com/...
-STRIPE_PAYMENT_LINK_PROJECT_MANAGER=https://buy.stripe.com/...
-# ... (30 total)
+STRIPE_PAYMENT_LINK_SHOPIFY_AGENT=https://buy.stripe.com/...
+STRIPE_PAYMENT_LINK_EMAIL_MANAGER=https://buy.stripe.com/...
+# ... (una per agente del catalogo, slug → underscore maiuscolo)
 ```
 
 ### Creating Payment Links in Stripe
@@ -122,25 +124,25 @@ See **STRIPE_SETUP.md** for detailed instructions.
 ### From Email Template
 
 ```html
-<p>Perfect! To activate your Executive Assistant subscription, click here:</p>
+<p>Perfect! To activate your Email Manager subscription, click here:</p>
 <a
-  href="https://yourdomain.com/api/billing/payment-link?agentId=executive-assistant&email=customer@example.com"
+  href="https://yourdomain.com/api/billing/payment-link?agentId=email-manager&email=customer@example.com"
 >
-  Activate Subscription - €79/month
+  Activate Subscription - €39/month
 </a>
 ```
 
 ### From Frontend (Logged-in User)
 
 ```typescript
-const paymentLink = `/api/billing/payment-link?agentId=executive-assistant&userId=${user.id}`;
+const paymentLink = `/api/billing/payment-link?agentId=email-manager&userId=${user.id}`;
 window.location.href = paymentLink;
 ```
 
 ### From Frontend (Guest Checkout)
 
 ```typescript
-const paymentLink = `/api/billing/payment-link?agentId=executive-assistant&email=customer@example.com`;
+const paymentLink = `/api/billing/payment-link?agentId=email-manager&email=customer@example.com`;
 window.location.href = paymentLink;
 ```
 
@@ -181,7 +183,7 @@ stripe trigger checkout.session.completed
 ### Test Payment Link Generation
 
 ```bash
-curl "http://localhost:3000/api/billing/payment-link?agentId=executive-assistant&email=test@example.com"
+curl "http://localhost:3000/api/billing/payment-link?agentId=email-manager&email=test@example.com"
 ```
 
 ### Test Full Flow
@@ -222,12 +224,6 @@ curl "http://localhost:3000/api/billing/payment-link?agentId=executive-assistant
 8. Deploy to production
 9. Switch to live mode in Stripe
 10. Create live payment links and update env vars
-
-## Support
-
-- Full setup guide: **STRIPE_SETUP.md**
-- Stripe Payment Links docs: https://stripe.com/docs/payment-links
-- Stripe Webhooks docs: https://stripe.com/docs/webhooks
 
 ## Support
 

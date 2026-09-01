@@ -24,6 +24,7 @@ DB (`supabase/schema.sql`).
 | **Support Agent**                       | **€49/mese**   | Customer Service    | Assistenza clienti 24/7           |
 | **Copywriter**                          | **€39/mese**   | Design & Content    | Copy che converte                 |
 | Executive Assistant                     | €39/mese       | Business & Ops       | Smistamento e pianificazione      |
+| Email Manager                           | €39/mese       | Business & Ops       | Smistamento posta, bozze e impegni|
 | Personal Assistant                      | €29/mese       | Business & Ops       | Organizzazione giornata           |
 | SEO Specialist / SEO Content            | €39/mese       | Marketing & Sales    | Contenuti e posizionamento        |
 | Social Media Manager                    | €39/mese       | Marketing & Sales    | Contenuti social                  |
@@ -36,9 +37,9 @@ blog, cold email, lead capture, prompt engineering), **€39/mese** per gli
 agenti di contenuto e operazioni standard, **€49/mese** per gli agenti ad
 alto valore (supporto 24/7, sviluppo, lead qualification, dati) e
 **€59/mese** per gli agenti strategici/cross-team (CRM, customer success,
-marketing strategist, DevOps, AI automation, business manager). I nuovi
-agenti disponibili — **Support Agent (€49/mese)** e **Copywriter
-(€39/mese)** — sono allineati a questa scala.
+marketing strategist, DevOps, AI automation, business manager). Gli agenti
+più recenti — **Support Agent (€49/mese)**, **Copywriter (€39/mese)** ed
+**Email Manager (€39/mese)** — sono allineati a questa scala.
 
 > **Nota:** questi prezzi sono quelli effettivamente addebitati via
 > `/api/checkout` (campo `priceCents` del catalogo). In passato il bootstrap
@@ -52,14 +53,14 @@ agenti disponibili — **Support Agent (€49/mese)** e **Copywriter
 | Plan        | Price    | Token/Month   | Features                                                                |
 | ----------- | -------- | ------------- | ----------------------------------------------------------------------- |
 | **Starter** | €29/mese | 300.000       | Ricerca prodotti, link carrello, stato ordini, lead capture             |
-| **Growth**  | €69/mese | 1.000.000     | Tutto del Starter + stato ordini avanzato, priorità supporto, analytics |
+| **Growth**  | €39/mese | 1.000.000     | Tutto del Starter + stato ordini avanzato, priorità supporto, analytics |
 
 ### Services Vertical (Calendar Booking)
 
 | Plan        | Price    | Token/Month   | Features                                                              |
 | ----------- | -------- | ------------- | --------------------------------------------------------------------- |
 | **Starter** | €29/mese | 300.000       | Prenotazione appuntamenti, controllo disponibilità, lead capture      |
-| **Growth**  | €69/mese | 1.000.000     | Tutto del Starter + reminder automatici, priorità supporto, analytics |
+| **Growth**  | €39/mese | 1.000.000     | Tutto del Starter + reminder automatici, priorità supporto, analytics |
 
 ## Add-ons
 
@@ -85,7 +86,7 @@ Shopify Starter: €29/mese
 Per i primi **10-15 clienti reali**, blocca questi prezzi a vita come incentivo di lancio:
 
 - **Starter**: €29/mese (invece di €39/mese futuro)
-- **Growth**: €69/mese (invece di €89/mese futuro)
+- **Growth**: €39/mese (invece di €49/mese futuro)
 - **Web Search Add-on**: €15/mese (invece di €19/mese futuro)
 
 ### Come gestire il founder pricing
@@ -138,14 +139,14 @@ Totale costo: €55
 Margine: -€26 (negativo a basso volume)
 ```
 
-**Piano Growth (€69/mese, 1.000 conversazioni):**
+**Piano Growth (€39/mese, 1.000 conversazioni):**
 
 ```
-Ricavo: €69
+Ricavo: €39
 Costo variabile: 1000 × €0.10 = €100
 Costo fisso: €25
 Totale costo: €125
-Margine: -€56 (negativo a medio volume)
+Margine: -€86 (negativo a medio volume)
 ```
 
 **Nota:** I costi stimati sono conservativi. Nella realtà:
@@ -157,8 +158,8 @@ Margine: -€56 (negativo a medio volume)
 **Con costo reale €0.05/conversazione:**
 
 ```
-Starter: €29 - (300 × €0.05) - €25 = €9 margine/mese
-Growth: €69 - (1000 × €0.05) - €25 = €19 margine/mese
+Starter: €29 - (300 × €0.05) - €25 = -€11 margine/mese
+Growth: €39 - (1000 × €0.05) - €25 = -€36 margine/mese
 ```
 
 ## Break-even Analysis
@@ -278,12 +279,12 @@ Crea due prodotti per verticale:
 **Shopify:**
 
 - Product: "AgentCloud Shopify - Starter" (€29/mese)
-- Product: "AgentCloud Shopify - Growth" (€69/mese)
+- Product: "AgentCloud Shopify - Growth" (€39/mese)
 
 **Services:**
 
 - Product: "AgentCloud Services - Starter" (€29/mese)
-- Product: "AgentCloud Services - Growth" (€69/mese)
+- Product: "AgentCloud Services - Growth" (€39/mese)
 
 ### Prices
 
@@ -321,9 +322,9 @@ metadata[tokens]=300000
 ```env
 # Pricing (in cents)
 PRICING_SHOPIFY_STARTER_PRICE=2900
-PRICING_SHOPIFY_GROWTH_PRICE=6900
+PRICING_SHOPIFY_GROWTH_PRICE=3900
 PRICING_SERVICES_STARTER_PRICE=2900
-PRICING_SERVICES_GROWTH_PRICE=6900
+PRICING_SERVICES_GROWTH_PRICE=3900
 
 # Add-ons
 PRICING_WEB_SEARCH_ADDON_PRICE=1500
@@ -375,25 +376,6 @@ Crea alert se:
 ### 3. Aggiusta i limiti se necessario
 
 Se i clienti Starter usano sistematicamente >250 conversazioni:
-
-- Considera di alzare il limite a 400
-- Oppure alza il prezzo a €39/mese
-
-### 4. Testa prima di lanciare
-
-Per i primi 3 mesi:
-
-- Monitora costi reali
-- Verifica margini
-- Raccogli feedback sui limiti
-- Aggiusta prima di aprire le vendite
-
-## Support
-
-- Implementation: `src/lib/billing/pricing.ts`
-- Usage tracking: `src/lib/billing/usage-tracking.ts`
-- Stripe setup: `STRIPE_SETUP.md`
-aticamente >250 conversazioni:
 
 - Considera di alzare il limite a 400
 - Oppure alza il prezzo a €39/mese
