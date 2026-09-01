@@ -27,8 +27,8 @@ export type FeatureFlags = {
 
 /**
  * Default configuration for Shopify e-commerce vertical launch.
- * 5 agents enabled: Shopify Agent + Lead Capture + Support Agent + Copywriter
- * + Email Manager
+ * 5 agents enabled: Cosmo (Shopify) + Falco (Lead Capture) + Zoe (Support)
+ * + Dante (Copywriter) + Cleo (Email Manager)
  */
 export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
   enabledAgents: [
@@ -91,9 +91,10 @@ export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
 };
 
 /**
- * Full platform configuration (all 10 agents enabled: SEO, Business Manager,
- * Personal Assistant, Email Manager, Shopify, Calendar Booking, Lead Capture,
- * Support Agent, Copywriter, Finance Manager)
+ * Full platform configuration (all 10 agents enabled: Nova (SEO), Otto
+ * (Business Manager), Aria (Personal Assistant), Cleo (Email Manager), Cosmo
+ * (Shopify), Luna (Calendar Booking), Falco (Lead Capture), Zoe (Support),
+ * Dante (Copywriter), Midas (Finance Manager))
  * Use this for existing customers or when you're ready to launch everything
  */
 export const FULL_PLATFORM_CONFIG: FeatureFlags = {

@@ -296,7 +296,7 @@ const it = {
       "Un marketplace di agenti AI pronti al lancio che pianificano i compiti, eseguono i workflow e si collegano agli strumenti che il tuo team usa già.",
     quickSolutions: [
       {
-        title: "Agente Shopify",
+        title: "Cosmo — Agente Shopify",
         description: "Cerca prodotti e crea link al carrello",
       },
       {
@@ -389,8 +389,8 @@ const it = {
       "Verificato lo stato di un ordine in meno di 30 secondi.",
     ],
     agents: [
-      ["Agente Shopify", "Attivo", "1.284 esecuzioni", "98,7%"],
-      ["Agente Lead Capture", "Attivo", "438 esecuzioni", "96,1%"],
+      ["Cosmo — Agente Shopify", "Attivo", "1.284 esecuzioni", "98,7%"],
+      ["Falco — Agente Lead Capture", "Attivo", "438 esecuzioni", "96,1%"],
     ],
   },
 
@@ -1293,7 +1293,7 @@ export const en: Dictionary = {
       "A marketplace of ready-to-launch AI agents that plan tasks, execute workflows, and connect to the tools your team already uses.",
     quickSolutions: [
       {
-        title: "Shopify Agent",
+        title: "Cosmo — Shopify Agent",
         description: "Search products and build cart links",
       },
       {
@@ -1386,8 +1386,8 @@ export const en: Dictionary = {
       "Checked an order status in under 30 seconds.",
     ],
     agents: [
-      ["Shopify Agent", "Active", "1,284 runs", "98.7%"],
-      ["Lead Capture Agent", "Active", "438 runs", "96.1%"],
+      ["Cosmo — Shopify Agent", "Active", "1,284 runs", "98.7%"],
+      ["Falco — Lead Capture", "Active", "438 runs", "96.1%"],
     ],
   },
 

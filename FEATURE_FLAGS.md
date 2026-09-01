@@ -22,11 +22,11 @@ AGENTCLOUD_VERTICAL=shopify
 
 This enables:
 
-- **Shopify Agent** - Product search, order status, cart links
-- **Lead Capture Agent** - Capture and notify sales
-- **Support Agent** - 24/7 ticket answers, KB-driven replies, smart escalation
-- **Copywriter** - Conversion copy for landing pages, ads, and email
-- **Email Manager** - Inbox triage, reply drafting, and commitment tracking
+- **Cosmo (Shopify Agent)** - Product search, order status, cart links
+- **Falco (Lead Capture Agent)** - Capture and notify sales
+- **Zoe (Support Agent)** - 24/7 ticket answers, KB-driven replies, smart escalation
+- **Dante (Copywriter)** - Conversion copy for landing pages, ads, and email
+- **Cleo (Email Manager)** - Inbox triage, reply drafting, and commitment tracking
 
 ### Change Vertical
 
@@ -53,11 +53,11 @@ AGENTCLOUD_VERTICAL=full
 
 **Enabled Agents:**
 
-- `shopify-agent` - Shopify Commerce Agent
-- `lead-capture` - Lead Capture Agent
-- `support-agent` - Support Agent (24/7 support)
-- `copywriter` - Copywriter (conversion copy)
-- `email-manager` - Email Manager (inbox triage and commitment tracking)
+- `shopify-agent` - Cosmo (Shopify Agent)
+- `lead-capture` - Falco (Lead Capture)
+- `support-agent` - Zoe (Support Agent, 24/7 support)
+- `copywriter` - Dante (Copywriter, conversion copy)
+- `email-manager` - Cleo (Email Manager, inbox triage and commitment tracking)
 
 **Enabled Tools:**
 
@@ -90,10 +90,10 @@ B: €149 (link) - Product C: €79 (link)"
 
 **Enabled Agents:**
 
-- `calendar-booking` - Calendar Booking Agent
-- `lead-capture` - Lead Capture Agent
-- `support-agent` - Support Agent (24/7 support)
-- `copywriter` - Copywriter (conversion copy)
+- `calendar-booking` - Luna (Calendar Booking)
+- `lead-capture` - Falco (Lead Capture)
+- `support-agent` - Zoe (Support Agent, 24/7 support)
+- `copywriter` - Dante (Copywriter, conversion copy)
 
 **Enabled Tools:**
 
@@ -127,16 +127,16 @@ calendar_book_event to book] "Confirmed! Your table is booked for tomorrow at
 **Enabled Agents:**
 
 - All 10 runtime agents of the full preset:
-  - `seo-agent` - SEO Content Agent
-  - `business-manager` - Business Manager Agent
-  - `personal-assistant` - Personal AI Assistant
-  - `email-manager` - Email Manager
-  - `shopify-agent` - Shopify Commerce Agent
-  - `calendar-booking` - Calendar Booking Agent
-  - `lead-capture` - Lead Capture Agent
-  - `support-agent` - Support Agent (24/7 support)
-  - `copywriter` - Copywriter (conversion copy)
-  - `finance-manager` - Finance Manager Agent
+  - `seo-agent` - Nova (SEO Content)
+  - `business-manager` - Otto (Business Manager)
+  - `personal-assistant` - Aria (Personal Assistant)
+  - `email-manager` - Cleo (Email Manager)
+  - `shopify-agent` - Cosmo (Shopify Agent)
+  - `calendar-booking` - Luna (Calendar Booking)
+  - `lead-capture` - Falco (Lead Capture)
+  - `support-agent` - Zoe (Support Agent)
+  - `copywriter` - Dante (Copywriter)
+  - `finance-manager` - Midas (Finance Manager)
 
 **Enabled Tools:**
 
@@ -205,7 +205,7 @@ When an agent is invoked:
 4. Filter by `enabledTools` if specified
 5. Return final list of enabled tools
 
-### Example: Shopify Agent
+### Example: Cosmo — Shopify Agent
 
 **Configuration:**
 
@@ -311,13 +311,13 @@ const agents = getEnabledAgents();
 // [
 //   {
 //     id: "shopify-agent",
-//     name: "Shopify Commerce Agent",
+//     name: "Cosmo — Shopify Agent",
 //     enabledTools: ["shopify_search_products", ...],
 //     ...
 //   },
 //   {
 //     id: "lead-capture",
-//     name: "Lead Capture Agent",
+//     name: "Falco — Lead Capture",
 //     enabledTools: ["lead_capture_submit", ...],
 //     ...
 //   }
@@ -343,7 +343,7 @@ AGENTCLOUD_VERTICAL=shopify
 
 This gives you:
 
-- 5 agents (Shopify, Lead Capture, Support, Copywriter, Email Manager)
+- 5 agents (Cosmo, Falco, Zoe, Dante, Cleo)
 - 9 tools total
 - Predictable behavior
 - Easy demo flow
@@ -477,7 +477,7 @@ AGENTCLOUD_VERTICAL=shopify
 
 **Result:**
 
-- Only 5 agents enabled (Shopify + Lead Capture + Support + Copywriter + Email Manager)
+- Only 5 agents enabled (Cosmo + Falco + Zoe + Dante + Cleo)
 - Only 9 tools enabled
 - Reduced surface area
 - More predictable demos

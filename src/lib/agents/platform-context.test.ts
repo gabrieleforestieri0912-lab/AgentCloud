@@ -46,7 +46,7 @@ describe("buildPlatformSystemPrompt", () => {
     expect(itPrompt).toContain("10 agenti AI");
     expect(itPrompt).toContain("Disponibili ora (5)");
     expect(itPrompt).toContain("In arrivo (5)");
-    expect(itPrompt).toContain("**Shopify Commerce Agent** (`shopify-agent`)");
+    expect(itPrompt).toContain("**Cosmo — Shopify Agent** (`shopify-agent`)");
     expect(itPrompt).toContain("`seo-agent`");
 
     const enPrompt = await buildPlatformSystemPrompt("en");

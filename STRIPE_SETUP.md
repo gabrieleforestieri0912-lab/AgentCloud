@@ -23,7 +23,7 @@ For each agent, create a Product and Price in Stripe:
 
 1. Go to **Products → Add Product**
 2. Product details:
-   - **Name**: Agent name (e.g., "Shopify Agent")
+   - **Name**: Agent name (e.g., "Cosmo — Shopify Agent")
    - **Description**: Agent description
    - **Pricing**: Recurring → Monthly → Set price in EUR
 3. Save the **Price ID** (starts with `price_`)
@@ -102,16 +102,16 @@ Use these slugs for environment variable names:
 
 | Agent              | Slug                    | Env Variable                              |
 | ------------------ | ----------------------- | ----------------------------------------- |
-| Email Manager      | `email-manager`         | `STRIPE_PAYMENT_LINK_EMAIL_MANAGER`       |
-| Business Manager   | `business-manager`      | `STRIPE_PAYMENT_LINK_BUSINESS_MANAGER`    |
-| Personal Assistant | `personal-assistant`    | `STRIPE_PAYMENT_LINK_PERSONAL_ASSISTANT`  |
-| Calendar Booking   | `calendar-booking`      | `STRIPE_PAYMENT_LINK_CALENDAR_BOOKING`    |
-| SEO Content        | `seo-agent`             | `STRIPE_PAYMENT_LINK_SEO_AGENT`           |
-| Lead Capture       | `lead-capture`          | `STRIPE_PAYMENT_LINK_LEAD_CAPTURE`        |
-| Support Agent      | `support-agent`         | `STRIPE_PAYMENT_LINK_SUPPORT_AGENT`       |
-| Copywriter         | `copywriter`            | `STRIPE_PAYMENT_LINK_COPYWRITER`          |
-| Finance Manager    | `finance-manager`       | `STRIPE_PAYMENT_LINK_FINANCE_MANAGER`     |
-| Shopify Agent      | `shopify-agent`         | `STRIPE_PAYMENT_LINK_SHOPIFY_AGENT`       |
+| Cleo — Email Manager      | `email-manager`         | `STRIPE_PAYMENT_LINK_EMAIL_MANAGER`       |
+| Otto — Business Manager   | `business-manager`      | `STRIPE_PAYMENT_LINK_BUSINESS_MANAGER`    |
+| Aria — Personal Assistant | `personal-assistant`    | `STRIPE_PAYMENT_LINK_PERSONAL_ASSISTANT`  |
+| Luna — Calendar Booking   | `calendar-booking`      | `STRIPE_PAYMENT_LINK_CALENDAR_BOOKING`    |
+| Nova — SEO Content        | `seo-agent`             | `STRIPE_PAYMENT_LINK_SEO_AGENT`           |
+| Falco — Lead Capture      | `lead-capture`          | `STRIPE_PAYMENT_LINK_LEAD_CAPTURE`        |
+| Zoe — Support Agent       | `support-agent`         | `STRIPE_PAYMENT_LINK_SUPPORT_AGENT`       |
+| Dante — Copywriter        | `copywriter`            | `STRIPE_PAYMENT_LINK_COPYWRITER`          |
+| Midas — Finance Manager   | `finance-manager`       | `STRIPE_PAYMENT_LINK_FINANCE_MANAGER`     |
+| Cosmo — Shopify Agent     | `shopify-agent`         | `STRIPE_PAYMENT_LINK_SHOPIFY_AGENT`       |
 
 ## Step 5: Configure Stripe Webhook
 
@@ -254,19 +254,19 @@ AGENTCLOUD_FEATURE_FLAGS={
 
 #### Shopify E-commerce (Default)
 
-- **Agents**: Shopify Agent, Lead Capture, Support Agent, Copywriter, Email Manager
+- **Agents**: Cosmo (Shopify), Falco (Lead Capture), Zoe (Support), Dante (Copywriter), Cleo (Email Manager)
 - **Tools**: Gestione prodotti/discount/inventario, product search, order status, cart links, lead capture
 - **Use case**: E-commerce stores on Shopify
 
 #### Services
 
-- **Agents**: Calendar Booking, Lead Capture, Support Agent, Copywriter
+- **Agents**: Luna (Calendar Booking), Falco (Lead Capture), Zoe (Support), Dante (Copywriter)
 - **Tools**: Calendar search, booking, lead capture
 - **Use case**: Restaurants, professionals, real estate
 
 #### Full Platform
 
-- **Agents**: All 10 agents of the full preset (SEO, Business Manager, Personal Assistant, Email Manager, Shopify, Calendar Booking, Lead Capture, Support Agent, Copywriter, Finance Manager)
+- **Agents**: All 10 agents of the full preset (Nova, Otto, Aria, Cleo, Cosmo, Luna, Falco, Zoe, Dante, Midas)
 - **Tools**: All tools enabled
 - **Use case**: Existing customers, full launch
 

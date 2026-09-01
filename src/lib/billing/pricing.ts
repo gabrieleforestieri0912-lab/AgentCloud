@@ -39,7 +39,7 @@ export type VerticalPricing = {
 
 /**
  * Shopify E-commerce Pricing
- * - Shopify Agent + Lead Capture
+ * - Cosmo (Shopify Agent) + Falco (Lead Capture)
  */
 export const SHOPIFY_PRICING: VerticalPricing = {
   vertical: "shopify",
