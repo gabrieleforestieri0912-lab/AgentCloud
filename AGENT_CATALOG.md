@@ -201,6 +201,26 @@
 
 ---
 
+### 10. Finance Manager Agent
+
+**Prezzo:** €49/mese  
+**Categoria:** E-commerce & Finance  
+**Descrizione:** Concilia entrate e uscite, prepara fatture e solleciti di pagamento e tiene il cash flow sotto controllo.
+
+**Funzionalità principali:**
+
+- Conciliazione entrate/uscite con segnalazione delle discrepanze
+- Fatture e solleciti di pagamento da approvare (mai inviati senza consenso)
+- Briefing cash flow in linguaggio semplice: entrate, uscite, scadenze, priorità
+- Nessun numero inventato: stime e dati mancanti sempre segnalati
+
+**Tools default:** read_file, write_file  
+**Tools opzionali:** web_search, scrape_page
+
+**Ideale per:** PMI e founder che vogliono una panoramica finanziaria affidabile senza caos di fogli di calcolo
+
+---
+
 ## 📊 Confronto Piani
 
 | Piano                 | Prezzo    | Conversazioni/Mese | Agenti Inclusi | Tools               |

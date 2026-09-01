@@ -322,6 +322,43 @@ const SEEDS: AgentSeed[] = [
     accent: "bg-pink-500",
   },
   {
+    slug: "finance-manager",
+    name: "Finance Manager",
+    shortName: "Finance Manager",
+    category: "E-commerce & Finance",
+    industry: "SMEs and founders",
+    icon: "file-text-dollar",
+    price: "€49/mo",
+    priceCents: 4900,
+    stripePriceId: "price_finance_manager",
+    setupTime: "1 day",
+    rating: "4.8",
+    installs: "380",
+    badge: "New",
+    description:
+      "Keep invoices, expenses, and cash flow under control — without the spreadsheet chaos.",
+    longDescription:
+      "The Finance Manager agent keeps your money numbers tidy and actionable. It reconciles income and expenses, drafts clear invoices and payment-reminder messages for your approval, and turns scattered records into a plain-language cash flow briefing: what came in, what went out, what is due, and what to prioritize. It flags anomalies instead of hiding them, works with Stripe, QuickBooks, Google Sheets, and Slack, and never invents figures — so founders and small teams get a reliable financial overview in minutes instead of spreadsheet chaos.",
+    tasks: [
+      "Invoice and payments",
+      "Expense tracking",
+      "Cash flow reports",
+      "Payment reminders",
+    ],
+    integrations: ["Stripe", "QuickBooks", "Google Sheets", "Slack"],
+    workflow: [
+      "Reconcile records",
+      "Track expenses",
+      "Draft invoices",
+      "Report cash flow",
+    ],
+    previewPrompt:
+      "Summarize this month's cash flow and flag the unpaid invoices.",
+    previewResult:
+      "I reconciled 42 transactions, flagged 6 unpaid invoices, and drafted a cash flow summary with next week's 3 priorities.",
+    accent: "bg-brand-600",
+  },
+  {
     slug: "shopify-agent",
     name: "Shopify Agent",
     shortName: "Shopify Agent",

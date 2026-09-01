@@ -248,6 +248,35 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     example:
       "Le mie varianti hanno migliorato la conversione del 19% nel test.",
   },
+  "finance-manager": {
+    name: "Finance Manager",
+    shortName: "Finance Manager",
+    category: "E-commerce & Finance",
+    badge: "Novità",
+    description:
+      "Tieni sotto controllo fatture, spese e cash flow — senza il caos dei fogli di calcolo.",
+    longDescription:
+      "L'agente Finance Manager tiene in ordine i numeri della tua azienda. Concilia entrate e uscite, prepara fatture chiare e messaggi di sollecito di pagamento da approvare, e trasforma i dati sparsi in un briefing del cash flow in linguaggio semplice: cosa è entrato, cosa è uscito, cosa è in scadenza e cosa prioritizzare. Segnala le anomalie invece di nasconderle, si collega a Stripe, QuickBooks, Google Sheets e Slack, e non inventa mai cifre — così founder e piccoli team hanno una panoramica finanziaria affidabile in pochi minuti invece del caos dei fogli di calcolo.",
+    industry: "PMI e founder",
+    tasks: [
+      "Fatture e pagamenti",
+      "Tracciamento spese",
+      "Report cash flow",
+      "Solleciti di pagamento",
+    ],
+    workflow: [
+      "Concilia i dati",
+      "Traccia le spese",
+      "Prepara le fatture",
+      "Riporta il cash flow",
+    ],
+    previewPrompt:
+      "Riepiloga il cash flow di questo mese e segnala le fatture non pagate.",
+    previewResult:
+      "Ho riconciliato 42 transazioni, segnalato 6 fatture non pagate e preparato un riepilogo del cash flow con le 3 priorità della prossima settimana.",
+    example:
+      "Ogni settimana riconcilio oltre 100 transazioni e preparo il report del cash flow prima delle 9:00.",
+  },
   "shopify-agent": {
     name: "Agente Shopify",
     shortName: "Agente Shopify",

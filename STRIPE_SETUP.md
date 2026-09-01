@@ -110,6 +110,7 @@ Use these slugs for environment variable names:
 | Lead Capture       | `lead-capture`          | `STRIPE_PAYMENT_LINK_LEAD_CAPTURE`        |
 | Support Agent      | `support-agent`         | `STRIPE_PAYMENT_LINK_SUPPORT_AGENT`       |
 | Copywriter         | `copywriter`            | `STRIPE_PAYMENT_LINK_COPYWRITER`          |
+| Finance Manager    | `finance-manager`       | `STRIPE_PAYMENT_LINK_FINANCE_MANAGER`     |
 | Shopify Agent      | `shopify-agent`         | `STRIPE_PAYMENT_LINK_SHOPIFY_AGENT`       |
 
 ## Step 5: Configure Stripe Webhook
@@ -265,7 +266,7 @@ AGENTCLOUD_FEATURE_FLAGS={
 
 #### Full Platform
 
-- **Agents**: All 9 agents of the full preset (SEO, Business Manager, Personal Assistant, Email Manager, Shopify, Calendar Booking, Lead Capture, Support Agent, Copywriter)
+- **Agents**: All 10 agents of the full preset (SEO, Business Manager, Personal Assistant, Email Manager, Shopify, Calendar Booking, Lead Capture, Support Agent, Copywriter, Finance Manager)
 - **Tools**: All tools enabled
 - **Use case**: Existing customers, full launch
 

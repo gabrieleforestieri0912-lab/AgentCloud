@@ -43,16 +43,16 @@ describe("buildPlatformSystemPrompt", () => {
     });
 
     const itPrompt = await buildPlatformSystemPrompt("it");
-    expect(itPrompt).toContain("9 agenti AI");
+    expect(itPrompt).toContain("10 agenti AI");
     expect(itPrompt).toContain("Disponibili ora (5)");
-    expect(itPrompt).toContain("In arrivo (4)");
+    expect(itPrompt).toContain("In arrivo (5)");
     expect(itPrompt).toContain("**Shopify Commerce Agent** (`shopify-agent`)");
     expect(itPrompt).toContain("`seo-agent`");
 
     const enPrompt = await buildPlatformSystemPrompt("en");
-    expect(enPrompt).toContain("9 AI agents");
+    expect(enPrompt).toContain("10 AI agents");
     expect(enPrompt).toContain("Available now (5)");
-    expect(enPrompt).toContain("Coming soon (4)");
+    expect(enPrompt).toContain("Coming soon (5)");
   });
 
   it("uses the database rows when they are available", async () => {
@@ -93,7 +93,7 @@ describe("buildPlatformSystemPrompt", () => {
 
     process.env.AGENTCLOUD_VERTICAL = "full";
     const prompt = await buildPlatformSystemPrompt("en");
-    expect(prompt).toContain("Available now (9)");
+    expect(prompt).toContain("Available now (10)");
     expect(prompt).toContain("Coming soon (0)");
   });
 });

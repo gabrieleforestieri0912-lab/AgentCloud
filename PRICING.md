@@ -28,12 +28,13 @@ DB (`supabase/schema.sql`).
 | SEO Content Agent                       | €39/mese       | Marketing & Sales    | Contenuti e posizionamento        |
 | Calendar Booking Agent                  | €39/mese       | Business & Ops       | Prenotazioni e slot               |
 | Business Manager                        | €59/mese       | Business & Ops       | Report, pianificazione e decisioni|
+| Finance Manager                         | €49/mese       | E-commerce & Finance | Fatture, spese e cash flow        |
 
 La tariffa base è **€29/mese** (Lead Capture, Personal Assistant),
 **€39/mese** per gli agenti di contenuto e operazioni (Shopify, SEO Content,
-Email Manager, Calendar Booking, Copywriter), **€49/mese** per l'agente ad
-alto valore (**Support Agent** 24/7) e **€59/mese** per l'agente strategico
-(**Business Manager**).
+Email Manager, Calendar Booking, Copywriter), **€49/mese** per gli agenti ad
+alto valore (**Support Agent** 24/7, **Finance Manager**) e **€59/mese** per
+l'agente strategico (**Business Manager**).
 
 > **Nota:** questi prezzi sono quelli effettivamente addebitati via
 > `/api/checkout` (campo `priceCents` del catalogo). In passato il bootstrap

@@ -126,7 +126,7 @@ calendar_book_event to book] "Confirmed! Your table is booked for tomorrow at
 
 **Enabled Agents:**
 
-- All 9 runtime agents of the full preset:
+- All 10 runtime agents of the full preset:
   - `seo-agent` - SEO Content Agent
   - `business-manager` - Business Manager Agent
   - `personal-assistant` - Personal AI Assistant
@@ -136,6 +136,7 @@ calendar_book_event to book] "Confirmed! Your table is booked for tomorrow at
   - `lead-capture` - Lead Capture Agent
   - `support-agent` - Support Agent (24/7 support)
   - `copywriter` - Copywriter (conversion copy)
+  - `finance-manager` - Finance Manager Agent
 
 **Enabled Tools:**
 

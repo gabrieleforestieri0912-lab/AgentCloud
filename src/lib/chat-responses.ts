@@ -9,16 +9,16 @@
  * The platform defaults to Italian; callers pass their active locale
  * to resolve the right language.
  *
- * The texts mirror the REAL platform catalog (the 9 runtime agents in
+ * The texts mirror the REAL platform catalog (the 10 runtime agents in
  * `src/lib/agents/registry.ts`): 5 available in the default vertical
  * (Shopify Agent, Lead Capture, Email Manager, Support Agent, Copywriter)
- * and 4 coming soon (SEO Content, Business Manager, Personal Assistant,
- * Calendar Booking).
+ * and 5 coming soon (SEO Content, Business Manager, Personal Assistant,
+ * Calendar Booking, Finance Manager).
  */
 
 export const CHAT_RESPONSES: Record<string, string> = {
   greeting:
-    "Hi! I'm your AgentCloud AI. Today the platform offers **9 AI agents** — 5 available now (**Shopify Agent**, **Lead Capture**, **Email Manager**, **Support Agent**, **Copywriter**) and 4 coming soon (**SEO Content**, **Business Manager**, **Personal Assistant**, **Calendar Booking**). What would you like to set up?",
+    "Hi! I'm your AgentCloud AI. Today the platform offers **10 AI agents** — 5 available now (**Shopify Agent**, **Lead Capture**, **Email Manager**, **Support Agent**, **Copywriter**) and 5 coming soon (**SEO Content**, **Business Manager**, **Personal Assistant**, **Calendar Booking**, **Finance Manager**). What would you like to set up?",
 
   email:
     "For your emails and contacts, the **Email Manager** agent triages your inbox, drafts on-brand replies for your approval, and tracks every commitment and deadline. Want to activate it?",
@@ -45,12 +45,12 @@ export const CHAT_RESPONSES: Record<string, string> = {
     "The **Calendar Booking** agent (coming soon) will find availability and book meetings automatically. For now you can set up **Lead Capture** or the **Shopify Agent**. Want to start?",
 
   default:
-    "Good question! AgentCloud currently offers **9 AI agents**:\n\n• **Available now** — Shopify Agent, Lead Capture, Email Manager, Support Agent, Copywriter\n• **Coming soon** — SEO Content, Business Manager, Personal Assistant, Calendar Booking\n\nWhat area would you like to explore?",
+    "Good question! AgentCloud currently offers **10 AI agents**:\n\n• **Available now** — Shopify Agent, Lead Capture, Email Manager, Support Agent, Copywriter\n• **Coming soon** — SEO Content, Business Manager, Personal Assistant, Calendar Booking, Finance Manager\n\nWhat area would you like to explore?",
 };
 
 export const CHAT_RESPONSES_IT: Record<string, string> = {
   greeting:
-    "Ciao! Sono l'assistente AI di AgentCloud. Oggi la piattaforma offre **9 agenti AI** — 5 disponibili ora (**Shopify Agent**, **Lead Capture**, **Email Manager**, **Support Agent**, **Copywriter**) e 4 in arrivo (**SEO Content**, **Business Manager**, **Personal Assistant**, **Calendar Booking**). Cosa vuoi configurare?",
+    "Ciao! Sono l'assistente AI di AgentCloud. Oggi la piattaforma offre **10 agenti AI** — 5 disponibili ora (**Shopify Agent**, **Lead Capture**, **Email Manager**, **Support Agent**, **Copywriter**) e 5 in arrivo (**SEO Content**, **Business Manager**, **Personal Assistant**, **Calendar Booking**, **Finance Manager**). Cosa vuoi configurare?",
 
   email:
     "Per le tue email e i contatti, l'agente **Email Manager** smista la casella, scrive bozze di risposta da approvare e traccia ogni impegno e scadenza. Vuoi attivarlo?",
@@ -77,7 +77,7 @@ export const CHAT_RESPONSES_IT: Record<string, string> = {
     "L'agente **Calendar Booking** (in arrivo) troverà la disponibilità e prenoterà le riunioni in automatico. Per ora puoi configurare **Lead Capture** o l'**Shopify Agent**. Vuoi iniziare?",
 
   default:
-    "Ottima domanda! AgentCloud offre oggi **9 agenti AI**:\n\n• **Disponibili ora** — Shopify Agent, Lead Capture, Email Manager, Support Agent, Copywriter\n• **In arrivo** — SEO Content, Business Manager, Personal Assistant, Calendar Booking\n\nQuale area vuoi esplorare?",
+    "Ottima domanda! AgentCloud offre oggi **10 agenti AI**:\n\n• **Disponibili ora** — Shopify Agent, Lead Capture, Email Manager, Support Agent, Copywriter\n• **In arrivo** — SEO Content, Business Manager, Personal Assistant, Calendar Booking, Finance Manager\n\nQuale area vuoi esplorare?",
 };
 
 const PATTERNS: Array<[RegExp, string]> = [

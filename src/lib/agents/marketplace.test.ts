@@ -67,10 +67,11 @@ describe("flag-driven marketplace", () => {
       "lead-capture",
       "support-agent",
       "copywriter",
+      "finance-manager",
     ]) {
       expect(mod.isAvailable(slug)).toBe(true);
     }
-    expect(mod.AVAILABLE_AGENTS.length).toBe(9);
+    expect(mod.AVAILABLE_AGENTS.length).toBe(10);
   });
 
   it("respects a custom JSON feature-flag override", async () => {
