@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { getLocalChatResponse } from "@/lib/chat-responses";
 import { useLanguage } from "./LanguageProvider";
 import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
@@ -11,7 +10,6 @@ type HeroMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  displayedContent?: string;
 };
 
 function heroId() {
@@ -20,23 +18,15 @@ function heroId() {
 
 // ─── Component ────────────────────────────────────────────────────────────
 export default function HeroSection() {
-  const { dict, locale } = useLanguage();
+  const { dict } = useLanguage();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<HeroMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
-  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasMessages = messages.length > 0 || isTyping;
-
-  // Clean up any running typewriter when the component unmounts.
-  useEffect(() => {
-    return () => {
-      if (typewriterRef.current) clearInterval(typewriterRef.current);
-    };
-  }, []);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -57,28 +47,6 @@ export default function HeroSection() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
-
-  function startTypewriter(aiMsgId: string, text: string) {
-    if (typewriterRef.current) clearInterval(typewriterRef.current);
-    let currentIndex = 0;
-    typewriterRef.current = setInterval(() => {
-      currentIndex += 2; // Speed of typewriter
-      if (currentIndex >= text.length) {
-        currentIndex = text.length;
-        if (typewriterRef.current) {
-          clearInterval(typewriterRef.current);
-          typewriterRef.current = null;
-        }
-      }
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === aiMsgId
-            ? { ...msg, displayedContent: text.substring(0, currentIndex) }
-            : msg,
-        ),
-      );
-    }, 20);
-  }
 
   async function handleSend() {
     const text = input.trim();
@@ -156,17 +124,14 @@ export default function HeroSection() {
       if (!aiText.trim()) throw new Error("Empty response");
       setIsTyping(false);
     } catch {
-      // Backend unavailable: use the deterministic local response engine.
-      const localText = getLocalChatResponse(text, locale);
-      const aiMsg: HeroMessage = {
-        id: aiMsgId,
-        role: "assistant",
-        content: localText,
-        displayedContent: "",
-      };
-      setMessages((prev) => [...prev, aiMsg]);
+      // No canned answers: the hero chat is Gemini-only. When the AI backend
+      // is unreachable (timeout, missing API key, provider error), show an
+      // honest error instead of a pre-made response.
+      setMessages((prev) => [
+        ...prev,
+        { id: aiMsgId, role: "assistant", content: dict.hero.aiError },
+      ]);
       setIsTyping(false);
-      startTypewriter(aiMsgId, localText);
     }
 
     textareaRef.current?.focus();
@@ -327,13 +292,7 @@ export default function HeroSection() {
                         }`}
                       >
                         {msg.role === "assistant" ? (
-                          <MarkdownText
-                            text={
-                              msg.displayedContent !== undefined
-                                ? msg.displayedContent
-                                : msg.content
-                            }
-                          />
+                          <MarkdownText text={msg.content} />
                         ) : (
                           msg.content
                         )}

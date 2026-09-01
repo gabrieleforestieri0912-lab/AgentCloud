@@ -128,6 +128,8 @@ const it = {
     placeholderContinued: "Continua la conversazione...",
     sendMessage: "Invia messaggio",
     openFullChat: "Apri la chat completa",
+    aiError:
+      "Il servizio AI non è disponibile in questo momento. Riprova tra poco.",
     chips: [
       "E-commerce",
       "Shopify",
@@ -1125,6 +1127,8 @@ export const en: Dictionary = {
     placeholderContinued: "Continue the conversation...",
     sendMessage: "Send message",
     openFullChat: "Open full chat",
+    aiError:
+      "The AI service is unavailable right now. Please try again shortly.",
     chips: [
       "E-commerce",
       "Shopify",
