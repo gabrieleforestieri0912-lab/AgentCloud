@@ -190,18 +190,16 @@ export default function HeroSection() {
     (m) => m.role === "assistant" && m.content.length > 0,
   );
 
+  // At rest the hero stays locked to the viewport — identical to the original
+  // layout (`h-dvh`). Only when the chat opens does it switch to `min-h-dvh`,
+  // so the growing chat dilates downward: the page (not an inner scrollbar)
+  // scrolls, with extra bottom breathing room.
   return (
     <section
-      className={`relative overflow-hidden px-4 pt-36 sm:pt-48 lg:pt-64 min-h-dvh flex items-center justify-center ${
-        hasMessages ? "pb-20 sm:pb-28 lg:pb-36" : "pb-12 sm:pb-20 lg:pb-28"
+      className={`relative overflow-hidden px-4 pt-36 sm:pt-48 lg:pt-64 flex items-center justify-center ${
+        hasMessages ? "min-h-dvh pb-20 sm:pb-28 lg:pb-36" : "h-dvh pb-12 sm:pb-20 lg:pb-28"
       }`}
     >
-      {/*
-        The hero is viewport-tall and vertically centered while the chat is
-        compact. `min-h-dvh` (instead of `h-dvh`) lets the section grow when
-        the chat expands, so the page dilates downward instead of clipping —
-        the hero keeps its resting look and nothing gets cut under the navbar.
-      */}
       {/* Float keyframes live in globals.css (shared with the waitlist page). */}
       <style>{`
         @keyframes fade-in-up {
