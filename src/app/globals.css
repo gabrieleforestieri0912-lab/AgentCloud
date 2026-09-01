@@ -114,6 +114,11 @@
     scrollbar-width: thin;
     scrollbar-color: #444555 transparent;
   }
+
+  button,
+  a {
+    cursor: pointer;
+  }
 }
 
 @keyframes fade-in-up {

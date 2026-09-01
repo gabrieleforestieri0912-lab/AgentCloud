@@ -137,7 +137,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Provision the Auth user so the signup shows up in Authentication → Users.    await provisionAuthUser(email);
+    // Provision the Auth user so the signup shows up in Authentication → Users.
+    await provisionAuthUser(email);
     const res = NextResponse.json({
       success: true,
       remaining: await getRemainingSpots(),
