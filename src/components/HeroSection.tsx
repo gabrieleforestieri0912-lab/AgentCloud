@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { getLocalChatResponse } from "@/lib/chat-responses";
 import { useLanguage } from "./LanguageProvider";
+import HeroBubbles from "./HeroBubbles";
 
 type HeroMessage = {
   id: string;
@@ -213,6 +214,10 @@ export default function HeroSection() {
 
       {/* Decorative top hairline */}
       <div className="absolute inset-x-0 top-16 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
+
+      {/* Floating constellations flanking the hero: companies/apps on the
+          left, agent avatars on the right (hidden below lg). */}
+      <HeroBubbles />
 
       {/* Outer Wide Screen Flex Wrapper */}
       <div className="w-full max-w-7xl mx-auto flex items-center justify-between relative">

@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-import HeroBubbles from "@/components/HeroBubbles";
 import MarketplaceSection from "@/components/MarketplaceSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import DashboardSection from "@/components/DashboardSection";
@@ -24,10 +23,6 @@ export default async function Home() {
             "radial-gradient(circle at 10% 20%, rgba(3,139,254,.15), transparent 30%), radial-gradient(circle at 90% 16%, rgba(234,67,53,.15), transparent 26%), radial-gradient(circle at 50% 95%, rgba(168,85,247,.10), transparent 36%)",
         }}
       />
-
-      {/* Decorative overlay: floating brand + agent constellations spread across
-          the whole page, behind the content (below z-10 of <main>). */}
-      <HeroBubbles stretch />
 
       <main
         id="main-content"
