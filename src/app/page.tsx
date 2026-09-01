@@ -13,7 +13,7 @@ export default async function Home() {
     // One background for the whole landing: the gradient (previously only the
     // hero) now stretches across every section. Sections stay transparent;
     // the floating constellations are a decorative overlay above this layer.
-    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
+    <div className="relative flex min-h-screen flex-col overflow-x-clip bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
       {/* Ambient glow baked into the shared background */}
       <div
         aria-hidden="true"

@@ -25,7 +25,6 @@ export default function HeroSection() {
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatBodyRef = useRef<HTMLDivElement>(null);
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasMessages = messages.length > 0 || isTyping;
@@ -45,12 +44,14 @@ export default function HeroSection() {
     ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
   }, [input]);
 
-  // Scroll chat to bottom on new messages
+  // The chat has no inner scrollbar: expanding content grows the page
+  // (single outer scrollbar). Just nudge the viewport so the newest message
+  // never falls below the fold while the user is chatting.
   const scrollToBottom = useCallback(() => {
-    const container = chatBodyRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
   }, []);
 
   useEffect(() => {
@@ -281,17 +282,14 @@ export default function HeroSection() {
               },
             }}
           >
+            {/* No fixed max-height: the box dilates downward with the
+                content, so the page (not an inner scrollbar) scrolls. */}
             <div
               className={`bg-neutral-900 rounded-3xl border border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.4)] transition-all duration-500 ease-out flex flex-col`}
-              style={{ maxHeight: hasMessages ? "480px" : undefined }}
             >
               {/* ── Messages area ── */}
               {hasMessages && (
-                <div
-                  ref={chatBodyRef}
-                  className="flex-1 overflow-y-auto px-5 pt-5 pb-2 space-y-3 text-left"
-                  style={{ maxHeight: "340px" }}
-                >
+                <div className="px-5 pt-5 pb-2 space-y-3 text-left">
                   {messages.map((msg) => (
                     <div
                       key={msg.id}
