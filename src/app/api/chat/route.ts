@@ -1,4 +1,6 @@
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
+import { buildPlatformSystemPrompt } from "@/lib/agents/platform-context";
+import { getLocale } from "@/lib/i18n/locale";
 import { getLLMProvider } from "@/lib/llm";
 import type { LLMMessage } from "@/lib/llm";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
@@ -30,11 +32,20 @@ export async function POST(req: Request) {
     }
 
     // System prompt + model from the agent registry when an agent is targeted.
+    // For the general platform chat (no agent), the model gets a system
+    // prompt built from the REAL platform data — active agents and counts
+    // read from the agents_registry database (see platform-context).
     let systemPrompt = "You are a helpful AI assistant.";
     let resolvedModel = model;
     if (agentId && AGENT_RUNTIME[agentId]) {
       systemPrompt = AGENT_RUNTIME[agentId].systemPrompt;
       resolvedModel = AGENT_RUNTIME[agentId].model;
+    } else {
+      try {
+        systemPrompt = await buildPlatformSystemPrompt(await getLocale());
+      } catch {
+        // Never fail the chat because the platform prompt could not be built.
+      }
     }
 
     // Clients may send a model name (e.g. from an agent config). If it isn't a

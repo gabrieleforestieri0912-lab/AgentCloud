@@ -20,6 +20,7 @@ import {
 import Image from "next/image";
 import { getLocalChatResponse } from "@/lib/chat-responses";
 import { useLanguage } from "./LanguageProvider";
+import MarkdownText from "./MarkdownText";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 
@@ -513,13 +514,17 @@ export default function ChatInterface({
                   className={`max-w-[75%] sm:max-w-[65%] ${msg.role === "user" ? "order-1" : ""}`}
                 >
                   <div
-                    className={`px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                    className={`px-4 py-3 text-sm leading-relaxed ${
                       msg.role === "user"
-                        ? "bg-brand-500 text-white rounded-2xl rounded-br-md shadow-lg shadow-brand-500/20"
+                        ? "whitespace-pre-wrap bg-brand-500 text-white rounded-2xl rounded-br-md shadow-lg shadow-brand-500/20"
                         : "bg-neutral-800 border border-white/5 text-neutral-200 rounded-2xl rounded-bl-md"
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === "assistant" ? (
+                      <MarkdownText text={msg.content} />
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                   <p
                     className={`text-[10px] text-neutral-600 mt-1 ${

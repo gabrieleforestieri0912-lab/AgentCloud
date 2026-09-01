@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { getLocalChatResponse } from "@/lib/chat-responses";
 import { useLanguage } from "./LanguageProvider";
 import HeroBubbles from "./HeroBubbles";
+import MarkdownText from "./MarkdownText";
 
 type HeroMessage = {
   id: string;
@@ -319,16 +320,23 @@ export default function HeroSection() {
                         </div>
                       )}
                       <div
-                        className={`max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap ${
+                        className={`max-w-[80%] text-sm leading-relaxed ${
                           msg.role === "user"
-                            ? "text-white font-medium"
+                            ? "text-white font-medium whitespace-pre-wrap"
                             : "text-neutral-200"
                         }`}
                       >
-                        {msg.role === "assistant" &&
-                        msg.displayedContent !== undefined
-                          ? msg.displayedContent
-                          : msg.content}
+                        {msg.role === "assistant" ? (
+                          <MarkdownText
+                            text={
+                              msg.displayedContent !== undefined
+                                ? msg.displayedContent
+                                : msg.content
+                            }
+                          />
+                        ) : (
+                          msg.content
+                        )}
                       </div>
                       {msg.role === "user" && (
                         <div className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center shrink-0">

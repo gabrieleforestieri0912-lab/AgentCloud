@@ -8,68 +8,76 @@
  * Kept framework-agnostic so it can be unit tested without React.
  * The platform defaults to Italian; callers pass their active locale
  * to resolve the right language.
+ *
+ * The texts mirror the REAL platform catalog (the 9 runtime agents in
+ * `src/lib/agents/registry.ts`): 5 available in the default vertical
+ * (Shopify Agent, Lead Capture, Email Manager, Support Agent, Copywriter)
+ * and 4 coming soon (SEO Content, Business Manager, Personal Assistant,
+ * Calendar Booking).
  */
 
 export const CHAT_RESPONSES: Record<string, string> = {
   greeting:
-    "Hi! I'm your AgentCloud AI. Today I help you with Shopify e-commerce and lead capture. What would you like to set up?",
+    "Hi! I'm your AgentCloud AI. Today the platform offers **9 AI agents** — 5 available now (**Shopify Agent**, **Lead Capture**, **Email Manager**, **Support Agent**, **Copywriter**) and 4 coming soon (**SEO Content**, **Business Manager**, **Personal Assistant**, **Calendar Booking**). What would you like to set up?",
 
   email:
-    "To handle the emails and contacts coming from your site, the **Lead Capture** agent collects prospects and notifies sales. Want to activate it?",
+    "For your emails and contacts, the **Email Manager** agent triages your inbox, drafts on-brand replies for your approval, and tracks every commitment and deadline. Want to activate it?",
 
   support:
-    "To answer customer questions about products and orders, the **Shopify Agent** searches the catalog, builds cart links, and checks order status. Want to configure it?",
+    "The **Support Agent** answers every ticket 24/7 from your knowledge base and escalates only what needs a human. Want to configure it?",
 
   leads:
-    "I can supercharge your lead capture:\n\n• **Automatic Capture** — Collect contacts from forms and your site\n• **Enrichment** — Add context to prospects\n• **Notifications** — Alert sales with the right next steps\n\nReady to launch your lead capture agent?",
+    "I can supercharge your lead capture with the **Lead Capture** agent:\n\n• **Automatic Capture** — Collect contacts from forms and your site\n• **Enrichment** — Add context to prospects\n• **Notifications** — Alert sales with the right next steps\n\nReady to launch your lead capture agent?",
 
   finance:
-    "Right now the platform focuses on **Shopify and lead capture**. If you need payment data, the **Shopify Agent** can check order status. Want to configure it?",
+    "The **Shopify Agent** can check order status, sales, and payments for your store. Want to configure it?",
 
   social:
-    "Today the platform is focused on **Shopify and lead capture**. Want to automate capturing leads from your channels instead?",
+    "Today the platform focuses on **Shopify, lead capture, email, support and content**. Want to automate capturing leads from your channels instead?",
 
   campaigns:
-    "Right now AgentCloud offers the **Shopify Agent and Lead Capture**. Want to set up lead capture or the e-commerce assistant?",
+    "The **Copywriter** writes landing pages, ads, and email copy that converts, while the **Shopify Agent** handles your store. Want to set one up?",
 
-  data: "To analyze lead or order data, the **Lead Capture** and **Shopify** agents collect and structure the information. Want to configure them?",
+  data:
+    "The **Lead Capture** and **Shopify** agents collect and structure lead and order data. Want to configure them?",
 
   scheduling:
-    "Today the platform offers the **Shopify Agent and Lead Capture**. Do you need something for e-commerce or for leads?",
+    "The **Calendar Booking** agent (coming soon) will find availability and book meetings automatically. For now you can set up **Lead Capture** or the **Shopify Agent**. Want to start?",
 
   default:
-    "Great question! Today AgentCloud helps you with:\n\n• **Shopify E-commerce** — Search products, build cart links, and check orders\n• **Lead Capture** — Collect and enrich contacts\n\nWhat area would you like to explore?",
+    "Good question! AgentCloud currently offers **9 AI agents**:\n\n• **Available now** — Shopify Agent, Lead Capture, Email Manager, Support Agent, Copywriter\n• **Coming soon** — SEO Content, Business Manager, Personal Assistant, Calendar Booking\n\nWhat area would you like to explore?",
 };
 
 export const CHAT_RESPONSES_IT: Record<string, string> = {
   greeting:
-    "Ciao! Sono l'assistente AI di AgentCloud. Oggi ti aiuto con l'e-commerce Shopify e l'acquisizione lead. Cosa vuoi configurare?",
+    "Ciao! Sono l'assistente AI di AgentCloud. Oggi la piattaforma offre **9 agenti AI** — 5 disponibili ora (**Shopify Agent**, **Lead Capture**, **Email Manager**, **Support Agent**, **Copywriter**) e 4 in arrivo (**SEO Content**, **Business Manager**, **Personal Assistant**, **Calendar Booking**). Cosa vuoi configurare?",
 
   email:
-    "Per gestire le email e i contatti che arrivano dal sito, l'agente **Lead Capture** raccoglie i prospect e avvisa le vendite. Vuoi attivarlo?",
+    "Per le tue email e i contatti, l'agente **Email Manager** smista la casella, scrive bozze di risposta da approvare e traccia ogni impegno e scadenza. Vuoi attivarlo?",
 
   support:
-    "Per rispondere alle domande dei clienti su prodotti e ordini c'è l'**Agente Shopify**: cerca nel catalogo, crea link al carrello e verifica lo stato degli ordini. Vuoi configurarlo?",
+    "L'**Support Agent** risponde a ogni ticket 24/7 usando la tua knowledge base e inoltra all'umano solo ciò che serve davvero. Vuoi configurarlo?",
 
   leads:
-    "Posso potenziare la tua acquisizione lead:\n\n• **Cattura automatica** — Raccoglie i contatti dai moduli e dal sito\n• **Arricchimento** — Aggiunge il contesto sui prospect\n• **Notifiche** — Avvisa le vendite con i passi successivi\n\nPronto a lanciare il tuo agente lead capture?",
+    "Posso potenziare la tua acquisizione lead con l'agente **Lead Capture**:\n\n• **Cattura automatica** — Raccoglie i contatti dai moduli e dal sito\n• **Arricchimento** — Aggiunge il contesto sui prospect\n• **Notifiche** — Avvisa le vendite con i passi successivi\n\nPronto a lanciare il tuo agente lead capture?",
 
   finance:
-    "Per ora la piattaforma è focalizzata su **Shopify e acquisizione lead**. Se ti servono dati sui pagamenti, l'**Agente Shopify** può verificare lo stato degli ordini. Vuoi configurarlo?",
+    "L'**Shopify Agent** può verificare ordini, vendite e pagamenti del tuo store. Vuoi configurarlo?",
 
   social:
-    "Oggi la piattaforma si concentra su **Shopify e lead capture**. Vuoi invece automatizzare l'acquisizione dei lead dai tuoi canali?",
+    "Oggi la piattaforma si concentra su **Shopify, lead capture, email, supporto e contenuti**. Vuoi invece automatizzare l'acquisizione dei lead dai tuoi canali?",
 
   campaigns:
-    "Per ora la piattaforma offre **Agente Shopify e Lead Capture**. Vuoi configurare l'acquisizione lead o l'assistente e-commerce?",
+    "Il **Copywriter** scrive landing page, ads ed email che convertono, mentre l'**Shopify Agent** gestisce lo store. Vuoi configurarne uno?",
 
-  data: "Per analizzare i dati dei lead o degli ordini, l'**Agente Lead Capture** e l'**Agente Shopify** raccolgono e strutturano le informazioni. Vuoi configurarli?",
+  data:
+    "Gli agenti **Lead Capture** e **Shopify** raccolgono e strutturano i dati di lead e ordini. Vuoi configurarli?",
 
   scheduling:
-    "Oggi la piattaforma offre **Agente Shopify e Lead Capture**. Ti serve qualcosa per l'e-commerce o per i lead?",
+    "L'agente **Calendar Booking** (in arrivo) troverà la disponibilità e prenoterà le riunioni in automatico. Per ora puoi configurare **Lead Capture** o l'**Shopify Agent**. Vuoi iniziare?",
 
   default:
-    "Ottima domanda! Oggi AgentCloud ti aiuta con:\n\n• **E-commerce Shopify** — Cerca prodotti, crea link al carrello e controlla gli ordini\n• **Acquisizione lead** — Cattura e arricchisci i contatti\n\nQuale area vuoi esplorare?",
+    "Ottima domanda! AgentCloud offre oggi **9 agenti AI**:\n\n• **Disponibili ora** — Shopify Agent, Lead Capture, Email Manager, Support Agent, Copywriter\n• **In arrivo** — SEO Content, Business Manager, Personal Assistant, Calendar Booking\n\nQuale area vuoi esplorare?",
 };
 
 const PATTERNS: Array<[RegExp, string]> = [
@@ -125,4 +133,4 @@ export function getLocalChatResponse(
     if (pattern.test(lower)) return responses[key];
   }
   return responses.default;
-}
+}

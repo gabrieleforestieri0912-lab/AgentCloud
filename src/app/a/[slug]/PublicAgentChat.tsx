@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
+import MarkdownText from "@/components/MarkdownText";
 import { t } from "@/lib/i18n/dictionaries";
 
 type Message = {
@@ -263,7 +264,13 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
                       : "bg-neutral-800 border border-white/5 text-neutral-200 rounded-2xl rounded-bl-md"
                   }`}
                 >
-                  {msg.content || (isRunning && i === messages.length - 1 ? (
+                  {msg.content ? (
+                    msg.role === "assistant" ? (
+                      <MarkdownText text={msg.content} />
+                    ) : (
+                      msg.content
+                    )
+                  ) : (isRunning && i === messages.length - 1 ? (
                     <span className="flex gap-1.5 items-center h-5">
                       <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                       <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: "200ms" }} />

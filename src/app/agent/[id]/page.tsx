@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
 import { useLanguage } from "@/components/LanguageProvider";
+import MarkdownText from "@/components/MarkdownText";
 import { t } from "@/lib/i18n/dictionaries";
 
 type StreamEvent =
@@ -292,8 +293,13 @@ export default function AgentChatPage() {
                       ))}
                     </div>
                   )}
-                  {msg.content ||
-                    (isRunning && i === messages.length - 1 ? (
+                  {msg.content ? (
+                    msg.role === "assistant" ? (
+                      <MarkdownText text={msg.content} />
+                    ) : (
+                      msg.content
+                    )
+                  ) : (isRunning && i === messages.length - 1 ? (
                       <span className="flex gap-1.5 items-center h-5">
                         <span
                           className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-typing-pulse"

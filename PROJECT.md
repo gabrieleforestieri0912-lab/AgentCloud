@@ -228,7 +228,7 @@ npm run dev       # sviluppo
 npm run build     # build produzione (con typecheck)
 npm run start     # avvio produzione
 npm run lint      # ESLint
-npm run test      # Vitest (149 test)
+npm run test      # Vitest (158 test)
 npm run typecheck # tsc --noEmit
 
 ---
