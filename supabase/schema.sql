@@ -470,16 +470,16 @@ $$;
 -- re-run schema.sql to refresh the catalog.
 -- =============================================================================
 insert into public.agents_registry (slug, name, short_name, category, price_cents, stripe_price_id, display_price, active) values
-  ('email-manager',        'Cleo — Email Manager',       'Cleo',                 'Business & Operations', 3900,  'price_email_manager',        '€39/mo',  true),
-  ('business-manager',     'Otto — Business Manager',    'Otto',                 'Business & Operations', 5900,  'price_business_manager',     '€59/mo',  true),
-  ('personal-assistant',   'Aria — Personal Assistant',  'Aria',                 'Business & Operations', 2900,  'price_personal_assistant',   '€29/mo',  true),
-  ('calendar-booking',     'Luna — Calendar Booking',    'Luna',                 'Business & Operations', 3900,  'price_calendar_booking',     '€39/mo',  true),
-  ('seo-agent',            'Nova — SEO Content',         'Nova',                 'Marketing & Sales',     3900,  'price_seo_agent',            '€39/mo',  true),
-  ('lead-capture',         'Falco — Lead Capture',       'Falco',                'Marketing & Sales',     2900,  'price_lead_capture',         '€29/mo',  true),
-  ('support-agent',        'Zoe — Support Agent',        'Zoe',                  'Customer Service',      4900,  'price_support_agent',        '€49/mo',  true),
-  ('copywriter',           'Dante — Copywriter',         'Dante',                'Design & Content',      3900,  'price_copywriter',           '€39/mo',  true),
-  ('finance-manager',      'Midas — Finance Manager',    'Midas',                'E-commerce & Finance',  4900,  'price_finance_manager',      '€49/mo',  true),
-  ('shopify-agent',        'Cosmo — Shopify Agent',      'Cosmo',                'E-commerce & Finance',  3900,  'price_shopify_agent',        '€39/mo',  true)
+  ('email-manager',        'Email Manager',              'Email Manager',        'Business & Operations', 3900,  'price_email_manager',        '€39/mo',  true),
+  ('business-manager',     'Business Manager',            'Business Manager',     'Business & Operations', 5900,  'price_business_manager',     '€59/mo',  true),
+  ('personal-assistant',   'Personal Assistant',          'Personal Assistant',   'Business & Operations', 2900,  'price_personal_assistant',   '€29/mo',  true),
+  ('calendar-booking',     'Calendar Booking Agent',      'Calendar Booking',     'Business & Operations', 3900,  'price_calendar_booking',     '€39/mo',  true),
+  ('seo-agent',            'SEO Content Agent',           'SEO Content',          'Marketing & Sales',     3900,  'price_seo_agent',            '€39/mo',  true),
+  ('lead-capture',         'Lead Capture Agent',          'Lead Capture',         'Marketing & Sales',     2900,  'price_lead_capture',         '€29/mo',  true),
+  ('support-agent',        'Support Agent',               'Support Agent',        'Customer Service',      4900,  'price_support_agent',        '€49/mo',  true),
+  ('copywriter',           'Copywriter',                  'Copywriter',           'Design & Content',      3900,  'price_copywriter',           '€39/mo',  true),
+  ('finance-manager',      'Finance Manager Agent',       'Finance Manager',      'E-commerce & Finance',  4900,  'price_finance_manager',      '€49/mo',  true),
+  ('shopify-agent',        'Shopify Agent',               'Shopify Agent',        'E-commerce & Finance',  3900,  'price_shopify_agent',        '€39/mo',  true)
 on conflict (slug) do update set
   name           = excluded.name,
   short_name     = excluded.short_name,

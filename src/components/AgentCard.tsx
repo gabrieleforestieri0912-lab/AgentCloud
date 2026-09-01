@@ -79,7 +79,7 @@ export default function AgentCard({
           </div>
           <div className="min-w-0">
             <h3 className="truncate text-lg font-bold text-white">
-              {agent.name}
+              {agent.shortName}
             </h3>
             <p className="text-sm font-semibold text-neutral-400">
               {agent.category}

@@ -6,7 +6,7 @@
 
 ## 🛒 E-commerce (Shopify)
 
-### 1. Cosmo — Shopify Agent
+### 1. Shopify Commerce Agent
 
 **Prezzo:** €39/mese  
 **Categoria:** E-commerce & Finance  
@@ -44,7 +44,7 @@
 
 ---
 
-### 2. Falco — Lead Capture
+### 2. Lead Capture Agent
 
 **Prezzo:** €29/mese  
 **Categoria:** Marketing & Sales  
@@ -74,7 +74,7 @@
 
 ## 📅 Services (Calendar Booking)
 
-### 3. Luna — Calendar Booking
+### 3. Calendar Booking Agent
 
 **Prezzo:** €39/mese  
 **Categoria:** Business & Operations  
@@ -101,7 +101,7 @@
 
 ---
 
-### 4. Cleo — Email Manager ✅ Disponibile
+### 4. Email Manager ✅ Disponibile
 
 **Prezzo:** €39/mese  
 **Categoria:** Business & Operations  
@@ -128,7 +128,7 @@
 
 ## 💼 Altri Agenti Disponibili (Non Attivi di Default)
 
-### 5. Zoe — Support Agent ✅ Disponibile
+### 5. Support Agent ✅ Disponibile
 
 **Prezzo:** €49/mese  
 **Categoria:** Customer Service  
@@ -148,7 +148,7 @@
 
 ---
 
-### 6. Dante — Copywriter ✅ Disponibile
+### 6. Copywriter ✅ Disponibile
 
 **Prezzo:** €39/mese  
 **Categoria:** Design & Content  
@@ -168,7 +168,7 @@
 
 ---
 
-### 7. Nova — SEO Content
+### 7. SEO Content Agent
 
 **Prezzo:** €39/mese  
 **Categoria:** Marketing & Sales  
@@ -179,7 +179,7 @@
 
 ---
 
-### 8. Otto — Business Manager
+### 8. Business Manager Agent
 
 **Prezzo:** €59/mese  
 **Categoria:** Business & Operations  
@@ -190,7 +190,7 @@
 
 ---
 
-### 9. Aria — Personal Assistant
+### 9. Personal AI Assistant
 
 **Prezzo:** €29/mese  
 **Categoria:** Business & Operations  
@@ -201,7 +201,7 @@
 
 ---
 
-### 10. Midas — Finance Manager
+### 10. Finance Manager Agent
 
 **Prezzo:** €49/mese  
 **Categoria:** E-commerce & Finance  
@@ -233,13 +233,13 @@
 
 ### Shopify E-commerce
 
-- **Agenti:** Cosmo (Shopify) + Falco (Lead Capture) + Zoe (Support) + Dante (Copywriter) + Cleo (Email)
+- **Agenti:** Shopify Agent + Lead Capture + Support Agent + Copywriter + Email Manager
 - **Tools:** Product search, order status, cart links, gestione prodotti/discount/inventario, lead capture, email
 - **Prezzo:** €29-49/mese
 
 ### Services
 
-- **Agenti:** Luna (Calendar Booking) + Falco (Lead Capture) + Zoe (Support) + Dante (Copywriter)
+- **Agenti:** Calendar Booking + Lead Capture + Support Agent + Copywriter
 - **Tools:** Calendar search, booking, lead capture, supporto, copy
 - **Prezzo:** €29-49/mese
 

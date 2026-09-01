@@ -66,7 +66,7 @@ export default async function AgentsPage() {
             </div>
           </div>
 
-          {/* Marketplace grid with search and filters */}
+          {/* Marketplace grid with category filters */}
           <MarketplaceGrid
             availableAgents={available}
             comingSoonAgents={comingSoon}

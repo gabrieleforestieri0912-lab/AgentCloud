@@ -24,8 +24,8 @@ export type AgentLocalization = {
 
 export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
   "email-manager": {
-    name: "Cleo — Email Manager",
-    shortName: "Cleo",
+    name: "Email Manager",
+    shortName: "Email Manager",
     category: "Business & Operations",
     badge: "Novità",
     description:
@@ -53,8 +53,8 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Gestisco 50 email al giorno e riduco i tempi di gestione della casella del 70%.",
   },
   "business-manager": {
-    name: "Otto — Business Manager",
-    shortName: "Otto",
+    name: "Business Manager",
+    shortName: "Business Manager",
     category: "Business & Operations",
     badge: "Consigliato",
     description:
@@ -81,8 +81,8 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Ho prodotto 12 report dirigenziali nell'ultimo anno con analisi dei KPI.",
   },
   "seo-agent": {
-    name: "Nova — Contenuti SEO",
-    shortName: "Nova",
+    name: "Agente Contenuti SEO",
+    shortName: "Agente SEO",
     category: "Marketing & Sales",
     badge: "Novità",
     description:
@@ -109,8 +109,8 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Ho scritto 15 articoli SEO che hanno portato +5.000 visitatori organici al mese.",
   },
   "personal-assistant": {
-    name: "Aria — Assistente Personale",
-    shortName: "Aria",
+    name: "Assistente Personale AI",
+    shortName: "Assistente Personale",
     category: "Business & Operations",
     badge: "Consigliato",
     description:
@@ -137,8 +137,8 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Ho gestito 60 attività e risparmiato 8 ore a settimana al founder.",
   },
   "calendar-booking": {
-    name: "Luna — Agente Prenotazioni",
-    shortName: "Luna",
+    name: "Agente Prenotazioni",
+    shortName: "Calendario",
     category: "Business & Operations",
     badge: "Popolare",
     description:
@@ -165,8 +165,8 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Ho gestito 200 prenotazioni al mese senza doppie prenotazioni.",
   },
   "lead-capture": {
-    name: "Falco — Lead Capture",
-    shortName: "Falco",
+    name: "Agente Lead Capture",
+    shortName: "Lead Capture",
     category: "Marketing & Sales",
     badge: "Consigliato",
     description:
@@ -193,8 +193,8 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Ho catturato 340 lead il mese scorso con il 96% di dati validi.",
   },
   "support-agent": {
-    name: "Zoe — Supporto",
-    shortName: "Zoe",
+    name: "Agente Supporto",
+    shortName: "Support Agent",
     category: "Customer Service",
     badge: "Popolare",
     description:
@@ -221,8 +221,8 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Ho risolto l'82% dei ticket in autonomia, in media in 40 secondi.",
   },
   copywriter: {
-    name: "Dante — Copywriter",
-    shortName: "Dante",
+    name: "Copywriter",
+    shortName: "Copywriter",
     category: "Design & Content",
     badge: "Popolare",
     description:
@@ -249,8 +249,8 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Le mie varianti hanno migliorato la conversione del 19% nel test.",
   },
   "finance-manager": {
-    name: "Midas — Finance Manager",
-    shortName: "Midas",
+    name: "Finance Manager",
+    shortName: "Finance Manager",
     category: "E-commerce & Finance",
     badge: "Novità",
     description:
@@ -278,8 +278,8 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Ogni settimana riconcilio oltre 100 transazioni e preparo il report del cash flow prima delle 9:00.",
   },
   "shopify-agent": {
-    name: "Cosmo — Agente Shopify",
-    shortName: "Cosmo",
+    name: "Agente Shopify",
+    shortName: "Agente Shopify",
     category: "E-commerce & Finance",
     badge: "Consigliato",
     description:

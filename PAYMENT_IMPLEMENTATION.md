@@ -124,7 +124,7 @@ See **STRIPE_SETUP.md** for detailed instructions.
 ### From Email Template
 
 ```html
-<p>Perfect! To activate your Cleo — Email Manager subscription, click here:</p>
+<p>Perfect! To activate your Email Manager subscription, click here:</p>
 <a
   href="https://yourdomain.com/api/billing/payment-link?agentId=email-manager&email=customer@example.com"
 >

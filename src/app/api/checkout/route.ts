@@ -73,7 +73,7 @@ export async function POST(req: Request) {
             unit_amount: agent.priceCents,
             recurring: { interval: "month" },
             product_data: {
-              name: `AgentCloud — ${agent.name}`,
+              name: `AgentCloud — ${agent.shortName}`,
               description: agent.description,
             },
           },

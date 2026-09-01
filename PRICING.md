@@ -4,8 +4,8 @@
 
 AgentCloud offers simple, transparent pricing for two verticals:
 
-- **E-commerce (Shopify)**: Cosmo (Shopify Agent) + Falco (Lead Capture)
-- **Services**: Luna (Calendar Booking) + Falco (Lead Capture)
+- **E-commerce (Shopify)**: Shopify Agent + Lead Capture
+- **Services**: Calendar Booking + Lead Capture
 
 Both verticals share the same pricing structure to keep things simple at launch.
 
@@ -19,23 +19,22 @@ DB (`supabase/schema.sql`).
 
 | Agente                                  | Prezzo mensile | Categoria            | Compito principale                |
 | --------------------------------------- | -------------- | -------------------- | --------------------------------- |
-| Cosmo — Shopify Agent                   | €39/mese       | E-commerce & Finance | Gestione store e vendite          |
-| Falco — Lead Capture                    | €29/mese       | Marketing & Sales    | Cattura e notifica lead           |
-| **Zoe — Support Agent**                 | **€49/mese**   | Customer Service    | Assistenza clienti 24/7           |
-| **Dante — Copywriter**                  | **€39/mese**   | Design & Content    | Copy che converte                 |
-| **Cleo — Email Manager**                | **€39/mese**   | Business & Ops       | Smistamento posta, bozze e impegni|
-| Aria — Personal Assistant               | €29/mese       | Business & Ops       | Organizzazione giornata           |
-| Nova — SEO Content                      | €39/mese       | Marketing & Sales    | Contenuti e posizionamento        |
-| Luna — Calendar Booking                 | €39/mese       | Business & Ops       | Prenotazioni e slot               |
-| Otto — Business Manager                 | €59/mese       | Business & Ops       | Report, pianificazione e decisioni|
-| Midas — Finance Manager                 | €49/mese       | E-commerce & Finance | Fatture, spese e cash flow        |
+| Shopify Agent                           | €39/mese       | E-commerce & Finance | Gestione store e vendite          |
+| Lead Capture Agent                      | €29/mese       | Marketing & Sales    | Cattura e notifica lead           |
+| **Support Agent**                       | **€49/mese**   | Customer Service    | Assistenza clienti 24/7           |
+| **Copywriter**                          | **€39/mese**   | Design & Content    | Copy che converte                 |
+| **Email Manager**                       | **€39/mese**   | Business & Ops       | Smistamento posta, bozze e impegni|
+| Personal Assistant                      | €29/mese       | Business & Ops       | Organizzazione giornata           |
+| SEO Content Agent                       | €39/mese       | Marketing & Sales    | Contenuti e posizionamento        |
+| Calendar Booking Agent                  | €39/mese       | Business & Ops       | Prenotazioni e slot               |
+| Business Manager                        | €59/mese       | Business & Ops       | Report, pianificazione e decisioni|
+| Finance Manager                         | €49/mese       | E-commerce & Finance | Fatture, spese e cash flow        |
 
-La tariffa base è **€29/mese** (Falco — Lead Capture, Aria — Personal
-Assistant), **€39/mese** per gli agenti di contenuto e operazioni (Cosmo —
-Shopify, Nova — SEO Content, Cleo — Email Manager, Luna — Calendar Booking,
-Dante — Copywriter), **€49/mese** per gli agenti ad alto valore (**Zoe —
-Support Agent** 24/7, **Midas — Finance Manager**) e **€59/mese** per
-l'agente strategico (**Otto — Business Manager**).
+La tariffa base è **€29/mese** (Lead Capture, Personal Assistant),
+**€39/mese** per gli agenti di contenuto e operazioni (Shopify, SEO Content,
+Email Manager, Calendar Booking, Copywriter), **€49/mese** per gli agenti ad
+alto valore (**Support Agent** 24/7, **Finance Manager**) e **€59/mese** per
+l'agente strategico (**Business Manager**).
 
 > **Nota:** questi prezzi sono quelli effettivamente addebitati via
 > `/api/checkout` (campo `priceCents` del catalogo). In passato il bootstrap

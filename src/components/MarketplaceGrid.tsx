@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, X, SlidersHorizontal, Grid3X3, List } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import AgentCard from "./AgentCard";
 import { isAvailable, type Agent } from "@/lib/agents";
@@ -25,7 +25,6 @@ export default function MarketplaceGrid({
   comingSoonLabel,
 }: MarketplaceGridProps) {
   const { locale, dict } = useLanguage();
-  const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -35,45 +34,11 @@ export default function MarketplaceGrid({
     return Array.from(cats).sort();
   }, [availableAgents]);
 
-  // Filter available agents based on query and category
+  // Filter available agents by category
   const filteredAvailable = useMemo(() => {
-    let result = availableAgents;
-
-    // Filter by category
-    if (selectedCategory) {
-      result = result.filter((a) => a.category === selectedCategory);
-    }
-
-    // Filter by search query
-    if (query.trim()) {
-      const lowerQuery = query.toLowerCase();
-      result = result.filter(
-        (a) =>
-          a.name.toLowerCase().includes(lowerQuery) ||
-          a.description.toLowerCase().includes(lowerQuery) ||
-          a.category.toLowerCase().includes(lowerQuery) ||
-          a.tasks.some((t) => t.toLowerCase().includes(lowerQuery)),
-      );
-    }
-
-    return result;
-  }, [availableAgents, query, selectedCategory]);
-
-  // Filter coming soon agents (only by query, not category)
-  const filteredComingSoon = useMemo(() => {
-    if (!query.trim()) return comingSoonAgents;
-
-    const lowerQuery = query.toLowerCase();
-    return comingSoonAgents
-      .filter(
-        (a) =>
-          a.name.toLowerCase().includes(lowerQuery) ||
-          a.description.toLowerCase().includes(lowerQuery) ||
-          a.category.toLowerCase().includes(lowerQuery) ||
-          a.tasks.some((t) => t.toLowerCase().includes(lowerQuery)),
-      )
-      .slice(0, 3);
-  }, [comingSoonAgents, query]);
+    if (!selectedCategory) return availableAgents;
+    return availableAgents.filter((a) => a.category === selectedCategory);
+  }, [availableAgents, selectedCategory]);
 
   return (
     <div className="space-y-12">
@@ -86,35 +51,8 @@ export default function MarketplaceGrid({
           </span>
         </div>
 
-        {/* Search and filters */}
+        {/* Category filters */}
         <div className="mb-6">
-          {/* Search bar */}
-          <div className="relative mb-4">
-            <Search
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500"
-            />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={
-                locale === "it"
-                  ? "Cerca agenti per nome, categoria o funzionalità..."
-                  : "Search agents by name, category or feature..."
-              }
-              className="w-full rounded-xl border border-white/10 bg-neutral-900 py-3 pl-11 pr-10 text-sm font-semibold text-white placeholder-neutral-500 outline-none transition-colors focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-neutral-500 hover:bg-neutral-800 hover:text-white"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
-
           {/* Filter toggle button (mobile) */}
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -129,7 +67,6 @@ export default function MarketplaceGrid({
             )}
           </button>
 
-          {/* Category filters */}
           <div
             className={`flex flex-wrap gap-2 ${showFilters ? "flex" : "hidden lg:flex"}`}
           >
@@ -163,13 +100,6 @@ export default function MarketplaceGrid({
           </div>
         </div>
 
-        {/* Results count */}
-        <div className="mb-4 text-sm font-semibold text-neutral-500">
-          {locale === "it"
-            ? `${filteredAvailable.length} agenti trovati`
-            : `${filteredAvailable.length} agents found`}
-        </div>
-
         {/* Available agents grid */}
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {filteredAvailable.map((agent) => (
@@ -190,15 +120,15 @@ export default function MarketplaceGrid({
             </h3>
             <p className="mt-2 text-sm text-neutral-400">
               {locale === "it"
-                ? "Prova a modificare i filtri di ricerca"
-                : "Try adjusting your search filters"}
+                ? "Prova a selezionare un'altra categoria"
+                : "Try selecting a different category"}
             </p>
           </div>
         )}
       </div>
 
       {/* Coming soon agents section */}
-      {filteredComingSoon.length > 0 && (
+      {comingSoonAgents.length > 0 && (
         <div>
           <div className="mb-6 flex items-center gap-3">
             <h2 className="text-2xl font-bold text-white">{comingSoonLabel}</h2>
@@ -207,7 +137,7 @@ export default function MarketplaceGrid({
             </span>
           </div>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {filteredComingSoon.map((agent) => (
+            {comingSoonAgents.map((agent) => (
               <AgentCard
                 key={agent.slug}
                 agent={agent}
@@ -219,4 +149,4 @@ export default function MarketplaceGrid({
       )}
     </div>
   );
-}
+}

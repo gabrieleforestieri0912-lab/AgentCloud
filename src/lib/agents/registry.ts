@@ -23,7 +23,7 @@ export type AgentRuntimeConfig = {
 export const AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
-    name: "Nova — SEO Content",
+    name: "SEO Content Agent",
     description:
       "Write SEO-optimized content with keyword research and competitor analysis",
     price: 3900,
@@ -49,7 +49,7 @@ Guidelines:
 
   "business-manager": {
     id: "business-manager",
-    name: "Otto — Business Manager",
+    name: "Business Manager Agent",
     description:
       "Executive assistant for reporting, scheduling, and strategic analysis",
     price: 5900,
@@ -88,7 +88,7 @@ Guidelines:
 
   "personal-assistant": {
     id: "personal-assistant",
-    name: "Aria — Personal Assistant",
+    name: "Personal AI Assistant",
     description:
       "Personal assistant for daily tasks, research, and organization",
     price: 2900,
@@ -120,7 +120,7 @@ Guidelines:
   },
   "email-manager": {
     id: "email-manager",
-    name: "Cleo — Email Manager",
+    name: "Email Manager",
     description:
       "Tidy your inbox and keep track of the commitments that matter",
     price: 3900,
@@ -146,7 +146,7 @@ Guidelines:
   },
   "finance-manager": {
     id: "finance-manager",
-    name: "Midas — Finance Manager",
+    name: "Finance Manager Agent",
     description:
       "Track cash flow, prepare invoices, and keep payments under control",
     price: 4900,
@@ -170,7 +170,7 @@ Guidelines:
   },
   "shopify-agent": {
     id: "shopify-agent",
-    name: "Cosmo — Shopify Agent",
+    name: "Shopify Commerce Agent",
     description: "Full Shopify store management — products, discounts, inventory, customers, analytics, and cart links",
     price: 3900,
     stripePriceId: "price_shopify_agent",
@@ -263,7 +263,7 @@ Guidelines:
 
   "calendar-booking": {
     id: "calendar-booking",
-    name: "Luna — Calendar Booking",
+    name: "Calendar Booking Agent",
     description: "Find availability and book meetings on your calendar.",
     price: 3900,
     stripePriceId: "price_calendar_booking",
@@ -296,7 +296,7 @@ Guidelines:
 
   "lead-capture": {
     id: "lead-capture",
-    name: "Falco — Lead Capture",
+    name: "Lead Capture Agent",
     description: "Capture, enrich, and notify sales about new leads.",
     price: 2900,
     stripePriceId: "price_lead_capture",
@@ -335,7 +335,7 @@ Guidelines:
 
   "support-agent": {
     id: "support-agent",
-    name: "Zoe — Support Agent",
+    name: "Support Agent",
     description: "Answer every ticket 24/7 and escalate only what needs a human",
     price: 4900,
     stripePriceId: "price_support_agent",
@@ -361,7 +361,7 @@ Guidelines:
 
   copywriter: {
     id: "copywriter",
-    name: "Dante — Copywriter",
+    name: "Copywriter",
     description: "Write copy that converts across landing pages, ads, and email",
     price: 3900,
     stripePriceId: "price_copywriter",
