@@ -25,6 +25,7 @@ export default function HeroSection() {
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasMessages = messages.length > 0 || isTyping;
@@ -44,14 +45,12 @@ export default function HeroSection() {
     ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
   }, [input]);
 
-  // The chat has no inner scrollbar: expanding content grows the page
-  // (single outer scrollbar). Just nudge the viewport so the newest message
-  // never falls below the fold while the user is chatting.
+  // Keep the newest message in view inside the chat's scrollable area.
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-    });
+    const container = chatBodyRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, []);
 
   useEffect(() => {
@@ -191,13 +190,17 @@ export default function HeroSection() {
   );
 
   // At rest the hero stays locked to the viewport — identical to the original
-  // layout (`h-dvh`). Only when the chat opens does it switch to `min-h-dvh`,
-  // so the growing chat dilates downward: the page (not an inner scrollbar)
-  // scrolls, with extra bottom breathing room.
+  // layout (`h-dvh`). When the chat opens the padding tightens and the section
+  // may grow (`min-h-dvh`) so the whole chat stays reachable on short screens;
+  // the chat box itself is capped to the viewport and scrolls internally, so
+  // any number of messages stays contained and the page keeps a single
+  // scrollbar.
   return (
     <section
-      className={`relative overflow-hidden px-4 pt-36 sm:pt-48 lg:pt-64 flex items-center justify-center ${
-        hasMessages ? "min-h-dvh pb-20 sm:pb-28 lg:pb-36" : "h-dvh pb-12 sm:pb-20 lg:pb-28"
+      className={`relative overflow-hidden px-4 flex items-center justify-center ${
+        hasMessages
+          ? "min-h-dvh pt-8 sm:pt-16 lg:pt-24 pb-20 sm:pb-28 lg:pb-36"
+          : "h-dvh pt-36 sm:pt-48 lg:pt-64 pb-12 sm:pb-20 lg:pb-28"
       }`}
     >
       {/* Float keyframes live in globals.css (shared with the waitlist page). */}
@@ -280,14 +283,19 @@ export default function HeroSection() {
               },
             }}
           >
-            {/* No fixed max-height: the box dilates downward with the
-                content, so the page (not an inner scrollbar) scrolls. */}
+            {/* The box grows with the content up to a viewport-aware cap
+                (min(400px, 50dvh)); beyond that the messages area scrolls
+                internally, so the hero never explodes with the conversation. */}
             <div
               className={`bg-neutral-900 rounded-3xl border border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.4)] transition-all duration-500 ease-out flex flex-col`}
+              style={hasMessages ? { maxHeight: "min(400px, 50dvh)" } : undefined}
             >
               {/* ── Messages area ── */}
               {hasMessages && (
-                <div className="px-5 pt-5 pb-2 space-y-3 text-left">
+                <div
+                  ref={chatBodyRef}
+                  className="flex-1 min-h-0 overflow-y-auto px-5 pt-5 pb-2 space-y-3 text-left"
+                >
                   {messages.map((msg) => (
                     <div
                       key={msg.id}
