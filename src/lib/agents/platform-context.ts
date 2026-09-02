@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { SHOPIFY_PRICING } from "@/lib/billing/pricing";
 import { AGENT_RUNTIME } from "./registry";
 import { getFeatureFlags } from "./feature-flags";
 
@@ -10,8 +11,11 @@ import { getFeatureFlags } from "./feature-flags";
  * `agentId`) from the REAL platform data: the active agents in the
  * `agents_registry` table (so counts always match what's actually in the
  * database) plus the runtime feature flags (which agents are available now
- * vs. coming soon). When the database is unreachable, it degrades to the
- * in-code runtime registry without ever failing the chat request.
+ * vs. coming soon), pricing, contacts and integrations. The agent list is
+ * re-read from the database on every request, so the assistant always knows
+ * the latest updates at that moment. When the database is unreachable, it
+ * degrades to the in-code runtime registry without ever failing the chat
+ * request.
  */
 
 type AgentRow = {
@@ -27,8 +31,17 @@ type PromptLabels = {
   available: string;
   comingSoon: string;
   none: string;
+  pricingTitle: string;
+  contactsTitle: string;
+  integrationsTitle: string;
+  liveNote: string;
   rules: string[];
   countSentence: (count: string) => string;
+};
+
+const PLATFORM_CONTACTS = {
+  email: "info@agentcloud.agency",
+  phone: "+39 351 986 3021",
 };
 
 const LABELS: Record<"it" | "en", PromptLabels> = {
@@ -36,17 +49,22 @@ const LABELS: Record<"it" | "en", PromptLabels> = {
     intro:
       "Sei l'assistente AI di AgentCloud, la piattaforma di agenti AI per automatizzare e-commerce, marketing, supporto e operations.",
     totalSuffix: "agenti AI",
-    sourceNote: "(fonte: database agents_registry)",
+    sourceNote: "(fonte: database agents_registry, letto in tempo reale)",
     available: "Disponibili ora",
     comingSoon: "In arrivo",
     none: "- (nessuno)",
+    pricingTitle: "**Piani e prezzi** (configurazione attuale):",
+    contactsTitle: "**Contatti AgentCloud:**",
+    integrationsTitle: "**Integrazioni principali:**",
+    liveNote:
+      "I dati su agenti, disponibilità e prezzi vengono letti dal database a ogni richiesta, quindi sono sempre aggiornati.",
     rules: [
       "Regole:",
       "- Rispondi nella lingua dell'utente (di norma in italiano).",
       "- Usa il markdown: **grassetto** per nomi e punti chiave, elenchi con • — la UI lo renderizza.",
       "- Sii conciso e concreto: dai subito il nome dell'agente giusto e cosa fa.",
-      "- Non inventare agenti, prezzi o funzionalità oltre a questa lista: se non c'è in elenco, dillo chiaramente.",
-      "- Se non conosci la risposta, ammettilo e suggerisci di contattare il team di AgentCloud.",
+      "- Non inventare agenti, prezzi o funzionalità oltre a queste informazioni: se non c'è in elenco, dillo chiaramente.",
+      "- Se non conosci la risposta, ammettilo e suggerisci di contattare il team di AgentCloud (email o telefono sotto).",
     ],
     countSentence: (count) =>
       `Quando ti chiedono quanti agenti ci sono, cita il conteggio reale della piattaforma (${count}) e distingui tra disponibili ora e in arrivo.`,
@@ -55,17 +73,22 @@ const LABELS: Record<"it" | "en", PromptLabels> = {
     intro:
       "You are the AgentCloud assistant, the AI of the AgentCloud platform for automating e-commerce, marketing, support and operations.",
     totalSuffix: "AI agents",
-    sourceNote: "(source: agents_registry database)",
+    sourceNote: "(source: agents_registry database, read live)",
     available: "Available now",
     comingSoon: "Coming soon",
     none: "- (none)",
+    pricingTitle: "**Plans and pricing** (current configuration):",
+    contactsTitle: "**AgentCloud contacts:**",
+    integrationsTitle: "**Main integrations:**",
+    liveNote:
+      "Agent, availability and pricing data is read from the database on every request, so it is always up to date.",
     rules: [
       "Rules:",
       "- Answer in the user's language.",
       "- Use markdown: **bold** for names and key points, • bullet lists — the UI renders it.",
       "- Be concise and concrete: name the right agent for the job and what it does.",
-      "- Never invent agents, prices or features beyond this list: if it's not listed, say so clearly.",
-      "- If you don't know the answer, admit it and suggest contacting the AgentCloud team.",
+      "- Never invent agents, prices or features beyond this information: if it's not listed, say so clearly.",
+      "- If you don't know the answer, admit it and suggest contacting the AgentCloud team (email or phone below).",
     ],
     countSentence: (count) =>
       `When asked how many agents there are, quote the real platform count (${count}) and distinguish between available now and coming soon.`,
@@ -81,6 +104,37 @@ function runtimeFallbackAgents(): AgentRow[] {
     name: a.name,
     display_price: CENTS_TO_DISPLAY(a.price),
   }));
+}
+
+/** Which vertical preset is active (from env), used for context in the prompt. */
+function activeVerticalLabel(locale: "it" | "en"): string {
+  const vertical = process.env.AGENTCLOUD_VERTICAL?.toLowerCase();
+  if (locale === "it") {
+    if (vertical === "full" || vertical === "all") return "piattaforma completa";
+    if (vertical === "services") return "verticale servizi";
+    return "verticale Shopify (e-commerce)";
+  }
+  if (vertical === "full" || vertical === "all") return "full platform";
+  if (vertical === "services") return "services vertical";
+  return "Shopify (e-commerce) vertical";
+}
+
+/** Pricing + add-ons rendered from the Shopify pricing config. */
+function pricingLines(locale: "it" | "en"): string[] {
+  const { plans } = SHOPIFY_PRICING;
+  const perMonth = locale === "it" ? "mese" : "month";
+  const tokens = locale === "it" ? "token/mese" : "tokens/month";
+  const lines = [plans.starter, plans.growth].map(
+    (plan) =>
+      `- **${plan.name}** — ${plan.priceDisplay} — fino a ${plan.tokens.toLocaleString("it-IT")} ${tokens}`,
+  );
+  const addon = plans.starter.addons?.webSearch;
+  if (addon) {
+    lines.push(
+      `- **Web Search** — ${addon.priceDisplay} — ${addon.description} (${perMonth})`,
+    );
+  }
+  return lines;
 }
 
 /**
@@ -108,7 +162,8 @@ async function fetchActiveAgentsFromDb(): Promise<AgentRow[] | null> {
 
 /**
  * Build the system prompt for the general chat with the real platform
- * knowledge (agents, prices and counts from the database).
+ * knowledge (agents, prices and counts from the database, plus pricing,
+ * contacts and integrations).
  */
 export async function buildPlatformSystemPrompt(
   locale: "it" | "en",
@@ -130,6 +185,8 @@ export async function buildPlatformSystemPrompt(
 
   const count = `${agents.length} (${available.length} ${locale === "it" ? "disponibili" : "available"}, ${comingSoon.length} ${locale === "it" ? "in arrivo" : "coming soon"})`;
 
+  const verticalLine = `Configurazione attiva: ${activeVerticalLabel(locale)}.`;
+
   const sections = [
     labels.intro,
     "",
@@ -141,8 +198,33 @@ export async function buildPlatformSystemPrompt(
     `**${labels.comingSoon} (${comingSoon.length}):**`,
     ...(comingSoon.length > 0 ? comingSoon.map(describe) : [labels.none]),
     "",
+    labels.pricingTitle,
+    ...pricingLines(locale),
+    "",
+    labels.integrationsTitle,
+    ...(locale === "it"
+      ? [
+          "- **Shopify** — negozio collegato dal cliente via OAuth (prodotti, ordini, clienti, sconti, analytics)",
+          "- **Stripe** — abbonamenti, pagamenti e fatturazione",
+          "- **Google Calendar** — prenotazioni e appuntamenti",
+          "- **Web search** — ricerca sul web (Tavily)",
+        ]
+      : [
+          "- **Shopify** — the customer's store connected via OAuth (products, orders, customers, discounts, analytics)",
+          "- **Stripe** — subscriptions, payments and billing",
+          "- **Google Calendar** — bookings and appointments",
+          "- **Web search** — web search (Tavily)",
+        ]),
+    "",
+    labels.contactsTitle,
+    `- **Email:** ${PLATFORM_CONTACTS.email}`,
+    `- **Telefono:** ${PLATFORM_CONTACTS.phone}`,
+    "",
     ...labels.rules,
     labels.countSentence(count),
+    "",
+    verticalLine,
+    labels.liveNote,
   ];
 
   return sections.join("\n");

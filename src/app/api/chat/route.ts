@@ -3,6 +3,7 @@ import { buildPlatformSystemPrompt } from "@/lib/agents/platform-context";
 import { getLocale } from "@/lib/i18n/locale";
 import { getLLMProvider } from "@/lib/llm";
 import type { LLMMessage } from "@/lib/llm";
+import { createWordEmitter } from "@/lib/stream";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
 /**
@@ -76,18 +77,28 @@ export async function POST(req: Request) {
         const send = (data: object) =>
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
 
-        try {
-          const response = await provider.chat({
-            model: finalModel,
-            system: systemPrompt,
-            messages: conversationMessages,
-            tools: [],
-            maxTokens: Number(process.env.AGENT_MAX_TOKENS || 1024),
-          });
+        // Re-emit the provider's text deltas one word at a time so the
+        // message types out in every chat UI instead of appearing whole.
+        const emitter = createWordEmitter((word) =>
+          send({ type: "text", content: word }),
+        );
 
-          if (response.text) send({ type: "text", content: response.text });
+        try {
+          await provider.chat(
+            {
+              model: finalModel,
+              system: systemPrompt,
+              messages: conversationMessages,
+              tools: [],
+              maxTokens: Number(process.env.AGENT_MAX_TOKENS || 1024),
+            },
+            (delta) => emitter.push(delta),
+          );
+
+          await emitter.flush();
           send({ type: "done" });
         } catch {
+          emitter.stop();
           send({ type: "error", message: streamErrorMessage });
         } finally {
           controller.close();

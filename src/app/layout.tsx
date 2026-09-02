@@ -4,7 +4,6 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LanguageProvider } from "@/components/LanguageProvider";
-import ScrollToTop from "@/components/ScrollToTop";
 import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { getSiteUrl } from "@/lib/site-url";
 import { SUPPORT_EMAIL } from "@/lib/email-config";
@@ -206,7 +205,6 @@ export default async function RootLayout({
         <LanguageProvider key={locale} initialLocale={locale}>
           {children}
         </LanguageProvider>
-        <ScrollToTop />
         <Analytics />
         <SpeedInsights />
       </body>

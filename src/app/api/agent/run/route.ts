@@ -9,6 +9,7 @@ import { apiErrorMessageForLocale } from "@/lib/i18n/api-errors";
 import { getLocale } from "@/lib/i18n/locale";
 import { getLLMProvider } from "@/lib/llm";
 import type { LLMMessage, LLMToolResult } from "@/lib/llm";
+import { createWordEmitter } from "@/lib/stream";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
@@ -164,6 +165,12 @@ export async function POST(req: Request) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };
 
+      // Re-emit the provider's text one word at a time so agent chats type
+      // out the answer instead of showing the whole message at once.
+      const emitter = createWordEmitter((word) =>
+        send({ type: "text", content: word }),
+      );
+
       try {
         let conversationMessages = [...initialMessages];
         let iterations = 0;
@@ -171,20 +178,23 @@ export async function POST(req: Request) {
         while (iterations < MAX_ITERATIONS) {
           iterations++;
 
-          const response = await provider.chat({
-            model: config.model,
-            system: config.systemPrompt,
-            messages: conversationMessages,
-            tools: enabledTools,
-            maxTokens: MAX_TOKENS,
-          });
+          const response = await provider.chat(
+            {
+              model: config.model,
+              system: config.systemPrompt,
+              messages: conversationMessages,
+              tools: enabledTools,
+              maxTokens: MAX_TOKENS,
+            },
+            (delta) => emitter.push(delta),
+          );
 
           inputTokens += response.usage.inputTokens;
           outputTokens += response.usage.outputTokens;
 
-          if (response.text) {
-            send({ type: "text", content: response.text });
-          }
+          // Let the queued words finish before tool events / the next turn
+          // so the stream stays readable and ordered.
+          await emitter.flush();
 
           if (response.stopReason === "end_turn") {
             send({ type: "done" });
@@ -265,6 +275,8 @@ export async function POST(req: Request) {
           }
         }
 
+        emitter.stop();
+
         // Record the run (conversation + tokens) once the agent finishes.
         // Tokens above the monthly allowance are billed automatically via the
         // Stripe overage meter (best-effort — never fails the stream).
@@ -276,6 +288,7 @@ export async function POST(req: Request) {
           tokens_output: outputTokens,
         });
       } catch {
+        emitter.stop();
         send({
           type: "error",
           message: executionErrorMessage,

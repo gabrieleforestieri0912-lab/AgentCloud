@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, CheckCircle2, Cloud, Sparkles } from "lucide-react";
+import { Activity, CheckCircle2, Clock, Cloud, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
 
@@ -82,14 +82,14 @@ export default function DashboardSection() {
             </aside>
 
             <div className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {dict.dashboardSection.stats.map(([value, label]) => (
                   <div
                     key={label}
                     className="rounded-xl border border-white/5 bg-neutral-800 p-4"
                   >
                     <p className="text-2xl font-bold text-white">{value}</p>
-                    <p className="text-xs font-semibold text-neutral-400">
+                    <p className="mt-1 text-xs font-semibold text-neutral-400">
                       {label}
                     </p>
                   </div>
@@ -97,27 +97,44 @@ export default function DashboardSection() {
               </div>
 
               <div className="rounded-xl border border-white/5">
-                {dashboardAgents.map(([name, status, runs, success]) => (
-                  <div
-                    key={name}
-                    className="grid gap-3 border-b border-white/5 p-4 last:border-b-0 sm:grid-cols-[1fr_90px_100px_80px] sm:items-center"
-                  >
-                    <p className="font-bold text-white">{name}</p>
-                    <span
-                      className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold ${
-                        status === "Active" || status === "Attivo"
-                          ? "bg-purple-500/20 text-purple-300"
-                          : "bg-neutral-800 text-neutral-400"
-                      }`}
+                <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
+                  <p className="text-sm font-bold text-white">
+                    {dict.dashboardSection.agentsHeading}
+                  </p>
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    {dict.common.online}
+                  </span>
+                </div>
+                {dashboardAgents.map(
+                  ([name, status, runs, success, lastRun]) => (
+                    <div
+                      key={name}
+                      className="grid gap-3 border-b border-white/5 p-4 last:border-b-0 sm:grid-cols-[1fr_90px_110px_80px] sm:items-center"
                     >
-                      {status}
-                    </span>
-                    <p className="text-sm font-semibold text-neutral-400">
-                      {runs}
-                    </p>
-                    <p className="text-sm font-bold text-white">{success}</p>
-                  </div>
-                ))}
+                      <div className="min-w-0">
+                        <p className="truncate font-bold text-white">{name}</p>
+                        <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-neutral-500">
+                          <Clock size={11} />
+                          {lastRun}
+                        </p>
+                      </div>
+                      <span
+                        className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold ${
+                          status === "Active" || status === "Attivo"
+                            ? "bg-purple-500/20 text-purple-300"
+                            : "bg-neutral-800 text-neutral-400"
+                        }`}
+                      >
+                        {status}
+                      </span>
+                      <p className="text-sm font-semibold text-neutral-400">
+                        {runs}
+                      </p>
+                      <p className="text-sm font-bold text-white">{success}</p>
+                    </div>
+                  ),
+                )}
               </div>
             </div>
 
@@ -127,12 +144,17 @@ export default function DashboardSection() {
                 <p className="text-sm font-bold text-white">{dict.dashboardSection.recentActivity}</p>
               </div>
               <div className="space-y-3">
-                {events.map((event) => (
+                {events.map(([time, text]) => (
                   <div
-                    key={event}
-                    className="rounded-lg bg-neutral-900 p-3 text-sm font-semibold leading-6 text-neutral-300 shadow-sm"
+                    key={text}
+                    className="rounded-lg bg-neutral-900 p-3 shadow-sm"
                   >
-                    {event}
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-purple-400">
+                      {time}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-neutral-300">
+                      {text}
+                    </p>
                   </div>
                 ))}
               </div>

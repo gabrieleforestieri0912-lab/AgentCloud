@@ -159,82 +159,110 @@ export default function ChatInterface({
 
     setIsTyping(true);
 
-    // Try the Gemini-backed chat endpoint, fallback to local responses on failure.
-    let responseText = "";
-    try {
-      const providerRes = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: text }],
-          agentId: activeAgentId || undefined,
-        }),
-      });
-
-      if (providerRes.ok) {
-        const reader = providerRes.body?.getReader();
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const text = new TextDecoder().decode(value);
-            const lines = text.split("\n").filter((line) => line.trim());
-            for (const line of lines) {
-              try {
-                const json = JSON.parse(line);
-                if (json.type === "text" && json.content) {
-                  responseText += json.content;
-                  // Update message in real-time
-                  setConversations((prev) =>
-                    prev.map((c) =>
-                      c.id === convId
-                        ? {
-                            ...c,
-                            messages: [
-                              ...c.messages.slice(0, -1),
-                              {
-                                id: generateId(),
-                                role: "assistant",
-                                content: responseText,
-                                created_at: new Date().toISOString(),
-                              },
-                            ],
-                          }
-                        : c,
-                    ),
-                  );
-                }
-                if (json.type === "done") break;
-              } catch {}
-            }
-          }
-        }
-      } else {
-        throw new Error("AI backend unavailable");
-      }
-    } catch {
-      // Fallback to local responses
-      await new Promise((r) => setTimeout(r, 600 + Math.random() * 1200));
-      responseText = getLocalChatResponse(text, locale);
-
+    // Update a single assistant message in place as the stream arrives.
+    // Returns the stable id so later chunks update the same bubble.
+    const patchAssistant = (assistantId: string, content: string) => {
       setConversations((prev) =>
         prev.map((c) =>
           c.id === convId
             ? {
                 ...c,
-                messages: [
-                  ...c.messages,
-                  {
-                    id: generateId(),
-                    role: "assistant",
-                    content: responseText,
-                    created_at: new Date().toISOString(),
-                  },
-                ],
+                messages: c.messages.some((m) => m.id === assistantId)
+                  ? c.messages.map((m) =>
+                      m.id === assistantId ? { ...m, content } : m,
+                    )
+                  : [
+                      ...c.messages,
+                      {
+                        id: assistantId,
+                        role: "assistant",
+                        content,
+                        created_at: new Date().toISOString(),
+                      },
+                    ],
               }
             : c,
         ),
       );
+    };
+
+    // Try the Gemini-backed chat endpoint, fallback to local responses on failure.
+    let responseText = "";
+    try {
+      // Send the full conversation history so the AI stays coherent across
+      // follow-ups (and always answers against the latest platform data).
+      const history =
+        conversations.find((c) => c.id === convId)?.messages ?? [];
+      const apiMessages = [
+        ...history.map((m) => ({ role: m.role, content: m.content })),
+        { role: "user" as const, content: text },
+      ];
+
+      const providerRes = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: apiMessages,
+          agentId: activeAgentId || undefined,
+        }),
+      });
+
+      if (providerRes.ok && providerRes.body) {
+        const reader = providerRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let assistantId = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            let json: { type?: string; content?: string };
+            try {
+              json = JSON.parse(line.slice(6));
+            } catch {
+              continue;
+            }
+
+            if (json.type === "text" && typeof json.content === "string") {
+              responseText += json.content;
+              if (!assistantId) assistantId = generateId();
+              patchAssistant(assistantId, responseText);
+            }
+
+            if (json.type === "done") break;
+          }
+        }
+
+        // Stream ended without any content — treat as backend failure.
+        if (!responseText.trim()) throw new Error("Empty response");
+      } else {
+        throw new Error("AI backend unavailable");
+      }
+    } catch {
+      // Fallback to local responses, typed out word by word for consistency.
+      await new Promise((r) => setTimeout(r, 600 + Math.random() * 1200));
+      responseText = getLocalChatResponse(text, locale);
+
+      const assistantId = generateId();
+      const words = responseText.split(/(\s+)/);
+      let emitted = "";
+      await new Promise<void>((resolve) => {
+        const timer = setInterval(() => {
+          emitted += words.shift() ?? "";
+          patchAssistant(assistantId, emitted);
+          if (words.length === 0) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, 30);
+      });
     }
 
     setIsTyping(false);

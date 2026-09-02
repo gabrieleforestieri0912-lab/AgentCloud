@@ -123,6 +123,22 @@ export default function Footer() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <a
+                  href="tel:+393519863021"
+                  className="text-base font-bold text-neutral-300 hover:text-white transition-colors"
+                >
+                  {dict.footer.phone}
+                </a>
+              </li>
+              <li>
+                <a
+                  href="mailto:info@agentcloud.agency"
+                  className="text-base font-bold text-neutral-300 hover:text-white transition-colors"
+                >
+                  {dict.footer.email}
+                </a>
+              </li>
             </ul>
           </div>
         </div>

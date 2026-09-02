@@ -53,6 +53,17 @@ describe("buildPlatformSystemPrompt", () => {
     expect(enPrompt).toContain("10 AI agents");
     expect(enPrompt).toContain("Available now (5)");
     expect(enPrompt).toContain("Coming soon (5)");
+
+    // Platform knowledge: pricing, contacts and integrations are always present.
+    expect(itPrompt).toContain("**Piani e prezzi**");
+    expect(itPrompt).toContain("**Starter** — €29/mese");
+    expect(itPrompt).toContain("**Growth** — €39/mese");
+    expect(itPrompt).toContain("info@agentcloud.agency");
+    expect(itPrompt).toContain("+39 351 986 3021");
+    expect(itPrompt).toContain("**Google Calendar**");
+    expect(itPrompt).toContain("letto in tempo reale");
+    expect(enPrompt).toContain("**Plans and pricing**");
+    expect(enPrompt).toContain("info@agentcloud.agency");
   });
 
   it("uses the database rows when they are available", async () => {

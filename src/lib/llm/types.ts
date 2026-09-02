@@ -74,5 +74,13 @@ export type LLMProviderName = "gemini";
 
 export interface LLMProvider {
   name: LLMProviderName;
-  chat(params: LLMChatParams): Promise<LLMResponse>;
+  /**
+   * Run a chat completion. When `onText` is provided the provider streams
+   * text deltas as they are generated (token by token) and still resolves
+   * with the full normalized `LLMResponse` once generation finishes.
+   */
+  chat(
+    params: LLMChatParams,
+    onText?: (delta: string) => void,
+  ): Promise<LLMResponse>;
 }

@@ -176,9 +176,92 @@ export function createGeminiProvider(options?: {
   return {
     name: "gemini",
 
-    async chat(params: LLMChatParams): Promise<LLMResponse> {
+    async chat(
+      params: LLMChatParams,
+      onText?: (delta: string) => void,
+    ): Promise<LLMResponse> {
       const resolvedModel = resolveModel(params.model || model);
 
+      // Streaming path: emit text deltas as they are generated. Tool calls
+      // (functionCall parts) arrive complete in the final chunk, so keep the
+      // last chunk that carries one — it has the full arguments.
+      if (onText) {
+        const stream = await getClient().models.generateContentStream({
+          model: resolvedModel,
+          contents: normalizeMessages(params.messages),
+          config: {
+            systemInstruction: params.system,
+            maxOutputTokens: params.maxTokens,
+            tools: normalizeTools(params.tools),
+          },
+        });
+
+        const textParts: string[] = [];
+        const toolUses: LLMResponse["toolUses"] = [];
+        let stopReason: LLMResponse["stopReason"] = "end_turn";
+        let finishReason: string | undefined;
+        let lastFunctionCallContent: Content | undefined;
+        let usage = { inputTokens: 0, outputTokens: 0 };
+
+        for await (const chunk of stream) {
+          const candidate = chunk.candidates?.[0];
+          const parts = candidate?.content?.parts ?? [];
+
+          for (const part of parts) {
+            if (part.text) {
+              textParts.push(part.text);
+              onText(part.text);
+            }
+          }
+
+          // The final chunk carries the complete function calls — replace any
+          // partial list from earlier chunks with the last complete one.
+          if (parts.some((p) => p.functionCall)) {
+            toolUses.length = 0;
+            for (const part of parts) {
+              if (part.functionCall) {
+                toolUses.push({
+                  id: `toolu_gemini_${toolUses.length}`,
+                  name: part.functionCall.name ?? "unknown",
+                  input: (part.functionCall.args ?? {}) as Record<string, unknown>,
+                });
+              }
+            }
+            lastFunctionCallContent = candidate?.content;
+          }
+
+          if (candidate?.finishReason) finishReason = candidate.finishReason;
+          if (chunk.usageMetadata) {
+            usage = {
+              inputTokens: chunk.usageMetadata.promptTokenCount ?? 0,
+              outputTokens: chunk.usageMetadata.candidatesTokenCount ?? 0,
+            };
+          }
+        }
+
+        if (finishReason === "STOP") {
+          stopReason = toolUses.length > 0 ? "tool_use" : "end_turn";
+        } else if (finishReason === "MAX_TOKENS") {
+          stopReason = "max_tokens";
+        } else if (finishReason === "SAFETY" || finishReason === "RECITATION") {
+          stopReason = "stop";
+        } else if (toolUses.length > 0) {
+          stopReason = "tool_use";
+        }
+
+        if (lastFunctionCallContent && toolUses.length > 0) {
+          rawResponseByToolUses.set(toolUses, lastFunctionCallContent);
+        }
+
+        return {
+          text: textParts.join(""),
+          toolUses,
+          stopReason,
+          usage,
+        };
+      }
+
+      // Non-streaming path (agent tool loops that need the full response).
       const response = await getClient().models.generateContent({
         model: resolvedModel,
         contents: normalizeMessages(params.messages),
