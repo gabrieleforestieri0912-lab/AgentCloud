@@ -29,7 +29,7 @@ export default function IntegrationsSection() {
   const { dict } = useLanguage();
   return (
     <section className="py-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl 3xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
@@ -57,7 +57,7 @@ export default function IntegrationsSection() {
 
         {/* Integration grid with original brand marks */}
         <motion.div
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl mx-auto mb-16"
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl 3xl:max-w-7xl mx-auto mb-16"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}

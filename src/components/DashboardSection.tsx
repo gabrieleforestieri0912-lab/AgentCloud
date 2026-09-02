@@ -11,7 +11,7 @@ export default function DashboardSection() {
   const events = dict.dashboardSection.events;
   return (
     <section className="overflow-hidden py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
         <motion.div
           className="mb-12 text-center"
           initial={{ opacity: 0, y: 30 }}
@@ -59,7 +59,7 @@ export default function DashboardSection() {
             </span>
           </div>
 
-          <div className="grid gap-4 p-2 pt-5 lg:grid-cols-[220px_1fr_300px]">
+          <div className="grid gap-4 p-2 pt-5 lg:grid-cols-[220px_1fr_300px] 3xl:grid-cols-[240px_1fr_380px]">
             <aside className="hidden rounded-xl border border-white/5 bg-neutral-800 p-4 lg:block">
               <div className="mb-6 flex items-center gap-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500 text-white">

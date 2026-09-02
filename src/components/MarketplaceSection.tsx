@@ -9,7 +9,7 @@ export default function MarketplaceSection() {
   const { dict } = useLanguage();
   return (
     <section id="marketplace" className="py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
         {/* Header animation */}
         <motion.div
           className="mb-14 grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-end"

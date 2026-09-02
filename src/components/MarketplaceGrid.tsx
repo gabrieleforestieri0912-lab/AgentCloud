@@ -101,7 +101,7 @@ export default function MarketplaceGrid({
         </div>
 
         {/* Available agents grid */}
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">
           {filteredAvailable.map((agent) => (
             <AgentCard
               key={agent.slug}
@@ -136,7 +136,7 @@ export default function MarketplaceGrid({
               {t(dict.agentsPage.agentsCount, { count: comingSoonCount })}
             </span>
           </div>
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">
             {comingSoonAgents.map((agent) => (
               <AgentCard
                 key={agent.slug}

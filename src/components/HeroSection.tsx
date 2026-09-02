@@ -188,7 +188,7 @@ export default function HeroSection() {
       <HeroBubbles />
 
       {/* Outer Wide Screen Flex Wrapper */}
-      <div className="w-full max-w-7xl mx-auto flex items-center justify-between relative">
+      <div className="w-full max-w-7xl 3xl:max-w-[1720px] mx-auto flex items-center justify-between relative">
         {/* CENTER HERO CONTENT */}
         <motion.div
           className="relative z-10 mx-auto max-w-4xl text-center px-4"

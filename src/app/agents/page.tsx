@@ -39,7 +39,7 @@ export default async function AgentsPage() {
       <Navbar marketplaceAgents={available} />
 
       <section className="bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-12 max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">
               {dict.agentsPage.badge}

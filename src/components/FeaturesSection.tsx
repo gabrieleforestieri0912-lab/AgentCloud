@@ -21,7 +21,7 @@ export default function FeaturesSection() {
 
   return (
     <section id="solutions" className="py-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl 3xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
@@ -48,7 +48,7 @@ export default function FeaturesSection() {
         </motion.div>
 
         <motion.div
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid md:grid-cols-2 lg:grid-cols-3 3xl:grid-cols-4 gap-6"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}

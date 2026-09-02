@@ -157,7 +157,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               "radial-gradient(circle at 15% 10%, rgba(3,139,254,0.10), transparent 40%), radial-gradient(circle at 85% 25%, rgba(217,70,239,0.06), transparent 45%)",
           }}
         />
-        <div className="relative mx-auto max-w-7xl">
+        <div className="relative mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <Link
             href="/agents"
             className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm font-bold text-neutral-400 backdrop-blur transition-colors hover:border-white/20 hover:text-white"
@@ -349,7 +349,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
 
       {/* ─── Content + Preview ─── */}
       <section className="px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_420px]">
+        <div className="mx-auto grid max-w-7xl 3xl:max-w-[1720px] gap-8 lg:grid-cols-[1fr_420px] 3xl:grid-cols-[1fr_480px]">
           <div className="space-y-8">
             {/* What this agent automates */}
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/20">
@@ -467,7 +467,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
       {/* ─── Related agents ─── */}
       {relatedAgents.length > 0 && (
         <section className="border-t border-white/5 px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
             <div className="mb-2 flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
                 <Layers size={18} />

@@ -75,6 +75,9 @@
   --color-indigo-800: #4a319c;
   --color-indigo-900: #311c72;
   --color-indigo-950: #1a0d48;
+
+  /* Ultra-wide screens: content opens up from ~1920px up. */
+  --breakpoint-3xl: 120rem;
 }
 
 @layer base {

@@ -178,7 +178,7 @@ export default async function DashboardPage({
       <Navbar />
 
       <section className="px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="mb-4 flex items-center gap-2">

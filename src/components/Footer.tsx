@@ -44,7 +44,7 @@ export default function Footer() {
         }}
       />
 
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+      <div className="relative mx-auto max-w-7xl 3xl:max-w-[1720px] px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 py-20 border-b border-white/10">
           {/* Brand column */}
           <div className="lg:col-span-2 flex flex-col items-start gap-4">

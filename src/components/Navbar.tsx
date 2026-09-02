@@ -142,7 +142,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
       <header
         className="fixed left-0 right-0 top-0 z-50"
       >
-        <div className="mx-auto mt-3 max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto mt-3 max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between rounded-full border border-white/10 bg-neutral-950/90 px-6 shadow-lg shadow-black/20 backdrop-blur-xl">
             <Link href="/" className="group flex items-center gap-2.5">
               <div className="relative h-9 w-9">
