@@ -223,11 +223,11 @@
 
 ## 📊 Confronto Piani
 
-| Piano                 | Prezzo    | Conversazioni/Mese | Agenti Inclusi | Tools               |
-| --------------------- | --------- | ------------------ | -------------- | ------------------- |
-| **Starter**           | €29/mese  | 300                | 1 a scelta     | Solo default        |
-| **Growth**            | €39/mese  | 1.000              | 1 a scelta     | Default + opzionali |
-| **Add-on Web Search** | +€15/mese | -                  | Qualsiasi      | + web_search        |
+| Piano                 | Prezzo    | Token/Mese | Agenti Inclusi | Tools               |
+| --------------------- | --------- | ---------- | -------------- | ------------------- |
+| **Starter**           | €29/mese  | 300.000    | 1 a scelta     | Solo default        |
+| **Growth**            | €39/mese  | 1.000.000  | 1 a scelta     | Default + opzionali |
+| **Add-on Web Search** | +€15/mese | -          | Qualsiasi      | + web_search        |
 
 ## 🎯 Verticali
 

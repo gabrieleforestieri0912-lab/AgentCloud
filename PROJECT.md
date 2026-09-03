@@ -13,7 +13,7 @@
 - **Supabase Auth** — autenticazione (email + password, Google OAuth, sessioni `@supabase/ssr`)
 - **Supabase** — database (billing, usage, rate limits) + form storage
 - **Stripe** — payment links, abbonamenti, customer portal, **overage billing** (Billing Meter)
-- **Google Gemini** — backend LLM unico (agenti `/api/agent/run`, chat `/api/chat`)
+- **Google Gemini** — backend LLM unico (agenti `/api/agent/run`, chat `/api/chat`), risposte in **streaming parola per parola**
 - **Resend** — email transazionali
 - **Simple Icons** — icone brand originali (integrazioni/hero) · **Lucide** — icone UI
 
@@ -51,9 +51,11 @@ src/
     ├── i18n/                # dictionaries (it/en), locale, api-errors, agentCatalog
     ├── billing/             # pricing, usage-tracking (limiti token, overage)
     ├── stripe/              # overage (meter), webhook-helpers
-    ├── agents/              # registry runtime, feature-flags, tools
+    ├── agents/              # registry runtime, feature-flags, platform-context (chat)
     ├── rate-limit.ts        # Rate limiting distribuito (Supabase RPC)
     ├── request-ip.ts        # Client IP condiviso
+    ├── stream.ts            # Streaming parole per parola (SSE) per chat e agent runs
+    ├── chat-responses.ts    # Risposte locali deterministiche (fallback senza backend)
     └── site-url.ts          # getSiteUrl() — unica fonte della URL pubblica
 ```
 
@@ -85,6 +87,7 @@ src/
 
 ### Layout
 - `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` · sezioni `py-24` · `rounded-xl/2xl/full`
+- **Ultra-wide (≥1920px)**: breakpoint custom `3xl` (`--breakpoint-3xl` in `globals.css`) — contenitori principali fino a `3xl:max-w-[1720px]`, griglie marketplace/features a 4 colonne; sotto i 1920px i layout restano invariati
 - Landing e pagine interne su **dark** (`bg-neutral-950`); deploy su light
 
 ### Font
@@ -228,8 +231,9 @@ npm run dev       # sviluppo
 npm run build     # build produzione (con typecheck)
 npm run start     # avvio produzione
 npm run lint      # ESLint
-npm run test      # Vitest (158 test)
+npm run test      # Vitest (161 test)
 npm run typecheck # tsc --noEmit
+```
 
 ---
 
@@ -256,4 +260,3 @@ Flusso runtime: `/api/shopify/install` (CSRF state + redirect) →
 revocano su 401 (APP_UNINSTALLED / shop/redact). La tabella
 `shopify_connections` è creata da `supabase/schema-shopify-oauth.sql`
 (rieseguire dopo il deploy).
-```

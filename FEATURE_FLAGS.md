@@ -4,7 +4,7 @@
 
 AgentCloud uses feature flags to control which agents and tools are available in your deployment. This allows you to:
 
-- **Launch with a few agents** instead of the whole 30-agent catalog
+- **Launch with a few agents** instead of the whole 10-agent catalog
 - **Reduce surface area** for initial demos
 - **Gradually roll out** features to specific customers
 - **Test new agents** with specific customers before full launch
