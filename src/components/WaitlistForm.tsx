@@ -215,10 +215,12 @@ export default function WaitlistForm({
                 {remainingSpots}/{MAX_SPOTS}
               </span>
               <div className="w-20 bg-neutral-700 rounded-full h-1.5">
+                {/* Barra dei posti OCCUPATI: si riempie con le iscrizioni, quindi
+                    quando la waitlist è piena (0 rimanenti) la barra è piena. */}
                 <motion.div
                   className="bg-linear-to-r from-brand-500 to-pink-500 h-1.5 rounded-full"
-                  initial={{ width: "100%" }}
-                  animate={{ width: `${(remainingSpots / MAX_SPOTS) * 100}%` }}
+                  initial={{ width: `${((MAX_SPOTS - remainingSpots) / MAX_SPOTS) * 100}%` }}
+                  animate={{ width: `${((MAX_SPOTS - remainingSpots) / MAX_SPOTS) * 100}%` }}
                   transition={{ duration: 0.5 }}
                 />
               </div>

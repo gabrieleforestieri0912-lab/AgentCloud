@@ -2,4 +2,4 @@
 // in server-only Supabase code) so the waitlist page — a client component —
 // can import the cap without dragging server code into the client bundle.
 // Total available waitlist spots (mirrors the DB-driven cap everywhere).
-export const MAX_SPOTS = 10;
+export const MAX_SPOTS = 20;

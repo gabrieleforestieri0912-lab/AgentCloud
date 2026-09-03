@@ -100,18 +100,20 @@ password casuale mai rivelata, `user_metadata.source = "waitlist"`), quindi comp
 Se l'email è già registrata (es. un utente che aveva già un account) la creazione viene
 saltata senza errori: l'iscrizione alla waitlist riesce comunque.
 
-### Posti rimanenti e backfill
+### Posti rimanenti
 
-Il contatore dei posti (`getRemainingSpots`) legge la **tabella `waitlist`** come unica
-fonte di verità: ogni riga = una persona = un posto. Quindi il numero cala **a ogni
-iscrizione**, anche se la creazione dell'utente Auth dovesse fallire temporaneamente.
-Per liberare un posto si cancella la riga dalla tabella (Table Editor) — e, se serve,
-anche l'utente Auth corrispondente.
+Il contatore dei posti (`getRemainingSpots`) conta gli **utenti in Supabase Auth**
+(Authentication → Users): ogni utente = una persona = un posto. Quindi:
+- a ogni iscrizione alla waitlist viene creato subito l'utente Auth → il posto cala;
+- **cancellare un utente in Authentication → Users libera subito il posto** (il modo
+  più semplice per ripulire iscrizioni di test/spam);
+- la tabella `waitlist` è il registro delle email (serve per il controllo "già
+  iscritto" e come backup): le righe senza utente Auth corrispondente vengono
+  ripulite automaticamente al conteggio.
 
-Le iscrizioni precedenti all'introduzione della creazione automatica degli utenti
-(vengono registrate solo in tabella, non in Auth) si riparano con il backfill
-idempotente `GET /api/waitlist/sync` (protetto da admin) oppure ri-eseguendo la
-creazione manualmente: l'email compare subito in **Authentication → Users**.
+Se mancano utenti Auth per delle email in tabella (es. iscrizioni di prima che la
+creazione automatica esistesse), il backfill idempotente `GET /api/waitlist/sync`
+(protetto da admin) li ricrea: l'email compare subito in **Authentication → Users**.
 
 ## Migrazione da Clerk
 

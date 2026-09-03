@@ -6,23 +6,86 @@ import { MAX_SPOTS } from "@/lib/waitlist-constants";
 export { MAX_SPOTS };
 
 /**
- * Authoritative remaining spots: MAX_SPOTS minus the real number of signups
- * currently stored. The `waitlist` table is the single source of truth:
- * emails are unique, so each row is exactly one person occupying one spot.
+ * Count the users that occupy a spot. The authoritative source is Supabase
+ * Auth (Authentication → Users): each user is one person occupying one spot,
+ * and deleting a user in the dashboard frees its spot immediately. The
+ * `waitlist` table is a signup log (email list + duplicate detection), NOT
+ * the source of truth for the counter.
  *
- * Counting from the table (instead of from Auth users) guarantees the counter
- * moves on EVERY signup — even if Auth provisioning is temporarily down — and
- * stays consistent with what the GET /api/waitlist verification reads.
- * Uses the service-role client so RLS on the table (select = authenticated
- * only) doesn't hide rows; falls back to the anon client in dev.
+ * While here, also drop waitlist rows whose email no longer has an Auth user
+ * (the owner deleted the user in the dashboard): this keeps the log aligned
+ * with Auth and lets that email re-join later instead of being stuck on 409.
  */
-export async function getRemainingSpots(): Promise<number> {
+async function countTakenSpots(): Promise<number> {
+  const admin = createAdminClient();
+  if (admin) {
+    try {
+      let taken = 0;
+      let page = 1;
+      let total: number | undefined;
+      const emails = new Set<string>();
+      do {
+        const { data, error } = await admin.auth.admin.listUsers({ page });
+        if (error) throw error;
+        const users = data?.users ?? [];
+        taken += users.length;
+        for (const u of users) {
+          if (u.email) emails.add(u.email.toLowerCase());
+        }
+        total = data?.total;
+        page += 1;
+      } while (total !== undefined && page <= Math.max(1, Math.ceil(total / 50)));
+
+      // Reconcile the signup log with Auth (idempotent, only when mismatched).
+      const { data: rows, error: rowsErr } = await admin
+        .from("waitlist")
+        .select("email");
+      if (!rowsErr && rows) {
+        const orphans = rows
+          .map((r) => r.email)
+          .filter((email) => email && !emails.has(email.toLowerCase()));
+        if (orphans.length) {
+          const { error: delErr } = await admin
+            .from("waitlist")
+            .delete()
+            .in("email", orphans);
+          if (delErr) {
+            console.error(
+              "[waitlist] failed to clean orphan rows:",
+              delErr.message,
+            );
+          } else {
+            console.log(
+              "[waitlist] removed",
+              orphans.length,
+              "orphan row(s):",
+              orphans.join(", "),
+            );
+          }
+        }
+      }
+      return taken;
+    } catch (err) {
+      console.error("[waitlist] failed to count Auth users:", err);
+    }
+  }
+
+  // Dev / fallback: count waitlist rows as a proxy for taken spots.
   const supabase = createAdminClient() ?? (await createClient());
   const { count, error } = await supabase
     .from("waitlist")
     .select("id", { count: "exact", head: true });
   if (error) throw error;
-  return Math.max(MAX_SPOTS - (count ?? 0), 0);
+  return count ?? 0;
+}
+
+/**
+ * Authoritative remaining spots: MAX_SPOTS minus the number of Auth users.
+ * Deleting a user in Authentication → Users frees its spot immediately.
+ */
+export async function getRemainingSpots(): Promise<number> {
+  const taken = await countTakenSpots();
+  return Math.max(MAX_SPOTS - taken, 0);
 }
 
 /**
