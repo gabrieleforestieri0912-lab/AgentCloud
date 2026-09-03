@@ -111,9 +111,9 @@ Il contatore dei posti (`getRemainingSpots`) conta gli **utenti in Supabase Auth
   iscritto" e come backup): le righe senza utente Auth corrispondente vengono
   ripulite automaticamente al conteggio.
 
-Se mancano utenti Auth per delle email in tabella (es. iscrizioni di prima che la
-creazione automatica esistesse), il backfill idempotente `GET /api/waitlist/sync`
-(protetto da admin) li ricrea: l'email compare subito in **Authentication → Users**.
+Il backfill è **automatico e solo per le nuove iscrizioni**: la creazione dell'utente
+Auth avviene dentro `POST /api/waitlist`, al momento dell'iscrizione — le email
+storiche in tabella non vengono toccate.
 
 ## Migrazione da Clerk
 
