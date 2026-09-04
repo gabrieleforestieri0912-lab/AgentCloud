@@ -36,11 +36,24 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
   const [input, setInput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [files, setFiles] = useState<Record<string, string>>({});
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Auto-scroll only while the user is at the bottom, scrolling the container
+  // directly (instant) — smooth scrollIntoView restarts on every streamed
+  // word and fights the finger on mobile.
+  const stickToBottom = useRef(true);
+
+  const handleMessagesScroll = () => {
+    const el = messagesRef.current;
+    if (!el) return;
+    stickToBottom.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
   const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesRef.current;
+    if (!el || !stickToBottom.current) return;
+    el.scrollTop = el.scrollHeight;
   }, []);
 
   useEffect(() => {
@@ -184,7 +197,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex flex-col">
+    <div className="min-h-dvh bg-neutral-950 flex flex-col">
       <header className="border-b border-white/5 bg-neutral-900/50 backdrop-blur-sm px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-linear-to-br from-brand-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -206,7 +219,11 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
         </a>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 max-w-4xl mx-auto w-full">
+      <div
+        ref={messagesRef}
+        onScroll={handleMessagesScroll}
+        className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 max-w-4xl mx-auto w-full"
+      >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-20">
             <div className="w-16 h-16 bg-linear-to-br from-brand-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/20 mb-5">
@@ -284,7 +301,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
             </div>
           ))
         )}
-        <div ref={bottomRef} />
+
       </div>
 
       <div className="border-t border-white/5 bg-neutral-900/80 backdrop-blur-sm px-4 sm:px-6 py-4">

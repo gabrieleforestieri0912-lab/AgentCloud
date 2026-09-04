@@ -80,14 +80,28 @@ export default function ChatInterface({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const initializedRef = useRef(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // True while the user is at the bottom of the conversation. Auto-scroll
+  // only runs then: while streaming, word-by-word updates scroll the
+  // container directly (instant, no smooth animation fighting the finger),
+  // and reading older messages is never interrupted by yanking back down.
+  const stickToBottom = useRef(true);
 
   const activeConv = conversations.find((c) => c.id === activeId);
   const messages = useMemo(() => activeConv?.messages ?? [], [activeConv]);
 
+  const handleMessagesScroll = () => {
+    const el = messagesRef.current;
+    if (!el) return;
+    stickToBottom.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
+
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesRef.current;
+    if (!el || !stickToBottom.current) return;
+    el.scrollTop = el.scrollHeight;
   }, []);
 
   useEffect(() => {
@@ -293,7 +307,7 @@ export default function ChatInterface({
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] pt-16 relative">
+    <div className="flex h-[calc(100dvh-4rem)] pt-16 relative">
       {/* Desktop sidebar toggle */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -507,7 +521,11 @@ export default function ChatInterface({
         {activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
+        <div
+          ref={messagesRef}
+          onScroll={handleMessagesScroll}
+          className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4"
+        >
           {messages.length === 0 && !isTyping ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <Image
@@ -602,7 +620,6 @@ export default function ChatInterface({
             </div>
           )}
 
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Input area */}
