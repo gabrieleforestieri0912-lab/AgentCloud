@@ -31,26 +31,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // System prompt + model from the agent registry when an agent is targeted.
-    // For the general platform chat (no agent), the model gets a system
-    // prompt built from the REAL platform data — active agents and counts
-    // read from the agents_registry database (see platform-context).
-    let systemPrompt = "You are a helpful AI assistant.";
+    // Locale is read up-front so the slow platform-prompt build (live DB
+    // query) can happen lazily inside the stream without delaying headers.
+    const locale = await getLocale();
+
+    // Model from the agent registry when an agent is targeted. Clients may
+    // send a model name (e.g. from an agent config). If it isn't a Claude
+    // model, the Anthropic provider maps it to the configured default, so
+    // here we always pass a valid Claude model to the backend.
     let resolvedModel = model;
     if (agentId && AGENT_RUNTIME[agentId]) {
-      systemPrompt = AGENT_RUNTIME[agentId].systemPrompt;
       resolvedModel = AGENT_RUNTIME[agentId].model;
-    } else {
-      try {
-        systemPrompt = await buildPlatformSystemPrompt(await getLocale());
-      } catch {
-        // Never fail the chat because the platform prompt could not be built.
-      }
     }
-
-    // Clients may send a model name (e.g. from an agent config). If it isn't
-    // a Claude model, the Anthropic provider maps it to the configured
-    // default, so here we always pass a valid Claude model to the backend.
     const finalModel =
       resolvedModel && resolvedModel.startsWith("claude")
         ? resolvedModel
@@ -83,6 +75,23 @@ export async function POST(req: Request) {
             // let the word emitter stop itself on its next tick.
           }
         };
+
+        // System prompt: agent-specific when an agent is targeted, otherwise
+        // built from the REAL platform data (active agents and counts read
+        // from the agents_registry database — see platform-context). It is
+        // built lazily here so headers reach the client immediately and cold
+        // starts / slow DB queries never stall the stream before the first
+        // byte. A failure degrades to the generic prompt, never to an error.
+        let systemPrompt = "You are a helpful AI assistant.";
+        try {
+          systemPrompt =
+            agentId && AGENT_RUNTIME[agentId]
+              ? AGENT_RUNTIME[agentId].systemPrompt
+              : await buildPlatformSystemPrompt(locale);
+        } catch {
+          // Keep the generic prompt — never fail the chat because the
+          // platform prompt could not be built.
+        }
 
         // Re-emit the provider's text deltas one word at a time so the
         // message types out in every chat UI instead of appearing whole.

@@ -72,6 +72,10 @@ export default function ChatInterface({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState(initialQuery || "");
   const [isTyping, setIsTyping] = useState(false);
+  // True once the assistant's current reply has started streaming (its bubble
+  // grows word by word). The three-dot indicator is shown only before the
+  // first word arrives — while the typewriter is running, dots stay hidden.
+  const [hasPartialReply, setHasPartialReply] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const initializedRef = useRef(false);
@@ -158,6 +162,7 @@ export default function ChatInterface({
     );
 
     setIsTyping(true);
+    setHasPartialReply(false);
 
     // Update a single assistant message in place as the stream arrives.
     // Returns the stable id so later chunks update the same bubble.
@@ -232,7 +237,10 @@ export default function ChatInterface({
 
             if (json.type === "text" && typeof json.content === "string") {
               responseText += json.content;
-              if (!assistantId) assistantId = generateId();
+              if (!assistantId) {
+                assistantId = generateId();
+                setHasPartialReply(true);
+              }
               patchAssistant(assistantId, responseText);
             }
 
@@ -251,6 +259,7 @@ export default function ChatInterface({
       responseText = getLocalChatResponse(text, locale);
 
       const assistantId = generateId();
+      setHasPartialReply(true);
       const words = responseText.split(/(\s+)/);
       let emitted = "";
       await new Promise<void>((resolve) => {
@@ -461,15 +470,13 @@ export default function ChatInterface({
         {/* Chat header */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur-sm">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-linear-to-br from-brand-500 to-pink-600 rounded-lg flex items-center justify-center">
-              <Image
-                src="/agentcloud.png"
-                alt="AgentCloud"
-                width={14}
-                height={14}
-                className="text-white"
-              />
-            </div>
+            <Image
+              src="/agentcloud.png"
+              alt="AgentCloud"
+              width={28}
+              height={28}
+              className="shrink-0"
+            />
             <div>
               <p className="text-sm font-semibold text-white">AgentCloud AI</p>
               <p className="text-xs font-semibold text-neutral-500">
@@ -503,15 +510,13 @@ export default function ChatInterface({
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
           {messages.length === 0 && !isTyping ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-14 h-14 bg-linear-to-br from-brand-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/20 mb-4">
-                <Image
-                  src="/agentcloud.png"
-                  alt="AgentCloud"
-                  width={28}
-                  height={28}
-                  className="text-white"
-                />
-              </div>
+              <Image
+                src="/agentcloud.png"
+                alt="AgentCloud"
+                width={56}
+                height={56}
+                className="mb-4"
+              />
               <h2 className="text-xl font-semibold text-white mb-2">
                 {dict.chat.emptyTitle}
               </h2>
@@ -528,15 +533,13 @@ export default function ChatInterface({
                 }`}
               >
                 {msg.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-xl bg-linear-to-br from-brand-500 to-pink-600 flex items-center justify-center shrink-0 shadow-lg shadow-brand-500/10">
-                    <Image
-                      src="/agentcloud.png"
-                      alt="AgentCloud"
-                      width={14}
-                      height={14}
-                      className="text-white"
-                    />
-                  </div>
+                  <Image
+                    src="/agentcloud.png"
+                    alt="AgentCloud"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 shrink-0"
+                  />
                 )}
                 <div
                   className={`max-w-[75%] sm:max-w-[65%] ${msg.role === "user" ? "order-1" : ""}`}
@@ -571,17 +574,15 @@ export default function ChatInterface({
             ))
           )}
 
-          {isTyping && (
+          {isTyping && !hasPartialReply && (
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-linear-to-br from-brand-500 to-pink-600 flex items-center justify-center shrink-0 shadow-lg shadow-brand-500/10">
-                <Image
-                  src="/agentcloud.png"
-                  alt="AgentCloud"
-                  width={14}
-                  height={14}
-                  className="text-white"
-                />
-              </div>
+              <Image
+                src="/agentcloud.png"
+                alt="AgentCloud"
+                width={32}
+                height={32}
+                className="w-8 h-8 shrink-0"
+              />
               <div className="bg-neutral-800 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3.5">
                 <div className="flex gap-1.5 items-center h-4">
                   <span

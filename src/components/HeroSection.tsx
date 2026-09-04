@@ -63,7 +63,11 @@ export default function HeroSection() {
     // Try the Claude-backed chat endpoint first, fall back to local responses.
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
+      // Generous guard: the endpoint streams headers immediately, but the
+      // first token can take a while on cold starts (route compilation,
+      // serverless boot, live platform-data query). 45s covers those without
+      // hanging forever on a truly dead backend.
+      const timeout = setTimeout(() => controller.abort(), 45000);
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
