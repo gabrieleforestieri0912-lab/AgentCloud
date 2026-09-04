@@ -1,14 +1,12 @@
 "use client";
 
-import { Globe } from "lucide-react";
+import { Languages } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 
-const LOCALES = [
-  { code: "it", short: "IT", long: "Italiano" },
-  { code: "en", short: "EN", long: "English" },
-] as const;
-
-type LocaleCode = (typeof LOCALES)[number]["code"];
+const LOCALES = {
+  en: { code: "en", short: "EN", long: "English" },
+  it: { code: "it", short: "IT", long: "Italiano" },
+} as const;
 
 export default function LanguageToggle({
   variant = "desktop",
@@ -17,36 +15,30 @@ export default function LanguageToggle({
 }) {
   const { locale, setLocale } = useLanguage();
 
-  const segment = (active: boolean) =>
-    `relative z-10 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
-      active
-        ? "bg-brand-500 text-white shadow-sm"
-        : "text-neutral-400 hover:text-neutral-200"
-    }`;
+  const next: "en" | "it" = locale === "en" ? "it" : "en";
+  const active = LOCALES[locale];
+  const isItalian = locale === "it";
 
-  const container = `relative flex items-center rounded-full border border-white/10 bg-neutral-900/60 p-0.5 backdrop-blur ${
-    variant === "mobile" ? "w-full" : ""
+  // English is the default → neutral look. Italian is the "changed" state →
+  // highlighted with the brand color, so the color flips on click.
+  const base = `flex items-center justify-center gap-2 rounded-full border text-xs font-bold uppercase tracking-wide transition-colors ${
+    isItalian
+      ? "border-brand-500/60 bg-brand-500/15 text-brand-300 hover:bg-brand-500/25"
+      : "border-white/10 bg-neutral-900/60 text-neutral-300 hover:border-white/25 hover:text-white"
   }`;
 
+  const size = variant === "mobile" ? "w-full py-3" : "h-9 px-3.5";
+
   return (
-    <div className={container} role="group" aria-label="Language">
-      <Globe size={14} className="ml-2 mr-1 shrink-0 text-brand-400" aria-hidden />
-      {LOCALES.map((l) => (
-        <button
-          key={l.code}
-          type="button"
-          onClick={() => setLocale(l.code as LocaleCode)}
-          aria-pressed={locale === l.code}
-          aria-label={l.long}
-          className={
-            variant === "mobile"
-              ? `flex-1 ${segment(locale === l.code)}`
-              : segment(locale === l.code)
-          }
-        >
-          {variant === "mobile" ? l.long : l.short}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      onClick={() => setLocale(next)}
+      aria-label={`Switch language to ${LOCALES[next].long} (current: ${active.long})`}
+      title={`${active.long} — click for ${LOCALES[next].long}`}
+      className={`${base} ${size}`}
+    >
+      <Languages size={16} aria-hidden />
+      <span>{active.short}</span>
+    </button>
   );
 }

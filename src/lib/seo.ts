@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getSiteUrl } from "@/lib/site-url";
-import type { Locale } from "@/lib/i18n/locale";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/constants";
 
 /**
  * Build consistent per-page SEO metadata.
@@ -22,7 +22,7 @@ export function pageSeo(opts: {
 }): Metadata {
   const BASE = getSiteUrl();
   const url = `${BASE}${opts.path}`;
-  const locale = opts.locale ?? "it";
+  const locale = opts.locale ?? DEFAULT_LOCALE;
   const ogLocale = locale === "it" ? "it_IT" : "en_US";
 
   return {
