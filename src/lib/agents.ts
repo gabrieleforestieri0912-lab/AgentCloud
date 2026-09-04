@@ -490,6 +490,25 @@ export const AVAILABLE_AGENTS: Agent[] = AGENTS.filter((a) =>
   isAvailable(a.slug),
 );
 
+// ─── Navbar featured agents ───────────────────────────────────────────────
+// The navbar dropdown intentionally shows a fixed set of flagship agents so it
+// stays compact — it must NOT grow as more agents are added to the catalog.
+// The full catalog is one click away via "Browse all agents".
+
+export const FEATURED_AGENT_SLUGS = [
+  "shopify-agent",
+  "email-manager",
+  "support-agent",
+  "lead-capture",
+] as const;
+
+/** Featured subset of a given agent list, kept in the curated display order. */
+export function getFeaturedAgents(agents: Agent[]): Agent[] {
+  return FEATURED_AGENT_SLUGS.map((slug) =>
+    agents.find((a) => a.slug === slug),
+  ).filter((a): a is Agent => Boolean(a));
+}
+
 export const COMING_SOON_AGENTS: Agent[] = AGENTS.filter((a) =>
   !isAvailable(a.slug),
 );

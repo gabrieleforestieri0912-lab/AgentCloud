@@ -14,7 +14,13 @@ import Image from "next/image";
 import AgentIcon from "./AgentIcon";
 import BrandLogo from "./BrandLogo";
 import MobileNav from "./MobileNav";
-import { AGENTS, AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
+import {
+  AGENTS,
+  AVAILABLE_AGENTS,
+  getFeaturedAgents,
+  localizeAgent,
+  type Agent,
+} from "@/lib/agents";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
 import LanguageToggle from "./LanguageToggle";
@@ -63,6 +69,9 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );
+  // The dropdown is curated: only the featured flagships, in featured order,
+  // no matter how large the catalog grows (see FEATURED_AGENT_SLUGS).
+  const featuredAgents = getFeaturedAgents(agents);
 
   // Track the Supabase session reactively (initial read + auth state changes).
   useEffect(() => {
@@ -195,7 +204,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                         {item.key === "marketplace" && (
                           <div className="w-80">
                             <div className="grid grid-cols-2 gap-2">
-                              {agents.map((agent) => (
+                              {featuredAgents.map((agent) => (
                                   <Link
                                     key={agent.slug}
                                     href={`/agents/${agent.slug}`}
