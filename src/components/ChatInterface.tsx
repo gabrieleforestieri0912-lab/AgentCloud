@@ -23,6 +23,7 @@ import { useLanguage } from "./LanguageProvider";
 import MarkdownText from "./MarkdownText";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
+import { HERO_CONVERSATION_STORAGE_KEY } from "./HeroSection";
 
 type LocalMessage = {
   id: string;
@@ -125,6 +126,41 @@ export default function ChatInterface({
       setTimeout(() => handleSendWithText(initialQuery, conv.id), 100);
     }
   }, [initialQuery]);
+
+  // Import the hero demo conversation (saved to localStorage by the hero
+  // chat) as a saved conversation, so whatever was discussed on the landing
+  // page is automatically available here.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HERO_CONVERSATION_STORAGE_KEY);
+      if (!raw) return;
+      localStorage.removeItem(HERO_CONVERSATION_STORAGE_KEY);
+      const stored = JSON.parse(raw) as {
+        id?: string;
+        role: "user" | "assistant";
+        content: string;
+        created_at?: string;
+        error?: boolean;
+      }[];
+      if (!Array.isArray(stored) || stored.length === 0) return;
+      const conv: LocalConversation = {
+        id: generateId(),
+        title: getConvTitle(stored as LocalMessage[], dict.chat.newChat),
+        messages: stored.map((m) => ({
+          id: m.id || generateId(),
+          role: m.role,
+          content: m.content,
+          created_at: m.created_at || new Date().toISOString(),
+          error: m.error,
+        })),
+        created_at: new Date().toISOString(),
+      };
+      setConversations((prev) => [conv, ...prev]);
+      setActiveId(conv.id);
+    } catch {
+      // Malformed storage — start fresh.
+    }
+  }, []);
 
   function switchConversation(id: string) {
     setActiveId(id);

@@ -2,15 +2,21 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { useLanguage } from "./LanguageProvider";
 import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 
+// The hero conversation is persisted here so the full chat page
+// (/chat) picks it up automatically and shows it as a saved conversation.
+export const HERO_CONVERSATION_STORAGE_KEY = "agentcloud_hero_conv";
+
 type HeroMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  created_at: string;
   // Error bubble: shows the failure text plus a contact link.
   error?: boolean;
 };
@@ -51,13 +57,32 @@ export default function HeroSection() {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
+  // Persist the hero conversation locally so the full chat page (/chat)
+  // imports it automatically as a saved conversation.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    try {
+      localStorage.setItem(
+        HERO_CONVERSATION_STORAGE_KEY,
+        JSON.stringify(messages),
+      );
+    } catch {
+      // Storage unavailable — the full chat simply starts fresh.
+    }
+  }, [messages]);
+
   async function handleSend() {
     const text = input.trim();
     if (!text || isTyping) return;
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
-    const userMsg: HeroMessage = { id: heroId(), role: "user", content: text };
+    const userMsg: HeroMessage = {
+      id: heroId(),
+      role: "user",
+      content: text,
+      created_at: new Date().toISOString(),
+    };
     setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
@@ -112,7 +137,12 @@ export default function HeroSection() {
               assistantAppended = true;
               setMessages((prev) => [
                 ...prev,
-                { id: aiMsgId, role: "assistant", content: aiText },
+                {
+                  id: aiMsgId,
+                  role: "assistant",
+                  content: aiText,
+                  created_at: new Date().toISOString(),
+                },
               ]);
             } else {
               setMessages((prev) =>
@@ -140,6 +170,7 @@ export default function HeroSection() {
           id: aiMsgId,
           role: "assistant",
           content: dict.hero.aiError,
+          created_at: new Date().toISOString(),
           error: true,
         },
       ]);
@@ -282,19 +313,13 @@ export default function HeroSection() {
                       }`}
                     >
                       {msg.role === "assistant" && (
-                        <div className="w-7 h-7 rounded-full bg-linear-to-br from-brand-500 to-pink-500 flex items-center justify-center shrink-0 shadow-md shadow-brand-500/20">
-                          <svg
-                            viewBox="0 0 24 24"
-                            className="w-3.5 h-3.5 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zm0 5v5l3 3" />
-                          </svg>
-                        </div>
+                        <Image
+                          src="/agentcloud.png"
+                          alt="AgentCloud"
+                          width={28}
+                          height={28}
+                          className="w-7 h-7 shrink-0"
+                        />
                       )}
                       <div
                         className={`max-w-[80%] text-sm leading-relaxed ${
@@ -332,19 +357,13 @@ export default function HeroSection() {
                   {/* Typing indicator */}
                   {isTyping && !hasStreamedContent && (
                     <div className="flex items-end gap-2.5 justify-start">
-                      <div className="w-7 h-7 rounded-full bg-linear-to-br from-brand-500 to-pink-500 flex items-center justify-center shrink-0 shadow-md shadow-brand-500/20">
-                        <svg
-                          viewBox="0 0 24 24"
-                          className="w-3.5 h-3.5 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zm0 5v5l3 3" />
-                        </svg>
-                      </div>
+                      <Image
+                        src="/agentcloud.png"
+                        alt="AgentCloud"
+                        width={28}
+                        height={28}
+                        className="w-7 h-7 shrink-0"
+                      />
                       <div className="bg-neutral-800 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
                         <div className="flex gap-1 items-center">
                           <span
@@ -412,9 +431,7 @@ export default function HeroSection() {
             {hasMessages && (
               <div className="mt-3 text-center">
                 <a
-                  href={`/chat?q=${encodeURIComponent(
-                    messages.find((m) => m.role === "user")?.content ?? "",
-                  )}`}
+                  href="/chat"
                   className="text-xs font-semibold text-neutral-500 hover:text-brand-400 transition-colors inline-flex items-center gap-1.5"
                 >
                   {dict.hero.openFullChat}
