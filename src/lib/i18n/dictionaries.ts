@@ -385,6 +385,10 @@ const it = {
     subtitle:
       "Controlla stato, esecuzioni dei workflow, alert e salute delle integrazioni senza uscire dal marketplace.",
     openDashboard: "Apri il dashboard",
+    chartTitle: "Esecuzioni negli ultimi 7 giorni",
+    chartRuns: "Esecuzioni",
+    chartWeek: "Questa settimana",
+    chartDays: ["L", "M", "M", "G", "V", "S", "D"],
     sidebar: [
       "Panoramica",
       "Agenti",
@@ -1480,6 +1484,10 @@ export const en: Dictionary = {
     subtitle:
       "Track status, workflow runs, alerts, and integration health without leaving the marketplace.",
     openDashboard: "Open dashboard",
+    chartTitle: "Runs in the last 7 days",
+    chartRuns: "Runs",
+    chartWeek: "This week",
+    chartDays: ["M", "T", "W", "T", "F", "S", "S"],
     sidebar: ["Overview", "Agents", "Integrations", "Runs", "Billing"],
     stats: [
       ["5", "Installed agents"],
