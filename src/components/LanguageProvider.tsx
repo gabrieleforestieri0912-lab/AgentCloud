@@ -4,8 +4,10 @@ import {
   createContext,
   useCallback,
   useContext,
+  useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import { LOCALE_COOKIE, type Locale } from "@/lib/i18n/constants";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries";
 
@@ -19,9 +21,17 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 /**
  * Provides the active locale (read from the cookie by the server layout) and
- * a setter that persists the choice in a cookie and updates the React context
- * immediately, so the UI switches language in place with no server round-trip.
- * The cookie keeps the choice for server-rendered pages on the next navigation.
+ * a setter that switches the language in place, with no page reload and no
+ * state loss:
+ *
+ * 1. The React context updates immediately, so every client component
+ *    (navbars, hero, chat, forms…) re-renders in the new language at once.
+ * 2. The choice is persisted in a cookie.
+ * 3. A debounced `router.refresh()` re-fetches the server components of the
+ *    current route in the background, so content rendered on the server
+ *    (page headings, legal pages, agent pages…) catches up in the new
+ *    language. It is a soft in-place refresh — not a full page reload — and
+ *    rapid toggling is coalesced into a single refresh.
  */
 export function LanguageProvider({
   initialLocale,
@@ -31,13 +41,18 @@ export function LanguageProvider({
   children: React.ReactNode;
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const router = useRouter();
 
   const setLocale = useCallback(
     (next: Locale) => {
       setLocaleState(next);
       document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
+      // Coalesce rapid toggling into a single background refresh.
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(() => router.refresh(), 200);
     },
-    [],
+    [router],
   );
 
   return (

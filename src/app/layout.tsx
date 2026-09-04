@@ -202,7 +202,11 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased bg-black text-neutral-900">
-        <LanguageProvider key={locale} initialLocale={locale}>
+        {/* No `key={locale}`: remounting the provider on a locale change
+            would wipe all client state (chat conversations, scroll, menu)
+            and re-render the whole tree. The provider switches in place and
+            calls router.refresh() so server-rendered content catches up. */}
+        <LanguageProvider initialLocale={locale}>
           {children}
         </LanguageProvider>
         <Analytics />
