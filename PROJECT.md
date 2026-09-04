@@ -28,7 +28,7 @@ src/
 │   ├── layout.tsx           # Metadata dinamici, LanguageProvider
 │   ├── page.tsx             # Homepage (hero + sezioni landing)
 │   ├── dashboard/page.tsx   # Dashboard (server component, dati reali Supabase)
-│   ├── chat/page.tsx        # Chat generica (Claude → fallback locale)
+│   ├── chat/page.tsx        # Chat generica (Claude; su errore → messaggio + link contatti)
 │   ├── agents/page.tsx      # Marketplace filtrato dai feature flags
 │   ├── agents/[slug]/page.tsx        # Dettaglio agente (localizzato)
 │   ├── agents/[slug]/deploy/         # Gate server (page.tsx) + wizard client (deploy-client.tsx)
@@ -57,7 +57,7 @@ src/
     ├── rate-limit.ts        # Rate limiting distribuito (Supabase RPC)
     ├── request-ip.ts        # Client IP condiviso
     ├── stream.ts            # Streaming parole per parola (SSE) per chat e agent runs
-    ├── chat-responses.ts    # Risposte locali deterministiche (fallback senza backend)
+    ├── chat-responses.ts    # (legacy) risposte locali deterministiche — non più usate dalle chat
     └── site-url.ts          # getSiteUrl() — unica fonte della URL pubblica
 ```
 

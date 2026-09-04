@@ -18,7 +18,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
-import { getLocalChatResponse } from "@/lib/chat-responses";
+import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { useLanguage } from "./LanguageProvider";
 import MarkdownText from "./MarkdownText";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
@@ -29,6 +29,9 @@ type LocalMessage = {
   role: "user" | "assistant";
   content: string;
   created_at: string;
+  // True for assistant bubbles that carry an error instead of an AI reply;
+  // the UI then shows a contact link below the message.
+  error?: boolean;
 };
 
 type LocalConversation = {
@@ -66,7 +69,7 @@ export default function ChatInterface({
   agentId?: string;
   availableAgents?: { slug: string; name: string }[];
 }) {
-  const { dict, locale } = useLanguage();
+  const { dict } = useLanguage();
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [activeAgentId, setActiveAgentId] = useState(agentId || "");
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -179,8 +182,14 @@ export default function ChatInterface({
     setHasPartialReply(false);
 
     // Update a single assistant message in place as the stream arrives.
-    // Returns the stable id so later chunks update the same bubble.
-    const patchAssistant = (assistantId: string, content: string) => {
+    // Returns the stable id so later chunks update the same bubble. When
+    // `error` is set the bubble is created as an error message (no AI reply),
+    // which renders a contact link underneath.
+    const patchAssistant = (
+      assistantId: string,
+      content: string,
+      error = false,
+    ) => {
       setConversations((prev) =>
         prev.map((c) =>
           c.id === convId
@@ -197,6 +206,7 @@ export default function ChatInterface({
                         role: "assistant",
                         content,
                         created_at: new Date().toISOString(),
+                        error: error || undefined,
                       },
                     ],
               }
@@ -205,8 +215,11 @@ export default function ChatInterface({
       );
     };
 
-    // Try the Claude-backed chat endpoint, fallback to local responses on failure.
+    // Always use the real AI backend — no pre-set answers. On failure a clear
+    // error bubble with a contact link is shown instead.
     let responseText = "";
+    // Server-side error message (localized) captured from the SSE stream.
+    let streamErrorMessage: string | null = null;
     try {
       // Send the full conversation history so the AI stays coherent across
       // follow-ups (and always answers against the latest platform data).
@@ -242,7 +255,11 @@ export default function ChatInterface({
 
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
-            let json: { type?: string; content?: string };
+            let json: {
+              type?: string;
+              content?: string;
+              message?: string;
+            };
             try {
               json = JSON.parse(line.slice(6));
             } catch {
@@ -258,6 +275,14 @@ export default function ChatInterface({
               patchAssistant(assistantId, responseText);
             }
 
+            if (json.type === "error") {
+              streamErrorMessage =
+                typeof json.message === "string" && json.message.trim()
+                  ? json.message
+                  : null;
+              throw new Error("AI backend error");
+            }
+
             if (json.type === "done") break;
           }
         }
@@ -268,24 +293,14 @@ export default function ChatInterface({
         throw new Error("AI backend unavailable");
       }
     } catch {
-      // Fallback to local responses, typed out word by word for consistency.
-      await new Promise((r) => setTimeout(r, 600 + Math.random() * 1200));
-      responseText = getLocalChatResponse(text, locale);
-
+      // No canned answers: show the real failure with a contact link.
+      const message =
+        streamErrorMessage && streamErrorMessage.trim()
+          ? streamErrorMessage
+          : dict.common.aiUnavailable;
       const assistantId = generateId();
       setHasPartialReply(true);
-      const words = responseText.split(/(\s+)/);
-      let emitted = "";
-      await new Promise<void>((resolve) => {
-        const timer = setInterval(() => {
-          emitted += words.shift() ?? "";
-          patchAssistant(assistantId, emitted);
-          if (words.length === 0) {
-            clearInterval(timer);
-            resolve();
-          }
-        }, 30);
-      });
+      patchAssistant(assistantId, message, true);
     }
 
     setIsTyping(false);
@@ -570,7 +585,17 @@ export default function ChatInterface({
                     }`}
                   >
                     {msg.role === "assistant" ? (
-                      <MarkdownText text={msg.content} />
+                      <>
+                        <MarkdownText text={msg.content} />
+                        {msg.error && (
+                          <a
+                            href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
+                            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 underline decoration-brand-400/40 underline-offset-2 hover:text-brand-300 transition-colors"
+                          >
+                            ✉️ {dict.common.contactSupport}
+                          </a>
+                        )}
+                      </>
                     ) : (
                       msg.content
                     )}

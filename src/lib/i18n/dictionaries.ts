@@ -21,6 +21,9 @@ const it = {
     close: "Chiudi",
     copy: "Copia",
     copied: "Copiato!",
+    aiUnavailable:
+      "Il servizio AI non è disponibile in questo momento. Riprova tra poco.",
+    contactSupport: "Contattaci via email",
   },
 
   apiErrors: {
@@ -1123,6 +1126,9 @@ export const en: Dictionary = {
     close: "Close",
     copy: "Copy",
     copied: "Copied!",
+    aiUnavailable:
+      "The AI service is unavailable right now. Please try again shortly.",
+    contactSupport: "Contact us by email",
   },
 
   apiErrors: {

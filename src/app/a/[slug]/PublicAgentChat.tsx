@@ -12,12 +12,15 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import MarkdownText from "@/components/MarkdownText";
+import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { t } from "@/lib/i18n/dictionaries";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
   files?: { filename: string; content: string }[];
+  // Error bubble: shows the failure text plus a contact link.
+  error?: boolean;
 };
 
 type Props = {
@@ -113,7 +116,11 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
         } catch {
           // ignore malformed error bodies
         }
-        updateLastAssistant((last) => ({ ...last, content: `\n\n⚠️ ${message}` }));
+        updateLastAssistant((last) => ({
+          ...last,
+          content: `\n\n⚠️ ${message}`,
+          error: true,
+        }));
         setIsRunning(false);
         return;
       }
@@ -164,6 +171,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
             updateLastAssistant((last) => ({
               ...last,
               content: last.content + `\n\n⚠️ ${data.message}`,
+              error: true,
             }));
             setIsRunning(false);
           }
@@ -173,6 +181,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
       updateLastAssistant((last) => ({
         ...last,
         content: last.content + `\n\n⚠️ ${dict.publicChat.connectionError}`,
+        error: true,
       }));
       setIsRunning(false);
     }
@@ -281,6 +290,14 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
                       <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: "400ms" }} />
                     </span>
                   ) : null)}
+                  {msg.role === "assistant" && msg.error && (
+                    <a
+                      href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 underline decoration-brand-400/40 underline-offset-2 hover:text-brand-300 transition-colors"
+                    >
+                      ✉️ {dict.common.contactSupport}
+                    </a>
+                  )}
                   {msg.files && msg.files.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
                       {msg.files.map((file, j) => (

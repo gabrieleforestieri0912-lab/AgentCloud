@@ -5,11 +5,14 @@ import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
 import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
+import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 
 type HeroMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  // Error bubble: shows the failure text plus a contact link.
+  error?: boolean;
 };
 
 function heroId() {
@@ -133,7 +136,12 @@ export default function HeroSection() {
       // honest error instead of a pre-made response.
       setMessages((prev) => [
         ...prev,
-        { id: aiMsgId, role: "assistant", content: dict.hero.aiError },
+        {
+          id: aiMsgId,
+          role: "assistant",
+          content: dict.hero.aiError,
+          error: true,
+        },
       ]);
       setIsTyping(false);
     }
@@ -296,7 +304,17 @@ export default function HeroSection() {
                         }`}
                       >
                         {msg.role === "assistant" ? (
-                          <MarkdownText text={msg.content} />
+                          <>
+                            <MarkdownText text={msg.content} />
+                            {msg.error && (
+                              <a
+                                href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
+                                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 underline decoration-brand-400/40 underline-offset-2 hover:text-brand-300 transition-colors"
+                              >
+                                ✉️ {dict.common.contactSupport}
+                              </a>
+                            )}
+                          </>
                         ) : (
                           msg.content
                         )}
