@@ -13,12 +13,20 @@ type AgentCardProps = {
   className?: string;
   /** Authoritative availability, computed server-side from feature flags. */
   available?: boolean;
+  /**
+   * Show the "Coming soon" tag even on an available (clickable) card. Used by
+   * access-code holders on the marketplace: the code unlocks every agent, but
+   * the tag keeps visible which agents a real (non-code) client would find
+   * locked — an admin preview, not a restriction.
+   */
+  comingSoonTag?: boolean;
 };
 
 export default function AgentCard({
   agent,
   className = "",
   available,
+  comingSoonTag = false,
 }: AgentCardProps) {
   const { dict } = useLanguage();
   // Server pages pass the authoritative value; otherwise fall back to the
@@ -58,7 +66,7 @@ export default function AgentCard({
         <div className="absolute inset-0 rounded-xl bg-linear-to-br from-brand-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       )}
 
-      {!isAgentAvailable && (
+      {(!isAgentAvailable || comingSoonTag) && (
         <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-400">
           <Clock size={12} />
           {dict.agentCard.comingSoon}

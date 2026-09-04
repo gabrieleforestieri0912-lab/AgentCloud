@@ -14,6 +14,12 @@ type MarketplaceGridProps = {
   comingSoonCount: number;
   availableLabel: string;
   comingSoonLabel: string;
+  /**
+   * Slugs to tag "Coming soon" inside the available grid. Access-code holders
+   * see the FULL catalog as clickable, but these cards keep the tag so admins
+   * can tell which agents a real (non-code) client would find locked.
+   */
+  previewComingSoonSlugs?: string[];
 };
 
 export default function MarketplaceGrid({
@@ -23,6 +29,7 @@ export default function MarketplaceGrid({
   comingSoonCount,
   availableLabel,
   comingSoonLabel,
+  previewComingSoonSlugs = [],
 }: MarketplaceGridProps) {
   const { locale, dict } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -107,7 +114,12 @@ export default function MarketplaceGrid({
             agents would flip back to locked for code holders. */}
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">
           {filteredAvailable.map((agent) => (
-            <AgentCard key={agent.slug} agent={agent} available={true} />
+            <AgentCard
+              key={agent.slug}
+              agent={agent}
+              available={true}
+              comingSoonTag={previewComingSoonSlugs.includes(agent.slug)}
+            />
           ))}
         </div>
 

@@ -31,9 +31,14 @@ export const dynamic = "force-dynamic";
 export default async function AgentsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  // Access-code holders (the testing client) see the FULL catalog as
-  // available — no "coming soon" section — so every agent is reachable.
+  // Access-code holders see the FULL catalog as available (every agent is
+  // reachable), but the agents that the PUBLIC would find locked — the
+  // "coming soon" set — keep their tag on the card (via
+  // previewComingSoonSlugs), so admins can tell at a glance which agents a
+  // real client will see as coming soon. Non-code visitors get the classic
+  // split: available-now grid + a locked coming-soon section.
   const unlocked = await hasPlatformAccess();
+  const comingSoonSlugs = COMING_SOON_AGENTS.map((a) => a.slug);
   const available = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((a) =>
     localizeAgent(a, locale),
   );
@@ -82,6 +87,7 @@ export default async function AgentsPage() {
             comingSoonCount={comingSoon.length}
             availableLabel={dict.agentsPage.availableNow}
             comingSoonLabel={dict.agentsPage.comingSoon}
+            previewComingSoonSlugs={unlocked ? comingSoonSlugs : undefined}
           />
 
           {/* Custom agent CTA — prominent so users who can't find what
