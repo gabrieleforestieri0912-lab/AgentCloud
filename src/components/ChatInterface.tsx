@@ -23,7 +23,10 @@ import { useLanguage } from "./LanguageProvider";
 import MarkdownText from "./MarkdownText";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
-import { HERO_CONVERSATION_STORAGE_KEY } from "./HeroSection";
+import {
+  HERO_CONVERSATION_STORAGE_KEY,
+  HERO_CONVERSATION_HISTORY_KEY,
+} from "./HeroSection";
 
 type LocalMessage = {
   id: string;
@@ -127,23 +130,19 @@ export default function ChatInterface({
     }
   }, [initialQuery]);
 
-  // Import the hero demo conversation (saved to localStorage by the hero
-  // chat) as a saved conversation, so whatever was discussed on the landing
-  // page is automatically available here.
+  // Import what the hero demo chat saved to localStorage as conversations:
+  // the live draft (ongoing hero chat) plus every conversation the hero's
+  // reset button committed to history. Both keys are consumed on import.
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(HERO_CONVERSATION_STORAGE_KEY);
-      if (!raw) return;
-      localStorage.removeItem(HERO_CONVERSATION_STORAGE_KEY);
-      const stored = JSON.parse(raw) as {
+      type StoredMsg = {
         id?: string;
         role: "user" | "assistant";
         content: string;
         created_at?: string;
         error?: boolean;
-      }[];
-      if (!Array.isArray(stored) || stored.length === 0) return;
-      const conv: LocalConversation = {
+      };
+      const toConversation = (stored: StoredMsg[]): LocalConversation => ({
         id: generateId(),
         title: getConvTitle(stored as LocalMessage[], dict.chat.newChat),
         messages: stored.map((m) => ({
@@ -154,9 +153,39 @@ export default function ChatInterface({
           error: m.error,
         })),
         created_at: new Date().toISOString(),
-      };
-      setConversations((prev) => [conv, ...prev]);
-      setActiveId(conv.id);
+      });
+
+      const imported: LocalConversation[] = [];
+
+      const draftRaw = localStorage.getItem(HERO_CONVERSATION_STORAGE_KEY);
+      if (draftRaw) {
+        const stored = JSON.parse(draftRaw) as StoredMsg[];
+        if (Array.isArray(stored) && stored.length > 0) {
+          imported.push(toConversation(stored));
+        }
+      }
+
+      const historyRaw = localStorage.getItem(HERO_CONVERSATION_HISTORY_KEY);
+      if (historyRaw) {
+        const list = JSON.parse(historyRaw) as StoredMsg[][];
+        if (Array.isArray(list)) {
+          // Newest saved conversation first: it sits on top and is opened.
+          for (let i = list.length - 1; i >= 0; i--) {
+            const entry = list[i];
+            if (Array.isArray(entry) && entry.length > 0) {
+              imported.push(toConversation(entry));
+            }
+          }
+        }
+      }
+
+      localStorage.removeItem(HERO_CONVERSATION_STORAGE_KEY);
+      localStorage.removeItem(HERO_CONVERSATION_HISTORY_KEY);
+
+      if (imported.length > 0) {
+        setConversations((prev) => [...imported, ...prev]);
+        setActiveId(imported[0].id);
+      }
     } catch {
       // Malformed storage — start fresh.
     }

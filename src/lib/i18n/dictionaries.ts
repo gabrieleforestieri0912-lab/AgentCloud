@@ -135,6 +135,7 @@ const it = {
     placeholderEmpty: "Dicci cosa vorresti automatizzare...",
     placeholderContinued: "Continua la conversazione...",
     sendMessage: "Invia messaggio",
+    resetChat: "Azzera conversazione (salva nella chat)",
     openFullChat: "Apri la chat completa",
     aiError:
       "Il servizio AI non è disponibile in questo momento. Riprova tra poco.",
@@ -1231,6 +1232,7 @@ export const en: Dictionary = {
     placeholderEmpty: "Tell us what you'd like to automate...",
     placeholderContinued: "Continue the conversation...",
     sendMessage: "Send message",
+    resetChat: "Reset conversation (save to chat)",
     openFullChat: "Open full chat",
     aiError:
       "The AI service is unavailable right now. Please try again shortly.",

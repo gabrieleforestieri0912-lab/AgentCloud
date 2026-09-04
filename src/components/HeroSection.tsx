@@ -12,6 +12,10 @@ import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 // (/chat) picks it up automatically and shows it as a saved conversation.
 export const HERO_CONVERSATION_STORAGE_KEY = "agentcloud_hero_conv";
 
+// Conversations committed by the hero's reset button accumulate here (list of
+// message arrays); /chat imports them together with the live draft above.
+export const HERO_CONVERSATION_HISTORY_KEY = "agentcloud_hero_conv_history";
+
 type HeroMessage = {
   id: string;
   role: "user" | "assistant";
@@ -34,6 +38,12 @@ export default function HeroSection() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
+  const heroColumnRef = useRef<HTMLDivElement>(null);
+  // In-flight stream, aborted when the user resets mid-answer.
+  const streamAbortRef = useRef<AbortController | null>(null);
+  // True while a reset has discarded the running stream: late chunks and the
+  // catch handler must not repopulate the cleared conversation.
+  const discardStreamRef = useRef(false);
 
   const hasMessages = messages.length > 0 || isTyping;
 
@@ -71,6 +81,15 @@ export default function HeroSection() {
     }
   }, [messages]);
 
+  // When a long conversation overflows a short viewport the section stays
+  // locked to the screen (side decorations keep their place): the center
+  // column scrolls instead, pinned to the bottom so the input stays visible.
+  useEffect(() => {
+    if (!hasMessages) return;
+    const el = heroColumnRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, isTyping, hasMessages]);
+
   async function handleSend() {
     const text = input.trim();
     if (!text || isTyping) return;
@@ -89,8 +108,10 @@ export default function HeroSection() {
     const aiMsgId = heroId();
 
     // Try the Claude-backed chat endpoint first, fall back to local responses.
+    discardStreamRef.current = false;
     try {
       const controller = new AbortController();
+      streamAbortRef.current = controller;
       // Generous guard: the endpoint streams headers immediately, but the
       // first token can take a while on cold starts (route compilation,
       // serverless boot, live platform-data query). 45s covers those without
@@ -159,8 +180,8 @@ export default function HeroSection() {
 
       // Stream ended without any content — treat as backend failure.
       if (!aiText.trim()) throw new Error("Empty response");
-      setIsTyping(false);
     } catch {
+      if (discardStreamRef.current) return;
       // No canned answers: the hero chat uses the live AI backend. When the AI backend
       // is unreachable (timeout, missing API key, provider error), show an
       // honest error instead of a pre-made response.
@@ -174,9 +195,12 @@ export default function HeroSection() {
           error: true,
         },
       ]);
-      setIsTyping(false);
+    } finally {
+      streamAbortRef.current = null;
     }
 
+    if (discardStreamRef.current) return;
+    setIsTyping(false);
     textareaRef.current?.focus();
   }
 
@@ -192,23 +216,62 @@ export default function HeroSection() {
     setTimeout(() => textareaRef.current?.focus(), 0);
   }
 
+  // Save a finished demo conversation into the history list imported by /chat.
+  function saveToChatHistory(conversation: HeroMessage[]) {
+    if (conversation.length === 0) return;
+    try {
+      const raw = localStorage.getItem(HERO_CONVERSATION_HISTORY_KEY);
+      let list: HeroMessage[][] = [];
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) list = parsed as HeroMessage[][];
+      }
+      list.push(conversation);
+      // Keep only the most recent ones to avoid unbounded growth.
+      if (list.length > 30) list = list.slice(list.length - 30);
+      localStorage.setItem(
+        HERO_CONVERSATION_HISTORY_KEY,
+        JSON.stringify(list),
+      );
+    } catch {
+      // Storage unavailable — the conversation is simply not archived.
+    }
+  }
+
+  // Reset the demo chat: save the current conversation into the real chat
+  // history, then clear the box so a fresh question can be asked.
+  function handleReset() {
+    saveToChatHistory(messages);
+    discardStreamRef.current = true;
+    streamAbortRef.current?.abort();
+    setIsTyping(false);
+    setMessages([]);
+    setInput("");
+    try {
+      // The conversation is now in history; drop the live draft so /chat does
+      // not import it twice.
+      localStorage.removeItem(HERO_CONVERSATION_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    textareaRef.current?.focus();
+  }
+
   const chips = dict.hero.chips;
 
   const hasStreamedContent = messages.some(
     (m) => m.role === "assistant" && m.content.length > 0,
   );
 
-  // At rest the hero stays locked to the viewport — identical to the original
-  // layout (`h-dvh`). When the chat opens the padding tightens and the section
-  // may grow (`min-h-dvh`) so the whole chat stays reachable on short screens;
-  // the chat box itself is capped to the viewport and scrolls internally, so
-  // any number of messages stays contained and the page keeps a single
-  // scrollbar.
+  // The hero is locked to the viewport (`h-dvh`) in both states so the side
+  // constellations never drift when the demo chat grows. At rest the content
+  // is vertically centered; once chatting, the center column scrolls
+  // internally on short screens instead of stretching the section.
   return (
     <section
       className={`relative overflow-hidden px-4 flex items-center justify-center ${
         hasMessages
-          ? "min-h-dvh pt-8 sm:pt-16 lg:pt-24 pb-20 sm:pb-28 lg:pb-36"
+          ? "h-dvh py-6 sm:py-10 lg:py-12"
           : "h-dvh pt-36 sm:pt-48 lg:pt-64 pb-12 sm:pb-20 lg:pb-28"
       }`}
     >
@@ -231,10 +294,19 @@ export default function HeroSection() {
       <HeroBubbles />
 
       {/* Outer Wide Screen Flex Wrapper */}
-      <div className="w-full max-w-7xl 3xl:max-w-[1720px] mx-auto flex items-center justify-between relative">
+      <div
+        className={`w-full max-w-7xl 3xl:max-w-[1720px] mx-auto flex items-center justify-between relative ${
+          hasMessages ? "h-full min-h-0" : ""
+        }`}
+      >
         {/* CENTER HERO CONTENT */}
         <motion.div
-          className="relative z-10 mx-auto max-w-4xl text-center px-4"
+          ref={heroColumnRef}
+          className={`relative z-10 mx-auto max-w-4xl text-center px-4 ${
+            hasMessages
+              ? "max-h-full min-h-0 overflow-y-auto overscroll-contain"
+              : ""
+          }`}
           initial="hidden"
           animate="visible"
           variants={{
@@ -404,6 +476,30 @@ export default function HeroSection() {
                   className="flex-1 bg-transparent text-base text-white placeholder-neutral-500 outline-none resize-none leading-relaxed font-medium py-2.5"
                   style={{ minHeight: "44px", maxHeight: "140px" }}
                 />
+                {hasMessages && (
+                  <button
+                    id="hero-reset-btn"
+                    type="button"
+                    onClick={handleReset}
+                    aria-label={dict.hero.resetChat}
+                    title={dict.hero.resetChat}
+                    className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all"
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                      <path d="M3 3v5h5" />
+                    </svg>
+                  </button>
+                )}
                 <button
                   id="hero-send-btn"
                   onClick={handleSend}
