@@ -33,6 +33,7 @@ export default function Footer() {
       <BrandIcon
         brand={def}
         size={size}
+        color="currentColor"
         className="opacity-70 group-hover:opacity-100 transition-opacity"
       />
     );
