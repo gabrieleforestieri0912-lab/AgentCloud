@@ -158,6 +158,12 @@ export default function Footer() {
             >
               {dict.footer.terms}
             </Link>
+            <Link
+              href="/refunds"
+              className="text-neutral-400 hover:text-brand-400 transition-colors"
+            >
+              {dict.footer.refunds}
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             {socialLinks.map(({ label, href }) => (

@@ -109,7 +109,7 @@ Per i primi **10-15 clienti reali**, blocca questi prezzi a vita come incentivo 
 
 | Componente              | Costo                         | Note                           |
 | ----------------------- | ----------------------------- | ------------------------------ |
-| LLM (Claude/GPT/Gemini) | ~€0.05-0.15/conversazione     | Dipende da lunghezza e modello |
+| LLM (Claude)              | ~€0.05-0.15/conversazione     | Dipende da lunghezza e modello |
 | Tavily (se attivo)      | ~€0.01-0.05/ricerca           | Solo se web search è abilitato |
 | **Totale stimato**      | **~€0.06-0.20/conversazione** | Senza web search               |
 

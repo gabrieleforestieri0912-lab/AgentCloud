@@ -106,7 +106,7 @@ const jsonLd = {
         availableLanguage: ["it", "en"],
       },
       // SameAs anchors the entity for generative engines (ChatGPT, Perplexity,
-      // Gemini) and traditional knowledge graphs. Only real, verifiable
+      // Claude) and traditional knowledge graphs. Only real, verifiable
       // profiles are listed.
       sameAs: [
         "https://github.com/gabrieleforestieri0912-lab/AgentCloud",

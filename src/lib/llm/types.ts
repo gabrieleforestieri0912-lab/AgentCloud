@@ -3,9 +3,9 @@
  *
  * The agent runtime talks to a generic provider and uses a single backend:
  *
- *  - `gemini`: the only supported provider. Activate it by setting
- *    `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) and optionally
- *    `AGENT_LLM_PROVIDER=gemini`. Default model: `gemini-3.6-flash`.
+ *  - `anthropic`: the only supported provider. Activate it by setting
+ *    `ANTHROPIC_API_KEY` and optionally `AGENT_LLM_PROVIDER=anthropic`.
+ *    Default model: `claude-sonnet-5`.
  *
  * The route (`src/app/api/agent/run/route.ts`) only depends on the types
  * below, so switching providers never touches the request/SSE logic.
@@ -70,7 +70,7 @@ export type LLMChatParams = {
   maxTokens: number;
 };
 
-export type LLMProviderName = "gemini";
+export type LLMProviderName = "anthropic";
 
 export interface LLMProvider {
   name: LLMProviderName;

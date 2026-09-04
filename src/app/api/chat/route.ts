@@ -13,10 +13,9 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
  *
  * Body: { messages, model?, agentId? }
  *
- * The model backend is resolved via `getLLMProvider()` — the Gemini backend
- * (production) when `GEMINI_API_KEY` / `GOOGLE_API_KEY` is configured. The
- * default model is
- * `gemini-3.6-flash` (override with `AGENT_LLM_MODEL`).
+ * The model backend is resolved via `getLLMProvider()` — the Anthropic
+ * (Claude) backend when `ANTHROPIC_API_KEY` is configured. The default model
+ * is `claude-sonnet-5` (override with `AGENT_LLM_MODEL`).
  *
  * Streams SSE: `data: { type: "text", content }` chunks, then
  * `data: { type: "done" }` (or `type: "error"` on failure).
@@ -49,13 +48,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // Clients may send a model name (e.g. from an agent config). If it isn't a
-    // Gemini model, the Gemini provider maps it to the configured default, so
-    // here we always pass a valid Gemini model to the backend.
+    // Clients may send a model name (e.g. from an agent config). If it isn't
+    // a Claude model, the Anthropic provider maps it to the configured
+    // default, so here we always pass a valid Claude model to the backend.
     const finalModel =
-      resolvedModel && resolvedModel.startsWith("gemini")
+      resolvedModel && resolvedModel.startsWith("claude")
         ? resolvedModel
-        : (process.env.AGENT_LLM_MODEL || "gemini-3.6-flash");
+        : (process.env.AGENT_LLM_MODEL || "claude-sonnet-5");
 
     const conversationMessages: LLMMessage[] = (messages as unknown[]).map(
       (m) => {
@@ -74,8 +73,16 @@ export async function POST(req: Request) {
 
     const stream = new ReadableStream({
       async start(controller) {
-        const send = (data: object) =>
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        const send = (data: object) => {
+          try {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
+            );
+          } catch {
+            // Client disconnected: the stream is closed. Ignore the write and
+            // let the word emitter stop itself on its next tick.
+          }
+        };
 
         // Re-emit the provider's text deltas one word at a time so the
         // message types out in every chat UI instead of appearing whole.
@@ -101,7 +108,11 @@ export async function POST(req: Request) {
           emitter.stop();
           send({ type: "error", message: streamErrorMessage });
         } finally {
-          controller.close();
+          try {
+            controller.close();
+          } catch {
+            // Already closed (client disconnected mid-stream).
+          }
         }
       },
     });

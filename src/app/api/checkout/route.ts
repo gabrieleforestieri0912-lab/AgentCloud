@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getAgentBySlug, isAvailable } from "@/lib/agents";
+import { hasPlatformAccess } from "@/lib/access-code";
 import { getSessionUser } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
@@ -41,7 +42,10 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!isAvailable(agentId)) {
+    // Availability is for the general public: access-code holders (the
+    // testing client) can configure/buy every agent, including "coming soon".
+    const unlocked = await hasPlatformAccess();
+    if (!isAvailable(agentId) && !unlocked) {
       return NextResponse.json(
         { error: await apiErrorMessage("notSubscribed") },
         { status: 400 },

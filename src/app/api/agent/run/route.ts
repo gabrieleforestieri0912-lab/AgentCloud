@@ -52,8 +52,8 @@ function isAnonRateLimited(ip: string): boolean {
  * checks; anonymous callers (public agent pages / embeds) are allowed as
  * previews but have no usage quota.
  *
- * The model backend is selected via `getLLMProvider()` — the Gemini backend
- * (production) when `GEMINI_API_KEY` / `GOOGLE_API_KEY` is configured.
+ * The model backend is selected via `getLLMProvider()` — the Anthropic
+ * (Claude) backend when `ANTHROPIC_API_KEY` is configured.
  */
 export async function POST(req: Request) {
   const locale = await getLocale();
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
     .map((tool) => TOOL_DEFINITIONS[tool])
     .filter(Boolean);
 
-  // Resolve the model backend once per request (Gemini).
+  // Resolve the model backend once per request (Anthropic).
   const provider = getLLMProvider();
 
   // Normalize inbound messages into the shared LLMMessage shape. The client
@@ -162,7 +162,14 @@ export async function POST(req: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: object) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        try {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
+          );
+        } catch {
+          // Client disconnected: the stream is closed. Ignore the write and
+          // let the word emitter stop itself on its next tick.
+        }
       };
 
       // Re-emit the provider's text one word at a time so agent chats type
@@ -294,7 +301,11 @@ export async function POST(req: Request) {
           message: executionErrorMessage,
         });
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // Already closed (client disconnected mid-stream).
+        }
       }
     },
   });

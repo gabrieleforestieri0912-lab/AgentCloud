@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import AgentCard from "./AgentCard";
-import { isAvailable, type Agent } from "@/lib/agents";
+import type { Agent } from "@/lib/agents";
 import { t } from "@/lib/i18n/dictionaries";
 
 type MarketplaceGridProps = {
@@ -100,14 +100,14 @@ export default function MarketplaceGrid({
           </div>
         </div>
 
-        {/* Available agents grid */}
+        {/* Available agents grid — every card in this list is available by
+            construction: the server only puts flag-enabled agents here, or —
+            for access-code holders — the FULL catalog. Never re-derive
+            availability from the client-side flags here, or "coming soon"
+            agents would flip back to locked for code holders. */}
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">
           {filteredAvailable.map((agent) => (
-            <AgentCard
-              key={agent.slug}
-              agent={agent}
-              available={isAvailable(agent.slug)}
-            />
+            <AgentCard key={agent.slug} agent={agent} available={true} />
           ))}
         </div>
 

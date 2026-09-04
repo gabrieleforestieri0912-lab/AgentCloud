@@ -186,7 +186,7 @@ export default function ChatInterface({
       );
     };
 
-    // Try the Gemini-backed chat endpoint, fallback to local responses on failure.
+    // Try the Claude-backed chat endpoint, fallback to local responses on failure.
     let responseText = "";
     try {
       // Send the full conversation history so the AI stays coherent across

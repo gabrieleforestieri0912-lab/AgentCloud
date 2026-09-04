@@ -29,6 +29,7 @@ import {
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
+import { hasPlatformAccess } from "@/lib/access-code";
 
 type AgentDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -128,7 +129,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   const rawAgent = getAgentBySlug(slug);
   if (!rawAgent) notFound();
   const agent = localizeAgent(rawAgent, locale);
-  const available = isAvailable(slug);
+  // Access-code holders unlock every agent — including "coming soon" ones —
+  // so the deploy CTA and related cards treat the whole catalog as live.
+  const unlocked = await hasPlatformAccess();
+  const available = unlocked || isAvailable(slug);
 
   const relatedAgents = AGENTS.filter(
     (a) => a.slug !== agent.slug && a.category === agent.category,
@@ -136,7 +140,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
     .slice(0, 3)
     .map((a) => localizeAgent(a, locale));
 
-  const marketplaceAgents = AVAILABLE_AGENTS.map((a) =>
+  const marketplaceAgents = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((a) =>
     localizeAgent(a, locale),
   );
 
@@ -484,7 +488,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 <AgentCard
                   key={a.slug}
                   agent={a}
-                  available={isAvailable(a.slug)}
+                  available={unlocked || isAvailable(a.slug)}
                 />
               ))}
             </div>

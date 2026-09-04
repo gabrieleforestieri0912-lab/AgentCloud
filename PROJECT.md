@@ -1,6 +1,6 @@
 # AgentCloud
 
-**v0.5.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing Stripe con overage, backend Gemini, Shopify OAuth multi-tenant e i18n IT/EN.
+**v0.5.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing Stripe con overage, backend Claude (Anthropic), Shopify OAuth multi-tenant e i18n IT/EN.
 
 ---
 
@@ -13,7 +13,7 @@
 - **Supabase Auth** — autenticazione (email + password, Google OAuth, sessioni `@supabase/ssr`)
 - **Supabase** — database (billing, usage, rate limits) + form storage
 - **Stripe** — payment links, abbonamenti, customer portal, **overage billing** (Billing Meter)
-- **Google Gemini** — backend LLM unico (agenti `/api/agent/run`, chat `/api/chat`), risposte in **streaming parola per parola**
+- **Anthropic Claude** — backend LLM unico (agenti `/api/agent/run`, chat `/api/chat`), risposte in **streaming parola per parola**
 - **Resend** — email transazionali
 - **Simple Icons** — icone brand originali (integrazioni/hero) · **Lucide** — icone UI
 
@@ -28,15 +28,15 @@ src/
 │   ├── layout.tsx           # Metadata dinamici, LanguageProvider
 │   ├── page.tsx             # Homepage (hero + sezioni landing)
 │   ├── dashboard/page.tsx   # Dashboard (server component, dati reali Supabase)
-│   ├── chat/page.tsx        # Chat generica (Gemini → fallback locale)
+│   ├── chat/page.tsx        # Chat generica (Claude → fallback locale)
 │   ├── agents/page.tsx      # Marketplace filtrato dai feature flags
 │   ├── agents/[slug]/page.tsx        # Dettaglio agente (localizzato)
-│   ├── agents/[slug]/deploy/page.tsx # Wizard di deploy
+│   ├── agents/[slug]/deploy/         # Gate server (page.tsx) + wizard client (deploy-client.tsx)
 │   ├── agent/[id]/page.tsx  # Chat di un agente (protetto)
 │   ├── a/[slug]/            # Pagina pubblica agente + chat embed
 │   ├── login | signup | waitlist | demo | contact | privacy | terms
 │   └── api/
-│       ├── agent/run/       # POST — esecuzione agente (Gemini) + tool, limiti e rate limit
+│       ├── agent/run/       # POST — esecuzione agente (Claude) + tool, limiti e rate limit
 │       ├── billing/webhook/ # POST — webhook Stripe (attivazione, rinnovo, cancellazione)
 │       ├── billing/payment-link/ · billing/portal/ · billing/notify-expiring/
 │       ├── checkout/        # Stripe Checkout Session (prezzo dinamico da priceCents)
@@ -52,6 +52,8 @@ src/
     ├── billing/             # pricing, usage-tracking (limiti token, overage)
     ├── stripe/              # overage (meter), webhook-helpers
     ├── agents/              # registry runtime, feature-flags, platform-context (chat)
+    ├── access-code.ts       # Codice di accesso fase waitlist (server-only) — sblocca tutti gli agenti
+    ├── waitlist-constants.ts # Costanti client-safe (MAX_SPOTS, cookie `ac_access`)
     ├── rate-limit.ts        # Rate limiting distribuito (Supabase RPC)
     ├── request-ip.ts        # Client IP condiviso
     ├── stream.ts            # Streaming parole per parola (SSE) per chat e agent runs
@@ -181,13 +183,14 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | Variabile | Obbligatoria | Note |
 |-----------|:---:|------|
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | usata per billing/usage/rate limits |
-| `GEMINI_API_KEY` | ✅ | esecuzione agenti (backend Gemini) |
+| `ANTHROPIC_API_KEY` | ✅ | esecuzione agenti (backend Claude) |
 | `RESEND_API_KEY` | ✅ | email transazionali |
 | `STRIPE_SECRET_KEY` | ✅ | prod: `sk_live_…` |
 | `STRIPE_WEBHOOK_SECRET` | ✅ | `whsec_…` |
 | `STRIPE_OVERAGE_PRICE_ID` | ⚠️ | senza → overage disabilitato (blocco 429 al plafond) |
 | `STRIPE_OVERAGE_METER_EVENT` | – | default `agentcloud_token_overage` |
 | `ADMIN_API_TOKEN` | ✅ | admin API + `email/send` (fail-closed se assente) |
+| `ACCESS_CODE` | – | codice di accesso della fase waitlist (default generato in `src/lib/access-code.ts`); chi lo inserisce nella pagina waitlist sblocca l'intera piattaforma e **tutti** gli agenti, anche quelli “in arrivo” |
 | `DEMO_EMAIL_TO` | – | default `info@agentcloud.io` |
 
 ### Stripe Payment Links
@@ -212,9 +215,9 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 
 | Variabile | Default | Note |
 |-----------|---------|------|
-| `AGENT_LLM_PROVIDER` | `gemini` | backend del runtime agenti (unico supportato: Gemini). Default: Gemini se `GEMINI_API_KEY`/`GOOGLE_API_KEY` è valida |
-| `AGENT_LLM_MODEL` | `gemini-3.6-flash` | modello usato dal backend Gemini quando non specificato per-request |
-| `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata LLM (Gemini) |
+| `AGENT_LLM_PROVIDER` | `anthropic` | backend del runtime agenti (unico supportato: Anthropic). Default: Anthropic se `ANTHROPIC_API_KEY` è configurata |
+| `AGENT_LLM_MODEL` | `claude-sonnet-5` | modello usato dal backend Claude quando non specificato per-request |
+| `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata LLM (Claude) |
 | `AGENT_ANON_RATE_LIMIT` | `30` | richieste/min per IP per i preview anonimi |
 | `AGENTCLOUD_VERTICAL` | `shopify` | `shopify` \| `services` \| `full` — filtra marketplace e tool |
 | `AGENTCLOUD_FEATURE_FLAGS` | – | JSON: `enabledAgents`, `enabledTools`, `agentToolOverrides`, `enableOptionalToolsByDefault` |
@@ -231,7 +234,7 @@ npm run dev       # sviluppo
 npm run build     # build produzione (con typecheck)
 npm run start     # avvio produzione
 npm run lint      # ESLint
-npm run test      # Vitest (161 test)
+npm run test      # Vitest (162 test)
 npm run typecheck # tsc --noEmit
 ```
 

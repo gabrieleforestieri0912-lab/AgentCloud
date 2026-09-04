@@ -25,6 +25,7 @@ export type WordEmitter = {
 export function createWordEmitter(onWord: (word: string) => void): WordEmitter {
   let queue: string[] = [];
   let timer: NodeJS.Timeout | null = null;
+  let stopped = false;
 
   const emitNext = () => {
     const word = queue.shift();
@@ -32,29 +33,41 @@ export function createWordEmitter(onWord: (word: string) => void): WordEmitter {
       timer = null;
       return;
     }
-    onWord(word);
+    try {
+      onWord(word);
+    } catch {
+      // The consumer closed the stream mid-emission (e.g. the client
+      // disconnected from the SSE response). Stop permanently: no more timer
+      // callbacks and no more queueing — otherwise the throw escapes the
+      // timer callback as an uncaughtException.
+      stopped = true;
+      queue = [];
+      timer = null;
+      return;
+    }
     timer = setTimeout(emitNext, WORD_DELAY_MS);
   };
 
   const ensureRunning = () => {
-    if (!timer && queue.length > 0) {
+    if (!stopped && !timer && queue.length > 0) {
       timer = setTimeout(emitNext, WORD_DELAY_MS);
     }
   };
 
   return {
     push(chunk) {
-      if (!chunk) return;
+      if (!chunk || stopped) return;
       const parts = chunk.match(/\s+|[^\s]+/g) ?? [chunk];
       queue.push(...parts);
       ensureRunning();
     },
     async flush() {
-      while (queue.length > 0 || timer) {
+      while (!stopped && (queue.length > 0 || timer)) {
         await new Promise((resolve) => setTimeout(resolve, WORD_DELAY_MS + 5));
       }
     },
     stop() {
+      stopped = true;
       if (timer) {
         clearTimeout(timer);
         timer = null;

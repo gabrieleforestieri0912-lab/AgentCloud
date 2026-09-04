@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import ChatInterface from "@/components/ChatInterface";
 import { getLocale } from "@/lib/i18n/locale";
 import { getSessionUser } from "@/lib/supabase/server";
+import { hasPlatformAccess } from "@/lib/access-code";
 
 import { pageSeo } from "@/lib/seo";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
@@ -23,7 +24,11 @@ export default async function ChatPage(props: {
   searchParams?: Promise<{ q?: string; agent?: string }>;
 }) {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  // Access-code holders skip the login requirement entirely — the code grants
+  // platform access without a Supabase account. They simply have no owned
+  // agents yet, so the generic chat (which runs anonymously) is available.
+  const accessGranted = await hasPlatformAccess();
+  if (!user && !accessGranted) redirect("/login");
 
   const searchParams = await props.searchParams;
   const initialQuery = searchParams?.q;

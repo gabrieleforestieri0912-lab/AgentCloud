@@ -7,6 +7,7 @@ import {
   LOCALE_COOKIE,
 } from "@/lib/i18n/constants";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { ACCESS_COOKIE } from "@/lib/waitlist-constants";
 
 /**
  * Refresh the Supabase session cookies on the way through the proxy and
@@ -79,15 +80,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Visitors holding a valid access code are full guests: no Supabase login
+  // needed, and no waitlist lock. The cookie is set server-side after code
+  // validation (see src/lib/access-code.ts); the code itself is never checked
+  // here.
+  const isAccessVisitor = request.cookies.get(ACCESS_COOKIE)?.value === "1";
+
   if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
-    // Only the admin (verified email on waitlist signup) gets through the
-    // waitlist gate via cookie. Regular waitlist members stay locked out —
-    // their ac_wl_joined cookie only records the signup, it grants no access.
-    const isAdminVisitor = request.cookies.get("ac_wl_admin")?.value === "1";
-    if (!isAdminVisitor) {
-      // Authenticated users (e.g. the owner/admin signed in) also pass through.
-      // resolveSession validates the session and carries refreshed auth cookies
-      // on `response`.
+    if (!isAccessVisitor) {
+      // Regular waitlist members stay locked out — their ac_wl_joined cookie
+      // only records the signup, it grants no access. Authenticated users
+      // (e.g. the owner/admin signed in) pass through: resolveSession
+      // validates the session and carries refreshed auth cookies on
+      // `response`.
       const { response, user } = await resolveSession(request);
       if (!user) {
         const waitlistUrl = request.nextUrl.clone();
@@ -99,6 +104,13 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isPublicPath(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
+  // Access-code holders can reach every page without signing in — the code is
+  // their invitation. (API handlers still resolve the session themselves and
+  // fall back to anonymous behavior when absent, exactly like public previews.)
+  if (isAccessVisitor) {
     return NextResponse.next();
   }
 

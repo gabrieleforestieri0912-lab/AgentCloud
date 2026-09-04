@@ -4,14 +4,15 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MarketplaceGrid from "@/components/MarketplaceGrid";
 import {
+  AGENTS,
   AVAILABLE_AGENTS,
   COMING_SOON_AGENTS,
-  isAvailable,
   localizeAgent,
 } from "@/lib/agents";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
+import { hasPlatformAccess } from "@/lib/access-code";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -30,8 +31,15 @@ export const dynamic = "force-dynamic";
 export default async function AgentsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const available = AVAILABLE_AGENTS.map((a) => localizeAgent(a, locale));
-  const comingSoon = COMING_SOON_AGENTS.map((a) => localizeAgent(a, locale));
+  // Access-code holders (the testing client) see the FULL catalog as
+  // available — no "coming soon" section — so every agent is reachable.
+  const unlocked = await hasPlatformAccess();
+  const available = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((a) =>
+    localizeAgent(a, locale),
+  );
+  const comingSoon = unlocked
+    ? []
+    : COMING_SOON_AGENTS.map((a) => localizeAgent(a, locale));
   const isIt = locale === "it";
 
   return (

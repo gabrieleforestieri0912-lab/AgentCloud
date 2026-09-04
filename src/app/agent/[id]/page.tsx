@@ -54,6 +54,16 @@ export default function AgentChatPage() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Append to the last assistant message with an immutable update. Mutating
+  // the stored message objects inside the updater would double-append under
+  // React StrictMode (dev), which invokes updater functions twice.
+  const updateLastAssistant = (fn: (last: Message) => Message) =>
+    setMessages((prev) =>
+      prev.map((m, i) =>
+        i === prev.length - 1 && m.role === "assistant" ? fn(m) : m,
+      ),
+    );
+
   const sendMessage = async () => {
     if (!input.trim() || isRunning || !agent) return;
 
@@ -106,55 +116,39 @@ export default function AgentChatPage() {
           const data: StreamEvent = JSON.parse(line.slice(6));
 
           if (data.type === "text") {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
-                last.content += data.content;
-              }
-              return updated;
-            });
+            updateLastAssistant((last) => ({
+              ...last,
+              content: last.content + data.content,
+            }));
           }
 
           if (data.type === "tool_start") {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
-                last.toolCalls = [
-                  ...(last.toolCalls || []),
-                  { name: data.toolName, status: "running" },
-                ];
-              }
-              return updated;
-            });
+            updateLastAssistant((last) => ({
+              ...last,
+              toolCalls: [
+                ...(last.toolCalls || []),
+                { name: data.toolName, status: "running" },
+              ],
+            }));
           }
 
           if (data.type === "tool_done") {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
-                last.toolCalls = last.toolCalls?.map((t) =>
-                  t.name === data.toolName ? { ...t, status: "done" } : t,
-                );
-              }
-              return updated;
-            });
+            updateLastAssistant((last) => ({
+              ...last,
+              toolCalls: last.toolCalls?.map((t) =>
+                t.name === data.toolName ? { ...t, status: "done" } : t,
+              ),
+            }));
           }
 
           if (data.type === "file") {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
-                last.files = [
-                  ...(last.files || []),
-                  { filename: data.filename, content: data.content },
-                ];
-              }
-              return updated;
-            });
+            updateLastAssistant((last) => ({
+              ...last,
+              files: [
+                ...(last.files || []),
+                { filename: data.filename, content: data.content },
+              ],
+            }));
           }
 
           if (data.type === "done") {
@@ -162,27 +156,19 @@ export default function AgentChatPage() {
           }
 
           if (data.type === "error") {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
-                last.content += `\n\n⚠️ ${data.message}`;
-              }
-              return updated;
-            });
+            updateLastAssistant((last) => ({
+              ...last,
+              content: last.content + `\n\n⚠️ ${data.message}`,
+            }));
             setIsRunning(false);
           }
         }
       }
     } catch {
-      setMessages((prev) => {
-        const updated = [...prev];
-        const last = updated[updated.length - 1];
-        if (last.role === "assistant") {
-          last.content += `\n\n⚠️ ${dict.agentChat.connectionError}`;
-        }
-        return updated;
-      });
+      updateLastAssistant((last) => ({
+        ...last,
+        content: last.content + `\n\n⚠️ ${dict.agentChat.connectionError}`,
+      }));
       setIsRunning(false);
     }
   };

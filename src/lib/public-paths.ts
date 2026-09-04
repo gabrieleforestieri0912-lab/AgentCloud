@@ -23,6 +23,7 @@ export const PUBLIC_PATHS = [
   "/contact",
   "/privacy",
   "/terms",
+  "/refunds",
   // Webhooks (called by third parties)
   "/api/email/webhook",
   "/api/email/send",

@@ -14,7 +14,8 @@ import Image from "next/image";
 import AgentIcon from "./AgentIcon";
 import BrandLogo from "./BrandLogo";
 import MobileNav from "./MobileNav";
-import { AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
+import { AGENTS, AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
+import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
 import LanguageToggle from "./LanguageToggle";
 import NotificationBell from "./NotificationBell";
@@ -53,10 +54,13 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const router = useRouter();
   const { locale, dict } = useLanguage();
   // Pages that can resolve the flags server-side pass the authoritative list;
-  // otherwise fall back to the default vertical's agents. Either way the
-  // agents are overlaid with the active locale so dropdown labels never leak
-  // English (localizeAgent is idempotent for already-localized input).
-  const agents = (marketplaceAgents ?? AVAILABLE_AGENTS).map((agent) =>
+  // otherwise fall back to the access cookie (code holders see the FULL
+  // catalog, everyone else the default vertical — client bundles can't read
+  // the server-only AGENTCLOUD_* env vars). Either way the agents are
+  // overlaid with the active locale so dropdown labels never leak English
+  // (localizeAgent is idempotent for already-localized input).
+  const fallbackAgents = hasAccessOnClient() ? AGENTS : AVAILABLE_AGENTS;
+  const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );
 

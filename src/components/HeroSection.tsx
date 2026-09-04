@@ -60,7 +60,7 @@ export default function HeroSection() {
 
     const aiMsgId = heroId();
 
-    // Try the Gemini-backed chat endpoint first, fall back to local responses.
+    // Try the Claude-backed chat endpoint first, fall back to local responses.
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
@@ -124,7 +124,7 @@ export default function HeroSection() {
       if (!aiText.trim()) throw new Error("Empty response");
       setIsTyping(false);
     } catch {
-      // No canned answers: the hero chat is Gemini-only. When the AI backend
+      // No canned answers: the hero chat uses the live AI backend. When the AI backend
       // is unreachable (timeout, missing API key, provider error), show an
       // honest error instead of a pre-made response.
       setMessages((prev) => [

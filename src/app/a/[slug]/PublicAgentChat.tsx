@@ -47,6 +47,16 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Append to the last assistant message with an immutable update. Mutating
+  // the stored message objects inside the updater would double-append under
+  // React StrictMode (dev), which invokes updater functions twice.
+  const updateLastAssistant = (fn: (last: Message) => Message) =>
+    setMessages((prev) =>
+      prev.map((m, i) =>
+        i === prev.length - 1 && m.role === "assistant" ? fn(m) : m,
+      ),
+    );
+
   const sendMessage = async () => {
     if (!input.trim() || isRunning) return;
 
@@ -90,14 +100,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
         } catch {
           // ignore malformed error bodies
         }
-        setMessages((prev) => {
-          const updated = [...prev];
-          const last = updated[updated.length - 1];
-          if (last.role === "assistant") {
-            last.content = `\n\n⚠️ ${message}`;
-          }
-          return updated;
-        });
+        updateLastAssistant((last) => ({ ...last, content: `\n\n⚠️ ${message}` }));
         setIsRunning(false);
         return;
       }
@@ -124,28 +127,20 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
           const data = JSON.parse(line.slice(6));
 
           if (data.type === "text") {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
-                last.content += data.content;
-              }
-              return updated;
-            });
+            updateLastAssistant((last) => ({
+              ...last,
+              content: last.content + data.content,
+            }));
           }
 
           if (data.type === "file") {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
-                last.files = [
-                  ...(last.files || []),
-                  { filename: data.filename, content: data.content },
-                ];
-              }
-              return updated;
-            });
+            updateLastAssistant((last) => ({
+              ...last,
+              files: [
+                ...(last.files || []),
+                { filename: data.filename, content: data.content },
+              ],
+            }));
           }
 
           if (data.type === "done") {
@@ -153,27 +148,19 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
           }
 
           if (data.type === "error") {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
-                last.content += `\n\n⚠️ ${data.message}`;
-              }
-              return updated;
-            });
+            updateLastAssistant((last) => ({
+              ...last,
+              content: last.content + `\n\n⚠️ ${data.message}`,
+            }));
             setIsRunning(false);
           }
         }
       }
     } catch {
-      setMessages((prev) => {
-        const updated = [...prev];
-        const last = updated[updated.length - 1];
-        if (last.role === "assistant") {
-          last.content += `\n\n⚠️ ${dict.publicChat.connectionError}`;
-        }
-        return updated;
-      });
+      updateLastAssistant((last) => ({
+        ...last,
+        content: last.content + `\n\n⚠️ ${dict.publicChat.connectionError}`,
+      }));
       setIsRunning(false);
     }
   };

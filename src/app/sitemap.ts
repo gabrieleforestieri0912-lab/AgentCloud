@@ -66,6 +66,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "yearly",
       priority: 0.1,
     },
+    {
+      url: `${BASE_URL}/refunds`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.1,
+    },
   ];
 
   // Every published agent gets its own indexable, canonical URL.

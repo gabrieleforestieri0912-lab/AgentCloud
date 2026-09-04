@@ -48,6 +48,7 @@ const it = {
     invalidEmailAddress: "Indirizzo email non valido",
     alreadyOnWaitlist: "Questa email è già in waitlist",
     failedToJoinWaitlist: "Iscrizione alla waitlist non riuscita",
+    invalidAccessCode: "Codice di accesso non valido",
     allFieldsRequired: "Tutti i campi sono obbligatori",
     aiStreamError: "Errore durante la generazione della risposta",
     aiConnectionFailed:
@@ -119,6 +120,7 @@ const it = {
     rights: "© 2026 AgentCloud. Tutti i diritti riservati.",
     privacy: "Privacy",
     terms: "Termini",
+    refunds: "Politica di Rimborso",
   },
 
   hero: {
@@ -707,7 +709,7 @@ const it = {
     titleAccent: "Waitlist",
     subtitle:
       "Sii tra i primi a provare l'automazione AI. Posti limitati disponibili.",
-    remainingSpots: "Posti rimanenti",
+    takenSpots: "Posti occupati",
     successTitle: "Sei nella lista!",
     successText: "Ti avviseremo quando AgentCloud sarà pronto.",
     fullTitle: "Waitlist piena",
@@ -717,7 +719,7 @@ const it = {
     emailModalPlaceholder: "Scrivi qui il tuo messaggio...",
     emailModalSend: "Invia email",
     emailModalCancel: "Annulla",
-    placeholder: "Inserisci la tua email",
+    placeholder: "Inserisci la tua email o il codice di accesso",
     joining: "Ti stai iscrivendo...",
     joinWaitlist: "Entra in waitlist",
     agreeNote:
@@ -841,6 +843,8 @@ const it = {
   },
 
   legal: {
+    seeTerms: "Vedi i Termini di Servizio",
+    seeRefunds: "Vedi la Politica di Rimborso",
     privacy: {
       backHome: "Torna alla home",
       title: "Informativa Privacy",
@@ -859,7 +863,7 @@ const it = {
           heading: "2. Come usiamo i tuoi dati",
           paragraphs: [
             "Usiamo i tuoi dati per fornire e migliorare i servizi AgentCloud, processare pagamenti e rimborsi tramite Stripe, applicare i limiti del tuo piano (consumo di token), inviarti email transazionali (benvenuto, fatturazione, supporto) e comunicare sul tuo account.",
-            "Il contenuto delle chat viene inviato al fornitore AI (Google Gemini) esclusivamente per generare le risposte dell'agente. Non utilizziamo i contenuti delle chat per addestrare i nostri modelli.",
+            "Il contenuto delle chat viene inviato al fornitore AI (Anthropic Claude) esclusivamente per generare le risposte dell'agente. Non utilizziamo i contenuti delle chat per addestrare i nostri modelli.",
             "Non vendiamo mai i tuoi dati personali a terze parti.",
           ],
         },
@@ -867,7 +871,7 @@ const it = {
           heading: "3. Condivisione dei dati",
           paragraphs: [
             "Condividiamo i dati solo con i fornitori di servizi essenziali:",
-            "Supabase — autenticazione e database; Stripe — pagamenti, fatturazione e rimborsi; Resend — consegna email transazionali; Google — accesso con account Google (OAuth) ed elaborazione delle conversazioni tramite Gemini; Shopify e Google Calendar — solo se colleghi queste integrazioni ai tuoi agenti.",
+            "Supabase — autenticazione e database; Stripe — pagamenti, fatturazione e rimborsi; Resend — consegna email transazionali; Google — accesso con account Google (OAuth); Anthropic — elaborazione delle conversazioni tramite Claude; Shopify e Google Calendar — solo se colleghi queste integrazioni ai tuoi agenti.",
           ],
         },
         {
@@ -955,6 +959,53 @@ const it = {
           paragraphs: [
             "Per domande su questi termini, fatturazione o rimborsi: legal@agentcloud.io",
           ],
+        },
+      ],
+    },
+    refunds: {
+      backHome: "Torna alla home",
+      title: "Politica di Rimborso",
+      lastUpdated: "Ultimo aggiornamento: agosto 2026",
+      sections: [
+        {
+          heading: "1. Servizi digitali e diritto di recesso",
+          paragraphs: [
+            "AgentCloud fornisce servizi digitali. Ai sensi della normativa europea sui diritti dei consumatori hai diritto di recesso entro 14 giorni dall'acquisto, ma tale diritto decade non appena il servizio inizia con il tuo consenso.",
+            "Sottoscrivendo un abbonamento acconsenti all'avvio immediato del servizio: di conseguenza, gli abbonamenti già attivati non sono rimborsabili.",
+          ],
+        },
+        {
+          heading: "2. Casi in cui spetta il rimborso",
+          paragraphs: [
+            "I rimborsi vengono riconosciuti nei seguenti casi:",
+            "Addebiti errati o duplicati: l'importo contestato viene rimborsato integralmente.",
+            "Prolungata indisponibilità del servizio imputabile ad AgentCloud: il rimborso è proporzionale al periodo non usufruito.",
+          ],
+        },
+        {
+          heading: "3. Casi in cui il rimborso non spetta",
+          paragraphs: [
+            "Le allowance di token non utilizzate non vengono riportate al mese successivo né rimborsate.",
+            "I consumi a eccedenza (metered overage) già addebitati non sono rimborsabili.",
+            "Gli abbonamenti attivati e utilizzati non sono rimborsabili, salvo i casi di cui sopra.",
+          ],
+        },
+        {
+          heading: "4. Come richiedere un rimborso",
+          paragraphs: [
+            "Per richiedere un rimborso scrivi a legal@agentcloud.io indicando l'email dell'account, l'agente/abbonamento interessato e l'importo contestato.",
+            "Le richieste vengono valutate entro 5 giorni lavorativi dalla ricezione.",
+          ],
+        },
+        {
+          heading: "5. Tempi e modalità di erogazione",
+          paragraphs: [
+            "I rimborsi spettanti vengono erogati tramite il metodo di pagamento originale entro un termine ragionevole dall'accoglimento della richiesta (in genere 5-10 giorni lavorativi, secondo i tempi del circuito di pagamento).",
+          ],
+        },
+        {
+          heading: "6. Contatti",
+          paragraphs: ["Per domande su fatturazione o rimborsi: legal@agentcloud.io"],
         },
       ],
     },
@@ -1098,6 +1149,7 @@ export const en: Dictionary = {
     invalidEmailAddress: "Invalid email address",
     alreadyOnWaitlist: "This email is already on the waitlist",
     failedToJoinWaitlist: "Failed to join waitlist",
+    invalidAccessCode: "Invalid access code",
     allFieldsRequired: "All fields are required",
     aiStreamError: "Error while streaming the response",
     aiConnectionFailed:
@@ -1161,6 +1213,7 @@ export const en: Dictionary = {
     rights: "© 2026 AgentCloud. All rights reserved.",
     privacy: "Privacy",
     terms: "Terms",
+    refunds: "Refund Policy",
   },
 
   hero: {
@@ -1733,7 +1786,7 @@ export const en: Dictionary = {
     titleAccent: "Waitlist",
     subtitle:
       "Be among the first to experience AI-powered automation. Limited spots available.",
-    remainingSpots: "Remaining Spots",
+    takenSpots: "Spots Taken",
     successTitle: "You're on the list!",
     successText: "We'll notify you when AgentCloud is ready.",
     fullTitle: "Waitlist is Full",
@@ -1743,7 +1796,7 @@ export const en: Dictionary = {
     emailModalPlaceholder: "Write your message here...",
     emailModalSend: "Send email",
     emailModalCancel: "Cancel",
-    placeholder: "Enter your email",
+    placeholder: "Enter your email or access code",
     joining: "Joining...",
     joinWaitlist: "Join Waitlist",
     agreeNote:
@@ -1861,6 +1914,8 @@ export const en: Dictionary = {
   },
 
   legal: {
+    seeTerms: "See the Terms of Service",
+    seeRefunds: "See the Refund Policy",
     privacy: {
       backHome: "Back to home",
       title: "Privacy Policy",
@@ -1879,7 +1934,7 @@ export const en: Dictionary = {
           heading: "2. How We Use Your Data",
           paragraphs: [
             "We use your data to provide and improve AgentCloud services, process payments and refunds via Stripe, enforce your plan limits (token usage), send you transactional emails (welcome, billing, support), and communicate about your account.",
-            "Chat content is sent to the AI provider (Google Gemini) solely to generate the agent's responses. We do not use chat content to train our models.",
+            "Chat content is sent to the AI provider (Anthropic Claude) solely to generate the agent's responses. We do not use chat content to train our models.",
             "We never sell your personal data to third parties.",
           ],
         },
@@ -1887,7 +1942,7 @@ export const en: Dictionary = {
           heading: "3. Data Sharing",
           paragraphs: [
             "We share data only with essential service providers:",
-            "Supabase — authentication and database; Stripe — payments, billing, and refunds; Resend — transactional email delivery; Google — Google account sign-in (OAuth) and conversation processing via Gemini; Shopify and Google Calendar — only if you connect these integrations to your agents.",
+            "Supabase — authentication and database; Stripe — payments, billing, and refunds; Resend — transactional email delivery; Google — Google account sign-in (OAuth); Anthropic — conversation processing via Claude; Shopify and Google Calendar — only if you connect these integrations to your agents.",
           ],
         },
         {
@@ -1975,6 +2030,53 @@ export const en: Dictionary = {
           paragraphs: [
             "For questions about these terms, billing, or refunds: legal@agentcloud.io",
           ],
+        },
+      ],
+    },
+    refunds: {
+      backHome: "Back to home",
+      title: "Refund Policy",
+      lastUpdated: "Last updated: August 2026",
+      sections: [
+        {
+          heading: "1. Digital Services and Withdrawal Right",
+          paragraphs: [
+            "AgentCloud provides digital services. Under EU consumer law you have a withdrawal right within 14 days of purchase, but it lapses as soon as the service begins with your consent.",
+            "By subscribing you consent to the immediate start of the service: accordingly, activated subscriptions are non-refundable.",
+          ],
+        },
+        {
+          heading: "2. Cases Where a Refund Is Due",
+          paragraphs: [
+            "Refunds are granted in the following cases:",
+            "Incorrect or duplicate charges: the disputed amount is refunded in full.",
+            "Prolonged service unavailability attributable to AgentCloud: the refund is prorated for the unused period.",
+          ],
+        },
+        {
+          heading: "3. Cases Where a Refund Is Not Due",
+          paragraphs: [
+            "Unused token allowances do not carry over to the next month and are not refunded.",
+            "Metered overage charges already billed are non-refundable.",
+            "Activated and used subscriptions are non-refundable, except for the cases above.",
+          ],
+        },
+        {
+          heading: "4. How to Request a Refund",
+          paragraphs: [
+            "To request a refund, write to legal@agentcloud.io with the account email, the agent/subscription concerned, and the disputed amount.",
+            "Requests are reviewed within 5 business days of receipt.",
+          ],
+        },
+        {
+          heading: "5. Timing and Method of Payment",
+          paragraphs: [
+            "Due refunds are issued via the original payment method within a reasonable time after approval (typically 5-10 business days, depending on the payment network).",
+          ],
+        },
+        {
+          heading: "6. Contact",
+          paragraphs: ["For billing or refund questions: legal@agentcloud.io"],
         },
       ],
     },

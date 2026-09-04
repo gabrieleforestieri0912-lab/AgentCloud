@@ -36,4 +36,25 @@ describe("createWordEmitter", () => {
 
     expect(words.join("")).not.toContain("secondo");
   });
+
+  it("stops permanently when the consumer closes the stream (onWord throws)", async () => {
+    const words: string[] = [];
+    const emitter = createWordEmitter((word) => {
+      words.push(word);
+      // Mimics controller.enqueue() after the client disconnected from the
+      // SSE response: previously this escaped the timer callback as an
+      // uncaughtException.
+      throw new Error("Invalid state: Controller is already closed");
+    });
+
+    emitter.push("primo secondo terzo");
+    await emitter.flush(); // must resolve, never reject or hang
+
+    expect(words.join("")).toBe("primo");
+
+    // Pushes after the stream died are ignored (no new timers scheduled).
+    emitter.push("quarto");
+    await emitter.flush();
+    expect(words.join("")).toBe("primo");
+  });
 });

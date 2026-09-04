@@ -16,19 +16,30 @@ import { MAX_SPOTS } from "@/lib/waitlist-constants";
 // Cookie flags (mirrors the server-side constants in /api/waitlist).
 const JOINED_COOKIE = "ac_wl_joined";
 const JOINED_EMAIL_COOKIE = "ac_wl_email";
-const ADMIN_COOKIE = "ac_wl_admin";
 
 // Floating brand marks echoing the hero constellation — ties the waitlist into
-// the landing page's visual language.
+// the landing page's visual language. A rich spread of companies (density is
+// deliberate: on the landing page the waitlist reads as "the whole market is
+// waiting for it").
 const FLOATING_BUBBLES: FloatingBubble[] = [
+  { top: "5%", left: "27%", size: "w-12 h-12", brand: "google", delay: "0.6s", anim: "animate-float-gentle" },
   { top: "8%", left: "7%", size: "w-12 h-12", brand: "shopify", delay: "0s", anim: "animate-float-gentle" },
+  { top: "10%", left: "57%", size: "w-11 h-11", brand: "discord", delay: "1.4s", anim: "animate-float-gentle" },
   { top: "14%", left: "85%", size: "w-11 h-11", brand: "stripe", delay: "1.2s", anim: "animate-float-reverse" },
-  { top: "36%", left: "4%", size: "w-10 h-10", brand: "instagram", delay: "0.7s", anim: "animate-float-gentle" },
+  { top: "22%", left: "3%", size: "w-10 h-10", brand: "calendly", delay: "1.1s", anim: "animate-float-reverse" },
+  { top: "20%", left: "88%", size: "w-11 h-11", brand: "mailchimp", delay: "0.3s", anim: "animate-float-gentle" },
   { top: "32%", left: "91%", size: "w-12 h-12", brand: "gmail", delay: "1.9s", anim: "animate-float-reverse" },
-  { top: "60%", left: "9%", size: "w-11 h-11", brand: "whatsapp", delay: "0.4s", anim: "animate-float-reverse" },
+  { top: "36%", left: "4%", size: "w-10 h-10", brand: "instagram", delay: "0.7s", anim: "animate-float-gentle" },
+  { top: "44%", left: "7%", size: "w-12 h-12", brand: "trello", delay: "1.8s", anim: "animate-float-reverse" },
+  { top: "46%", left: "84%", size: "w-10 h-10", brand: "paypal", delay: "0.5s", anim: "animate-float-gentle" },
   { top: "56%", left: "87%", size: "w-10 h-10", brand: "notion", delay: "2.2s", anim: "animate-float-gentle" },
+  { top: "60%", left: "9%", size: "w-11 h-11", brand: "whatsapp", delay: "0.4s", anim: "animate-float-reverse" },
+  { top: "64%", left: "22%", size: "w-11 h-11", brand: "github", delay: "1.0s", anim: "animate-float-reverse" },
+  { top: "66%", left: "70%", size: "w-12 h-12", brand: "dropbox", delay: "1.7s", anim: "animate-float-gentle" },
   { top: "80%", left: "16%", size: "w-10 h-10", brand: "hubspot", delay: "1.5s", anim: "animate-float-gentle" },
   { top: "82%", left: "78%", size: "w-12 h-12", brand: "facebook", delay: "0.9s", anim: "animate-float-reverse" },
+  { top: "89%", left: "42%", size: "w-10 h-10", brand: "woocommerce", delay: "2.4s", anim: "animate-float-gentle" },
+  { top: "92%", left: "5%", size: "w-11 h-11", brand: "meta", delay: "1.3s", anim: "animate-float-reverse" },
 ];
 
 export default function WaitlistForm({
@@ -39,6 +50,8 @@ export default function WaitlistForm({
   initialRemaining: number;
 }) {
   const { dict, locale } = useLanguage();
+  // The field accepts an email (join the waitlist) OR the access code (enter
+  // the platform directly) — the server tells them apart.
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(
@@ -67,7 +80,6 @@ export default function WaitlistForm({
         if (data.verified === true && data.joined === false) {
           document.cookie = `${JOINED_COOKIE}=; max-age=0; path=/`;
           document.cookie = `${JOINED_EMAIL_COOKIE}=; max-age=0; path=/`;
-          document.cookie = `${ADMIN_COOKIE}=; max-age=0; path=/`;
           setIsSuccess(false);
         } else if (data.joined === true) {
           setIsSuccess(true);
@@ -87,6 +99,9 @@ export default function WaitlistForm({
   }, [error]);
   // Derived — the waitlist is full when no spots are left (no separate setter).
   const isFull = remainingSpots <= 0;
+  // The counter shows spots TAKEN (out of MAX_SPOTS), so it reads "4/20" and
+  // grows as people join — the bar below fills with the same ratio.
+  const takenSpots = Math.min(MAX_SPOTS, Math.max(0, MAX_SPOTS - remainingSpots));
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -132,9 +147,9 @@ export default function WaitlistForm({
       if (typeof data.remaining === "number") {
         setRemainingSpots(data.remaining);
       }
-      // Only the admin (verified server-side by email) is let into the
-      // platform — straight to the landing page, no success card needed.
-      if (data.adminAccess) {
+      // Access-code holders (validated server-side) are let straight into the
+      // platform — every agent is unlocked for them, no success card needed.
+      if (data.accessGranted) {
         window.location.href = "/";
         return;
       }
@@ -209,10 +224,10 @@ export default function WaitlistForm({
             {/* Spots — compact inline */}
             <div className="flex items-center justify-center gap-2 mb-5">
               <span className="text-xs font-semibold text-neutral-500">
-                {dict.waitlist.remainingSpots}:
+                {dict.waitlist.takenSpots}:
               </span>
               <span className="text-sm font-bold text-brand-400">
-                {remainingSpots}/{MAX_SPOTS}
+                {takenSpots}/{MAX_SPOTS}
               </span>
               <div className="w-20 bg-neutral-700 rounded-full h-1.5">
                 {/* Barra dei posti OCCUPATI: si riempie con le iscrizioni, quindi
@@ -285,68 +300,64 @@ export default function WaitlistForm({
                   </a>
                 </div>
               </motion.div>
-            ) : isFull ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center"
-              >
-                <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2">
-                  {dict.waitlist.fullTitle}
-                </h3>
-                <p className="text-neutral-400 text-sm">
-                  {dict.waitlist.fullText}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowEmailModal(true)}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:opacity-90 hover:-translate-y-0.5"
-                >
-                  <Mail size={16} />
-                  {dict.waitlist.emailButton}
-                </button>
-              </motion.div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (error) setError("");
-                    }}
-                    placeholder={dict.waitlist.placeholder}
-                    className="w-full bg-neutral-800 border border-white/10 rounded-full px-5 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
-                    disabled={isSubmitting}
-                  />
-                  {error && (
-                    <p className="text-red-400 text-sm mt-2">{error}</p>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || remainingSpots === 0}
-                  className="w-full bg-linear-to-r from-brand-500 to-pink-500 text-white font-semibold py-3 px-6 rounded-full hover:opacity-90 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30"
-                >
-                  {isSubmitting ? dict.waitlist.joining : dict.waitlist.joinWaitlist}
-                </button>
-              </form>
+              <>
+                {/* Waitlist-full notice: blocks only new email signups — the
+                    access code still works below. */}
+                {isFull && (
+                  <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-center">
+                    <h3 className="text-sm font-bold text-white">
+                      {dict.waitlist.fullTitle}
+                    </h3>
+                    <p className="mt-1 text-sm text-neutral-400">
+                      {dict.waitlist.fullText}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowEmailModal(true)}
+                      className="mt-3 inline-flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:opacity-90"
+                    >
+                      <Mail size={14} />
+                      {dict.waitlist.emailButton}
+                    </button>
+                  </div>
+                )}
+
+                {/* Single field: an email joins the waitlist, the access code
+                    unlocks the platform directly (server-side check). */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <input
+                      type="text"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (error) setError("");
+                      }}
+                      placeholder={dict.waitlist.placeholder}
+                      autoComplete="off"
+                      className="w-full bg-neutral-800 border border-white/10 rounded-full px-5 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                      disabled={isSubmitting}
+                    />
+                    {error && (
+                      <p className="text-red-400 text-sm mt-2">{error}</p>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={
+                      isSubmitting ||
+                      // The waitlist being full blocks only new email signups.
+                      (isFull && email.trim() !== "" && !email.includes("@"))
+                    }
+                    className="w-full bg-linear-to-r from-brand-500 to-pink-500 text-white font-semibold py-3 px-6 rounded-full hover:opacity-90 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30"
+                  >
+                    {isSubmitting
+                      ? dict.waitlist.joining
+                      : dict.waitlist.joinWaitlist}
+                  </button>
+                </form>
+              </>
             )}
 
             <p className="text-neutral-500 text-xs text-center mt-6">

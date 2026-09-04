@@ -10,12 +10,13 @@ Piattaforma di **agenti AI** per le aziende: marketplace di agenti pronti al lan
 - 💳 **Billing Stripe** — payment links, attivazione automatica via webhook, customer portal (cancellazione self-service), **overage billing** con tetto di sicurezza a 2x l'allowance
 - 🌐 **i18n** — italiano di default, inglese via cookie `agentcloud_locale` (niente URL `/en`)
 - 🔐 **Auth Supabase** — email + password e Google OAuth (sessioni `@supabase/ssr`)
+- 🔑 **Accesso con codice** — durante la fase waitlist si entra con un codice di accesso (niente più email admin): elimina il vincolo del login (niente account Supabase) e sblocca **tutte** le pagine e **tutti** gli agenti, anche quelli “in arrivo”
 - 🛡️ **Rate limiting distribuito** — Supabase (`rate_limits` + RPC), fail-open
 - 🔌 **Shopify OAuth multi-tenant** — App pubblica installabile da qualsiasi merchant (install/callback/webhooks, token cifrati AES-256-GCM)
 
 ## Stack
 
-Next.js 16 (Turbopack) · React 19 · Tailwind CSS v4 · TypeScript · Supabase (Auth + DB) · Stripe · Google Gemini · Resend · Vitest
+Next.js 16 (Turbopack) · React 19 · Tailwind CSS v4 · TypeScript · Supabase (Auth + DB) · Stripe · Anthropic Claude · Resend · Vitest
 
 ## Avvio rapido
 
@@ -33,7 +34,7 @@ npm run dev
 | `npm run build` | build produzione (con typecheck) |
 | `npm run start` | avvio produzione |
 | `npm run lint` | ESLint |
-| `npm run test` | Vitest (161 test) |
+| `npm run test` | Vitest (162 test) |
 | `npm run typecheck` | `tsc --noEmit` |
 
 ## Environment Variables
@@ -50,7 +51,7 @@ SUPABASE_SERVICE_ROLE_KEY=…
 NEXT_PUBLIC_SITE_URL=https://tuodominio.com
 
 # AI + Email
-GEMINI_API_KEY=…
+ANTHROPIC_API_KEY=sk-ant-…
 RESEND_API_KEY=re_…
 
 # Stripe (live!) — vedi STRIPE_SETUP.md per payment links, webhook e metered price
@@ -62,6 +63,10 @@ STRIPE_PAYMENT_LINK_<VERTICAL>_<TIER>=https://buy.stripe.com/…
 
 # Admin
 ADMIN_API_TOKEN=…
+
+# Accesso fase waitlist — codice che sblocca la piattaforma e tutti gli agenti
+# (default generato in src/lib/access-code.ts)
+ACCESS_CODE=…
 
 # Facoltativi: AGENTCLOUD_VERTICAL, AGENTCLOUD_FEATURE_FLAGS, tool Shopify/Calendar/Lead/WhatsApp, SHOPIFY_API_KEY/SECRET/SCOPES, TENANT_STORE_KEY
 ```

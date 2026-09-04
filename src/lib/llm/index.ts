@@ -1,15 +1,13 @@
-import { geminiProvider } from "./gemini";
+import { anthropicProvider } from "./anthropic";
 import type { LLMProvider, LLMProviderName } from "./types";
 
 /**
  * LLM provider resolver for agent execution.
  *
  * The platform uses a single backend:
- *  - Gemini (production) — activated by `GEMINI_API_KEY` (or `GOOGLE_API_KEY`),
- *    with `AGENT_LLM_PROVIDER=gemini`. The default model is `gemini-3.6-flash`
- *    (override with `AGENT_LLM_MODEL`).
- *
- * Ollama and Anthropic have been removed; Gemini is the only provider.
+ *  - Anthropic (Claude, production) — activated by `ANTHROPIC_API_KEY`,
+ *    with `AGENT_LLM_PROVIDER=anthropic`. The default model is
+ *    `claude-sonnet-5` (override with `AGENT_LLM_MODEL`).
  *
  * This module is server-only.
  */
@@ -24,18 +22,18 @@ export type {
   LLMToolResult,
 } from "./types";
 
-export function isGeminiKeyConfigured(): boolean {
-  const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+export function isAnthropicKeyConfigured(): boolean {
+  const key = process.env.ANTHROPIC_API_KEY;
   return Boolean(key && key.length > 10);
 }
 
 export function getLLMProvider(): LLMProvider {
   const configured = (process.env.AGENT_LLM_PROVIDER ?? "").trim().toLowerCase();
 
-  if (configured === "gemini") return geminiProvider;
+  if (configured === "anthropic") return anthropicProvider;
 
-  // The only supported backend is Gemini.
-  return geminiProvider;
+  // The only supported backend is Anthropic (Claude).
+  return anthropicProvider;
 }
 
 export function getLLMProviderName(): LLMProviderName {

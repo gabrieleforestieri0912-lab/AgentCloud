@@ -10,15 +10,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title:
       locale === "it"
-        ? "Termini di Servizio | AgentCloud"
-        : "Terms of Service | AgentCloud",
+        ? "Politica di Rimborso | AgentCloud"
+        : "Refund Policy | AgentCloud",
   };
 }
 
-export default async function TermsPage() {
+export default async function RefundsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const legal = dict.legal.terms;
+  const legal = dict.legal.refunds;
 
   return (
     <main className="min-h-screen bg-neutral-950">
@@ -50,10 +50,10 @@ export default async function TermsPage() {
 
             <p>
               <Link
-                href="/refunds"
+                href="/terms"
                 className="font-semibold text-brand-400 hover:text-brand-300"
               >
-                {dict.legal.seeRefunds}
+                {dict.legal.seeTerms}
               </Link>
             </p>
           </div>

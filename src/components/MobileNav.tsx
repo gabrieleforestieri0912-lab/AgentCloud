@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
-import { AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
+import { AGENTS, AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
+import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
 import LanguageToggle from "./LanguageToggle";
 
@@ -19,7 +20,10 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const { locale, dict } = useLanguage();
 
-  const agents = (marketplaceAgents ?? AVAILABLE_AGENTS).map((agent) =>
+  // Server pages pass the authoritative list; otherwise fall back to the
+  // access cookie (code holders see the FULL catalog in the mobile menu too).
+  const fallbackAgents = hasAccessOnClient() ? AGENTS : AVAILABLE_AGENTS;
+  const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );
 

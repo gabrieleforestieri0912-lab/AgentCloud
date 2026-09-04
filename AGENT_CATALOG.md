@@ -247,7 +247,7 @@
 
 **Costo variabile per conversazione:**
 
-- LLM (Gemini): ~€0.05-0.15
+- LLM (Claude): ~€0.05-0.15
 - Tavily (se attivo): ~€0.01-0.05
 - **Senza web search:** ~€0.05-0.08
 

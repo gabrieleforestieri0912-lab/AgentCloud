@@ -17,6 +17,7 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/contact")).toBe(true);
     expect(isPublicPath("/privacy")).toBe(true);
     expect(isPublicPath("/terms")).toBe(true);
+    expect(isPublicPath("/refunds")).toBe(true);
   });
 
   it("keeps auth pages public", () => {

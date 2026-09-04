@@ -8,27 +8,33 @@ afterEach(() => {
 });
 
 describe("getLLMProvider resolver", () => {
-  it("defaults to gemini when no provider is configured", async () => {
+  it("defaults to anthropic when no provider is configured", async () => {
     delete process.env.AGENT_LLM_PROVIDER;
     const { getLLMProvider } = await import("./index");
-    expect(getLLMProvider().name).toBe("gemini");
+    expect(getLLMProvider().name).toBe("anthropic");
   });
 
-  it("honors AGENT_LLM_PROVIDER=gemini explicitly", async () => {
-    process.env.AGENT_LLM_PROVIDER = "gemini";
+  it("honors AGENT_LLM_PROVIDER=anthropic explicitly", async () => {
+    process.env.AGENT_LLM_PROVIDER = "anthropic";
     const { getLLMProvider } = await import("./index");
-    expect(getLLMProvider().name).toBe("gemini");
+    expect(getLLMProvider().name).toBe("anthropic");
   });
 });
 
-describe("gemini provider", () => {
-  it("maps a non-gemini model name to the configured gemini default", async () => {
+describe("anthropic provider", () => {
+  it("exposes the anthropic provider shape with the default model fallback", async () => {
     vi.resetModules();
     delete process.env.AGENT_LLM_MODEL;
-    const { createGeminiProvider } = await import("./gemini");
-    const provider = createGeminiProvider({ apiKey: "test-key" });
+    const { createAnthropicProvider } = await import("./anthropic");
+    const provider = createAnthropicProvider({ apiKey: "test-key" });
     // Accessing private chat would require network; just assert the provider
-    // resolves the name and the default model fallback via the public shape.
-    expect(provider.name).toBe("gemini");
+    // shape and the default model resolution via the public name.
+    expect(provider.name).toBe("anthropic");
+  });
+
+  it("detects a configured ANTHROPIC_API_KEY", async () => {
+    process.env.ANTHROPIC_API_KEY = "sk-ant-test-1234567890123";
+    const { isAnthropicKeyConfigured } = await import("./index");
+    expect(isAnthropicKeyConfigured()).toBe(true);
   });
 });
