@@ -19,6 +19,11 @@ export const PUBLIC_PATHS = [
   "/signup",
   "/reset-password",
   "/auth/callback", // Supabase PKCE / OAuth redirect target
+  // Google OAuth — reachable without a session so the flow can always
+  // terminate in a readable redirect (?google=error&reason=...) instead of a
+  // bare 401. /connect still requires a session; /callback is gated by the
+  // CSRF state (nonce cookie + user_id) verified inside the handler.
+  "/api/auth/google",
   "/waitlist",
   "/contact",
   "/privacy",

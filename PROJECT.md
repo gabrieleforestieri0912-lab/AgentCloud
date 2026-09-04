@@ -209,6 +209,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `LEAD_CAPTURE_ENDPOINT`, `LEAD_CAPTURE_ENRICH_ENDPOINT`, `SLACK_WEBHOOK_URL` | tool Lead capture |
 | `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` | webhook WhatsApp |
 | `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SHOPIFY_SCOPES` | OAuth multi-tenant dell'App pubblica Shopify (vedi sezione Shopify) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, `GOOGLE_SCOPES` | OAuth Google Gmail/Calendar (vedi sezione Google) |
 | `TENANT_STORE_KEY` | cifratura tenant store — **mai usare il default `dev-tenant-key` in prod** (store su filesystem: non persistente su serverless) |
 
 ### Runtime / feature flags
@@ -263,3 +264,35 @@ Flusso runtime: `/api/shopify/install` (CSRF state + redirect) →
 revocano su 401 (APP_UNINSTALLED / shop/redact). La tabella
 `shopify_connections` è creata da `supabase/schema-shopify-oauth.sql`
 (rieseguire dopo il deploy).
+
+---
+
+## Google (Gmail + Calendar) — OAuth multi-tenant
+
+Integrazione con Gmail e Google Calendar (stesso pattern della OAuth Shopify:
+token cifrati AES-256-GCM in `google_connections`, RLS per utente, niente
+INSERT dal client). Il codice (`src/lib/google/*`, `/api/auth/google/*`)
+consuma solo env var — il setup Google Cloud è manuale:
+
+1. **Google Cloud Console** → crea un progetto → **APIs & Services → OAuth consent screen** (External).
+2. Abilita **Gmail API** e **Google Calendar API** nel progetto.
+3. **Credentials → Create credentials → OAuth client ID** (Web application):
+   - **Authorized redirect URIs**: `https://<host>/api/auth/google/callback`
+     (in dev: `http://localhost:3000/api/auth/google/callback`)
+4. Scope **solo lettura** ("sensitive", non "restricted"):
+   `https://www.googleapis.com/auth/gmail.readonly`,
+   `https://www.googleapis.com/auth/calendar.readonly` (override: `GOOGLE_SCOPES`).
+5. Env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`,
+   `GOOGLE_TOKEN_ENCRYPTION_KEY` (fallback: `TENANT_STORE_KEY`).
+
+Flusso runtime: `/api/auth/google/connect` (nonce anti-CSRF in cookie httpOnly
++ `state` con `user_id`) → `/api/auth/google/callback` (verifica state, exchange
+code, userinfo, upsert cifrato in `google_connections`). Errori e denial
+rientrano su `/dashboard?google=error&reason=...` — mai pagina bianca. La
+tabella `google_connections` è creata da `supabase/schema-google-oauth.sql`
+(rieseguire dopo il deploy).
+
+Fasi successive: **refresh token + proxy API** (Next.js route handlers, come
+`/api/shopify/*`) ed **esposizione all'agente AI** (tool `list_emails` /
+`get_calendar_events`). Fase 5 (opzionale): scope di scrittura
+(`gmail.send`, `calendar.events`) con guardrail di conferma esplicita in UI.
