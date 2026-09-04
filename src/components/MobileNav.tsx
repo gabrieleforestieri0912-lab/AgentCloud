@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronRight } from "lucide-react";
@@ -18,6 +20,7 @@ type MobileNavProps = {
 export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const pathname = usePathname();
   const { locale, dict } = useLanguage();
 
   // Server pages pass the authoritative list; otherwise fall back to the
@@ -31,7 +34,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   useEffect(() => {
     setIsOpen(false);
     setActiveSection(null);
-  }, []);
+  }, [pathname]);
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -50,7 +53,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
       id: "marketplace",
       label: dict.navbar.marketplace,
       href: "/agents",
-      children: agents.slice(0, 6).map((agent) => ({
+      children: agents.map((agent) => ({
         label: agent.shortName,
         href: `/agents/${agent.slug}`,
         icon: agent.icon,
@@ -85,8 +88,15 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
         <Menu size={20} />
       </button>
 
-      {/* Mobile menu overlay */}
-      <AnimatePresence>
+      {/* Mobile menu overlay.
+          Rendered through a portal to document.body on purpose: the navbar's
+          backdrop-blur creates a containing block for fixed descendants, so a
+          fixed panel rendered inline would be sized to the navbar bar instead
+          of the viewport (a tiny "stuck" menu). Outside the filtered ancestor,
+          inset-0 / h-dvh resolve against the real viewport. */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
         {isOpen && (
           <>
             {/* Backdrop */}
@@ -104,7 +114,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 z-50 h-full w-80 max-w-[85vw] bg-neutral-950 border-l border-white/10 md:hidden overflow-y-auto"
+              className="fixed inset-y-0 right-0 z-50 h-dvh w-80 max-w-[85vw] bg-neutral-950 border-l border-white/10 md:hidden overflow-y-auto"
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-white/10 p-4">
@@ -236,7 +246,9 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+          document.body,
+        )}
     </>
   );
 }
