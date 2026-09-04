@@ -31,25 +31,26 @@ export const dynamic = "force-dynamic";
 export default async function AgentsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  // Access-code holders see the FULL catalog as available (every agent is
-  // reachable), but the agents that the PUBLIC would find locked — the
-  // "coming soon" set — keep their tag on the card (via
-  // previewComingSoonSlugs), so admins can tell at a glance which agents a
-  // real client will see as coming soon. Non-code visitors get the classic
-  // split: available-now grid + a locked coming-soon section.
+  // Everyone — code holders included — sees the marketplace split the SAME
+  // way a real client does: an "Available now" grid plus a "Coming soon"
+  // section, so admins can tell at a glance which agents the public will
+  // find locked. The only difference for access-code holders:
+  // comingSoonAccessible keeps those cards tagged but clickable (the code
+  // unlocks them), instead of dimmed/locked. The navbar / mobile menu still
+  // lists the FULL catalog for code holders (navAgents).
   const unlocked = await hasPlatformAccess();
-  const comingSoonSlugs = COMING_SOON_AGENTS.map((a) => a.slug);
-  const available = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((a) =>
+  const available = AVAILABLE_AGENTS.map((a) => localizeAgent(a, locale));
+  const comingSoon = COMING_SOON_AGENTS.map((a) =>
     localizeAgent(a, locale),
   );
-  const comingSoon = unlocked
-    ? []
-    : COMING_SOON_AGENTS.map((a) => localizeAgent(a, locale));
+  const navAgents = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((a) =>
+    localizeAgent(a, locale),
+  );
   const isIt = locale === "it";
 
   return (
     <main className="min-h-screen bg-neutral-950">
-      <Navbar marketplaceAgents={available} />
+      <Navbar marketplaceAgents={navAgents} />
 
       <section className="bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
@@ -87,7 +88,7 @@ export default async function AgentsPage() {
             comingSoonCount={comingSoon.length}
             availableLabel={dict.agentsPage.availableNow}
             comingSoonLabel={dict.agentsPage.comingSoon}
-            previewComingSoonSlugs={unlocked ? comingSoonSlugs : undefined}
+            comingSoonAccessible={unlocked}
           />
 
           {/* Custom agent CTA — prominent so users who can't find what

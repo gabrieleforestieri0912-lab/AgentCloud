@@ -15,11 +15,12 @@ type MarketplaceGridProps = {
   availableLabel: string;
   comingSoonLabel: string;
   /**
-   * Slugs to tag "Coming soon" inside the available grid. Access-code holders
-   * see the FULL catalog as clickable, but these cards keep the tag so admins
-   * can tell which agents a real (non-code) client would find locked.
+   * When true (access-code holders), "coming soon" cards keep the tag but
+   * stay clickable — the code unlocks them, while the tag still shows which
+   * agents a real (non-code) client would find locked. When false (public
+   * view) the cards are dimmed and not clickable.
    */
-  previewComingSoonSlugs?: string[];
+  comingSoonAccessible?: boolean;
 };
 
 export default function MarketplaceGrid({
@@ -29,7 +30,7 @@ export default function MarketplaceGrid({
   comingSoonCount,
   availableLabel,
   comingSoonLabel,
-  previewComingSoonSlugs = [],
+  comingSoonAccessible = false,
 }: MarketplaceGridProps) {
   const { locale, dict } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -108,18 +109,11 @@ export default function MarketplaceGrid({
         </div>
 
         {/* Available agents grid — every card in this list is available by
-            construction: the server only puts flag-enabled agents here, or —
-            for access-code holders — the FULL catalog. Never re-derive
-            availability from the client-side flags here, or "coming soon"
-            agents would flip back to locked for code holders. */}
+            construction: the server only puts flag-enabled agents here.
+            Never re-derive availability from the client-side flags here. */}
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">
           {filteredAvailable.map((agent) => (
-            <AgentCard
-              key={agent.slug}
-              agent={agent}
-              available={true}
-              comingSoonTag={previewComingSoonSlugs.includes(agent.slug)}
-            />
+            <AgentCard key={agent.slug} agent={agent} available={true} />
           ))}
         </div>
 
@@ -153,7 +147,8 @@ export default function MarketplaceGrid({
               <AgentCard
                 key={agent.slug}
                 agent={agent}
-                available={false}
+                available={comingSoonAccessible}
+                comingSoonTag={comingSoonAccessible}
               />
             ))}
           </div>
