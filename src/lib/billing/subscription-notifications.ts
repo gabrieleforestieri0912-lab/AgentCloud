@@ -171,7 +171,7 @@ type SubGroup = {
 export async function notifyUserSubscriptions(
   db: SupabaseClient,
   userId: string,
-  locale: "it" | "en" = "it",
+  locale: "it" | "en" = "en",
   now: number = Date.now(),
 ): Promise<void> {
   const dict = getDictionary(locale);
@@ -256,7 +256,7 @@ export async function notifyUserSubscriptions(
  */
 export async function notifyAllExpiringSubscriptions(
   db: SupabaseClient,
-  locale: "it" | "en" = "it",
+  locale: "it" | "en" = "en",
   now: number = Date.now(),
 ): Promise<number> {
   const future = new Date(now + EXPIRY_WARNING_DAYS * DAY_MS).toISOString();

@@ -19,7 +19,7 @@ export async function GET(req: Request, { params }: Props) {
     });
   }
 
-  // Widget label follows the platform default (Italian); embedders can opt
+  // Widget label follows the platform default (English); embedders can opt
   // into English with `?lang=en`.
   const lang = new URL(req.url).searchParams.get("lang");
   const widgetLabel =

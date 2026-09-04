@@ -17,7 +17,7 @@ export {
 /**
  * Lightweight i18n for AgentCloud.
  *
- * The default language is Italian; the navbar toggle switches to English. The
+ * The default language is English; the navbar toggle switches to Italian. The
  * choice is persisted in a cookie so both client and server components can
  * read it — URLs stay unchanged (no /it /en routing).
  *
@@ -28,7 +28,7 @@ export {
 
 /**
  * Server-only: resolve the current locale from the cookie.
- * Falls back to Italian when the cookie is missing or invalid.
+ * Falls back to English when the cookie is missing or invalid.
  */
 export async function getLocale(): Promise<Locale> {
   try {

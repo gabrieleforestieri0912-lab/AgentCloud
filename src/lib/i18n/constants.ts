@@ -11,7 +11,7 @@ export const LOCALE_COOKIE = "agentcloud_locale";
 export const LOCALES = ["it", "en"] as const;
 export type Locale = (typeof LOCALES)[number];
 
-export const DEFAULT_LOCALE: Locale = "it";
+export const DEFAULT_LOCALE: Locale = "en";
 
 export function isLocale(value: unknown): value is Locale {
   return LOCALES.includes(value as Locale);

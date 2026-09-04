@@ -79,10 +79,10 @@ describe("getLocalChatResponse", () => {
     );
   });
 
-  // ─── Italian responses (platform default) ──────────────────────────────
+  // ─── Italian responses (requested explicitly) ──────────────────────────
 
-  it("defaults to Italian when no locale is passed", () => {
-    expect(getLocalChatResponse("ciao")).toBe(CHAT_RESPONSES_IT.greeting);
+  it("defaults to English when no locale is passed", () => {
+    expect(getLocalChatResponse("hello")).toBe(CHAT_RESPONSES.greeting);
   });
 
   it("returns Italian responses for Italian messages", () => {

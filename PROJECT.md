@@ -103,7 +103,7 @@ src/
 
 ## i18n
 
-- **Default italiano**, switch IT/EN nella navbar (cookie `agentcloud_locale`, URL invariati).
+- **Default inglese**, switch EN/IT nella navbar (cookie `agentcloud_locale`, URL invariati).
 - Dizionari `it`+`en` in `src/lib/i18n/dictionaries.ts` (`Dictionary = typeof it`, test di allineamento delle shape).
 - Overlay italiani per tutto il catalogo agenti in `agentCatalog.ts` + `localizeAgent`.
 - Errori delle API localizzati via `src/lib/i18n/api-errors.ts` (legge la stessa cookie).

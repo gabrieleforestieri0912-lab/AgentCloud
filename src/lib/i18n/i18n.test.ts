@@ -9,8 +9,8 @@ import { AGENT_LOCALIZATIONS_IT, getAgentLocalization } from "./agentCatalog";
 import { AGENTS, localizeAgent } from "@/lib/agents";
 
 describe("locale", () => {
-  it("defaults to Italian", () => {
-    expect(DEFAULT_LOCALE).toBe("it");
+  it("defaults to English", () => {
+    expect(DEFAULT_LOCALE).toBe("en");
   });
 
   it("exposes exactly the supported locales", () => {

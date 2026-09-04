@@ -1,6 +1,6 @@
 # AgentCloud
 
-Piattaforma di **agenti AI** per le aziende: marketplace di agenti pronti al lancio, chat, dashboard con monitoraggio token, abbonamenti Stripe con overage billing. **Default italiano** con switch EN dalla navbar.
+Piattaforma di **agenti AI** per le aziende: marketplace di agenti pronti al lancio, chat, dashboard con monitoraggio token, abbonamenti Stripe con overage billing. **Default inglese** con switch IT dalla navbar.
 
 ## Funzionalità
 
@@ -8,7 +8,7 @@ Piattaforma di **agenti AI** per le aziende: marketplace di agenti pronti al lan
 - 💬 **Chat** — chat pubblica per agente (`/a/[slug]`), chat generica e widget embed, con risposte in streaming parola per parola
 - 📊 **Dashboard** — agenti installati, utilizzo mensile token, stato abbonamento
 - 💳 **Billing Stripe** — payment links, attivazione automatica via webhook, customer portal (cancellazione self-service), **overage billing** con tetto di sicurezza a 2x l'allowance
-- 🌐 **i18n** — italiano di default, inglese via cookie `agentcloud_locale` (niente URL `/en`)
+- 🌐 **i18n** — inglese di default, italiano via cookie `agentcloud_locale` (niente URL `/en`)
 - 🔐 **Auth Supabase** — email + password e Google OAuth (sessioni `@supabase/ssr`)
 - 🔑 **Accesso con codice** — durante la fase waitlist si entra con un codice di accesso (niente più email admin): elimina il vincolo del login (niente account Supabase) e sblocca **tutte** le pagine e **tutti** gli agenti, anche quelli “in arrivo”
 - 🛡️ **Rate limiting distribuito** — Supabase (`rate_limits` + RPC), fail-open

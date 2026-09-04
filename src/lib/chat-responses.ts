@@ -6,7 +6,7 @@
  * (Claude) is reachable.
  *
  * Kept framework-agnostic so it can be unit tested without React.
- * The platform defaults to Italian; callers pass their active locale
+ * The platform defaults to English; callers pass their active locale
  * to resolve the right language.
  *
  * The texts mirror the REAL platform catalog (the 10 runtime agents in
@@ -120,12 +120,12 @@ const PATTERNS: Array<[RegExp, string]> = [
  * Deterministically resolve a local response for a user message.
  * Used as a graceful fallback when no AI backend is available.
  *
- * `locale` selects the language of the response; it defaults to Italian,
+ * `locale` selects the language of the response; it defaults to English,
  * matching the platform default.
  */
 export function getLocalChatResponse(
   input: string,
-  locale: "it" | "en" = "it",
+  locale: "it" | "en" = "en",
 ): string {
   const lower = input.toLowerCase();
   const responses = locale === "en" ? CHAT_RESPONSES : CHAT_RESPONSES_IT;
