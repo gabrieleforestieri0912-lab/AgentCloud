@@ -3,16 +3,40 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
+import BrandIcon from "./BrandIcon";
+import { BRANDS } from "@/lib/brands";
 import { useLanguage } from "./LanguageProvider";
 
 export default function Footer() {
   const { dict } = useLanguage();
 
+  // Real social profiles, shown with their official brand marks (X, Instagram,
+  // LinkedIn) and linking to the verified URLs.
   const socialLinks = [
-    { label: "X (Twitter)", href: "https://x.com/AgentCloud2k" },
-    { label: "Instagram", href: "https://www.instagram.com/_agentcloud/" },
-    { label: "LinkedIn", href: "https://www.linkedin.com/in/agent-cloud-323218431/" },
+    { label: "X (Twitter)", href: "https://x.com/AgentCloud2k", brand: "x" },
+    {
+      label: "Instagram",
+      href: "https://www.instagram.com/_agentcloud/",
+      brand: "instagram",
+    },
+    {
+      label: "LinkedIn",
+      href: "https://www.linkedin.com/in/agent-cloud-323218431/",
+      brand: "linkedin",
+    },
   ];
+
+  const SocialGlyph = ({ brand, size }: { brand: string; size: number }) => {
+    const def = BRANDS[brand];
+    if (!def) return null;
+    return (
+      <BrandIcon
+        brand={def}
+        size={size}
+        className="opacity-70 group-hover:opacity-100 transition-opacity"
+      />
+    );
+  };
 
   const companyLinks = [
     { label: dict.footer.about, href: "/about" },
@@ -166,18 +190,17 @@ export default function Footer() {
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            {socialLinks.map(({ label, href }) => (
+            {socialLinks.map(({ label, href, brand }) => (
               <Link
                 key={label}
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-neutral-500 hover:text-white transition-colors"
+                className="group text-neutral-500 hover:text-white transition-colors"
                 aria-label={label}
               >
                 <span className="sr-only">{label}</span>
-                {/* Simple icon placeholders - in production you'd use actual SVG icons */}
-                <div className="h-5 w-5 rounded-full bg-neutral-700" />
+                <SocialGlyph brand={brand} size={18} />
               </Link>
             ))}
           </div>

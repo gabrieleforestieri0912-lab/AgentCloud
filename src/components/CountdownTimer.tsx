@@ -61,7 +61,7 @@ function getServerSnapshot(): TimeUnit[] {
   return ZERO;
 }
 
-export default function CountdownTimer({ locale = "it" }: { locale?: string }) {
+export default function CountdownTimer({ locale = "en" }: { locale?: string }) {
   const units = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const isLaunched = units.every((u) => u.value === 0);
 
