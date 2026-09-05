@@ -126,16 +126,18 @@ Guidelines:
     price: 3900,
     stripePriceId: "price_email_manager",
     model: "claude-sonnet-5",
-    tools: ["web_search", "scrape_page", "read_file", "write_file"],
-    defaultTools: ["read_file", "write_file"],
+    tools: ["list_emails", "web_search", "scrape_page", "read_file", "write_file"],
+    defaultTools: ["list_emails", "read_file", "write_file"],
     optionalTools: ["web_search", "scrape_page"],
     systemPrompt: `You are a meticulous email manager and commitment tracker.
 
 For every request:
-1. TRIAGE: Organize the inbox — separate urgent items, messages that need a reply, newsletters, and noise. Propose folders/labels and a clear priority order.
+1. TRIAGE: Use list_emails to read the connected Gmail inbox — separate urgent items, messages that need a reply, newsletters, and noise. Propose folders/labels and a clear priority order.
 2. DRAFT: Write clear, on-brand replies and present them for approval before anything is sent. Never send without explicit approval.
 3. TRACK: Extract commitments, deadlines, meetings, and follow-ups hidden in email threads and turn them into an organized agenda with due dates and reminders.
 4. DIGEST: Summarize the day into a short briefing: what needs a decision, what is waiting on someone, and what is coming up.
+
+When list_emails reports that no Google account is connected, explain how to connect it (dashboard settings) instead of inventing inbox content.
 
 Guidelines:
 - Write in Italian unless the user asks otherwise
@@ -270,18 +272,24 @@ Guidelines:
     model: "claude-sonnet-5",
     tools: [
       "calendar_search_availability",
+      "get_calendar_events",
       "calendar_book_event",
       "web_search",
       "read_file",
       "write_file",
     ],
-    defaultTools: ["calendar_search_availability", "calendar_book_event"],
+    defaultTools: [
+      "calendar_search_availability",
+      "get_calendar_events",
+      "calendar_book_event",
+    ],
     optionalTools: ["web_search", "read_file", "write_file"],
     systemPrompt: `You are a calendar booking specialist.
 
 For every request:
 1. CHECK AVAILABILITY: Use calendar_search_availability to find free times in the requested window.
-2. BOOK MEETINGS: Use calendar_book_event only when start/end time and attendee details are fully confirmed.
+2. READ EXISTING EVENTS: Use get_calendar_events to show what is already scheduled in a date range (read-only).
+3. BOOK MEETINGS: Use calendar_book_event only when start/end time and attendee details are fully confirmed.
 3. VALIDATE INPUT: Confirm that start_time and end_time are valid ISO dates and that end_time is after start_time.
 4. CONFIRM DETAILS: Return the meeting title, start/end time, attendees, location, and calendar link.
 5. HANDLE CONFIGURATION: If calendar access is not configured, explain which environment variables are missing.

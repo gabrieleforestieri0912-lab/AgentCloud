@@ -5,6 +5,8 @@ import {
   getShopifyConnection,
   revokeShopifyConnection,
 } from "@/lib/shopify/connections";
+import { googleApiProxy } from "@/lib/google/api-proxy";
+import { getGoogleConnection } from "@/lib/google/connections";
 
 export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   web_search: {
@@ -341,6 +343,45 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
         },
       },
       required: ["start_date", "end_date"],
+    },
+  },
+
+  list_emails: {
+    name: "list_emails",
+    description:
+      "Read the user's Gmail inbox (read-only): optionally filter by query and return the most recent matching emails with sender, subject, date, and preview.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Optional Gmail search query (e.g. 'from:client@example.com is:unread')",
+        },
+        max_results: {
+          type: "integer",
+          description: "Max number of emails to return (default 10, max 20)",
+        },
+      },
+    },
+  },
+
+  get_calendar_events: {
+    name: "get_calendar_events",
+    description:
+      "Read events from the user's Google Calendar (read-only) in a date range, with start/end time, location, and calendar link.",
+    input_schema: {
+      type: "object",
+      properties: {
+        date_from: {
+          type: "string",
+          description: "Start of the range in ISO date/time format",
+        },
+        date_to: {
+          type: "string",
+          description: "End of the range in ISO date/time format (max 31 days from date_from)",
+        },
+      },
+      required: ["date_from", "date_to"],
     },
   },
 
@@ -1353,6 +1394,16 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
     case "calendar_search_availability": {
       let accessToken = process.env.GOOGLE_CALENDAR_ACCESS_TOKEN;
       let calendarId = process.env.GOOGLE_CALENDAR_CALENDAR_ID;
+      // Per-user OAuth connection (google_connections) takes priority — the
+      // agent reads the user's own calendar instead of the legacy env
+      // credentials. Legacy vars remain the fallback for non-OAuth setups.
+      if (context.userId && context.userId !== "anonymous") {
+        const conn = await getGoogleConnection(context.userId).catch(() => null);
+        if (conn) {
+          accessToken = conn.accessToken;
+          calendarId = "primary";
+        }
+      }
       const tenantId = context.tenantId;
       if (tenantId) {
         const creds = getTenantCredentials(tenantId);
@@ -1608,6 +1659,36 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       } catch (e) {
         return `Calendar booking network error: ${e instanceof Error ? e.message : String(e)}`;
       }
+    }
+
+    case "list_emails": {
+      if (!context.userId || context.userId === "anonymous") {
+        return "list_emails requires a connected Google account. Please log in and connect Gmail from the dashboard settings.";
+      }
+      const emailsResult = await googleApiProxy(
+        "list_emails",
+        {
+          query: input.query || "",
+          max_results: input.max_results || "10",
+        },
+        context.userId,
+      );
+      return emailsResult.ok ? String(emailsResult.data) : emailsResult.error;
+    }
+
+    case "get_calendar_events": {
+      if (!context.userId || context.userId === "anonymous") {
+        return "get_calendar_events requires a connected Google account. Please log in and connect Google Calendar from the dashboard settings.";
+      }
+      const eventsResult = await googleApiProxy(
+        "get_calendar_events",
+        {
+          date_from: input.date_from || "",
+          date_to: input.date_to || "",
+        },
+        context.userId,
+      );
+      return eventsResult.ok ? String(eventsResult.data) : eventsResult.error;
     }
 
     case "lead_capture_submit": {

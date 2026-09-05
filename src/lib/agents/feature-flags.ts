@@ -49,10 +49,14 @@ export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
     "shopify_build_cart_url",
     "lead_capture_submit",
     "lead_capture_notify_sales",
+    "calendar_search_availability",
+    "calendar_book_event",
     "web_search",
     "scrape_page",
     "read_file",
     "write_file",
+    "list_emails",
+    "get_calendar_events",
   ],
 
   // No agent-specific overrides needed
@@ -83,6 +87,8 @@ export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
     "scrape_page",
     "read_file",
     "write_file",
+    "list_emails",
+    "get_calendar_events",
   ],
 
   agentToolOverrides: {},
@@ -121,6 +127,8 @@ export const FULL_PLATFORM_CONFIG: FeatureFlags = {
     "shopify_build_cart_url",
     "calendar_search_availability",
     "calendar_book_event",
+    "get_calendar_events",
+    "list_emails",
     "lead_capture_submit",
     "lead_capture_enrich",
     "lead_capture_notify_sales",

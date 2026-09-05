@@ -16,6 +16,11 @@
 -- only by the OAuth callback running with the service role (Phase 2), so a
 -- user cannot write arbitrary connection rows. The service role (callback,
 -- token refresh, API proxy) bypasses RLS.
+--
+-- Runtime (Phase 3-4): access tokens are refreshed automatically by
+-- src/lib/google/token.ts before each call; the typed read-only proxy
+-- (src/lib/google/api-proxy.ts + POST /api/google/proxy) exposes list_emails
+-- and get_calendar_events to the Email Manager and Calendar Booking agents.
 -- =============================================================================
 
 create table if not exists public.google_connections (

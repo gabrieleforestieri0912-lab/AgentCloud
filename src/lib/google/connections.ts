@@ -64,6 +64,26 @@ export async function upsertGoogleConnection(opts: {
   }
 }
 
+/**
+ * Update only the access token + expiry for a user (token refresh). The
+ * refresh token, scopes, email, and connected_at are left untouched.
+ */
+export async function updateGoogleTokens(
+  userId: string,
+  accessToken: string,
+  expiresAt: string,
+): Promise<void> {
+  const admin = createAdminClient();
+  if (!admin) return;
+  await admin
+    .from("google_connections")
+    .update({
+      access_token: encryptGoogleToken(accessToken),
+      expires_at: expiresAt,
+    })
+    .eq("user_id", userId);
+}
+
 /** Fetch + decrypt a user's Google connection. Returns null when absent. */
 export async function getGoogleConnection(
   userId: string,

@@ -292,7 +292,23 @@ rientrano su `/dashboard?google=error&reason=...` — mai pagina bianca. La
 tabella `google_connections` è creata da `supabase/schema-google-oauth.sql`
 (rieseguire dopo il deploy).
 
-Fasi successive: **refresh token + proxy API** (Next.js route handlers, come
-`/api/shopify/*`) ed **esposizione all'agente AI** (tool `list_emails` /
-`get_calendar_events`). Fase 5 (opzionale): scope di scrittura
-(`gmail.send`, `calendar.events`) con guardrail di conferma esplicita in UI.
+Fasi 3-4 (implementate): **refresh token** automatico (`src/lib/google/token.ts`,
+margine 5 minuti, aggiorna `access_token`/`expires_at` cifrati in DB) e
+**proxy API tipizzato** (`src/lib/google/api-proxy.ts` + route
+`POST /api/google/proxy` con sessione obbligatoria) con le azioni readonly
+`list_emails` (Gmail) e `get_calendar_events` (Calendar). Gli agenti
+chiamano lo stesso modulo con lo `userId` dal contesto di run — mai token o
+HTTP diretti dal client.
+
+Agenti collegati: **Email Manager** → tool `list_emails` (default);
+**Calendar Booking** → tool `get_calendar_events` (default) e
+`calendar_search_availability` ora legge il calendario personale dell'utente
+dalla connessione OAuth (`google_connections`) con fallback alle env legacy
+`GOOGLE_CALENDAR_ACCESS_TOKEN`/`GOOGLE_CALENDAR_CALENDAR_ID`.
+`calendar_book_event` resta sulle credenziali legacy finché non si attivano
+gli scope di scrittura (Fase 5, opzionale: `gmail.send`, `calendar.events`,
+con guardrail di conferma esplicita in UI).
+
+End-to-end: dopo il deploy, applica `supabase/schema-google-oauth.sql` in
+Supabase, poi ogni utente collega l'account da `/dashboard` (bottone
+"Collega account Google" → `/api/auth/google/connect`).
