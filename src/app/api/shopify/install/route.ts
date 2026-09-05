@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSessionUser } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
+import { ACCESS_COOKIE } from "@/lib/waitlist-constants";
 import {
   normalizeShop,
   buildAuthorizeUrl,
@@ -42,9 +43,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Who is connecting?
+  //  - Access-code holder (admin) → the store is stored as the shared tenant
+  //    connection; no email is recorded and no login is required. Even when
+  //    an admin happens to be signed in, the store goes to the tenant so the
+  //    client's store is the one every code holder tests against.
+  //  - Regular signed-in user → the store is stored on their account
+  //    (per-user), which is what the callback persists.
+  //  - Anyone else → sign in first, then this route runs again.
   const sessionUser = await getSessionUser();
-  if (!sessionUser) {
-    // Sign in first, then this route runs again with the session present.
+  const isAccessHolder = req.cookies.get(ACCESS_COOKIE)?.value === "1";
+  if (!sessionUser && !isAccessHolder) {
     const nextPath =
       `/api/shopify/install?shop=${encodeURIComponent(shop)}` +
       (returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : "");

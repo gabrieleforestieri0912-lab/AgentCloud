@@ -9,7 +9,10 @@ import {
 import { getLocale } from "@/lib/i18n/locale";
 import { hasPlatformAccess } from "@/lib/access-code";
 import { getSessionUser } from "@/lib/supabase/server";
-import { listShopifyConnections } from "@/lib/shopify/connections";
+import {
+  TENANT_SHOPIFY_ID,
+  listShopifyConnections,
+} from "@/lib/shopify/connections";
 import { getGoogleConnectionSummary } from "@/lib/google/connections";
 import DeployAgentClient from "./deploy-client";
 
@@ -43,19 +46,24 @@ export default async function DeployAgentPage(props: {
     localizeAgent(agent, locale),
   );
 
-  // Real connection state for logged-in users, so the "Connect tools" list
-  // can mark already-connected services as active. Anonymous visitors get
-  // no state (nothing is connected for them).
+  // Real connection state, so the "Connect tools" list can mark already-
+  // connected services as active:
+  //  - Access-code holders (no account) read the shared tenant connection.
+  //  - Signed-in users read their own rows.
+  //  - Anonymous visitors get no state (nothing is connected for them).
   const user = await getSessionUser();
+  // Code holders connect (and read) the shared tenant store — no email, no
+  // account; signed-in users without the code use their own rows.
+  const ownerId = unlocked ? TENANT_SHOPIFY_ID : user?.id ?? null;
   let connections: DeployConnections = {
     shopifyConnected: false,
     shopifyShops: [],
     googleConnected: false,
     googleEmail: null,
   };
-  if (user) {
-    const shops = await listShopifyConnections(user.id).catch(() => []);
-    const google = await getGoogleConnectionSummary(user.id).catch(() => null);
+  if (ownerId) {
+    const shops = await listShopifyConnections(ownerId).catch(() => []);
+    const google = await getGoogleConnectionSummary(ownerId).catch(() => null);
     connections = {
       shopifyConnected: shops.some((s) => s.connected),
       shopifyShops: shops.filter((s) => s.connected).map((s) => s.shopDomain),

@@ -19,6 +19,7 @@ import {
   buildActionNotification,
   createAgentNotification,
 } from "@/lib/agents/notifications";
+import { TENANT_SHOPIFY_ID } from "@/lib/shopify/connections";
 
 const MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const MAX_ITERATIONS = 10;
@@ -94,7 +95,17 @@ export async function POST(req: Request) {
   // (the code is the invitation — it unlocks every agent for free, even when
   // the visitor is also logged in with a non-admin account). Never derived
   // from the request body, so it cannot be spoofed via the public waitlist.
-  const isAdmin = isAdminEmail(sessionUser?.email) || (await hasPlatformAccess());
+  const hasCode = await hasPlatformAccess();
+  const isAdmin = isAdminEmail(sessionUser?.email) || hasCode;
+
+  // External-service connections (Shopify, …) are stored per user, except
+  // for access-code holders who have no account: they share the reserved
+  // tenant connection (connected once from the admin side, no email saved).
+  const tenantId = hasCode
+    ? TENANT_SHOPIFY_ID
+    : sessionUser
+      ? sessionUser.id
+      : "anonymous";
 
   // Enforce subscription + plan limits for real users (skipped for anonymous
   // and for admins, who get full, unlimited access).
@@ -226,10 +237,12 @@ export async function POST(req: Request) {
                 use.input as Record<string, string>,
                 {
                   userId,
-                  // Tenant id === authenticated user id: this is what lets the
-                  // Shopify (and other) tools read the user's own connected
-                  // store credentials instead of falling back to env vars.
-                  tenantId: userId,
+                  // Tenant id === authenticated user id for signed-in users, and
+                  // the shared tenant id for access-code holders (no account):
+                  // this is what lets the Shopify (and other) tools read the
+                  // right connected store credentials instead of falling back
+                  // to env vars.
+                  tenantId,
                   files: files as Record<string, string> | undefined,
                 },
               );

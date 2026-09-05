@@ -11,6 +11,14 @@ import {
  * user_id we persist. Reads for the agent (Phase 5) also go through here.
  */
 
+/**
+ * Reserved user_id for the shared "tenant" Shopify connection. Used when a
+ * visitor holding the platform access code (no Supabase account, no email
+ * stored) connects a store: the row is stored under this id and exposed to
+ * code-holder agent runs instead of per-user rows.
+ */
+export const TENANT_SHOPIFY_ID = "__tenant__";
+
 export type ShopifyConnectionRow = {
   user_id: string;
   shop_domain: string;
