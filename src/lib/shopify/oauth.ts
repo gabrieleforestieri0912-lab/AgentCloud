@@ -10,6 +10,10 @@ import type { NextRequest } from "next/server";
 export const SHOPIFY_STATE_COOKIE = "ac_shopify_state";
 export const SHOPIFY_STATE_MAX_AGE = 60 * 10; // 10 minutes
 
+/** Cookie carrying the page to return to after the OAuth round-trip. */
+export const SHOPIFY_RETURN_COOKIE = "ac_shopify_return";
+export const OAUTH_RETURN_MAX_AGE = 60 * 15; // 15 minutes
+
 /** Agent slug that triggers the in-chat Shopify connection prompt. */
 export const SHOPIFY_AGENT_SLUG =
   process.env.SHOPIFY_AGENT_SLUG || "shopify-agent";

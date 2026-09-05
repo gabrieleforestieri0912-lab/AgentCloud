@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { getSessionUser } from "@/lib/supabase/server";
+import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
 import {
   normalizeShop,
   verifyShopifyHmac,
   readShopifyStateCookie,
   SHOPIFY_STATE_COOKIE,
+  SHOPIFY_RETURN_COOKIE,
 } from "@/lib/shopify/oauth";
 import { upsertShopifyConnection } from "@/lib/shopify/connections";
 import { registerShopifyWebhooks } from "@/lib/shopify/webhooks";
@@ -19,18 +21,33 @@ import { registerShopifyWebhooks } from "@/lib/shopify/webhooks";
  *   3. Verifies the request HMAC with SHOPIFY_API_SECRET (integrity of redirect).
  *   4. Exchanges `code` for an access token via the Shopify token endpoint.
  *   5. Encrypts the token and stores it per (user, shop) in shopify_connections.
- *   Errors are surfaced via ?shopify=error&reason=... — never silent.
+ *
+ * The user is sent back to the page they started from (returnTo cookie) with
+ * ?shopify=connected|error&reason=... — never a bare redirect to a dead end.
  */
 export async function GET(req: NextRequest) {
-  const dashboardError = (reason: string) =>
-    NextResponse.redirect(
-      new URL(`/dashboard?shopify=error&reason=${reason}`, req.url),
-    );
-
   const sessionUser = await getSessionUser();
   if (!sessionUser) {
-    return NextResponse.redirect(new URL("/login?shopify=error&reason=auth", req.url));
+    // Session expired mid-flow: the one-time code can't be replayed, so the
+    // user just needs to start the connection again after signing in.
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("intent", "shopify");
+    return NextResponse.redirect(loginUrl);
   }
+
+  const returnBase = () => {
+    const c = req.cookies.get(SHOPIFY_RETURN_COOKIE)?.value;
+    return c && isSafeRedirectPath(c) ? c : "/dashboard";
+  };
+  const out = (search: string) => {
+    const base = returnBase();
+    const sep = base.includes("?") ? "&" : "?";
+    const res = NextResponse.redirect(new URL(`${base}${sep}${search}`, req.url));
+    res.cookies.delete(SHOPIFY_STATE_COOKIE);
+    res.cookies.delete(SHOPIFY_RETURN_COOKIE);
+    return res;
+  };
+  const fail = (reason: string) => out(`shopify=error&reason=${reason}`);
 
   const params = req.nextUrl.searchParams;
   const shopParam = params.get("shop") || "";
@@ -40,7 +57,7 @@ export async function GET(req: NextRequest) {
 
   const shop = normalizeShop(shopParam);
   if (!shop || !code || !state || !hmac) {
-    return dashboardError("missing_params");
+    return fail("missing_params");
   }
 
   // 2. CSRF state check
@@ -50,18 +67,18 @@ export async function GET(req: NextRequest) {
     cookieState.length !== state.length ||
     !timingSafeEqual(Buffer.from(cookieState), Buffer.from(state))
   ) {
-    return dashboardError("state_mismatch");
+    return fail("state_mismatch");
   }
 
   const secret = process.env.SHOPIFY_API_SECRET;
   const clientId = process.env.SHOPIFY_API_KEY;
   if (!secret || !clientId) {
-    return dashboardError("config");
+    return fail("config");
   }
 
   // 3. HMAC integrity check
   if (!verifyShopifyHmac(params, secret)) {
-    return dashboardError("hmac");
+    return fail("hmac");
   }
 
   // 4. Exchange code for an access token
@@ -73,16 +90,16 @@ export async function GET(req: NextRequest) {
       body: JSON.stringify({ client_id: clientId, client_secret: secret, code }),
     });
     if (!tokenRes.ok) {
-      return dashboardError("token_exchange");
+      return fail("token_exchange");
     }
     tokenData = await tokenRes.json();
   } catch {
-    return dashboardError("token_exchange");
+    return fail("token_exchange");
   }
 
   const accessToken = tokenData.access_token;
   if (!accessToken) {
-    return dashboardError("no_token");
+    return fail("no_token");
   }
 
   // 5. Encrypt + persist (per user, per shop)
@@ -94,16 +111,12 @@ export async function GET(req: NextRequest) {
       scope: tokenData.scope,
     });
   } catch {
-    return dashboardError("store");
+    return fail("store");
   }
 
   // 6. Best-effort: register mandatory webhooks (app/uninstalled + GDPR).
   // Non-fatal — missing webhooks only degrade uninstall/revocation handling.
   void registerShopifyWebhooks(shop, accessToken).catch(() => {});
 
-  const res = NextResponse.redirect(
-    new URL("/dashboard?shopify=connected", req.url),
-  );
-  res.cookies.delete(SHOPIFY_STATE_COOKIE);
-  return res;
+  return out("shopify=connected");
 }

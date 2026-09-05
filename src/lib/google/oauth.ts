@@ -10,6 +10,10 @@ import type { NextRequest } from "next/server";
 export const GOOGLE_STATE_COOKIE = "ac_google_state";
 export const GOOGLE_STATE_MAX_AGE = 60 * 10; // 10 minutes
 
+/** Cookie carrying the page to return to after the OAuth round-trip. */
+export const GOOGLE_RETURN_COOKIE = "ac_google_return";
+export const OAUTH_RETURN_MAX_AGE = 60 * 15; // 15 minutes
+
 /**
  * Read-only scopes per the Fase 1-4 scope decision (sensitive, not
  * restricted, per Google). Override via GOOGLE_SCOPES (space- or

@@ -5,8 +5,12 @@ import {
   googleStatesMatch,
   readGoogleStateCookie,
   GOOGLE_STATE_COOKIE,
+  GOOGLE_RETURN_COOKIE,
 } from "@/lib/google/oauth";
 import { upsertGoogleConnection } from "@/lib/google/connections";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isAdminEmail } from "@/lib/admin-access";
+import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
@@ -21,21 +25,26 @@ const UUID_RE =
  *   1. Verifies the `state` nonce against the httpOnly cookie (CSRF) and uses
  *      the user_id embedded in `state` (the connect step is authenticated).
  *   2. Exchanges `code` for access_token + refresh_token + expires_in.
- *   3. Fetches the connected Google account email (userinfo).
+ *   3. Fetches the connected Google account email (userinfo). The email is
+ *      NOT persisted when the connecting account is an admin (privacy rule).
  *   4. Encrypts both tokens (AES-256-GCM) and upserts the per-user row.
  *
- * Every failure redirects to the settings page with
- * ?google=error&reason=... — never a blank page or a 500. Consent denial by
- * the user is surfaced as a readable error (reason=denied).
+ * Every failure redirects back to the page the user started from (returnTo
+ * cookie) with ?google=error&reason=... — never a blank page or a 500.
  */
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
 
+  const returnBase = () => {
+    const c = req.cookies.get(GOOGLE_RETURN_COOKIE)?.value;
+    return c && isSafeRedirectPath(c) ? c : "/dashboard";
+  };
   const done = (search: string) => {
-    const res = NextResponse.redirect(
-      new URL(`/dashboard?${search}`, req.url),
-    );
+    const base = returnBase();
+    const sep = base.includes("?") ? "&" : "?";
+    const res = NextResponse.redirect(new URL(`${base}${sep}${search}`, req.url));
     res.cookies.delete(GOOGLE_STATE_COOKIE);
+    res.cookies.delete(GOOGLE_RETURN_COOKIE);
     return res;
   };
   const fail = (reason: string) => done(`google=error&reason=${reason}`);
@@ -107,17 +116,30 @@ export async function GET(req: NextRequest) {
   }
 
   // 3. Connected Google account email (display nicety — non-fatal on failure).
+  // Admins opt out: their connected email is never persisted.
   let googleEmail: string | null = null;
+  let isAdmin = false;
   try {
-    const infoRes = await fetch(USERINFO_URL, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (infoRes.ok) {
-      const info = (await infoRes.json()) as { email?: string };
-      googleEmail = info.email ?? null;
+    const admin = createAdminClient();
+    if (admin) {
+      const { data: u } = await admin.auth.admin.getUserById(payload.userId);
+      isAdmin = isAdminEmail(u?.user?.email ?? null);
     }
   } catch {
-    // ignore — tokens are what matter
+    // fall back to non-admin (store the email)
+  }
+  if (!isAdmin) {
+    try {
+      const infoRes = await fetch(USERINFO_URL, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (infoRes.ok) {
+        const info = (await infoRes.json()) as { email?: string };
+        googleEmail = info.email ?? null;
+      }
+    } catch {
+      // ignore — tokens are what matter
+    }
   }
 
   // 4. Encrypt + persist (one row per user).

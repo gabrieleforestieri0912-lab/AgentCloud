@@ -8,6 +8,9 @@ import BrandLogo from "@/components/BrandLogo";
 import HeroBubbles from "@/components/HeroBubbles";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createClient } from "@/lib/supabase/client";
+import { t } from "@/lib/i18n/dictionaries";
+import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
+import { AlertCircle } from "lucide-react";
 
 // Reads ?error=auth_callback (set by /auth/callback when the PKCE exchange
 // fails) — isolated in a child component so it can be wrapped in Suspense
@@ -19,6 +22,36 @@ function CallbackErrorNotice() {
   return (
     <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
       {dict.auth.errors.authCallbackFailed}
+    </p>
+  );
+}
+
+// The next-destination value used by the submit handlers. Read directly from
+// window.location (this component is mounted only on the client) so the page
+// component itself never calls useSearchParams during static prerender.
+function getNextParam(): string | null {
+  if (typeof window === "undefined") return null;
+  const next = new URLSearchParams(window.location.search).get("next");
+  return next && isSafeRedirectPath(next) ? next : null;
+}
+
+// Reads ?intent=shopify|google (set when the OAuth connect routes bounce the
+// user here) and explains why they are being asked to sign in.
+function ConnectIntentNotice() {
+  const { dict, locale } = useLanguage();
+  const searchParams = useSearchParams();
+  const intent = searchParams.get("intent");
+  if (intent !== "shopify" && intent !== "google") return null;
+  const app =
+    intent === "shopify"
+      ? "Shopify"
+      : locale === "it"
+        ? "Gmail e Google Calendar"
+        : "Gmail and Google Calendar";
+  return (
+    <p className="flex items-start gap-2 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-sm leading-5 text-brand-200">
+      <AlertCircle size={16} className="mt-0.5 shrink-0" />
+      {t(dict.auth.login.needSigninToConnect, { app })}
     </p>
   );
 }
@@ -55,6 +88,14 @@ export default function LoginPage() {
             ? a.signup.checkEmail
             : a.errors.invalidCredentials,
         );
+        return;
+      }
+      // Resume a pending OAuth connect (e.g. Shopify install) after signing
+      // in — the route is an API redirect to the external provider, so use a
+      // full page navigation instead of client-side routing.
+      const next = getNextParam();
+      if (next) {
+        window.location.assign(next);
         return;
       }
       router.push("/dashboard");
@@ -98,9 +139,13 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       const supabase = createClient();
+      const next = getNextParam();
+      const redirectTo = `${window.location.origin}/auth/callback${
+        next ? `?next=${encodeURIComponent(next)}` : ""
+      }`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo },
       });
       if (error) setError(a.errors.googleFailed);
     } catch {
@@ -143,6 +188,11 @@ export default function LoginPage() {
               {a.login.title}
             </h1>
             <p className="mt-2 text-neutral-400">{a.login.hint}</p>
+            <div className="mt-3">
+              <Suspense fallback={null}>
+                <ConnectIntentNotice />
+              </Suspense>
+            </div>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl shadow-black/40">

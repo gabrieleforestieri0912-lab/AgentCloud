@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   ArrowLeft,
   Check,
@@ -76,6 +76,40 @@ export default function DeployAgentClient({
     string | null
   >(null);
   const [shopDomain, setShopDomain] = useState("");
+  // Outcome of a just-finished OAuth round-trip (?shopify= / ?google=), shown
+  // inline on this page instead of bouncing the user to the dashboard.
+  const [banner, setBanner] = useState<{
+    kind: "ok" | "err";
+    msg: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const parseOutcome = (
+      key: string,
+      successLabel: string,
+    ): { kind: "ok" | "err"; msg: string } | null => {
+      const val = params.get(key);
+      if (val === "connected") return { kind: "ok", msg: successLabel };
+      if (val === "error") {
+        return {
+          kind: "err",
+          msg: t(dict.common.connectFailed, {
+            reason: params.get("reason") ?? "error",
+          }),
+        };
+      }
+      return null;
+    };
+    const outcome =
+      parseOutcome("shopify", dict.common.connectSuccess) ??
+      parseOutcome("google", dict.common.connectSuccess);
+    if (outcome) {
+      setBanner(outcome);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const steps = dict.deploy.steps;
 
@@ -116,7 +150,10 @@ export default function DeployAgentClient({
       return;
     }
     if (kind === "google") {
-      window.location.assign("/api/auth/google/connect");
+      const returnTo = encodeURIComponent(
+        window.location.pathname + window.location.search,
+      );
+      window.location.assign(`/api/auth/google/connect?returnTo=${returnTo}`);
       return;
     }
     router.push(`/chat?agent=${agent.slug}`);
@@ -127,6 +164,7 @@ export default function DeployAgentClient({
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);
     u.searchParams.set("shop", s);
+    u.searchParams.set("returnTo", window.location.pathname + window.location.search);
     window.location.href = u.toString();
   };
 
@@ -201,6 +239,18 @@ export default function DeployAgentClient({
               </div>
             </div>
           </div>
+
+          {banner && (
+            <div
+              className={`mb-8 rounded-xl border px-4 py-3 text-sm font-semibold ${
+                banner.kind === "ok"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-red-500/30 bg-red-500/10 text-red-300"
+              }`}
+            >
+              {banner.msg}
+            </div>
+          )}
 
           <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
             {/* Main column */}

@@ -24,6 +24,9 @@ const it = {
     aiUnavailable:
       "Il servizio AI non è disponibile in questo momento. Riprova tra poco.",
     contactSupport: "Contattaci via email",
+    connectSuccess: "Collegamento riuscito.",
+    connectFailed:
+      "Collegamento non riuscito ({reason}). Riprova o contattaci.",
   },
 
   apiErrors: {
@@ -705,6 +708,8 @@ const it = {
       link: "Registrati",
       forgot: "Password dimenticata?",
       resetSent: "Ti abbiamo inviato un link per reimpostare la password.",
+      needSigninToConnect:
+        "Per collegare {app} devi prima accedere con il tuo account.",
     },
     signup: {
       title: "Crea il tuo account",
@@ -1165,6 +1170,8 @@ export const en: Dictionary = {
     aiUnavailable:
       "The AI service is unavailable right now. Please try again shortly.",
     contactSupport: "Contact us by email",
+    connectSuccess: "Connection successful.",
+    connectFailed: "Connection failed ({reason}). Please try again or contact us.",
   },
 
   apiErrors: {
@@ -1822,6 +1829,8 @@ export const en: Dictionary = {
       link: "Sign up",
       forgot: "Forgot password?",
       resetSent: "We sent you a link to reset your password.",
+      needSigninToConnect:
+        "To connect {app}, sign in with your account first.",
     },
     signup: {
       title: "Create your account",
