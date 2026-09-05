@@ -14,6 +14,7 @@ import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin-access";
+import { hasPlatformAccess } from "@/lib/access-code";
 import {
   buildActionNotification,
   createAgentNotification,
@@ -89,9 +90,11 @@ export async function POST(req: Request) {
   const sessionUser = await getSessionUser();
   const userId = sessionUser?.id ?? "anonymous";
 
-  // Admin status is derived from the verified session email only — never from
-  // the request body — so it cannot be spoofed via the public waitlist.
-  const isAdmin = isAdminEmail(sessionUser?.email);
+  // Admin status: allowlisted session emails OR valid access-code holders
+  // (the code is the invitation — it unlocks every agent for free, even when
+  // the visitor is also logged in with a non-admin account). Never derived
+  // from the request body, so it cannot be spoofed via the public waitlist.
+  const isAdmin = isAdminEmail(sessionUser?.email) || (await hasPlatformAccess());
 
   // Enforce subscription + plan limits for real users (skipped for anonymous
   // and for admins, who get full, unlimited access).
