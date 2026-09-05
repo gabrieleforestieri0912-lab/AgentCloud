@@ -4,7 +4,9 @@ import { getSessionUser } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin-access";
 
 import ShopifyConnect from "@/components/ShopifyConnect";
+import GoogleConnect from "@/components/GoogleConnect";
 import { listShopifyConnections } from "@/lib/shopify/connections";
+import { getGoogleConnectionSummary } from "@/lib/google/connections";
 import {
   Activity,
   AlertCircle,
@@ -162,6 +164,13 @@ export default async function DashboardPage({
     () => [],
   );
 
+  const googleConnection = await getGoogleConnectionSummary(user.id).catch(
+    () => null,
+  );
+  const googleConfigured = Boolean(
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+  );
+
   const statCards: Array<[string, string, typeof Zap]> = [
     [String(installed.length), dict.dashboard.statInstalledAgents, Zap],
     [formatCount(totalRuns), dict.dashboard.statRunsThisMonth, Activity],
@@ -237,6 +246,13 @@ export default async function DashboardPage({
               shopDomain: c.shopDomain,
               connected: c.connected,
             }))}
+          />
+
+          <GoogleConnect
+            connected={googleConnection}
+            s={dict.dashboard}
+            locale={locale}
+            configured={googleConfigured}
           />
 
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">

@@ -658,6 +658,27 @@ const it = {
     minutesAgo: "{n} min",
     hoursAgo: "{n} h",
     daysAgo: "{n} g",
+    googleConnectDesc:
+      "Collega il tuo account Google (Gmail e Calendario) per dare agli agenti accesso in sola lettura a email e calendario.",
+    googleConnectButton: "Collega account Google",
+    googleConnectedBadge: "Connesso",
+    googleConnectedMsg: "Account Google collegato con successo.",
+    googleConnectFailed: "Collegamento non riuscito ({reason}).",
+    googleConnectedEmail: "Account collegato",
+    googleConnectedAt: "Connesso il",
+    googleScopes: "Scope attivi",
+    googleDisconnect: "Scollega",
+    googleDisconnectConfirm:
+      "Scollegare l'account Google? Gli agenti perderanno l'accesso a Gmail e Calendario.",
+    googleDisconnecting: "Scollegamento...",
+    googleDisconnectedMsg: "Account Google scollegato.",
+    googleDisconnectFailed: "Impossibile scollegare l'account. Riprova.",
+    googleNotConnected: "Nessun account Google collegato.",
+    googleNotConfigured:
+      "Integrazione Google non configurata: aggiungi GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET nelle variabili d'ambiente.",
+    scopeGmailReadonly: "Gmail (sola lettura)",
+    scopeCalendarReadonly: "Calendario (sola lettura)",
+    scopeOther: "Altri permessi",
   },
 
   auth: {
@@ -1744,6 +1765,27 @@ export const en: Dictionary = {
     minutesAgo: "{n} min",
     hoursAgo: "{n} h",
     daysAgo: "{n} d",
+    googleConnectDesc:
+      "Connect your Google account (Gmail and Calendar) to give agents read-only access to your email and calendar.",
+    googleConnectButton: "Connect Google account",
+    googleConnectedBadge: "Connected",
+    googleConnectedMsg: "Google account connected successfully.",
+    googleConnectFailed: "Connection failed ({reason}).",
+    googleConnectedEmail: "Connected account",
+    googleConnectedAt: "Connected on",
+    googleScopes: "Active scopes",
+    googleDisconnect: "Disconnect",
+    googleDisconnectConfirm:
+      "Disconnect your Google account? Agents will lose access to Gmail and Calendar.",
+    googleDisconnecting: "Disconnecting...",
+    googleDisconnectedMsg: "Google account disconnected.",
+    googleDisconnectFailed: "Could not disconnect the account. Please try again.",
+    googleNotConnected: "No Google account connected.",
+    googleNotConfigured:
+      "Google integration not configured: add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the environment variables.",
+    scopeGmailReadonly: "Gmail (read-only)",
+    scopeCalendarReadonly: "Calendar (read-only)",
+    scopeOther: "Other permissions",
   },
 
   auth: {
