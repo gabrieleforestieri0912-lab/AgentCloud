@@ -8,6 +8,7 @@ import { hasPlatformAccess } from "@/lib/access-code";
 
 import { pageSeo } from "@/lib/seo";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
+import { getLocalizedAgentInfo } from "@/lib/i18n/agentCatalog";
 import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,6 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ChatPage(props: {
   searchParams?: Promise<{ q?: string; agent?: string }>;
 }) {
+  const locale = await getLocale();
   const user = await getSessionUser();
   // Access-code holders skip the login requirement entirely — the code grants
   // platform access without a Supabase account. They simply have no owned
@@ -41,12 +43,28 @@ export default async function ChatPage(props: {
     name: AGENT_RUNTIME[slug]?.name ?? slug,
   }));
 
+  // When the marketplace CTA opens the chat for a specific agent
+  // (/chat?agent=<slug>), show that agent's (localized) name in the header so
+  // the visitor knows which agent they're talking to — even before owning it.
+  let agentLabel: string | undefined;
+  if (agentParam) {
+    const runtime = AGENT_RUNTIME[agentParam];
+    if (runtime) {
+      agentLabel = getLocalizedAgentInfo(
+        agentParam,
+        locale,
+        { name: runtime.name, description: runtime.description },
+      ).name;
+    }
+  }
+
   return (
     <main className="min-h-screen bg-neutral-950">
       <Navbar />
       <ChatInterface
         initialQuery={initialQuery}
         agentId={agentParam}
+        agentLabel={agentLabel}
         availableAgents={availableAgents}
       />
     </main>

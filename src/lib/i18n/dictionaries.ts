@@ -468,6 +468,7 @@ const it = {
 
   chat: {
     newChat: "Nuova chat",
+    assistantName: "Assistente personale",
     home: "Home",
     chat: "Chat",
     tools: "Strumenti",
@@ -1576,6 +1577,7 @@ export const en: Dictionary = {
 
   chat: {
     newChat: "New Chat",
+    assistantName: "Personal assistant",
     home: "Home",
     chat: "Chat",
     tools: "Tools",

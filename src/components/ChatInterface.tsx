@@ -67,10 +67,13 @@ function generateId() {
 export default function ChatInterface({
   initialQuery,
   agentId,
+  agentLabel,
   availableAgents = [],
 }: {
   initialQuery?: string;
   agentId?: string;
+  /** Localized agent name shown when the chat was opened for one agent. */
+  agentLabel?: string;
   availableAgents?: { slug: string; name: string }[];
 }) {
   const { dict } = useLanguage();
@@ -97,6 +100,13 @@ export default function ChatInterface({
 
   const activeConv = conversations.find((c) => c.id === activeId);
   const messages = useMemo(() => activeConv?.messages ?? [], [activeConv]);
+
+  // Header title: the active agent's name when one is selected (marketplace
+  // CTA or sidebar picker), otherwise the generic assistant name.
+  const activeAgentDisplayName =
+    availableAgents.find((a) => a.slug === activeAgentId)?.name ??
+    (agentLabel && activeAgentId ? agentLabel : undefined) ??
+    dict.chat.assistantName;
 
   const handleMessagesScroll = () => {
     const el = messagesRef.current;
@@ -185,6 +195,22 @@ export default function ChatInterface({
       if (imported.length > 0) {
         setConversations((prev) => [...imported, ...prev]);
         setActiveId(imported[0].id);
+        return;
+      }
+
+      // No saved conversation to open: start with a fresh empty one so the
+      // input is immediately usable (e.g. arriving from the marketplace
+      // "Compra" CTA at /chat?agent=...) instead of silently disabled.
+      if (!initializedRef.current) {
+        initializedRef.current = true;
+        const conv: LocalConversation = {
+          id: generateId(),
+          title: dict.chat.newChat,
+          messages: [],
+          created_at: new Date().toISOString(),
+        };
+        setConversations([conv]);
+        setActiveId(conv.id);
       }
     } catch {
       // Malformed storage — start fresh.
@@ -295,16 +321,43 @@ export default function ChatInterface({
         { role: "user" as const, content: text },
       ];
 
-      const providerRes = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: apiMessages,
-          agentId: activeAgentId || undefined,
-        }),
-      });
+      // Real agent conversations run through the agent runtime so the
+      // selected agent's tools actually execute (Shopify, Gmail, Calendar,
+      // web/file tools...). The generic personal assistant (no agent) stays
+      // on the plain chat endpoint. Both stream the same SSE shape
+      // ({ type: "text" | "done" | "error", ... }), so one reader handles both.
+      const isAgentChat = Boolean(activeAgentId);
+      const providerRes = await fetch(
+        isAgentChat ? "/api/agent/run" : "/api/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            isAgentChat
+              ? { agentId: activeAgentId, messages: apiMessages }
+              : { messages: apiMessages },
+          ),
+        },
+      );
 
-      if (providerRes.ok && providerRes.body) {
+      // Non-2xx: the route returns a JSON { error } (already localized
+      // server-side — e.g. subscription required, monthly limit, rate
+      // limited). Surface that real message instead of a generic one.
+      if (!providerRes.ok) {
+        let serverMessage: string | null = null;
+        try {
+          const data = (await providerRes.json()) as { error?: string };
+          if (data && typeof data.error === "string" && data.error.trim()) {
+            serverMessage = data.error;
+          }
+        } catch {
+          // ignore malformed error bodies
+        }
+        if (serverMessage) streamErrorMessage = serverMessage;
+        throw new Error("AI backend error");
+      }
+
+      if (providerRes.body) {
         const reader = providerRes.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
@@ -471,7 +524,7 @@ export default function ChatInterface({
                 }`}
               >
                 <Bot size={14} className="shrink-0" />
-                <span className="truncate">Assistente personale</span>
+                <span className="truncate">{dict.chat.assistantName}</span>
               </button>
               {availableAgents.map((a) => (
                 <button
@@ -501,10 +554,18 @@ export default function ChatInterface({
             </p>
           ) : (
             conversations.map((conv) => (
-              <button
+              <div
                 key={conv.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => switchConversation(conv.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors group ${
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    switchConversation(conv.id);
+                  }
+                }}
+                className={`group flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors ${
                   conv.id === activeId
                     ? "bg-white/5 text-white border border-white/5"
                     : "text-neutral-400 hover:text-white hover:bg-white/5"
@@ -525,7 +586,7 @@ export default function ChatInterface({
                 >
                   <Trash2 size={12} />
                 </button>
-              </button>
+              </div>
             ))
           )}
         </div>
@@ -572,7 +633,9 @@ export default function ChatInterface({
               className="shrink-0"
             />
             <div>
-              <p className="text-sm font-semibold text-white">AgentCloud AI</p>
+              <p className="text-sm font-semibold text-white">
+                {activeAgentDisplayName}
+              </p>
               <p className="text-xs font-semibold text-neutral-500">
                 {isTyping ? (
                   <span className="flex items-center gap-1">

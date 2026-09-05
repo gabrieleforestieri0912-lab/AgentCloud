@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type MouseEvent } from "react";
-import { ArrowRight, CheckCircle2, Clock, Loader2, Rocket } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, CheckCircle2, Clock, MessageSquare } from "lucide-react";
 import type { Agent } from "@/lib/agents";
 import { isAvailable } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
@@ -32,25 +32,16 @@ export default function AgentCard({
   // Server pages pass the authoritative value; otherwise fall back to the
   // flags (which resolve to the default vertical in client bundles).
   const isAgentAvailable = available ?? isAvailable(agent.slug);
-  const [isBuying, setIsBuying] = useState(false);
+  const router = useRouter();
 
-  async function handleBuy(e: MouseEvent) {
+  // Access-code holders (and the testing client) get every agent for free:
+  // the buy CTA opens the real conversation with the agent instead of a
+  // Stripe checkout. Regular paid checkout stays available through the
+  // agent's deploy/settings page.
+  function openChat(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    setIsBuying(true);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId: agent.slug }),
-      });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-    } catch {
-      // user stays on the page on error
-    } finally {
-      setIsBuying(false);
-    }
+    router.push(`/chat?agent=${agent.slug}`);
   }
 
   return (
@@ -121,26 +112,15 @@ export default function AgentCard({
         </div>
 
         {isAgentAvailable ? (
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 group-hover:bg-brand-400 group-hover:shadow-lg group-hover:shadow-brand-500/25">
-              {dict.agentCard.view}
-              <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
-            </span>
-            <button
-              type="button"
-              onClick={handleBuy}
-              disabled={isBuying}
-              aria-label={`${dict.agentCard.buy} ${agent.name}`}
-              className="relative z-20 inline-flex items-center gap-2 rounded-full border border-brand-500/40 bg-brand-500/10 px-5 py-2.5 text-sm font-semibold text-brand-300 transition-all duration-300 hover:bg-brand-500 hover:text-white disabled:opacity-60"
-            >
-              {isBuying ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Rocket size={16} />
-              )}
-              {dict.agentCard.buy}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={openChat}
+            aria-label={`${dict.agentCard.buy} ${agent.name}`}
+            className="relative z-20 inline-flex items-center gap-2 rounded-full border border-brand-500/40 bg-brand-500/10 px-5 py-2.5 text-sm font-semibold text-brand-300 transition-all duration-300 hover:bg-brand-500 hover:text-white"
+          >
+            <MessageSquare size={16} />
+            {dict.agentCard.buy}
+          </button>
         ) : (
           <span className="inline-flex items-center gap-2 rounded-full bg-neutral-800 px-5 py-2.5 text-sm font-semibold text-neutral-500 cursor-not-allowed">
             {dict.agentCard.comingSoon}
