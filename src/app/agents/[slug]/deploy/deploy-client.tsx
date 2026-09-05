@@ -25,6 +25,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { getAgentBySlug, localizeAgent, type Agent } from "@/lib/agents";
 import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
+import { normalizeShopInput } from "@/lib/shopify-input";
 import type { DeployConnections } from "./page";
 
 const NO_CONNECTIONS: DeployConnections = {
@@ -160,7 +161,8 @@ export default function DeployAgentClient({
   };
 
   const connectShopify = (domain: string) => {
-    const s = domain.trim().toLowerCase();
+    // Accept full store links (https://…/admin) as well as bare domains.
+    const s = normalizeShopInput(domain) ?? domain.trim().toLowerCase();
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);
     u.searchParams.set("shop", s);

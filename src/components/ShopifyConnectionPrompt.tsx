@@ -5,6 +5,7 @@ import { Store, Plus, ExternalLink } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 import { readableConnectReason } from "@/lib/connect-errors";
+import { normalizeShopInput } from "@/lib/shopify-input";
 
 /**
  * In-chat prompt shown when the Shopify agent is active and no store is
@@ -78,7 +79,8 @@ export default function ShopifyConnectionPrompt() {
   }
 
   const connectExisting = () => {
-    const s = shop.trim().toLowerCase();
+    // Accept full store links (https://…/admin) as well as bare domains.
+    const s = normalizeShopInput(shop) ?? shop.trim().toLowerCase();
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);
     u.searchParams.set("shop", s);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { normalizeShopInput } from "@/lib/shopify-input";
 
 type Connected = { shopDomain: string; connected: boolean };
 
@@ -41,7 +42,8 @@ export default function ShopifyConnect({
   }, []);
 
   const connect = () => {
-    const s = shop.trim().toLowerCase();
+    // Accept full store links (https://…/admin) as well as bare domains.
+    const s = normalizeShopInput(shop) ?? shop.trim().toLowerCase();
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);
     u.searchParams.set("shop", s);
