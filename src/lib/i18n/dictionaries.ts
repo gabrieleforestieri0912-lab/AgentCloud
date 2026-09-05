@@ -469,6 +469,13 @@ const it = {
   chat: {
     newChat: "Nuova chat",
     assistantName: "Assistente personale",
+    googleConnectTitle: "Collega il tuo account Google",
+    googleConnectDesc:
+      "Collega Gmail e Google Calendar così l'agente lavora sui tuoi dati reali.",
+    googleConnectAction: "Collega account Google",
+    googleConnectedLine: "Account Google collegato: {email}",
+    googleReadOnlyHint:
+      "Accesso in sola lettura a Gmail e Google Calendar (consenso OAuth sicuro).",
     home: "Home",
     chat: "Chat",
     tools: "Strumenti",
@@ -610,6 +617,8 @@ const it = {
     consentTerms: "Termini di Servizio",
     consentConjunction: "e la",
     consentPrivacy: "Privacy Policy",
+    connected: "Collegato",
+    manage: "Gestisci",
   },
 
   dashboard: {
@@ -1578,6 +1587,13 @@ export const en: Dictionary = {
   chat: {
     newChat: "New Chat",
     assistantName: "Personal assistant",
+    googleConnectTitle: "Connect your Google account",
+    googleConnectDesc:
+      "Connect Gmail and Google Calendar so the agent can work on your real data.",
+    googleConnectAction: "Connect Google account",
+    googleConnectedLine: "Google account connected: {email}",
+    googleReadOnlyHint:
+      "Read-only access to Gmail and Google Calendar (secure OAuth consent).",
     home: "Home",
     chat: "Chat",
     tools: "Tools",
@@ -1718,6 +1734,8 @@ export const en: Dictionary = {
     consentTerms: "Terms of Service",
     consentConjunction: "and the",
     consentPrivacy: "Privacy Policy",
+    connected: "Connected",
+    manage: "Manage",
   },
 
   dashboard: {

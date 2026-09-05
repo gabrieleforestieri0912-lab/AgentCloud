@@ -8,7 +8,17 @@ import {
 } from "@/lib/agents";
 import { getLocale } from "@/lib/i18n/locale";
 import { hasPlatformAccess } from "@/lib/access-code";
+import { getSessionUser } from "@/lib/supabase/server";
+import { listShopifyConnections } from "@/lib/shopify/connections";
+import { getGoogleConnectionSummary } from "@/lib/google/connections";
 import DeployAgentClient from "./deploy-client";
+
+export type DeployConnections = {
+  shopifyConnected: boolean;
+  shopifyShops: string[];
+  googleConnected: boolean;
+  googleEmail: string | null;
+};
 
 /**
  * Server wrapper around the (client) deploy form. The availability gate must
@@ -33,5 +43,32 @@ export default async function DeployAgentPage(props: {
     localizeAgent(agent, locale),
   );
 
-  return <DeployAgentClient slug={slug} marketplaceAgents={navAgents} />;
+  // Real connection state for logged-in users, so the "Connect tools" list
+  // can mark already-connected services as active. Anonymous visitors get
+  // no state (nothing is connected for them).
+  const user = await getSessionUser();
+  let connections: DeployConnections = {
+    shopifyConnected: false,
+    shopifyShops: [],
+    googleConnected: false,
+    googleEmail: null,
+  };
+  if (user) {
+    const shops = await listShopifyConnections(user.id).catch(() => []);
+    const google = await getGoogleConnectionSummary(user.id).catch(() => null);
+    connections = {
+      shopifyConnected: shops.some((s) => s.connected),
+      shopifyShops: shops.filter((s) => s.connected).map((s) => s.shopDomain),
+      googleConnected: Boolean(google?.connected),
+      googleEmail: google?.googleEmail ?? null,
+    };
+  }
+
+  return (
+    <DeployAgentClient
+      slug={slug}
+      marketplaceAgents={navAgents}
+      connections={connections}
+    />
+  );
 }

@@ -22,6 +22,8 @@ import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { useLanguage } from "./LanguageProvider";
 import MarkdownText from "./MarkdownText";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
+import GoogleConnectionPrompt from "@/components/GoogleConnectionPrompt";
+import { getEnabledTools } from "@/lib/agents/registry";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 import {
   HERO_CONVERSATION_STORAGE_KEY,
@@ -107,6 +109,17 @@ export default function ChatInterface({
     availableAgents.find((a) => a.slug === activeAgentId)?.name ??
     (agentLabel && activeAgentId ? agentLabel : undefined) ??
     dict.chat.assistantName;
+
+  // Agents whose default tools read Gmail/Calendar need a Google connection:
+  // show the in-chat connect panel for them (like the Shopify one).
+  const needsGoogle =
+    Boolean(activeAgentId) &&
+    getEnabledTools(activeAgentId).some(
+      (tool) =>
+        tool === "list_emails" ||
+        tool === "get_calendar_events" ||
+        tool.startsWith("calendar_"),
+    );
 
   const handleMessagesScroll = () => {
     const el = messagesRef.current;
@@ -662,6 +675,7 @@ export default function ChatInterface({
         </div>
 
         {activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
+        {needsGoogle && <GoogleConnectionPrompt />}
 
         {/* Messages */}
         <div

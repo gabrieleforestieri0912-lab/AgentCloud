@@ -25,6 +25,14 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { getAgentBySlug, localizeAgent, type Agent } from "@/lib/agents";
 import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
+import type { DeployConnections } from "./page";
+
+const NO_CONNECTIONS: DeployConnections = {
+  shopifyConnected: false,
+  shopifyShops: [],
+  googleConnected: false,
+  googleEmail: null,
+};
 
 /**
  * Which real OAuth connector an integration label maps to.
@@ -47,10 +55,13 @@ function integrationKind(integration: string): ConnectorKind {
 export default function DeployAgentClient({
   slug,
   marketplaceAgents,
+  connections = NO_CONNECTIONS,
 }: {
   slug: string;
   /** Navbar agent list resolved server-side (the FULL catalog for access holders). */
   marketplaceAgents?: Agent[];
+  /** Real per-user connection state (server-side), for the active badges. */
+  connections?: DeployConnections;
 }) {
   const { dict, locale } = useLanguage();
   const router = useRouter();
@@ -89,6 +100,14 @@ export default function DeployAgentClient({
    */
   const startConnect = (integration: string) => {
     const kind = integrationKind(integration);
+    const isConnected =
+      (kind === "shopify" && connections.shopifyConnected) ||
+      (kind === "google" && connections.googleConnected);
+    // Already connected → manage/disconnect from the dashboard.
+    if (isConnected) {
+      router.push("/dashboard");
+      return;
+    }
     if (kind === "shopify") {
       setShopDomain("");
       setConnectingIntegration((cur) =>
@@ -274,34 +293,67 @@ export default function DeployAgentClient({
                   {agent.integrations.map((integration) => {
                     const kind = integrationKind(integration);
                     const expanded = connectingIntegration === integration;
+                    const connected =
+                      (kind === "shopify" && connections.shopifyConnected) ||
+                      (kind === "google" && connections.googleConnected);
+                    const connectedDetail =
+                      kind === "shopify"
+                        ? connections.shopifyShops[0]
+                        : kind === "google"
+                          ? connections.googleEmail
+                          : undefined;
                     return (
                       <div key={integration}>
                         <button
                           type="button"
                           onClick={() => startConnect(integration)}
-                          className="group flex w-full items-center justify-between gap-3 rounded-xl border border-white/5 bg-neutral-800/60 px-4 py-3.5 text-left transition-all hover:border-brand-500/30 hover:bg-neutral-800"
+                          className={`group flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3.5 text-left transition-all ${
+                            connected
+                              ? "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50"
+                              : "border-white/5 bg-neutral-800/60 hover:border-brand-500/30 hover:bg-neutral-800"
+                          }`}
                         >
                           <span className="flex items-center gap-3">
-                            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-neutral-400 transition-all group-hover:bg-brand-500/15 group-hover:text-brand-400">
+                            <span
+                              className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${
+                                connected
+                                  ? "bg-emerald-500/15 text-emerald-400"
+                                  : "bg-white/5 text-neutral-400 group-hover:bg-brand-500/15 group-hover:text-brand-400"
+                              }`}
+                            >
                               <Plug size={16} />
                             </span>
                             <span>
                               <span className="block text-sm font-bold text-white">
                                 {integration}
                               </span>
-                              <span className="text-xs font-semibold text-neutral-500">
-                                {kind
-                                  ? locale === "it"
-                                    ? "Collegamento sicuro OAuth"
-                                    : "Secure OAuth connection"
-                                  : locale === "it"
-                                    ? "Provalo nella chat dell'agente"
-                                    : "Try it in the agent chat"}
-                              </span>
+                              {connected ? (
+                                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                  {dict.deploy.connected}
+                                  {connectedDetail ? ` · ${connectedDetail}` : ""}
+                                </span>
+                              ) : (
+                                <span className="text-xs font-semibold text-neutral-500">
+                                  {kind
+                                    ? locale === "it"
+                                      ? "Collegamento sicuro OAuth"
+                                      : "Secure OAuth connection"
+                                    : locale === "it"
+                                      ? "Provalo nella chat dell'agente"
+                                      : "Try it in the agent chat"}
+                                </span>
+                              )}
                             </span>
                           </span>
-                          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-500/40 bg-brand-500/10 px-4 py-1.5 text-xs font-bold text-brand-300 transition-all group-hover:bg-brand-500 group-hover:text-white">
-                            {dict.deploy.connect}
+                          <span
+                            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
+                              connected
+                                ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 group-hover:bg-emerald-500/20"
+                                : "border border-brand-500/40 bg-brand-500/10 text-brand-300 group-hover:bg-brand-500 group-hover:text-white"
+                            }`}
+                          >
+                            {connected ? dict.deploy.manage : dict.deploy.connect}
                             <ArrowRight
                               size={12}
                               className="transition-transform group-hover:translate-x-0.5"
@@ -310,7 +362,7 @@ export default function DeployAgentClient({
                         </button>
 
                         {/* Inline Shopify domain form (unfolded on click) */}
-                        {expanded && kind === "shopify" && (
+                        {expanded && kind === "shopify" && !connected && (
                           <div className="mt-2 rounded-xl border border-white/5 bg-neutral-900 p-3">
                             <div className="flex gap-2">
                               <input
