@@ -170,7 +170,7 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
           type="button"
           onClick={status === "done" ? reset : () => { setStatus("running"); setShowResult(false); }}
           disabled={status === "running"}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 transition-all hover:bg-brand-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 hover:shadow-brand-500/30 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {status === "running" ? (
             <><Loader2 size={15} className="animate-spin" /> {dict.agentPreview.running}</>

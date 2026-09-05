@@ -505,7 +505,7 @@ export default function HeroSection() {
                   onClick={handleSend}
                   disabled={!input.trim() || isTyping}
                   aria-label={dict.hero.sendMessage}
-                  className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-white text-neutral-900 hover:bg-brand-500 hover:text-white transition-all disabled:bg-neutral-800 disabled:text-neutral-600 disabled:cursor-not-allowed shadow-sm"
+                  className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-brand-500 text-white hover:bg-brand-400 transition-all disabled:bg-neutral-800 disabled:text-neutral-600 disabled:cursor-not-allowed shadow-lg shadow-brand-500/25"
                 >
                   <svg
                     width="16"
