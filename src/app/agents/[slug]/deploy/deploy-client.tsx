@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import {
   ArrowLeft,
@@ -15,6 +15,8 @@ import {
   User,
   Volume2,
   AlertTriangle,
+  ArrowRight,
+  ExternalLink,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -23,6 +25,24 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { getAgentBySlug, localizeAgent, type Agent } from "@/lib/agents";
 import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
+
+/**
+ * Which real OAuth connector an integration label maps to.
+ *   "shopify" → Shopify OAuth (needs the store domain first)
+ *   "google"  → Google OAuth (Gmail + Calendar, read-only)
+ *   null      → no live connector yet: the agent chat is where the
+ *               user can try the agent and reach its tools.
+ */
+type ConnectorKind = "shopify" | "google" | null;
+
+function integrationKind(integration: string): ConnectorKind {
+  const key = integration.toLowerCase();
+  if (key.includes("shopify")) return "shopify";
+  if (key === "gmail" || key.includes("google") || key.includes("sheets")) {
+    return "google";
+  }
+  return null;
+}
 
 export default function DeployAgentClient({
   slug,
@@ -33,12 +53,18 @@ export default function DeployAgentClient({
   marketplaceAgents?: Agent[];
 }) {
   const { dict, locale } = useLanguage();
+  const router = useRouter();
   const rawAgent = getAgentBySlug(slug);
   const agent = rawAgent ? localizeAgent(rawAgent, locale) : undefined;
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // Integration currently expanding its inline Shopify connect form.
+  const [connectingIntegration, setConnectingIntegration] = useState<
+    string | null
+  >(null);
+  const [shopDomain, setShopDomain] = useState("");
 
   const steps = dict.deploy.steps;
 
@@ -52,15 +78,48 @@ export default function DeployAgentClient({
 
   if (!agent) notFound();
 
+  /**
+   * What happens when the user clicks "Connetti" on a tool:
+   *  - Shopify → expand the inline store-domain form, then OAuth
+   *    (/api/shopify/install?shop=<domain>)
+   *  - Google tools (Gmail, Google Calendar, …) → Google OAuth consent
+   *    (/api/auth/google/connect)
+   *  - any other tool → open the agent's live chat, where the agent can be
+   *    tried and its available tools used.
+   */
+  const startConnect = (integration: string) => {
+    const kind = integrationKind(integration);
+    if (kind === "shopify") {
+      setShopDomain("");
+      setConnectingIntegration((cur) =>
+        cur === integration ? null : integration,
+      );
+      return;
+    }
+    if (kind === "google") {
+      window.location.assign("/api/auth/google/connect");
+      return;
+    }
+    router.push(`/chat?agent=${agent.slug}`);
+  };
+
+  const connectShopify = (domain: string) => {
+    const s = domain.trim().toLowerCase();
+    if (!s) return;
+    const u = new URL("/api/shopify/install", window.location.origin);
+    u.searchParams.set("shop", s);
+    window.location.href = u.toString();
+  };
+
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-neutral-950">
       <Navbar marketplaceAgents={marketplaceAgents} />
 
       <section className="px-4 pb-20 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <Link
             href={`/agents/${agent.slug}`}
-            className="group mb-8 inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 transition-colors hover:text-neutral-950"
+            className="group mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm font-bold text-neutral-400 backdrop-blur transition-colors hover:border-white/20 hover:text-white"
           >
             <ArrowLeft
               size={16}
@@ -70,12 +129,12 @@ export default function DeployAgentClient({
           </Link>
 
           {/* Agent header card */}
-          <div className="mb-8 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-            <div className="border-b border-neutral-100 bg-neutral-50/50 px-6 py-4">
+          <div className="mb-8 overflow-hidden rounded-2xl border border-white/5 bg-neutral-900 shadow-sm">
+            <div className="border-b border-white/5 bg-linear-to-r from-neutral-900 to-neutral-950 px-6 py-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
                   <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-xl ${agent.accent} shadow-sm`}
+                    className={`flex h-12 w-12 items-center justify-center rounded-xl ${agent.accent} shadow-lg shadow-black/20`}
                   >
                     <AgentIcon
                       icon={agent.icon}
@@ -85,10 +144,10 @@ export default function DeployAgentClient({
                     />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-neutral-950">
+                    <h1 className="text-2xl font-bold tracking-tight text-white">
                       {t(dict.deploy.configureTitle, { name: agent.shortName })}
                     </h1>
-                    <p className="mt-0.5 text-sm text-neutral-500">
+                    <p className="mt-0.5 text-sm font-semibold text-neutral-400">
                       {agent.description}
                     </p>
                   </div>
@@ -102,20 +161,20 @@ export default function DeployAgentClient({
                         className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${
                           index === 0
                             ? "bg-brand-500 text-white shadow-sm shadow-brand-500/20"
-                            : "bg-neutral-100 text-neutral-500"
+                            : "bg-neutral-800 text-neutral-500"
                         }`}
                       >
                         {index === 0 ? <Settings2 size={13} /> : index + 1}
                       </div>
                       <span
                         className={`hidden text-sm font-semibold md:block ${
-                          index === 0 ? "text-brand-600" : "text-neutral-500"
+                          index === 0 ? "text-brand-400" : "text-neutral-500"
                         }`}
                       >
                         {step}
                       </span>
                       {index < steps.length - 1 && (
-                        <ChevronRight size={14} className="text-neutral-300" />
+                        <ChevronRight size={14} className="text-neutral-700" />
                       )}
                     </div>
                   ))}
@@ -128,16 +187,16 @@ export default function DeployAgentClient({
             {/* Main column */}
             <div className="space-y-6">
               {/* Agent settings */}
-              <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-                <div className="mb-6 flex items-center gap-2.5 border-b border-neutral-100 pb-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-500">
+              <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
+                <div className="mb-6 flex items-center gap-2.5 border-b border-white/5 pb-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
                     <Settings2 size={18} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-neutral-950">
+                    <h2 className="text-lg font-bold text-white">
                       {dict.deploy.agentSettings}
                     </h2>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs font-semibold text-neutral-500">
                       {dict.deploy.agentSettingsDesc}
                     </p>
                   </div>
@@ -145,33 +204,33 @@ export default function DeployAgentClient({
 
                 <div className="grid gap-5 sm:grid-cols-2">
                   <label className="block">
-                    <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
-                      <User size={14} className="text-brand-500" />
+                    <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-300">
+                      <User size={14} className="text-brand-400" />
                       {dict.deploy.businessName}
                     </span>
                     <input
                       defaultValue="Acme Studio"
-                      className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+                      className="h-11 w-full rounded-xl border border-white/10 bg-neutral-800 px-4 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
                     />
                   </label>
                   <label className="block">
-                    <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
-                      <Zap size={14} className="text-brand-500" />
+                    <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-300">
+                      <Zap size={14} className="text-brand-400" />
                       {dict.deploy.mainGoal}
                     </span>
                     <input
                       defaultValue={agent.tasks[0]}
-                      className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+                      className="h-11 w-full rounded-xl border border-white/10 bg-neutral-800 px-4 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
                     />
                   </label>
                   <label className="block">
-                    <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
-                      <Volume2 size={14} className="text-brand-500" />
+                    <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-300">
+                      <Volume2 size={14} className="text-brand-400" />
                       {dict.deploy.tone}
                     </span>
                     <select
                       defaultValue={dict.deploy.toneOptions[0]}
-                      className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm text-neutral-900 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a3a3a3%22%20strokeWidth%3D%222%22%20strokeLinecap%3D%22round%22%20strokeLinejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_14px_center] bg-no-repeat"
+                      className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-neutral-800 px-4 text-sm text-white outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a3a3a3%22%20strokeWidth%3D%222%22%20strokeLinecap%3D%22round%22%20strokeLinejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_14px_center] bg-no-repeat"
                     >
                       {dict.deploy.toneOptions.map((option) => (
                         <option key={option}>{option}</option>
@@ -179,13 +238,13 @@ export default function DeployAgentClient({
                     </select>
                   </label>
                   <label className="block">
-                    <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
-                      <Shield size={14} className="text-brand-500" />
+                    <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-neutral-300">
+                      <Shield size={14} className="text-brand-400" />
                       {dict.deploy.escalation}
                     </span>
                     <select
                       defaultValue={dict.deploy.escalationOptions[0]}
-                      className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm text-neutral-900 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a3a3a3%22%20strokeWidth%3D%222%22%20strokeLinecap%3D%22round%22%20strokeLinejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_14px_center] bg-no-repeat"
+                      className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-neutral-800 px-4 text-sm text-white outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a3a3a3%22%20strokeWidth%3D%222%22%20strokeLinecap%3D%22round%22%20strokeLinejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_14px_center] bg-no-repeat"
                     >
                       {dict.deploy.escalationOptions.map((option) => (
                         <option key={option}>{option}</option>
@@ -196,62 +255,111 @@ export default function DeployAgentClient({
               </div>
 
               {/* Connect tools */}
-              <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-                <div className="mb-6 flex items-center gap-2.5 border-b border-neutral-100 pb-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-500">
+              <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
+                <div className="mb-6 flex items-center gap-2.5 border-b border-white/5 pb-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
                     <Plug size={18} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-neutral-950">
+                    <h2 className="text-lg font-bold text-white">
                       {dict.deploy.connectTools}
                     </h2>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs font-semibold text-neutral-500">
                       {dict.deploy.connectToolsDesc}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {agent.integrations.map((integration, index) => (
-                    <button
-                      key={integration}
-                      type="button"
-                      className="group relative flex items-center justify-between rounded-xl border border-neutral-100 bg-white p-4 text-left shadow-sm transition-all hover:border-brand-200 hover:shadow-md hover:shadow-brand-500/5"
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600 transition-all group-hover:bg-brand-50 group-hover:text-brand-500">
-                          <Plug size={16} />
-                        </span>
-                        <span>
-                          <span className="block text-sm font-bold text-neutral-900">
-                            {integration}
+                <div className="space-y-2.5">
+                  {agent.integrations.map((integration) => {
+                    const kind = integrationKind(integration);
+                    const expanded = connectingIntegration === integration;
+                    return (
+                      <div key={integration}>
+                        <button
+                          type="button"
+                          onClick={() => startConnect(integration)}
+                          className="group flex w-full items-center justify-between gap-3 rounded-xl border border-white/5 bg-neutral-800/60 px-4 py-3.5 text-left transition-all hover:border-brand-500/30 hover:bg-neutral-800"
+                        >
+                          <span className="flex items-center gap-3">
+                            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-neutral-400 transition-all group-hover:bg-brand-500/15 group-hover:text-brand-400">
+                              <Plug size={16} />
+                            </span>
+                            <span>
+                              <span className="block text-sm font-bold text-white">
+                                {integration}
+                              </span>
+                              <span className="text-xs font-semibold text-neutral-500">
+                                {kind
+                                  ? locale === "it"
+                                    ? "Collegamento sicuro OAuth"
+                                    : "Secure OAuth connection"
+                                  : locale === "it"
+                                    ? "Provalo nella chat dell'agente"
+                                    : "Try it in the agent chat"}
+                              </span>
+                            </span>
                           </span>
-                          <span className="text-xs text-neutral-500">
-                            {index < 2 ? dict.deploy.recommended : dict.deploy.optional}
+                          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-500/40 bg-brand-500/10 px-4 py-1.5 text-xs font-bold text-brand-300 transition-all group-hover:bg-brand-500 group-hover:text-white">
+                            {dict.deploy.connect}
+                            <ArrowRight
+                              size={12}
+                              className="transition-transform group-hover:translate-x-0.5"
+                            />
                           </span>
-                        </span>
-                      </span>
-                      <span className="rounded-full border border-neutral-200 bg-white px-3.5 py-1 text-xs font-bold text-neutral-600 transition-all hover:border-brand-500 hover:bg-brand-500 hover:text-white">
-                        {dict.deploy.connect}
-                      </span>
-                    </button>
-                  ))}
+                        </button>
+
+                        {/* Inline Shopify domain form (unfolded on click) */}
+                        {expanded && kind === "shopify" && (
+                          <div className="mt-2 rounded-xl border border-white/5 bg-neutral-900 p-3">
+                            <div className="flex gap-2">
+                              <input
+                                value={shopDomain}
+                                onChange={(e) => setShopDomain(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter")
+                                    connectShopify(shopDomain);
+                                }}
+                                placeholder="tuo-store.myshopify.com"
+                                autoFocus
+                                className="h-10 flex-1 rounded-xl border border-white/10 bg-neutral-800 px-4 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => connectShopify(shopDomain)}
+                                disabled={!shopDomain.trim()}
+                                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-brand-500 px-4 text-sm font-bold text-white transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <ExternalLink size={14} />
+                                {dict.deploy.connect}
+                              </button>
+                            </div>
+                            <p className="mt-2 text-xs text-neutral-500">
+                              {locale === "it"
+                                ? "Verrà avviato il flusso OAuth di Shopify per autorizzare l'accesso dell'agente al tuo store."
+                                : "The Shopify OAuth flow will start to authorize the agent's access to your store."}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
             {/* Sidebar */}
             <aside className="lg:sticky lg:top-24 lg:self-start">
-              <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-                <div className="mb-5 flex items-center gap-2.5 border-b border-neutral-100 pb-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-500">
+              <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
+                <div className="mb-5 flex items-center gap-2.5 border-b border-white/5 pb-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
                     <Rocket size={18} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-neutral-950">
+                    <h2 className="text-lg font-bold text-white">
                       {dict.deploy.deploymentSummary}
                     </h2>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs font-semibold text-neutral-500">
                       {dict.deploy.reviewBefore}
                     </p>
                   </div>
@@ -259,61 +367,81 @@ export default function DeployAgentClient({
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-neutral-500">{dict.deploy.agent}</span>
-                    <span className="text-sm font-bold text-neutral-950">{agent.shortName}</span>
+                    <span className="text-sm text-neutral-500">
+                      {dict.deploy.agent}
+                    </span>
+                    <span className="text-sm font-bold text-white">
+                      {agent.shortName}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-neutral-500">{dict.deploy.category}</span>
-                    <span className="text-sm font-bold text-neutral-950">{agent.category}</span>
+                    <span className="text-sm text-neutral-500">
+                      {dict.deploy.category}
+                    </span>
+                    <span className="text-sm font-bold text-white">
+                      {agent.category}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-neutral-500">{dict.deploy.setupTime}</span>
-                    <span className="text-sm font-bold text-neutral-950">{agent.setupTime}</span>
+                    <span className="text-sm text-neutral-500">
+                      {dict.deploy.setupTime}
+                    </span>
+                    <span className="text-sm font-bold text-white">
+                      {agent.setupTime}
+                    </span>
                   </div>
                 </div>
 
                 <div className="mt-5 space-y-2.5">
-                  <div className="rounded-xl border border-neutral-200 bg-white p-3.5 transition-all hover:border-brand-200">
+                  <div className="rounded-xl border border-white/5 bg-neutral-800/60 p-3.5 transition-all hover:border-white/10">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-bold text-neutral-950">{dict.deploy.starter}</p>
+                        <p className="text-sm font-bold text-white">
+                          {dict.deploy.starter}
+                        </p>
                         <p className="text-xs text-neutral-500">€29/mese</p>
                       </div>
-                      <span className="text-[10px] font-semibold text-neutral-400">300 conv/mese</span>
+                      <span className="text-[10px] font-semibold text-neutral-500">
+                        300 conv/mese
+                      </span>
                     </div>
                     <ul className="mt-2 space-y-1">
-                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
-                        <Check size={11} className="text-brand-500" />
+                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                        <Check size={11} className="text-brand-400" />
                         {dict.deploy.toolsBase}
                       </li>
-                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
-                        <Check size={11} className="text-brand-500" />
+                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                        <Check size={11} className="text-brand-400" />
                         {dict.deploy.leadCapture}
                       </li>
                     </ul>
                   </div>
-                  <div className="rounded-xl border border-brand-200 bg-brand-50/30 p-3.5 transition-all hover:border-brand-300">
+                  <div className="rounded-xl border border-brand-500/40 bg-brand-500/10 p-3.5 transition-all hover:border-brand-500/60">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-bold text-neutral-950">{dict.deploy.growth}</p>
-                        <p className="text-xs text-neutral-500">€39/mese</p>
+                        <p className="text-sm font-bold text-white">
+                          {dict.deploy.growth}
+                        </p>
+                        <p className="text-xs text-neutral-400">€39/mese</p>
                       </div>
-                      <span className="rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-700">{dict.deploy.popular}</span>
+                      <span className="rounded-full bg-brand-500/20 px-2 py-0.5 text-[10px] font-bold text-brand-300">
+                        {dict.deploy.popular}
+                      </span>
                     </div>
                     <div className="mt-2 flex items-center gap-1.5 text-[11px] text-neutral-500">
-                      <span className="text-neutral-400">1.000 conv/mese</span>
+                      <span>1.000 conv/mese</span>
                     </div>
                     <ul className="mt-1.5 space-y-1">
-                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
-                        <Check size={11} className="text-brand-500" />
+                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                        <Check size={11} className="text-brand-400" />
                         {dict.deploy.fullTools}
                       </li>
-                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
-                        <Check size={11} className="text-brand-500" />
+                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                        <Check size={11} className="text-brand-400" />
                         {dict.deploy.leadCapture}
                       </li>
-                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-600">
-                        <Check size={11} className="text-brand-500" />
+                      <li className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                        <Check size={11} className="text-brand-400" />
                         {dict.deploy.prioritySupport}
                       </li>
                     </ul>
@@ -325,20 +453,20 @@ export default function DeployAgentClient({
                     type="checkbox"
                     checked={acceptedTerms}
                     onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-neutral-300 text-brand-500 accent-brand-500"
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-neutral-500 text-brand-500 accent-brand-500"
                   />
-                  <span className="text-xs leading-relaxed text-neutral-500">
+                  <span className="text-xs leading-relaxed text-neutral-400">
                     {dict.deploy.consentPrefix}{" "}
                     <Link
                       href="/terms"
-                      className="font-semibold text-brand-600 hover:underline"
+                      className="font-semibold text-brand-400 hover:underline"
                     >
                       {dict.deploy.consentTerms}
                     </Link>{" "}
                     {dict.deploy.consentConjunction}{" "}
                     <Link
                       href="/privacy"
-                      className="font-semibold text-brand-600 hover:underline"
+                      className="font-semibold text-brand-400 hover:underline"
                     >
                       {dict.deploy.consentPrivacy}
                     </Link>
@@ -367,34 +495,34 @@ export default function DeployAgentClient({
                       setIsCheckingOut(false);
                     }
                   }}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Rocket size={16} />
                   {isCheckingOut ? dict.common.close : dict.deploy.requestDemo}
                 </button>
 
-                <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200/50 bg-amber-50/50 px-3.5 py-2.5">
+                <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5">
                   <AlertTriangle
                     size={14}
-                    className="mt-0.5 shrink-0 text-amber-600"
+                    className="mt-0.5 shrink-0 text-amber-400"
                   />
-                  <p className="text-xs leading-relaxed text-amber-800">
+                  <p className="text-xs leading-relaxed text-amber-200">
                     {dict.deploy.flowNote}
                   </p>
                 </div>
               </div>
 
               {/* Delivery options */}
-              <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-                <div className="mb-4 flex items-center gap-2.5 border-b border-neutral-100 pb-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-500">
+              <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
                     <Zap size={18} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-neutral-950">
+                    <h2 className="text-lg font-bold text-white">
                       {dict.deploy.deliveryOptions}
                     </h2>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs font-semibold text-neutral-500">
                       {dict.deploy.deliveryOptionsDesc}
                     </p>
                   </div>
@@ -402,35 +530,37 @@ export default function DeployAgentClient({
 
                 <div className="space-y-4">
                   {/* Option B: Direct link */}
-                  <div className="rounded-xl border border-brand-100 bg-brand-50/30 p-4">
+                  <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 p-4">
                     <div className="mb-2 flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-white text-xs font-bold">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-xs font-bold text-white">
                         B
                       </span>
-                      <span className="text-sm font-bold text-neutral-900">
+                      <span className="text-sm font-bold text-white">
                         {dict.deploy.directLink}
                       </span>
-                      <span className="ml-auto rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-700">
+                      <span className="ml-auto rounded-full bg-brand-500/20 px-2 py-0.5 text-[10px] font-bold text-brand-300">
                         {dict.deploy.recommended}
                       </span>
                     </div>
-                    <p className="mb-3 text-xs text-neutral-500">
+                    <p className="mb-3 text-xs font-semibold text-neutral-400">
                       {dict.deploy.directLinkDesc}
                     </p>
                     <div className="flex items-center gap-2">
                       <input
                         readOnly
                         value={`${origin}/a/${agent.slug}`}
-                        className="flex-1 h-9 rounded-lg border border-neutral-200 bg-white px-3 text-xs text-neutral-700 outline-none select-all"
+                        className="h-9 flex-1 rounded-lg border border-white/10 bg-neutral-900 px-3 text-xs text-neutral-300 outline-none select-all"
                         onClick={(e) => (e.target as HTMLInputElement).select()}
                       />
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(`${origin}/a/${agent.slug}`);
+                          navigator.clipboard.writeText(
+                            `${origin}/a/${agent.slug}`,
+                          );
                           setCopiedLink(true);
                           setTimeout(() => setCopiedLink(false), 2000);
                         }}
-                        className="shrink-0 h-9 rounded-lg bg-brand-500 px-3 text-xs font-bold text-white hover:bg-brand-400 transition-colors"
+                        className="h-9 shrink-0 rounded-lg bg-brand-500 px-3 text-xs font-bold text-white transition-colors hover:bg-brand-400"
                       >
                         {copiedLink ? dict.deploy.copied : dict.deploy.copy}
                       </button>
@@ -438,25 +568,27 @@ export default function DeployAgentClient({
                   </div>
 
                   {/* Option A: Embed script */}
-                  <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+                  <div className="rounded-xl border border-white/5 bg-neutral-800/60 p-4">
                     <div className="mb-2 flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-700 text-white text-xs font-bold">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-white text-xs font-bold">
                         A
                       </span>
-                      <span className="text-sm font-bold text-neutral-900">
+                      <span className="text-sm font-bold text-white">
                         {dict.deploy.embedScript}
                       </span>
                     </div>
-                    <p className="mb-3 text-xs text-neutral-500">
+                    <p className="mb-3 text-xs font-semibold text-neutral-500">
                       <span dangerouslySetInnerHTML={{ __html: dict.deploy.embedScriptDesc }} />
                     </p>
                     <div className="relative">
-                      <pre className="overflow-x-auto rounded-lg bg-neutral-900 p-3 text-[10px] text-green-300 leading-relaxed">
+                      <pre className="overflow-x-auto rounded-lg bg-neutral-950 p-3 text-[10px] leading-relaxed text-green-400">
 {`<script src="${origin}/api/embed/${agent.slug}"></script>`}
                       </pre>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(`<script src="${origin}/api/embed/${agent.slug}"></script>`);
+                          navigator.clipboard.writeText(
+                            `<script src="${origin}/api/embed/${agent.slug}"></script>`,
+                          );
                           setCopiedEmbed(true);
                           setTimeout(() => setCopiedEmbed(false), 2000);
                         }}
