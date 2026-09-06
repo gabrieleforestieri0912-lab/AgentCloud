@@ -6,13 +6,14 @@ import { FROM_EMAIL } from "@/lib/email-config";
 /**
  * POST /api/email/send
  *
- * Admin-only email dispatch. This endpoint lets the caller send arbitrary
- * emails through the AgentCloud Resend account, so it MUST NOT be usable by
- * regular signed-in users (open relay = spam + burned domain reputation).
+ * Invio email riservato agli admin. Questo endpoint permette di mandare email
+ * arbitrarie tramite l'account Resend di AgentCloud, quindi NON deve essere
+ * usabile dagli utenti normali loggati (relay aperto = spam + reputazione del
+ * dominio bruciata).
  *
- * Auth: requires `Authorization: Bearer <ADMIN_API_TOKEN>` (same token used by
- * the admin API). Fails closed: when the token is not configured the endpoint
- * is unreachable.
+ * Auth: richiede `Authorization: Bearer <ADMIN_API_TOKEN>` (stesso token delle
+ * API admin). Fails closed: se il token non è configurato l'endpoint è
+ * irraggiungibile.
  */
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization") || "";

@@ -1,5 +1,8 @@
 "use client";
 
+// Client della pagina account: gestisce modifica nome, logout, eliminazione
+// profilo e mostra piano/connessioni. Riceve dal server component i dati già
+// verificati (isMock = admin via codice → nessuna scrittura sul DB).
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -65,8 +68,8 @@ export default function AccountClient({
     setDeleting(true);
     try {
       const supabase = createClient();
-      // Supabase does not allow self-delete via client; we would need an API route.
-      // For now, sign out and redirect to contact support.
+      // Supabase non permette la self-delete dal client; servirebbe una route API.
+      // Per ora: logout e rimando al supporto (pagina contatti).
       await supabase.auth.signOut();
       window.location.href = "/contact";
     } finally {

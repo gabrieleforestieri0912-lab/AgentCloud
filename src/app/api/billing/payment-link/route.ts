@@ -5,11 +5,11 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
 /**
  * GET /api/billing/payment-link?agentId=xxx&userId=xxx&email=xxx
- * OR
+ * OPPURE
  * GET /api/billing/payment-link?planId=xxx&vertical=xxx&userId=xxx&email=xxx
  *
- * Returns a redirect to a Stripe Payment Link for the specified agent or plan.
- * The link includes metadata for automatic activation via the webhook.
+ * Restituisce un redirect a uno Stripe Payment Link per l'agente o il piano
+ * indicato. Il link include i metadati per l'attivazione automatica via webhook.
  */
 export async function GET(req: Request) {
   try {
@@ -23,7 +23,8 @@ export async function GET(req: Request) {
     const userId = url.searchParams.get("userId");
     const email = url.searchParams.get("email");
 
-    // Basic input validation to avoid echoing arbitrary values into links.
+    // Validazione base degli input per evitare di rimandare valori arbitrari
+    // nei link.
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email && !EMAIL_RE.test(email)) {
       return NextResponse.json(
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
       source: "agentcloud",
     };
 
-    // Plan-based pricing (new system)
+    // Prezzi basati su piano (nuovo sistema)
     if (planId && vertical) {
       const plan = getPlan(vertical, planId as "starter" | "growth");
       if (!plan) {
@@ -54,7 +55,7 @@ export async function GET(req: Request) {
       metadata.vertical = vertical;
       metadata.tokens = plan.tokens.toString();
     }
-    // Agent-based pricing (legacy, for backward compatibility)
+    // Prezzi basati su agente (legacy, per compatibilità all'indietro)
     else if (agentId) {
       const config = AGENT_RUNTIME[agentId];
       if (!config) {
@@ -85,7 +86,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // Build payment link with metadata
+    // Costruisce il payment link con i metadati
     const paymentUrl = new URL(paymentLink);
 
     if (userId) {

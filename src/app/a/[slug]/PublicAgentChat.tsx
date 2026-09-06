@@ -1,5 +1,8 @@
 "use client";
 
+// Chat pubblica embeddabile di un agente (pagina /a/[slug]): streaming SSE su
+// /api/agent/run, allegati (drag&drop, +, incolla) e rendering markdown.
+// È il punto di prova dell'agente per i visitatori non autenticati.
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Send,
@@ -27,11 +30,11 @@ import type { ChatAttachment } from "@/lib/chat-attachments";
 type Message = {
   role: "user" | "assistant";
   content: string;
-  // Attachments the user sent with this message (image previews / file chips).
+  // Allegati inviati dall'utente con questo messaggio (anteprime / chip file).
   attachments?: Pick<ChatAttachment, "id" | "name" | "kind" | "previewUrl">[];
-  // Files the assistant produced via tools (e.g. generated documents).
+  // File prodotti dall'assistente tramite gli strumenti (es. documenti generati).
   files?: { filename: string; content: string }[];
-  // Error bubble: shows the failure text plus a contact link.
+  // Bolla di errore: mostra il testo del fallimento più un link di contatto.
   error?: boolean;
 };
 
@@ -54,9 +57,9 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
   const [isRunning, setIsRunning] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  // Auto-scroll only while the user is at the bottom, scrolling the container
-  // directly (instant) — smooth scrollIntoView restarts on every streamed
-  // word and fights the finger on mobile.
+  // Auto-scroll solo quando l'utente è in fondo: scroll diretto del contenitore
+  // (istantaneo) — uno smooth scrollIntoView ripartirebbe a ogni parola in
+  // streaming e combatterebbe il dito sul mobile.
   const stickToBottom = useRef(true);
 
   const handleMessagesScroll = () => {
@@ -76,9 +79,9 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Append to the last assistant message with an immutable update. Mutating
-  // the stored message objects inside the updater would double-append under
-  // React StrictMode (dev), which invokes updater functions twice.
+  // Aggiorna l'ultimo messaggio dell'assistente in modo immutabile. Mutare gli
+  // oggetti messaggio dentro l'updater raddoppierebbe l'append in React
+  // StrictMode (dev), che invoca gli updater due volte.
   const updateLastAssistant = (fn: (last: Message) => Message) =>
     setMessages((prev) =>
       prev.map((m, i) =>
@@ -90,9 +93,9 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
     const pending = attach.attachments;
     if ((!input.trim() && pending.length === 0) || isRunning) return;
 
-    // The full composed body (file contents included) goes to the API so the
-    // agent can read the attachments; the visible bubble keeps the plain text
-    // plus compact preview chips instead of raw file dumps.
+    // Il corpo completo (contenuti file inclusi) va all'API così l'agente può
+    // leggere gli allegati; la bolla visibile conserva solo il testo più i chip
+    // di anteprima compatti, non i dump grezzi dei file.
     const userContent = composeUserContent(input, pending);
     const filesMap = toFilesMap(pending);
     const displayContent =
@@ -135,16 +138,16 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
         }),
       });
 
-      // The endpoint returns JSON for errors (agent not found, subscription
-      // required, monthly limit reached, rate limited). Surface those instead
-      // of hanging on an empty stream.
+      // L'endpoint risponde in JSON per gli errori (agente non trovato,
+      // abbonamento richiesto, limite mensile raggiunto, rate limit). Li
+      // mostriamo invece di restare appesi a uno stream vuoto.
       if (!res.ok) {
         let message = dict.publicChat.somethingWentWrong;
         try {
           const data = await res.json();
           if (data && typeof data.error === "string") message = data.error;
         } catch {
-          // ignore malformed error bodies
+          // ignora corpi di errore malformati
         }
         updateLastAssistant((last) => ({
           ...last,

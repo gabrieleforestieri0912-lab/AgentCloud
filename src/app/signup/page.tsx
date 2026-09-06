@@ -18,6 +18,9 @@ import {
   HONEYPOT_FIELD_NAME,
 } from "@/lib/forms-security";
 
+// Pagina di registrazione (client): come il login, applica in sequenza
+// honeypot anti-bot, throttling anti-spam e validazioni preventive prima di
+// creare l'utente su Supabase Auth.
 export default function SignupPage() {
   const { dict } = useLanguage();
   const router = useRouter();
@@ -90,8 +93,9 @@ export default function SignupPage() {
       }
       resetClientAttemptThrottle("signup_attempt");
 
-      // When email confirmation is enabled there is no session yet — ask the
-      // user to check their inbox; otherwise go straight to the dashboard.
+      // Se la conferma email è attiva non esiste ancora una sessione: si
+      // chiede all'utente di controllare la casella; altrimenti si va
+      // direttamente alla dashboard.
       if (data.session) {
         router.push("/dashboard");
         router.refresh();
@@ -125,7 +129,7 @@ export default function SignupPage() {
 
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
-      {/* Decorative background — same visual language as the hero */}
+      {/* Sfondo decorativo — stesso linguaggio visivo dell'hero */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
       <div
         className="absolute inset-0 opacity-[0.35] pointer-events-none select-none"
@@ -135,12 +139,12 @@ export default function SignupPage() {
         }}
       />
 
-      {/* Floating app + agent constellations, flanking the form */}
+      {/* Costellazioni fluttuanti di app e agenti ai lati del form */}
       <HeroBubbles />
 
       <section className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-6 sm:py-10">
         <div className="w-full max-w-md">
-          {/* Back to home — the navbar is not rendered on this page */}
+          {/* Torna alla home — su questa pagina la navbar non è renderizzata */}
           <div className="mb-6 flex justify-center">
             <Link
               href="/"

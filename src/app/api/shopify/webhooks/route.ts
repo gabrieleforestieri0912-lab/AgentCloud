@@ -3,18 +3,18 @@ import { markShopifyUninstalled } from "@/lib/shopify/connections";
 import { verifyShopifyWebhookHmac } from "@/lib/shopify/oauth";
 
 /**
- * Phase 4 — Shopify webhook receiver.
+ * Fase 4 — ricevitore dei webhook Shopify.
  *
  * POST /api/shopify/webhooks
- *   Verifies the `X-Shopify-Hmac-SHA256` signature over the raw body, then
- *   routes by `X-Shopify-Topic`:
- *     - APP_UNINSTALLED      → revoke the shop's connection
- *     - SHOP_REDACT          → revoke the shop's connection (GDPR erasure)
- *     - CUSTOMERS_DATA_REQUEST / CUSTOMERS_REDACT → acknowledge (we store no
- *       Shopify customer PII; the encrypted token is already per-shop)
+ *   Verifica la firma `X-Shopify-Hmac-SHA256` sul corpo grezzo, poi instrada
+ *   in base a `X-Shopify-Topic`:
+ *     - APP_UNINSTALLED      → revoca la connessione del negozio
+ *     - SHOP_REDACT          → revoca la connessione del negozio (cancellazione GDPR)
+ *     - CUSTOMERS_DATA_REQUEST / CUSTOMERS_REDACT → acknowledgement (non
+ *       salviamo PII dei clienti Shopify; il token criptato è già per-negozio)
  *
- * Always responds 200 so Shopify does not retry indefinitely; invalid
- * signatures get 401.
+ * Risponde sempre 200 così Shopify non ritenta all'infinito; le firme non
+ * valide ricevono 401.
  */
 export async function POST(req: NextRequest) {
   const secret = process.env.SHOPIFY_API_SECRET;
@@ -40,15 +40,15 @@ export async function POST(req: NextRequest) {
       }
       case "customers/data_request":
       case "customers/redact": {
-        // No customer PII is persisted outside Shopify; nothing to erase here.
-        // Log for audit trail only.
+        // Nessuna PII dei clienti è salvata fuori da Shopify; qui non c'è nulla
+        // da cancellare. Solo un log per la traccia di audit.
         console.info(
           `Shopify GDPR webhook ${topic} for shop ${shopDomain} acknowledged.`,
         );
         break;
       }
       default:
-        // Unknown topic: accept to avoid retries, but note it.
+        // Topic sconosciuto: accetta per evitare retry, ma annotalo.
         console.info(`Shopify webhook unhandled topic: ${topic}`);
     }
   } catch (e) {

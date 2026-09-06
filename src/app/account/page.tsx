@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+
+// Pagina account: guscio server che applica i controlli di accesso (sessione
+// Supabase + codice di accesso) e delega il rendering interattivo al client
+// (AccountClient), passando solo i dati già autorizzati.
+
 import { getSessionUser } from "@/lib/supabase/server";
 import { hasPlatformAccess } from "@/lib/access-code";
 import { isAdminEmail } from "@/lib/admin-access";
@@ -35,7 +40,8 @@ export default async function AccountPage() {
   const userId = user?.id ?? (isMock ? TENANT_GOOGLE_ID : null);
   const createdAt = isMock ? new Date().toISOString() : (user as unknown as { created_at?: string })?.created_at ?? null;
 
-  // Load real data only for real users, not for mock admin (no DB writes)
+  // Carica dati reali solo per utenti reali, non per l'admin simulato
+  // (nessuna scrittura sul DB)
   let plan: string | null = null;
   let shopifyShops: string[] = [];
   let googleEmail: string | null = null;

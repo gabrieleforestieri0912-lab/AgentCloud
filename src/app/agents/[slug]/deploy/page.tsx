@@ -24,10 +24,11 @@ export type DeployConnections = {
 };
 
 /**
- * Server wrapper around the (client) deploy form. The availability gate must
- * run server-side per request: `isAvailable` reflects the runtime feature
- * flags, but access-code holders unlock EVERY agent — including the ones
- * still flagged "coming soon" — so their deploy pages must render.
+ * Wrapper server attorno al form di deploy (client). Il controllo di
+ * disponibilità deve girare lato server a ogni richiesta: `isAvailable`
+ * rispecchia i feature flag runtime, ma chi ha il codice di accesso sblocca
+ * OGNI agente — inclusi quelli ancora "coming soon" — quindi le relative
+ * pagine di deploy devono renderizzare.
  */
 export default async function DeployAgentPage(props: {
   params: Promise<{ slug: string }>;
@@ -40,26 +41,26 @@ export default async function DeployAgentPage(props: {
   if (!unlocked && !isAvailable(slug)) notFound();
 
   const locale = await getLocale();
-  // Navbar agent list: the full catalog for access holders, the flag-gated
-  // list otherwise (mirrors what the marketplace pages pass down).
+  // Lista agenti per la navbar: catalogo completo per chi ha il codice,
+  // lista filtrata dai flag altrimenti (come sulle pagine marketplace).
   const navAgents = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((agent) =>
     localizeAgent(agent, locale),
   );
 
-  // Real connection state, so the "Connect tools" list can mark already-
-  // connected services as active. The owner is resolved PER SERVICE, matching
-  // where each connect route stores the row:
-  //  - Google: signed-in users read their own rows; access-code holders
-  //    (admin) read the shared tenant store (TENANT_GOOGLE_ID) — same owner
-  //    /api/auth/google/* uses for code holders.
-  //  - Shopify: signed-in users read their own rows; access-code holders
-  //    WITHOUT a session read the shared tenant store (TENANT_SHOPIFY_ID —
-  //    the same owner /api/shopify/install|callback use for code holders).
-  //  - Anonymous visitors get no state (nothing is connected for them).
+  // Stato reale delle connessioni, così l'elenco "Connetti strumenti" può
+  // marcare come attivi i servizi già collegati. Il proprietario è risolto
+  // PER SERVIZIO, coerente con dove ogni route di connessione salva la riga:
+  //  - Google: gli utenti con sessione leggono le proprie righe; chi ha il
+  //    codice (admin) legge lo store tenant condiviso (TENANT_GOOGLE_ID) — lo
+  //    stesso owner usato da /api/auth/google/* per i possessori del codice.
+  //  - Shopify: utenti con sessione leggono le proprie righe; chi ha il codice
+  //    SENZA sessione legge lo store tenant condiviso (TENANT_SHOPIFY_ID — lo
+  //    stesso owner di /api/shopify/install|callback per i detentori del codice).
+  //  - Visitatori anonimi: nessuno stato (per loro non c'è nulla di collegato).
   const user = await getSessionUser();
-  // Shopify mirrors /api/shopify/install|callback|status exactly: access-code
-  // holders use the shared tenant store (even when signed in), regular
-  // signed-in users their own rows.
+  // Shopify rispecchia /api/shopify/install|callback|status: i possessori del
+  // codice usano lo store tenant condiviso (anche se loggati), gli utenti
+  // normali con sessione le proprie righe.
   const shopifyOwnerId = unlocked
     ? TENANT_SHOPIFY_ID
     : user?.id ?? null;

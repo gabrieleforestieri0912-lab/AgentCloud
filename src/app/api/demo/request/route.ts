@@ -8,7 +8,8 @@ import { SUPPORT_EMAIL, FROM_EMAIL } from "@/lib/email-config";
 
 const DEMO_EMAIL_TO = process.env.DEMO_EMAIL_TO || SUPPORT_EMAIL;
 
-// Max requests per IP per hour — prevents DB spam and email abuse.
+// Route API della richiesta demo: salva su Supabase e notifica via email.
+// Max richieste per IP all'ora — protegge DB ed email da spam/abusi.
 const DEMO_LIMIT = 5;
 
 export async function POST(request: Request) {
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Store in Supabase
+    // Salva la richiesta su Supabase
     const supabase = await createClient();
     const { error: dbError } = await supabase
       .from("demo_requests")
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
       console.error("Failed to store demo request:", dbError);
     }
 
-    // Send email notification
+    // Invia la notifica email
     const { error: emailError } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [DEMO_EMAIL_TO],
@@ -75,8 +76,9 @@ export async function POST(request: Request) {
   } catch (err) {
     return NextResponse.json(
       {
-        // Provider errors (Resend/Supabase) are surfaced verbatim: their
-        // content is unknown, so we only localize the generic fallback.
+        // Gli errori dei provider (Resend/Supabase) sono mostrati così come
+        // sono: il contenuto è sconosciuto, quindi localizziamo solo il
+        // fallback generico.
         error:
           err instanceof Error
             ? err.message

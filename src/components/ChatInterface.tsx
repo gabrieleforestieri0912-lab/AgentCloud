@@ -56,8 +56,8 @@ type LocalMessage = {
   role: "user" | "assistant";
   content: string;
   created_at: string;
-  // True for assistant bubbles that carry an error instead of an AI reply;
-  // the UI then shows a contact link below the message.
+  // True per le bolle dell'assistente che contengono un errore invece di una
+  // risposta AI; la UI mostra allora un link di contatto sotto il messaggio.
   error?: boolean;
   attachments?: Pick<ChatAttachment, "id" | "name" | "kind" | "previewUrl">[];
 };
@@ -96,7 +96,7 @@ export default function ChatInterface({
 }: {
   initialQuery?: string;
   agentId?: string;
-  /** Localized agent name shown when the chat was opened for one agent. */
+  /** Nome localizzato dell'agente mostrato quando la chat è stata aperta per un agente. */
   agentLabel?: string;
   availableAgents?: { slug: string; name: string }[];
 }) {
@@ -108,9 +108,10 @@ export default function ChatInterface({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState(initialQuery || "");
   const [isTyping, setIsTyping] = useState(false);
-  // True once the assistant's current reply has started streaming (its bubble
-  // grows word by word). The three-dot indicator is shown only before the
-  // first word arrives — while the typewriter is running, dots stay hidden.
+  // True da quando la risposta corrente dell'assistente ha iniziato lo
+  // streaming (la bolla cresce parola per parola). L'indicatore a tre puntini
+  // appare solo prima dell'arrivo della prima parola — mentre la macchina da
+  // scrivere è in funzione, i puntini restano nascosti.
   const [hasPartialReply, setHasPartialReply] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -119,18 +120,21 @@ export default function ChatInterface({
 
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  // True while the user is at the bottom of the conversation. Auto-scroll
-  // only runs then: while streaming, word-by-word updates scroll the
-  // container directly (instant, no smooth animation fighting the finger),
-  // and reading older messages is never interrupted by yanking back down.
+  // True finché l'utente è in fondo alla conversazione. L'auto-scroll scatta
+  // solo allora: in streaming gli aggiornamenti parola per parola scorrono il
+  // contenitore direttamente (istantaneo, niente animazione smooth che lotta
+  // col dito), e la lettura dei messaggi più vecchi non viene mai interrotta
+  // da uno "strattone" verso il basso.
   const stickToBottom = useRef(true);
 
   const activeConv = conversations.find((c) => c.id === activeId);
   const messages = useMemo(() => activeConv?.messages ?? [], [activeConv]);
 
-  // Header title: the active agent's name when one is selected (marketplace
-  // CTA or sidebar picker), otherwise the generic assistant name.
-  // Admin / access-code holders see the full catalog (same handling as normal users, with history)
+  // Titolo dell'intestazione: il nome dell'agente attivo quando ne è selezionato
+  // uno (CTA marketplace o selettore in sidebar), altrimenti il nome generico
+  // dell'assistente.
+  // Admin / possessori del codice vedono l'intero catalogo (stessa gestione
+  // degli utenti normali, con cronologia)
   const effectiveAvailableAgents = useMemo(() => {
     if (availableAgents.length > 0) return availableAgents;
     if (hasAccessOnClient()) {
@@ -147,8 +151,9 @@ export default function ChatInterface({
     (agentLabel && activeAgentId ? agentLabel : undefined) ??
     dict.chat.assistantName;
 
-  // Agents whose default tools read Gmail/Calendar need a Google connection:
-  // show the in-chat connect panel for them (like the Shopify one).
+  // Gli agenti i cui tool di default leggono Gmail/Calendar richiedono una
+  // connessione Google: mostra per loro il pannello di connessione in chat
+  // (come quello di Shopify).
   const needsGoogle =
     Boolean(activeAgentId) &&
     getEnabledTools(activeAgentId).some(
@@ -214,7 +219,7 @@ export default function ChatInterface({
         }
       }
     } catch {
-      // ignore
+      // ignora
     }
   }, []);
 
@@ -223,10 +228,11 @@ export default function ChatInterface({
       if (conversations.length > 0) {
         localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(conversations));
       } else if (initializedRef.current) {
-        // keep empty history as empty array, don't delete immediately to avoid flicker
+        // mantieni la cronologia vuota come array vuoto, non cancellare subito
+        // per evitare sfarfallii
       }
     } catch {
-      // ignore
+      // ignora
     }
   }, [conversations]);
 
@@ -245,9 +251,10 @@ export default function ChatInterface({
     }
   }, [initialQuery]);
 
-  // Import what the hero demo chat saved to localStorage as conversations:
-  // the live draft (ongoing hero chat) plus every conversation the hero's
-  // reset button committed to history. Both keys are consumed on import.
+  // Importa come conversazioni ciò che la chat demo dell'hero ha salvato in
+  // localStorage: la bozza live (chat hero in corso) più ogni conversazione che
+  // il bottone reset dell'hero ha archiviato. Entrambe le chiavi vengono
+  // consumate all'import.
   useEffect(() => {
     try {
       type StoredMsg = {
@@ -284,7 +291,7 @@ export default function ChatInterface({
       if (historyRaw) {
         const list = JSON.parse(historyRaw) as StoredMsg[][];
         if (Array.isArray(list)) {
-          // Newest saved conversation first: it sits on top and is opened.
+          // Prima la conversazione salvata più recente: sta in cima e si apre.
           for (let i = list.length - 1; i >= 0; i--) {
             const entry = list[i];
             if (Array.isArray(entry) && entry.length > 0) {
@@ -303,9 +310,9 @@ export default function ChatInterface({
         return;
       }
 
-      // No saved conversation to open: start with a fresh empty one so the
-      // input is immediately usable (e.g. arriving from the marketplace
-      // "Compra" CTA at /chat?agent=...) instead of silently disabled.
+      // Nessuna conversazione salvata da aprire: si parte da una vuota così
+      // l'input è subito usabile (es. arrivando dalla CTA "Compra" del
+      // marketplace su /chat?agent=...) invece di restare disabilitato.
       if (!initializedRef.current) {
         initializedRef.current = true;
         const conv: LocalConversation = {
@@ -318,7 +325,7 @@ export default function ChatInterface({
         setActiveId(conv.id);
       }
     } catch {
-      // Malformed storage — start fresh.
+      // Storage malformato — si riparte da zero.
     }
   }, []);
 
@@ -391,10 +398,10 @@ export default function ChatInterface({
     setIsTyping(true);
     setHasPartialReply(false);
 
-    // Update a single assistant message in place as the stream arrives.
-    // Returns the stable id so later chunks update the same bubble. When
-    // `error` is set the bubble is created as an error message (no AI reply),
-    // which renders a contact link underneath.
+    // Aggiorna un singolo messaggio dell'assistente man mano che lo stream
+    // arriva. Restituisce l'id stabile così i chunk successivi aggiornano la
+    // stessa bolla. Quando `error` è impostato la bolla nasce come messaggio
+    // di errore (nessuna risposta AI), con un link di contatto sotto.
     const patchAssistant = (
       assistantId: string,
       content: string,
@@ -425,14 +432,15 @@ export default function ChatInterface({
       );
     };
 
-    // Always use the real AI backend — no pre-set answers. On failure a clear
-    // error bubble with a contact link is shown instead.
+    // Usa sempre il backend AI reale — nessuna risposta preimpostata. In caso
+    // di errore si mostra una chiara bolla di errore con link di contatto.
     let responseText = "";
-    // Server-side error message (localized) captured from the SSE stream.
+    // Messaggio di errore lato server (localizzato) catturato dallo stream SSE.
     let streamErrorMessage: string | null = null;
     try {
-      // Send the full conversation history so the AI stays coherent across
-      // follow-ups (and always answers against the latest platform data).
+      // Invia l'intera cronologia della conversazione così l'AI resta coerente
+      // nei messaggi successivi (e risponde sempre sui dati piattaforma più
+      // recenti).
       const history =
         conversations.find((c) => c.id === convId)?.messages ?? [];
       const apiMessages = [
@@ -441,11 +449,12 @@ export default function ChatInterface({
       ];
       const filesMap = toFilesMap(pending);
 
-      // Real agent conversations run through the agent runtime so the
-      // selected agent's tools actually execute (Shopify, Gmail, Calendar,
-      // web/file tools...). The generic personal assistant (no agent) stays
-      // on the plain chat endpoint. Both stream the same SSE shape
-      // ({ type: "text" | "done" | "error", ... }), so one reader handles both.
+      // Le conversazioni con agenti reali passano dal runtime agenti così gli
+      // strumenti dell'agente selezionato si eseguono davvero (Shopify, Gmail,
+      // Calendar, tool web/file...). L'assistente personale generico (senza
+      // agente) resta sull'endpoint chat semplice. Entrambi usano la stessa
+      // forma SSE ({ type: "text" | "done" | "error", ... }), quindi un unico
+      // reader gestisce entrambi.
       const isAgentChat = Boolean(activeAgentId);
       const providerRes = await fetch(
         isAgentChat ? "/api/agent/run" : "/api/chat",
@@ -464,9 +473,9 @@ export default function ChatInterface({
         },
       );
 
-      // Non-2xx: the route returns a JSON { error } (already localized
-      // server-side — e.g. subscription required, monthly limit, rate
-      // limited). Surface that real message instead of a generic one.
+      // Non-2xx: la route risponde con un JSON { error } (già localizzato lato
+      // server — es. abbonamento richiesto, limite mensile, rate limited).
+      // Mostra quel messaggio reale invece di uno generico.
       if (!providerRes.ok) {
         let serverMessage: string | null = null;
         try {
@@ -475,7 +484,7 @@ export default function ChatInterface({
             serverMessage = data.error;
           }
         } catch {
-          // ignore malformed error bodies
+          // ignora corpi di errore malformati
         }
         if (serverMessage) streamErrorMessage = serverMessage;
         throw new Error("AI backend error");
@@ -529,13 +538,13 @@ export default function ChatInterface({
           }
         }
 
-        // Stream ended without any content — treat as backend failure.
+        // Stream terminato senza contenuto — trattalo come errore del backend.
         if (!responseText.trim()) throw new Error("Empty response");
       } else {
         throw new Error("AI backend unavailable");
       }
     } catch {
-      // No canned answers: show the real failure with a contact link.
+      // Niente risposte preimpostate: mostra l'errore reale con un link di contatto.
       const message =
         streamErrorMessage && streamErrorMessage.trim()
           ? streamErrorMessage
@@ -565,7 +574,7 @@ export default function ChatInterface({
   }
 
   function handleAppHeaderToggle() {
-    // Desktop (>=lg) toggles the persistent sidebar, mobile toggles overlay.
+    // Su desktop (>=lg) apre/chiude la sidebar persistente, su mobile l'overlay.
     if (typeof window !== "undefined" && window.innerWidth < 1024) {
       setMobileSidebarOpen((v) => !v);
     } else {
@@ -576,7 +585,7 @@ export default function ChatInterface({
   function handleReplyToPhrase(phrase: string) {
     const quoted = `> ${phrase.trim()}\n\n`;
     setInput((prev) => (prev ? prev + "\n" + quoted : quoted));
-    // Focus and scroll to input
+    // Porta il focus sull'input
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
@@ -589,7 +598,7 @@ export default function ChatInterface({
         onToggleSidebar={handleAppHeaderToggle}
       />
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Mobile sidebar overlay */}
+        {/* Overlay sidebar mobile */}
         {mobileSidebarOpen && (
           <div
             className="absolute inset-0 bg-black/60 z-20 lg:hidden"
@@ -652,7 +661,7 @@ export default function ChatInterface({
           </Link>
         </nav>
 
-        {/* Active tools for current agent */}
+        {/* Strumenti attivi per l'agente corrente */}
         {activeAgentId && getEnabledTools(activeAgentId).length > 0 && (
           <div className="px-3 pt-1 pb-1">
             <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
@@ -770,7 +779,7 @@ export default function ChatInterface({
         </div>
       </aside>
 
-      {/* Mobile sidebar trigger */}
+      {/* Trigger sidebar su mobile */}
       <button
         onClick={() => setMobileSidebarOpen(true)}
         className="lg:hidden fixed bottom-6 left-4 z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
@@ -779,7 +788,7 @@ export default function ChatInterface({
         <MessageSquare size={18} className="text-white" />
       </button>
 
-      {/* Main chat area */}
+      {/* Area chat principale */}
       <main
         className={`flex-1 flex flex-col bg-neutral-900 transition-all duration-300 relative ${
           sidebarOpen ? "lg:ml-0" : ""
@@ -789,7 +798,7 @@ export default function ChatInterface({
         onDragLeave={attach.onDragLeave}
         onDrop={attach.makeDrop(attachLabels)}
       >
-        {/* Chat header */}
+        {/* Intestazione chat */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur-sm">
           <div className="flex items-center gap-2.5">
             <Image
@@ -839,7 +848,7 @@ export default function ChatInterface({
         {activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
         {needsGoogle && <GoogleConnectionPrompt />}
 
-        {/* Messages */}          <div
+        {/* Messaggi */}          <div
           ref={messagesRef}
           onScroll={handleMessagesScroll}
           className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 mx-auto max-w-content"

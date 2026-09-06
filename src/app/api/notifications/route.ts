@@ -11,13 +11,13 @@ import { getLocale } from "@/lib/i18n/locale";
 /**
  * GET /api/notifications
  *
- * Returns the signed-in user's notifications for the in-app bell:
- *   - `notifications`: subscription alerts (expiring soon / cancelling),
- *   - `agentNotifications`: important actions performed by the user's agents
- *     (file created, product published, event booked, lead captured, ...),
- *     newest first, with an `unreadCount` for the bell badge.
- * Best-effort also triggers the one-time transactional email for expiring
- * subscriptions so delivery does not depend on cron infra.
+ * Restituisce le notifiche dell'utente loggato per la campanella in-app:
+ *   - `notifications`: avvisi di abbonamento (in scadenza / in cancellazione),
+ *   - `agentNotifications`: azioni importanti svolte dagli agenti dell'utente
+ *     (file creato, prodotto pubblicato, evento prenotato, lead catturato, ...),
+ *     dalla più recente, con `unreadCount` per il badge della campanella.
+ * Best-effort: innesca anche l'email transazionale unica per gli abbonamenti
+ * in scadenza, così la consegna non dipende dall'infrastruttura cron.
  */
 export async function GET() {
   const user = await getSessionUser();
@@ -61,7 +61,8 @@ export async function GET() {
     createdAt: r.created_at,
   }));
 
-  // Best-effort: send the transactional email the first time we detect it.
+  // Best-effort: invia l'email transazionale la prima volta che viene rilevata
+  // la scadenza.
   try {
     const locale = await getLocale();
     await notifyUserSubscriptions(db, user.id, locale);

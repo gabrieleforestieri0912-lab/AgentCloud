@@ -4,6 +4,8 @@ import { AGENTS } from "@/lib/agents";
 
 const BASE_URL = getSiteUrl();
 
+// Sitemap.xml generato a runtime: elenca le rotte statiche principali più una
+// voce per ogni agente pubblicato, così ogni pagina prodotto è indicizzabile.
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -74,7 +76,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  // Every published agent gets its own indexable, canonical URL.
+  // Ogni agente pubblicato ha la propria URL canonica indicizzabile.
   const agentRoutes: MetadataRoute.Sitemap = AGENTS.map((agent) => ({
     url: `${BASE_URL}/agents/${agent.slug}`,
     lastModified: new Date(),

@@ -13,13 +13,14 @@ import { readableConnectReason } from "@/lib/connect-errors";
 import { normalizeShopInput } from "@/lib/shopify-input";
 
 /**
- * In-chat prompt shown when the Shopify agent is active and no store is
- * connected. Two options per the agreed design:
- *   1. "Collega store esistente" → OAuth flow (/api/shopify/install?shop=...)
- *   2. "Crea un nuovo store"      → opens the Shopify signup page in a new tab
- * Self-fetches connection status and refreshes when the window regains focus
- * (e.g. after returning from the OAuth redirect), and surfaces the OAuth
- * outcome (?shopify=connected|error) inline.
+ * Prompt in-chat mostrato quando l'agente Shopify è attivo e nessun negozio
+ * è collegato. Due opzioni come da design concordato:
+ *   1. "Collega store esistente" → flusso OAuth (/api/shopify/install?shop=...)
+ *   2. "Crea un nuovo store"      → apre la pagina di registrazione Shopify in
+ *      una nuova scheda
+ * Recupera da solo lo stato della connessione e si aggiorna quando la finestra
+ * riprende il focus (es. dopo il redirect OAuth), mostrando inline l'esito
+ * (?shopify=connected|error).
  */
 export default function ShopifyConnectionPrompt() {
   const { dict, locale } = useLanguage();
@@ -27,7 +28,7 @@ export default function ShopifyConnectionPrompt() {
   const [shops, setShops] = useState<string[]>([]);
   const [showInput, setShowInput] = useState(false);
   const [shop, setShop] = useState("");
-  // Outcome of a just-finished OAuth round-trip, read from the URL.
+  // Esito di un round-trip OAuth appena concluso, letto dall'URL.
   const [outcome, setOutcome] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
   const refresh = useCallback(async () => {
@@ -44,8 +45,8 @@ export default function ShopifyConnectionPrompt() {
   useEffect(() => {
     queueMicrotask(refresh);
     window.addEventListener("focus", refresh);
-    // Read ?shopify=connected|error&reason=... (set on the returnTo page after
-    // the OAuth round-trip) and strip it so it only shows once.
+    // Legge ?shopify=connected|error&reason=... (impostato sulla pagina di
+    // ritorno dopo il round-trip OAuth) e lo rimuove così appare una sola volta.
     const params = new URLSearchParams(window.location.search);
     const val = params.get("shopify");
     const stripParams = () => {
@@ -84,7 +85,7 @@ export default function ShopifyConnectionPrompt() {
   }
 
   const connectExisting = () => {
-    // Accept full store links (https://…/admin) as well as bare domains.
+    // Accetta sia link completi al negozio (https://…/admin) sia domini nudi.
     const s = normalizeShopInput(shop) ?? shop.trim().toLowerCase();
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);

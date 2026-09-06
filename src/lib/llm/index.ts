@@ -32,7 +32,7 @@ export function getLLMProvider(): LLMProvider {
 
   if (configured === "anthropic") return anthropicProvider;
 
-  // The only supported backend is Anthropic (Claude).
+  // L'unico backend supportato è Anthropic (Claude).
   return anthropicProvider;
 }
 

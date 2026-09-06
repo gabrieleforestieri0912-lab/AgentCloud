@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+
+// Pagina Rimborsi: contenuto legale statico localizzato (dizionario i18n)
+// con metadati per lingua. Nessuna logica applicativa.
+
 import Footer from "@/components/Footer";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";

@@ -30,7 +30,8 @@ const LEFT_BUBBLES = [
   { top: "90%", left: "35%", size: "w-13 h-13", brand: "shopify", delay: "1.9s", anim: "animate-float-gentle" },
 ];
 
-// Agent avatars — role + initials bubbles mirroring the hero's right side.
+// Avatar degli agenti — bolle con ruolo + iniziali che rispecchiano il lato
+// destro dell'hero.
 const RIGHT_BUBBLES = [
   { top: "12%", left: "48%", size: "w-14 h-14", role: "Product Manager", initials: "PM", avatarBg: "bg-blue-500", delay: "0.2s", anim: "animate-float-gentle" },
   { top: "14%", left: "76%", size: "w-10 h-10", role: "Developer", initials: "DE", avatarBg: "bg-cyan-500", delay: "1.5s", anim: "animate-float-reverse" },
@@ -47,9 +48,10 @@ const RIGHT_BUBBLES = [
 ];
 
 /**
- * Decorative floating constellations from the hero — app brand marks on the
- * left, agent avatars on the right. Absolutely positioned so the parent must
- * be `relative`; hidden below `lg`. Float keyframes live in globals.css.
+ * Costellazioni decorative fluttuanti della hero — marchi delle app a
+ * sinistra, avatar degli agenti a destra. Posizionate in assoluto: il genitore
+ * deve essere `relative`; nascoste sotto `lg`. I keyframe di float vivono in
+ * globals.css.
  */
 export default function HeroBubbles() {
   const { dict } = useLanguage();
@@ -57,7 +59,7 @@ export default function HeroBubbles() {
 
   return (
     <>
-      {/* LEFT FLOATING CONSTELLATION (apps) */}
+      {/* COSTELLAZIONE FLUTTUANTE SINISTRA (app) */}
       <motion.div
         className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-80 xl:w-96 h-150 pointer-events-none select-none z-0"
         initial="hidden"
@@ -75,8 +77,8 @@ export default function HeroBubbles() {
       >
         {LEFT_BUBBLES.map((b, idx) => {
           if (!BRANDS[b.brand]) return null;
-          // Icon scaled to the bubble size (e.g. w-12 = 48px → 20px mark).
-          // The digit in `w-12` is a Tailwind spacing index: px = index × 4.
+          // Icona scalata alla dimensione della bolla (es. w-12 = 48px → 20px).
+          // La cifra in `w-12` è un indice di spaziatura Tailwind: px = indice × 4.
           const bubblePx = Number(b.size.match(/\d+/)?.[0] ?? 12) * 4;
           const iconSize = Math.round(bubblePx * 0.42);
           return (
@@ -103,7 +105,7 @@ export default function HeroBubbles() {
         })}
       </motion.div>
 
-      {/* RIGHT FLOATING CONSTELLATION (agents) */}
+      {/* COSTELLAZIONE FLUTTUANTE DESTRA (agenti) */}
       <motion.div
         className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-80 xl:w-96 h-150 pointer-events-none select-none z-0"
         initial="hidden"

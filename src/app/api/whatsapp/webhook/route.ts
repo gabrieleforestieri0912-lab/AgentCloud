@@ -3,7 +3,8 @@ import { getSiteUrl } from "@/lib/site-url";
 import { sendWhatsApp } from "@/lib/whatsapp/send";
 
 /**
- * Handle message processing and response dispatch for WhatsApp.
+ * Elabora il messaggio in arrivo: lo inoltra a /api/agent/run e ricompone la
+ * risposta leggendo lo stream SSE (eventi di tipo "text") per poi rimandarla.
  */
 export async function processWhatsAppMessage(
   from: string,
@@ -31,7 +32,7 @@ export async function processWhatsAppMessage(
       return null;
     }
 
-    // Read SSE response from /api/agent/run
+    // Legge la risposta SSE di /api/agent/run
     const raw = await res.text();
     const lines = raw.split("\n");
     let fullText = "";
@@ -58,7 +59,7 @@ export async function processWhatsAppMessage(
 
 /**
  * GET /api/whatsapp/webhook
- * Meta Cloud API Webhook Verification.
+ * Verifica del webhook per Meta Cloud API.
  */
 export async function GET(req: Request) {
   try {
@@ -78,14 +79,15 @@ export async function GET(req: Request) {
       });
     }
   } catch {
-    // fall through to 400
+    // va a cadere sul 400/403 qui sotto
   }
   return new Response("Forbidden", { status: 403 });
 }
 
 /**
  * POST /api/whatsapp/webhook
- * Receives messages from Meta Cloud API, routes to agent, and responds via WhatsApp.
+ * Riceve i messaggi da Meta Cloud API, li instrada all'agente e risponde via
+ * WhatsApp.
  */
 export async function POST(req: Request) {
   try {
@@ -109,7 +111,7 @@ export async function POST(req: Request) {
     const change = body?.entry?.[0]?.changes?.[0]?.value;
     const msg = change?.messages?.[0];
 
-    // Status notifications (delivered, read) have no messages
+    // Le notifiche di stato (consegnato, letto) non hanno messaggi
     if (!msg) {
       return new Response(JSON.stringify({ status: "ignored_non_message" }), {
         status: 200,
@@ -127,7 +129,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // Process message asynchronously to reply back without blocking webhook ACK
+    // Elabora il messaggio in modo asincrono per rispondere senza bloccare
+    // l'ACK del webhook
     const replyPromise = (async () => {
       const reply = await processWhatsAppMessage(
         from,
@@ -145,7 +148,7 @@ export async function POST(req: Request) {
       }
     })();
 
-    // In serverless / edge environments, wait or handle gracefully
+    // In ambienti serverless / edge, attendi o gestisci con garbo
     try {
       await Promise.race([
         replyPromise,

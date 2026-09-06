@@ -2,16 +2,17 @@ import { googleApiProxy } from "@/lib/google/api-proxy";
 import { getSessionUser } from "@/lib/supabase/server";
 
 /**
- * Phase 3 — HTTP surface of the Google API proxy.
+ * Fase 3 — superficie HTTP del proxy API Google.
  *
  * POST /api/google/proxy
  * Body: { action: "list_emails" | "get_calendar_events", params: {...} }
  *
- * Requires an authenticated session; the user id is resolved server-side and
- * never trusted from the body (same rule as /api/agent/run). All reads go
- * through the shared googleApiProxy module, which refreshes tokens
- * automatically. Agents call the same module directly with the user id from
- * their run context — this route exists for external/backend consumers.
+ * Richiede una sessione autenticata; lo user id è risolto lato server e non
+ * viene mai preso dal body (stessa regola di /api/agent/run). Tutte le letture
+ * passano dal modulo condiviso googleApiProxy, che rinnova i token in modo
+ * automatico. Gli agenti chiamano lo stesso modulo direttamente con lo user id
+ * del proprio contesto di run — questa route esiste per i consumatori
+ * esterni/backend.
  */
 export async function POST(req: Request) {
   const sessionUser = await getSessionUser();

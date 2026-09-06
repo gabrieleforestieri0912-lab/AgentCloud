@@ -39,42 +39,47 @@ type MenuKey = "marketplace" | "solutions" | "integrations" | "pricing";
 
 type NavbarProps = {
   /**
-   * Marketplace agents to show in the dropdown/mobile menu. Server pages pass
-   * the flag-gated list; when omitted the default vertical's agents are used
-   * (client bundles can't read the server-only AGENTCLOUD_* env vars).
+   * Agenti del marketplace da mostrare nel menu a tendina/mobile. Le pagine
+   * server passano la lista filtrata dai flag; se omessa si usano gli agenti
+   * del verticale predefinito (i bundle client non possono leggere le env var
+   * AGENTCLOUD_* riservate al server).
    */
   marketplaceAgents?: Agent[];
 };
 
 import { INTEGRATIONS as ALL_INTEGRATIONS } from "@/lib/integrations";
 
-// Navbar dropdown shows a compact 8-item subset for quick access
+// Il menu a tendina della navbar mostra un sottoinsieme compatto di 8 elementi
+// per un accesso rapido
 const INTEGRATIONS = ALL_INTEGRATIONS.slice(0, 8);
 
 export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  // True once the initial session read settles — prevents a one-frame flash of
-  // the "Accedi" button for signed-in users before hydration resolves.
+  // True appena la lettura iniziale della sessione è conclusa — evita il
+  // flash di un frame del bottone "Accedi" per gli utenti loggati prima che
+  // l'hydration risolva.
   const [authLoaded, setAuthLoaded] = useState(false);
   const router = useRouter();
   const { locale, dict } = useLanguage();
-  // Pages that can resolve the flags server-side pass the authoritative list;
-  // otherwise fall back to the access cookie (code holders see the FULL
-  // catalog, everyone else the default vertical — client bundles can't read
-  // the server-only AGENTCLOUD_* env vars). Either way the agents are
-  // overlaid with the active locale so dropdown labels never leak English
-  // (localizeAgent is idempotent for already-localized input).
+  // Le pagine che risolvono i flag lato server passano la lista autoritativa;
+  // altrimenti si ripiega sul cookie di accesso (chi ha il codice vede il
+  // catalogo COMPLETO, tutti gli altri il verticale di default — i bundle
+  // client non possono leggere le env var AGENTCLOUD_* solo server). In ogni
+  // caso gli agenti vengono localizzati con la lingua attiva così le etichette
+  // del menu non perdono mai inglese (localizeAgent è idempotente per input
+  // già localizzati).
   const fallbackAgents = hasAccessOnClient() ? AGENTS : AVAILABLE_AGENTS;
   const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );
-  // The dropdown is curated: only the featured flagships, in featured order,
-  // no matter how large the catalog grows (see FEATURED_AGENT_SLUGS).
+  // Il menu è curato: solo gli agenti in evidenza, nell'ordine scelto, a
+  // prescindere da quanto cresce il catalogo (vedi FEATURED_AGENT_SLUGS).
   const featuredAgents = getFeaturedAgents(agents);
 
-  // Track the Supabase session reactively (initial read + auth state changes).
+  // Tiene traccia della sessione Supabase in modo reattivo (lettura iniziale +
+  // cambi di stato dell'auth).
   useEffect(() => {
     let mounted = true;
     const supabase = createClient();
@@ -135,8 +140,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     { key: "solutions" as MenuKey, label: dict.navbar.solutions, href: "/#solutions" },
     { key: "integrations" as MenuKey, label: dict.navbar.integrations, href: "/integrations" },
   ];
-  // Solutions link to their agent when the platform already offers it; the
-  // rest are not available yet and redirect to the demo request page.
+  // Le soluzioni puntano al proprio agente quando la piattaforma lo offre già;
+  // le altre non sono ancora disponibili e rimandano alla richiesta demo.
   const SOLUTION_LINKS: Record<string, string> = {
     "E-commerce & Shopify": "/agents/shopify-agent",
     "Shopify & E-commerce": "/agents/shopify-agent",
@@ -151,17 +156,18 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     href: SOLUTION_LINKS[s.title] ?? "/demo",
   }));
 
-  // Grace period so the dropdown stays open while the mouse travels from
-  // the trigger link to the dropdown panel (they are separated by a small
-  // gap that would otherwise fire onMouseLeave and close the menu).
+  // Periodo di grazia: il menu resta aperto mentre il mouse viaggia dal link
+  // trigger al pannello (sono separati da un piccolo spazio che altrimenti
+  // farebbe scattare onMouseLeave e chiudere il menu).
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Panel position (viewport coords of the open dropdown). The dropdown is
-  // rendered through a portal to <body> — see below — and positioned here.
+  // Posizione del pannello (coordinate viewport del menu aperto). Il menu è
+  // renderizzato tramite un portal verso <body> — vedi sotto — e posizionato
+  // qui.
   const [panelPos, setPanelPos] = useState<{ left: number; top: number } | null>(null);
   const triggerRefs = useRef<Partial<Record<MenuKey, HTMLDivElement | null>>>({});
 
-  // Approximate dropdown width per menu (matches the w-80 / w-72 panels) so
-  // the centered panel can be clamped inside the viewport.
+  // Larghezza approssimativa del menu per voce (combacia con i pannelli w-80 /
+  // w-72) così il pannello centrato può essere limitato dentro il viewport.
   const PANEL_WIDTH: Record<MenuKey, number> = {
     marketplace: 320,
     solutions: 288,
@@ -172,8 +178,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   function openMenu(key: MenuKey) {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setActiveMenu(key);
-    // Center the panel on its trigger; the header is `fixed`, so these
-    // viewport coordinates stay correct while the page scrolls.
+    // Centra il pannello sul suo trigger; l'header è `fixed`, quindi queste
+    // coordinate viewport restano corrette mentre la pagina scorre.
     const trigger = triggerRefs.current[key];
     if (trigger && typeof window !== "undefined") {
       const rect = trigger.getBoundingClientRect();
@@ -188,8 +194,9 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     closeTimer.current = setTimeout(() => setActiveMenu(null), 120);
   }
 
-  // If the window is resized while a dropdown is open, drop it — the portal
-  // is positioned in viewport coordinates that may no longer line up.
+  // Se la finestra viene ridimensionata con un menu aperto, chiudilo — il
+  // portal è posizionato in coordinate viewport che potrebbero non combaciare
+  // più.
   useEffect(() => {
     if (!activeMenu) return;
     const close = () => setActiveMenu(null);
@@ -380,10 +387,10 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <LanguageToggle />
-              {/* lg:flex (not md:flex): the sign-in / account cluster is the
-                  widest part of the navbar and starts at ~768px, where the
-                  hamburger menu is still shown. md: made the CTAs overflow
-                  the viewport right edge on tablets. */}
+              {/* lg:flex (non md:flex): il gruppo login/account è la parte più
+                  larga della navbar e inizia a ~768px, dove è ancora visibile il
+                  menu hamburger. Con md: le CTA sforavano il bordo destro del
+                  viewport sui tablet. */}
               <div className="hidden items-center gap-3 lg:flex">
                 {authLoaded && (showAsLoggedIn ? (
                 <div className="flex items-center gap-3">

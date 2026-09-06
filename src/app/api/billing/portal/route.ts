@@ -11,9 +11,9 @@ function getStripe(): Stripe | null {
 }
 
 /**
- * Resolve the Stripe customer id for a user from their agent subscriptions.
- * `user_agents` is the authoritative ownership table: every active agent row
- * carries the customer id of the Stripe checkout that purchased it.
+ * Risolve lo Stripe customer id di un utente dai suoi abbonamenti agente.
+ * `user_agents` è la tabella autoritativa di proprietà: ogni riga di agente
+ * attivo porta il customer id del checkout Stripe che l'ha acquistato.
  */
 async function resolveStripeCustomerId(userId: string): Promise<string | null> {
   const db = createAdminClient();
@@ -32,16 +32,16 @@ async function resolveStripeCustomerId(userId: string): Promise<string | null> {
 /**
  * GET /api/billing/portal
  *
- * Opens the Stripe Customer Billing Portal for the signed-in user so they can
- * self-serve their subscription: cancel it (at the end of the already paid
- * period by default), update the payment method, download invoices, etc.
+ * Apre lo Stripe Customer Billing Portal per l'utente loggato così può gestire
+ * da solo il proprio abbonamento: cancellarlo (a fine periodo già pagato di
+ * default), aggiornare il metodo di pagamento, scaricare le fatture, ecc.
  *
- * The route is protected by the Clerk middleware (not in the public route
- * list) and re-checks the session here as defense-in-depth.
+ * La rotta è protetta dal middleware (non è nella lista delle rotte pubbliche)
+ * e qui la sessione viene ricontrollata come defense-in-depth.
  *
- * When no Stripe customer exists (or Stripe is unreachable) the user is sent
- * back to /dashboard with `?billing=error`, where the dashboard shows a
- * notice.
+ * Quando non esiste alcun customer Stripe (o Stripe non è raggiungibile)
+ * l'utente torna a /dashboard con `?billing=error`, dove la dashboard mostra
+ * un avviso.
  */
 export async function GET(req: Request) {
   const user = await getSessionUser();

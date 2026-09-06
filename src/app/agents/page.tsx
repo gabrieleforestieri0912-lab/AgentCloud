@@ -3,6 +3,9 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MarketplaceGrid from "@/components/MarketplaceGrid";
+// Pagina marketplace (lista agenti): server component che filtra il catalogo
+// in base ai feature flag runtime e alla presenza del codice di accesso, poi
+// passa il risultato alla griglia client.
 import {
   AGENTS,
   AVAILABLE_AGENTS,
@@ -24,20 +27,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageSeo({ title, description, path: "/agents", locale });
 }
 
-// The listing is gated by the runtime feature flags (server-only env vars),
-// so it must be rendered per-request instead of baked at build time.
+// L'elenco dipende dai feature flag runtime (env var solo server), quindi va
+// renderizzato per richiesta e non "cotto" in fase di build.
 export const dynamic = "force-dynamic";
 
 export default async function AgentsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  // Everyone — code holders included — sees the marketplace split the SAME
-  // way a real client does: an "Available now" grid plus a "Coming soon"
-  // section, so admins can tell at a glance which agents the public will
-  // find locked. The only difference for access-code holders:
-  // comingSoonAccessible keeps those cards tagged but clickable (the code
-  // unlocks them), instead of dimmed/locked. The navbar / mobile menu still
-  // lists the FULL catalog for code holders (navAgents).
+  // Tutti — inclusi i possessori del codice — vedono il marketplace diviso
+  // come lo vede un cliente reale: una griglia "Disponibili ora" più una
+  // sezione "In arrivo", così gli admin capiscono a colpo d'occhio quali
+  // agenti il pubblico troverà bloccati. L'unica differenza per chi ha il
+  // codice: comingSoonAccessible mantiene quelle card marcate ma cliccabili
+  // (il codice le sblocca), invece di attenuate/bloccate. Navbar e menu
+  // mobile elencano comunque il catalogo COMPLETO per chi ha il codice
+  // (navAgents).
   const unlocked = await hasPlatformAccess();
   const available = AVAILABLE_AGENTS.map((a) => localizeAgent(a, locale));
   const comingSoon = COMING_SOON_AGENTS.map((a) =>
@@ -80,7 +84,7 @@ export default async function AgentsPage() {
             </div>
           </div>
 
-          {/* Marketplace grid with category filters */}
+          {/* Griglia marketplace con filtri per categoria */}
           <MarketplaceGrid
             availableAgents={available}
             comingSoonAgents={comingSoon}
@@ -91,7 +95,7 @@ export default async function AgentsPage() {
             comingSoonAccessible={unlocked}
           />
 
-          {/* Custom agent CTA — prominent so users who can't find what
+          {/* CTA agente personalizzato — ben visibile per chi non trova ciò
               they need know we'll build it for them. */}              <div className="relative mt-14 sm:mt-16 overflow-hidden rounded-3xl border border-white/5 bg-neutral-900 p-10 text-center shadow-xl shadow-black/20 sm:p-14">
             <div
               className="pointer-events-none absolute inset-0 select-none"

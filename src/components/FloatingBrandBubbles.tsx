@@ -16,12 +16,14 @@ export type FloatingBubble = {
 };
 
 /**
- * Decorative constellation of floating brand marks — the same visual language
- * as the hero section. Rendered behind page content (z-0, pointer-events none)
- * and hidden on small screens. Float keyframes live in globals.css.
+ * Costellazione decorativa di marchi fluttuanti — stesso linguaggio visivo
+ * della sezione hero. Renderizzata dietro al contenuto (z-0, pointer-events
+ * none) e nascosta sugli schermi piccoli. I keyframe di float vivono in
+ * globals.css.
  *
- * Note: the HeroSection intentionally renders its own motion-animated variant
- * (spring stagger entrance, `lg:` breakpoint, fixed-width side columns).
+ * Nota: HeroSection renderizza di proposito la propria variante animata con
+ * motion (entrata a molla con stagger, breakpoint `lg`, colonne laterali a
+ * larghezza fissa).
  */
 export default function FloatingBrandBubbles({
   bubbles,
@@ -42,9 +44,9 @@ export default function FloatingBrandBubbles({
             className={`absolute rounded-full border border-white/10 bg-neutral-900/80 backdrop-blur-sm flex items-center justify-center shadow-[0_6px_20px_rgba(0,0,0,0.3)] ${b.size} ${b.anim}`}
             style={{ top: b.top, left: b.left, animationDelay: b.delay }}
           >
-            {/* BrandLogo renders the authentic multi-color mark when one exists
-                (Google, WhatsApp, Instagram, Gmail, …) and falls back to the
-                official single-color glyph otherwise — same as the hero. */}
+            {/* BrandLogo renderizza il marchio ufficiale multicolore quando
+                esiste (Google, WhatsApp, Instagram, Gmail, …) e ripiega sul
+                glifo ufficiale monocromatico altrimenti — come nell'hero. */}
             <BrandLogo slug={b.brand} size={iconSize} />
           </div>
         );

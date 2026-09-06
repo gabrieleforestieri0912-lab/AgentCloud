@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+
+// Pagina Privacy Policy: contenuto statico localizzato (dizionario i18n) con
+// metadati generati per lingua. Nessuna logica applicativa.
+
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getLocale } from "@/lib/i18n/locale";

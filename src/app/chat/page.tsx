@@ -10,6 +10,9 @@ import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { getLocalizedAgentInfo } from "@/lib/i18n/agentCatalog";
 import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
 
+// Pagina /chat: server component che decide l'accesso (utente Supabase oppure
+// codice di accesso), risolve quali agenti mostrare nel selettore e passa
+// query/agente iniziali alla ChatInterface client.
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const isIt = locale === "it";
@@ -25,9 +28,10 @@ export default async function ChatPage(props: {
 }) {
   const locale = await getLocale();
   const user = await getSessionUser();
-  // Access-code holders skip the login requirement entirely — the code grants
-  // platform access without a Supabase account. They simply have no owned
-  // agents yet, so the generic chat (which runs anonymously) is available.
+  // I possessori del codice saltano del tutto il login: il codice concede
+  // accesso alla piattaforma senza account Supabase. Non hanno agenti
+  // posseduti, quindi resta disponibile la chat generica (che gira in
+  // anonimo).
   const accessGranted = await hasPlatformAccess();
   if (!user && !accessGranted) redirect("/login");
 
@@ -36,7 +40,8 @@ export default async function ChatPage(props: {
   const agentParam =
     typeof searchParams?.agent === "string" ? searchParams.agent : undefined;
 
-  // Admin / access-code holders without a Supabase user get the full catalog in chat (same handling as normal users, with history)
+  // Gli admin / possessori del codice senza utente Supabase vedono in chat
+  // l'intero catalogo (stessa gestione degli utenti normali, con cronologia).
   let availableAgents: { slug: string; name: string }[] = [];
   if (user) {
     const ownedSlugs = await getOwnedAgentSlugs(user.id);
@@ -51,9 +56,10 @@ export default async function ChatPage(props: {
     }));
   }
 
-  // When the marketplace CTA opens the chat for a specific agent
-  // (/chat?agent=<slug>), show that agent's (localized) name in the header so
-  // the visitor knows which agent they're talking to — even before owning it.
+  // Quando la CTA del marketplace apre la chat per un agente specifico
+  // (/chat?agent=<slug>), mostriamo il nome (localizzato) dell'agente
+  // nell'intestazione, così il visitatore sa con chi sta parlando — anche
+  // prima di possederlo.
   let agentLabel: string | undefined;
   if (agentParam) {
     const runtime = AGENT_RUNTIME[agentParam];

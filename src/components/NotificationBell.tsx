@@ -106,7 +106,7 @@ export default function NotificationBell() {
           setAgentItems(data.agentNotifications ?? []);
         })
         .catch(() => {
-          // offline / transient — keep last known state
+          // offline / transitorio — mantieni l'ultimo stato noto
         });
     load();
     const interval = setInterval(load, POLL_MS);
@@ -137,7 +137,7 @@ export default function NotificationBell() {
         body: JSON.stringify(ids ? { ids } : {}),
       });
     } catch {
-      // best-effort — local state still updates
+      // best-effort — lo stato locale si aggiorna comunque
     }
     if (ids) {
       const idSet = new Set(ids);

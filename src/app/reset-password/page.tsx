@@ -22,11 +22,11 @@ export default function ResetPasswordPage() {
 
   const r = dict.auth.resetPassword;
 
-  // Two supported entry paths:
-  // 1. New flow: the email link lands on /auth/callback?next=/reset-password,
-  //    which exchanges the PKCE code and redirects here with a live session.
-  // 2. Legacy/direct links: the recovery code arrives in the URL hash and is
-  //    exchanged here before the password can be updated.
+  // Due percorsi di ingresso supportati:
+  // 1. Flusso nuovo: il link via email arriva su /auth/callback?next=/reset-password,
+  //    che scambia il codice PKCE e reindirizza qui con una sessione attiva.
+  // 2. Link legacy/diretti: il codice di recupero arriva nell'hash dell'URL e
+  //    viene scambiato qui prima di poter aggiornare la password.
   useEffect(() => {
     let mounted = true;
 

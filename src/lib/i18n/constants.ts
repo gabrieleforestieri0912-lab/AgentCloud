@@ -52,7 +52,7 @@ export const COUNTRY_LOCALE_MAP: Record<string, Locale> = {
   LI: "de",
   FR: "fr",
   BE: "fr",
-  CA: "fr", // will be disambiguated by Accept-Language; default to fr for FR-BE/CA
+  CA: "fr", // verrà disambiguato via Accept-Language; fr di default per FR-BE/CA
   LU: "fr",
   MC: "fr",
 };

@@ -20,9 +20,11 @@ import {
   HONEYPOT_FIELD_NAME,
 } from "@/lib/forms-security";
 
-// Reads ?error=auth_callback (set by /auth/callback when the PKCE exchange
-// fails) — isolated in a child component so it can be wrapped in Suspense
-// (useSearchParams requires one during static prerender of /login).
+// Pagina di login (client): applica difese anti-bot/anti-brute-force prima di
+// chiamare Supabase Auth, e riprende i flussi OAuth in sospeso (intent=...).
+// Il rilevamento di ?error= / ?intent= vive in componenti figli isolati così
+// da poter essere avvolti in Suspense (useSearchParams lo richiede durante il
+// prerender statico di /login).
 function CallbackErrorNotice() {
   const { dict } = useLanguage();
   const searchParams = useSearchParams();
@@ -34,17 +36,17 @@ function CallbackErrorNotice() {
   );
 }
 
-// The next-destination value used by the submit handlers. Read directly from
-// window.location (this component is mounted only on the client) so the page
-// component itself never calls useSearchParams during static prerender.
+// La destinazione "next" usata dagli handler di submit. Lettura diretta da
+// window.location (questo componente è montato solo lato client) così la page
+// stessa non chiama mai useSearchParams durante il prerender statico.
 function getNextParam(): string | null {
   if (typeof window === "undefined") return null;
   const next = new URLSearchParams(window.location.search).get("next");
   return next && isSafeRedirectPath(next) ? next : null;
 }
 
-// Reads ?intent=shopify|google (set when the OAuth connect routes bounce the
-// user here) and explains why they are being asked to sign in.
+// Legge ?intent=shopify|google (impostato quando le route di connessione OAuth
+// rimbalzano qui l'utente) e spiega perché gli viene chiesto di accedere.
 function ConnectIntentNotice() {
   const { dict, locale } = useLanguage();
   const searchParams = useSearchParams();
@@ -130,9 +132,9 @@ export default function LoginPage() {
       // Accesso riuscito: reset contatore tentativi
       resetClientAttemptThrottle("login_attempt");
 
-      // Resume a pending OAuth connect (e.g. Shopify install) after signing
-      // in — the route is an API redirect to the external provider, so use a
-      // full page navigation instead of client-side routing.
+      // Riprende una connessione OAuth in sospeso (es. install Shopify) dopo
+      // il login — la route è un redirect API verso il provider esterno,
+      // quindi serve una navigazione piena, non un routing client-side.
       const next = getNextParam();
       if (next) {
         window.location.assign(next);
@@ -200,7 +202,7 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
-      {/* Decorative background — same visual language as the hero */}
+      {/* Sfondo decorativo — stesso linguaggio visivo dell'hero */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
       <div
         className="absolute inset-0 opacity-[0.35] pointer-events-none select-none"
@@ -210,12 +212,12 @@ export default function LoginPage() {
         }}
       />
 
-      {/* Floating app + agent constellations, flanking the form */}
+      {/* Costellazioni fluttuanti di app e agenti ai lati del form */}
       <HeroBubbles />
 
       <section className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-6 sm:py-10">
         <div className="w-full max-w-md">
-          {/* Back to home — the navbar is not rendered on this page */}
+          {/* Torna alla home — su questa pagina la navbar non è renderizzata */}
           <div className="mb-6 flex justify-center">
             <Link
               href="/"

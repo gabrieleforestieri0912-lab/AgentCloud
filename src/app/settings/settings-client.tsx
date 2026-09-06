@@ -7,6 +7,9 @@ import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/constants";
 
+// Client delle impostazioni: preferenze locali di lingua, notifiche e dati.
+// Le preferenze (toggle ecc.) sono per ora simulabili lato client — nessuna
+// scrittura su DB, da qui il pulsante "Salva" fittizio.
 export default function SettingsClient({ locale: initialLocale, isMock, email }: { locale: Locale; isMock: boolean; email: string }) {
   const { locale, setLocale } = useLanguage();
   const isIt = locale === "it";

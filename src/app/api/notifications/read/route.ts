@@ -5,8 +5,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 /**
  * POST /api/notifications/read
  *
- * Body: { ids?: string[] } — mark the given agent notifications as read, or
- * all of them when `ids` is omitted. Only the caller's own rows are touched.
+ * Body: { ids?: string[] } — segna come lette le notifiche agente indicate,
+ * oppure tutte quando `ids` è omesso. Vengono toccate solo le righe del
+ * chiamante.
  */
 export async function POST(req: Request) {
   const user = await getSessionUser();
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
       ids = body.ids.filter((v): v is string => typeof v === "string");
     }
   } catch {
-    // No/invalid body → mark all as read.
+    // Body assente/non valido → segna tutte come lette.
   }
 
   const db = createAdminClient();

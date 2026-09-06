@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+// Webhook email in ingresso (scaffold): riceve i payload di Resend e li
+// logga. Punto di estensione per salvare/inoltrare le email in arrivo.
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -14,8 +16,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Process inbound email — store or forward based on your logic
-    console.log("Inbound email received:", { from, subject });
+    // Gestisci l'email in arrivo — salva o inoltra secondo la logica scelta
+    console.log("Email in arrivo ricevuta:", { from, subject });
 
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -26,7 +28,7 @@ export async function POST(request: Request) {
   }
 }
 
-// Resend verifies the webhook endpoint with a GET request
+// Resend verifica l'endpoint del webhook con una richiesta GET
 export async function GET() {
   return NextResponse.json({ ok: true });
 }

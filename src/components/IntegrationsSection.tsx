@@ -60,7 +60,7 @@ export default function IntegrationsSection() {
           </p>
         </motion.div>
 
-        {/* Integration grid with original brand marks */}
+        {/* Griglia integrazioni con i marchi ufficiali */}
         <motion.div
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl 3xl:max-w-7xl mx-auto mb-16"
           initial="hidden"

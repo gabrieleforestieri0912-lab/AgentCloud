@@ -6,7 +6,9 @@ import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { SUPPORT_EMAIL, FEEDBACK_EMAIL, FROM_EMAIL } from "@/lib/email-config";
 
-// Max submissions per IP per hour — prevents DB spam and email abuse.
+// Route API del form contatti: salva il messaggio su Supabase e lo invia via
+// email al supporto.
+// Max invii per IP all'ora — protegge DB ed email da spam/abusi.
 const CONTACT_LIMIT = 5;
 
 export async function POST(request: Request) {
@@ -67,8 +69,9 @@ export async function POST(request: Request) {
   } catch (err) {
     return NextResponse.json(
       {
-        // Provider errors (Resend/Supabase) are surfaced verbatim: their
-        // content is unknown, so we only localize the generic fallback.
+        // Gli errori dei provider (Resend/Supabase) sono mostrati così come
+        // sono: il contenuto è sconosciuto, quindi localizziamo solo il
+        // fallback generico.
         error:
           err instanceof Error
             ? err.message

@@ -11,8 +11,8 @@ import {
 import { isExpiringSoon } from "@/lib/billing/subscription-notifications";
 
 /**
- * The generated Stripe SDK v22 types are heavily restructured; these narrow
- * shapes cover only the fields this webhook relies on.
+ * I tipi generati dello Stripe SDK v22 sono pesantemente ristrutturati;
+ * queste forme ristrette coprono solo i campi su cui fa affidamento il webhook.
  */
 type WebhookSubscription = {
   id: string;
@@ -33,8 +33,8 @@ function getStripe() {
 }
 
 /**
- * Resolve the platform user for a checkout.
- * Priority: client_reference_id (Clerk user ID) -> metadata user_id -> email.
+ * Risolve l'utente di piattaforma per un checkout.
+ * Priorità: client_reference_id (ID utente) -> metadata user_id -> email.
  */
 function resolveUserId(session: Stripe.Checkout.Session, metadataUserId: string | null) {
   return (
@@ -91,17 +91,17 @@ async function activateSubscription(
     activatedVia: resolution.planId ? "plan" : "agent",
   };
 
-  // Attach the metered overage Price to the subscription right away, so usage
-  // above the token allowance can be billed from the first overage run.
-  // (getOrCreateMeterItem is idempotent — all agents of the same plan share
-  // the same subscription and therefore the same meter item.)
+  // Aggancia subito il Price metered dell'overage all'abbonamento, così il
+  // consumo oltre la soglia token può essere fatturato dalla prima run in
+  // overage. (getOrCreateMeterItem è idempotente — tutti gli agenti dello
+  // stesso piano condividono lo stesso abbonamento e quindi lo stesso meter item.)
   if (subscriptionId && isOverageBillingEnabled()) {
     const meterItemId = await getOrCreateMeterItem(subscriptionId);
     if (meterItemId) config.stripeSubscriptionItemId = meterItemId;
   }
 
   for (const agentId of resolution.agentIds) {
-    // Raw Stripe subscription ledger (one row per subscription x agent).
+    // Registro grezzo degli abbonamenti Stripe (una riga per subscription x agente).
     const { error: subError } = await db.from("subscriptions").upsert(
       {
         user_id: userId,
@@ -118,9 +118,10 @@ async function activateSubscription(
       continue;
     }
 
-    // Authoritative ownership table used to enforce run limits.
-    // current_period_end is filled in by the subscription.updated / invoice.paid
-    // events (the checkout session's expires_at is the payment-link expiry).
+    // Tabella autoritativa di proprietà usata per applicare i limiti di run.
+    // current_period_end viene valorizzata dagli eventi subscription.updated /
+    // invoice.paid (l'expires_at della sessione checkout è la scadenza del
+    // payment link).
     const { error: uaError } = await db.from("user_agents").upsert(
       {
         user_id: userId,
@@ -188,7 +189,7 @@ export async function POST(req: Request) {
     }
 
     case "invoice.paid": {
-      // Subscription renewed — keep the entitlement active and bump the period.
+      // Abbonamento rinnovato — mantieni il diritto attivo e aggiorna il periodo.
       const invoice = event.data.object as unknown as WebhookInvoice;
       const subscriptionId =
         typeof invoice.subscription === "string"
@@ -223,9 +224,9 @@ export async function POST(req: Request) {
         .update({ status: subscription.status })
         .eq("stripe_subscription_id", subscription.id);
 
-      // Update each agent of the subscription individually so we can record
-      // `cancel_at_period_end` in the config (the dashboard shows it as a
-      // "Cancels at period end" chip) without clobbering the other keys.
+      // Aggiorna ogni agente dell'abbonamento singolarmente così possiamo
+      // registrare `cancel_at_period_end` nella config (la dashboard lo mostra
+      // come chip "Annulla a fine periodo") senza sovrascrivere le altre chiavi.
       const { data: agents } = await db
         .from("user_agents")
         .select("id, config")
@@ -237,8 +238,9 @@ export async function POST(req: Request) {
           ...existing,
           cancelAtPeriodEnd,
         };
-        // A renewed / extended period is a fresh billing cycle, so allow the
-        // expiry notification to fire again next time it enters the window.
+        // Un periodo rinnovato/prolungato è un nuovo ciclo di fatturazione,
+        // quindi la notifica di scadenza può scattare di nuovo alla prossima
+        // finestra.
         if (!periodEnd || !isExpiringSoon(periodEnd, Date.now())) {
           delete config.renewalNotifiedAt;
         }

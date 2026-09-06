@@ -35,8 +35,9 @@ export type GoogleConnection = {
 };
 
 /**
- * Upsert the connection for a user (one row per user, unique user_id).
- * Encrypts both tokens at rest. Called by the OAuth callback only.
+ * Inserisce o aggiorna la connessione di un utente (una riga per utente,
+ * user_id unico). Cripta entrambi i token a riposo. Chiamata solo dal
+ * callback OAuth.
  */
 export async function upsertGoogleConnection(opts: {
   userId: string;
@@ -70,8 +71,8 @@ export async function upsertGoogleConnection(opts: {
 }
 
 /**
- * Update only the access token + expiry for a user (token refresh). The
- * refresh token, scopes, email, and connected_at are left untouched.
+ * Aggiorna solo l'access token + la scadenza di un utente (refresh del
+ * token). Refresh token, scopes, email e connected_at restano invariati.
  */
 export async function updateGoogleTokens(
   userId: string,
@@ -89,7 +90,7 @@ export async function updateGoogleTokens(
     .eq("user_id", userId);
 }
 
-/** Fetch + decrypt a user's Google connection. Returns null when absent. */
+/** Recupera + decripta la connessione Google di un utente. Null se assente. */
 export async function getGoogleConnection(
   userId: string,
 ): Promise<GoogleConnection | null> {
@@ -115,7 +116,7 @@ export async function getGoogleConnection(
   };
 }
 
-/** Delete a user's connection (disconnect). */
+/** Cancella la connessione di un utente (disconnessione). */
 export async function deleteGoogleConnection(userId: string): Promise<void> {
   const admin = createAdminClient();
   if (!admin) return;
@@ -129,7 +130,7 @@ export type GoogleConnectionSummary = {
   connectedAt: string | null;
 };
 
-/** List a user's Google connection (for the Phase 6 settings UI). */
+/** Elenca la connessione Google di un utente (per la UI impostazioni). */
 export async function getGoogleConnectionSummary(
   userId: string,
 ): Promise<GoogleConnectionSummary | null> {

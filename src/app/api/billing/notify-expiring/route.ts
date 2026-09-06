@@ -6,11 +6,12 @@ import { getLocale } from "@/lib/i18n/locale";
 /**
  * POST /api/billing/notify-expiring
  *
- * Daily cron: emails every user with a subscription expiring within the warning
- * window (or set to cancel at period end). Idempotent per subscription via
- * `config.renewalNotifiedAt`, so re-runs never double-email.
+ * Cron giornaliero: invia una email a ogni utente con un abbonamento in
+ * scadenza entro la finestra di preavviso (o impostato per la cancellazione a
+ * fine periodo). Idempotente per abbonamento grazie a
+ * `config.renewalNotifiedAt`, quindi le riesecuzioni non inviano email doppie.
  *
- * Auth: `Authorization: Bearer <ADMIN_API_TOKEN>` or `?token=<CRON_SECRET>`.
+ * Auth: `Authorization: Bearer <ADMIN_API_TOKEN>` oppure `?token=<CRON_SECRET>`.
  */
 export async function POST(request: Request) {
   const adminToken = process.env.ADMIN_API_TOKEN;

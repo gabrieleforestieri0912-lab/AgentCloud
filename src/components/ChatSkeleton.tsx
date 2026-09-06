@@ -34,7 +34,7 @@ export function SidebarSkeleton() {
 export function ChatMessagesSkeleton() {
   return (
     <div className="flex-1 flex flex-col bg-neutral-900">
-      {/* Header */}
+      {/* Intestazione */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
         <div className="flex items-center gap-2.5">
           <Skeleton className="w-7 h-7 rounded-lg" />
@@ -45,10 +45,10 @@ export function ChatMessagesSkeleton() {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messaggi */}
       <div className="flex-1 overflow-hidden px-4 sm:px-6 py-6">
         <div className="space-y-6">
-          {/* AI message skeleton */}
+          {/* Skeleton messaggio AI */}
           <div className="flex items-start gap-3">
             <Skeleton className="w-8 h-8 rounded-xl flex-shrink-0" />
             <div className="space-y-2 max-w-[65%]">
@@ -57,7 +57,7 @@ export function ChatMessagesSkeleton() {
             </div>
           </div>
 
-          {/* User message skeleton */}
+          {/* Skeleton messaggio utente */}
           <div className="flex items-start gap-3 justify-end">
             <div className="space-y-2 max-w-[65%]">
               <Skeleton className="h-12 rounded-2xl rounded-br-md w-full" />
@@ -66,7 +66,7 @@ export function ChatMessagesSkeleton() {
             <Skeleton className="w-8 h-8 rounded-xl flex-shrink-0" />
           </div>
 
-          {/* Typing skeleton */}
+          {/* Skeleton digitazione */}
           <div className="flex items-start gap-3">
             <Skeleton className="w-8 h-8 rounded-xl flex-shrink-0" />
             <Skeleton className="h-10 rounded-2xl rounded-bl-md w-20" />
@@ -74,7 +74,7 @@ export function ChatMessagesSkeleton() {
         </div>
       </div>
 
-      {/* Input skeleton */}
+      {/* Skeleton input */}
       <div className="px-4 sm:px-6 py-4 border-t border-white/5">
         <div className="max-w-4xl mx-auto">
           <Skeleton className="h-12 rounded-2xl w-full" />

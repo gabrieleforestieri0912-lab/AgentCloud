@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAgentBySlug, localizeAgent } from "@/lib/agents";
+
+// Pagina pubblica /a/[slug]: risolve l'agente (catalogo o registry runtime),
+// ne localizza nome/descrizione e delega la chat interattiva a PublicAgentChat.
+// I metadati impostano robots: noindex perché la pagina vive per l'embed/link
+// diretto del cliente, non per l'indicizzazione.
+
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
 import { getLocalizedAgentInfo } from "@/lib/i18n/agentCatalog";
 import { getLocale } from "@/lib/i18n/locale";

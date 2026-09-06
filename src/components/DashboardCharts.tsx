@@ -47,7 +47,7 @@ export default function DashboardCharts({
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      {/* Runs chart */}
+      {/* Grafico delle esecuzioni */}
       <div className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-sm font-bold text-white">
@@ -84,7 +84,7 @@ export default function DashboardCharts({
           </div>
         )}
 
-        {/* Mini token sparkline under runs */}
+        {/* Mini sparkline dei token sotto le esecuzioni */}
         <div className="mt-6 border-t border-white/5 pt-4">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-500">
             <TrendingUp size={12} />
@@ -106,7 +106,7 @@ export default function DashboardCharts({
         </div>
       </div>
 
-      {/* Cost chart */}
+      {/* Grafico dei costi */}
       <div className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-sm font-bold text-white">
@@ -151,7 +151,7 @@ export default function DashboardCharts({
           </div>
         </div>
 
-        {/* Visual cost bar */}
+        {/* Barra visuale costi/utilizzo */}
         <div className="mt-4">
           <div className="mb-1.5 flex justify-between text-xs font-semibold text-neutral-500">
             <span>{isIt ? "Utilizzo vs. costo" : "Usage vs cost"}</span>

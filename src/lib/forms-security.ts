@@ -10,9 +10,9 @@
  */
 
 import { sanitizeHtml, detectPromptInjection } from "@/lib/security";
-// Imported from the client-safe module (NOT from access-code.ts, which reads
-// next/headers and must stay out of client bundles): this file is shared
-// between server routes and client components (login/signup/waitlist forms).
+// Importato dal modulo client-safe (NON da access-code.ts, che legge
+// next/headers e deve restare fuori dai bundle client): questo file è
+// condiviso tra route server e componenti client (form login/signup/waitlist).
 import { isValidAccessCode } from "@/lib/access-code-validation";
 
 /** Lunghezza massima consentita per un indirizzo email secondo la specifica RFC 5321 */

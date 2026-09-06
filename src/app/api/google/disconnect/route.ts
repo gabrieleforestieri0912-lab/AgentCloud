@@ -11,8 +11,8 @@ const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 
 /**
  * POST /api/google/disconnect
- * Revokes the stored refresh token at Google (best effort) and deletes the
- * user's row from google_connections. Requires a session.
+ * Revoca il refresh token salvato presso Google (best effort) e cancella la
+ * riga dell'utente da google_connections. Richiede una sessione.
  */
 export async function POST() {
   const user = await getSessionUser();
@@ -32,8 +32,8 @@ export async function POST() {
     return NextResponse.json({ ok: true, disconnected: false });
   }
 
-  // Revoke the refresh token server-side. Google's revoke endpoint is
-  // fire-and-forget — a failure here must not block removing the local row.
+  // Revoca il refresh token lato server. L'endpoint di revoca di Google è
+  // fire-and-forget — un errore qui non deve bloccare la rimozione della riga.
   try {
     await fetch(REVOKE_URL, {
       method: "POST",
@@ -41,7 +41,7 @@ export async function POST() {
       body: new URLSearchParams({ token: conn.refreshToken }).toString(),
     });
   } catch {
-    // ignore — local disconnect still proceeds
+    // ignora — la disconnessione locale prosegue comunque
   }
 
   await deleteGoogleConnection(userId).catch(() => {});

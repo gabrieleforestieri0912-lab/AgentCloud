@@ -49,11 +49,11 @@ export function buildPaymentLinkUrl(
     url.searchParams.set("prefilled_email", options.email);
   }
 
-  // Add agent_id metadata
+  // Aggiunge i metadati agent_id
   url.searchParams.set("metadata[agent_id]", agentId);
   url.searchParams.set("metadata[source]", "agentcloud");
 
-  // Add custom metadata
+  // Aggiunge i metadati personalizzati
   if (options?.metadata) {
     for (const [key, value] of Object.entries(options.metadata)) {
       url.searchParams.set(`metadata[${key}]`, value);

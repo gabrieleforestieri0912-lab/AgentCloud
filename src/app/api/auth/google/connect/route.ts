@@ -14,22 +14,22 @@ import {
 } from "@/lib/google/oauth";
 
 /**
- * Phase 2 — start the Google OAuth flow.
+ * Fase 2 — avvio del flusso OAuth Google.
  *
  * GET /api/auth/google/connect[?returnTo=<path>]
- *   1. Requires an authenticated AgentCloud session (tokens are stored per
- *      user). Signing in is part of the flow: signed-out users are sent to
- *      /login?intent=google&next=… and resume here automatically afterwards.
- *   2. Issues a random nonce, embeds { nonce, userId } in the OAuth `state`
- *      (base64url JSON) and stores the nonce in a short-lived httpOnly cookie
- *      for verification at the callback (anti-CSRF).
- *   3. Stores the origin page (returnTo) so the callback can bring the user
- *      back there with ?google=connected|error.
- *   4. Redirects to the Google consent screen with access_type=offline and
- *      prompt=consent so a refresh token is always issued.
+ *   1. Richiede una sessione AgentCloud autenticata (i token sono salvati per
+ *      utente). Il login fa parte del flusso: gli utenti non loggati vengono
+ *      mandati a /login?intent=google&next=… e qui riprendono da soli dopo.
+ *   2. Genera un nonce casuale, lo incorpora (con userId) nello `state` OAuth
+ *      (JSON base64url) e salva il nonce in un cookie httpOnly a breve durata
+ *      per la verifica al callback (anti-CSRF).
+ *   3. Salva la pagina di origine (returnTo) così il callback può riportarci
+ *      l'utente con ?google=connected|error.
+ *   4. Redirige allo schermo di consenso Google con access_type=offline e
+ *      prompt=consent così viene sempre emesso un refresh token.
  *
- * No secrets are read from the request — GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
- * are server-side env vars.
+ * Nessun segreto viene letto dalla richiesta — GOOGLE_CLIENT_ID /
+ * GOOGLE_CLIENT_SECRET sono env var lato server.
  */
 export async function GET(req: NextRequest) {
   const returnParam = req.nextUrl.searchParams.get("returnTo");
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   const sessionUser = await getSessionUser();
   const hasAccess = await hasPlatformAccess();
   let userId: string | null = sessionUser?.id ?? null;
-  // Access-code holders (admin) without a Supabase account use the shared tenant
+  // I possessori del codice (admin) senza account Supabase usano il tenant condiviso
   if (!userId && hasAccess) userId = TENANT_GOOGLE_ID;
 
   if (!userId) {

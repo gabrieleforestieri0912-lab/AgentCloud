@@ -25,8 +25,9 @@ import FloatingBrandBubbles, {
 import { useLanguage } from "@/components/LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 
-// Floating brand marks in the side gutters — same visual language as the hero
-// constellation, kept clear of the two-column content.
+// Pagina demo (client): richiesta di demo con form → /api/demo/request.
+// Loghi fluttuanti nei margini laterali — stesso linguaggio visivo della
+// costellazione hero, tenuti lontani dal contenuto a due colonne.
 const FLOATING_BUBBLES: FloatingBubble[] = [
   { top: "16%", left: "6%", size: "w-12 h-12", brand: "shopify", delay: "0s", anim: "animate-float-gentle" },
   { top: "14%", left: "88%", size: "w-11 h-11", brand: "stripe", delay: "1.2s", anim: "animate-float-reverse" },
@@ -95,7 +96,7 @@ export default function DemoPage() {
     <main className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
       <Navbar />
 
-      {/* Decorative background — same language as the hero section */}
+      {/* Sfondo decorativo — stesso linguaggio della sezione hero */}
       <div className="absolute inset-x-0 top-16 h-px bg-linear-to-r from-transparent via-brand-500/30 to-transparent" />
       <div
         className="absolute inset-0 opacity-40 pointer-events-none select-none"
@@ -109,7 +110,7 @@ export default function DemoPage() {
       <section className="relative z-10 px-4 pb-24 pt-32 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-16 lg:grid-cols-[1fr_420px] lg:items-start">
-            {/* Product presentation */}
+            {/* Presentazione del prodotto */}
             <motion.div
               initial="hidden"
               whileInView="visible"
@@ -292,7 +293,7 @@ export default function DemoPage() {
                 </p>
               </form>
 
-              {/* Overlay + Success Modal */}
+              {/* Overlay + modale di successo */}
               {success && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
                   <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-neutral-900 p-8 shadow-2xl shadow-black/40 text-center animate-fade-in">
@@ -321,8 +322,8 @@ export default function DemoPage() {
         </div>
       </section>
 
-      {/* How it works after the demo request — explains the journey from
-          request to a working agent for the client. */}
+      {/* "Come funziona" dopo la richiesta di demo — spiega al cliente il
+          percorso che va dalla richiesta all'agente funzionante. */}
       <section className="relative z-10 px-4 pb-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <motion.div

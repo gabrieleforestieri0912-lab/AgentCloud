@@ -24,9 +24,9 @@ import { TENANT_SHOPIFY_ID } from "@/lib/shopify/connections";
 const MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const MAX_ITERATIONS = 10;
 
-// Rate limit for anonymous preview callers (public agent pages / embeds).
-// Two layers: a cheap in-memory burst filter (per instance) and the
-// authoritative distributed limit via Supabase (holds across instances).
+// Rate limit per i chiamanti anonimi in anteprima (pagine pubbliche / embed).
+// Due livelli: un filtro burst in memoria economico (per istanza) e il limite
+// distribuito autoritativo via Supabase (vale tra tutte le istanze).
 const ANON_LIMIT_MAX = Number(process.env.AGENT_ANON_RATE_LIMIT || 30);
 const ANON_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOWS.MINUTE_MS;
 const anonBuckets = new Map<string, number[]>();
@@ -49,13 +49,14 @@ function isAnonRateLimited(ip: string): boolean {
  *
  * Body: { agentId, messages, files? }
  *
- * The caller is resolved server-side from the Supabase session, never from the
- * request body. Logged-in users go through the subscription + monthly limit
- * checks; anonymous callers (public agent pages / embeds) are allowed as
- * previews but have no usage quota.
+ * Motore di esecuzione degli agenti: risponde in SSE e gestisce il loop
+ * modello→strumenti fino a MAX_ITERATIONS. Il chiamante è risolto lato server
+ * dalla sessione Supabase, mai dal corpo della richiesta. Gli utenti loggati
+ * passano dai controlli abbonamento + limite mensile; i chiamanti anonimi
+ * (pagine pubbliche / embed) sono ammessi come anteprima ma senza quota.
  *
- * The model backend is selected via `getLLMProvider()` — the Anthropic
- * (Claude) backend when `ANTHROPIC_API_KEY` is configured.
+ * Il backend del modello è scelto con `getLLMProvider()` — quello Anthropic
+ * (Claude) quando `ANTHROPIC_API_KEY` è configurata.
  */
 export async function POST(req: Request) {
   const locale = await getLocale();
@@ -87,28 +88,28 @@ export async function POST(req: Request) {
     );
   }
 
-  // Resolve the caller from the authenticated session (never trust the body).
+  // Risolve il chiamante dalla sessione autenticata (mai fidarsi del body).
   const sessionUser = await getSessionUser();
   const userId = sessionUser?.id ?? "anonymous";
 
-  // Admin status: allowlisted session emails OR valid access-code holders
-  // (the code is the invitation — it unlocks every agent for free, even when
-  // the visitor is also logged in with a non-admin account). Never derived
-  // from the request body, so it cannot be spoofed via the public waitlist.
+  // Stato admin: email di sessione in whitelist OPPURE validi possessori del
+  // codice di accesso (il codice è l'invito: sblocca ogni agente gratis, anche
+  // quando il visitatore è loggato con un account non-admin). Non deriva mai
+  // dal body, quindi non può essere falsificato dalla waitlist pubblica.
   const hasCode = await hasPlatformAccess();
   const isAdmin = isAdminEmail(sessionUser?.email) || hasCode;
 
-  // External-service connections (Shopify, …) are stored per user, except
-  // for access-code holders who have no account: they share the reserved
-  // tenant connection (connected once from the admin side, no email saved).
+  // Le connessioni a servizi esterni (Shopify, …) sono salvate per utente,
+  // tranne per i possessori del codice senza account: condividono la
+  // connessione tenant riservata (collegata una volta lato admin, senza email).
   const tenantId = hasCode
     ? TENANT_SHOPIFY_ID
     : sessionUser
       ? sessionUser.id
       : "anonymous";
 
-  // Enforce subscription + plan limits for real users (skipped for anonymous
-  // and for admins, who get full, unlimited access).
+  // Applica i limiti abbonamento + piano per gli utenti reali (saltati per gli
+  // anonimi e per gli admin, che hanno accesso completo e illimitato).
   const check = await assertRunAllowed(userId, agentId, locale, isAdmin);
   if (!check.allowed) {
     return Response.json(
@@ -117,8 +118,8 @@ export async function POST(req: Request) {
     );
   }
 
-  // Throttle anonymous preview callers: per-instance burst filter first, then
-  // the distributed limit (authoritative across all instances).
+  // Throttle dei chiamanti anonimi in anteprima: prima il filtro burst per
+  // istanza, poi il limite distribuito (autoritativo tra tutte le istanze).
   if (userId === "anonymous") {
     const ip = getClientIp(req);
     const burstLimited = isAnonRateLimited(ip);
@@ -142,17 +143,17 @@ export async function POST(req: Request) {
     }
   }
 
-  // Respect feature flags: expose only the tools enabled for this agent.
+  // Rispetta i feature flag: espone solo gli strumenti abilitati per l'agente.
   const enabledToolNames = getEnabledToolsForAgent(agentId);
   const enabledTools = enabledToolNames
     .map((tool) => TOOL_DEFINITIONS[tool])
     .filter(Boolean);
 
-  // Resolve the model backend once per request (Anthropic).
+  // Risolve il backend del modello una volta per richiesta (Anthropic).
   const provider = getLLMProvider();
 
-  // Normalize inbound messages into the shared LLMMessage shape. The client
-  // always sends plain { role, content } strings.
+  // Normalizza i messaggi in ingresso nella forma condivisa LLMMessage. Il
+  // client invia sempre semplici stringhe { role, content }.
   const initialMessages: LLMMessage[] = (messages as unknown[]).map((m) => {
     const msg = m as { role?: string; content?: unknown };
     return {
@@ -181,13 +182,13 @@ export async function POST(req: Request) {
             encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
           );
         } catch {
-          // Client disconnected: the stream is closed. Ignore the write and
-          // let the word emitter stop itself on its next tick.
+          // Client disconnesso: lo stream è chiuso. Ignora la scrittura e
+          // lascia che l'emitter di parole si fermi al tick successivo.
         }
       };
 
-      // Re-emit the provider's text one word at a time so agent chats type
-      // out the answer instead of showing the whole message at once.
+      // Re-emette il testo del provider una parola alla volta così le chat
+      // degli agenti "scrivono" la risposta invece di mostrarla tutta insieme.
       const emitter = createWordEmitter((word) =>
         send({ type: "text", content: word }),
       );
@@ -213,8 +214,8 @@ export async function POST(req: Request) {
           inputTokens += response.usage.inputTokens;
           outputTokens += response.usage.outputTokens;
 
-          // Let the queued words finish before tool events / the next turn
-          // so the stream stays readable and ordered.
+          // Lascia finire le parole in coda prima degli eventi tool / del turno
+          // successivo, così lo stream resta leggibile e ordinato.
           await emitter.flush();
 
           if (response.stopReason === "end_turn") {
@@ -237,21 +238,21 @@ export async function POST(req: Request) {
                 use.input as Record<string, string>,
                 {
                   userId,
-                  // Tenant id === authenticated user id for signed-in users, and
-                  // the shared tenant id for access-code holders (no account):
-                  // this is what lets the Shopify (and other) tools read the
-                  // right connected store credentials instead of falling back
-                  // to env vars.
+                  // Tenant id === id utente autenticato per chi ha una sessione,
+                  // e tenant id condiviso per i possessori del codice (niente
+                  // account): è così che gli strumenti Shopify (e altri) leggono
+                  // le credenziali del negozio giusto invece di ripiegare sulle
+                  // env var.
                   tenantId,
                   files: files as Record<string, string> | undefined,
                 },
               );
 
-              // Surface important actions (file created, product published,
-              // event booked, lead captured, ...) as in-app notifications so
-              // the user always knows what their agents did. Best-effort and
-              // only for real accounts — anonymous preview callers have no
-              // inbox. Read-only tool calls never notify.
+              // Le azioni importanti (file creato, prodotto pubblicato, evento
+              // prenotato, lead catturato, ...) diventano notifiche in-app così
+              // l'utente sa sempre cosa hanno fatto i suoi agenti. Best-effort
+              // e solo per account reali — i chiamanti anonimi in anteprima
+              // non hanno inbox. Le chiamate tool di sola lettura non notificano.
               if (userId !== "anonymous") {
                 const action = buildActionNotification(
                   use.name,
@@ -279,7 +280,7 @@ export async function POST(req: Request) {
                     content: parsed.content,
                   });
                 } catch {
-                  // ignore malformed file payload
+                  // ignora payload file malformati
                 }
               }
 
@@ -292,7 +293,7 @@ export async function POST(req: Request) {
               { role: "user", content: toolResults },
             ];
           } else {
-            // Unexpected stop (max_tokens / length / stop): no tool loop.
+            // Stop inatteso (max_tokens / length / stop): niente loop tool.
             send({ type: "done" });
             break;
           }
@@ -300,8 +301,8 @@ export async function POST(req: Request) {
 
         emitter.stop();
 
-        // Record the run (conversation + tokens) once the agent finishes.
-        // Per richiesta admin via codice: non salvare nulla nel DB, ma sblocca comunque le pagine
+        // Registra la run (conversazione + token) a fine esecuzione.
+        // Per richieste admin via codice: non salvare nulla nel DB, ma sblocca comunque le pagine
         if (!hasCode) {
           await recordUsageAndReportOverage({
             user_id: userId,
@@ -321,7 +322,7 @@ export async function POST(req: Request) {
         try {
           controller.close();
         } catch {
-          // Already closed (client disconnected mid-stream).
+          // Già chiuso (client disconnesso a metà stream).
         }
       }
     },

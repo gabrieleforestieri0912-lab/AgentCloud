@@ -57,6 +57,10 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
+// Dashboard: server component che legge i dati reali dell'utente (agenti
+// installati, run e token del mese) con Supabase service-role e li mostra in
+// card e grafici. Gli admin via codice (isAdminMock) vedono la pagina ma senza
+// letture/scritture sul DB.
 function timeAgo(iso: string | null, dict: ReturnType<typeof getDictionary>): string {
   if (!iso) return "—";
   const diff = Date.now() - new Date(iso).getTime();
@@ -77,16 +81,16 @@ export default async function DashboardPage({
   const locale = await getLocale();
   const dict = getDictionary(locale);
 
-  // Supabase session: resolve the user server-side from the cookies.
-  // Admin via codice (hasPlatformAccess) è come se fosse loggato ma non salva nulla nel DB
+  // Sessione Supabase: l'utente viene risolto lato server dai cookie.
+  // L'admin via codice (hasPlatformAccess) è come se fosse loggato ma non salva nulla nel DB
   const user = await getSessionUser();
   const hasAccess = await hasPlatformAccess();
   if (!user && !hasAccess) redirect("/login");
   const isAdminMock = !user && hasAccess;
   const userId = user?.id ?? null;
 
-  // ── Real data (service-role, server-side) con graceful fallback
-  // Per admin via codice (hasAccess senza user) non leggiamo/scriviamo nulla nel DB
+  // ── Dati reali (service-role, lato server) con fallback graduale
+  // Per l'admin via codice (hasAccess senza utente) non leggiamo/scriviamo nulla nel DB
   const db = createAdminClient();
   let installed: InstalledAgent[] = [];
   let totalRuns = 0;
@@ -191,19 +195,20 @@ export default async function DashboardPage({
     ],
   ];
 
-  // ── Charts: last 7 days buckets + cost ───────────────────────────────
-  // Build 7-day daily buckets from the month's runs (if DB available).
-  // We keep a separate lightweight in-memory aggregation; if there are no
-  // runs the chart shows an empty state.
+  // ── Grafici: bucket giornalieri degli ultimi 7 giorni + costi ─────────
+  // Costruisce i bucket giornalieri (7 giorni) a partire dalle run del mese
+  // (se il DB è disponibile), con una leggera aggregazione in memoria; se non
+  // ci sono run il grafico mostra lo stato vuoto.
   let dailyBuckets: Array<{ label: string; date: string; runs: number; tokens: number }> = [];
   let overageCentsTotal = 0;
   if (dbAvailable) {
-    // Will be populated after runs are fetched above; placeholder here so
-    // TypeScript knows the shape. Actual dailyBuckets computed below from
-    // a second query that covers exactly last 7 days for accuracy.
+    // Verrà popolato dopo il fetch delle run qui sopra; segnaposto così
+    // TypeScript conosce la forma. I dailyBuckets reali sono calcolati sotto
+    // con una seconda query sugli ultimi 7 giorni esatti.
   }
 
-  // Fetch last-7-days runs for the charts (independent from monthly stats)
+  // Fetch delle run degli ultimi 7 giorni per i grafici (indipendente dalle
+  // statistiche mensili)
   let chartRuns: Array<{ started_at: string | null; input_tokens: number | null; output_tokens: number | null }> = [];
   if (db && !isAdminMock && userId) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -219,7 +224,7 @@ export default async function DashboardPage({
     ? ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"]
     : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  // Build map YYYY-MM-DD -> {runs, tokens}
+  // Costruisce la mappa YYYY-MM-DD -> {runs, tokens}
   const byDay = new Map<string, { runs: number; tokens: number }>();
   for (const r of chartRuns) {
     if (!r.started_at) continue;
@@ -243,7 +248,7 @@ export default async function DashboardPage({
     };
   });
 
-  // Cost aggregation: sum per-agent overage
+  // Aggregazione costi: somma dell'overage per agente
   for (const inst of installed) {
     const limit = resolveTokenLimit((inst.config ?? {}) as Record<string, unknown>);
     const over = Math.max(0, inst.tokens - limit);
@@ -323,8 +328,9 @@ export default async function DashboardPage({
             configured={googleConfigured}
           />
 
-          {/* Charts & costs — visible only if user has activity, but always rendered
-              so empty state is informative. Spec: "dashboard con grafici e costi se l'utenti li fa" */}
+          {/* Grafici e costi — rilevanti se c'è attività, ma sempre renderizzati
+              così lo stato vuoto è informativo (specifica: "dashboard con grafici
+              e costi se l'utente li fa") */}
           <div className="mb-8">
             <DashboardCharts
               daily={dailyBuckets}

@@ -18,6 +18,9 @@ import { t } from "@/lib/i18n/dictionaries";
 
 const CONTACT_REASON_ICONS = [MessageSquare, Sparkles, Mail, Sparkles, MessageSquare];
 
+// Pagina contatti (client): invia il form a /api/contact e mostra lo stato
+// (errore localizzato / conferma). Tutte le stringhe vengono dal dizionario
+// i18n della lingua attiva.
 export default function ContactPage() {
   const { dict } = useLanguage();
   const contactReasons = dict.contact.reasons.map((label, i) => ({
@@ -65,7 +68,7 @@ export default function ContactPage() {
       <section className="px-4 pb-24 pt-32 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-16 lg:grid-cols-[1fr_480px] lg:items-start">
-            {/* Left: Info */}
+            {/* Sinistra: informazioni */}
             <div>
               <div className="mb-6 flex items-center gap-2">
                 <Sparkles size={13} className="text-brand-400" />

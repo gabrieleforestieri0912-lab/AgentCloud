@@ -8,24 +8,24 @@ import type { NextRequest } from "next/server";
  */
 
 export const SHOPIFY_STATE_COOKIE = "ac_shopify_state";
-export const SHOPIFY_STATE_MAX_AGE = 60 * 10; // 10 minutes
+export const SHOPIFY_STATE_MAX_AGE = 60 * 10; // 10 minuti
 
 /** Cookie che ricorda la pagina a cui tornare dopo il round-trip OAuth. */
 export const SHOPIFY_RETURN_COOKIE = "ac_shopify_return";
-export const OAUTH_RETURN_MAX_AGE = 60 * 15; // 15 minutes
+export const OAUTH_RETURN_MAX_AGE = 60 * 15; // 15 minuti
 
 /** Slug dell'agente che attiva il prompt di connessione Shopify in chat. */
 export const SHOPIFY_AGENT_SLUG =
   process.env.SHOPIFY_AGENT_SLUG || "shopify-agent";
 
-/** Default scopes proposed in the spec (Phase 0). Override via SHOPIFY_SCOPES. */
+/** Scope di default previsti in specifica. Override via SHOPIFY_SCOPES. */
 const DEFAULT_SCOPES =
   "read_products write_products read_orders write_orders read_inventory write_inventory";
 
 /**
- * Validate and normalize a Shopify shop domain. Rejects anything containing a
- * scheme, path, query or characters outside a `*.myshopify.com` host, which
- * prevents open-redirect abuse of the authorize endpoint.
+ * Valida e normalizza un dominio negozio Shopify. Rifiuta qualunque valore
+ * con scheme, path, query o caratteri fuori da un host `*.myshopify.com`,
+ * prevenendo l'abuso da open-redirect dell'endpoint authorize.
  */
 export function normalizeShop(shop: string): string | null {
   const s = shop.trim().toLowerCase();
@@ -54,7 +54,7 @@ export function getShopifyRedirectUri(): string {
   );
 }
 
-/** Public base URL used for webhook subscription callbacks. */
+/** URL pubblico base usato per i callback di sottoscrizione webhook. */
 export function getShopifyWebhookAddress(): string {
   return (
     process.env.SHOPIFY_WEBHOOK_ADDRESS ||
@@ -63,9 +63,10 @@ export function getShopifyWebhookAddress(): string {
 }
 
 /**
- * Verify a Shopify webhook HMAC: Shopify sends `X-Shopify-Hmac-SHA256`, the
- * base64 of the HMAC-SHA256 of the *raw* request body computed with the app
- * secret. Computed value must match the header in constant time.
+ * Verifica l'HMAC di un webhook Shopify: Shopify invia `X-Shopify-Hmac-SHA256`,
+ * la base64 dell'HMAC-SHA256 del corpo *grezzo* della richiesta calcolata con
+ * il segreto dell'app. Il valore calcolato deve combaciare con l'header a
+ * tempo costante.
  */
 export function verifyShopifyWebhookHmac(
   rawBody: string,
@@ -83,7 +84,7 @@ export function verifyShopifyWebhookHmac(
   }
 }
 
-/** Build the Shopify authorize URL the user is redirected to. */
+/** Costruisce l'URL authorize di Shopify verso cui viene rediretto l'utente. */
 export function buildAuthorizeUrl(shop: string, state: string): string {
   const params = new URLSearchParams({
     client_id: process.env.SHOPIFY_API_KEY || "",
@@ -95,9 +96,9 @@ export function buildAuthorizeUrl(shop: string, state: string): string {
 }
 
 /**
- * Verify the Shopify request HMAC: hash all query params (except `hmac`),
- * sorted lexicographically as `key=value`, with the client secret, and compare
- * to the `hmac` param in constant time.
+ * Verifica l'HMAC della richiesta Shopify: fai l'hash di tutti i parametri
+ * query (tranne `hmac`), ordinati lessicograficamente come `key=value`, con il
+ * client secret, e confrontali col parametro `hmac` a tempo costante.
  */
 export function verifyShopifyHmac(
   params: URLSearchParams,
@@ -120,7 +121,7 @@ export function verifyShopifyHmac(
   }
 }
 
-/** Read the CSRF state cookie set during the install step. */
+/** Legge il cookie CSRF state impostato durante il passo di installazione. */
 export function readShopifyStateCookie(req: NextRequest): string | undefined {
   return req.cookies.get(SHOPIFY_STATE_COOKIE)?.value;
 }

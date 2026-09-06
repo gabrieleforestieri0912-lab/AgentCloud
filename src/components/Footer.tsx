@@ -14,8 +14,8 @@ import { useLanguage } from "./LanguageProvider";
 export default function Footer() {
   const { dict } = useLanguage();
 
-  // Real social profiles, shown with their official brand marks (X, Instagram,
-  // LinkedIn) and linking to the verified URLs.
+  // Profili social reali, mostrati con i loro marchi ufficiali (X, Instagram,
+  // LinkedIn) e link alle URL verificate.
   const socialLinks = [
     { label: "X (Twitter)", href: "https://x.com/AgentCloud2k", brand: "x" },
     {
@@ -63,7 +63,8 @@ export default function Footer() {
       transition={{ duration: 0.7, ease: "easeOut" }}
       className="relative border-t border-white/5 text-white"
     >
-      {/* Hairline + subtle brand glow so the dark footer reads as a distinct block */}
+      {/* Hairline + bagliore sottile del brand perché il footer scuro si legga
+          come blocco distinto */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/70 to-transparent" />
       <div
         className="pointer-events-none absolute inset-0 select-none"
@@ -75,7 +76,7 @@ export default function Footer() {
 
       <div className="relative mx-auto max-w-7xl 3xl:max-w-[1720px] px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 py-20 border-b border-white/10">
-          {/* Brand column */}
+          {/* Colonna brand */}
           <div className="lg:col-span-2 flex flex-col items-start gap-4">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="relative h-8 w-8">
@@ -96,7 +97,7 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Product column */}
+          {/* Colonna prodotto */}
           <div className="flex flex-col gap-3.5">
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
               {dict.navbar.marketplace}
@@ -115,7 +116,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Social column */}
+          {/* Colonna social */}
           <div className="flex flex-col gap-3.5">
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
               {dict.footer.follow}
@@ -136,7 +137,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Company column */}
+          {/* Colonna azienda */}
           <div className="flex flex-col gap-3.5">
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
               {dict.footer.company}

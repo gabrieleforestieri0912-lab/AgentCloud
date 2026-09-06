@@ -50,7 +50,7 @@ export default function AgentCard({
           : "border-white/5 opacity-60"
       } ${className}`}
     >
-      {/* Top accent gradient */}
+      {/* Gradiente d'accento in alto */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       {isAgentAvailable && (
         <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-500/[0.04] to-purple-500/[0.04] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -63,7 +63,7 @@ export default function AgentCard({
         </div>
       )}
 
-      {/* Header: icon + category + badge */}
+      {/* Intestazione: icona + categoria + badge */}
       <div className="relative mb-4 flex items-start gap-4">
         <div
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105 ${agent.accent}`}
@@ -95,19 +95,19 @@ export default function AgentCard({
         </div>
       </div>
 
-      {/* Setup time */}
+      {/* Tempo di setup */}
       <div className="relative mb-3 flex items-center gap-1.5 text-xs text-neutral-500 font-semibold">
         <Clock size={12} />
         {agent.setupTime}
       </div>
 
-      {/* Persuasive description */}
+      {/* Descrizione persuasiva */}
       <p className="relative text-sm font-bold leading-6 text-white line-clamp-2">{agent.description}</p>
       <p className="relative mt-2 text-xs leading-5 text-neutral-400 line-clamp-2">
         {persuasiveTagline} — {agent.longDescription.slice(0, 110)}...
       </p>
 
-      {/* Benefits */}
+      {/* Benefici */}
       <div className="relative mt-4 rounded-xl border border-white/5 bg-neutral-800/40 p-3">
         <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
           <Zap size={11} className="text-brand-400" />
@@ -125,7 +125,7 @@ export default function AgentCard({
         </div>
       </div>
 
-      {/* Footer: price + CTA */}
+      {/* Piè di card: prezzo + CTA */}
       <div className="relative mt-5 flex items-center justify-between border-t border-white/5 pt-5">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">{setupLabel}</p>
@@ -158,7 +158,7 @@ export default function AgentCard({
         {isIt ? "Parla con un esperto" : "Talk to an expert"}
       </Link>
 
-      {/* Whole card clickable overlay (except CTA) */}
+      {/* Overlay cliccabile dell'intera card (tranne la CTA) */}
       {isAgentAvailable && (
         <Link href={`/agents/${agent.slug}`} aria-label={`${dict.agentCard.view} ${agent.name}`} className="absolute inset-0 rounded-2xl" />
       )}

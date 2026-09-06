@@ -5,8 +5,9 @@ import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/conne
 
 /**
  * GET /api/google/status
- * Returns the current user's Google connection state (email, scopes, connected
- * date) for the settings UI. Unauthenticated callers get { authenticated: false }.
+ * Restituisce lo stato della connessione Google dell'utente (email, scopes,
+ * data di collegamento) per la UI delle impostazioni. I chiamanti non
+ * autenticati ricevono { authenticated: false }.
  */
 export async function GET() {
   const user = await getSessionUser();

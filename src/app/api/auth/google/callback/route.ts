@@ -20,18 +20,18 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Phase 2 — Google OAuth callback + token exchange.
+ * Fase 2 — callback OAuth Google + scambio del token.
  *
  * GET /api/auth/google/callback?code&state&error...
- *   1. Verifies the `state` nonce against the httpOnly cookie (CSRF) and uses
- *      the user_id embedded in `state` (the connect step is authenticated).
- *   2. Exchanges `code` for access_token + refresh_token + expires_in.
- *   3. Fetches the connected Google account email (userinfo). The email is
- *      NOT persisted when the connecting account is an admin (privacy rule).
- *   4. Encrypts both tokens (AES-256-GCM) and upserts the per-user row.
+ *   1. Verifica il nonce di `state` contro il cookie httpOnly (CSRF) e usa
+ *      lo user_id incorporato in `state` (il passo di connessione è autenticato).
+ *   2. Scambia `code` con access_token + refresh_token + expires_in.
+ *   3. Recupera l'email dell'account Google collegato (userinfo). L'email NON
+ *      viene salvata quando l'account che si collega è un admin (regola privacy).
+ *   4. Cripta entrambi i token (AES-256-GCM) e aggiorna la riga per utente.
  *
- * Every failure redirects back to the page the user started from (returnTo
- * cookie) with ?google=error&reason=... — never a blank page or a 500.
+ * Ogni errore rimanda alla pagina da cui l'utente è partito (cookie returnTo)
+ * con ?google=error&reason=... — mai una pagina bianca o un 500.
  */
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
@@ -50,7 +50,8 @@ export async function GET(req: NextRequest) {
   };
   const fail = (reason: string) => done(`google=error&reason=${reason}`);
 
-  // User denied consent on the Google screen — readable message, not a 500.
+  // L'utente ha negato il consenso sullo schermo Google — messaggio leggibile,
+  // non un 500.
   const oauthError = params.get("error");
   if (oauthError) {
     return fail(oauthError === "access_denied" ? "denied" : "consent");
@@ -62,8 +63,9 @@ export async function GET(req: NextRequest) {
     return fail("missing_params");
   }
 
-  // 1. CSRF check: state must decode and its nonce must match the httpOnly
-  // cookie set by /connect. The user_id comes from the verified state.
+  // 1. Controllo CSRF: lo state deve decodificarsi e il suo nonce deve
+  // corrispondere al cookie httpOnly impostato da /connect. Lo user_id viene
+  // dallo state verificato.
   const payload = decodeGoogleState(state);
   const cookieNonce = readGoogleStateCookie(req);
   if (
@@ -84,7 +86,8 @@ export async function GET(req: NextRequest) {
     return fail("config");
   }
 
-  // 2. Exchange the authorization code for tokens (form-encoded, per Google).
+  // 2. Scambia il codice di autorizzazione con i token (form-encoded, come
+  // richiede Google).
   let tokenData: {
     access_token?: string;
     refresh_token?: string;
@@ -92,9 +95,9 @@ export async function GET(req: NextRequest) {
     scope?: string;
   };
   try {
-    // Dev-only fake token exchange (GOOGLE_FAKE_TOKEN_EXCHANGE=1) so the whole
-    // OAuth flow can be exercised end-to-end without a real Google account.
-    // Never set outside local/dev environments.
+    // Scambio token finto solo per dev (GOOGLE_FAKE_TOKEN_EXCHANGE=1), così
+    // l'intero flusso OAuth è provabile end-to-end senza un vero account Google.
+    // Da non attivare mai fuori da ambienti locali/dev.
     if (process.env.GOOGLE_FAKE_TOKEN_EXCHANGE === "1") {
       tokenData = {
         access_token: `ya29.test_${payload.userId.slice(0, 8)}_${Date.now()}`,
@@ -129,8 +132,9 @@ export async function GET(req: NextRequest) {
     return fail("no_token");
   }
 
-  // 3. Connected Google account email (display nicety — non-fatal on failure).
-  // Admins opt out: their connected email is never persisted (except for tenant).
+  // 3. Email dell'account Google collegato (solo per display — non fatale in
+  // caso di errore). Gli admin non la salvano: la loro email collegata non
+  // viene mai persistita (tranne per il tenant).
   let googleEmail: string | null = null;
   let isAdmin = false;
   if (!isTenant) {
@@ -141,7 +145,7 @@ export async function GET(req: NextRequest) {
         isAdmin = isAdminEmail(u?.user?.email ?? null);
       }
     } catch {
-      // fall back to non-admin (store the email)
+      // ripiega su non-admin (salva l'email)
     }
   }
   if (!isAdmin) {
@@ -154,11 +158,11 @@ export async function GET(req: NextRequest) {
         googleEmail = info.email ?? null;
       }
     } catch {
-      // ignore — tokens are what matter
+      // ignora — ciò che conta sono i token
     }
   }
 
-  // 4. Encrypt + persist (one row per user).
+  // 4. Cripta e salva (una riga per utente).
   try {
     await upsertGoogleConnection({
       userId: payload.userId,

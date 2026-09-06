@@ -6,6 +6,9 @@ import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
 import SettingsClient from "./settings-client";
 
+// Pagina impostazioni: server component che protegge la rotta (sessione o
+// codice di accesso), distingue l'utente mock (admin via codice) da quello
+// reale e delega la UI interattiva a SettingsClient.
 export default async function SettingsPage() {
   const locale = await getLocale();
   const user = await getSessionUser();

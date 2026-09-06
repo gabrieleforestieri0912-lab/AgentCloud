@@ -14,10 +14,11 @@ import {
  */
 
 /**
- * Reserved user_id for the shared "tenant" Shopify connection. Used when a
- * visitor holding the platform access code (no Supabase account, no email
- * stored) connects a store: the row is stored under this id and exposed to
- * code-holder agent runs instead of per-user rows.
+ * user_id riservato per la connessione Shopify "tenant" condivisa. Usato
+ * quando un visitatore con il codice di accesso alla piattaforma (nessun
+ * account Supabase, nessuna email salvata) collega un negozio: la riga è
+ * salvata sotto questo id ed esposta alle run degli agenti dei possessori del
+ * codice invece che alle righe per-utente.
  */
 export const TENANT_SHOPIFY_ID = "__tenant__";
 
@@ -30,7 +31,8 @@ export type ShopifyConnectionRow = {
   uninstalled_at: string | null;
 };
 
-/** Upsert a connection for a (user, shop). Encrypts the access token at rest. */
+/** Inserisce o aggiorna una connessione per (utente, negozio). Cripta l'access
+ * token a riposo. */
 export async function upsertShopifyConnection(opts: {
   userId: string;
   shopDomain: string;
@@ -59,7 +61,8 @@ export async function upsertShopifyConnection(opts: {
   }
 }
 
-/** Mark a shop as uninstalled (webhook). Keeps the row for audit but invalidates it. */
+/** Marca un negozio come disinstallato (webhook). Conserva la riga per l'audit
+ * ma la invalida. */
 export async function markShopifyUninstalled(shopDomain: string): Promise<void> {
   const admin = createAdminClient();
   if (!admin) return;
@@ -69,7 +72,8 @@ export async function markShopifyUninstalled(shopDomain: string): Promise<void> 
     .eq("shop_domain", shopDomain);
 }
 
-/** Fetch + decrypt the access token for a (user, shop). Returns null if absent/revoked. */
+/** Recupera + decripta l'access token per (utente, negozio). Null se assente
+ * o revocato. */
 export async function getShopifyToken(
   userId: string,
   shopDomain: string,
@@ -88,10 +92,10 @@ export async function getShopifyToken(
 }
 
 /**
- * Resolve the active connection for a user (latest non-revoked shop).
- * Used by the agent tools (Phase 5) so they read the OAuth-stored, encrypted
- * token instead of the legacy in-memory tenant store. Returns null when the
- * user has no connected store.
+ * Risolve la connessione attiva per un utente (negozio più recente non
+ * revocato). Usata dai tool degli agenti così leggono il token OAuth criptato
+ * invece dello store tenant legacy in memoria. Restituisce null quando
+ * l'utente non ha negozi collegati.
  */
 export async function getShopifyConnection(
   userId: string,
@@ -112,7 +116,7 @@ export async function getShopifyConnection(
   return { shopDomain: data.shop_domain, accessToken: token };
 }
 
-/** Revoke (mark uninstalled) a specific user+shop connection (e.g. on 401). */
+/** Revoca (marca come disinstallata) una connessione utente+negozio (es. su 401). */
 export async function revokeShopifyConnection(
   userId: string,
   shopDomain: string,
@@ -133,7 +137,7 @@ export type ShopifyConnectionSummary = {
   installedAt: string | null;
 };
 
-/** List a user's Shopify connections (for the dashboard UI). */
+/** Elenca le connessioni Shopify di un utente (per la UI dashboard). */
 export async function listShopifyConnections(
   userId: string,
 ): Promise<ShopifyConnectionSummary[]> {

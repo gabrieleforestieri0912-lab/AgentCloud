@@ -33,16 +33,18 @@ function withLocaleCookie(response: NextResponse, locale: string) {
 }
 
 /**
- * Refresh the Supabase session cookies on the way through the proxy and
- * resolve the current user. Follows the official @supabase/ssr pattern.
+ * Proxy Next.js (middleware): applica locale automatica, blocco waitlist e
+ * protezione delle rotte, rinnovando i cookie di sessione Supabase lungo il
+ * percorso. Qui in particolare aggiorna i cookie di sessione e risolve
+ * l'utente corrente, seguendo il pattern ufficiale @supabase/ssr.
  */
 async function resolveSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  // Misconfigured deploy: fail closed (treat as signed out) so protected
-  // routes redirect to /login instead of throwing a 500.
+  // Deploy mal configurato: fail closed (tratta come non autenticato) così le
+  // rotte protette rimandano a /login invece di lanciare un 500.
   if (!url || !anonKey) return { response, user: null };
 
   const supabase = createServerClient(url, anonKey, {
@@ -62,8 +64,8 @@ async function resolveSession(request: NextRequest) {
     },
   });
 
-  // getUser() validates the access token and refreshes it when needed; the
-  // refreshed cookies land on `response` via setAll.
+  // getUser() valida l'access token e lo rinnova se serve; i cookie rinnovati
+  // finiscono su `response` tramite setAll.
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -72,13 +74,13 @@ async function resolveSession(request: NextRequest) {
 }
 
 export async function proxy(request: NextRequest) {
-  // ─── Auto locale: if no explicit cookie, detect from country/Accept-Language and persist
+  // ─── Locale automatica: senza cookie esplicito, rileva da paese/Accept-Language e salva
   const { locale: detectedLocale, needsCookie } = getLocaleForRequest(request);
 
-  // ─── Waitlist phase: lock down the platform ───────────────────────
-  // During the waitlist phase, redirect every page to /waitlist so the
-  // platform is locked down. API routes, static assets, and the waitlist
-  // page itself are excluded.
+  // ─── Fase waitlist: blocca la piattaforma ──────────────────────────
+  // Durante la fase waitlist ogni pagina viene rimandata a /waitlist così la
+  // piattaforma resta chiusa. Sono escluse le route API, gli asset statici e
+  // la stessa pagina waitlist.
   const { pathname } = request.nextUrl;
   const isWaitlistRoute = pathname === "/waitlist";
   const isApiOrAsset =
@@ -86,18 +88,18 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/_next/") ||
     pathname.includes(".");
 
-  // Auth routes stay reachable during the waitlist phase so the owner (and any
-  // pre-provisioned account) can sign in. The rest of the app stays locked down
-  // to the waitlist page until the phase is lifted.
+  // Le route di auth restano raggiungibili durante la fase waitlist così il
+  // proprietario (e gli account pre-provisionati) possono accedere. Il resto
+  // dell'app resta bloccato sulla waitlist finché la fase non viene rimossa.
   const isAuthRoute =
     pathname === "/login" ||
     pathname === "/signup" ||
     pathname === "/reset-password" ||
     pathname === "/auth/callback";
 
-  // Local development without Supabase keys: allow everything through so the
-  // app is usable before keys are configured. In production this bypass is
-  // never taken — missing keys fail closed (protected routes → /login).
+  // Sviluppo locale senza chiavi Supabase: lascia passare tutto così l'app è
+  // usabile prima della configurazione delle chiavi. In produzione questo
+  // bypass non scatta mai — chiavi mancanti = fail closed (rotte protette → /login).
   const supabaseConfigured = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -107,19 +109,19 @@ export async function proxy(request: NextRequest) {
     return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
   }
 
-  // Visitors holding a valid access code are full guests: no Supabase login
-  // needed, and no waitlist lock. The cookie is set server-side after code
-  // validation (see src/lib/access-code.ts); the code itself is never checked
-  // here.
+  // I visitatori con un codice di accesso valido sono ospiti a tutti gli
+  // effetti: nessun login Supabase richiesto e nessun blocco waitlist. Il
+  // cookie viene impostato lato server dopo la validazione del codice (vedi
+  // src/lib/access-code.ts); il codice stesso non viene mai verificato qui.
   const isAccessVisitor = request.cookies.get(ACCESS_COOKIE)?.value === "1";
 
   if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
     if (!isAccessVisitor) {
-      // Regular waitlist members stay locked out — their ac_wl_joined cookie
-      // only records the signup, it grants no access. Authenticated users
-      // (e.g. the owner/admin signed in) pass through: resolveSession
-      // validates the session and carries refreshed auth cookies on
-      // `response`.
+      // I membri normali della waitlist restano bloccati — il cookie
+      // ac_wl_joined registra solo l'iscrizione, non concede accesso. Gli
+      // utenti autenticati (es. proprietario/admin loggati) passano:
+      // resolveSession valida la sessione e porta i cookie di auth rinnovati
+      // su `response`.
       const { response, user } = await resolveSession(request);
       if (!user) {
         const waitlistUrl = request.nextUrl.clone();
@@ -136,20 +138,21 @@ export async function proxy(request: NextRequest) {
     return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
   }
 
-  // Access-code holders can reach every page without signing in — the code is
-  // their invitation. (API handlers still resolve the session themselves and
-  // fall back to anonymous behavior when absent, exactly like public previews.)
+  // I possessori del codice raggiungono ogni pagina senza login — il codice è
+  // il loro invito. (Gli handler API risolvono comunque la sessione da soli e
+  // in assenza ripiegano sul comportamento anonimo, come le anteprime pubbliche.)
   if (isAccessVisitor) {
     const res = NextResponse.next();
     return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
   }
 
-  // Protected route: require a session, otherwise send the user to /login
-  // (the intended destination is not preserved, matching the current flow).
+  // Rotta protetta: richiede una sessione, altrimenti rimanda a /login
+  // (la destinazione voluta non viene conservata, come nel flusso attuale).
   const { response, user } = await resolveSession(request);
   if (!user) {
-    // API routes get a clean 401 JSON instead of an HTML redirect — clients
-    // calling fetch() would otherwise follow the redirect and parse HTML.
+    // Le route API ricevono un pulito 401 JSON invece di un redirect HTML —
+    // i client che chiamano fetch() seguirebbero il redirect e proverebbero a
+    // fare il parse dell'HTML.
     if (request.nextUrl.pathname.startsWith("/api/")) {
       const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
       return NextResponse.json(

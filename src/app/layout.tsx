@@ -1,4 +1,10 @@
 /* eslint-disable @next/next/no-page-custom-font */
+/**
+ * Layout radice dell'app: imposta lingua, metadati SEO (title/OG/Twitter),
+ * dati strutturati JSON-LD e i provider globali (LanguageProvider + analytics
+ * Vercel). L'html/lang segue la locale rilevata per richiesta, così ogni
+ * pagina eredita gli stessi meta e lo stesso sfondo.
+ */
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
@@ -121,9 +127,9 @@ const jsonLd = {
         areaServed: "Worldwide",
         availableLanguage: ["it", "en", "es", "de", "fr"],
       },
-      // SameAs anchors the entity for generative engines (ChatGPT, Perplexity,
-      // Claude) and traditional knowledge graphs. Only real, verifiable
-      // profiles are listed.
+      // SameAs ancora l'entità per i motori generativi (ChatGPT, Perplexity,
+      // Claude) e i knowledge graph tradizionali. Elencati solo profili reali
+      // e verificabili.
       sameAs: [
         "https://github.com/gabrieleforestieri0912-lab/AgentCloud",
         "https://x.com/AgentCloud2k",
@@ -218,10 +224,10 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased bg-black text-neutral-900">
-        {/* No `key={locale}`: remounting the provider on a locale change
-            would wipe all client state (chat conversations, scroll, menu)
-            and re-render the whole tree. The provider switches in place and
-            calls router.refresh() so server-rendered content catches up. */}
+        {/* Niente `key={locale}`: rimontare il provider a ogni cambio lingua
+            azzererebbe lo stato client (conversazioni chat, scroll, menu) e
+            ri-renderizzerebbe l'intero albero. Il provider cambia sul posto e
+            chiama router.refresh() così i contenuti server si aggiornano. */}
         <LanguageProvider initialLocale={locale}>
           {children}
         </LanguageProvider>

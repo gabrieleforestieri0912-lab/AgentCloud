@@ -601,9 +601,9 @@ export function localizeAgent(agent: Agent, locale: import("./i18n/constants").L
     category: localized.category as AgentCategory,
     industry: localized.industry,
     setupTime: localizeSetupTime(agent.setupTime, locale),
-    // The badge overlay carries localized display text ("Popolare", "Novità",
-    // "Consigliato") that doesn't fit the English union type — safe because
-    // badge is rendered as display-only text everywhere in the UI.
+    // L'overlay del badge porta testi di display localizzati ("Popolare",
+    // "Novità", "Consigliato") che non rientrano nel tipo union inglese —
+    // sicuro perché il badge è renderizzato solo come testo ovunque nella UI.
     badge: localized.badge as Agent["badge"],
     description: localized.description,
     longDescription: localized.longDescription,
@@ -614,17 +614,18 @@ export function localizeAgent(agent: Agent, locale: import("./i18n/constants").L
 
 export const SELLABLE_AGENTS: string[] = AGENTS.map((agent) => agent.slug);
 
-// ─── Flag-driven marketplace ──────────────────────────────────────────────
-// Which agents the marketplace offers is controlled by the runtime feature
-// flags (see ./agents/feature-flags). Agents enabled by the flags are
-// "available"; the rest of the catalog is shown as "coming soon".
+// ─── Marketplace guidato dai flag ─────────────────────────────────────────
+// Quali agenti offre il marketplace lo decidono i feature flag runtime (vedi
+// ./agents/feature-flags). Gli agenti abilitati dai flag sono "available"; il
+// resto del catalogo appare come "coming soon".
 //
-// NOTE: `AGENTCLOUD_VERTICAL` / `AGENTCLOUD_FEATURE_FLAGS` are server-only env
-// vars, so client bundles evaluate these with the default (shopify) config.
-// Server components (e.g. /agents) see the real flags; pass the result down
-// to client components via props when the value must be authoritative.
+// NOTA: `AGENTCLOUD_VERTICAL` / `AGENTCLOUD_FEATURE_FLAGS` sono env var solo
+// server, quindi i bundle client li valutano con la config di default
+// (shopify). I server component (es. /agents) vedono i flag reali; passa il
+// risultato ai componenti client via props quando il valore deve essere
+// autoritativo.
 
-/** Slugs enabled by the active feature flags. */
+/** Slug abilitati dai feature flag attivi. */
 export function getEnabledAgentSlugs(): string[] {
   return getFeatureFlags().enabledAgents;
 }
@@ -637,10 +638,11 @@ export const AVAILABLE_AGENTS: Agent[] = AGENTS.filter((a) =>
   isAvailable(a.slug),
 );
 
-// ─── Navbar featured agents ───────────────────────────────────────────────
-// The navbar dropdown intentionally shows a fixed set of flagship agents so it
-// stays compact — it must NOT grow as more agents are added to the catalog.
-// The full catalog is one click away via "Browse all agents".
+// ─── Agenti in evidenza nella navbar ──────────────────────────────────────
+// Il menu a tendina della navbar mostra volutamente un set fisso di agenti
+// di punta per restare compatto — NON deve crescere quando si aggiungono
+// agenti al catalogo. Il catalogo completo è a un click con "Sfoglia tutti
+// gli agenti".
 
 export const FEATURED_AGENT_SLUGS = [
   "shopify-agent",
@@ -649,7 +651,7 @@ export const FEATURED_AGENT_SLUGS = [
   "lead-capture",
 ] as const;
 
-/** Featured subset of a given agent list, kept in the curated display order. */
+/** Sottoinsieme in evidenza di una lista di agenti, nell'ordine curato. */
 export function getFeaturedAgents(agents: Agent[]): Agent[] {
   return FEATURED_AGENT_SLUGS.map((slug) =>
     agents.find((a) => a.slug === slug),

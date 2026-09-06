@@ -47,7 +47,7 @@ export default function AppHeader({
   return (
     <header className="sticky top-0 z-40 border-b border-white/5 bg-neutral-950/90 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 3xl:max-w-[1720px]">
-        {/* Left */}
+        {/* Sinistra */}
         <div className="flex items-center gap-3 min-w-0">
           {variant === "chat" && onToggleSidebar && (
             <button
@@ -76,9 +76,9 @@ export default function AppHeader({
           </div>
         </div>
 
-        {/* Right */}
+        {/* Destra */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Switch between dashboard/chat */}
+          {/* Passaggio dashboard/chat */}
           <nav className="hidden items-center gap-1 sm:flex">
             <Link
               href="/dashboard"

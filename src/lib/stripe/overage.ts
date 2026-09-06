@@ -32,8 +32,8 @@ function getStripe(): Stripe | null {
 }
 
 /**
- * True when overage billing can actually charge customers: the Stripe secret
- * key AND the metered overage Price are both configured.
+ * True quando la fatturazione overage può davvero addebitare i clienti:
+ * sono configurati sia la secret key Stripe sia il Price metered dell'overage.
  */
 export function isOverageBillingEnabled(): boolean {
   return Boolean(
@@ -42,8 +42,9 @@ export function isOverageBillingEnabled(): boolean {
 }
 
 /**
- * Convert an overage token count into whole meter units (1.000 tokens each),
- * rounding up so the customer is charged for at least the tokens they used.
+ * Converte un conteggio di token in overage in unità intere da meter (1.000
+ * token l'una), arrotondando per eccesso così il cliente paga almeno i token
+ * che ha usato.
  */
 export function calculateMeterUnits(overageTokens: number): number {
   if (overageTokens <= 0) return 0;
@@ -51,24 +52,25 @@ export function calculateMeterUnits(overageTokens: number): number {
 }
 
 /**
- * Estimated charge (cents) for an overage token count: whole meter units ×
- * the per-1.000-token rate. Mirrors the Stripe metered Price and is used for
- * UI copy (e.g. the dashboard overage footnote).
+ * Addebito stimato (in centesimi) per un conteggio di token in overage:
+ * unità intere da meter × la tariffa per 1.000 token. Rispecchia il Price
+ * metered di Stripe e serve per i testi UI (es. nota overage della dashboard).
  */
 export function calculateOverageAmountCents(overageTokens: number): number {
   return calculateMeterUnits(overageTokens) * OVERAGE_RATE_PER_1000_TOKENS;
 }
 
 /**
- * Find or create the metered overage item on a subscription.
+ * Trova o crea l'item metered dell'overage su un abbonamento.
  *
- * Idempotent across processes: lists the subscription items first and reuses
- * the existing one when the overage Price is already attached (this happens
- * when several agents of the same plan share one subscription — they must all
- * report against the same meter item, never create duplicates).
+ * Idempotente tra processi: elenca prima le subscription item e riusa quella
+ * esistente quando il Price overage è già agganciato (succede quando più
+ * agenti dello stesso piano condividono un abbonamento — devono tutti
+ * riferirsi allo stesso meter item, mai creare duplicati).
  *
- * Returns the `si_...` subscription item id, or null when overage billing is
- * not configured or Stripe is unreachable (caller logs and skips).
+ * Restituisce l'id `si_...` della subscription item, oppure null quando la
+ * fatturazione overage non è configurata o Stripe non è raggiungibile (il
+ * chiamante logga e salta).
  */
 export async function getOrCreateMeterItem(
   stripeSubscriptionId: string,
@@ -107,15 +109,15 @@ export type OverageReport = {
 };
 
 /**
- * Report overage tokens as a Billing Meter event, incrementally.
+ * Segnala i token in overage come evento Billing Meter, in modo incrementale.
  *
- * The event is attributed to the customer via `payload.stripe_customer_id`
- * and carries the overage as whole units of 1.000 tokens. The meter's
- * aggregation (sum) accumulates these units over the billing period.
+ * L'evento è attribuito al cliente tramite `payload.stripe_customer_id` e
+ * trasporta l'overage come unità intere da 1.000 token. L'aggregazione del
+ * meter (somma) accumula queste unità nel periodo di fatturazione.
  *
- * `idempotencyKey` should be unique per run (e.g. the run's conversation id):
- * it is sent as the event `identifier`, so a retry can never double-report
- * the same run.
+ * `idempotencyKey` deve essere univoco per run (es. l'id conversazione della
+ * run): viene inviato come `identifier` dell'evento, quindi un retry non può
+ * mai segnalare due volte la stessa run.
  */
 export async function reportOverageUsage(
   report: OverageReport,

@@ -22,10 +22,10 @@ type MarketplaceGridProps = {
   availableLabel: string;
   comingSoonLabel: string;
   /**
-   * When true (access-code holders), "coming soon" cards keep the tag but
-   * stay clickable — the code unlocks them, while the tag still shows which
-   * agents a real (non-code) client would find locked. When false (public
-   * view) the cards are dimmed and not clickable.
+   * Quando true (possessori del codice), le card "coming soon" mantengono il
+   * tag ma restano cliccabili — il codice le sblocca, mentre il tag mostra
+   * comunque quali agenti un cliente reale (senza codice) troverebbe bloccati.
+   * Quando false (vista pubblica) le card sono attenuate e non cliccabili.
    */
   comingSoonAccessible?: boolean;
 };
@@ -43,13 +43,13 @@ export default function MarketplaceGrid({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Extract unique categories from available agents
+  // Estrae le categorie uniche dagli agenti disponibili
   const categories = useMemo(() => {
     const cats = new Set(availableAgents.map((a) => a.category));
     return Array.from(cats).sort();
   }, [availableAgents]);
 
-  // Filter available agents by category
+  // Filtra gli agenti disponibili per categoria
   const filteredAvailable = useMemo(() => {
     if (!selectedCategory) return availableAgents;
     return availableAgents.filter((a) => a.category === selectedCategory);
@@ -57,7 +57,7 @@ export default function MarketplaceGrid({
 
   return (
     <div className="space-y-12">
-      {/* Available agents section */}
+      {/* Sezione agenti disponibili */}
       <div>
         <div className="mb-6 flex items-center gap-3">
           <h2 className="text-2xl font-bold text-white">{availableLabel}</h2>
@@ -66,9 +66,9 @@ export default function MarketplaceGrid({
           </span>
         </div>
 
-        {/* Category filters */}
+        {/* Filtri per categoria */}
         <div className="mb-6">
-          {/* Filter toggle button (mobile) */}
+          {/* Bottone toggle filtri (mobile) */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="mb-3 flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-300 hover:bg-neutral-800 lg:hidden"
@@ -115,16 +115,16 @@ export default function MarketplaceGrid({
           </div>
         </div>
 
-        {/* Available agents grid — every card in this list is available by
-            construction: the server only puts flag-enabled agents here.
-            Never re-derive availability from the client-side flags here. */}
+        {/* Griglia agenti disponibili — ogni card in questa lista è disponibile
+            per costruzione: il server mette qui solo gli agenti abilitati dai
+            flag. Non ricalcolare mai la disponibilità dai flag lato client. */}
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">
           {filteredAvailable.map((agent) => (
             <AgentCard key={agent.slug} agent={agent} available={true} />
           ))}
         </div>
 
-        {/* No results message */}
+        {/* Messaggio nessun risultato */}
         {filteredAvailable.length === 0 && (
           <div className="rounded-2xl border border-white/5 bg-neutral-900 p-12 text-center">
             <Search size={48} className="mx-auto mb-4 text-neutral-600" />

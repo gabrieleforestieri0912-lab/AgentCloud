@@ -35,6 +35,10 @@ type AgentDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
 
+// Pagina prodotto di un agente (server): genera i metadati SEO, verifica che
+// lo slug esista e sia disponibile (o sbloccato dal codice di accesso), poi
+// compone la pagina di dettaglio con prezzo, setup, integrazioni e FAQ.
+
 export function generateStaticParams() {
   return AGENTS.map((agent) => ({ slug: agent.slug }));
 }
@@ -129,8 +133,8 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   const rawAgent = getAgentBySlug(slug);
   if (!rawAgent) notFound();
   const agent = localizeAgent(rawAgent, locale);
-  // Access-code holders unlock every agent — including "coming soon" ones —
-  // so the deploy CTA and related cards treat the whole catalog as live.
+  // I possessori del codice sbloccano ogni agente — inclusi quelli "coming
+  // soon" — così CTA di deploy e card trattano l'intero catalogo come attivo.
   const unlocked = await hasPlatformAccess();
   const available = unlocked || isAvailable(slug);
 
@@ -153,7 +157,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
 
       {/* ─── Hero ─── */}
       <section className="relative overflow-hidden bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-        {/* Soft brand glow behind the header */}
+        {/* Bagliore del brand dietro l'intestazione */}
         <div
           className="pointer-events-none absolute inset-0 select-none"
           style={{
@@ -226,10 +230,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               </div>
             </div>
 
-            {/* Sticky sidebar — only real info: price, setup, integrations */}
+            {/* Sidebar sticky — solo info reali: prezzo, setup, integrazioni */}
             <aside className="lg:sticky lg:top-24 lg:self-start">
               <div className="space-y-6">
-                {/* Price + plan card */}
+                {/* Card prezzo + piano */}
                 <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
                   <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
@@ -311,7 +315,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   </Link>
                 </div>
 
-                {/* Integrations card */}
+                {/* Card integrazioni */}
                 <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
                   <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
@@ -338,7 +342,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   </div>
                 </div>
 
-                {/* Trust card */}
+                {/* Card fiducia */}
                 <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
                   <div className="flex items-start gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
@@ -362,11 +366,11 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
         </div>
       </section>
 
-      {/* ─── Content ─── */}
+      {/* ─── Contenuto ─── */}
       <section className="px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="space-y-8">
-            {/* What this agent automates */}
+            {/* Cosa automatizza questo agente */}
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/20">
               <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
@@ -387,7 +391,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               </div>
             </div>
 
-            {/* How it works */}
+            {/* Come funziona */}
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/20">
               <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
@@ -418,7 +422,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               </div>
             </div>
 
-            {/* Use cases */}
+            {/* Casi d'uso */}
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/20">
               <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-pink-500/15 text-pink-400">
@@ -474,7 +478,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
         </div>
       </section>
 
-      {/* ─── Related agents ─── */}
+      {/* ─── Agenti correlati ─── */}
       {relatedAgents.length > 0 && (
         <section className="border-t border-white/5 px-4 py-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
@@ -502,7 +506,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
         </section>
       )}
 
-      {/* ─── CTA ─── */}
+      {/* ─── Invito all'azione ─── */}
       <section className="border-t border-white/5 px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">

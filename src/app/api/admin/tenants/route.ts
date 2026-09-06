@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { registerTenant } from "@/lib/tenants";
 import { logAudit } from "@/lib/audit";
 
+// Route admin per registrare un tenant (credenziali di servizi esterni)
+// in memoria. Protetta dal token ADMIN_API_TOKEN nell'header Authorization.
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // Basic auth via header token
+    // Auth di base tramite token nell'header
     const auth = req.headers.get("authorization") || "";
     if (auth !== `Bearer ${process.env.ADMIN_API_TOKEN}`) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
@@ -13,7 +15,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // Expect shape: { id, google: { calendarId, refreshToken }, shopify: { shopDomain, accessToken } }
+    // Forma attesa: { id, google: { calendarId, refreshToken },
+    // shopify: { shopDomain, accessToken } }
     const { id, google, shopify } = body;
     if (!id)
       return new Response(JSON.stringify({ error: "missing id" }), {

@@ -17,9 +17,9 @@ export const DEFAULT_TOKEN_LIMIT = 300_000;
 export type Plan = {
   id: string;
   name: string;
-  price: number; // in cents
+  price: number; // in centesimi
   priceDisplay: string;
-  tokens: number; // max tokens per month (input + output)
+  tokens: number; // max token al mese (input + output)
   features: string[];
   addons?: {
     webSearch?: {
@@ -39,7 +39,7 @@ export type VerticalPricing = {
 };
 
 /**
- * Shopify E-commerce Pricing
+ * Prezzi E-commerce Shopify
  * - Shopify Agent + Lead Capture
  */
 export const SHOPIFY_PRICING: VerticalPricing = {
@@ -48,7 +48,7 @@ export const SHOPIFY_PRICING: VerticalPricing = {
     starter: {
       id: "shopify-starter",
       name: "Starter",
-      price: 999, // €9,99/month (999 centesimi)
+      price: 999, // €9,99/mese (999 centesimi)
       priceDisplay: "€9,99/mese",
       tokens: 300_000,
       features: [
@@ -61,7 +61,7 @@ export const SHOPIFY_PRICING: VerticalPricing = {
       ],
       addons: {
         webSearch: {
-          price: 499, // €4,99/month
+          price: 499, // €4,99/mese
           priceDisplay: "+€4,99/mese",
           description: "Web search con Tavily",
         },
@@ -70,7 +70,7 @@ export const SHOPIFY_PRICING: VerticalPricing = {
     growth: {
       id: "shopify-growth",
       name: "Growth",
-      price: 1499, // €14,99/month (1499 centesimi)
+      price: 1499, // €14,99/mese (1499 centesimi)
       priceDisplay: "€14,99/mese",
       tokens: 1_000_000,
       features: [
@@ -92,8 +92,8 @@ export const SHOPIFY_PRICING: VerticalPricing = {
 };
 
 /**
- * Services Pricing (Calendar Booking + Lead Capture)
- * - For restaurants, professionals, real estate
+ * Prezzi Servizi (prenotazione calendario + Lead Capture)
+ * - Per ristoranti, professionisti, immobiliare
  */
 export const SERVICES_PRICING: VerticalPricing = {
   vertical: "services",
@@ -101,7 +101,7 @@ export const SERVICES_PRICING: VerticalPricing = {
     starter: {
       id: "services-starter",
       name: "Starter",
-      price: 999, // €9,99/month (999 centesimi)
+      price: 999, // €9,99/mese (999 centesimi)
       priceDisplay: "€9,99/mese",
       tokens: 300_000,
       features: [
@@ -122,7 +122,7 @@ export const SERVICES_PRICING: VerticalPricing = {
     growth: {
       id: "services-growth",
       name: "Growth",
-      price: 1499, // €14,99/month (1499 centesimi)
+      price: 1499, // €14,99/mese (1499 centesimi)
       priceDisplay: "€14,99/mese",
       tokens: 1_000_000,
       features: [
@@ -144,7 +144,7 @@ export const SERVICES_PRICING: VerticalPricing = {
 };
 
 /**
- * Get pricing for a specific vertical
+ * Restituisce i prezzi per un verticale specifico
  */
 export function getPricing(vertical: "shopify" | "services"): VerticalPricing {
   switch (vertical) {
@@ -157,7 +157,7 @@ export function getPricing(vertical: "shopify" | "services"): VerticalPricing {
 }
 
 /**
- * Get a specific plan
+ * Restituisce un piano specifico
  */
 export function getPlan(
   vertical: "shopify" | "services",
@@ -168,19 +168,19 @@ export function getPlan(
 }
 
 /**
- * Calculate cost per 1000 tokens (cents)
- * Used for monitoring profitability against plan allowances.
+ * Calcola il costo per 1.000 token (in centesimi).
+ * Usato per monitorare la redditività rispetto alle allowance dei piani.
  */
 export function calculateCostPerToken(
-  planPrice: number, // in cents
-  tokens: number, // monthly token allowance
+  planPrice: number, // in centesimi
+  tokens: number, // allowance mensile di token
 ): number {
   if (tokens === 0) return 0;
   return (planPrice / tokens) * 1000;
 }
 
 /**
- * Check if usage is within plan limits
+ * Verifica se l'utilizzo è dentro i limiti del piano
  */
 export function isWithinLimit(
   currentUsage: number,
@@ -190,20 +190,21 @@ export function isWithinLimit(
 }
 
 /**
- * Overage billing.
+ * Fatturazione overage.
  *
- * Usage beyond the monthly token allowance is no longer blocked with 429:
- * it is billed automatically through a metered Price attached to the
- * customer's Stripe subscription (Stripe invoices it at the end of the
- * billing period, together with the renewal).
+ * L'utilizzo oltre l'allowance mensile di token non viene più bloccato con
+ * 429: viene fatturato in automatico tramite un Price metered agganciato
+ * all'abbonamento Stripe del cliente (Stripe lo fattura a fine periodo di
+ * fatturazione, insieme al rinnovo).
  *
- * - `OVERAGE_RATE_PER_1000_TOKENS`: amount charged per 1.000 extra tokens
- *   (cents). The actual price that gets billed lives in Stripe as a metered
- *   Price (`STRIPE_OVERAGE_PRICE_ID`); this constant mirrors it for UI copy
- *   and invoice fallbacks.
- * - `OVERAGE_HARD_CAP_MULTIPLIER`: even with overage billing, runs are blocked
- *   again (429) once usage reaches this multiple of the allowance, as a
- *   safety net against runaway agent loops.
+ * - `OVERAGE_RATE_PER_1000_TOKENS`: importo addebitato per 1.000 token extra
+ *   (in centesimi). Il prezzo realmente fatturato vive in Stripe come Price
+ *   metered (`STRIPE_OVERAGE_PRICE_ID`); questa costante lo rispecchia per i
+ *   testi UI e i fallback di fatturazione.
+ * - `OVERAGE_HARD_CAP_MULTIPLIER`: anche con la fatturazione overage le run
+ *   vengono di nuovo bloccate (429) quando l'utilizzo raggiunge questo
+ *   multiplo dell'allowance, come rete di sicurezza contro loop agenti fuori
+ *   controllo.
  */
-export const OVERAGE_RATE_PER_1000_TOKENS = 30; // €0,30 per 1.000 token (cents)
+export const OVERAGE_RATE_PER_1000_TOKENS = 30; // €0,30 per 1.000 token (centesimi)
 export const OVERAGE_HARD_CAP_MULTIPLIER = 2;

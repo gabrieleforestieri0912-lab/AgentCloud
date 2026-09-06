@@ -27,13 +27,14 @@ import {
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
 
-// Icons for the demo sidebar items — index-aligned with the localized list
-// (Overview, Agents, Integrations, Runs, Billing).
+// Icone per le voci della sidebar demo — allineate per indice con la lista
+// localizzata (Overview, Agents, Integrations, Runs, Billing).
 const SIDEBAR_ICONS = [LayoutDashboard, Bot, Plug, History, CreditCard];
 
-// Per-agent accent (icon chip tint) — index-aligned with the agent rows AND
-// the recent-activity feed in the dictionaries (Shopify, Support, Lead,
-// Copywriter, Email Manager), so a color identifies the same agent everywhere.
+// Accento per agente (tinta del chip icona) — allineato per indice sia con le
+// righe degli agenti sia con il feed attività recente nei dizionari (Shopify,
+// Support, Lead, Copywriter, Email Manager): un colore identifica sempre lo
+// stesso agente ovunque.
 const ACCENTS = [
   { icon: ShoppingBag, chip: "bg-purple-500/15 text-purple-300" },
   { icon: Headset, chip: "bg-emerald-500/15 text-emerald-300" },
@@ -42,7 +43,8 @@ const ACCENTS = [
   { icon: Mail, chip: "bg-sky-500/15 text-sky-300" },
 ];
 
-// Empty arrays — no fake data. Dashboard shows real data when connected.
+// Array vuoti — niente dati finti: la dashboard mostra i dati reali quando è
+// connessa.
 
 function RunsChart({
   title,
@@ -289,7 +291,7 @@ export default function DashboardSection() {
                           />
                           {status}
                         </span>
-                        {/* Runs (with a micro usage bar) */}
+                        {/* Esecuzioni (con mini barra di utilizzo) */}
                         <div className="order-last w-full sm:order-none sm:w-auto sm:min-w-[96px]">
                           <p className="text-sm font-semibold text-neutral-300 whitespace-nowrap">
                             {runs}

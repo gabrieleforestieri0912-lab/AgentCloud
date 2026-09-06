@@ -32,16 +32,16 @@ function asString(value: unknown): string | null {
 }
 
 /**
- * Normalize Stripe checkout session metadata into a typed object.
- * Accepts values from `session.metadata` (Payment Links inject every param
- * under `metadata[...]`, including `client_reference_id` and `email`).
+ * Normalizza i metadati della sessione checkout Stripe in un oggetto tipizzato.
+ * Accetta i valori da `session.metadata` (i Payment Links iniettano ogni
+ * parametro sotto `metadata[...]`, inclusi `client_reference_id` ed `email`).
  */
 export function parseCheckoutMetadata(
   metadata: Record<string, unknown>,
   extra?: { client_reference_id?: unknown; email?: unknown },
 ): CheckoutMetadata {
-  // New key is `tokens`; fall back to legacy `conversations` so payment
-  // links created before the token migration keep working.
+  // La chiave nuova è `tokens`; ripiega sulla legacy `conversations` così i
+  // payment link creati prima della migrazione ai token continuano a funzionare.
   const tokensRaw = asString(metadata.tokens) ?? asString(metadata.conversations);
   const tokens = tokensRaw ? Number(tokensRaw) : null;
   const vertical = asString(metadata.vertical);
@@ -69,11 +69,12 @@ export type CheckoutResolution = {
 };
 
 /**
- * Map a normalized checkout to the list of agents the customer should own
- * and the monthly token allowance of their plan.
+ * Mappa un checkout normalizzato alla lista di agenti che il cliente deve
+ * possedere e all'allowance mensile di token del proprio piano.
  *
- * - Agent-based checkouts: the single agent, with the configured allowance.
- * - Plan-based checkouts: all agents of the vertical, with the plan allowance.
+ * - Checkout basati su agente: il singolo agente, con l'allowance configurata.
+ * - Checkout basati su piano: tutti gli agenti del verticale, con l'allowance
+ *   del piano.
  */
 export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolution {
   if (info.agentId) {
@@ -86,8 +87,8 @@ export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolutio
   }
 
   if (info.planId && info.vertical) {
-    // plan_id arrives as `${vertical}-${tier}` (e.g. "shopify-growth");
-    // getPlan expects only the tier.
+    // plan_id arriva come `${vertical}-${tier}` (es. "shopify-growth");
+    // getPlan si aspetta solo il tier.
     const tier = info.planId.startsWith(`${info.vertical}-`)
       ? info.planId.slice(info.vertical.length + 1)
       : info.planId;
@@ -100,7 +101,7 @@ export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolutio
       return {
         agentIds: launchConfig.enabledAgents,
         tokenLimit: plan.tokens,
-        // plan_id is already stored as `${vertical}-${tier}` by the payment-link route.
+        // plan_id è già salvato come `${vertical}-${tier}` dalla route del payment link.
         planId: info.planId,
         vertical: info.vertical,
       };

@@ -30,9 +30,9 @@ export async function createClient() {
 }
 
 /**
- * Server-only: resolve the authenticated user from the session cookies.
- * Returns null when signed out. Never throws — callers can treat null as
- * "anonymous".
+ * Server-only: risolve l'utente autenticato dai cookie di sessione.
+ * Restituisce null quando non è loggato. Non lancia mai eccezioni — i
+ * chiamanti possono trattare null come "anonymous".
  */
 export async function getSessionUser(): Promise<User | null> {
   try {

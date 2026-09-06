@@ -27,14 +27,14 @@ import {
   HONEYPOT_FIELD_NAME,
 } from "@/lib/forms-security";
 
-// Cookie flags (mirrors the server-side constants in /api/waitlist).
+// Flag dei cookie (rispecchiano le costanti lato server in /api/waitlist).
 const JOINED_COOKIE = "ac_wl_joined";
 const JOINED_EMAIL_COOKIE = "ac_wl_email";
 
-// Floating brand marks echoing the hero constellation — ties the waitlist into
-// the landing page's visual language. A rich spread of companies (density is
-// deliberate: on the landing page the waitlist reads as "the whole market is
-// waiting for it").
+// Marchi fluttuanti che riprendono la costellazione dell'hero: agganciano la
+// waitlist al linguaggio visivo della landing. Una ricca distribuzione di
+// aziende (la densità è voluta: sulla landing la waitlist deve comunicare
+// "tutto il mercato la sta aspettando").
 const FLOATING_BUBBLES: FloatingBubble[] = [
   { top: "5%", left: "27%", size: "w-12 h-12", brand: "google", delay: "0.6s", anim: "animate-float-gentle" },
   { top: "8%", left: "7%", size: "w-12 h-12", brand: "shopify", delay: "0s", anim: "animate-float-gentle" },
@@ -59,8 +59,8 @@ const FLOATING_BUBBLES: FloatingBubble[] = [
 export default function WaitlistForm({
   initialRemaining,
 }: {
-  // Authoritative remaining count read from the database server-side, so the
-  // number is correct on the very first render (no fake 10/10 flash).
+  // Conteggio autoritativo dei posti rimasti, letto lato server dal DB, così
+  // il numero è corretto già al primo render (niente finto flash "10/10").
   initialRemaining: number;
 }) {
   const { dict, locale } = useLanguage();
@@ -75,15 +75,15 @@ export default function WaitlistForm({
       document.cookie.includes("ac_wl_joined=1"),
   );
   const [error, setError] = useState("");
-  // Starts from the server-provided value (no client-only fallback), so a
-  // refresh keeps the real count. Updated again on mount and after submit to
-  // stay in sync with the database.
+  // Parte dal valore fornito dal server (nessun fallback solo-client), così
+  // un refresh mantiene il conteggio reale. Aggiornato di nuovo al mount e
+  // dopo il submit per restare allineato al database.
   const [remainingSpots, setRemainingSpots] = useState(initialRemaining);
 
-  // Re-sync with the database on mount: authoritative spots count, and (when
-  // a previous join is remembered) whether the signup still exists. If the
-  // owner deleted the entry, clear the cookies so the form shows again instead
-  // of a stale success message.
+  // Risincronizza col DB al mount: conteggio posti autoritativo e, quando è
+  // ricordata un'iscrizione precedente, verifica che esista ancora. Se il
+  // proprietario ha cancellato la voce, pulisce i cookie così il form ricompare
+  // invece di un messaggio di successo stantio.
   useEffect(() => {
     fetch("/api/waitlist")
       .then((res) => (res.ok ? res.json() : null))
@@ -101,21 +101,22 @@ export default function WaitlistForm({
         }
       })
       .catch(() => {
-        // keep the client-side state on network errors
+        // mantiene lo stato client in caso di errori di rete
       });
   }, []);
 
-  // Error messages are transient alerts: auto-clear after a few seconds so they
-  // only briefly warn the user without blocking the form.
+  // Gli errori sono avvisi transitori: si auto-cancellano dopo pochi secondi
+  // così avvisano brevemente l'utente senza bloccare il form.
   useEffect(() => {
     if (!error) return;
     const t = setTimeout(() => setError(""), 4000);
     return () => clearTimeout(t);
   }, [error]);
-  // Derived — the waitlist is full when no spots are left (no separate setter).
+  // Derivato — la waitlist è piena quando non restano posti (nessun setter
+  // separato).
   const isFull = remainingSpots <= 0;
-  // The counter shows spots TAKEN (out of MAX_SPOTS), so it reads "4/20" and
-  // grows as people join — the bar below fills with the same ratio.
+  // Il contatore mostra i posti OCCUPATI (su MAX_SPOTS), quindi legge "4/20" e
+  // cresce con le iscrizioni — la barra sotto si riempie con lo stesso rapporto.
   const takenSpots = Math.min(MAX_SPOTS, Math.max(0, MAX_SPOTS - remainingSpots));
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [message, setMessage] = useState("");
@@ -178,8 +179,9 @@ export default function WaitlistForm({
       if (typeof data.remaining === "number") {
         setRemainingSpots(data.remaining);
       }
-      // Access-code holders (validated server-side) are let straight into the
-      // platform — every agent is unlocked for them, no success card needed.
+      // I possessori del codice (validato lato server) entrano direttamente
+      // nella piattaforma — ogni agente è sbloccato per loro, nessuna card di
+      // successo necessaria.
       if (data.accessGranted) {
         window.location.href = "/";
         return;
@@ -195,7 +197,7 @@ export default function WaitlistForm({
 
   return (
     <section className="relative flex min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)] px-4 py-6 sm:py-10">
-      {/* Decorative background — same language as the hero section */}
+      {/* Sfondo decorativo — stesso linguaggio della sezione hero */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/30 to-transparent" />
       <div
         className="absolute inset-0 opacity-40 pointer-events-none select-none"
@@ -205,10 +207,10 @@ export default function WaitlistForm({
         }}
       />
 
-      {/* Floating brand constellation */}
+      {/* Costellazione di marchi fluttuanti */}
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
-      {/* Language toggle — top-right of the page */}
+      {/* Toggle lingua — in alto a destra della pagina */}
       <div className="absolute top-4 right-4 z-20">
         <LanguageToggle />
       </div>
@@ -249,10 +251,10 @@ export default function WaitlistForm({
               {dict.waitlist.subtitle}
             </p>
 
-            {/* Countdown Timer */}
+            {/* Conto alla rovescia */}
             <CountdownTimer locale={locale} />
 
-            {/* Spots — compact inline */}
+            {/* Posti — compatto inline */}
             <div className="flex items-center justify-center gap-2 mb-5">
               <span className="text-xs font-semibold text-neutral-500">
                 {dict.waitlist.takenSpots}:
@@ -333,8 +335,8 @@ export default function WaitlistForm({
               </motion.div>
             ) : (
               <>
-                {/* Waitlist-full notice: blocks only new email signups — the
-                    access code still works below. */}
+                {/* Avviso waitlist piena: blocca solo le nuove iscrizioni via
+                    email — il codice di accesso qui sotto funziona ancora. */}
                 {isFull && (
                   <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-center">
                     <h3 className="text-sm font-bold text-white">
@@ -354,8 +356,9 @@ export default function WaitlistForm({
                   </div>
                 )}
 
-                {/* Single field: an email joins the waitlist, the access code
-                    unlocks the platform directly (server-side check). */}
+                {/* Campo unico: un'email iscrive alla waitlist, il codice di
+                    accesso sblocca direttamente la piattaforma (controllo lato
+                    server). */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Trappola Honeypot Anti-Bot: invisibile ai visitatori umani, compilata solo da scraper e bot */}
                   <div
@@ -400,7 +403,7 @@ export default function WaitlistForm({
                     type="submit"
                     disabled={
                       isSubmitting ||
-                      // The waitlist being full blocks only new email signups.
+                      // La waitlist piena blocca solo le nuove iscrizioni via email.
                       (isFull && email.trim() !== "" && !email.includes("@"))
                     }
                     className="w-full bg-linear-to-r from-brand-500 to-pink-500 text-white font-semibold py-3 px-6 rounded-full hover:opacity-90 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30"
@@ -420,7 +423,7 @@ export default function WaitlistForm({
         </div>
       </motion.div>
 
-      {/* Email popup — shown when the waitlist is full */}
+      {/* Popup email — mostrato quando la waitlist è piena */}
       <AnimatePresence>
         {showEmailModal && (
           <>

@@ -82,9 +82,9 @@ function normalizeMessages(messages: LLMMessage[]): MessageParam[] {
       const raw = rawBlocksByToolUses.get(toolUses);
       if (raw) return { role: "assistant", content: raw };
 
-      // Fallback: reconstruct tool_use blocks without thinking content. This
-      // is only safe for models without thinking (e.g. Haiku) — streaming
-      // responses always populate the cache first, so this path is rare.
+      // Fallback: ricostruisce i blocchi tool_use senza contenuto thinking.
+      // È sicuro solo per modelli senza thinking (es. Haiku) — le risposte in
+      // streaming popolano sempre prima la cache, quindi questo percorso è raro.
       const content: ContentBlockParam[] = toolUses.map((use) => ({
         type: "tool_use",
         id: use.id,
@@ -346,8 +346,9 @@ export function createAnthropicProvider(options?: {
           }
         }
 
-        // Cache the raw assistant blocks (thinking signatures + tool_use) so
-        // the next tool-loop turn can replay them verbatim.
+        // Mette in cache i blocchi grezzi dell'assistente (firme thinking +
+        // tool_use) così il prossimo turno del loop tool può riprodurli
+        // identici.
         if (toolUses.length > 0) {
           rawBlocksByToolUses.set(
             toolUses,
@@ -374,7 +375,7 @@ export function createAnthropicProvider(options?: {
 
       const { text, toolUses } = extractTextAndToolUses(response.content);
 
-      // Cache raw blocks for the next tool-loop turn.
+      // Mette in cache i blocchi grezzi per il prossimo turno del loop tool.
       if (toolUses.length > 0) {
         rawBlocksByToolUses.set(toolUses, contentToParams(response.content));
       }

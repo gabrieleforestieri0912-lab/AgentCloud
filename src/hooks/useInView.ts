@@ -1,4 +1,10 @@
 "use client";
+/**
+ * Hook condiviso di "reveal on scroll": osserva un elemento con un
+ * IntersectionObserver e restituisce { ref, inView }. Serve per le animazioni
+ * di ingresso delle sezioni (una volta visibili, l'animazione parte) senza
+ * librerie esterne.
+ */
 import { useEffect, useRef, useState } from "react";
 
 interface UseInViewOptions {

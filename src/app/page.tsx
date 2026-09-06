@@ -8,13 +8,16 @@ import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 
+// Homepage: pagina di destinazione componibile — navbar, hero, marketplace,
+// sezioni marketing e footer. È una Server Component pura: i contenuti sono
+// statici/strutturati e non richiedono stato client.
 export default async function Home() {
   return (
-    // One background for the whole landing: the gradient (previously only the
-    // hero) now stretches across every section. Sections stay transparent;
-    // the floating constellations are a decorative overlay above this layer.
+    // Un unico sfondo per tutta la landing: il gradiente (prima solo dell'hero)
+    // ora attraversa ogni sezione. Le sezioni restano trasparenti; le
+    // costellazioni fluttuanti sono un overlay decorativo sopra questo livello.
     <div className="relative flex min-h-screen flex-col overflow-x-clip bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
-{/* Ambient glow baked into the shared background */}
+{/* Bagliore ambientale incluso nello sfondo condiviso */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 select-none opacity-[0.35]"

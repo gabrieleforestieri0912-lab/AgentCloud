@@ -5,10 +5,10 @@ import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
 /**
  * GET /auth/callback?code=...&next=/dashboard
  *
- * OAuth (Google) and email-confirmation links from Supabase land here with a
- * short-lived `code` (PKCE flow). The code must be exchanged for a session
- * before the user can access protected pages — without this route the session
- * is never created and the user bounces back to /login.
+ * Qui arrivano i link OAuth (Google) e di conferma email di Supabase con un
+ * `code` monouso e a breve scadenza (flusso PKCE). Il codice va scambiato con
+ * una sessione prima che l'utente possa accedere alle pagine protette — senza
+ * questa route la sessione non viene mai creata e l'utente rimbalza su /login.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=auth_callback`);
   }
 
-  // Only allow same-origin relative destinations to avoid open redirects.
+  // Consenti solo destinazioni relative same-origin per evitare open redirect.
   const safeNext = isSafeRedirectPath(next) ? next : "/dashboard";
   return NextResponse.redirect(`${origin}${safeNext}`);
 }

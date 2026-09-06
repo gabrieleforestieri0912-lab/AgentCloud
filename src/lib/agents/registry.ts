@@ -662,9 +662,9 @@ export function getAgentRuntimeConfig(
 }
 
 /**
- * Get the list of tools that should be enabled for an agent.
- * By default, returns only defaultTools.
- * If feature flags are enabled, can return additional tools.
+ * Restituisce la lista degli strumenti da abilitare per un agente.
+ * Di default restituisce solo i defaultTools.
+ * Se i feature flag sono attivi può restituire strumenti aggiuntivi.
  */
 export function getEnabledTools(
   agentId: string,
@@ -676,15 +676,15 @@ export function getEnabledTools(
   const config = AGENT_RUNTIME[agentId];
   if (!config) return [];
 
-  // If specific tools are provided, use those
+  // Se sono indicati strumenti specifici, usa quelli
   if (options?.enabledTools) {
     return options.enabledTools.filter((tool) => config.tools.includes(tool));
   }
 
-  // Otherwise, use default tools
+  // Altrimenti usa i tool predefiniti
   const tools = [...config.defaultTools];
 
-  // Optionally enable optional tools
+  // Abilita opzionalmente i tool opzionali
   if (options?.enableOptional && config.optionalTools) {
     tools.push(...config.optionalTools);
   }

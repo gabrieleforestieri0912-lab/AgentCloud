@@ -43,8 +43,8 @@ function getTimeLeft(): TimeUnit[] {
 
 const ZERO = getTimeUnits(0, 0, 0, 0);
 
-// Cached snapshot so `getSnapshot` returns a stable reference between ticks
-// (required by useSyncExternalStore to avoid render loops).
+// Snapshot in cache: `getSnapshot` restituisce un riferimento stabile tra un
+// tick e l'altro (richiesto da useSyncExternalStore per evitare loop di render).
 let snapshot: TimeUnit[] = ZERO;
 
 function subscribe(callback: () => void): () => void {
@@ -65,7 +65,8 @@ function getSnapshot(): TimeUnit[] {
   return snapshot;
 }
 
-// Stable on the server so server and client HTML match (no hydration mismatch).
+// Stabile sul server così HTML server e client combaciano (nessun mismatch di
+// hydration).
 function getServerSnapshot(): TimeUnit[] {
   return ZERO;
 }
@@ -92,7 +93,7 @@ export default function CountdownTimer({ locale = "en" }: { locale?: string }) {
         </span>
       </div>
 
-      {/* Timer blocks */}
+      {/* Blocchi del timer */}
       <div className="flex items-center justify-center gap-2">
         {units.map((unit, i) => (
           <div key={unit.label} className="flex items-center gap-2">

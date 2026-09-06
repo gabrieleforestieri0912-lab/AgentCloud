@@ -58,11 +58,12 @@ export async function listBusinessReviews(
   const tenantId = params.tenantId || "default";
   logAudit("reviews_list_fetch", { tenantId, minRating: params.minRating });
 
-  // If live Google credentials exist for the tenant, we query Google Business API
+  // Se per il tenant esistono credenziali Google live, interroghiamo la Google
+  // Business API
   const creds = getTenantCredentials(tenantId);
   const token = creds?.google?.accessToken;
 
-  // If live Google API access is configured and account id is set:
+  // Se è configurato l'accesso live alla Google API ed è impostato l'account id:
   if (token && process.env.GOOGLE_BUSINESS_ACCOUNT_ID) {
     try {
       const url = `https://mybusiness.googleapis.com/v4/accounts/${process.env.GOOGLE_BUSINESS_ACCOUNT_ID}/locations/-/reviews`;
@@ -86,7 +87,7 @@ export async function listBusinessReviews(
     }
   }
 
-  // Otherwise return local per-tenant reviews
+  // Altrimenti restituisci le recensioni locali per tenant
   const localReviews = getOrCreateTenantReviews(tenantId);
   return filterReviews(localReviews, params);
 }
@@ -137,7 +138,7 @@ export async function replyToBusinessReview(
     }
   }
 
-  // Update in local per-tenant store
+  // Aggiorna nello store locale per-tenant
   const reviews = getOrCreateTenantReviews(tenantId);
   const target = reviews.find((r) => r.reviewId === reviewId);
   if (target) {

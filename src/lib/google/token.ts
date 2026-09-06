@@ -46,8 +46,8 @@ export async function getValidGoogleAccessToken(
       conn.expiresAt,
     );
     if (!refreshed) {
-      // Refresh failed (revoked token, network, misconfig) — only fall back to
-      // the stored access token if it hasn't expired yet.
+      // Refresh fallito (token revocato, rete, config errata) — ripiega
+      // sull'access token salvato solo se non è ancora scaduto.
       if (shouldRefreshToken(conn.expiresAt)) {
         return null;
       }
@@ -95,8 +95,8 @@ export async function refreshGoogleAccessToken(
     };
     if (!json.access_token) return null;
     const expiresInMs = (json.expires_in || 3600) * 1000;
-    // Base the new expiry on the current wall time; if the previous token was
-    // still valid we simply extend from now (Google issues ~1h tokens).
+    // La nuova scadenza si calcola sull'orologio corrente: se il token precedente
+    // era ancora valido, lo si estende semplicemente da adesso (Google emette token di ~1h).
     return {
       accessToken: json.access_token,
       expiresAt: new Date(Date.now() + expiresInMs).toISOString(),

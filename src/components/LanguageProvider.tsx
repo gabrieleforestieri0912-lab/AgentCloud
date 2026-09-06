@@ -56,7 +56,7 @@ export function LanguageProvider({
     (next: Locale) => {
       setLocaleState(next);
       document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-      // Coalesce rapid toggling into a single background refresh.
+      // Unisce i cambi rapidi di lingua in un unico refresh di sottofondo.
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
       refreshTimer.current = setTimeout(() => router.refresh(), 200);
     },

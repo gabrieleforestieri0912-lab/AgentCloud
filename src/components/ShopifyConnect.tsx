@@ -44,7 +44,7 @@ export default function ShopifyConnect({
   }, []);
 
   const connect = () => {
-    // Accept full store links (https://…/admin) as well as bare domains.
+    // Accetta sia link completi al negozio (https://…/admin) sia domini nudi.
     const s = normalizeShopInput(shop) ?? shop.trim().toLowerCase();
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);

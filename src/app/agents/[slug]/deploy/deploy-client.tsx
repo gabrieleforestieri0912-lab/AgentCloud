@@ -37,11 +37,16 @@ const NO_CONNECTIONS: DeployConnections = {
 };
 
 /**
- * Which real OAuth connector an integration label maps to.
- *   "shopify" → Shopify OAuth (needs the store domain first)
- *   "google"  → Google OAuth (Gmail + Calendar, read & write: send/delete emails, create/delete events with reminders)
- *   null      → no live connector yet: the agent chat is where the
- *               user can try the agent and reach its tools.
+ * Client del form di deploy: configura l'agente (impostazioni, connessioni,
+ * consenso) e offre le due opzioni di consegna (link diretto / embed).
+ * Gestisce anche l'esito OAuth appena concluso (?shopify= / ?google=).
+ *
+ * Quale connettore OAuth reale corrisponde a un'etichetta di integrazione:
+ *   "shopify" → OAuth Shopify (serve prima il dominio del negozio)
+ *   "google"  → OAuth Google (Gmail + Calendar, lettura e scrittura: invio/
+ *               cancellazione email, creazione/cancellazione eventi con promemoria)
+ *   null      → nessun connettore attivo: la chat dell'agente è il punto in cui
+ *               l'utente può provare l'agente e usare i suoi strumenti.
  */
 type ConnectorKind = "shopify" | "google" | null;
 
@@ -60,9 +65,9 @@ export default function DeployAgentClient({
   connections = NO_CONNECTIONS,
 }: {
   slug: string;
-  /** Navbar agent list resolved server-side (the FULL catalog for access holders). */
+  /** Lista agenti della navbar risolta lato server (catalogo COMPLETO per chi ha il codice). */
   marketplaceAgents?: Agent[];
-  /** Real per-user connection state (server-side), for the active badges. */
+  /** Stato reale delle connessioni per utente (lato server), per i badge attivi. */
   connections?: DeployConnections;
 }) {
   const { dict, locale } = useLanguage();
@@ -73,13 +78,13 @@ export default function DeployAgentClient({
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  // Integration currently expanding its inline Shopify connect form.
+  // Integrazione che in questo momento mostra il form Shopify inline.
   const [connectingIntegration, setConnectingIntegration] = useState<
     string | null
   >(null);
   const [shopDomain, setShopDomain] = useState("");
-  // Outcome of a just-finished OAuth round-trip (?shopify= / ?google=), shown
-  // inline on this page instead of bouncing the user to the dashboard.
+  // Esito di un round-trip OAuth appena concluso (?shopify= / ?google=),
+  // mostrato inline su questa pagina invece di rimbalzare alla dashboard.
   const [banner, setBanner] = useState<{
     kind: "ok" | "err";
     msg: string;
@@ -115,8 +120,8 @@ export default function DeployAgentClient({
 
   const steps = dict.deploy.steps;
 
-  // window.location.origin is only known on the client — subscribe to it
-  // directly (useSyncExternalStore) instead of setState-in-effect.
+  // window.location.origin è noto solo lato client — ci si sottoscrive
+  // direttamente (useSyncExternalStore) invece di usare setState-in-effect.
   const origin = useSyncExternalStore(
     subscribeToLocation,
     getWindowOrigin,
@@ -126,20 +131,20 @@ export default function DeployAgentClient({
   if (!agent) notFound();
 
   /**
-   * What happens when the user clicks "Connetti" on a tool:
-   *  - Shopify → expand the inline store-domain form, then OAuth
-   *    (/api/shopify/install?shop=<domain>)
-   *  - Google tools (Gmail, Google Calendar, …) → Google OAuth consent
+   * Cosa succede quando l'utente clicca "Connetti" su uno strumento:
+   *  - Shopify → apre inline il form per il dominio del negozio, poi OAuth
+   *    (/api/shopify/install?shop=<dominio>)
+   *  - Strumenti Google (Gmail, Google Calendar, …) → consenso OAuth Google
    *    (/api/auth/google/connect)
-   *  - any other tool → open the agent's live chat, where the agent can be
-   *    tried and its available tools used.
+   *  - Qualsiasi altro strumento → apre la chat live dell'agente, dove si può
+   *    provare l'agente e usare gli strumenti disponibili.
    */
   const startConnect = (integration: string) => {
     const kind = integrationKind(integration);
     const isConnected =
       (kind === "shopify" && connections.shopifyConnected) ||
       (kind === "google" && connections.googleConnected);
-    // Already connected → manage/disconnect from the dashboard.
+    // Già connesso → gestisci/scollega dalla dashboard.
     if (isConnected) {
       router.push("/dashboard");
       return;
@@ -162,7 +167,7 @@ export default function DeployAgentClient({
   };
 
   const connectShopify = (domain: string) => {
-    // Accept full store links (https://…/admin) as well as bare domains.
+    // Accetta sia link completi al negozio (https://…/admin) sia domini nudi.
     const s = normalizeShopInput(domain) ?? domain.trim().toLowerCase();
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);
@@ -188,7 +193,7 @@ export default function DeployAgentClient({
             {dict.deploy.backToAgent}
           </Link>
 
-          {/* Agent header card */}
+          {/* Card di intestazione dell'agente */}
           <div className="mb-8 overflow-hidden rounded-2xl border border-white/5 bg-neutral-900 shadow-sm">
             <div className="border-b border-white/5 bg-linear-to-r from-neutral-900 to-neutral-950 px-6 py-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -213,7 +218,7 @@ export default function DeployAgentClient({
                   </div>
                 </div>
 
-                {/* Step indicator */}
+                {/* Indicatore dei passaggi */}
                 <div className="flex items-center gap-2">
                   {steps.map((step, index) => (
                     <div key={step} className="flex items-center gap-2">
@@ -255,12 +260,12 @@ export default function DeployAgentClient({
             </div>
           )}
 
-          {/* minmax(0,1fr): without it the 1fr track's min-content (long words,
-              inputs) forced ~8px horizontal overflow on 320px screens. */}
+          {/* minmax(0,1fr): senza, il min-content della traccia 1fr (parole
+              lunghe, input) causava ~8px di overflow orizzontale su schermi 320px. */}
           <div className="grid gap-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_380px]">
-            {/* Main column */}
+            {/* Colonna principale */}
             <div className="space-y-6">
-              {/* Agent settings */}
+              {/* Impostazioni agente */}
               <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
                 <div className="mb-6 flex items-center gap-2.5 border-b border-white/5 pb-4">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
@@ -328,7 +333,7 @@ export default function DeployAgentClient({
                 </div>
               </div>
 
-              {/* Connect tools */}
+              {/* Connetti strumenti */}
               <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
                 <div className="mb-6 flex items-center gap-2.5 border-b border-white/5 pb-4">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
@@ -416,7 +421,7 @@ export default function DeployAgentClient({
                           </span>
                         </button>
 
-                        {/* Inline Shopify domain form (unfolded on click) */}
+                        {/* Form inline del dominio Shopify (aperto al click) */}
                         {expanded && kind === "shopify" && !connected && (
                           <div className="mt-2 rounded-xl border border-white/5 bg-neutral-900 p-3">
                             <div className="flex gap-2">
@@ -581,7 +586,8 @@ export default function DeployAgentClient({
                   </span>
                 </label>
 
-                {/* Direct Stripe purchase: admin/access holders go directly to chat with agent */}
+                {/* Acquisto diretto Stripe: admin/detentori del codice vanno
+                    direttamente in chat con l'agente */}
                 {hasAccessOnClient() ? (
                   <Link
                     href={`/chat?agent=${agent.slug}`}
@@ -607,7 +613,7 @@ export default function DeployAgentClient({
                           window.location.href = data.url;
                         }
                       } catch {
-                        // user stays on page on error
+                        // in caso di errore l'utente resta sulla pagina
                       } finally {
                         setIsCheckingOut(false);
                       }
@@ -679,7 +685,7 @@ export default function DeployAgentClient({
                 </p>
               </div>
 
-              {/* Delivery options */}
+              {/* Opzioni di consegna */}
               <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm">
                 <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
@@ -696,7 +702,7 @@ export default function DeployAgentClient({
                 </div>
 
                 <div className="space-y-4">
-                  {/* Option B: Direct link */}
+                  {/* Opzione B: link diretto */}
                   <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 p-4">
                     <div className="mb-2 flex items-center gap-2">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-xs font-bold text-white">
@@ -734,7 +740,7 @@ export default function DeployAgentClient({
                     </div>
                   </div>
 
-                  {/* Option A: Embed script */}
+                  {/* Opzione A: script di embed */}
                   <div className="rounded-xl border border-white/5 bg-neutral-800/60 p-4">
                     <div className="mb-2 flex items-center gap-2">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-white text-xs font-bold">
@@ -748,9 +754,9 @@ export default function DeployAgentClient({
                       <span dangerouslySetInnerHTML={{ __html: dict.deploy.embedScriptDesc }} />
                     </p>
                     <div className="relative">
-                      {/* break-all keeps the long script tag from setting the
-                          page's min-content width (was causing 180px horizontal
-                          scroll on 320–414px screens). */}
+                      {/* break-all evita che il lungo tag script imposti la
+                          larghezza min-content della pagina (causava scroll
+                          orizzontale di 180px su schermi 320–414px). */}
                       <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-neutral-950 p-3 text-[10px] leading-relaxed text-green-400">
 {`<script src="${origin}/api/embed/${agent.slug}"></script>`}
                       </pre>
@@ -780,10 +786,10 @@ export default function DeployAgentClient({
   );
 }
 
-// --- window.location.origin helpers for useSyncExternalStore ---
+// --- Helper per window.location.origin usati con useSyncExternalStore ---
 
 function subscribeToLocation() {
-  // origin never changes for a page lifetime — no subscription needed.
+  // l'origin non cambia mai per la vita della pagina — nessuna sottoscrizione.
   return () => {};
 }
 

@@ -41,7 +41,7 @@ export default function MarketplaceSection() {
           </p>
         </motion.div>
 
-        {/* Quick solutions grid with premium interactive cards */}
+        {/* Griglia soluzioni rapide con card interattive premium */}
         <motion.div
           className="mb-14 grid gap-4 border-y border-white/5 py-8 sm:grid-cols-2 lg:grid-cols-4"
           initial="hidden"
@@ -83,7 +83,7 @@ export default function MarketplaceSection() {
           ))}
         </motion.div>
 
-        {/* Bottom browse button */}
+        {/* Bottone "sfoglia" in fondo */}
         <motion.div
           className="text-center"
           initial={{ opacity: 0, scale: 0.95 }}
@@ -99,7 +99,7 @@ export default function MarketplaceSection() {
           </Link>
         </motion.div>
 
-        {/* Custom agent box */}
+        {/* Box agente personalizzato */}
         <motion.div
           className="mt-14 overflow-hidden rounded-2xl border border-brand-500/20 bg-linear-to-br from-brand-950/50 via-neutral-900 to-purple-950/30 p-6 shadow-sm shadow-brand-500/5 sm:flex sm:items-center sm:justify-between sm:gap-6"
           initial={{ opacity: 0, y: 30 }}

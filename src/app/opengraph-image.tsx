@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+// Genera l'immagine Open Graph di default del sito (1200x630) con next/og,
+// quindi senza asset statici da mantenere: basta modificare questo JSX.
 export const runtime = "nodejs";
 
 export const alt = "AgentCloud — Agenti AI per la tua azienda";

@@ -1,10 +1,10 @@
 import WaitlistForm from "@/components/WaitlistForm";
 import { MAX_SPOTS, getRemainingSpots } from "@/lib/waitlist";
 
-// Server component: reads the authoritative remaining-spots count from the
-// database (or falls back to MAX_SPOTS if the check fails in dev) and passes
-// it to the client form, so the number is correct on the very first render —
-// no misleading 10/10 flash on refresh.
+// Pagina waitlist: server component che legge il conteggio autoritativo dei
+// posti rimasti dal DB (con fallback a MAX_SPOTS in caso di errore) e lo passa
+// al form client, così il numero è corretto già al primo render — niente
+// fuorviante flash "10/10" al refresh.
 async function getInitialRemaining(): Promise<number> {
   try {
     return await getRemainingSpots();

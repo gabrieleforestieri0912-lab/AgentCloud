@@ -17,34 +17,34 @@ import {
 import { registerShopifyWebhooks } from "@/lib/shopify/webhooks";
 
 /**
- * Phase 3 — Shopify OAuth callback + token exchange.
+ * Fase 3 — callback OAuth Shopify + scambio del token.
  *
  * GET /api/shopify/callback?code&shop&state&hmac&timestamp&...
- *   1. Resolves who is connecting:
- *        - Access-code holder (admin, no account) → the shared tenant
- *          connection (TENANT_SHOPIFY_ID). No login and no email recorded.
- *        - Signed-in user → their own (user, shop) row.
- *        - Anyone else → back to /login?intent=shopify to sign in first.
- *   2. Verifies the `state` CSRF cookie (rejects on mismatch).
- *   3. Verifies the request HMAC with SHOPIFY_API_SECRET (integrity of redirect).
- *   4. Exchanges `code` for an access token via the Shopify token endpoint.
- *   5. Encrypts the token and stores it per (tenant|user, shop) in shopify_connections.
+ *   1. Risolve chi si sta connettendo:
+ *        - Possessore del codice (admin, senza account) → connessione tenant
+ *          condivisa (TENANT_SHOPIFY_ID). Nessun login e nessuna email salvata.
+ *        - Utente loggato → la propria riga (user, shop).
+ *        - Chiunque altro → di nuovo a /login?intent=shopify per accedere prima.
+ *   2. Verifica il cookie CSRF `state` (rifiuta in caso di mismatch).
+ *   3. Verifica l'HMAC della richiesta con SHOPIFY_API_SECRET (integrità del redirect).
+ *   4. Scambia `code` con un access token via l'endpoint token di Shopify.
+ *   5. Cripta il token e lo salva per (tenant|utente, negozio) in shopify_connections.
  *
- * The user is sent back to the page they started from (returnTo cookie) with
- * ?shopify=connected|error&reason=... — never a bare redirect to a dead end.
+ * L'utente torna alla pagina da cui era partito (cookie returnTo) con
+ * ?shopify=connected|error&reason=... — mai un redirect secco verso un vicolo cieco.
  */
 export async function GET(req: NextRequest) {
   const sessionUser = await getSessionUser();
   const isAccessHolder = req.cookies.get(ACCESS_COOKIE)?.value === "1";
   if (!sessionUser && !isAccessHolder) {
-    // Session expired mid-flow: the one-time code can't be replayed, so the
-    // user just needs to start the connection again after signing in.
+    // Sessione scaduta a metà flusso: il codice monouso non è riutilizzabile,
+    // quindi l'utente deve solo riavviare la connessione dopo il login.
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("intent", "shopify");
     return NextResponse.redirect(loginUrl);
   }
-  // Access-code holders (with or without a session) connect the shared
-  // tenant store; regular signed-in users connect their own store.
+  // I possessori del codice (con o senza sessione) collegano lo store tenant
+  // condiviso; gli utenti normali loggati collegano il proprio store.
   const ownerId = isAccessHolder ? TENANT_SHOPIFY_ID : sessionUser!.id;
 
   const returnBase = () => {
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     return fail("missing_params");
   }
 
-  // 2. CSRF state check
+  // 2. Controllo CSRF dello state
   const cookieState = readShopifyStateCookie(req);
   if (
     !cookieState ||
@@ -88,12 +88,12 @@ export async function GET(req: NextRequest) {
     return fail("config");
   }
 
-  // 3. HMAC integrity check
+  // 3. Controllo di integrità HMAC
   if (!verifyShopifyHmac(params, secret)) {
     return fail("hmac");
   }
 
-  // 4. Exchange code for an access token
+  // 4. Scambio del codice con un access token
   let tokenData: { access_token?: string; scope?: string };
   try {
     const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     return fail("no_token");
   }
 
-  // 5. Encrypt + persist (per owner, per shop)
+  // 5. Cripta e salva (per proprietario, per negozio)
   try {
     await upsertShopifyConnection({
       userId: ownerId,
@@ -126,8 +126,8 @@ export async function GET(req: NextRequest) {
     return fail("store");
   }
 
-  // 6. Best-effort: register mandatory webhooks (app/uninstalled + GDPR).
-  // Non-fatal — missing webhooks only degrade uninstall/revocation handling.
+  // 6. Best-effort: registra i webhook obbligatori (app/uninstalled + GDPR).
+  // Non fatale — webhook mancanti degradano solo gestione uninstall/revoca.
   void registerShopifyWebhooks(shop, accessToken).catch(() => {});
 
   return out("shopify=connected");

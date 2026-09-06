@@ -20,12 +20,13 @@ import { createClient } from "@/lib/supabase/client";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 
-// The hero conversation is persisted here so the full chat page
-// (/chat) picks it up automatically and shows it as a saved conversation.
+// La conversazione dell'hero viene salvata qui così la pagina chat completa
+// (/chat) la riprende in automatico come conversazione salvata.
 export const HERO_CONVERSATION_STORAGE_KEY = "agentcloud_hero_conv";
 
-// Conversations committed by the hero's reset button accumulate here (list of
-// message arrays); /chat imports them together with the live draft above.
+// Le conversazioni archiviate dal bottone reset dell'hero si accumulano qui
+// (lista di array di messaggi); /chat le importa insieme alla bozza live qui
+// sopra.
 export const HERO_CONVERSATION_HISTORY_KEY = "agentcloud_hero_conv_history";
 
 type HeroMessage = {
@@ -33,7 +34,7 @@ type HeroMessage = {
   role: "user" | "assistant";
   content: string;
   created_at: string;
-  // Error bubble: shows the failure text plus a contact link.
+  // Bolla di errore: mostra il testo del fallimento più un link di contatto.
   error?: boolean;
 };
 
@@ -55,17 +56,17 @@ export default function HeroSection() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
   const heroColumnRef = useRef<HTMLDivElement>(null);
-  // In-flight stream, aborted when the user resets mid-answer.
+  // Stream in corso, interrotto quando l'utente fa reset a metà risposta.
   const streamAbortRef = useRef<AbortController | null>(null);
-  // True while a reset has discarded the running stream: late chunks and the
-  // catch handler must not repopulate the cleared conversation.
+  // True mentre un reset ha scartato lo stream attivo: i chunk tardivi e il
+  // catch handler non devono ripopolare la conversazione azzerata.
   const discardStreamRef = useRef(false);
 
   const hasMessages = messages.length > 0 || isTyping;
   const userCount = messages.filter((m) => m.role === "user").length;
   const remaining = Math.max(0, DEMO_LIMIT - userCount);
 
-  // Expanded prompts for suggestion chips — well-formed sentences per locale
+  // Prompt estesi per i chip di suggerimento — frasi ben formate per lingua
   const CHIP_EXPANDED: Record<string, string[]> = {
     it: [
       "Vorrei automatizzare il mio e-commerce: puoi mostrarmi come gestire prodotti, ordini e link al carrello con AgentCloud?",
@@ -109,7 +110,7 @@ export default function HeroSection() {
     const prompts = CHIP_EXPANDED[localeKey] ?? CHIP_EXPANDED.en;
     const idx = chips.indexOf(chip);
     if (idx >= 0 && prompts[idx]) return prompts[idx];
-    // Fallback: return chip with expanded wrapper
+    // Fallback: restituisci il chip con la formula estesa
     return isItFallback(locale) ? `Vorrei sapere di più su: ${chip}` : `Tell me more about: ${chip}`;
   }
 
@@ -117,8 +118,10 @@ export default function HeroSection() {
     return l === "it";
   }
 
-  // Track auth state to enforce 10-message limit only for guests
-  // Admin / access-code holders are treated as authenticated (same handling as normal users, no demo limit, history saved)
+  // Tiene traccia dello stato di autenticazione per applicare il limite di 10
+  // messaggi solo agli ospiti.
+  // Admin / possessori del codice sono trattati come autenticati (stessa
+  // gestione degli utenti normali: niente limite demo, cronologia salvata)
   useEffect(() => {
     const supabase = createClient();
     const checkAccess = () => hasAccessOnClient();
@@ -129,7 +132,7 @@ export default function HeroSection() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Auto-resize textarea
+  // Auto-resize della textarea
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
@@ -137,7 +140,7 @@ export default function HeroSection() {
     ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
   }, [input]);
 
-  // Keep the newest message in view inside the chat's scrollable area.
+  // Tiene in vista il messaggio più recente nell'area scrollabile della chat.
   const scrollToBottom = useCallback(() => {
     const container = chatBodyRef.current;
     if (container) {
@@ -149,8 +152,8 @@ export default function HeroSection() {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
-  // Persist the hero conversation locally so the full chat page (/chat)
-  // imports it automatically as a saved conversation.
+  // Salva la conversazione dell'hero in locale così la pagina chat completa
+  // (/chat) la importa in automatico come conversazione salvata.
   useEffect(() => {
     if (messages.length === 0) return;
     try {
@@ -159,13 +162,14 @@ export default function HeroSection() {
         JSON.stringify(messages),
       );
     } catch {
-      // Storage unavailable — the full chat simply starts fresh.
+      // Storage non disponibile — la chat completa riparte semplicemente da zero.
     }
   }, [messages]);
 
-  // When a long conversation overflows a short viewport the section stays
-  // locked to the screen (side decorations keep their place): the center
-  // column scrolls instead, pinned to the bottom so the input stays visible.
+  // Quando una conversazione lunga supera un viewport basso la sezione resta
+  // ancorata allo schermo (le decorazioni laterali tengono il posto): a
+  // scorrere è la colonna centrale, fissata in basso così l'input resta
+  // visibile.
   useEffect(() => {
     if (!hasMessages) return;
     const el = heroColumnRef.current;
@@ -175,7 +179,7 @@ export default function HeroSection() {
   async function sendText(text: string) {
     const trimmed = text.trim();
     if (!trimmed || isTyping) return;
-    // Demo limit for unauthenticated users: 10 user messages, then show login modal
+    // Limite demo per utenti non autenticati: 10 messaggi utente, poi modale di login
     if (!isAuthed && userCount >= DEMO_LIMIT) {
       setShowLimitModal(true);
       return;
@@ -194,15 +198,15 @@ export default function HeroSection() {
 
     const aiMsgId = heroId();
 
-    // Try the Claude-backed chat endpoint first, fall back to local responses.
+    // Prova prima l'endpoint chat basato su Claude, senza risposte locali di ripiego.
     discardStreamRef.current = false;
     try {
       const controller = new AbortController();
       streamAbortRef.current = controller;
-      // Generous guard: the endpoint streams headers immediately, but the
-      // first token can take a while on cold starts (route compilation,
-      // serverless boot, live platform-data query). 45s covers those without
-      // hanging forever on a truly dead backend.
+      // Guardia generosa: l'endpoint invia subito gli header, ma il primo token
+      // può tardare sui cold start (compilazione route, boot serverless, query
+      // live sui dati piattaforma). 45s copre questi casi senza restare appesi
+      // per sempre a un backend davvero morto.
       const timeout = setTimeout(() => controller.abort(), 45000);
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -265,13 +269,14 @@ export default function HeroSection() {
         }
       }
 
-      // Stream ended without any content — treat as backend failure.
+      // Stream terminato senza contenuto — trattalo come errore del backend.
       if (!aiText.trim()) throw new Error("Empty response");
     } catch {
       if (discardStreamRef.current) return;
-      // No canned answers: the hero chat uses the live AI backend. When the AI backend
-      // is unreachable (timeout, missing API key, provider error), show an
-      // honest error instead of a pre-made response.
+      // Niente risposte preimpostate: la chat dell'hero usa il backend AI live.
+      // Quando il backend AI non è raggiungibile (timeout, API key mancante,
+      // errore del provider), mostra un errore onesto invece di una risposta
+      // preconfezionata.
       setMessages((prev) => [
         ...prev,
         {
@@ -304,11 +309,11 @@ export default function HeroSection() {
 
   function handleChipClick(text: string) {
     const expanded = getExpandedChip(text);
-    // Show the well-formed sentence directly in the demo chat, not just the chip word
+    // Mostra nella chat demo la frase ben formata, non solo la parola del chip
     sendText(expanded);
   }
 
-  // Save a finished demo conversation into the history list imported by /chat.
+  // Salva una conversazione demo conclusa nella lista cronologia importata da /chat.
   function saveToChatHistory(conversation: HeroMessage[]) {
     if (conversation.length === 0) return;
     try {
@@ -319,19 +324,19 @@ export default function HeroSection() {
         if (Array.isArray(parsed)) list = parsed as HeroMessage[][];
       }
       list.push(conversation);
-      // Keep only the most recent ones to avoid unbounded growth.
+      // Conserva solo le più recenti per evitare una crescita illimitata.
       if (list.length > 30) list = list.slice(list.length - 30);
       localStorage.setItem(
         HERO_CONVERSATION_HISTORY_KEY,
         JSON.stringify(list),
       );
     } catch {
-      // Storage unavailable — the conversation is simply not archived.
+      // Storage non disponibile — la conversazione semplicemente non viene archiviata.
     }
   }
 
-  // Reset the demo chat: save the current conversation into the real chat
-  // history, then clear the box so a fresh question can be asked.
+  // Reset della chat demo: salva la conversazione corrente nella cronologia
+  // della chat reale, poi svuota la casella così si può fare una nuova domanda.
   function handleReset() {
     saveToChatHistory(messages);
     discardStreamRef.current = true;
@@ -340,11 +345,11 @@ export default function HeroSection() {
     setMessages([]);
     setInput("");
     try {
-      // The conversation is now in history; drop the live draft so /chat does
-      // not import it twice.
+      // La conversazione è ora in cronologia; elimina la bozza live così /chat
+      // non la importa due volte.
       localStorage.removeItem(HERO_CONVERSATION_STORAGE_KEY);
     } catch {
-      // ignore
+      // ignora
     }
     textareaRef.current?.focus();
   }
@@ -355,10 +360,10 @@ export default function HeroSection() {
     (m) => m.role === "assistant" && m.content.length > 0,
   );
 
-  // The hero is locked to the viewport (`h-dvh`) in both states so the side
-  // constellations never drift when the demo chat grows. At rest the content
-  // is vertically centered; once chatting, the center column scrolls
-  // internally on short screens instead of stretching the section.
+  // L'hero resta ancorato al viewport (`h-dvh`) in entrambi gli stati così le
+  // costellazioni laterali non si spostano quando la chat demo cresce. A
+  // riposo il contenuto è centrato verticalmente; in chat, la colonna centrale
+  // scorre internamente sugli schermi bassi invece di allungare la sezione.
   return (
     <section
       className={`relative overflow-hidden px-4 flex items-center justify-center ${
@@ -367,7 +372,7 @@ export default function HeroSection() {
           : "h-dvh pt-36 sm:pt-48 lg:pt-64 pb-12 sm:pb-20 lg:pb-28"
       }`}
     >
-      {/* Float keyframes live in globals.css (shared with the waitlist page). */}
+      {/* I keyframe di float vivono in globals.css (condivisi con la waitlist). */}
       <style>{`
         @keyframes fade-in-up {
           from { opacity: 0; transform: translateY(8px); }
@@ -378,20 +383,20 @@ export default function HeroSection() {
         }
       `}</style>
 
-      {/* Decorative top hairline */}
+      {/* Hairline decorativa in alto */}
       <div className="absolute inset-x-0 top-16 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
 
-      {/* Floating constellations flanking the hero: companies/apps on the
-          left, agent avatars on the right (hidden below lg). */}
+      {/* Costellazioni fluttuanti ai lati dell'hero: aziende/app a sinistra,
+          avatar degli agenti a destra (nascoste sotto lg). */}
       <HeroBubbles />
 
-      {/* Outer Wide Screen Flex Wrapper */}
+      {/* Wrapper flessibile esterno per schermi larghi */}
       <div
         className={`w-full max-w-7xl 3xl:max-w-[1720px] mx-auto flex items-center justify-between relative ${
           hasMessages ? "h-full min-h-0" : ""
         }`}
       >
-        {/* CENTER HERO CONTENT */}
+        {/* CONTENUTO CENTRALE DELL'HERO */}
         <motion.div
           ref={heroColumnRef}
           className={`relative z-10 mx-auto max-w-4xl text-center px-4 ${
@@ -456,9 +461,9 @@ export default function HeroSection() {
               },
             }}
           >
-            {/* The box grows with the content up to a viewport-aware cap
-                (min(400px, 50dvh)); beyond that the messages area scrolls
-                internally, so the hero never explodes with the conversation. */}
+            {/* La casella cresce con il contenuto fino a un tetto proporzionale
+                al viewport (min(400px, 50dvh)); oltre, l'area messaggi scorre
+                internamente, così l'hero non esplode con la conversazione. */}
             <div
               className={`bg-neutral-900 rounded-3xl border border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.4)] transition-all duration-500 ease-out flex flex-col`}
               style={hasMessages ? { maxHeight: "min(400px, 50dvh)" } : undefined}
@@ -518,7 +523,7 @@ export default function HeroSection() {
                     </div>
                   ))}
 
-                  {/* Typing indicator */}
+                  {/* Indicatore di digitazione */}
                   {isTyping && !hasStreamedContent && (
                     <div className="flex items-end gap-2.5 justify-start">
                       <Image
@@ -615,7 +620,7 @@ export default function HeroSection() {
               </div>
             </div>
 
-            {/* ── Open full chat CTA ── */}
+            {/* ── CTA apri chat completa ── */}
             {hasMessages && (
               <div className="mt-3 text-center">
                 <a
@@ -640,7 +645,7 @@ export default function HeroSection() {
             )}
           </motion.div>
 
-          {/* ── Pill Buttons ── */}
+          {/* ── Pulsanti a pillola (suggerimenti) ── */}
           {!hasMessages && (
             <div className="mt-8 flex flex-col items-center gap-3.5">
               <div className="flex flex-wrap justify-center gap-3">

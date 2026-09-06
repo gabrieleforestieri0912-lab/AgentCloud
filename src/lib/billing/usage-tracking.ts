@@ -58,17 +58,18 @@ export type UserAgentRecord = {
 };
 
 /**
- * Result of a pre-run permission check.
+ * Esito del controllo permessi prima di una run.
  *
- * `allowed: true` is always accompanied by `overage`: when the user is above
- * their monthly allowance the run is allowed anyway and billed via the
- * Stripe meter (`overage: true`), unless the safety cap was hit (429).
+ * `allowed: true` è sempre accompagnato da `overage`: quando l'utente è oltre
+ * l'allowance mensile la run è comunque consentita e fatturata via il meter
+ * Stripe (`overage: true`), a meno che non venga raggiunto il tetto di
+ * sicurezza (429).
  */
 export type RunCheck =
   | { allowed: true; overage: boolean }
   | {
       allowed: false;
-      status: number; // HTTP status to return (402 / 429 / 500)
+      status: number; // status HTTP da restituire (402 / 429 / 500)
       code: string;
       message: string;
     };
@@ -86,8 +87,8 @@ function periodBounds(year: number, month: number) {
 }
 
 /**
- * Fetch a user's agent instance (ownership + status + config).
- * Returns null when the user does not own the agent.
+ * Recupera l'istanza agente di un utente (proprietà + stato + config).
+ * Restituisce null quando l'utente non possiede l'agente.
  */
 export async function getUserAgent(
   userId: string,
@@ -118,18 +119,18 @@ export async function getUserAgent(
 }
 
 /**
- * Resolve the monthly token allowance for a user's agent instance.
- * Prefers the new `tokenLimit` config, falls back to the legacy
- * `conversationLimit` (rows written before the token-based migration),
- * then to the default allowance.
+ * Risolve l'allowance mensile di token per l'istanza agente di un utente.
+ * Preferisce la nuova config `tokenLimit`, ripiega sulla legacy
+ * `conversationLimit` (righe scritte prima della migrazione a token), poi
+ * sull'allowance predefinita.
  */
 export function resolveTokenLimit(config: Record<string, unknown>): number {
   if (typeof config.tokenLimit === "number") return config.tokenLimit;
   if (typeof config.conversationLimit === "number") {
-    // Legacy rows stored a conversation budget (300/1000). Map it to the
-    // token allowance of the same plan tier. Note: a legacy limit of 0
-    // (fully blocked) maps to the default allowance — an acceptable
-    // one-time forgiveness during migration.
+    // Le righe legacy salvavano un budget di conversazioni (300/1000). Le
+    // mappiamo sull'allowance token dello stesso livello di piano. Nota: un
+    // limite legacy di 0 (completamente bloccato) mappa sull'allowance
+    // predefinita — una sanatoria una tantum accettabile durante la migrazione.
     return config.conversationLimit >= 1000
       ? 1_000_000
       : DEFAULT_TOKEN_LIMIT;
@@ -138,12 +139,12 @@ export function resolveTokenLimit(config: Record<string, unknown>): number {
 }
 
 /**
- * Check whether a logged-in user is allowed to run an agent:
- *  1. They must own the agent with an `active` subscription.
- *  2. They must not have exceeded the monthly token allowance.
+ * Verifica se un utente loggato può eseguire un agente:
+ *  1. Deve possedere l'agente con un abbonamento `active`.
+ *  2. Non deve aver superato l'allowance mensile di token.
  *
- * Anonymous/preview callers should skip this check and call
- * `recordUsage` with a `user_id` of "anonymous".
+ * I chiamanti anonimi/di anteprima dovrebbero saltare questo controllo e
+ * chiamare `recordUsage` con `user_id` = "anonymous".
  */
 export async function assertRunAllowed(
   userId: string,
@@ -151,8 +152,8 @@ export async function assertRunAllowed(
   locale: Locale = DEFAULT_LOCALE,
   isAdmin = false,
 ): Promise<RunCheck> {
-  // Admin accounts (verified server-side via the session email) get full,
-  // unlimited access to every agent without a subscription or plan cap.
+  // Gli account admin (verificati lato server via email di sessione) hanno
+  // accesso pieno e illimitato a ogni agente, senza abbonamento né tetto piano.
   if (isAdmin) {
     return { allowed: true, overage: false };
   }
@@ -163,7 +164,7 @@ export async function assertRunAllowed(
 
   const db = await getDb();
   if (!db) {
-    // No DB configured — don't block local dev
+    // Nessun DB configurato — non bloccare lo sviluppo locale
     return { allowed: true, overage: false };
   }
 
@@ -201,9 +202,10 @@ export async function assertRunAllowed(
 
   const used = summary?.tokensUsed ?? 0;
 
-  // Overage billing kicks in only for customers with a real subscription AND
-  // a Stripe customer id, and when the metered Price is configured. Otherwise
-  // keep the previous behaviour: block at the allowance with 429.
+  // La fatturazione dell'overage scatta solo per i clienti con un vero
+  // abbonamento E uno Stripe customer id, e quando il Price metered è
+  // configurato. Altrimenti mantiene il comportamento precedente: blocco
+  // all'allowance con 429.
   const overageAvailable =
     Boolean(userAgent.stripe_subscription_id) &&
     Boolean(userAgent.stripe_customer_id) &&
@@ -211,7 +213,8 @@ export async function assertRunAllowed(
 
   if (used >= tokenLimit) {
     if (overageAvailable) {
-      // Safety net: beyond 2x the allowance even overage usage is blocked.
+      // Rete di sicurezza: oltre 2x l'allowance anche l'uso in overage viene
+      // bloccato.
       const hardCap = tokenLimit * OVERAGE_HARD_CAP_MULTIPLIER;
       if (used >= hardCap) {
         return {
@@ -226,7 +229,7 @@ export async function assertRunAllowed(
           }),
         };
       }
-      // Above the allowance but below the cap: allowed, billed via the meter.
+      // Oltre l'allowance ma sotto il tetto: consentito, fatturato via meter.
       return { allowed: true, overage: true };
     }
 
@@ -246,7 +249,7 @@ export async function assertRunAllowed(
 }
 
 /**
- * Record a conversation usage event.
+ * Registra un evento di utilizzo della conversazione.
  */
 export async function recordUsage(usage: UsageRecord): Promise<void> {
   if (!usage.user_id || !usage.agent_slug) return;
@@ -254,7 +257,7 @@ export async function recordUsage(usage: UsageRecord): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  // Resolve the user_agents row so we can link the run to the subscription.
+  // Risolve la riga user_agents così possiamo collegare la run all'abbonamento.
   let userAgentId: string | null = null;
   if (usage.user_id !== "anonymous") {
     const userAgent = await getUserAgent(usage.user_id, usage.agent_slug);
@@ -279,13 +282,13 @@ export async function recordUsage(usage: UsageRecord): Promise<void> {
 }
 
 /**
- * Record a run AND bill its overage increment via Stripe.
+ * Registra una run E fattura il suo incremento di overage via Stripe.
  *
- * Called after a run finishes. Only the tokens of THIS run that fall above the
- * monthly allowance are reported to the meter (incremental, so consecutive
- * overage runs are not double-charged). When overage billing is not available
- * (no subscription, no metered Price configured) this behaves exactly like
- * `recordUsage`.
+ * Chiamata a fine run. Al meter vengono segnalati solo i token di QUESTA run
+ * che superano l'allowance mensile (incrementale, così run in overage
+ * consecutive non vengono addebitate due volte). Quando la fatturazione
+ * overage non è disponibile (niente abbonamento o Price metered configurato)
+ * si comporta esattamente come `recordUsage`.
  */
 export async function recordUsageAndReportOverage(
   usage: UsageRecord,
@@ -301,7 +304,7 @@ export async function recordUsageAndReportOverage(
   const subscriptionId = userAgent?.stripe_subscription_id ?? null;
   const stripeCustomerId = userAgent?.stripe_customer_id ?? null;
 
-  // Fast path: no way to bill → just log the run, exactly like before.
+  // Percorso rapido: nessun modo di fatturare → logga la run come prima.
   if (!subscriptionId || !stripeCustomerId || !isOverageBillingEnabled()) {
     await recordUsage(usage);
     return;
@@ -311,10 +314,10 @@ export async function recordUsageAndReportOverage(
     ? resolveTokenLimit(userAgent.config)
     : DEFAULT_TOKEN_LIMIT;
 
-  // Snapshot usage BEFORE this run so we bill only the increment above the
-  // allowance: tokens of this run beyond the remaining allowance.
-  // (Two concurrent runs can still race here; the error is bounded to a few
-  // tokens and corrected on the next report.)
+  // Snapshot dell'utilizzo PRIMA di questa run, così fatturiamo solo
+  // l'incremento oltre l'allowance: i token di questa run che superano
+  // l'allowance residua. (Due run concorrenti possono ancora correre qui;
+  // l'errore è limitato a pochi token e viene corretto al report successivo.)
   const now = new Date();
   const summary = await getUsageSummary(
     usage.user_id,
@@ -331,10 +334,10 @@ export async function recordUsageAndReportOverage(
 
   if (overageTokens <= 0) return;
 
-  // Ensure the metered overage Price is attached to the subscription, then
-  // report this run's overage as a Billing Meter event. The webhook stores the
-  // subscription item id in config at checkout, so we only hit the Stripe API
-  // when it is missing (e.g. legacy subscriptions).
+  // Assicura che il Price metered dell'overage sia agganciato all'abbonamento,
+  // poi segnala l'overage di questa run come evento Billing Meter. Il webhook
+  // salva l'id della subscription item nella config al checkout, quindi
+  // chiamiamo l'API Stripe solo quando manca (es. abbonamenti legacy).
   const storedItemId = userAgent?.config?.stripeSubscriptionItemId;
   const meterItemId =
     (typeof storedItemId === "string" && storedItemId.length > 0
@@ -350,7 +353,7 @@ export async function recordUsageAndReportOverage(
 }
 
 /**
- * Get usage summary for a user in a specific period.
+ * Restituisce il riepilogo di utilizzo di un utente in un periodo.
  */
 export async function getUsageSummary(
   userId: string,
@@ -363,7 +366,7 @@ export async function getUsageSummary(
 
   const { periodStart, periodEnd } = periodBounds(year, month);
 
-  // Get conversation count (only completed runs count toward the quota).
+  // Conta le conversazioni (solo le run completate contano per la quota).
   const { count: conversations } = await db
     .from("agent_runs")
     .select("*", { count: "exact", head: true })
@@ -373,9 +376,10 @@ export async function getUsageSummary(
     .gte("started_at", periodStart)
     .lte("started_at", periodEnd);
 
-  // Get token usage. Unlike the conversation count above, this sums tokens
-  // from ALL runs (no status filter): interrupted/failed runs still consume
-  // provider tokens, so they count toward the allowance too.
+  // Calcola l'uso dei token. A differenza del conteggio conversazioni qui
+  // sopra, somma i token di TUTTE le run (nessun filtro di stato): le run
+  // interrotte/fallite consumano comunque token del provider, quindi contano
+  // anch'esse sull'allowance.
   const { data: runs } = await db
     .from("agent_runs")
     .select("input_tokens, output_tokens")
@@ -392,7 +396,7 @@ export async function getUsageSummary(
 
   const conversationCount = conversations || 0;
 
-  // Get plan allowance from user_agents
+  // Legge l'allowance del piano da user_agents
   const userAgent = await getUserAgent(userId, agentSlug);
   const config = userAgent?.config ?? {};
   const tokenLimit = resolveTokenLimit(config);
@@ -409,7 +413,7 @@ export async function getUsageSummary(
 }
 
 /**
- * Check if user has exceeded their plan limit.
+ * Verifica se l'utente ha superato il limite del proprio piano.
  */
 export async function hasExceededLimit(
   userId: string,
@@ -429,7 +433,7 @@ export async function hasExceededLimit(
 }
 
 /**
- * Get usage stats for all agents of a user.
+ * Restituisce le statistiche di utilizzo per tutti gli agenti di un utente.
  */
 export async function getTotalUsage(
   userId: string,
@@ -479,7 +483,7 @@ export async function getTotalUsage(
 }
 
 /**
- * Update user agent config with plan details.
+ * Aggiorna la config dell'agente utente con i dettagli del piano.
  */
 export async function updateUserAgentPlan(
   userId: string,

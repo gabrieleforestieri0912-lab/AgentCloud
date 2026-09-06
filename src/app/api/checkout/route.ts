@@ -17,10 +17,10 @@ function getStripe(): Stripe | null {
  *
  * Body: { agentId: string }
  *
- * Creates a Stripe Checkout Session (subscription mode) with a dynamic price
- * derived from the agent's priceCents — no pre-created Stripe products needed.
- * The session carries metadata so the billing webhook can activate the
- * subscription automatically.
+ * Crea una Stripe Checkout Session (modalità subscription) con un prezzo
+ * dinamico ricavato dal priceCents dell'agente — nessun prodotto Stripe
+ * pre-creato. La sessione porta i metadati così il webhook di billing può
+ * attivare l'abbonamento in automatico.
  */
 export async function POST(req: Request) {
   try {
@@ -42,8 +42,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Availability is for the general public: access-code holders (the
-    // testing client) can configure/buy every agent, including "coming soon".
+    // La disponibilità vale per il pubblico: i possessori del codice (il
+    // cliente di test) possono configurare/comprare ogni agente, inclusi
+    // quelli "coming soon".
     const unlocked = await hasPlatformAccess();
     if (!isAvailable(agentId) && !unlocked) {
       return NextResponse.json(
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Resolve the signed-in user to link the subscription.
+    // Risolve l'utente loggato per collegare l'abbonamento.
     const user = await getSessionUser();
     const userId = user?.id ?? null;
     const email = user?.email ?? null;
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      // Dynamic price — no pre-created product on Stripe needed.
+      // Prezzo dinamico — nessun prodotto pre-creato su Stripe.
       line_items: [
         {
           price_data: {
@@ -96,7 +97,7 @@ export async function POST(req: Request) {
         user_id: userId ?? "",
         source: "agentcloud",
       },
-      // Pass the user id so the webhook can resolve the account.
+      // Passa lo user id così il webhook può risolvere l'account.
       ...(userId ? { client_reference_id: userId } : {}),
       ...(email ? { customer_email: email } : {}),
       success_url: `${baseUrl}/dashboard?checkout=success`,

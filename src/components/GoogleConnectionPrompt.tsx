@@ -20,17 +20,17 @@ type GoogleStatus = {
 };
 
 /**
- * In-chat prompt shown when the active agent needs Gmail/Calendar access and
- * no Google account is connected yet. One action: start the OAuth flow
- * (/api/auth/google/connect). Self-fetches the connection status and
- * refreshes when the window regains focus (e.g. after the OAuth redirect
- * returns), and surfaces the OAuth outcome (?google=connected|error) inline.
- * Same pattern as ShopifyConnectionPrompt.
+ * Prompt in-chat mostrato quando l'agente attivo richiede l'accesso a
+ * Gmail/Calendar e nessun account Google è ancora collegato. Un'unica azione:
+ * avviare il flusso OAuth (/api/auth/google/connect). Recupera da solo lo
+ * stato della connessione e si aggiorna quando la finestra riprende il focus
+ * (es. dopo il redirect OAuth), mostrando inline l'esito
+ * (?google=connected|error). Stesso pattern di ShopifyConnectionPrompt.
  */
 export default function GoogleConnectionPrompt() {
   const { dict, locale } = useLanguage();
   const [status, setStatus] = useState<GoogleStatus | null>(null);
-  // Outcome of a just-finished OAuth round-trip, read from the URL.
+  // Esito di un round-trip OAuth appena concluso, letto dall'URL.
   const [outcome, setOutcome] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
   const refresh = useCallback(async () => {

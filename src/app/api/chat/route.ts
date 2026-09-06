@@ -9,16 +9,17 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
 /**
  * POST /api/chat
  *
- * Provider-agnostic chat endpoint used by the hero demo and the full chat UI.
+ * Endpoint chat indipendente dal provider, usato dalla demo hero e dalla UI
+ * chat completa.
  *
  * Body: { messages, model?, agentId? }
  *
- * The model backend is resolved via `getLLMProvider()` — the Anthropic
- * (Claude) backend when `ANTHROPIC_API_KEY` is configured. The default model
- * is `claude-sonnet-5` (override with `AGENT_LLM_MODEL`).
+ * Il backend del modello è risolto con `getLLMProvider()` — quello Anthropic
+ * (Claude) quando `ANTHROPIC_API_KEY` è configurata. Il modello predefinito è
+ * `claude-sonnet-5` (sovrascrivibile con `AGENT_LLM_MODEL`).
  *
- * Streams SSE: `data: { type: "text", content }` chunks, then
- * `data: { type: "done" }` (or `type: "error"` on failure).
+ * Stream SSE: chunk `data: { type: "text", content }`, poi
+ * `data: { type: "done" }` (oppure `type: "error"` in caso di errore).
  */
 export async function POST(req: Request) {
   try {
@@ -31,14 +32,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Locale is read up-front so the slow platform-prompt build (live DB
-    // query) can happen lazily inside the stream without delaying headers.
+    // La locale viene letta subito così la costruzione lenta del prompt di
+    // piattaforma (query live sul DB) può avvenire in modo lazy dentro lo
+    // stream senza ritardare gli header.
     const locale = await getLocale();
 
-    // Model from the agent registry when an agent is targeted. Clients may
-    // send a model name (e.g. from an agent config). If it isn't a Claude
-    // model, the Anthropic provider maps it to the configured default, so
-    // here we always pass a valid Claude model to the backend.
+    // Modello dal registry degli agenti quando è indicato un agente. I client
+    // possono inviare un nome modello (es. dalla config di un agente). Se non
+    // è un modello Claude, il provider Anthropic lo mappa sul default
+    // configurato, quindi qui passiamo sempre un modello Claude valido.
     let resolvedModel = model;
     if (agentId && AGENT_RUNTIME[agentId]) {
       resolvedModel = AGENT_RUNTIME[agentId].model;
@@ -71,17 +73,17 @@ export async function POST(req: Request) {
               encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
             );
           } catch {
-            // Client disconnected: the stream is closed. Ignore the write and
-            // let the word emitter stop itself on its next tick.
+            // Client disconnesso: lo stream è chiuso. Ignora la scrittura e
+            // lascia che l'emitter di parole si fermi al tick successivo.
           }
         };
 
-        // System prompt: agent-specific when an agent is targeted, otherwise
-        // built from the REAL platform data (active agents and counts read
-        // from the agents_registry database — see platform-context). It is
-        // built lazily here so headers reach the client immediately and cold
-        // starts / slow DB queries never stall the stream before the first
-        // byte. A failure degrades to the generic prompt, never to an error.
+        // System prompt: specifico dell'agente quando è indicato un agente,
+        // altrimenti costruito dai dati REALI della piattaforma (agenti attivi
+        // e conteggi letti dal DB agents_registry — vedi platform-context).
+        // Viene costruito in modo lazy così gli header arrivano subito al
+        // client e cold start / query DB lente non bloccano lo stream prima
+        // del primo byte. Un errore degrada al prompt generico, mai a un errore.
         let systemPrompt = "You are a helpful AI assistant.";
         try {
           systemPrompt =
@@ -89,12 +91,12 @@ export async function POST(req: Request) {
               ? AGENT_RUNTIME[agentId].systemPrompt
               : await buildPlatformSystemPrompt(locale);
         } catch {
-          // Keep the generic prompt — never fail the chat because the
-          // platform prompt could not be built.
+          // Mantieni il prompt generico — non far mai fallire la chat perché
+          // il prompt di piattaforma non si è potuto costruire.
         }
 
-        // Re-emit the provider's text deltas one word at a time so the
-        // message types out in every chat UI instead of appearing whole.
+        // Re-emette i delta di testo del provider una parola alla volta così
+        // il messaggio viene "scritto" in ogni UI chat invece di apparire intero.
         const emitter = createWordEmitter((word) =>
           send({ type: "text", content: word }),
         );
@@ -120,7 +122,7 @@ export async function POST(req: Request) {
           try {
             controller.close();
           } catch {
-            // Already closed (client disconnected mid-stream).
+            // Già chiuso (client disconnesso a metà stream).
           }
         }
       },

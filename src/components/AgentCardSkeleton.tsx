@@ -24,7 +24,7 @@ export default function AgentCardSkeleton({ count = 6 }: AgentCardSkeletonProps)
           transition={{ duration: 0.3, delay: i * 0.05 }}
           className="rounded-xl border border-white/5 bg-neutral-900 p-6"
         >
-          {/* Header skeleton */}
+          {/* Skeleton intestazione */}
           <div className="mb-6 flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl bg-neutral-800 animate-pulse" />
@@ -35,13 +35,13 @@ export default function AgentCardSkeleton({ count = 6 }: AgentCardSkeletonProps)
             </div>
           </div>
 
-          {/* Description skeleton */}
+          {/* Skeleton descrizione */}
           <div className="mb-6 space-y-2">
             <div className="h-4 w-full rounded bg-neutral-800 animate-pulse" />
             <div className="h-4 w-3/4 rounded bg-neutral-800 animate-pulse" />
           </div>
 
-          {/* Tasks skeleton */}
+          {/* Skeleton attività */}
           <div className="mb-6 space-y-2.5">
             {[1, 2, 3].map((j) => (
               <div key={j} className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export default function AgentCardSkeleton({ count = 6 }: AgentCardSkeletonProps)
             ))}
           </div>
 
-          {/* Footer skeleton */}
+          {/* Skeleton piè di card */}
           <div className="flex items-center justify-between border-t border-white/5 pt-6">
             <div>
               <div className="mb-1 h-3 w-12 rounded bg-neutral-800 animate-pulse" />

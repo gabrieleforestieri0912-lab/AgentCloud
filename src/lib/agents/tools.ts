@@ -900,10 +900,11 @@ function sanitizeText(value: string, maxLength = 1000): string {
 }
 
 /**
- * Resolve Shopify credentials for a tenant (user):
- *   1. the encrypted OAuth connection stored in `shopify_connections` (Phase 5),
- *   2. legacy environment variables (SHOPIFY_SHOP_DOMAIN / SHOPIFY_ADMIN_ACCESS_TOKEN).
- * Returns null when no connection is available.
+ * Risolve le credenziali Shopify per un tenant (utente):
+ *   1. la connessione OAuth criptata salvata in `shopify_connections`,
+ *   2. le variabili d'ambiente legacy (SHOPIFY_SHOP_DOMAIN /
+ *      SHOPIFY_ADMIN_ACCESS_TOKEN).
+ * Restituisce null quando non c'è alcuna connessione disponibile.
  */
 async function resolveShopifyCredentials(tenantId?: string): Promise<{
   shopDomain: string;
@@ -919,7 +920,7 @@ async function resolveShopifyCredentials(tenantId?: string): Promise<{
   return null;
 }
 
-/** Execute a Shopify GraphQL Admin API query/mutation. */
+/** Esegue una query/mutation GraphQL dell'Admin API di Shopify. */
 async function shopifyGraphQL(
   shopDomain: string,
   accessToken: string,
@@ -969,9 +970,10 @@ async function shopifyGraphQL(
 }
 
 /**
- * Run a Shopify GraphQL call for a tenant, resolving credentials and handling
- * token revocation: a 401 means the token was uninstalled/expired, so we mark
- * the connection revoked and return a friendly, reconnect-oriented message.
+ * Esegue una chiamata GraphQL Shopify per un tenant, risolvendo le credenziali
+ * e gestendo la revoca del token: un 401 significa token disinstallato/scaduto,
+ * quindi la connessione viene marcata come revocata e si restituisce un
+ * messaggio amichevole orientato alla riconnessione.
  */
 async function shopifyCall(
   userId: string | undefined,
@@ -1322,10 +1324,10 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
     }
 
     case "shopify_setup_store": {
-      // Connection is handled securely via the OAuth panel in the chat UI
-      // (see SHOPIFY_AGENT_SLUG + /api/shopify/install). We intentionally do
-      // NOT accept a raw Admin API token in chat: that would expose the secret
-      // in conversation history and bypass the encrypted-at-rest store.
+      // La connessione è gestita in modo sicuro dal pannello OAuth nella UI
+      // chat (vedi SHOPIFY_AGENT_SLUG + /api/shopify/install). Non accettiamo
+      // di proposito un Admin API token grezzo in chat: esporrebbe il segreto
+      // nella cronologia della conversazione e aggirerebbe lo store criptato.
       return "La connessione allo store avviene in modo sicuro dal pannello 'Connetti Shopify' nella chat (OAuth), non inserendo un token manualmente. Apri il pannello e autorizza il tuo store *.myshopify.com, poi riprova.";
     }
 
@@ -1344,7 +1346,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       const country = sanitizeText(input.country || "", 10);
       const businessType = sanitizeText(input.business_type || "", 100);
 
-      // If a store is already connected, don't create a new one — manage the existing
+      // Se un negozio è già collegato, non crearne uno nuovo — gestisci l'esistente
       const existing = await resolveShopifyCredentials(context.tenantId).catch(() => null);
       if (existing) {
         return [
@@ -1354,12 +1356,12 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
         ].join("\n");
       }
 
-      // Try Partners API if configured (SHOPIFY_PARTNER_TOKEN + SHOPIFY_PARTNER_ORG_ID)
+      // Prova la Partners API se configurata (SHOPIFY_PARTNER_TOKEN + SHOPIFY_PARTNER_ORG_ID)
       const partnerToken = process.env.SHOPIFY_PARTNER_TOKEN;
       const partnerOrg = process.env.SHOPIFY_PARTNER_ORG_ID;
       if (partnerToken && partnerOrg) {
         try {
-          // Partners GraphQL: create development store (requires Partners API)
+          // Partners GraphQL: crea un development store (richiede la Partners API)
           const res = await fetch("https://partners.shopify.com/api/cli/graphql", {
             method: "POST",
             headers: {
@@ -1400,11 +1402,12 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
               .join("\n");
           }
         } catch {
-          // fall through to guided flow
+          // ripiega sul flusso guidato
         }
       }
 
-      // Guided creation flow (no Partners API or failure) — acts directly via official signup
+      // Flusso di creazione guidato (senza Partners API o in caso di errore) —
+      // agisce direttamente tramite la registrazione ufficiale
       const signupUrl = new URL("https://www.shopify.com/free-trial");
       signupUrl.searchParams.set("store_name", slug);
       if (email && isValidEmail(email)) signupUrl.searchParams.set("email", email);
@@ -1611,7 +1614,8 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
         }
       `;
 
-      // 2024-10 compliant: productOptions + variants with optionValues, media instead of images
+      // Conforme API 2024-10: productOptions + variants con optionValues,
+      // media al posto di images
       const hasValidImage = imageUrl && isValidHttpsUrl(imageUrl);
       const productInput: Record<string, unknown> = {
         title,
@@ -1629,7 +1633,8 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       };
 
       let result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { input: productInput });
-      // Fallback: if variants format is rejected (e.g. API version mismatch), retry without variants/media and set price via bulk update
+      // Fallback: se il formato variants viene rifiutato (es. mismatch versione
+      // API), riprova senza variants/media e imposta il prezzo via bulk update
       const shouldFallback =
         result.ok &&
         (result.data as { productCreate?: { userErrors?: Array<{ message?: string }> } })?.productCreate?.userErrors?.some(
@@ -1825,7 +1830,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
 
       const productIds = productIdsRaw.split(",").map((s) => s.trim()).filter(Boolean);
 
-      // Use collectionAddProducts / collectionRemoveProducts mutations
+      // Usa le mutation collectionAddProducts / collectionRemoveProducts
       const mutationName = action === "add" ? "collectionAddProducts" : "collectionRemoveProducts";
       const graphql = `
         mutation ${mutationName}($id: ID!, $productIds: [ID!]!) {
@@ -1873,7 +1878,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       if (!variantId) return "variant_id is required (e.g. gid://shopify/ProductVariant/123).";
       if (isNaN(quantity) || quantity < 0) return "quantity must be a non-negative number.";
 
-      // First, find the inventory item for this variant
+      // Prima trova l'inventory item per questa variante
       const graphqlVariant = `
         query getVariant($id: ID!) {
           productVariant(id: $id) {
@@ -1903,7 +1908,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       const inventoryItemId = variantData.inventoryItem?.id;
       if (!inventoryItemId) return `No inventory item found for variant ${variantData.title}."`;
 
-      // Get the location to set inventory at
+      // Recupera la location su cui impostare l'inventario
       const graphqlLocations = `
         query { locations(first: 1) { edges { node { id name } } } }
       `;
@@ -1914,7 +1919,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
 
       if (!locationId) return "No location found in your Shopify store.";
 
-      // Set inventory level
+      // Imposta il livello di inventario
       const graphqlSetInventory = `
         mutation inventoryAdjustQuantityAtLocation($inventoryItemId: ID!, $locationId: ID!, $delta: Int!) {
           inventoryAdjustQuantityAtLocation(
@@ -1969,9 +1974,9 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
 
       let accessToken = process.env.GOOGLE_CALENDAR_ACCESS_TOKEN;
       let calendarId = process.env.GOOGLE_CALENDAR_CALENDAR_ID;
-      // Per-user OAuth connection (google_connections) takes priority — the
-      // agent reads the user's own calendar instead of the legacy env
-      // credentials. Legacy vars remain the fallback for non-OAuth setups.
+      // La connessione OAuth per utente (google_connections) ha priorità —
+      // l'agente legge il calendario dell'utente invece delle credenziali env
+      // legacy. Le var legacy restano il fallback per gli setup non OAuth.
       if (context.userId && context.userId !== "anonymous") {
         const conn = await getGoogleConnection(context.userId).catch(() => null);
         if (conn) {
@@ -2002,7 +2007,8 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       }
 
       try {
-        // If tenant provided a refresh token stored in memory, try to refresh access token when missing.
+        // Se il tenant ha fornito un refresh token salvato in memoria, prova a
+        // rinnovare l'access token quando manca.
         if ((!accessToken || accessToken.length < 10) && tenantId) {
           const creds = getTenantCredentials(tenantId);
           const refreshToken = creds?.google?.refreshToken;
@@ -2037,7 +2043,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
                 } catch {}
               }
             } catch {
-              // token refresh failure — fall back to the stored access token
+              // errore nel refresh del token — ripiega sull'access token salvato
             }
           }
         }
@@ -2145,7 +2151,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       }
 
       try {
-        // Attempt refresh if accessToken missing and refresh token present
+        // Tenta il refresh se manca l'accessToken ma c'è il refresh token
         if ((!accessToken || accessToken.length < 10) && tenantId) {
           const creds = getTenantCredentials(tenantId);
           const refreshToken = creds?.google?.refreshToken;
@@ -2180,7 +2186,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
                 } catch {}
               }
             } catch {
-              // token refresh failure — fall back to the stored access token
+              // errore nel refresh del token — ripiega sull'access token salvato
             }
           }
         }

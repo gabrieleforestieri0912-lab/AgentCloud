@@ -28,20 +28,21 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const pathname = usePathname();
   const { locale, dict } = useLanguage();
 
-  // Server pages pass the authoritative list; otherwise fall back to the
-  // access cookie (code holders see the FULL catalog in the mobile menu too).
+  // Le pagine server passano la lista autoritativa; altrimenti si ripiega sul
+  // cookie di accesso (chi ha il codice vede il catalogo COMPLETO anche nel
+  // menu mobile).
   const fallbackAgents = hasAccessOnClient() ? AGENTS : AVAILABLE_AGENTS;
   const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );
 
-  // Close menu on route change
+  // Chiude il menu al cambio di rotta
   useEffect(() => {
     setIsOpen(false);
     setActiveSection(null);
   }, [pathname]);
 
-  // Prevent body scroll when menu is open
+  // Impedisce lo scroll del body quando il menu è aperto
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -84,7 +85,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
 
   return (
     <>
-      {/* Mobile menu button */}
+      {/* Bottone menu mobile */}
       <button
         onClick={() => setIsOpen(true)}
         className="p-2 text-neutral-400 md:hidden"
@@ -93,12 +94,13 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
         <Menu size={20} />
       </button>
 
-      {/* Mobile menu overlay.
-          Rendered through a portal to document.body on purpose: the navbar's
-          backdrop-blur creates a containing block for fixed descendants, so a
-          fixed panel rendered inline would be sized to the navbar bar instead
-          of the viewport (a tiny "stuck" menu). Outside the filtered ancestor,
-          inset-0 / h-dvh resolve against the real viewport. */}
+      {/* Overlay menu mobile.
+          Renderizzato di proposito con un portal verso document.body: il
+          backdrop-blur della navbar crea un containing block per i discendenti
+          fixed, quindi un pannello fixed inline verrebbe dimensionato sulla
+          barra della navbar invece che sul viewport (un menu minuscolo e
+          "incollato"). Fuori dall'antenato con filtro, inset-0 / h-dvh si
+          risolvono sul viewport reale. */}
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>
@@ -226,12 +228,12 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                 ))}
               </div>
 
-              {/* Language switcher */}
+              {/* Selettore lingua */}
               <div className="border-t border-white/10 p-4">
                 <LanguageToggle variant="mobile" />
               </div>
 
-              {/* Auth button */}
+              {/* Bottone autenticazione */}
               <div className="border-t border-white/10 p-4">
                 <Link
                   href="/login"

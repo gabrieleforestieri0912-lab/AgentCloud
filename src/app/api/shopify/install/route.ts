@@ -13,24 +13,25 @@ import {
 } from "@/lib/shopify/oauth";
 
 /**
- * Phase 2 — start the Shopify OAuth flow.
+ * Fase 2 — avvio del flusso OAuth Shopify.
  *
  * GET /api/shopify/install?shop=<store>.myshopify.com[&returnTo=<path>]
- *   1. Requires an authenticated AgentCloud session (token is stored per
- *      user). Signing in is part of the flow: signed-out users are sent to
- *      /login?intent=shopify&next=… and resume here automatically after
- *      signing in — never a dead end.
- *   2. Validates the shop domain (must be *.myshopify.com) to avoid open
- *      redirect.
- *   3. Issues a random CSRF `state`, stores it in an httpOnly cookie.
- *   4. Stores where the user came from (returnTo) so the OAuth callback can
- *      bring them back to the same page with ?shopify=connected|error.
- *   5. Redirects to Shopify's authorize endpoint.
+ *   1. Richiede una sessione AgentCloud autenticata (il token è salvato per
+ *      utente). Il login fa parte del flusso: gli utenti non loggati vengono
+ *      mandati a /login?intent=shopify&next=… e qui riprendono da soli dopo
+ *      il login — mai un vicolo cieco.
+ *   2. Valida il dominio del negozio (deve essere *.myshopify.com) per evitare
+ *      open redirect.
+ *   3. Genera uno `state` CSRF casuale e lo salva in un cookie httpOnly.
+ *   4. Salva la pagina di provenienza (returnTo) così il callback OAuth può
+ *      riportare l'utente sulla stessa pagina con ?shopify=connected|error.
+ *   5. Redirige all'endpoint authorize di Shopify.
  *
- * No secrets are read from the request body — SHOPIFY_API_KEY is server-side.
+ * Nessun segreto viene letto dal corpo della richiesta — SHOPIFY_API_KEY è
+ * lato server.
  */
 export async function GET(req: NextRequest) {
-  // Where to land after the OAuth round-trip (same-origin relative path).
+  // Dove arrivare dopo il round-trip OAuth (percorso relativo same-origin).
   const returnParam = req.nextUrl.searchParams.get("returnTo");
   const returnTo = returnParam && isSafeRedirectPath(returnParam) ? returnParam : null;
 
@@ -43,14 +44,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Who is connecting?
-  //  - Access-code holder (admin) → the store is stored as the shared tenant
-  //    connection; no email is recorded and no login is required. Even when
-  //    an admin happens to be signed in, the store goes to the tenant so the
-  //    client's store is the one every code holder tests against.
-  //  - Regular signed-in user → the store is stored on their account
-  //    (per-user), which is what the callback persists.
-  //  - Anyone else → sign in first, then this route runs again.
+  // Chi si sta connettendo?
+  //  - Possessore del codice (admin) → il negozio è salvato come connessione
+  //    tenant condivisa; nessuna email registrata e nessun login richiesto.
+  //    Anche se un admin è già loggato, il negozio va al tenant così lo store
+  //    del cliente è quello su cui testano tutti i possessori del codice.
+  //  - Utente normale loggato → il negozio è salvato sul suo account
+  //    (per-utente), che è ciò che persiste il callback.
+  //  - Chiunque altro → prima accedi, poi questa route gira di nuovo.
   const sessionUser = await getSessionUser();
   const isAccessHolder = req.cookies.get(ACCESS_COOKIE)?.value === "1";
   if (!sessionUser && !isAccessHolder) {

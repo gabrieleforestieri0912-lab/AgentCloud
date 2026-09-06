@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+
+// Pagina "Chi siamo": Server Component che genera metadati localizzati e
+// dati strutturati JSON-LD (AboutPage) e compone i contenuti di marketing
+// dal dizionario i18n della lingua attiva.
+
 import Footer from "@/components/Footer";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -78,7 +83,7 @@ export default async function AboutPage() {
             {about.subtitle}
           </p>
 
-          {/* Mission */}
+          {/* Missione */}
           <div className="mt-14 rounded-2xl border border-white/5 bg-white/[0.02] p-6 sm:p-8">
             <h2 className="text-xl font-bold text-white">
               {about.missionTitle}
@@ -114,7 +119,7 @@ export default async function AboutPage() {
             </div>
           </div>
 
-          {/* Values */}
+          {/* Valori */}
           <div className="mt-16">
             <h2 className="text-2xl font-bold text-white">
               {about.valuesTitle}
@@ -134,7 +139,7 @@ export default async function AboutPage() {
             </div>
           </div>
 
-          {/* CTA */}
+          {/* Invito all'azione */}
           <div className="mt-16 rounded-2xl border border-brand-500/20 bg-brand-500/[0.04] p-6 sm:p-8 text-center">
             <h2 className="text-2xl font-bold text-white">{about.ctaTitle}</h2>
             <p className="mx-auto mt-3 max-w-xl text-neutral-400">

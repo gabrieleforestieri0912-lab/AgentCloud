@@ -39,15 +39,15 @@ export function getGoogleRedirectUri(): string {
 }
 
 /**
- * App page the OAuth flow redirects back to with ?google=connected|error.
- * Phase 6 will build the settings UI there (alongside ShopifyConnect).
+ * Pagina dell'app a cui il flusso OAuth rimanda con ?google=connected|error.
  */
 export const GOOGLE_SETTINGS_PATH = "/dashboard";
 
 /**
- * Build the Google consent URL. `access_type=offline` is required to obtain a
- * refresh token; `prompt=consent` guarantees one is (re)issued on every
- * authorization, even when the user has previously granted access.
+ * Costruisce l'URL di consenso Google. `access_type=offline` è necessario
+ * per ottenere un refresh token; `prompt=consent` garantisce che ne venga
+ * (ri)emesso uno a ogni autorizzazione, anche quando l'utente ha già
+ * concesso l'accesso in precedenza.
  */
 export function buildGoogleConsentUrl(state: string): string {
   const params = new URLSearchParams({
@@ -62,14 +62,14 @@ export function buildGoogleConsentUrl(state: string): string {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-/** `state` payload = { nonce, userId } encoded as base64url JSON. */
+/** Payload dello `state` = { nonce, userId } codificato come JSON base64url. */
 export type GoogleStatePayload = { nonce: string; userId: string };
 
 export function encodeGoogleState(payload: GoogleStatePayload): string {
   return Buffer.from(JSON.stringify(payload)).toString("base64url");
 }
 
-/** Decode + validate a `state` value. Returns null on any malformed input. */
+/** Decodifica + valida un valore `state`. Restituisce null su input malformato. */
 export function decodeGoogleState(state: string): GoogleStatePayload | null {
   try {
     const parsed = JSON.parse(
@@ -88,7 +88,7 @@ export function decodeGoogleState(state: string): GoogleStatePayload | null {
   }
 }
 
-/** Constant-time comparison of the CSRF nonce with the httpOnly cookie. */
+/** Confronto a tempo costante del nonce CSRF con il cookie httpOnly. */
 export function googleStatesMatch(a: string, b: string): boolean {
   if (!a || !b || a.length !== b.length) return false;
   try {
@@ -98,7 +98,7 @@ export function googleStatesMatch(a: string, b: string): boolean {
   }
 }
 
-/** Read the CSRF nonce cookie set during the connect step. */
+/** Legge il cookie del nonce CSRF impostato durante il passo di connessione. */
 export function readGoogleStateCookie(req: NextRequest): string | undefined {
   return req.cookies.get(GOOGLE_STATE_COOKIE)?.value;
 }
