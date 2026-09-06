@@ -14,10 +14,22 @@ import { useLanguage } from "@/components/LanguageProvider";
 import MarkdownText from "@/components/MarkdownText";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { t } from "@/lib/i18n/dictionaries";
+import {
+  AttachPlusButton,
+  AttachmentChips,
+  DropHint,
+  chatAttachLabels,
+  useChatAttachments,
+} from "@/components/ChatAttachments";
+import { composeUserContent, toFilesMap } from "@/lib/chat-attachments";
+import type { ChatAttachment } from "@/lib/chat-attachments";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
+  // Attachments the user sent with this message (image previews / file chips).
+  attachments?: Pick<ChatAttachment, "id" | "name" | "kind" | "previewUrl">[];
+  // Files the assistant produced via tools (e.g. generated documents).
   files?: { filename: string; content: string }[];
   // Error bubble: shows the failure text plus a contact link.
   error?: boolean;
@@ -35,10 +47,11 @@ function formatTime(d: Date) {
 
 export default function PublicAgentChat({ slug, name, description }: Props) {
   const { dict } = useLanguage();
+  const attachLabels = chatAttachLabels(dict);
+  const attach = useChatAttachments();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
-  const [files, setFiles] = useState<Record<string, string>>({});
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Auto-scroll only while the user is at the bottom, scrolling the container
@@ -74,25 +87,42 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
     );
 
   const sendMessage = async () => {
-    if (!input.trim() || isRunning) return;
+    const pending = attach.attachments;
+    if ((!input.trim() && pending.length === 0) || isRunning) return;
 
-    const userContent = input;
+    // The full composed body (file contents included) goes to the API so the
+    // agent can read the attachments; the visible bubble keeps the plain text
+    // plus compact preview chips instead of raw file dumps.
+    const userContent = composeUserContent(input, pending);
+    const filesMap = toFilesMap(pending);
+    const displayContent =
+      input.trim() || pending.map((a) => a.name).join(", ");
     setInput("");
+    attach.clear();
     setIsRunning(true);
 
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: userContent },
+      {
+        role: "user",
+        content: displayContent,
+        attachments: pending.map((a) => ({
+          id: a.id,
+          name: a.name,
+          kind: a.kind,
+          previewUrl: a.previewUrl,
+        })),
+      },
       { role: "assistant", content: "", files: [] },
     ]);
 
     const apiMessages = [
-      ...messages,
+      ...messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
       { role: "user" as const, content: userContent },
-    ].map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
+    ];
 
     try {
       const res = await fetch("/api/agent/run", {
@@ -101,7 +131,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
         body: JSON.stringify({
           agentId: slug,
           messages: apiMessages,
-          files: Object.keys(files).length > 0 ? files : undefined,
+          files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
         }),
       });
 
@@ -194,15 +224,8 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const content = ev.target?.result as string;
-      setFiles((prev) => ({ ...prev, [file.name]: content }));
-    };
-    reader.readAsText(file);
+  const handleFileUpload = (picked: FileList | null) => {
+    void attach.addFiles(picked, attachLabels);
   };
 
   return (
@@ -281,7 +304,31 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
                     msg.role === "assistant" ? (
                       <MarkdownText text={msg.content} />
                     ) : (
-                      msg.content
+                      <>
+                        {msg.content}
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {msg.attachments.map((file) =>
+                              file.kind === "image" && file.previewUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  key={file.id}
+                                  src={file.previewUrl}
+                                  alt={file.name}
+                                  className="max-h-28 max-w-[140px] rounded-lg object-cover"
+                                />
+                              ) : (
+                                <span
+                                  key={file.id}
+                                  className="inline-flex items-center rounded-lg bg-white/15 px-2 py-1 text-[11px]"
+                                >
+                                  {file.name}
+                                </span>
+                              ),
+                            )}
+                          </div>
+                        )}
+                      </>
                     )
                   ) : (isRunning && i === messages.length - 1 ? (
                     <span className="flex gap-1.5 items-center h-5">
@@ -321,14 +368,37 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
 
       </div>
 
-      <div className="border-t border-white/5 bg-neutral-900/80 backdrop-blur-sm px-4 sm:px-6 py-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-end gap-3 bg-neutral-800 rounded-2xl border border-white/5 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+      <div
+        className="border-t border-white/5 bg-neutral-900/80 backdrop-blur-sm px-4 sm:px-6 py-4"
+        onDragEnter={attach.onDragEnter}
+        onDragOver={attach.onDragOver}
+        onDragLeave={attach.onDragLeave}
+        onDrop={attach.makeDrop(attachLabels)}
+      >
+        <div className="max-w-4xl mx-auto relative">
+          <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
+          <AttachmentChips
+            items={attach.attachments}
+            onRemove={attach.remove}
+            removeLabel={(name) =>
+              dict.chat.removeAttachment.replace("{name}", name)
+            }
+          />
+          {attach.notice && (
+            <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>
+          )}
+          <div className="flex items-end gap-2 bg-neutral-800 rounded-2xl border border-white/5 px-3 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+            <AttachPlusButton
+              labels={attachLabels}
+              disabled={isRunning}
+              onPick={handleFileUpload}
+            />
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={attach.makePaste(attachLabels)}
               placeholder={t(dict.publicChat.messagePlaceholder, { name })}
               rows={1}
               className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
@@ -337,7 +407,9 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
             />
             <button
               onClick={sendMessage}
-              disabled={!input.trim() || isRunning}
+              disabled={
+                (!input.trim() && attach.attachments.length === 0) || isRunning
+              }
               className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed"
             >
               {isRunning ? (
@@ -347,45 +419,11 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
               )}
             </button>
           </div>
-          <div className="flex items-center justify-between mt-2">
-            <label className="text-xs text-neutral-600 cursor-pointer hover:text-neutral-400 transition-colors">
-              <input
-                type="file"
-                onChange={handleFileUpload}
-                className="hidden"
-                accept=".txt,.csv,.md,.json,.html"
-              />
-              {dict.publicChat.attachFile}
-            </label>
+          <div className="flex items-center justify-end mt-2">
             <p className="text-[10px] text-neutral-600">
               {dict.publicChat.poweredBy} AgentCloud
             </p>
           </div>
-          {Object.keys(files).length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {Object.entries(files).map(([name]) => (
-                <span
-                  key={name}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-800 rounded-full text-xs text-neutral-300 border border-white/5"
-                >
-                  <FileText size={10} />
-                  {name}
-                  <button
-                    onClick={() =>
-                      setFiles((prev) => {
-                        const next = { ...prev };
-                        delete next[name];
-                        return next;
-                      })
-                    }
-                    className="text-neutral-500 hover:text-red-400 ml-1"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -371,6 +371,12 @@ const it = {
     openSidebar: "Apri la sidebar",
     deleteConversation: "Elimina conversazione",
     newChatTitle: "Nuova chat",
+    attachAria: "Allega file o immagini",
+    dropHint: "Rilascia qui per allegare file o immagini",
+    removeAttachment: "Rimuovi {name}",
+    fileTooLarge: "«{name}» è troppo grande (max {max})",
+    tooManyFiles: "Puoi allegare al massimo {n} file",
+    unsupportedFile: "Impossibile leggere «{name}»",
   },
 
   agentChat: {
@@ -1374,6 +1380,12 @@ export const en: Dictionary = {
     openSidebar: "Open sidebar",
     deleteConversation: "Delete conversation",
     newChatTitle: "New Chat",
+    attachAria: "Attach files or images",
+    dropHint: "Drop files or images here to attach them",
+    removeAttachment: "Remove {name}",
+    fileTooLarge: "“{name}” is too large (max {max})",
+    tooManyFiles: "You can attach at most {n} files",
+    unsupportedFile: "Could not read “{name}”",
   },
 
   agentChat: {
@@ -2366,6 +2378,12 @@ export const es: Dictionary = {
     openSidebar: "Abrir barra lateral",
     deleteConversation: "Eliminar conversación",
     newChatTitle: "New Chat",
+    attachAria: "Adjuntar archivos o imágenes",
+    dropHint: "Suelta aquí archivos o imágenes para adjuntarlos",
+    removeAttachment: "Quitar {name}",
+    fileTooLarge: "«{name}» es demasiado grande (máx. {max})",
+    tooManyFiles: "Puedes adjuntar como máximo {n} archivos",
+    unsupportedFile: "No se pudo leer «{name}»",
   },
 
   agentChat: {
@@ -3358,6 +3376,12 @@ export const de: Dictionary = {
     openSidebar: "Seitenleiste öffnen",
     deleteConversation: "Gespräch löschen",
     newChatTitle: "New Chat",
+    attachAria: "Dateien oder Bilder anhängen",
+    dropHint: "Dateien oder Bilder hier ablegen",
+    removeAttachment: "{name} entfernen",
+    fileTooLarge: "„{name}“ ist zu groß (max. {max})",
+    tooManyFiles: "Du kannst höchstens {n} Dateien anhängen",
+    unsupportedFile: "„{name}“ konnte nicht gelesen werden",
   },
 
   agentChat: {
@@ -4350,6 +4374,12 @@ export const fr: Dictionary = {
     openSidebar: "Ouvrir la barre latérale",
     deleteConversation: "Supprimer la conversation",
     newChatTitle: "New Chat",
+    attachAria: "Joindre des fichiers ou des images",
+    dropHint: "Déposez ici fichiers ou images pour les joindre",
+    removeAttachment: "Retirer {name}",
+    fileTooLarge: "« {name} » est trop volumineux (max {max})",
+    tooManyFiles: "Vous pouvez joindre au plus {n} fichiers",
+    unsupportedFile: "Impossible de lire « {name} »",
   },
 
   agentChat: {

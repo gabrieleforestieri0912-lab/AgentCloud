@@ -18,6 +18,15 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { MessageSquare, X, Send, Bot, RotateCcw } from "lucide-react";
 import { sanitizeHtml } from "@/lib/security";
+import {
+  AttachPlusButton,
+  AttachmentChips,
+  DropHint,
+  type Labels,
+  useChatAttachments,
+} from "@/components/ChatAttachments";
+import { composeUserContent } from "@/lib/chat-attachments";
+import type { ChatAttachment } from "@/lib/chat-attachments";
 
 /**
  * Proprietà di configurazione accettate dal componente AgentChatWidget.
@@ -50,6 +59,19 @@ type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  // Allegati inviati dall'utente con questo messaggio (anteprime / chip).
+  attachments?: Pick<ChatAttachment, "id" | "name" | "kind" | "previewUrl">[];
+};
+
+// Etichette di default per allegati e drag & drop (il widget non usa i
+// dizionari i18n dell'app: il resto delle stringhe è già in italiano).
+const WIDGET_ATTACH_LABELS: Labels = {
+  attachAria: "Allega file o immagini",
+  dropHint: "Rilascia qui per allegare file o immagini",
+  removeAttachment: "Rimuovi {name}",
+  fileTooLarge: (name) => `«${name}» è troppo grande (max 8 MB)`,
+  tooManyFiles: "Puoi allegare al massimo 6 file",
+  unsupportedFile: (name) => `Impossibile leggere «${name}»`,
 };
 
 export function AgentChatWidget({
@@ -82,6 +104,9 @@ export function AgentChatWidget({
   const [input, setInput] = useState("");
   // Flag che indica se una risposta è attualmente in streaming dall'agente
   const [isStreaming, setIsStreaming] = useState(false);
+
+  // Gestione allegati (file/immagini) condivisa: + button, drag & drop, paste.
+  const attach = useChatAttachments();
 
   // Riferimento per lo scroll automatico all'ultimo messaggio
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -120,6 +145,7 @@ export function AgentChatWidget({
    * Ripristina la conversazione allo stato iniziale.
    */
   const handleReset = () => {
+    attach.clear();
     setMessages([
       {
         id: `msg-${Date.now()}`,
@@ -135,35 +161,60 @@ export function AgentChatWidget({
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const rawText = input.trim();
-    if (!rawText || isStreaming) return;
+    const pending = attach.attachments;
+    if ((!rawText && pending.length === 0) || isStreaming) return;
 
     // Sanitizza l'input dell'utente prima di memorizzarlo e inviarlo
     const text = sanitizeHtml(rawText);
+
+    // Il corpo completo (contenuto dei file inclusi) va all'API così l'agente
+    // può leggere gli allegati; la bolla visibile mostra solo il testo più i
+    // chip compatti.
+    const apiContent = composeUserContent(text || "", pending) || text;
+    const displayContent =
+      text || pending.map((a) => a.name).join(", ");
 
     const userMsgId = `user-${Date.now()}`;
     const assistantMsgId = `assistant-${Date.now()}`;
 
     const newMessages: Message[] = [
       ...messages,
-      { id: userMsgId, role: "user", content: text },
+      {
+        id: userMsgId,
+        role: "user",
+        content: displayContent,
+        attachments: pending.map((a) => ({
+          id: a.id,
+          name: a.name,
+          kind: a.kind,
+          previewUrl: a.previewUrl,
+        })),
+      },
     ];
 
     setMessages(newMessages);
     setInput("");
+    attach.clear();
     setIsStreaming(true);
 
     try {
-      // Invia la cronologia della conversazione all'API di chat
+      // Invia la cronologia della conversazione all'API di chat. La cronologia
+      // conserva il testo visibile; solo l'ultimo messaggio trasporta il corpo
+      // completo con gli allegati.
+      const apiMessages = [
+        ...messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        { role: "user" as const, content: apiContent },
+      ];
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId: slug,
           tenantId,
-          messages: newMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages: apiMessages,
         }),
       });
 
@@ -251,6 +302,10 @@ export function AgentChatWidget({
           aria-modal="true"
           aria-label={displayTitle}
           className="mb-4 flex flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950 text-neutral-100 shadow-2xl transition-all"
+          onDragEnter={attach.onDragEnter}
+          onDragOver={attach.onDragOver}
+          onDragLeave={attach.onDragLeave}
+          onDrop={attach.makeDrop(WIDGET_ATTACH_LABELS)}
           style={{
             width: "380px",
             height: "520px",
@@ -327,6 +382,28 @@ export function AgentChatWidget({
                   }
                 >
                   {m.content}
+                  {m.attachments && m.attachments.length > 0 && (
+                    <span className="mt-2 flex flex-wrap gap-1.5">
+                      {m.attachments.map((f) =>
+                        f.kind === "image" && f.previewUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={f.id}
+                            src={f.previewUrl}
+                            alt={f.name}
+                            className="max-h-24 max-w-[120px] rounded-lg object-cover"
+                          />
+                        ) : (
+                          <span
+                            key={f.id}
+                            className="inline-flex items-center rounded-lg bg-white/15 px-2 py-0.5 text-[11px]"
+                          >
+                            {f.name}
+                          </span>
+                        ),
+                      )}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -350,27 +427,53 @@ export function AgentChatWidget({
           {/* Barra di inserimento messaggio (Input Bar) */}
           <form
             onSubmit={handleSend}
-            className="border-t border-neutral-800 p-3 bg-neutral-900/60 flex items-center gap-2"
+            className="relative border-t border-neutral-800 p-3 bg-neutral-900/60"
           >
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={placeholder || "Scrivi un messaggio..."}
-              disabled={isStreaming}
-              aria-label="Messaggio da inviare all'assistente"
-              className="flex-1 rounded-xl bg-neutral-800/80 border border-neutral-700/60 px-3.5 py-2 text-sm text-neutral-100 placeholder-neutral-500 outline-none focus:border-neutral-500 transition-colors disabled:opacity-50"
+            <DropHint
+              visible={attach.dragOver}
+              text={WIDGET_ATTACH_LABELS.dropHint}
             />
-            <button
-              type="submit"
-              disabled={!input.trim() || isStreaming}
-              aria-label="Invia messaggio"
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-white transition-opacity disabled:opacity-30 shadow-md"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <Send className="h-4 w-4" />
-            </button>
+            <AttachmentChips
+              items={attach.attachments}
+              onRemove={attach.remove}
+              removeLabel={(name) =>
+                WIDGET_ATTACH_LABELS.removeAttachment.replace("{name}", name)
+              }
+            />
+            {attach.notice && (
+              <p className="mb-1 text-[11px] text-amber-400">{attach.notice}</p>
+            )}
+            <div className="flex items-center gap-2">
+              <AttachPlusButton
+                labels={WIDGET_ATTACH_LABELS}
+                disabled={isStreaming}
+                onPick={(files) => {
+                  void attach.addFiles(files, WIDGET_ATTACH_LABELS);
+                }}
+              />
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={placeholder || "Scrivi un messaggio..."}
+                disabled={isStreaming}
+                aria-label="Messaggio da inviare all'assistente"
+                className="flex-1 rounded-xl bg-neutral-800/80 border border-neutral-700/60 px-3.5 py-2 text-sm text-neutral-100 placeholder-neutral-500 outline-none focus:border-neutral-500 transition-colors disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={
+                  (!input.trim() && attach.attachments.length === 0) ||
+                  isStreaming
+                }
+                aria-label="Invia messaggio"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-white transition-opacity disabled:opacity-30 shadow-md"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
           </form>
 
           {/* Badge footer */}

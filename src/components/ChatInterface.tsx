@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
@@ -23,6 +24,15 @@ import MarkdownText from "./MarkdownText";
 import AppHeader from "./AppHeader";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import GoogleConnectionPrompt from "@/components/GoogleConnectionPrompt";
+import {
+  AttachPlusButton,
+  AttachmentChips,
+  DropHint,
+  chatAttachLabels,
+  useChatAttachments,
+} from "@/components/ChatAttachments";
+import { composeUserContent, toFilesMap } from "@/lib/chat-attachments";
+import type { ChatAttachment } from "@/lib/chat-attachments";
 import { getEnabledTools, AGENT_RUNTIME } from "@/lib/agents/registry";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
@@ -39,6 +49,7 @@ type LocalMessage = {
   // True for assistant bubbles that carry an error instead of an AI reply;
   // the UI then shows a contact link below the message.
   error?: boolean;
+  attachments?: Pick<ChatAttachment, "id" | "name" | "kind" | "previewUrl">[];
 };
 
 type LocalConversation = {
@@ -80,6 +91,8 @@ export default function ChatInterface({
   availableAgents?: { slug: string; name: string }[];
 }) {
   const { dict } = useLanguage();
+  const attachLabels = chatAttachLabels(dict);
+  const attach = useChatAttachments();
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [activeAgentId, setActiveAgentId] = useState(agentId || "");
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -326,10 +339,16 @@ export default function ChatInterface({
 
   async function handleSendWithText(text: string, convId: string) {
     if (!text.trim() || !convId) return;
-    await sendMessage(text, convId);
+    await sendMessage(text, convId, []);
   }
 
-  async function sendMessage(text: string, convId: string) {
+  async function sendMessage(
+    text: string,
+    convId: string,
+    pending: ChatAttachment[] = [],
+  ) {
+    const apiContent = composeUserContent(text, pending);
+    if (!apiContent || !convId) return;
     if (isTyping) return;
     setIsAtBottom(true);
     stickToBottom.current = true;
@@ -337,8 +356,14 @@ export default function ChatInterface({
     const userMsg: LocalMessage = {
       id: generateId(),
       role: "user",
-      content: text,
+      content: text.trim() || pending.map((a) => a.name).join(", "),
       created_at: new Date().toISOString(),
+      attachments: pending.map((a) => ({
+        id: a.id,
+        name: a.name,
+        kind: a.kind,
+        previewUrl: a.previewUrl,
+      })),
     };
 
     setConversations((prev) =>
@@ -402,8 +427,9 @@ export default function ChatInterface({
         conversations.find((c) => c.id === convId)?.messages ?? [];
       const apiMessages = [
         ...history.map((m) => ({ role: m.role, content: m.content })),
-        { role: "user" as const, content: text },
+        { role: "user" as const, content: apiContent },
       ];
+      const filesMap = toFilesMap(pending);
 
       // Real agent conversations run through the agent runtime so the
       // selected agent's tools actually execute (Shopify, Gmail, Calendar,
@@ -418,7 +444,11 @@ export default function ChatInterface({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             isAgentChat
-              ? { agentId: activeAgentId, messages: apiMessages }
+              ? {
+                  agentId: activeAgentId,
+                  messages: apiMessages,
+                  files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
+                }
               : { messages: apiMessages },
           ),
         },
@@ -510,10 +540,11 @@ export default function ChatInterface({
 
   async function handleSend() {
     const text = input.trim();
-    if (!text || !activeId) return;
+    if ((!text && attach.attachments.length === 0) || !activeId) return;
+    const pending = attach.take();
     setInput("");
     inputRef.current?.focus();
-    await sendMessage(text, activeId);
+    await sendMessage(text, activeId, pending);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -743,6 +774,10 @@ export default function ChatInterface({
         className={`flex-1 flex flex-col bg-neutral-900 transition-all duration-300 relative ${
           sidebarOpen ? "lg:ml-0" : ""
         }`}
+        onDragEnter={attach.onDragEnter}
+        onDragOver={attach.onDragOver}
+        onDragLeave={attach.onDragLeave}
+        onDrop={attach.makeDrop(attachLabels)}
       >
         {/* Chat header */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur-sm">
@@ -855,7 +890,31 @@ export default function ChatInterface({
                         )}
                       </>
                     ) : (
-                      msg.content
+                      <>
+                        {msg.content}
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {msg.attachments.map((file) =>
+                              file.kind === "image" && file.previewUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  key={file.id}
+                                  src={file.previewUrl}
+                                  alt={file.name}
+                                  className="max-h-36 max-w-45 rounded-lg object-cover"
+                                />
+                              ) : (
+                                <span
+                                  key={file.id}
+                                  className="inline-flex items-center rounded-lg bg-white/15 px-2 py-1 text-[11px]"
+                                >
+                                  {file.name}
+                                </span>
+                              ),
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                   <p
@@ -917,13 +976,37 @@ export default function ChatInterface({
         )}
 
         {/* Input area — toggle blu rimosso come richiesto */}
-        <div className="px-4 sm:px-6 py-4 bg-neutral-900/80 backdrop-blur-sm border-t border-white/5">
-          <div className="mx-auto flex items-end gap-3 bg-neutral-800 rounded-2xl border border-white/5 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all max-w-content">
+        <div
+          className="px-4 sm:px-6 py-4 bg-neutral-900/80 backdrop-blur-sm border-t border-white/5"
+          onDragEnter={attach.onDragEnter}
+          onDragOver={attach.onDragOver}
+          onDragLeave={attach.onDragLeave}
+          onDrop={attach.makeDrop(attachLabels)}
+        >
+          <div className="relative mx-auto max-w-content">
+            <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
+            <AttachmentChips
+              items={attach.attachments}
+              onRemove={attach.remove}
+              removeLabel={(name) =>
+                dict.chat.removeAttachment.replace("{name}", name)
+              }
+            />
+            {attach.notice && (
+              <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>
+            )}
+            <div className="flex items-end gap-2 bg-neutral-800 rounded-2xl border border-white/5 px-3 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+            <AttachPlusButton
+              labels={attachLabels}
+              disabled={isTyping}
+              onPick={(files) => attach.addFiles(files, attachLabels)}
+            />
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={attach.makePaste(attachLabels)}
               placeholder={dict.chat.placeholder}
               rows={1}
               className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
@@ -931,13 +1014,18 @@ export default function ChatInterface({
             />
             <button
               onClick={handleSend}
-              disabled={!input.trim() || isTyping || !activeId}
+              disabled={
+                (!input.trim() && attach.attachments.length === 0) ||
+                isTyping ||
+                !activeId
+              }
               aria-label={dict.chat.sendMessage}
               title={dict.chat.sendMessage}
               className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed"
             >
               <Send size={16} />
             </button>
+            </div>
           </div>
           <p className="text-[10px] text-neutral-600 text-center mt-2">
             {dict.chat.disclaimer}
