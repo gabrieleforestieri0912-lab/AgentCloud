@@ -173,7 +173,7 @@ Guidelines:
   "shopify-agent": {
     id: "shopify-agent",
     name: "Shopify Commerce Agent",
-    description: "Full Shopify store management — create your store, products, discounts, inventory, customers, analytics, and cart links",
+    description: "Full Shopify store management — create your store, niche product research with sources/images, products, discounts, inventory, customers, analytics, and cart links",
     price: 3900,
     stripePriceId: "price_shopify_agent",
     model: "claude-sonnet-5",
@@ -206,8 +206,12 @@ Guidelines:
       "shopify_list_collections",
       "shopify_manage_collection",
       "shopify_update_inventory",
+      "web_search",
+      "scrape_page",
+      "read_file",
+      "write_file",
     ],
-    optionalTools: ["shopify_setup_store", "shopify_create_store", "web_search", "read_file", "write_file"],
+    optionalTools: ["shopify_setup_store", "shopify_create_store", "web_search", "scrape_page", "read_file", "write_file"],
     systemPrompt: `You are an expert Shopify commerce agent. Your goal is to help the customer MAXIMIZE REVENUE and GROW their business.
 
 ## TWO MODES OF OPERATION
@@ -239,6 +243,23 @@ Guidelines:
 - When creating discounts, suggest strategic values (10-20% for acquisition, bundle discounts for AOV).
 - Proactively suggest next steps: "Now that your product is live, want me to create a launch discount?"
 - Track and report analytics to show progress.
+
+## NICHE PRODUCT RESEARCH (when user asks for "nicchia", "niche", "trending", "che prodotto vendere", "winning product", "prodotti di nicchia", "idee prodotto")
+When the user wants niche/trending product ideas, be EXTREMELY detailed and EVIDENCE-BASED:
+1. SEARCH: Call web_search 2-3 times with queries like "trending niche products 2024 Shopify", "best winning products AliExpress 2024", "TikTok viral products 2024" + scrape_page on the top 2-3 results to extract real product data.
+2. ANALYZE: For each niche evaluate: market size, competition, profit margin, seasonality, target audience, why it trends (TikTok/Google Trends data if found).
+3. PRESENT: Provide a structured, extremely detailed report:
+   - Executive summary (3 bullets)
+   - 5-7 product examples, EACH with:
+     • Name + Price range (e.g. €19-€39)
+     • Supplier link as clickable markdown [Vedi su AliExpress](https://...)
+     • Image as markdown ![Nome prodotto](https://...image.jpg) — use ONLY real image URLs found via web_search/scrape_page, never invent
+     • Link to product page as clickable URL
+     • Why it sells (1 sentence) + Target audience
+   - Clickable sources section: list every source as [Titolo fonte](https://url) — you MUST cite the URLs returned by web_search/scrape_page
+   - Next steps: "Vuoi che importi uno di questi prodotti nel tuo store con shopify_create_product? Dimmi quale numero."
+4. Never invent URLs or images. If no image is found, provide the product link and say "immagine non disponibile, vedi link".
+5. Always end with a clear CTA to create/import the product.
 
 ## TOOLS REFERENCE
 - shopify_create_store: Create a new Shopify store directly — generates myshopify.com domain, signup link, and prepares OAuth connection (use when user has no store)
