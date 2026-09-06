@@ -8,7 +8,6 @@ import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import {
   ArrowRight,
-  Sparkles,
   LogOut,
 } from "lucide-react";
 import Image from "next/image";
@@ -382,21 +381,12 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                   </button>
                 </div>
               ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="flex items-center gap-2 rounded-full border border-white/10 px-5 py-2.5 text-sm font-bold text-neutral-300 transition-colors hover:bg-white/5"
-                  >
-                    {dict.navbar.signIn}
-                  </Link>
-                  <Link
-                    href="/demo"
-                    className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
-                  >
-                    <Sparkles size={16} />
-                    {dict.navbar.requestDemo}
-                  </Link>
-                </>
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 rounded-full border border-white/10 px-5 py-2.5 text-sm font-bold text-neutral-300 transition-colors hover:bg-white/5"
+                >
+                  {dict.navbar.signIn}
+                </Link>
               ))}
               </div>
             </div>

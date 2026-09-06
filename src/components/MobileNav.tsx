@@ -226,15 +226,8 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                 <LanguageToggle variant="mobile" />
               </div>
 
-              {/* Auth buttons */}
-              <div className="border-t border-white/10 p-4 space-y-3">
-                <Link
-                  href="/demo"
-                  onClick={() => setIsOpen(false)}
-                  className="block w-full rounded-full bg-brand-500 px-4 py-3 text-center text-sm font-bold text-white"
-                >
-                  {dict.navbar.requestDemo}
-                </Link>
+              {/* Auth button */}
+              <div className="border-t border-white/10 p-4">
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
