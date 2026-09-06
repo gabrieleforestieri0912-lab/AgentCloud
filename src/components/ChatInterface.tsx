@@ -3,6 +3,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import {
   MessageSquare,
   Plus,
@@ -10,12 +11,9 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
   Send,
-  Sparkles,
-  Cloud,
   Home,
   Wrench,
   Bot,
-  ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -506,24 +504,53 @@ export default function ChatInterface({
           </button>
         </div>
 
-        <nav className="px-3 pt-3 pb-1">
-          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
+        <nav className="px-3 pt-3 pb-1 space-y-1">
+          <Link
+            href="/"
+            className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+          >
             <Home size={16} />
             {dict.chat.home}
-          </button>
-          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20">
+          </Link>
+          <div className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20">
             <MessageSquare size={16} />
             {dict.chat.chat}
-          </button>
-          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
+          </div>
+          <Link
+            href="/integrations"
+            className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+          >
             <Wrench size={16} />
             {dict.chat.tools}
-          </button>
-          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
+          </Link>
+          <Link
+            href="/agents"
+            className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+          >
             <Bot size={16} />
             {dict.chat.agents}
-          </button>
+          </Link>
         </nav>
+
+        {/* Active tools for current agent */}
+        {activeAgentId && getEnabledTools(activeAgentId).length > 0 && (
+          <div className="px-3 pt-1 pb-1">
+            <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
+              {dict.chat.tools}
+            </p>
+            <div className="space-y-1">
+              {getEnabledTools(activeAgentId).map((tool) => (
+                <div
+                  key={tool}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-xs font-semibold text-neutral-400"
+                >
+                  <Wrench size={12} />
+                  {tool}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {availableAgents.length > 0 && (
           <div className="px-3 pt-1 pb-1">
@@ -668,12 +695,20 @@ export default function ChatInterface({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all">
-              <Sparkles size={16} />
+            <button
+              onClick={handleNewChat}
+              title={dict.chat.newChat}
+              className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all"
+            >
+              <Plus size={16} />
             </button>
-            <button className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all">
-              <ChevronDown size={16} />
-            </button>
+            <Link
+              href="/agents"
+              title={dict.chat.agents}
+              className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all"
+            >
+              <Bot size={16} />
+            </Link>
           </div>
         </div>
 

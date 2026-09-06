@@ -90,17 +90,31 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   }, []);
 
   const isSignedIn = Boolean(session);
+  const isAccessVisitor = hasAccessOnClient();
+  const showAsLoggedIn = isSignedIn || isAccessVisitor;
 
   const userMeta = session?.user?.user_metadata as
     | { full_name?: string }
     | undefined;
-  const accountInitials =
-    (userMeta?.full_name || session?.user?.email || "?")
-      .split(/[\s@.]+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((s) => s[0]?.toUpperCase())
-      .join("") || "?";
+  const accountInitials = isSignedIn
+    ? (userMeta?.full_name || session?.user?.email || "?")
+        .split(/[\s@.]+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((s) => s[0]?.toUpperCase())
+        .join("") || "?"
+    : "AD";
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
+        setUserMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [userMenuOpen]);
 
   async function handleSignOut() {
     await createClient().auth.signOut();
@@ -362,19 +376,76 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                   hamburger menu is still shown. md: made the CTAs overflow
                   the viewport right edge on tablets. */}
               <div className="hidden items-center gap-3 lg:flex">
-                {authLoaded && (isSignedIn ? (
+                {authLoaded && (showAsLoggedIn ? (
                 <div className="flex items-center gap-3">
-                  <Link
-                    href="/dashboard"
-                    aria-label="Account"
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-brand-500/15 text-sm font-bold text-brand-300 transition-colors hover:border-brand-500/40 hover:bg-brand-500/25"
-                  >
-                    {accountInitials}
-                  </Link>
+                  <div ref={userMenuRef} className="relative">
+                    <button
+                      onClick={() => setUserMenuOpen((v) => !v)}
+                      aria-label="Account"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-brand-500/15 text-sm font-bold text-brand-300 transition-colors hover:border-brand-500/40 hover:bg-brand-500/25"
+                    >
+                      {accountInitials}
+                    </button>
+                    {userMenuOpen && (
+                      <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl">
+                        <div className="px-3 py-2">
+                          <p className="text-sm font-bold text-white">
+                            {isSignedIn ? session?.user?.email : "admin@agentcloud.agency"}
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            {isSignedIn ? "Account" : "Admin · mock loggato"}
+                          </p>
+                        </div>
+                        <div className="my-1 h-px bg-white/5" />
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
+                        >
+                          Dashboard
+                        </Link>
+                        <Link
+                          href="/chat"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
+                        >
+                          Chat
+                        </Link>
+                        <Link
+                          href="/agents"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
+                        >
+                          Marketplace
+                        </Link>
+                        <div className="my-1 h-px bg-white/5" />
+                        {isSignedIn ? (
+                          <button
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              handleSignOut();
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/10"
+                          >
+                            <LogOut size={14} />
+                            {dict.navbar.logOut}
+                          </button>
+                        ) : (
+                          <Link
+                            href="/login"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand-300 hover:bg-brand-500/10"
+                          >
+                            {dict.navbar.signIn}
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <NotificationBell />
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+                    className="hidden items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 xl:flex"
                   >
                     <LogOut size={16} />
                     {dict.navbar.logOut}
