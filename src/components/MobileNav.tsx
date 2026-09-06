@@ -69,7 +69,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
     {
       id: "integrations",
       label: dict.navbar.integrations,
-      href: "/#integrations",
+      href: "/integrations",
     },
   ];
 

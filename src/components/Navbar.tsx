@@ -38,18 +38,10 @@ type NavbarProps = {
   marketplaceAgents?: Agent[];
 };
 
-// Apps the platform is already connected to link to the integrations section;
-// the rest are not available yet and redirect to the demo request page.
-const INTEGRATIONS = [
-  { name: "Gmail", brand: "gmail", available: false },
-  { name: "Google Calendar", brand: "googlecalendar", available: false },
-  { name: "HubSpot", brand: "hubspot", available: false },
-  { name: "WhatsApp", brand: "whatsapp", available: false },
-  { name: "Shopify", brand: "shopify", available: true },
-  { name: "Stripe", brand: "stripe", available: false },
-  { name: "Notion", brand: "notion", available: false },
-  { name: "Google Sheets", brand: "googlesheets", available: false },
-];
+import { INTEGRATIONS as ALL_INTEGRATIONS } from "@/lib/integrations";
+
+// Navbar dropdown shows a compact 8-item subset for quick access
+const INTEGRATIONS = ALL_INTEGRATIONS.slice(0, 8);
 
 export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -119,7 +111,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const menuItems = [
     { key: "marketplace" as MenuKey, label: dict.navbar.marketplace, href: "/agents" },
     { key: "solutions" as MenuKey, label: dict.navbar.solutions, href: "/#solutions" },
-    { key: "integrations" as MenuKey, label: dict.navbar.integrations, href: "/#integrations" },
+    { key: "integrations" as MenuKey, label: dict.navbar.integrations, href: "/integrations" },
   ];
   // Solutions link to their agent when the platform already offers it; the
   // rest are not available yet and redirect to the demo request page.
@@ -299,19 +291,39 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                             )}
 
                             {item.key === "integrations" && (
-                              <div className="grid grid-cols-4 gap-1 w-80">
-                                {INTEGRATIONS.map((integration) => (
-                                  <Link
-                                    key={integration.name}
-                                    href={integration.available ? "/#integrations" : "/demo"}
-                                    className="flex flex-col items-center gap-2 rounded-lg px-3 py-4 text-center text-sm font-bold text-neutral-400 transition-colors hover:bg-white/5"
-                                  >
-                                    <span className="h-5 flex items-center justify-center transition-transform group-hover:scale-110">
-                                      <BrandLogo slug={integration.brand} size={22} />
-                                    </span>
-                                    {integration.name}
-                                  </Link>
-                                ))}
+                              <div className="w-80">
+                                <div className="grid grid-cols-4 gap-1">
+                                  {INTEGRATIONS.map((integration) => {
+                                    const href =
+                                      integration.available && integration.agentSlug
+                                        ? `/agents/${integration.agentSlug}`
+                                        : "/integrations";
+                                    return (
+                                      <Link
+                                        key={integration.name}
+                                        href={href}
+                                        className="flex flex-col items-center gap-1 rounded-lg px-2 py-3 text-center text-xs font-bold text-neutral-400 transition-colors hover:bg-white/5 relative"
+                                      >
+                                        <span className="h-5 flex items-center justify-center">
+                                          <BrandLogo slug={integration.brand} size={22} />
+                                        </span>
+                                        {integration.name}
+                                        {!integration.available && (
+                                          <span className="text-[10px] font-bold text-amber-300">
+                                            {locale === "it" ? "Presto" : "Soon"}
+                                          </span>
+                                        )}
+                                      </Link>
+                                    );
+                                  })}
+                                </div>
+                                <Link
+                                  href="/integrations"
+                                  className="mt-2 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-bold text-brand-400 transition-colors hover:bg-brand-500/10"
+                                >
+                                  {locale === "it" ? "Vedi tutte le integrazioni" : "View all integrations"}
+                                  <ArrowRight size={14} />
+                                </Link>
                               </div>
                             )}
 
