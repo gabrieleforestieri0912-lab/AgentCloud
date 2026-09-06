@@ -1,8 +1,10 @@
 /**
- * Quote / Preventivi Engine
+ * Motore Preventivi / Quote.
  *
- * Handles calculation, structured formatting, and transactional email
- * delivery (via Resend) for professional quotes and estimates.
+ * Come funziona: gestisce calcolo, formattazione strutturata e consegna via
+ * email transazionale (Resend) di preventivi e stime professionali. Il calcolo
+ * parte dai servizi/quantità richiesti; l'email parte solo a preventivo
+ * confermato dall'utente.
  */
 
 import { getResend } from "@/lib/resend";

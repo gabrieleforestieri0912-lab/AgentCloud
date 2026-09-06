@@ -1,8 +1,9 @@
 /**
- * Google Business Profile / Reviews Engine
+ * Motore recensioni / Google Business Profile.
  *
- * Provides review monitoring, sentiment analysis support, and draft reply
- * workflows for Google Business Profile locations with per-tenant isolation.
+ * Fornisce monitoraggio delle recensioni, supporto all'analisi del sentiment
+ * e flussi di bozza di risposta per le sedi Google Business Profile, con
+ * isolamento per-tenant dei dati.
  */
 
 import { logAudit } from "@/lib/audit";
@@ -11,7 +12,7 @@ import { getTenantCredentials } from "@/lib/tenants";
 export type GoogleBusinessReview = {
   reviewId: string;
   authorName: string;
-  rating: number; // 1 to 5
+  rating: number; // da 1 a 5
   comment: string;
   createTime: string;
   reply?: {
@@ -26,7 +27,7 @@ export type ListReviewsParams = {
   unansweredOnly?: boolean;
 };
 
-// Memory fallback store for demo/testing per-tenant reviews
+// Store di fallback in memoria per le recensioni demo/test per-tenant
 const tenantReviewsStore = new Map<string, GoogleBusinessReview[]>();
 
 export function getOrCreateTenantReviews(tenantId: string): GoogleBusinessReview[] {

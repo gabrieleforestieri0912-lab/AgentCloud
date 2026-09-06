@@ -1,6 +1,11 @@
 /**
- * Social Media tools: weekly editorial calendar and local post scheduling
- * (downloadable markdown; Buffer/Meta posting is optional via env later).
+ * Tool Social Media: calendario editoriale settimanale e pianificazione post
+ * locale (markdown scaricabile; la pubblicazione su Buffer/Meta è opzionale,
+ * prevista via env in futuro).
+ *
+ * Come funziona: il calendario viene generato per piattaforma e fascia oraria
+ * ottimale; i post pianificati vengono salvati come file markdown scaricabile
+ * invece di pubblicare davvero sui social.
  */
 
 export type EditorialPost = {

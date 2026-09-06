@@ -1,15 +1,17 @@
 /**
- * Subscription expiry notifications.
+ * Notifiche di scadenza abbonamento.
  *
- * When a user's subscription is about to expire (or has been set to cancel at
- * period end) we surface an in-app bell notification AND a transactional email
- * from AgentCloud. Detection is derived from the `user_agents` rows that the
- * Stripe webhook keeps in sync (`current_period_end`, `config.cancelAtPeriodEnd`).
+ * Quando l'abbonamento di un utente sta per scadere (o è stato impostato per
+ * annullarsi a fine periodo) mostriamo una notifica in-app (campanella) E
+ * inviamo un'email transazionale da AgentCloud. Il rilevamento deriva dalle
+ * righe `user_agents` che il webhook Stripe tiene sincronizzate
+ * (`current_period_end`, `config.cancelAtPeriodEnd`).
  *
- * Email sending is idempotent per subscription via `config.renewalNotifiedAt`,
- * so re-running the check (cron or lazily on page load) never double-emails.
+ * L'invio email è idempotente per abbonamento tramite
+ * `config.renewalNotifiedAt`: rieseguire il controllo (cron o al caricamento
+ * pagina) non invia mai due email.
  *
- * Server-only: imports the Resend client and Supabase admin client.
+ * Server-only: importa il client Resend e il client admin Supabase.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";

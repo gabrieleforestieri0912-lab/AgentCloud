@@ -2,9 +2,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAgentRuntimeConfig } from "./registry";
 
 /**
- * Server-only: return the slugs of agents the given user currently owns
- * (active subscription/ownership rows), filtered to agents that actually exist
- * in the runtime registry. Used to populate the chat sidebar's agent picker.
+ * Server-only: restituisce gli slug degli agenti posseduti dall'utente
+ * (righe di abbonamento/possesso attive in `user_agents`), filtrati su quelli
+ * che esistono davvero nel registry runtime.
+ *
+ * Perché il filtro: la tabella potrebbe contenere slug di agenti rimossi dal
+ * catalogo; mostrarli romperebbe la chat. È usata per popolare il selettore
+ * agenti nella sidebar della chat.
  */
 export async function getOwnedAgentSlugs(userId: string): Promise<string[]> {
   const admin = createAdminClient();

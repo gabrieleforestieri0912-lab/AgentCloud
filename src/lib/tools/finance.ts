@@ -1,9 +1,10 @@
 /**
- * Finance Manager tools: cash-flow summary, invoice generation, payment reminders.
+ * Tool dell'agenzia Finance Manager: riepilogo cash-flow, generazione fatture,
+ * solleciti di pagamento.
  *
- * Cash flow prefers user-uploaded CSV/text. If none is provided and
- * STRIPE_SECRET_KEY is set (typical self-hosted / merchant key), it falls
- * back to Stripe balance transactions.
+ * Come funziona: il cash-flow preferisce il CSV/testo caricato dall'utente;
+ * se non viene fornito nulla e STRIPE_SECRET_KEY è configurata (tipico caso
+ * merchant/self-hosted), ripiega sulle transazioni di saldo Stripe.
  */
 
 import Stripe from "stripe";

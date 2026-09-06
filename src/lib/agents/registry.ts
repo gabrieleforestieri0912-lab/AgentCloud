@@ -1,3 +1,14 @@
+/**
+ * Registry runtime degli agenti: configurazione completa (nome, prezzo,
+ * modello, system prompt, tool) per ogni agente del catalogo.
+ *
+ * Come viene usato: `AGENT_RUNTIME` è la fonte dei dati a runtime — la chat
+ * e il registry agenti ci leggono nome/modello/prompt, `/api/agent/run`
+ * esegue l'agente selezionato e le feature flag decidono quali slug sono
+ * davvero attivi. I prezzi sono in centesimi (per Stripe). I `systemPrompt`
+ * sono istruzioni vere per il modello LLM: restano in inglese di proposito,
+ * sono dati di funzionamento, non commenti.
+ */
 export type AgentRuntimeConfig = {
   id: string;
   name: string;
@@ -8,14 +19,15 @@ export type AgentRuntimeConfig = {
   tools: string[];
   model: string;
   /**
-   * Tools that are enabled by default for this agent.
-   * Only these tools will be available unless explicitly activated via feature flags.
-   * This limits the agent's surface area and prevents unexpected behavior.
+   * Tool abilitati di default per questo agente.
+   * Solo questi saranno disponibili, a meno che non vengano attivati
+   * esplicitamente tramite feature flag. Limita la superficie dell'agente
+   * ed evita comportamenti imprevisti.
    */
   defaultTools: string[];
   /**
-   * Optional tools that can be activated via feature flags.
-   * These are ready in code but disabled by default.
+   * Tool opzionali attivabili tramite feature flag.
+   * Sono pronti nel codice ma disabilitati di default.
    */
   optionalTools?: string[];
 };

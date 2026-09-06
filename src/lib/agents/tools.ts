@@ -1,3 +1,19 @@
+/**
+ * Definizioni e gestori (handler) dei tool a disposizione degli agenti.
+ *
+ * Come funziona il file:
+ * - `TOOL_DEFINITIONS` espone a ogni modello LLM lo schema JSON dei tool
+ *   (nome, descrizione, parametri): è ciò che permette al modello di decidere
+ *   "quale tool chiamare e con quali argomenti". Le descrizioni qui sono dati
+ *   per il modello e restano in inglese di proposito.
+ * - gli handler eseguono davvero il tool quando il modello lo chiama:
+ *   web search (Tavily), file caricati/creati, Shopify, Google Calendar/Gmail,
+ *   preventivi, recensioni, finanza, HR, social...
+ *
+ * Ogni esecuzione passa per un audit log e restituisce al modello un risultato
+ * testuale (o JSON strutturato per le azioni con effetti, come la creazione
+ * di file/prodotti che generano notifiche).
+ */
 import type { LLMTool } from "@/lib/llm";
 import { logAudit } from "@/lib/audit";
 import { getTenantCredentials, updateTenantGoogleTokens } from "@/lib/tenants";

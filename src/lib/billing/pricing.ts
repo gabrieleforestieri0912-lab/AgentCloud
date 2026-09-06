@@ -1,15 +1,16 @@
 /**
- * Pricing configuration for AgentCloud
+ * Configurazione prezzi di AgentCloud.
  *
- * Two verticals: Shopify (e-commerce) and Services (calendar booking)
- * Each has Starter and Growth plans
- * Web Search is an add-on only
+ * Perché qui: pagine pubbliche, checkout, limiti token e notifiche devono
+ * usare gli stessi piani. Due verticali: Shopify (e-commerce) e Servizi
+ * (prenotazioni calendario). Ognuna ha i piani Starter e Growth; Web Search
+ * è solo un add-on. I prezzi sono in centesimi per Stripe.
  */
 
 /**
- * Default monthly token allowance used when no plan is configured
- * (e.g. legacy agent-based purchases or development environments).
- * Tokens are counted as input + output across all agent runs in the month.
+ * Allowance token mensile di default quando nessun piano è configurato
+ * (es. acquisti legacy per singolo agente o ambienti di sviluppo).
+ * I token si contano come input + output di tutte le esecuzioni agente nel mese.
  */
 export const DEFAULT_TOKEN_LIMIT = 300_000;
 

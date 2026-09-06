@@ -1,10 +1,11 @@
 /**
- * Italian overlays for the agent catalog.
+ * Overlay italiani per il catalogo agenti.
  *
- * The canonical agent content lives in `src/lib/agents.ts` (English). These
- * entries provide the Italian version of the fields shown in the UI, keyed by
- * the agent slug. `localizeAgent()` in `src/lib/agents.ts` overlays them when
- * the active locale is Italian; English uses the data as-is.
+ * Perché esiste: il contenuto canonico degli agenti vive in `src/lib/agents.ts`
+ * (inglese). Queste voci forniscono la versione italiana dei campi mostrati
+ * nella UI, indicizzate per slug dell'agente. `localizeAgent()` in
+ * `src/lib/agents.ts` le applica sopra quando la lingua attiva è l'italiano;
+ * per l'inglese i dati vengono usati così come sono.
  */
 
 export type AgentLocalization = {

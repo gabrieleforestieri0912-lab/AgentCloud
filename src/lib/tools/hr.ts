@@ -1,5 +1,11 @@
 /**
- * HR Recruiter tools: structured CV parsing and candidate scoring.
+ * Tool dell'agenzia HR Recruiter: parsing strutturato dei CV e valutazione
+ * (scoring) dei candidati.
+ *
+ * Come funziona: il CV (testo incollato o file caricato) viene analizzato in
+ * sezioni strutturate (esperienza, competenze, istruzione...); lo scoring
+ * confronta poi il candidato con i requisiti richiesti e produce un punteggio
+ * con motivazione.
  */
 
 export type ParsedCv = {

@@ -6,17 +6,17 @@ import { AGENT_RUNTIME } from "./registry";
 import { getFeatureFlags } from "./feature-flags";
 
 /**
- * Server-only platform knowledge for the general chat.
+ * Conoscenza piattaforma server-only per la chat generica.
  *
- * Builds the system prompt for the non-agent chat (`/api/chat` without
- * `agentId`) from the REAL platform data: the active agents in the
- * `agents_registry` table (so counts always match what's actually in the
- * database) plus the runtime feature flags (which agents are available now
- * vs. coming soon), pricing, contacts and integrations. The agent list is
- * re-read from the database on every request, so the assistant always knows
- * the latest updates at that moment. When the database is unreachable, it
- * degrades to the in-code runtime registry without ever failing the chat
- * request.
+ * Come funziona: costruisce il system prompt della chat senza agente
+ * (`/api/chat` senza `agentId`) a partire dai DATI REALI della piattaforma:
+ * gli agenti attivi nella tabella `agents_registry` (così i conteggi coincidono
+ * sempre con ciò che c'è davvero nel DB) più i feature flag runtime (quali
+ * agenti sono disponibili ora vs. in arrivo), prezzi, contatti e integrazioni.
+ * La lista agenti viene riletta dal database a ogni richiesta, quindi
+ * l'assistente conosce sempre gli ultimi aggiornamenti. Se il database non è
+ * raggiungibile degrada al registry runtime nel codice, senza mai far fallire
+ * la richiesta di chat.
  */
 
 type AgentRow = {
@@ -194,7 +194,7 @@ function runtimeFallbackAgents(): AgentRow[] {
     }));
 }
 
-/** Which vertical preset is active (from env), used for context in the prompt. */
+/** Quale preset verticale è attivo (da env), usato come contesto nel prompt. */
 function activeVerticalLabel(locale: Locale): string {
   const vertical = process.env.AGENTCLOUD_VERTICAL?.toLowerCase();
   if (locale === "it") {
@@ -207,7 +207,7 @@ function activeVerticalLabel(locale: Locale): string {
   return "Shopify (e-commerce) vertical";
 }
 
-/** Pricing + add-ons rendered from the Shopify pricing config. */
+/** Righe prezzi + add-on generate dalla configurazione prezzi Shopify. */
 function pricingLines(locale: Locale): string[] {
   const { plans } = SHOPIFY_PRICING;
   const perMonth = locale === "it" ? "mese" : "month";
@@ -226,9 +226,9 @@ function pricingLines(locale: Locale): string[] {
 }
 
 /**
- * Query the active agents from `agents_registry`. Returns null when the
- * database is unavailable or empty so callers can fall back to the runtime
- * registry. Never throws.
+ * Interroga gli agenti attivi da `agents_registry`. Restituisce null quando
+ * il database non è disponibile o è vuoto, così i chiamanti possono ripiegare
+ * sul registry runtime. Non lancia mai.
  */
 async function fetchActiveAgentsFromDb(): Promise<AgentRow[] | null> {
   try {
@@ -249,9 +249,9 @@ async function fetchActiveAgentsFromDb(): Promise<AgentRow[] | null> {
 }
 
 /**
- * Build the system prompt for the general chat with the real platform
- * knowledge (agents, prices and counts from the database, plus pricing,
- * contacts and integrations).
+ * Costruisce il system prompt della chat generica con la conoscenza reale
+ * della piattaforma (agenti, prezzi e conteggi dal database, più prezzi,
+ * contatti e integrazioni).
  */
 export async function buildPlatformSystemPrompt(
   locale: Locale,

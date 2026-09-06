@@ -1,3 +1,12 @@
+/**
+ * Catalogo dei marchi (brand) con i loghi ufficiali Simple Icons.
+ *
+ * Perché esiste: navbar, footer, hero, marketplace e pagina integrazioni
+ * mostrano i loghi dei servizi collegabili (Shopify, Google, Stripe...).
+ * Avere qui un'unica mappa marchio → logo (con fallback su colore o icona
+ * generica) evita di duplicare import e logica di fallback nei componenti.
+ * Le icone sono dati statici SVG/React.
+ */
 import {
   siAndroid,
   siApple,

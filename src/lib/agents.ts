@@ -1,3 +1,14 @@
+/**
+ * Catalogo agenti (contenuti) + helper di localizzazione.
+ *
+ * Come è organizzato: qui vivono i dati "canonici" di ogni agente del
+ * marketplace in inglese (nome, descrizioni, categoria, prezzo, icona,
+ * integrazioni...), usati sia per le card del marketplace sia per le pagine
+ * agente. La versione italiana degli stessi campi è un overlay in
+ * `src/lib/i18n/agentCatalog.ts`, applicato da `localizeAgent()` quando la
+ * lingua attiva è l'italiano. Le stringhe qui sono CONTENUTI mostrati agli
+ * utenti (in inglese di default), non commenti: non vanno tradotte nel file.
+ */
 import { getFeatureFlags } from "./agents/feature-flags";
 import {
   getAgentLocalization,

@@ -1,18 +1,20 @@
 /**
- * Agent action notifications.
+ * Notifiche delle azioni degli agenti.
  *
- * While an agent runs it can perform actions with real side effects: creating
- * a file, publishing a product, generating a discount code, booking an event,
- * capturing a lead. Those are surfaced to the user as in-app notifications
- * (the bell in the Navbar) so they always know what their agents did.
+ * Come funziona: mentre un agente gira può compiere azioni con effetti reali:
+ * creare un file, pubblicare un prodotto, generare un codice sconto, fissare
+ * un evento, catturare un lead. Queste vengono mostrate all'utente come
+ * notifiche in-app (la campanella nella Navbar), così sa sempre cosa hanno
+ * fatto i suoi agenti.
  *
- * Deliberately, NOT every tool call notifies: read-only lookups (web_search,
- * scrape_page, read_file, calendar_search_availability, shopify_*_search ...)
- * are invisible steps, not actions. Only tools whose success means "something
- * changed / something was delivered" produce a notification.
+ * Volutamente NON tutte le tool call notificano: le ricerche in sola lettura
+ * (web_search, scrape_page, read_file, calendar_search_availability,
+ * shopify_*_search ...) sono passi invisibili, non azioni. Solo i tool il cui
+ * successo significa "qualcosa è cambiato / qualcosa è stato consegnato"
+ * producono una notifica.
  *
- * Server-only: `createAgentNotification` writes through the Supabase service
- * role client; `buildActionNotification` is pure so it can be unit-tested.
+ * Server-only: `createAgentNotification` scrive col client service-role di
+ * Supabase; `buildActionNotification` è pura così può essere unit-testata.
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -46,7 +48,7 @@ export const AGENT_NOTIFICATION_KINDS: AgentNotificationKind[] = [
   "cv_analyzed",
 ];
 
-/** Neutral, locale-agnostic params stored in the DB; the UI localizes them. */
+/** Parametri neutri (senza lingua) salvati nel DB; la UI li localizza. */
 export type AgentNotificationParams = Record<string, string | number>;
 
 export type ActionNotification = {
@@ -56,7 +58,7 @@ export type ActionNotification = {
 
 type ToolActionRule = {
   kind: AgentNotificationKind;
-  /** The tool result string indicates the action actually succeeded. */
+  /** La stringa di risultato del tool indica se l'azione è riuscita davvero. */
   success: (result: string) => boolean;
   params: (
     input: Record<string, string>,
@@ -69,8 +71,8 @@ function matchGroup(result: string, re: RegExp): string | undefined {
 }
 
 /**
- * Tool name → action rule. Read-only tools are intentionally absent: their
- * executions never produce a notification.
+ * Mappa nome tool → regola di azione. I tool in sola lettura sono assenti di
+ * proposito: la loro esecuzione non genera mai una notifica.
  */
 const TOOL_ACTION_RULES: Record<string, ToolActionRule> = {
   write_file: {
@@ -185,9 +187,9 @@ const TOOL_ACTION_RULES: Record<string, ToolActionRule> = {
 };
 
 /**
- * Pure: decide whether a tool execution is an important action worth
- * notifying about. Returns null for read-only tools, failed executions, and
- * unknown tools.
+ * Pura: decide se un'esecuzione di tool è un'azione importante degna di
+ * notifica. Restituisce null per i tool in sola lettura, per le esecuzioni
+ * fallite e per i tool sconosciuti.
  */
 export function buildActionNotification(
   toolName: string,
@@ -200,8 +202,9 @@ export function buildActionNotification(
 }
 
 /**
- * Persist an action notification for a user (best-effort — never throws).
- * Anonymous preview callers have no inbox and must be filtered by the caller.
+ * Persiste una notifica d'azione per un utente (best-effort — non lancia mai
+ * eccezioni). I chiamanti anonimi in anteprima non hanno una casella:
+ * devono essere filtrati a monte dal chiamante.
  */
 export async function createAgentNotification(input: {
   userId: string;
@@ -220,7 +223,7 @@ export async function createAgentNotification(input: {
   });
 
   if (error) {
-    console.error("createAgentNotification failed:", error);
+    console.error("createAgentNotification fallita:", error);
     return false;
   }
   return true;

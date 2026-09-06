@@ -1,34 +1,36 @@
 /**
- * Feature flags for controlling which agents and tools are available.
+ * Feature flag per controllare quali agenti e quali tool sono disponibili.
  *
- * This allows you to:
- * - Launch with only a few agents instead of the whole 10-agent catalog
- * - Control which tools are enabled per agent
- * - Gradually roll out features to specific customers
- * - Reduce surface area for initial demos
+ * Perché esistono: permettono di regolare la superficie del prodotto senza
+ * toccare il codice:
+ * - lanciare solo con alcuni agenti invece dell'intero catalogo
+ * - controllare quali tool sono attivi per ogni agente
+ * - distribuire gradualmente le feature a clienti specifici
+ * - ridurre la superficie per le prime demo
+ *
+ * La configurazione attiva viene scelta da env var (JSON custom oppure preset
+ * verticale) con fallback sulla piattaforma completa.
  */
 
 import { AGENT_RUNTIME } from "./registry";
 
 export type FeatureFlags = {
-  // Agents that are enabled (by slug)
+  // Agenti abilitati (per slug)
   enabledAgents: string[];
 
-  // Tools that are globally enabled (overrides agent-level settings)
+  // Tool abilitati globalmente (sovrascrivono le impostazioni a livello agente)
   enabledTools: string[];
 
-  // Agent-specific tool overrides
-  // If specified, these tools are enabled for the agent regardless of defaultTools
+  // Sovrascritture dei tool per singolo agente
+  // Se specificati, questi tool sono attivi per l'agente a prescindere da defaultTools
   agentToolOverrides: Record<string, string[]>;
 
-  // Whether to enable optional tools by default
+  // Se abilitare i tool opzionali di default
   enableOptionalToolsByDefault: boolean;
 };
 
 /**
- * Default configuration for Shopify e-commerce vertical launch.
- * 5 agents enabled: Shopify Agent + Lead Capture + Support Agent + Copywriter
- * + Email Manager
+ * Preset di lancio con i primi 10 agenti (verticale Shopify e-commerce).
  */
 export const ACTIVE_10_AGENTS = [
   "shopify-agent",
@@ -94,7 +96,7 @@ export const ALL_TOOLS_LIST = [
 ];
 
 /**
- * Default configuration for Shopify e-commerce vertical launch.
+ * Configurazione di default per il lancio verticale Shopify e-commerce.
  */
 export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
   enabledAgents: ACTIVE_15_AGENTS,
@@ -104,7 +106,7 @@ export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
 };
 
 /**
- * Configuration for services vertical (restaurants, professionals, real estate)
+ * Configurazione per la verticale servizi (ristoranti, professionisti, immobiliare)
  */
 export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
   enabledAgents: ACTIVE_15_AGENTS,
@@ -114,7 +116,7 @@ export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
 };
 
 /**
- * Full platform configuration (all 15 active agents enabled)
+ * Configurazione piattaforma completa (tutti i 15 agenti attivi abilitati)
  */
 export const FULL_PLATFORM_CONFIG: FeatureFlags = {
   enabledAgents: ACTIVE_15_AGENTS,
@@ -124,24 +126,24 @@ export const FULL_PLATFORM_CONFIG: FeatureFlags = {
 };
 
 /**
- * Get the active feature flags configuration.
- * Priority:
- * 1. Environment variable AGENTCLOUD_FEATURE_FLAGS (JSON string)
- * 2. Environment variable AGENTCLOUD_VERTICAL (shopify | services | full)
- * 3. Default to FULL_PLATFORM_CONFIG (15 active agents)
+ * Restituisce la configurazione feature flag attiva.
+ * Priorità:
+ * 1. Variabile d'ambiente AGENTCLOUD_FEATURE_FLAGS (stringa JSON)
+ * 2. Variabile d'ambiente AGENTCLOUD_VERTICAL (shopify | services | full)
+ * 3. Default: FULL_PLATFORM_CONFIG (15 agenti attivi)
  */
 export function getFeatureFlags(): FeatureFlags {
-  // Check for custom JSON config
+  // Controlla eventuale config JSON custom
   const customConfig = process.env.AGENTCLOUD_FEATURE_FLAGS;
   if (customConfig) {
     try {
       return JSON.parse(customConfig) as FeatureFlags;
     } catch (error) {
-      console.error("Failed to parse AGENTCLOUD_FEATURE_FLAGS:", error);
+      console.error("Impossibile parsare AGENTCLOUD_FEATURE_FLAGS:", error);
     }
   }
 
-  // Check for vertical preset
+  // Controlla il preset verticale
   const vertical = process.env.AGENTCLOUD_VERTICAL?.toLowerCase();
 
   switch (vertical) {
@@ -157,7 +159,7 @@ export function getFeatureFlags(): FeatureFlags {
 }
 
 /**
- * Check if an agent is enabled.
+ * Dice se un agente è abilitato dalla configurazione attiva.
  */
 export function isAgentEnabled(agentId: string): boolean {
   const flags = getFeatureFlags();
@@ -165,8 +167,8 @@ export function isAgentEnabled(agentId: string): boolean {
 }
 
 /**
- * Get the list of enabled tools for an agent.
- * Respects feature flags and agent configuration.
+ * Restituisce l'elenco dei tool abilitati per un agente, rispettando i
+ * feature flag e la configurazione dell'agente nel registry.
  */
 export function getEnabledToolsForAgent(agentId: string): string[] {
   const flags = getFeatureFlags();
@@ -176,22 +178,23 @@ export function getEnabledToolsForAgent(agentId: string): string[] {
     return [];
   }
 
-  // Start with default tools
+  // Si parte dai tool di default dell'agente...
   const enabledTools = new Set<string>(config.defaultTools);
 
-  // Check for agent-specific overrides
+  // ...poi si aggiungono eventuali override specifici per l'agente...
   if (flags.agentToolOverrides[agentId]) {
     flags.agentToolOverrides[agentId].forEach((tool: string) =>
       enabledTools.add(tool),
     );
   }
 
-  // If global flag is set, add optional tools
+  // ...e i tool opzionali se il flag globale li attiva di default.
   if (flags.enableOptionalToolsByDefault && config.optionalTools) {
     config.optionalTools.forEach((tool: string) => enabledTools.add(tool));
   }
 
-  // Filter by globally enabled tools (if specified)
+  // Infine si filtra con l'elenco globale dei tool abilitati (se presente),
+  // così un tool bandito globalmente non può essere riattivato da un agente.
   if (flags.enabledTools.length > 0) {
     return Array.from(enabledTools).filter((tool: string) =>
       flags.enabledTools.includes(tool),
@@ -202,7 +205,8 @@ export function getEnabledToolsForAgent(agentId: string): string[] {
 }
 
 /**
- * Get all enabled agents with their configurations.
+ * Restituisce tutti gli agenti abilitati con la loro configurazione e
+ * l'elenco dei tool effettivamente attivi per ciascuno.
  */
 export function getEnabledAgents() {
   const flags = getFeatureFlags();

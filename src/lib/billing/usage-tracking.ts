@@ -1,16 +1,15 @@
 /**
- * Usage tracking for AgentCloud
+ * Tracciamento dell'utilizzo per AgentCloud.
  *
- * Tracks conversation usage per user/agent to enforce plan limits
- * and calculate overage charges.
+ * Come funziona: registra l'utilizzo delle conversazioni per utente/agente
+ * così da applicare i limiti dei piani e calcolare gli addebiti di overage.
+ * I limiti sono sui TOKEN (input + output) al mese, per agente installato.
+ * I conteggi delle conversazioni servono solo per reportistica.
  *
- * Limits are enforced on TOKENS (input + output) per month, per installed
- * agent. Conversation counts are kept for reporting only.
- *
- * IMPORTANT: This module is server-only. It prefers the service-role client
- * so it can write/read rows keyed by external (Clerk) user IDs, and falls
- * back to the anon client when `SUPABASE_SERVICE_ROLE_KEY` is not set.
- * Never import these functions from client components.
+ * IMPORTANTE: modulo server-only. Preferisce il client service-role così può
+ * scrivere/leggere righe chiave sugli ID utente esterni (es. Clerk), e ripiega
+ * sul client anon quando `SUPABASE_SERVICE_ROLE_KEY` non è impostata.
+ * Mai importare queste funzioni da componenti client.
  */
 
 import { createClient } from "@/lib/supabase/server";
