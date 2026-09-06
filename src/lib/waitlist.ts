@@ -2,19 +2,22 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_SPOTS } from "@/lib/waitlist-constants";
 
-// Total available waitlist spots (mirrors the DB-driven cap everywhere).
+// Posti totali disponibili in waitlist (rispecchia il tetto gestito via DB ovunque).
 export { MAX_SPOTS };
 
 /**
- * Count the users that occupy a spot. The authoritative source is Supabase
- * Auth (Authentication → Users): each user is one person occupying one spot,
- * and deleting a user in the dashboard frees its spot immediately. The
- * `waitlist` table is a signup log (email list + duplicate detection), NOT
- * the source of truth for the counter.
+ * Conta gli utenti che occupano un posto.
  *
- * While here, also drop waitlist rows whose email no longer has an Auth user
- * (the owner deleted the user in the dashboard): this keeps the log aligned
- * with Auth and lets that email re-join later instead of being stuck on 409.
+ * Perché la fonte autorevole è Supabase Auth (Authentication → Users): ogni
+ * utente è una persona che occupa un posto, e cancellare un utente dalla
+ * dashboard libera subito il suo posto. La tabella `waitlist` è un log di
+ * iscrizione (lista email + rilevamento duplicati), NON la fonte di verità
+ * per il contatore.
+ *
+ * Passando da qui, vengono eliminate anche le righe waitlist la cui email non
+ * ha più un utente Auth (il proprietario ha cancellato l'utente dalla
+ * dashboard): il log resta allineato ad Auth e quell'email potrà re-iscriversi
+ * in futuro invece di restare bloccata su 409.
  */
 async function countTakenSpots(): Promise<number> {
   const admin = createAdminClient();
@@ -51,14 +54,14 @@ async function countTakenSpots(): Promise<number> {
             .in("email", orphans);
           if (delErr) {
             console.error(
-              "[waitlist] failed to clean orphan rows:",
+              "[waitlist] pulizia righe orfane fallita:",
               delErr.message,
             );
           } else {
             console.log(
-              "[waitlist] removed",
+              "[waitlist] rimosse",
               orphans.length,
-              "orphan row(s):",
+              "riga/e orfana/e:",
               orphans.join(", "),
             );
           }
@@ -66,11 +69,11 @@ async function countTakenSpots(): Promise<number> {
       }
       return taken;
     } catch (err) {
-      console.error("[waitlist] failed to count Auth users:", err);
+      console.error("[waitlist] conteggio utenti Auth fallito:", err);
     }
   }
 
-  // Dev / fallback: count waitlist rows as a proxy for taken spots.
+  // Dev / fallback: conta le righe waitlist come proxy dei posti occupati.
   const supabase = createAdminClient() ?? (await createClient());
   const { count, error } = await supabase
     .from("waitlist")
@@ -80,8 +83,8 @@ async function countTakenSpots(): Promise<number> {
 }
 
 /**
- * Authoritative remaining spots: MAX_SPOTS minus the number of Auth users.
- * Deleting a user in Authentication → Users frees its spot immediately.
+ * Posti rimanenti autorevoli: MAX_SPOTS meno il numero di utenti Auth.
+ * Cancellare un utente in Authentication → Users libera subito il suo posto.
  */
 export async function getRemainingSpots(): Promise<number> {
   const taken = await countTakenSpots();
@@ -89,25 +92,27 @@ export async function getRemainingSpots(): Promise<number> {
 }
 
 /**
- * Provision a Supabase Auth user for the waitlist email (idempotent,
- * best-effort). This is the automatic "backfill" for the NEW signup only:
- * it runs at signup time in POST /api/waitlist, so the email immediately
- * appears in Auth → Users. Historical rows are never backfilled.
+ * Crea un utente Supabase Auth per l'email della waitlist (idempotente,
+ * best-effort). È il "backfill" automatico SOLO per le nuove iscrizioni:
+ * viene eseguito al momento della firma in POST /api/waitlist, così l'email
+ * compare subito in Auth → Users. Le righe storiche non vengono mai backfillate.
  *
- * The account is created with a random, never-revealed password and a
- * confirmed email: the person signs in later with Google (same email →
- * Supabase links the account) or via the "forgot password" flow. The
- * `handle_new_user` trigger also creates their `profiles` row.
+ * L'account viene creato con una password casuale mai rivelata ed email
+ * confermata: la persona accederà poi con Google (stessa email → Supabase
+ * collega l'account) o tramite il flusso "password dimenticata". Il trigger
+ * `handle_new_user` crea anche la riga `profiles`.
  *
- * Returns true when the account was created or already exists; false when it
- * could not be verified (e.g. no service-role key, or a non-duplicate error).
- * Never throws: a duplicate email (already registered) is expected and fine.
+ * Restituisce true quando l'account è stato creato o esiste già; false quando
+ * non è stato possibile verificarlo (es. manca la chiave service-role, o c'è
+ * un errore non-duplicato). Non lancia mai: un'email duplicata (già registrata)
+ * è un caso atteso e innocuo.
  */
 export async function provisionAuthUser(email: string): Promise<boolean> {
   const admin = createAdminClient();
-  if (!admin) return false; // no service-role key — skip silently (dev fallback)
-  // One retry for transient failures: the owner expects every signup to show
-  // up in Authentication → Users, so a network blip shouldn't drop it.
+  if (!admin) return false; // niente chiave service-role — salta in silenzio (fallback dev)
+  // Un retry per i guasti transitori: il proprietario si aspetta che ogni
+  // iscrizione compaia in Authentication → Users, quindi un problema di rete
+  // non deve farla sparire.
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       await admin.auth.admin.createUser({
@@ -119,18 +124,18 @@ export async function provisionAuthUser(email: string): Promise<boolean> {
       return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      // A pre-existing account is the common case here (re-join, or someone
-      // already signed up): log at debug level and move on.
+      // Un account preesistente è il caso più comune (re-iscrizione, o utente
+      // già registrato): log a livello info e si va avanti.
       if (/already registered|already been registered|duplicate/i.test(msg)) {
         console.log("[waitlist] auth user already exists:", email);
         return true;
       }
       if (attempt === 1) {
-        console.warn("[waitlist] provisioning failed, retrying:", msg);
+        console.warn("[waitlist] provisioning fallito, nuovo tentativo:", msg);
         await new Promise((r) => setTimeout(r, 500));
         continue;
       }
-      console.error("[waitlist] failed to provision auth user:", msg);
+      console.error("[waitlist] impossibile creare l'utente auth:", msg);
       return false;
     }
   }

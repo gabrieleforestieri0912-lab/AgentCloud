@@ -1,10 +1,12 @@
 /**
- * Validate a `next` redirect target coming from a URL query parameter.
+ * Valida la destinazione di redirect `next` ricevuta da un parametro query.
  *
- * Only same-origin relative paths are allowed, so an attacker cannot turn the
- * post-auth redirect into an open redirect. Rejects absolute URLs
- * (https://...), protocol-relative URLs (//...), backslash tricks (/\\...)
- * and path traversal (..).
+ * Perché esiste: dopo il login l'utente viene rispedito a una pagina (`?next=`);
+ * senza validazione un attaccante potrebbe trasformare il redirect in un
+ * "open redirect" verso un sito malevolo. Sono accettati SOLO percorsi
+ * relativi same-origin; vengono rifiutati URL assoluti (https://...), URL
+ * protocol-relative (//...), trucchi con backslash (/\\...) e path traversal
+ * (..).
  */
 export function isSafeRedirectPath(next: string | null): boolean {
   if (!next) return false;

@@ -1,16 +1,18 @@
 /**
- * Distributed rate limiting backed by Supabase.
+ * Rate limiting distribuito basato su Supabase.
  *
- * Counters live in the `rate_limits` table (see supabase/schema.sql) and are
- * incremented atomically through the `bump_rate_limit` RPC, so limits hold
- * across all server instances (serverless included) — unlike the in-memory
- * per-instance buckets.
+ * Perché distribuito: in ambiente serverless (Vercel) ogni richiesta può finire
+ * su un'istanza diversa, quindi i contatori in memoria non basterebbero. I
+ * contatori vivono nella tabella `rate_limits` (vedi supabase/schema.sql) e
+ * vengono incrementati atomicamente via RPC `bump_rate_limit`: il limite vale
+ * così su TUTTE le istanze contemporaneamente.
  *
- * Fails OPEN: if the DB is unreachable or the RPC errors, the request is
- * allowed. A rate-limit outage must never block paying traffic; the in-memory
- * fast path (where present) still catches bursts locally.
+ * Fail-OPEN: se il DB non è raggiungibile o la RPC va in errore la richiesta
+ * viene comunque lasciata passare. Un guasto del rate limiting non deve mai
+ * bloccare il traffico pagante; eventuali bucket in memoria intercettano
+ * comunque i burst locali.
  *
- * Server-only — never import from client components.
+ * Server-only — mai importare da componenti client.
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -25,7 +27,7 @@ export const RATE_LIMIT_WINDOWS = {
   HOUR_MS: 3_600_000,
 } as const;
 
-/** Pure: start of the fixed window a timestamp falls into. */
+/** Pura: inizio della finestra fissa (fixed window) in cui cade un timestamp. */
 export function windowStart(nowMs: number, windowMs: number): number {
   return Math.floor(nowMs / windowMs) * windowMs;
 }
@@ -38,17 +40,17 @@ async function cleanupExpiredWindows(): Promise<void> {
       p_older_than: new Date(Date.now() - 2 * 24 * 3_600_000).toISOString(),
     });
   } catch {
-    // best effort — stale rows are harmless
+    // best effort — le righe stale sono innocue
   }
 }
 
 /**
- * Check (and consume) one unit of a rate limit bucket.
+ * Controlla (e consuma) un'unità del bucket di rate limiting.
  *
- * @param bucket stable namespace, e.g. "contact-form"
- * @param key identifier, e.g. the client IP or user id
- * @param opts.limit max requests per window
- * @param opts.windowMs window length in ms
+ * @param bucket namespace stabile, es. "contact-form"
+ * @param key identificatore, es. l'IP del client o l'id utente
+ * @param opts.limit massimo di richieste per finestra
+ * @param opts.windowMs durata della finestra in ms
  */
 export async function rateLimit(
   bucket: string,
@@ -87,12 +89,14 @@ export async function rateLimit(
       };
     }
 
-    // Keep the table small: ~1% of calls trigger a cleanup of stale windows.
+    // Mantiene la tabella piccola: ~1% delle chiamate innesca la pulizia
+    // delle finestre scadute (campionamento casuale, costo quasi nullo).
     if (Math.random() < 0.01) void cleanupExpiredWindows();
 
     return { allowed: true, retryAfterSeconds: 0 };
   } catch (err) {
     console.error(`rateLimit (${bucket}) failed open:`, err);
+    // Fail-open: un errore imprevisto non deve bloccare gli utenti legittimi.
     return { allowed: true, retryAfterSeconds: 0 };
   }
 }

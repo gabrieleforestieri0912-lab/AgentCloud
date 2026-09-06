@@ -1,9 +1,10 @@
 /**
- * Accept flexible store input in the connect forms: a bare domain
- * ("store.myshopify.com"), a full URL ("https://store.myshopify.com/admin"),
- * or anything containing the myshopify.com host. Extracts the canonical
- * <store>.myshopify.com host (server-side normalizeShop stays strict).
- * Returns null when no valid myshopify.com store host is present.
+ * Accetta input flessibili del negozio nei form di connessione: un dominio
+ * nudo ("store.myshopify.com"), un URL completo
+ * ("https://store.myshopify.com/admin") o qualsiasi testo che contiene un
+ * host myshopify.com. Estrae l'host canonico <store>.myshopify.com (la
+ * normalizzazione lato server resta rigorosa). Restituisce null quando non è
+ * presente un host myshopify.com valido.
  */
 export function normalizeShopInput(input: string): string | null {
   const raw = input.toLowerCase();
@@ -13,8 +14,8 @@ export function normalizeShopInput(input: string): string | null {
   if (!match) return null;
   const host = match[1];
   const hostEnd = match.index! + match[0].length;
-  // The host must not be the tail of a longer hostname
-  // (e.g. store.myshopify.com.br) — only separators may follow.
+  // L'host non deve essere la coda di un hostname più lungo
+  // (es. store.myshopify.com.br): dopo di esso possono seguire solo separatori.
   const next = raw[hostEnd];
   if (next && /[a-z0-9.-]/.test(next)) return null;
   return /^[a-z0-9][a-z0-9-]*[a-z0-9]\.myshopify\.com$/.test(host)

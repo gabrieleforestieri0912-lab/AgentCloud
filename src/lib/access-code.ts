@@ -1,37 +1,38 @@
 /**
- * Server-only access-code control for AgentCloud.
+ * Controllo del codice di accesso (server-only) per AgentCloud.
  *
- * SECURITY MODEL
- * -------------
- * During the waitlist phase the platform is locked down. Entry is granted by
- * a single access code (NOT by email): whoever submits the valid code from
- * the waitlist page receives the `ac_access` cookie, set server-side in
- * POST /api/waitlist after the code is validated with `isValidAccessCode`
- * (src/lib/access-code-validation.ts — client-safe, pure comparison). The
- * proxy then lets cookie holders through the waitlist gate and treats every
- * agent — including those flagged "coming soon" — as fully available.
+ * MODELLO DI SICUREZZA
+ * --------------------
+ * Durante la fase waitlist la piattaforma è bloccata. L'ingresso è concesso
+ * tramite un UNICO codice di accesso (non via email): chi invia il codice
+ * valido dalla pagina waitlist riceve il cookie `ac_access`, impostato lato
+ * server in POST /api/waitlist dopo che il codice è stato verificato con
+ * `isValidAccessCode` (src/lib/access-code-validation.ts — confronto puro,
+ * client-safe). Il proxy fa poi passare i possessori del cookie attraverso il
+ * gate della waitlist e tratta ogni agente — compresi quelli "in arrivo" —
+ * come pienamente disponibile.
  *
- * The code itself lives in the `ACCESS_CODE` environment variable (server
- * secret, NOT `NEXT_PUBLIC_*`), falling back to a generated default so the
- * platform works out of the box. This module must only be imported from
- * server code: it reads `next/headers`, and importing it from a client
- * component would drag server-only code into the browser bundle.
+ * Il codice vive nella variabile d'ambiente `ACCESS_CODE` (segreto server,
+ * NON `NEXT_PUBLIC_*`), con fallback su un default generato così la piattaforma
+ * funziona subito. Questo modulo va importato SOLO da codice server: legge
+ * `next/headers`, e importarlo da un client component trascinerebbe codice
+ * server-only nel bundle del browser.
  */
 
 import { cookies } from "next/headers";
 import { ACCESS_COOKIE } from "./waitlist-constants";
 
 /**
- * Server-only: whether the current request already holds the access grant
- * (the `ac_access` cookie). Safe to call from server components and route
- * handlers; never from client code.
+ * Server-only: dice se la richiesta corrente possiede già la concessione di
+ * accesso (il cookie `ac_access`). Chiamabile da server component e route
+ * handler; mai da codice client.
  */
 export async function hasPlatformAccess(): Promise<boolean> {
   try {
     const store = await cookies();
     return store.get(ACCESS_COOKIE)?.value === "1";
   } catch {
-    // cookies() is unavailable in some edge contexts — never fail rendering.
+    // cookies() non è disponibile in alcuni contesti edge — il rendering non deve mai fallire.
     return false;
   }
 }

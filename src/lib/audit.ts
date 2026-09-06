@@ -1,3 +1,12 @@
+/**
+ * Audit logging leggero per gli eventi di sicurezza (rate limit, tentativi
+ * di accesso, riscatto codici, ecc.).
+ *
+ * Server-only. Scrive ogni evento sia nella console sia su un file giornaliero
+ * (`logs/audit-<data>.log`) per avere una traccia persistente senza dipendere
+ * dal database. Qualsiasi errore viene inghiottito: la registrazione non deve
+ * MAI bloccare la richiesta che l'ha generata.
+ */
 import fs from "fs";
 import path from "path";
 
@@ -11,7 +20,7 @@ export function logAudit(
       action,
       payload,
     };
-    // Persist to console and to a rotating file (basic implementation)
+    // Persistenza su console e su file a rotazione giornaliera (implementazione base)
     console.info("AUDIT", JSON.stringify(entry));
     try {
       const logDir = path.join(process.cwd(), "logs");
@@ -22,10 +31,10 @@ export function logAudit(
       );
       fs.appendFileSync(file, JSON.stringify(entry) + "\n");
     } catch {
-      // ignore file errors in non-server environments
+      // ignora gli errori di scrittura file negli ambienti senza filesystem
     }
   } catch (e) {
-    // avoid throwing in audit
+    // l'audit non deve mai lanciare eccezioni verso il chiamante
     console.error("AUDIT ERROR", e);
   }
 }

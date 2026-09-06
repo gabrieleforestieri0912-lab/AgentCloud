@@ -1,9 +1,13 @@
 import type { Locale } from "./i18n/constants";
 
 /**
- * Friendly, localized text for the `reason` values the OAuth callback routes
- * put in ?shopify=error&reason=... / ?google=error&reason=... . Unknown
- * reasons fall back to the raw token so the UI never shows nothing.
+ * Testi localizzati e leggibili per i valori `reason` che le route di
+ * callback OAuth mettono in ?shopify=error&reason=... / ?google=error&reason=... .
+ *
+ * Perché esiste: i provider OAuth restituiscono solo codici d'errore generici;
+ * questa mappa li traduce in messaggi comprensibili all'utente. Le ragioni
+ * sconosciute ripiegano sul token grezzo, così l'interfaccia non mostra mai
+ * un errore vuoto.
  */
 const REASONS_IT: Record<string, string> = {
   auth: "devi accedere prima di collegare",

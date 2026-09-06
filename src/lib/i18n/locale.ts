@@ -16,20 +16,20 @@ export {
 } from "./constants";
 
 /**
- * Lightweight i18n for AgentCloud.
+ * i18n leggero per AgentCloud.
  *
- * Priority:
- *  1. Explicit cookie (user picked a language via the toggle)
- *  2. Geo country header (x-vercel-ip-country / cf-ipcountry / x-country)
- *  3. Accept-Language header
+ * Priorità di risoluzione della lingua:
+ *  1. Cookie esplicito (l'utente ha scelto una lingua col toggle)
+ *  2. Header paese geografico (x-vercel-ip-country / cf-ipcountry / x-country)
+ *  3. Header Accept-Language
  *  4. DEFAULT_LOCALE
  *
- * URLs stay unchanged (no /it /en routing). The choice is persisted in a
- * cookie so both client and server components can read it.
+ * Gli URL restano invariati (nessun routing /it /en): la scelta viene
+ * persistita in un cookie leggibile sia dai client sia dai server component.
  *
- * NOTE: this module is server-only (it reads `next/headers`). Client
- * components that only need the cookie name / locale constants should import
- * from `./constants` instead.
+ * NOTA: questo modulo è server-only (legge `next/headers`). I client component
+ * che servono solo nome del cookie / costanti devono importare da
+ * `./constants`.
  */
 
 async function getGeoAndAcceptLanguage(): Promise<{
@@ -52,27 +52,28 @@ async function getGeoAndAcceptLanguage(): Promise<{
 }
 
 /**
- * Server-only: resolve the current locale.
- * - If a valid cookie exists, it wins (explicit user choice).
- * - Otherwise auto-detect from country / Accept-Language.
+ * Server-only: risolve la lingua corrente della richiesta.
+ * - Se esiste un cookie valido, vince lui (scelta esplicita dell'utente).
+ * - Altrimenti auto-rilevamento da paese / Accept-Language.
  */
 export async function getLocale(): Promise<Locale> {
   try {
     const store = await cookies();
     const value = store.get(LOCALE_COOKIE)?.value;
     if (isLocale(value)) return value;
-    // No explicit choice → auto-detect from request headers (country + language)
+    // Nessuna scelta esplicita → auto-rilevamento dagli header (paese + lingua)
     const { country, acceptLanguage } = await getGeoAndAcceptLanguage();
     return detectLocale({ country, acceptLanguage });
   } catch {
-    // cookies()/headers() unavailable in some edge contexts — never fail rendering.
+    // cookies()/headers() non disponibili in alcuni contesti edge — mai far fallire il rendering.
     return DEFAULT_LOCALE;
   }
 }
 
 /**
- * Helper for middleware/proxy: detect locale from a NextRequest
- * without using `next/headers`. Used to auto-set the cookie on first visit.
+ * Helper per middleware/proxy: rileva la lingua da una NextRequest SENZA
+ * usare `next/headers`. Serve per impostare il cookie automatico alla prima
+ * visita, quando il proxy non può leggere i cookie come un server component.
  */
 export function getLocaleFromRequest(req: {
   cookies: { get(name: string): { value: string } | undefined };

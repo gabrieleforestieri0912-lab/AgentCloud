@@ -1,16 +1,18 @@
 /**
- * Minimal markdown parser used by the chat bubbles.
+ * Parser markdown minimale usato nelle bolle della chat.
  *
- * Deliberately dependency-free and tolerant of partial input: the hero chat
- * streams text incrementally (SSE chunks / typewriter), so a message may
- * contain an unclosed `**` while it is still being typed. In that case the
- * dangling marker is rendered as literal text instead of breaking the UI.
+ * Perché esiste e come funziona: è volutamente senza dipendenze esterne e
+ * tollerante verso input incompleti. La chat dell'hero streamma il testo a
+ * pezzi (chunk SSE / effetto macchina da scrivere): mentre il messaggio sta
+ * ancora arrivando può contenere un `**` non ancora chiuso. In quel caso il
+ * marcatore pendente viene mostrato come testo letterale invece di rompere
+ * l'interfaccia.
  *
- * Supported syntax:
- *   - `#` / `##` / `###` headings
- *   - `**bold**`, `*italic*`, `` `code` `` inline
- *   - bullet lists (`• `, `- `, `* `) and ordered lists (`1. `, `2) `)
- *   - blank-line separated paragraphs
+ * Sintassi supportata:
+ *   - titoli `#` / `##` / `###`
+ *   - `**grassetto**`, `*corsivo*`, `` `codice` `` inline
+ *   - elenchi puntati (`• `, `- `, `* `) e numerati (`1. `, `2) `)
+ *   - paragrafi separati da righe vuote
  */
 
 export type InlineSegment =
@@ -30,8 +32,10 @@ export type MarkdownBlock =
   | { type: "list"; items: MarkdownList };
 
 /**
- * Parse inline markers (`**bold**`, `*italic*`, `` `code` ``) into segments.
- * Unclosed markers are emitted as literal text.
+ * Analizza i marcatori inline (`**grassetto**`, `*corsivo*`, `` `codice` ``)
+ * trasformandoli in segmenti tipizzati. I marcatori non chiusi (messaggio
+ * ancora in streaming) vengono emessi come testo letterale: meglio mostrare
+ * un asterisco che un bubble rotto.
  */
 export function parseInline(text: string): InlineSegment[] {
   const segments: InlineSegment[] = [];
@@ -61,7 +65,7 @@ export function parseInline(text: string): InlineSegment[] {
         i = closeIdx + marker.length;
         continue;
       }
-      // No closing marker (still streaming) — render literally.
+      // Nessun marcatore di chiusura (risposta ancora in streaming): testo letterale.
       plain += ch;
       i += 1;
       continue;
@@ -93,8 +97,9 @@ const BULLET_RE = /^\s*(?:[•\-*])\s+(.*)$/;
 const ORDERED_RE = /^\s*(\d+)[.)]\s+(.*)$/;
 
 /**
- * Parse a message into block-level elements: paragraphs, headings and lists.
- * Blank lines separate blocks; consecutive plain lines join with a space.
+ * Analizza un messaggio in elementi a livello di blocco: paragrafi, titoli ed
+ * elenchi. Le righe vuote separano i blocchi; le righe di testo consecutive
+ * vengono unite con uno spazio per ricostruire i paragrafi.
  */
 export function parseMarkdown(text: string): MarkdownBlock[] {
   const lines = text.split("\n");

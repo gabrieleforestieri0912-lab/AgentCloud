@@ -1,9 +1,10 @@
 /**
- * Client-safe i18n constants.
+ * Costanti i18n client-safe.
  *
- * These live in their own module (no `next/headers`) so client components
- * (e.g. LanguageProvider) can import them without pulling server-only code
- * into the browser bundle. Server components should use `./locale.ts`.
+ * Vivono in un modulo dedicato (senza `next/headers`) così i client component
+ * (es. LanguageProvider) possono importarle senza trascinare codice
+ * server-only nel bundle del browser. I server component devono usare
+ * `./locale.ts`.
  */
 
 export const LOCALE_COOKIE = "agentcloud_locale";
@@ -13,7 +14,7 @@ export type Locale = (typeof LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = "en";
 
-/** Human labels for the toggle / OG locales */
+/** Etichette leggibili per il toggle lingua / locale OpenGraph */
 export const LOCALE_LABELS: Record<Locale, { short: string; long: string; og: string }> = {
   it: { short: "IT", long: "Italiano", og: "it_IT" },
   en: { short: "EN", long: "English", og: "en_US" },
@@ -27,10 +28,10 @@ export function isLocale(value: unknown): value is Locale {
 }
 
 /**
- * Country → locale mapping for geo-based auto-detection.
- * Uses Vercel (`x-vercel-ip-country`), Cloudflare (`cf-ipcountry`)
- * and similar headers. Only the listed countries map to a specific
- * language; everything else falls back to Accept-Language / default.
+ * Mappa paese → locale per il rilevamento automatico geografico.
+ * Usa gli header Vercel (`x-vercel-ip-country`), Cloudflare (`cf-ipcountry`)
+ * e simili. Solo i paesi elencati vengono mappati a una lingua specifica;
+ * tutti gli altri ripiegano su Accept-Language / default.
  */
 export const COUNTRY_LOCALE_MAP: Record<string, Locale> = {
   IT: "it",
@@ -72,7 +73,8 @@ export function localeFromCountry(country: string | null | undefined): Locale | 
 
 export function localeFromAcceptLanguage(header: string | null | undefined): Locale | null {
   if (!header) return null;
-  // Parse "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5"
+  // Analizza "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5": prende il primo
+  // tag di lingua valido rispettando l'ordine di preferenza indicato.
   const parts = header.split(",").map((p) => p.trim());
   for (const part of parts) {
     const [tag] = part.split(";").map((s) => s.trim());

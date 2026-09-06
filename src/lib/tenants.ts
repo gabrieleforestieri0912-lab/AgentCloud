@@ -1,3 +1,12 @@
+/**
+ * Store multi-tenant locale (JSON cifrato) per le credenziali dei test tenant.
+ *
+ * Come funziona: i token OAuth (Google/Shopify) dei tenant senza account
+ * Supabase vengono salvati in `data/tenants.json` CIFRATI con AES-256-GCM.
+ * La chiave deriva da `TENANT_STORE_KEY` (in produzione va impostata, altrimenti
+ * si usa "dev-tenant-key"). Cifrare i token è obbligatorio: il file è su disco
+ * e non deve mai contenere segreti in chiaro. Server-only (usa fs/crypto).
+ */
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
@@ -77,7 +86,7 @@ function writeStore(store: Record<string, StoredTenant>) {
       encoding: "utf8",
     });
   } catch {
-    // ignore
+    // ignora: la scrittura del file non deve mai rompere il flusso di login
   }
 }
 
@@ -154,7 +163,7 @@ export function updateTenantShopifyCredentials(
 }
 
 /**
- * Delete all credentials and data for a tenant (GDPR compliance / offboarding).
+ * Cancella tutte le credenziali e i dati di un tenant (conformità GDPR / offboarding).
  */
 export function deleteTenant(tenantId: string): boolean {
   const store = readStore();
@@ -165,8 +174,12 @@ export function deleteTenant(tenantId: string): boolean {
 }
 
 /**
- * Generate a cryptographically signed widget API key for a tenant.
- * Non-sequential, contains a random nonce and HMAC signature.
+ * Genera una API key del widget firmata crittograficamente per un tenant.
+ *
+ * Perché firmata: l'endpoint embed deve riconoscere in modo affidabile chi
+ * chiama (qual è il tenantId). La chiave non è sequenziale: contiene un nonce
+ * casuale e una firma HMAC, quindi non è indovinabile né falsificabile senza
+ * conoscere `TENANT_STORE_KEY`.
  */
 export function generateTenantApiKey(tenantId: string): string {
   const nonce = crypto.randomBytes(16).toString("hex");
@@ -180,7 +193,10 @@ export function generateTenantApiKey(tenantId: string): string {
 }
 
 /**
- * Verify a widget API key and extract the verified tenantId.
+ * Verifica una API key del widget ed estrae il tenantId autenticato.
+ *
+ * La verifica ricalcola l'HMAC e confronta le firme con `timingSafeEqual`
+ * (confronto a tempo costante, per non rivelare informazioni via timing).
  */
 export function verifyTenantApiKey(
   apiKey: string,

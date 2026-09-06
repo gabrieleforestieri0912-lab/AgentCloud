@@ -1,3 +1,12 @@
+/**
+ * Catalogo statico delle integrazioni mostrate nella pagina /integrations.
+ *
+ * Perché esiste: la pagina elenca i servizi collegabili (Shopify, Gmail,
+ * Stripe...) con stato di disponibilità. Ogni voce può puntare all'agente che
+ * la gestisce (`agentSlug`): se disponibile il click porta alla pagina
+ * dell'agente, altrimenti resta sulla pagina integrazioni. I dati qui sono
+ * statici e usati solo per la UI.
+ */
 export type Integration = {
   name: string;
   brand: string;
@@ -72,7 +81,7 @@ export const INTEGRATIONS: Integration[] = [
     available: true,
     description: "Notifiche e supporto team",
   },
-  // Coming soon
+  // In arrivo (non ancora disponibili: solo catalogo, niente agente collegato)
   {
     name: "WhatsApp",
     brand: "whatsapp",

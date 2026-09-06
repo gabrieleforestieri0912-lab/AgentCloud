@@ -3,16 +3,19 @@ import { getSiteUrl } from "@/lib/site-url";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/constants";
 
 /**
- * Build consistent per-page SEO metadata.
+ * Costruisce metadata SEO coerenti per ogni pagina.
  *
- * - Sets a self-referencing canonical so every route is indexed on its own URL
- *   (the root layout only sets the homepage canonical, which would otherwise
- *   be inherited by every child page — a duplicate-content trap).
- * - Mirrors the same title/description into OpenGraph + Twitter cards so the
- *   shared link renders richly (and picks up the root `opengraph-image`).
+ * Come funziona e perché:
+ * - Imposta un canonical che punta a sé stesso, così ogni rotta viene
+ *   indicizzata sul proprio URL (il layout di root imposta solo il canonical
+ *   della homepage, che altrimenti verrebbe ereditato da tutte le pagine
+ *   figlie — una trappola da contenuto duplicato per Google).
+ * - Riporta gli stessi title/description nelle card OpenGraph + Twitter così
+ *   il link condiviso viene mostrato in modo ricco (e raccoglie la
+ *   `opengraph-image` di root).
  *
- * The title uses the root template ("%s | AgentCloud"), so pass a BARE title
- * (no " | AgentCloud" suffix) to avoid double branding.
+ * Il titolo usa il template di root ("%s | AgentCloud"): passa quindi un
+ * titolo SENZA suffisso " | AgentCloud" per evitare doppio branding.
  */
 export function pageSeo(opts: {
   title: string;

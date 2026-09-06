@@ -1,3 +1,11 @@
+/**
+ * Client Resend condiviso (singleton) per l'invio delle email transazionali.
+ *
+ * Perché esiste: istanziare un nuovo client a ogni chiamata spreca risorse e
+ * rischia di superare i limiti di connessione; il client viene creato una
+ * sola volta e riusato. L'API key viene letta dall'ambiente al primo uso e
+ * manca solo se non è configurata.
+ */
 import { Resend } from "resend";
 
 let _resend: Resend | null = null;

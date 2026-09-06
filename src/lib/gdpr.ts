@@ -1,8 +1,11 @@
 /**
- * GDPR & Privacy Compliance Module
+ * Modulo conformità GDPR & Privacy.
  *
- * Implements data minimization, sub-processor registry, and
- * the "Right to be forgotten" (deletion of all tenant data associated with an email).
+ * Perché esiste: la normativa richiede di sapere sempre quali dati trattiamo e
+ * di poterli cancellare su richiesta dell'interessato. Qui sono implementati:
+ * la minimizzazione dei dati, il registro dei sub-processori (i fornitori che
+ * trattano dati per nostro conto) e il "diritto all'oblio" (cancellazione di
+ * tutti i dati del tenant associati a un'email).
  */
 
 import { logAudit } from "@/lib/audit";
@@ -56,7 +59,8 @@ export type DeletionResult = {
 };
 
 /**
- * Delete all tenant data linked to a specific email address across services.
+ * Cancella tutti i dati del tenant collegati a un indirizzo email, su tutti i
+ * servizi che ne conservano una copia (diritto all'oblio).
  */
 export async function deleteTenantDataForEmail(
   tenantId: string,
@@ -67,7 +71,7 @@ export async function deleteTenantDataForEmail(
 
   logAudit("gdpr_deletion_request", { tenantId, email: normalizedEmail });
 
-  // 1. Purge matching reviews / author submissions in memory/store
+  // 1. Rimuove le recensioni / segnalazioni dell'autore in memoria/store
   try {
     const reviews = getOrCreateTenantReviews(tenantId);
     const initialLen = reviews.length;
@@ -96,7 +100,8 @@ export async function deleteTenantDataForEmail(
 }
 
 /**
- * Return summary privacy notice for widget presentation.
+ * Restituisce la sintesi della privacy (informativa) da mostrare nel widget
+ * agli utenti finali prima che lascino dati.
  */
 export function getWidgetPrivacyDisclosure(): {
   controller: string;

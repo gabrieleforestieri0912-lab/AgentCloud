@@ -1,24 +1,24 @@
 /**
- * Word-by-word SSE emitter.
+ * Emettitore SSE parola per parola.
  *
- * The LLM providers stream text deltas as they are generated, but those
- * deltas can be large or arrive in bursts (a whole paragraph at once). This
- * helper re-emits the text one word at a time on a small timer so every chat
- * UI shows the assistant "typing" its answer instead of the full message
- * appearing in a single jump.
+ * Perché esiste: i provider LLM streammano delta di testo mentre lo generano,
+ * ma quei delta possono essere grandi o arrivare a raffiche (anche un paragrafo
+ * intero in un colpo solo). Questo helper ri-emette il testo una parola alla
+ * volta con un piccolo timer, così ogni UI di chat mostra l'assistente che
+ * "sta scrivendo" la risposta invece di farla comparire tutta in un salto.
  *
- * Server-only. Words are split on whitespace so markdown tokens like `**bold**`
- * stay intact.
+ * Server-only. Le parole vengono spezzate sugli spazi bianchi, così i token
+ * markdown come `**grassetto**` restano intatti.
  */
 
 const WORD_DELAY_MS = 30;
 
 export type WordEmitter = {
-  /** Queue text as it arrives from the provider (any size, any chunking). */
+  /** Accoda il testo appena arriva dal provider (qualsiasi dimensione/chunking). */
   push(chunk: string): void;
-  /** Resolve once every queued word has been emitted (before sending `done`). */
+  /** Risolve quando tutte le parole in coda sono state emesse (prima del `done`). */
   flush(): Promise<void>;
-  /** Drop any pending words (used on error paths). */
+  /** Scarta le parole in attesa (usato nei percorsi d'errore). */
   stop(): void;
 };
 
@@ -36,10 +36,10 @@ export function createWordEmitter(onWord: (word: string) => void): WordEmitter {
     try {
       onWord(word);
     } catch {
-      // The consumer closed the stream mid-emission (e.g. the client
-      // disconnected from the SSE response). Stop permanently: no more timer
-      // callbacks and no more queueing — otherwise the throw escapes the
-      // timer callback as an uncaughtException.
+      // Il consumatore ha chiuso lo stream a metà emissione (es. il client si
+      // è disconnesso dalla risposta SSE). Stop definitivo: niente più timer e
+      // niente più accodamenti — altrimenti l'eccezione uscirebbe dal callback
+      // del timer come uncaughtException.
       stopped = true;
       queue = [];
       timer = null;
