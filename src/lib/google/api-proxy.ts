@@ -1,7 +1,7 @@
 import { getValidGoogleAccessToken } from "./token";
 
 /**
- * Phase 3 — typed Google API proxy (read-only).
+ * Google API proxy with read & write.
  *
  * Central access point for Gmail + Google Calendar. Resolves the caller's
  * OAuth token (with automatic refresh) and calls the Google REST APIs,
@@ -9,9 +9,9 @@ import { getValidGoogleAccessToken } from "./token";
  * raw HTTP — they always go through this module (and its HTTP wrapper at
  * /api/google/proxy).
  *
- * Actions (Fase 1-4 scope, read-only):
- *   - list_emails(query?, max_results?)            → Gmail
- *   - get_calendar_events(date_from, date_to)      → Calendar
+ * Actions (read & write):
+ *   - list_emails(query?, max_results?)            → Gmail (read)
+ *   - get_calendar_events(date_from, date_to)      → Calendar (read)
  */
 
 export type GoogleProxyAction = "list_emails" | "get_calendar_events";

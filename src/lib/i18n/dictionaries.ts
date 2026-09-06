@@ -480,7 +480,7 @@ const it = {
     googleConnectAction: "Collega account Google",
     googleConnectedLine: "Account Google collegato: {email}",
     googleReadOnlyHint:
-      "Accesso in sola lettura a Gmail e Google Calendar (consenso OAuth sicuro).",
+      "Accesso completo a Gmail e Google Calendar: invio, eliminazione email e gestione eventi con promemoria (consenso OAuth sicuro).",
     home: "Home",
     chat: "Chat",
     tools: "Strumenti",
@@ -676,7 +676,7 @@ const it = {
     hoursAgo: "{n} h",
     daysAgo: "{n} g",
     googleConnectDesc:
-      "Collega il tuo account Google (Gmail e Calendario) per dare agli agenti accesso in sola lettura a email e calendario.",
+      "Collega il tuo account Google (Gmail e Calendario) per dare agli agenti accesso completo: lettura, invio ed eliminazione email, creazione/eliminazione eventi e promemoria.",
     googleConnectButton: "Collega account Google",
     googleConnectedBadge: "Connesso",
     googleConnectedMsg: "Account Google collegato con successo.",
@@ -693,8 +693,8 @@ const it = {
     googleNotConnected: "Nessun account Google collegato.",
     googleNotConfigured:
       "Integrazione Google non configurata: aggiungi GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET nelle variabili d'ambiente.",
-    scopeGmailReadonly: "Gmail (sola lettura)",
-    scopeCalendarReadonly: "Calendario (sola lettura)",
+    scopeGmailReadonly: "Gmail (lettura e scrittura)",
+    scopeCalendarReadonly: "Calendario (lettura e scrittura)",
     scopeOther: "Altri permessi",
   },
 
@@ -1604,7 +1604,7 @@ export const en: Dictionary = {
     googleConnectAction: "Connect Google account",
     googleConnectedLine: "Google account connected: {email}",
     googleReadOnlyHint:
-      "Read-only access to Gmail and Google Calendar (secure OAuth consent).",
+      "Full access to Gmail and Google Calendar: send, delete emails and manage events with reminders (secure OAuth consent).",
     home: "Home",
     chat: "Chat",
     tools: "Tools",
@@ -1799,7 +1799,7 @@ export const en: Dictionary = {
     hoursAgo: "{n} h",
     daysAgo: "{n} d",
     googleConnectDesc:
-      "Connect your Google account (Gmail and Calendar) to give agents read-only access to your email and calendar.",
+      "Conecta tu cuenta de Google (Gmail y Calendario) para dar a los agentes acceso completo: lectura, envío/eliminación de emails y gestión de eventos con recordatorios.",
     googleConnectButton: "Connect Google account",
     googleConnectedBadge: "Connected",
     googleConnectedMsg: "Google account connected successfully.",
@@ -1816,8 +1816,8 @@ export const en: Dictionary = {
     googleNotConnected: "No Google account connected.",
     googleNotConfigured:
       "Google integration not configured: add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the environment variables.",
-    scopeGmailReadonly: "Gmail (read-only)",
-    scopeCalendarReadonly: "Calendar (read-only)",
+    scopeGmailReadonly: "Gmail (read & write)",
+    scopeCalendarReadonly: "Calendar (read & write)",
     scopeOther: "Other permissions",
   },
 
@@ -2713,11 +2713,11 @@ export const es: Dictionary = {
     assistantName: "Asistente personal",
     googleConnectTitle: "Connect your Google account",
     googleConnectDesc:
-      "Connect Gmail and Google Calendar so the agent can work on your real data.",
+      "Conecta Gmail y Google Calendar para que el agente pueda trabajar con tus datos reales.",
     googleConnectAction: "Connect Google account",
     googleConnectedLine: "Google account connected: {email}",
     googleReadOnlyHint:
-      "Read-only access to Gmail and Google Calendar (secure OAuth consent).",
+      "Vollzugriff auf Gmail und Google Kalender: Senden, Löschen von E-Mails und Verwalten von Terminen mit Erinnerungen (sichere OAuth-Zustimmung).",
     home: "Inicio",
     chat: "Chat",
     tools: "Herramientas",
@@ -2912,7 +2912,7 @@ export const es: Dictionary = {
     hoursAgo: "{n} h",
     daysAgo: "{n} d",
     googleConnectDesc:
-      "Connect your Google account (Gmail and Calendar) to give agents read-only access to your email and calendar.",
+      "Connect your Google account (Gmail and Calendar) to give agents full access: read, send/delete emails and manage events with reminders.",
     googleConnectButton: "Connect Google account",
     googleConnectedBadge: "Connected",
     googleConnectedMsg: "Google account connected successfully.",
@@ -2929,8 +2929,8 @@ export const es: Dictionary = {
     googleNotConnected: "No Google account connected.",
     googleNotConfigured:
       "Google integration not configured: add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the environment variables.",
-    scopeGmailReadonly: "Gmail (read-only)",
-    scopeCalendarReadonly: "Calendar (read-only)",
+    scopeGmailReadonly: "Gmail (lectura y escritura)",
+    scopeCalendarReadonly: "Calendario (lectura y escritura)",
     scopeOther: "Other permissions",
   },
 
@@ -3826,11 +3826,11 @@ export const de: Dictionary = {
     assistantName: "Persönlicher Assistent",
     googleConnectTitle: "Connect your Google account",
     googleConnectDesc:
-      "Connect Gmail and Google Calendar so the agent can work on your real data.",
+      "Verbinde Gmail und Google Kalender, damit der Agent mit deinen echten Daten arbeiten kann.",
     googleConnectAction: "Connect Google account",
     googleConnectedLine: "Google account connected: {email}",
     googleReadOnlyHint:
-      "Read-only access to Gmail and Google Calendar (secure OAuth consent).",
+      "Acceso completo a Gmail y Google Calendar: envío, eliminación de emails y gestión de eventos con recordatorios (consentimiento OAuth seguro).",
     home: "Start",
     chat: "Chat",
     tools: "Tools",
@@ -4025,7 +4025,7 @@ export const de: Dictionary = {
     hoursAgo: "{n} h",
     daysAgo: "{n} d",
     googleConnectDesc:
-      "Connect your Google account (Gmail and Calendar) to give agents read-only access to your email and calendar.",
+      "Conecta tu cuenta de Google (Gmail y Calendario) para dar a los agentes acceso completo: lectura, envío/eliminación de emails y gestión de eventos con recordatorios.",
     googleConnectButton: "Connect Google account",
     googleConnectedBadge: "Connected",
     googleConnectedMsg: "Google account connected successfully.",
@@ -4042,8 +4042,8 @@ export const de: Dictionary = {
     googleNotConnected: "No Google account connected.",
     googleNotConfigured:
       "Google integration not configured: add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the environment variables.",
-    scopeGmailReadonly: "Gmail (read-only)",
-    scopeCalendarReadonly: "Calendar (read-only)",
+    scopeGmailReadonly: "Gmail (Lesen & Schreiben)",
+    scopeCalendarReadonly: "Kalender (Lesen & Schreiben)",
     scopeOther: "Other permissions",
   },
 
@@ -4939,11 +4939,11 @@ export const fr: Dictionary = {
     assistantName: "Assistant personnel",
     googleConnectTitle: "Connect your Google account",
     googleConnectDesc:
-      "Connect Gmail and Google Calendar so the agent can work on your real data.",
+      "Connectez Gmail et Google Calendar pour que l'agent puisse travailler avec vos données réelles.",
     googleConnectAction: "Connect Google account",
     googleConnectedLine: "Google account connected: {email}",
     googleReadOnlyHint:
-      "Read-only access to Gmail and Google Calendar (secure OAuth consent).",
+      "Accès complet à Gmail et Google Calendar : envoi, suppression d'e-mails et gestion d'événements avec rappels (consentement OAuth sécurisé).",
     home: "Accueil",
     chat: "Chat",
     tools: "Outils",
@@ -5138,7 +5138,7 @@ export const fr: Dictionary = {
     hoursAgo: "{n} h",
     daysAgo: "{n} d",
     googleConnectDesc:
-      "Connect your Google account (Gmail and Calendar) to give agents read-only access to your email and calendar.",
+      "Verbinde dein Google-Konto (Gmail und Kalender), um Agenten Vollzugriff zu geben: Lesen, Senden/Löschen von E-Mails und Verwalten von Terminen mit Erinnerungen.",
     googleConnectButton: "Connect Google account",
     googleConnectedBadge: "Connected",
     googleConnectedMsg: "Google account connected successfully.",
@@ -5155,8 +5155,8 @@ export const fr: Dictionary = {
     googleNotConnected: "No Google account connected.",
     googleNotConfigured:
       "Google integration not configured: add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the environment variables.",
-    scopeGmailReadonly: "Gmail (read-only)",
-    scopeCalendarReadonly: "Calendar (read-only)",
+    scopeGmailReadonly: "Gmail (lecture & écriture)",
+    scopeCalendarReadonly: "Calendrier (lecture & écriture)",
     scopeOther: "Other permissions",
   },
 

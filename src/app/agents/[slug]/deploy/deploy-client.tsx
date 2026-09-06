@@ -39,7 +39,7 @@ const NO_CONNECTIONS: DeployConnections = {
 /**
  * Which real OAuth connector an integration label maps to.
  *   "shopify" → Shopify OAuth (needs the store domain first)
- *   "google"  → Google OAuth (Gmail + Calendar, read-only)
+ *   "google"  → Google OAuth (Gmail + Calendar, read & write: send/delete emails, create/delete events with reminders)
  *   null      → no live connector yet: the agent chat is where the
  *               user can try the agent and reach its tools.
  */

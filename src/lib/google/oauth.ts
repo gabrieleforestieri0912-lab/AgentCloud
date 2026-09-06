@@ -15,13 +15,13 @@ export const GOOGLE_RETURN_COOKIE = "ac_google_return";
 export const OAUTH_RETURN_MAX_AGE = 60 * 15; // 15 minutes
 
 /**
- * Read-only scopes per the Fase 1-4 scope decision (sensitive, not
- * restricted, per Google). Override via GOOGLE_SCOPES (space- or
- * comma-separated) when Fase 5 write scopes are later enabled.
+ * Write scopes: gli agenti devono poter inviare/eliminare email e creare/
+ * eliminare eventi con promemoria. Include Gmail modify + Calendar full.
+ * Override via GOOGLE_SCOPES se necessario.
  */
 const DEFAULT_GOOGLE_SCOPES = [
-  "https://www.googleapis.com/auth/gmail.readonly",
-  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/gmail.modify",
+  "https://www.googleapis.com/auth/calendar",
 ];
 
 export function getGoogleScopes(): string[] {

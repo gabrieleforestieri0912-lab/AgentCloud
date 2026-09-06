@@ -59,3 +59,5 @@ supabase/schema.sql.bak
 .clerk
 .env.local
 .env.local.example 
+
+brand/

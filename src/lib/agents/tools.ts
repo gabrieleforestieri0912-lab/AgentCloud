@@ -7,6 +7,7 @@ import {
 } from "@/lib/shopify/connections";
 import { googleApiProxy } from "@/lib/google/api-proxy";
 import { getGoogleConnection } from "@/lib/google/connections";
+import { getValidGoogleAccessToken } from "@/lib/google/token";
 
 export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   web_search: {
@@ -381,7 +382,7 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   list_emails: {
     name: "list_emails",
     description:
-      "Read the user's Gmail inbox (read-only): optionally filter by query and return the most recent matching emails with sender, subject, date, and preview.",
+      "Read the user's Gmail inbox: optionally filter by query and return the most recent matching emails with sender, subject, date, and preview.",
     input_schema: {
       type: "object",
       properties: {
@@ -400,7 +401,7 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   get_calendar_events: {
     name: "get_calendar_events",
     description:
-      "Read events from the user's Google Calendar (read-only) in a date range, with start/end time, location, and calendar link.",
+      "Read events from the user's Google Calendar in a date range, with start/end time, location, and calendar link.",
     input_schema: {
       type: "object",
       properties: {
@@ -417,9 +418,67 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
     },
   },
 
+  gmail_send: {
+    name: "gmail_send",
+    description:
+      "Send an email via the connected Gmail account (requires Gmail modify scope).",
+    input_schema: {
+      type: "object",
+      properties: {
+        to: { type: "string", description: "Recipient email (comma-separated for multiple)" },
+        subject: { type: "string", description: "Email subject" },
+        body: { type: "string", description: "Email body (plain text or HTML)" },
+        cc: { type: "string", description: "CC recipients, comma-separated (optional)" },
+        bcc: { type: "string", description: "BCC recipients, comma-separated (optional)" },
+      },
+      required: ["to", "subject", "body"],
+    },
+  },
+
+  gmail_trash: {
+    name: "gmail_trash",
+    description:
+      "Move a Gmail message to trash (delete). Use list_emails first to get the message ID. Requires Gmail modify scope.",
+    input_schema: {
+      type: "object",
+      properties: {
+        message_id: { type: "string", description: "Gmail message ID to trash" },
+      },
+      required: ["message_id"],
+    },
+  },
+
+  calendar_delete_event: {
+    name: "calendar_delete_event",
+    description:
+      "Delete a Google Calendar event by its ID. Use get_calendar_events first to find the event ID.",
+    input_schema: {
+      type: "object",
+      properties: {
+        event_id: { type: "string", description: "Calendar event ID to delete" },
+      },
+      required: ["event_id"],
+    },
+  },
+
+  calendar_set_reminder: {
+    name: "calendar_set_reminder",
+    description:
+      "Set or update reminders for a calendar event (popup/email). Use get_calendar_events to find the event ID first.",
+    input_schema: {
+      type: "object",
+      properties: {
+        event_id: { type: "string", description: "Calendar event ID" },
+        minutes: { type: "integer", description: "Minutes before event to trigger reminder (e.g. 10, 30, 1440)" },
+        method: { type: "string", description: 'Reminder method: "popup" or "email" (default popup)' },
+      },
+      required: ["event_id", "minutes"],
+    },
+  },
+
   calendar_book_event: {
     name: "calendar_book_event",
-    description: "Book an event in the configured calendar.",
+    description: "Book an event in the configured calendar (also supports reminders via overrides).",
     input_schema: {
       type: "object",
       properties: {
@@ -443,6 +502,10 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
         description: {
           type: "string",
           description: "Event description or notes",
+        },
+        reminder_minutes: {
+          type: "integer",
+          description: "Optional reminder minutes before event (e.g. 10 for popup 10 min before)",
         },
       },
       required: ["title", "start_time", "end_time"],
@@ -1797,6 +1860,14 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
               start: { dateTime: start.toISOString() },
               end: { dateTime: end.toISOString() },
               attendees: attendeeObjects,
+              ...(input.reminder_minutes
+                ? {
+                    reminders: {
+                      useDefault: false,
+                      overrides: [{ method: "popup", minutes: Number(input.reminder_minutes) }],
+                    },
+                  }
+                : {}),
             }),
           },
         );
@@ -1810,6 +1881,127 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
         return `Event booked: ${event.summary || title}\nStart: ${event.start?.dateTime || start.toISOString()}\nEnd: ${event.end?.dateTime || end.toISOString()}\nLocation: ${event.location || location}\nGoogle Calendar event link: ${event.htmlLink || "none"}`;
       } catch (e) {
         return `Calendar booking network error: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+
+    case "gmail_send": {
+      if (!context.userId || context.userId === "anonymous") {
+        return "gmail_send requires a connected Google account. Please log in and connect Gmail from the dashboard, then retry.";
+      }
+      const to = sanitizeText(input.to || "", 500);
+      const subject = sanitizeText(input.subject || "", 500);
+      const body = (input.body || "").toString().slice(0, 10000);
+      const cc = sanitizeText(input.cc || "", 500);
+      const bcc = sanitizeText(input.bcc || "", 500);
+      if (!to || !isValidEmail(to.split(",")[0].trim())) return "gmail_send requires a valid 'to' email.";
+      if (!subject) return "gmail_send requires a subject.";
+      if (!body) return "gmail_send requires a body.";
+      const tokenData = await getValidGoogleAccessToken(context.userId);
+      if (!tokenData) return "No Google account connected. Connect Gmail from the dashboard, then retry.";
+      try {
+        const headers = [
+          `To: ${to}`,
+          `Subject: ${subject}`,
+          `Content-Type: text/plain; charset="UTF-8"`,
+          `MIME-Version: 1.0`,
+          ...(cc ? [`Cc: ${cc}`] : []),
+          ...(bcc ? [`Bcc: ${bcc}`] : []),
+        ];
+        const raw = headers.join("\r\n") + "\r\n\r\n" + body;
+        const encoded = Buffer.from(raw)
+          .toString("base64")
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+        const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${tokenData.accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ raw: encoded }),
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          return `Gmail send failed: ${res.status} ${res.statusText} - ${txt}`;
+        }
+        const json = (await res.json()) as { id?: string };
+        return `✅ Email sent to ${to} (id: ${json.id ?? "unknown"}). Subject: "${subject}"`;
+      } catch (e) {
+        return `Gmail send network error: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+
+    case "gmail_trash": {
+      if (!context.userId || context.userId === "anonymous") {
+        return "gmail_trash requires a connected Google account. Please log in and connect Gmail from the dashboard, then retry.";
+      }
+      const messageId = sanitizeText(input.message_id || "", 200);
+      if (!messageId) return "gmail_trash requires message_id. Use list_emails first to get the ID.";
+      const tokenData = await getValidGoogleAccessToken(context.userId);
+      if (!tokenData) return "No Google account connected. Connect Gmail from the dashboard, then retry.";
+      try {
+        const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(messageId)}/trash`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${tokenData.accessToken}` },
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          return `Gmail trash failed: ${res.status} ${res.statusText} - ${txt}`;
+        }
+        return `✅ Email ${messageId} moved to trash.`;
+      } catch (e) {
+        return `Gmail trash network error: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+
+    case "calendar_delete_event": {
+      if (!context.userId || context.userId === "anonymous") {
+        return "calendar_delete_event requires a connected Google account. Please log in and connect Calendar from the dashboard, then retry.";
+      }
+      const eventId = sanitizeText(input.event_id || "", 500);
+      if (!eventId) return "calendar_delete_event requires event_id. Use get_calendar_events first to find the ID.";
+      const tokenData = await getValidGoogleAccessToken(context.userId);
+      if (!tokenData) return "No Google account connected. Connect Calendar from the dashboard, then retry.";
+      try {
+        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${tokenData.accessToken}` },
+        });
+        if (!res.ok && res.status !== 204) {
+          const txt = await res.text();
+          return `Calendar delete failed: ${res.status} ${res.statusText} - ${txt}`;
+        }
+        return `✅ Event ${eventId} deleted from Google Calendar.`;
+      } catch (e) {
+        return `Calendar delete network error: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+
+    case "calendar_set_reminder": {
+      if (!context.userId || context.userId === "anonymous") {
+        return "calendar_set_reminder requires a connected Google account. Please log in and connect Calendar from the dashboard, then retry.";
+      }
+      const eventId = sanitizeText(input.event_id || "", 500);
+      const minutes = Number(input.minutes);
+      const method = sanitizeText(input.method || "popup", 20).toLowerCase();
+      if (!eventId) return "calendar_set_reminder requires event_id.";
+      if (!Number.isFinite(minutes) || minutes < 0 || minutes > 40320) return "calendar_set_reminder requires minutes between 0 and 40320.";
+      const validMethod = method === "email" ? "email" : "popup";
+      const tokenData = await getValidGoogleAccessToken(context.userId);
+      if (!tokenData) return "No Google account connected. Connect Calendar from the dashboard, then retry.";
+      try {
+        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${tokenData.accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reminders: { useDefault: false, overrides: [{ method: validMethod, minutes }] },
+          }),
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          return `Calendar reminder failed: ${res.status} ${res.statusText} - ${txt}`;
+        }
+        return `✅ Reminder set for event ${eventId}: ${minutes} minutes before via ${validMethod}.`;
+      } catch (e) {
+        return `Calendar reminder network error: ${e instanceof Error ? e.message : String(e)}`;
       }
     }
 
