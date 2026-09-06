@@ -1,24 +1,25 @@
 /**
- * Stripe overage billing (Billing Meter).
+ * Fatturazione overage Stripe (Billing Meter).
  *
- * When a user exceeds their monthly token allowance, the extra tokens are no
- * longer blocked: they are billed through a *metered* Price attached to the
- * customer's subscription. Usage is reported as Billing Meter events
- * (`billing.meterEvents.create`) and Stripe invoices it automatically at the
- * end of the billing period, together with the renewal. Stripe also handles
- * payment retries (dunning).
+ * Perché esiste: quando un utente supera la sua allowance mensile di token, i
+ * token extra non vengono più bloccati: vengono fatturati tramite un prezzo
+ * *metered* collegato all'abbonamento del cliente. L'utilizzo è riportato come
+ * eventi Billing Meter (`billing.meterEvents.create`) e Stripe lo fattura
+ * automaticamente a fine periodo insieme al rinnovo. Stripe gestisce anche i
+ * nuovi tentativi di pagamento (dunning).
  *
- * Stripe SDK v22 dropped the legacy `usage_records` API in favour of Billing
- * Meters, so the setup is:
- *   1. a Meter in the Stripe dashboard (event name, aggregation sum,
- *      customer mapped via `stripe_customer_id`);
- *   2. a metered Price (€0,30 per 1.000 tokens, monthly) referencing it
+ * Stripe SDK v22 ha rimosso la legacy `usage_records` in favore dei Billing
+ * Meters, quindi la configurazione è:
+ *   1. un Meter nella dashboard Stripe (nome evento, somma aggregata,
+ *      cliente mappato via `stripe_customer_id`);
+ *   2. un prezzo metered (€0,30 per 1.000 token, mensile) che lo referenzia
  *      (`STRIPE_OVERAGE_PRICE_ID`);
- *   3. the Price attached to the customer subscription;
- *   4. one meter event per overage run: value = whole units of 1.000 tokens.
+ *   3. il prezzo collegato all'abbonamento del cliente;
+ *   4. un evento meter per ogni esecuzione in overage: valore = unità intere
+ *      da 1.000 token.
  *
- * This module is server-only: it needs STRIPE_SECRET_KEY and must never be
- * imported from client components.
+ * Modulo server-only: serve STRIPE_SECRET_KEY e non va mai importato da
+ * componenti client.
  */
 
 import Stripe from "stripe";

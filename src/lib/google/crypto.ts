@@ -1,13 +1,15 @@
 import crypto from "crypto";
 
 /**
- * Server-only encryption for Google OAuth tokens at rest.
+ * Cifratura server-only dei token OAuth Google a riposo.
  *
- * access_token and refresh_token are encrypted with AES-256-GCM before being
- * written to `google_connections` (jsonb envelope { data, iv, tag }) — the
- * same mechanism used for shopify_connections. The key comes from
- * GOOGLE_TOKEN_ENCRYPTION_KEY (server-only), falling back to TENANT_STORE_KEY
- * for convenience. NEVER log the plaintext token.
+ * Perché cifrare: i token danno accesso a Gmail/Calendar dell'utente: se il
+ * database venisse esposto, un token in chiaro sarebbe un incidente di
+ * sicurezza. access_token e refresh_token vengono cifrati con AES-256-GCM
+ * prima di finire in `google_connections` (envelope jsonb { data, iv, tag })
+ * — stesso meccanismo di shopify_connections. La chiave arriva da
+ * GOOGLE_TOKEN_ENCRYPTION_KEY (server-only), con fallback su TENANT_STORE_KEY
+ * per comodità. MAI loggare il token in chiaro.
  */
 
 const ALGO = "aes-256-gcm";

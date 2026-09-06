@@ -2,19 +2,19 @@ import { createHmac, timingSafeEqual } from "crypto";
 import type { NextRequest } from "next/server";
 
 /**
- * Shared Shopify OAuth helpers (server-only). No secrets are hard-coded here —
- * SHOPIFY_API_KEY / SHOPIFY_API_SECRET / SHOPIFY_SCOPES are read from the
- * environment at runtime.
+ * Helper condivisi OAuth Shopify (server-only). Nessun segreto è hard-codato
+ * qui: SHOPIFY_API_KEY / SHOPIFY_API_SECRET / SHOPIFY_SCOPES vengono letti
+ * dall'ambiente a runtime.
  */
 
 export const SHOPIFY_STATE_COOKIE = "ac_shopify_state";
 export const SHOPIFY_STATE_MAX_AGE = 60 * 10; // 10 minutes
 
-/** Cookie carrying the page to return to after the OAuth round-trip. */
+/** Cookie che ricorda la pagina a cui tornare dopo il round-trip OAuth. */
 export const SHOPIFY_RETURN_COOKIE = "ac_shopify_return";
 export const OAUTH_RETURN_MAX_AGE = 60 * 15; // 15 minutes
 
-/** Agent slug that triggers the in-chat Shopify connection prompt. */
+/** Slug dell'agente che attiva il prompt di connessione Shopify in chat. */
 export const SHOPIFY_AGENT_SLUG =
   process.env.SHOPIFY_AGENT_SLUG || "shopify-agent";
 

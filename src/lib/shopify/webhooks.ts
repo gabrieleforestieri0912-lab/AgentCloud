@@ -1,13 +1,13 @@
 import { getShopifyWebhookAddress } from "./oauth";
 
 /**
- * Register the mandatory Shopify webhooks for a freshly authorized shop.
+ * Registra i webhook Shopify obbligatori per un negozio appena autorizzato.
  *
- * Shopify requires `APP_UNINSTALLED` plus the three GDPR topics
- * (`CUSTOMERS_DATA_REQUEST`, `CUSTOMERS_REDACT`, `SHOP_REDACT`) to be
- * subscribed. These topics need no extra OAuth scope, so registration with the
- * just-exchanged token always succeeds. Failures are non-fatal (the app can
- * also register them from the Partner Dashboard) — we log and continue.
+ * Perché: Shopify richiede la sottoscrizione di `APP_UNINSTALLED` più i tre
+ * topic GDPR (`CUSTOMERS_DATA_REQUEST`, `CUSTOMERS_REDACT`, `SHOP_REDACT`).
+ * Questi topic non richiedono scope OAuth extra, quindi la registrazione col
+ * token appena scambiato riesce sempre. Gli errori non sono fatali (l'app può
+ * registrarli anche dal Partner Dashboard) — logghiamo e si continua.
  */
 
 const SHOPIFY_WEBHOOK_TOPICS = [

@@ -2,14 +2,14 @@ import { anthropicProvider } from "./anthropic";
 import type { LLMProvider, LLMProviderName } from "./types";
 
 /**
- * LLM provider resolver for agent execution.
+ * Risolutore del provider LLM per l'esecuzione degli agenti.
  *
- * The platform uses a single backend:
- *  - Anthropic (Claude, production) — activated by `ANTHROPIC_API_KEY`,
- *    with `AGENT_LLM_PROVIDER=anthropic`. The default model is
- *    `claude-sonnet-5` (override with `AGENT_LLM_MODEL`).
+ * La piattaforma usa un unico backend:
+ *  - Anthropic (Claude, produzione) — attivato da `ANTHROPIC_API_KEY`,
+ *    con `AGENT_LLM_PROVIDER=anthropic`. Il modello di default è
+ *    `claude-sonnet-5` (override con `AGENT_LLM_MODEL`).
  *
- * This module is server-only.
+ * Modulo server-only.
  */
 
 export type { LLMProvider, LLMProviderName } from "./types";

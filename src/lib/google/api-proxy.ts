@@ -1,17 +1,17 @@
 import { getValidGoogleAccessToken } from "./token";
 
 /**
- * Google API proxy with read & write.
+ * Proxy API Google in lettura e scrittura.
  *
- * Central access point for Gmail + Google Calendar. Resolves the caller's
- * OAuth token (with automatic refresh) and calls the Google REST APIs,
- * returning normalized, compact results. The AI agents never touch tokens or
- * raw HTTP — they always go through this module (and its HTTP wrapper at
- * /api/google/proxy).
+ * Punto di accesso centrale per Gmail + Google Calendar. Perché esiste:
+ * risolve il token OAuth del chiamante (con refresh automatico) e chiama le
+ * REST API di Google restituendo risultati normalizzati e compatti, così gli
+ * agenti AI non toccano MAI token o HTTP grezzo: passano sempre da questo
+ * modulo (e dal suo wrapper HTTP in /api/google/proxy).
  *
- * Actions (read & write):
- *   - list_emails(query?, max_results?)            → Gmail (read)
- *   - get_calendar_events(date_from, date_to)      → Calendar (read)
+ * Azioni (lettura & scrittura):
+ *   - list_emails(query?, max_results?)            → Gmail (lettura)
+ *   - get_calendar_events(date_from, date_to)      → Calendar (lettura)
  */
 
 export type GoogleProxyAction = "list_emails" | "get_calendar_events";
@@ -22,7 +22,7 @@ const MAX_EMAILS = 20;
 const MAX_EVENTS = 50;
 const MAX_CALENDAR_RANGE_DAYS = 31;
 
-/** Normalize a Gmail message into a compact readable block. */
+/** Normalizza un messaggio Gmail in un blocco compatto e leggibile. */
 export function normalizeEmailMessage(
   msg: { id?: string; snippet?: string; payload?: { headers?: Array<{ name?: string; value?: string }> } },
 ): string {

@@ -1,18 +1,18 @@
 import { getGoogleConnection, updateGoogleTokens } from "./connections";
 
 /**
- * Phase 3 — resolve a valid (non-expired) Google access token for a user.
+ * Risolve un access token Google valido (non scaduto) per un utente.
  *
- * Reads the user's encrypted connection from `google_connections`, refreshes
- * the access token via Google's token endpoint when it is expired or within
- * the refresh margin (5 minutes), and persists the new token/expiry. Internal
- * helper used by the API proxy and the agent tools — never exposed to the
- * client directly.
+ * Come funziona: legge la connessione cifrata dell'utente da
+ * `google_connections`, rinfresca l'access token tramite l'endpoint token di
+ * Google quando è scaduto o vicino alla scadenza (margine di 5 minuti), e
+ * salva il nuovo token/scadenza. È l'helper interno usato dal proxy API e
+ * dai tool degli agenti — mai esposto direttamente al client.
  */
 
-const REFRESH_MARGIN_MS = 5 * 60 * 1000; // refresh 5 minutes before expiry
+const REFRESH_MARGIN_MS = 5 * 60 * 1000; // rinfresca 5 minuti prima della scadenza
 
-/** True when a token with this expiry should be refreshed now. */
+/** True se un token con questa scadenza va rinfrescato ora. */
 export function shouldRefreshToken(expiresAt: string | null): boolean {
   if (!expiresAt) return true;
   const expiry = new Date(expiresAt).getTime();

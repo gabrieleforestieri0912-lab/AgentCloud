@@ -6,9 +6,11 @@ import {
 } from "./crypto";
 
 /**
- * Server-only data access for per-shop Shopify connections. All writes use the
- * service-role client (bypasses RLS); row ownership is still enforced by the
- * user_id we persist. Reads for the agent (Phase 5) also go through here.
+ * Accesso dati server-only per le connessioni Shopify per-negozio.
+ *
+ * Come funziona: tutte le scritture usano il client service-role (bypassa le
+ * policy RLS); la proprietà della riga è comunque garantita dallo `user_id`
+ * che salviamo. Anche le letture per l'agente passano da qui.
  */
 
 /**

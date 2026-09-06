@@ -1,3 +1,11 @@
+/**
+ * Invio messaggi WhatsApp (Cloud API) per gli agenti.
+ *
+ * Come funziona: se WHATSAPP_API_TOKEN e WHATSAPP_PHONE_NUMBER_ID non sono
+ * configurati l'invio viene saltato e registrato nell'audit (nessun crash);
+ * altrimenti chiama l'API Cloud di Meta e restituisce un esito tipizzato.
+ * Server-only (usa segreti d'ambiente).
+ */
 import { logAudit } from "@/lib/audit";
 
 type SendResult = { ok: boolean; status?: number; body?: unknown };

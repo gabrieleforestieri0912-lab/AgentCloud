@@ -15,15 +15,15 @@ import type {
 } from "./types";
 
 /**
- * Anthropic provider — Claude LLM backend via the `@anthropic-ai/sdk`.
+ * Provider Anthropic — backend LLM Claude via `@anthropic-ai/sdk`.
  *
- * Activate it by setting `ANTHROPIC_API_KEY` and (optionally)
- * `AGENT_LLM_PROVIDER=anthropic`. The default model is `claude-sonnet-5`
- * (override with `AGENT_LLM_MODEL`).
+ * Come si attiva: impostando `ANTHROPIC_API_KEY` e (opzionalmente)
+ * `AGENT_LLM_PROVIDER=anthropic`. Il modello di default è `claude-sonnet-5`
+ * (override con `AGENT_LLM_MODEL`).
  *
- * This module is server-only. Never import it from client components.
+ * Modulo server-only: mai importarlo da componenti client.
  *
- * ## Thinking-block preservation
+ * ## Conservazione dei blocchi di thinking
  *
  * Claude Sonnet 5 (and Opus 5) run adaptive thinking, which returns encrypted
  * `signature` fields inside `thinking` blocks. When a multi-turn tool loop

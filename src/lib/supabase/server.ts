@@ -1,3 +1,10 @@
+/**
+ * Client Supabase per il server (Server Component / route handler).
+ *
+ * Perché serve un client dedicato: legge la sessione dai cookie della
+ * richiesta (via `cookies()` di next/headers) e la usa per autenticare le
+ * query con l'identità dell'utente loggato. Server-only: usa `next/headers`.
+ */
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";

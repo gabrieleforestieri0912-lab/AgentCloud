@@ -1,8 +1,10 @@
 /**
- * Stripe Payment Links utility
+ * Utility Stripe Payment Links.
  *
- * Retrieves static payment links from environment variables.
- * Payment links are created once from Stripe Dashboard and stored as env vars.
+ * Recupera i payment link statici dalle variabili d'ambiente. I payment link
+ * vengono creati una sola volta dalla dashboard Stripe e salvati come env var
+ * (`STRIPE_PAYMENT_LINK_<AGENTE>`), così il checkout non richiede chiavi
+ * Stripe lato server.
  */
 
 export function getPaymentLink(agentId: string): string | null {

@@ -1,15 +1,15 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Server-only Supabase client that uses the service role key.
+ * Client Supabase server-only che usa la service role key.
  *
- * The service role bypasses Row Level Security, so this client MUST ONLY be
- * used from server code (route handlers / server components) AFTER the
- * request has been authenticated (e.g. via a verified
- * webhook signature). Never import it from client components.
+ * PERICOLO: il service role bypassa la Row Level Security, quindi questo
+ * client può essere usato SOLO da codice server (route handler / server
+ * component) DOPO che la richiesta è stata autenticata (es. via firma
+ * webhook verificata). Mai importarlo da componenti client.
  *
- * Returns `null` when `SUPABASE_SERVICE_ROLE_KEY` is not configured so that
- * callers can degrade gracefully in development.
+ * Restituisce `null` quando `SUPABASE_SERVICE_ROLE_KEY` non è configurata,
+ * così i chiamanti degradano con grazia in sviluppo.
  */
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -1,17 +1,18 @@
 /**
- * Provider-agnostic LLM layer for agent execution.
+ * Layer LLM indipendente dal provider per l'esecuzione degli agenti.
  *
- * The agent runtime talks to a generic provider and uses a single backend:
+ * Perché esiste: il runtime degli agenti parla con un provider generico
+ * tramite un'unica interfaccia:
  *
- *  - `anthropic`: the only supported provider. Activate it by setting
- *    `ANTHROPIC_API_KEY` and optionally `AGENT_LLM_PROVIDER=anthropic`.
- *    Default model: `claude-sonnet-5`.
+ *  - `anthropic`: unico provider supportato. Si attiva impostando
+ *    `ANTHROPIC_API_KEY` e opzionalmente `AGENT_LLM_PROVIDER=anthropic`.
+ *    Modello di default: `claude-sonnet-5`.
  *
- * The route (`src/app/api/agent/run/route.ts`) only depends on the types
- * below, so switching providers never touches the request/SSE logic.
+ * La route (`src/app/api/agent/run/route.ts`) dipende solo dai tipi sotto:
+ * cambiare provider non tocca mai la logica di richiesta/SSE.
  */
 
-/** Tool definition shared by every provider. */
+/** Definizione di tool condivisa da ogni provider. */
 export type LLMTool = {
   name: string;
   description: string;

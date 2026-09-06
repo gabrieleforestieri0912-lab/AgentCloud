@@ -1,6 +1,9 @@
 /**
- * Pure helpers for resolving Stripe checkout events.
- * Kept framework-free so they can be unit tested without Stripe/Supabase.
+ * Helper puri per risolvere gli eventi checkout di Stripe.
+ *
+ * Perché puri: tenuti senza dipendenze framework/SDK così possono essere
+ * unit-testati senza Stripe né Supabase. Ricevono i metadati dell'evento e
+ * restituiscono i dati tipizzati che il webhook deve applicare.
  */
 
 import {

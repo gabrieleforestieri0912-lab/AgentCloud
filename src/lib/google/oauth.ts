@@ -2,15 +2,15 @@ import { timingSafeEqual } from "crypto";
 import type { NextRequest } from "next/server";
 
 /**
- * Shared Google OAuth helpers (server-only). No secrets are hard-coded here —
- * GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REDIRECT_URI are read from
- * the environment at runtime (Phase 2). Mirrors src/lib/shopify/oauth.ts.
+ * Helper condivisi OAuth Google (server-only). Nessun segreto è hard-codato
+ * qui: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REDIRECT_URI vengono
+ * letti dall'ambiente a runtime. Specchia src/lib/shopify/oauth.ts.
  */
 
 export const GOOGLE_STATE_COOKIE = "ac_google_state";
 export const GOOGLE_STATE_MAX_AGE = 60 * 10; // 10 minutes
 
-/** Cookie carrying the page to return to after the OAuth round-trip. */
+/** Cookie che ricorda la pagina a cui tornare dopo il round-trip OAuth. */
 export const GOOGLE_RETURN_COOKIE = "ac_google_return";
 export const OAUTH_RETURN_MAX_AGE = 60 * 15; // 15 minutes
 

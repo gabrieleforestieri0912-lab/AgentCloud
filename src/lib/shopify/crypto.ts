@@ -1,12 +1,13 @@
 import crypto from "crypto";
 
 /**
- * Server-only encryption for Shopify access tokens at rest.
+ * Cifratura server-only dei token di accesso Shopify a riposo.
  *
- * Tokens are encrypted with AES-256-GCM before being written to
- * `shopify_connections.access_token` (jsonb envelope { data, iv, tag }).
- * The key comes from SHOPIFY_TOKEN_ENCRYPTION_KEY (server-only), falling back
- * to TENANT_STORE_KEY for convenience. NEVER log the plaintext token.
+ * Perché cifrare: un token Shopify consente di gestire il negozio del
+ * merchant. I token vengono cifrati con AES-256-GCM prima di finire in
+ * `shopify_connections.access_token` (envelope jsonb { data, iv, tag }).
+ * La chiave arriva da SHOPIFY_TOKEN_ENCRYPTION_KEY (server-only), con fallback
+ * su TENANT_STORE_KEY per comodità. MAI loggare il token in chiaro.
  */
 
 const ALGO = "aes-256-gcm";
