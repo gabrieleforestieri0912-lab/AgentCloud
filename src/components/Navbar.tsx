@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/client";
 import {
   ArrowRight,
   LogOut,
+  User,
+  Settings,
 } from "lucide-react";
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
@@ -417,6 +419,22 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                           className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
                         >
                           Marketplace
+                        </Link>
+                        <Link
+                          href="/account"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
+                        >
+                          <User size={14} />
+                          Account
+                        </Link>
+                        <Link
+                          href="/settings"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
+                        >
+                          <Settings size={14} />
+                          {locale === "it" ? "Impostazioni" : "Settings"}
                         </Link>
                         <div className="my-1 h-px bg-white/5" />
                         {isSignedIn ? (
