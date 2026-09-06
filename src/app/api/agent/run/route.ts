@@ -301,15 +301,16 @@ export async function POST(req: Request) {
         emitter.stop();
 
         // Record the run (conversation + tokens) once the agent finishes.
-        // Tokens above the monthly allowance are billed automatically via the
-        // Stripe overage meter (best-effort — never fails the stream).
-        await recordUsageAndReportOverage({
-          user_id: userId,
-          agent_slug: agentId,
-          conversation_id: conversationId,
-          tokens_input: inputTokens,
-          tokens_output: outputTokens,
-        });
+        // Per richiesta admin via codice: non salvare nulla nel DB, ma sblocca comunque le pagine
+        if (!hasCode) {
+          await recordUsageAndReportOverage({
+            user_id: userId,
+            agent_slug: agentId,
+            conversation_id: conversationId,
+            tokens_input: inputTokens,
+            tokens_output: outputTokens,
+          });
+        }
       } catch {
         emitter.stop();
         send({

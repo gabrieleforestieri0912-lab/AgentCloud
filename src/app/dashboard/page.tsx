@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
+import { hasPlatformAccess } from "@/lib/access-code";
 import { isAdminEmail } from "@/lib/admin-access";
 
 import ShopifyConnect from "@/components/ShopifyConnect";
 import GoogleConnect from "@/components/GoogleConnect";
-import { listShopifyConnections } from "@/lib/shopify/connections";
-import { getGoogleConnectionSummary } from "@/lib/google/connections";
+import { TENANT_SHOPIFY_ID, listShopifyConnections } from "@/lib/shopify/connections";
+import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/connections";
 import {
   Activity,
   AlertCircle,
@@ -77,18 +78,22 @@ export default async function DashboardPage({
   const dict = getDictionary(locale);
 
   // Supabase session: resolve the user server-side from the cookies.
+  // Admin via codice (hasPlatformAccess) è come se fosse loggato ma non salva nulla nel DB
   const user = await getSessionUser();
-  if (!user) redirect("/login");
-  const userId = user.id;
+  const hasAccess = await hasPlatformAccess();
+  if (!user && !hasAccess) redirect("/login");
+  const isAdminMock = !user && hasAccess;
+  const userId = user?.id ?? null;
 
-  // ── Real data (service-role, server-side) with graceful fallbacks ──────
+  // ── Real data (service-role, server-side) con graceful fallback
+  // Per admin via codice (hasAccess senza user) non leggiamo/scriviamo nulla nel DB
   const db = createAdminClient();
   let installed: InstalledAgent[] = [];
   let totalRuns = 0;
   let totalTokens = 0;
   let dbAvailable = false;
 
-  if (db) {
+  if (db && !isAdminMock && userId) {
     dbAvailable = true;
     const now = new Date();
     const periodStart = new Date(
@@ -149,25 +154,28 @@ export default async function DashboardPage({
     });
   }
 
-  const fullName =
-    typeof user.user_metadata?.full_name === "string"
+  const fullName = isAdminMock
+    ? "Admin"
+    : typeof user?.user_metadata?.full_name === "string"
       ? user.user_metadata.full_name
       : "";
-  const firstName =
-    fullName.split(" ")[0] || (user.email ?? "").split("@")[0];
+  const firstName = isAdminMock
+    ? "Admin"
+    : fullName.split(" ")[0] || (user?.email ?? "").split("@")[0];
   const greeting = firstName
     ? t(dict.dashboard.welcomeBack, { name: firstName })
     : dict.dashboard.welcomeBackGeneric;
-  const email = user.email ?? "";
-  const isAdmin = isAdminEmail(user.email);
+  const email = isAdminMock ? "admin@agentcloud.agency" : (user?.email ?? "");
+  const isAdmin = isAdminMock || isAdminEmail(user?.email);
 
-  const shopifyConnections = await listShopifyConnections(user.id).catch(
-    () => [],
-  );
-
-  const googleConnection = await getGoogleConnectionSummary(user.id).catch(
-    () => null,
-  );
+  const shopifyOwnerForConnections = isAdminMock ? TENANT_SHOPIFY_ID : user?.id ?? null;
+  const googleOwnerForConnections = isAdminMock ? TENANT_GOOGLE_ID : user?.id ?? null;
+  const shopifyConnections = shopifyOwnerForConnections
+    ? await listShopifyConnections(shopifyOwnerForConnections).catch(() => [])
+    : [];
+  const googleConnection = googleOwnerForConnections
+    ? await getGoogleConnectionSummary(googleOwnerForConnections).catch(() => null)
+    : null;
   const googleConfigured = Boolean(
     process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
   );
@@ -197,7 +205,7 @@ export default async function DashboardPage({
 
   // Fetch last-7-days runs for the charts (independent from monthly stats)
   let chartRuns: Array<{ started_at: string | null; input_tokens: number | null; output_tokens: number | null }> = [];
-  if (db) {
+  if (db && !isAdminMock && userId) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data } = await db
       .from("agent_runs")
