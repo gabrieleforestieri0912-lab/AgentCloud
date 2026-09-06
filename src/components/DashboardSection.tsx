@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useId } from "react";
+import Image from "next/image";
 import {
   Activity,
   Bot,
   Clock,
-  Cloud,
   CreditCard,
   Headset,
   History,
@@ -232,7 +232,7 @@ export default function DashboardSection() {
             <span className="h-3 w-3 rounded-full bg-yellow-400" />
             <span className="h-3 w-3 rounded-full bg-purple-500" />
             <span className="ml-3 max-w-[45vw] truncate text-xs font-semibold text-neutral-500">
-              cloud.agentcloud.ai/dashboard
+              agentcloud.agency/dashboard
             </span>
           </div>
 
@@ -240,8 +240,14 @@ export default function DashboardSection() {
             {/* ── Sidebar ── */}
             <aside className="hidden rounded-xl border border-white/5 bg-neutral-800 p-4 lg:flex lg:flex-col">
               <div className="mb-7 flex items-center gap-2 px-1">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500 text-white">
-                  <Cloud size={14} />
+                <div className="relative h-7 w-7 overflow-hidden rounded-lg">
+                  <Image
+                    src="/agentcloud.png"
+                    alt="AgentCloud"
+                    fill
+                    className="object-cover"
+                    sizes="28px"
+                  />
                 </div>
                 <span className="text-sm font-bold text-white">AgentCloud</span>
               </div>
