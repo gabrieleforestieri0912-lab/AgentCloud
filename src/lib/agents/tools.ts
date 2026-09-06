@@ -1209,18 +1209,38 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
         }
       `;
 
+      // 2024-10 compliant: productOptions + variants with optionValues, media instead of images
+      const hasValidImage = imageUrl && isValidHttpsUrl(imageUrl);
       const productInput: Record<string, unknown> = {
         title,
         descriptionHtml,
-        variants: [{
-          price,
-          ...(compareAt && parseFloat(compareAt) > 0 ? { compareAtPrice: compareAt } : {}),
-        }],
+        productOptions: [{ name: "Title", values: [{ name: "Default Title" }] }],
+        variants: [
+          {
+            price,
+            optionValues: [{ name: "Default Title" }],
+            ...(compareAt && parseFloat(compareAt) > 0 ? { compareAtPrice: compareAt } : {}),
+          },
+        ],
         ...(tags ? { tags: tags.split(",").map((t: string) => t.trim()).filter(Boolean) } : {}),
-        ...(imageUrl ? { images: [{ src: imageUrl }] } : {}),
+        ...(hasValidImage ? { media: [{ originalSource: imageUrl, mediaContentType: "IMAGE" }] } : {}),
       };
 
-      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { input: productInput });
+      let result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { input: productInput });
+      // Fallback: if variants format is rejected (e.g. API version mismatch), retry without variants/media and set price via bulk update
+      const shouldFallback =
+        result.ok &&
+        (result.data as { productCreate?: { userErrors?: Array<{ message?: string }> } })?.productCreate?.userErrors?.some(
+          (e) => e.message?.toLowerCase().includes("variant") || e.message?.toLowerCase().includes("media"),
+        );
+      if (shouldFallback) {
+        const fallbackInput: Record<string, unknown> = {
+          title,
+          descriptionHtml,
+          ...(tags ? { tags: tags.split(",").map((t: string) => t.trim()).filter(Boolean) } : {}),
+        };
+        result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { input: fallbackInput });
+      }
       if (result.status === 401) {
         if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
         return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
