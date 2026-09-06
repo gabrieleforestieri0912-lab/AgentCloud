@@ -133,7 +133,7 @@ const SEEDS: AgentSeed[] = [
     previewPrompt:
       "Tidy up my inbox and remind me of the commitments coming up this week.",
     previewResult:
-      "📬 Triage completato:\n• Inbox: 42 email → 6 cartelle (Urgenti 3, Newsletter 18, Da archiviare 21)\n• Flagged: 3 email richiedono risposta entro oggi (cliente Acme, fattura #1042, meeting team)\n• Promemoria creati: 5 impegni (Lun 10:00 call Acme, Mar 14:30 review, Mer scadenza fattura, Gio demo, Ven report)\n• Digest inviato: riepilogo mattutino con priorità e scadenze.",
+      "Triage completato:\n• Inbox: 42 email → 6 cartelle (Urgenti 3, Newsletter 18, Da archiviare 21)\n• Flagged: 3 email richiedono risposta entro oggi (cliente Acme, fattura #1042, meeting team)\n• Promemoria creati: 5 impegni (Lun 10:00 call Acme, Mar 14:30 review, Mer scadenza fattura, Gio demo, Ven report)\n• Digest inviato: riepilogo mattutino con priorità e scadenze.",
     accent: "bg-emerald-500",
   },
   {
@@ -165,7 +165,7 @@ const SEEDS: AgentSeed[] = [
     previewPrompt:
       "Write an SEO article about local SEO for Italian restaurants.",
     previewResult:
-      "📝 Articolo SEO pronto (1.520 parole):\n• H1: Come fare Local SEO per ristoranti italiani nel 2024\n• Keywords: 'ristorante vicino a me' (2.1k/mese), 'menu ristorante' (1.4k), 'prenotazione online' (890) + 2 secondarie\n• Meta: 'Scopri come posizionare il tuo ristorante su Google con 5 step pratici...' (152 char)\n• Links: 3 interni suggeriti (menu, prenotazioni, recensioni)\n• Fonte: Ahrefs + GSC, salvato su WordPress come bozza.",
+      "Articolo SEO pronto (1.520 parole):\n• H1: Come fare Local SEO per ristoranti italiani nel 2024\n• Keywords: 'ristorante vicino a me' (2.1k/mese), 'menu ristorante' (1.4k), 'prenotazione online' (890) + 2 secondarie\n• Meta: 'Scopri come posizionare il tuo ristorante su Google con 5 step pratici...' (152 char)\n• Links: 3 interni suggeriti (menu, prenotazioni, recensioni)\n• Fonte: Ahrefs + GSC, salvato su WordPress come bozza.",
     accent: "bg-orange-500",
   },
   {
@@ -192,7 +192,7 @@ const SEEDS: AgentSeed[] = [
     previewPrompt:
       "Organize my week, prioritize meetings, and draft a summary email.",
     previewResult:
-      "📅 Settimana pianificata:\n• 5 task prioritizzati (1. Call Acme P0, 2. Report Q3 P1...)\n• 2 meeting spostati (standup Ven → Lun, 1:1 con Anna annullato)\n• Blocco deep-work: Mer 09:00-11:00\n• Email riepilogo pronta: 'Questa settimana: 5 priorità, 2 rinvii, 1 blocco focus' — da approvare.",
+      "Settimana pianificata:\n• 5 task prioritizzati (1. Call Acme P0, 2. Report Q3 P1...)\n• 2 meeting spostati (standup Ven → Lun, 1:1 con Anna annullato)\n• Blocco deep-work: Mer 09:00-11:00\n• Email riepilogo pronta: 'Questa settimana: 5 priorità, 2 rinvii, 1 blocco focus' — da approvare.",
     accent: "bg-brand-400",
   },
   {
@@ -229,7 +229,7 @@ const SEEDS: AgentSeed[] = [
     previewPrompt:
       "Book a 30-minute introduction call with Marco and Anna next week.",
     previewResult:
-      "📅 Disponibilità verificata:\n• Mar 10:00, Mar 15:30, Mer 11:00 (fuso Europe/Rome)\n• Prenotato: Mar 15:30-16:00 'Intro Call — Marco & Anna' con Zoom https://zoom.us/j/123\n• Inviti inviati a marco@acme.it, anna@agentcloud.agency + promemoria 15 min\n• Google Calendar aggiornato, Slack notificato #sales.",
+      "Disponibilità verificata:\n• Mar 10:00, Mar 15:30, Mer 11:00 (fuso Europe/Rome)\n• Prenotato: Mar 15:30-16:00 'Intro Call — Marco & Anna' con Zoom https://zoom.us/j/123\n• Inviti inviati a marco@acme.it, anna@agentcloud.agency + promemoria 15 min\n• Google Calendar aggiornato, Slack notificato #sales.",
     accent: "bg-cyan-500",
   },
   {
@@ -261,7 +261,7 @@ const SEEDS: AgentSeed[] = [
     previewPrompt:
       "Capture the lead from the website inquiry form and notify sales.",
     previewResult:
-      "✅ Lead catturato:\n• Mario Rossi — mario@acme.it — Acme SRL (+39 02 1234) — Interesse: demo Shopify\n• Enrich: CEO, 12 dipendenti, Milano, LinkedIn linkedin.com/in/mariorossi\n• Score: Alto (fit perfetto, intent chiaro)\n• Slack #sales notificato con riepilogo + link HubSpot\n• Follow-up automatico programmato per domani 10:00.",
+      "Lead catturato:\n• Mario Rossi — mario@acme.it — Acme SRL (+39 02 1234) — Interesse: demo Shopify\n• Enrich: CEO, 12 dipendenti, Milano, LinkedIn linkedin.com/in/mariorossi\n• Score: Alto (fit perfetto, intent chiaro)\n• Slack #sales notificato con riepilogo + link HubSpot\n• Follow-up automatico programmato per domani 10:00.",
     accent: "bg-orange-500",
   },
   {
@@ -292,7 +292,7 @@ const SEEDS: AgentSeed[] = [
     workflow: ["Read ticket", "Search KB", "Draft reply", "Escalate if needed"],
     previewPrompt: "Handle the open tickets from this morning.",
     previewResult:
-      "🎧 Ticket gestiti:\n• #1042 'Accesso portale non funziona' → Risposta inviata: procedura reset password con link + video guida (KB: onboarding.pdf)\n• #1043 'Fattura doppia' → Escalation al team billing con riepilogo cliente + priorità alta\n• #1044 'Info spedizione' → Risposta inviata: tracking #TRK123, consegna ven 12/12, link stato ordine\n• 15 ticket risolti, 2 in attesa umana, tempo medio 42s.",
+      "Ticket gestiti:\n• #1042 'Accesso portale non funziona' → Risposta inviata: procedura reset password con link + video guida (KB: onboarding.pdf)\n• #1043 'Fattura doppia' → Escalation al team billing con riepilogo cliente + priorità alta\n• #1044 'Info spedizione' → Risposta inviata: tracking #TRK123, consegna ven 12/12, link stato ordine\n• 15 ticket risolti, 2 in attesa umana, tempo medio 42s.",
     accent: "bg-purple-500",
   },
   {
@@ -318,7 +318,7 @@ const SEEDS: AgentSeed[] = [
     workflow: ["Analyze brief", "Research competitors", "Draft 3 variants", "Score & hand off"],
     previewPrompt: "Write 3 landing page variants for our new pricing.",
     previewResult:
-      "✍️ Copy pronto (ricerca su 3 competitor + web_search):\n• Variante A (Benefit): 'Raddoppia le vendite senza assumere — agenti AI che lavorano 24/7'\n• Variante B (Social proof): 'Già 2.3k team usano AgentCloud per convertire di più'\n• Variante C (Urgency): 'Lancia oggi, vendi domani — setup in giornata'\n• CTA: 'Attiva ora →', 'Prova gratis', 'Vedi demo'\n• Salvato in copy-landing-pricing-2024-12-06.md con scoring 9/8/7 e vincitore consigliato A.",
+      "Copy pronto (ricerca su 3 competitor + web_search):\n• Variante A (Benefit): 'Raddoppia le vendite senza assumere — agenti AI che lavorano 24/7'\n• Variante B (Social proof): 'Già 2.3k team usano AgentCloud per convertire di più'\n• Variante C (Urgency): 'Lancia oggi, vendi domani — setup in giornata'\n• CTA: 'Attiva ora →', 'Prova gratis', 'Vedi demo'\n• Salvato in copy-landing-pricing-2024-12-06.md con scoring 9/8/7 e vincitore consigliato A.",
     accent: "bg-pink-500",
   },
   {
@@ -355,7 +355,7 @@ const SEEDS: AgentSeed[] = [
     previewPrompt:
       "Summarize this month's cash flow and flag the unpaid invoices.",
     previewResult:
-      "💰 Cash flow riconciliato (30gg):\n• Entrate: €24.320 (Stripe) — Uscite: €18.410 (fornitori + tool) — Netto: +€5.910\n• 42 transazioni verificate, 2 anomalie flaggate (doppio addebito Stripe #4821)\n• Fatture insoluti: 6 (3 >30gg: Acme €1.200, Beta €890, Gamma €450) — solleciti pronti\n• Priorità settimana prossima: 1) Sollecita Acme, 2) Rinegozia fornitore X, 3) Prepara forecast Q4\n• Report salvato: cashflow-2024-12-06.pdf",
+      "Cash flow riconciliato (30gg):\n• Entrate: €24.320 (Stripe) — Uscite: €18.410 (fornitori + tool) — Netto: +€5.910\n• 42 transazioni verificate, 2 anomalie flaggate (doppio addebito Stripe #4821)\n• Fatture insoluti: 6 (3 >30gg: Acme €1.200, Beta €890, Gamma €450) — solleciti pronti\n• Priorità settimana prossima: 1) Sollecita Acme, 2) Rinegozia fornitore X, 3) Prepara forecast Q4\n• Report salvato: cashflow-2024-12-06.pdf",
     accent: "bg-brand-600",
   },
   {
@@ -392,7 +392,7 @@ const SEEDS: AgentSeed[] = [
     ],
     previewPrompt: "Create a summer collection and set up a 20% launch discount.",
     previewResult:
-      "🛍️ Store aggiornato — Collezione 'Estate 2024' creata:\n• Maglia Lino Beige — €49,90 — handle: maglia-lino-beige — URL: /products/maglia-lino-beige — Cart: /cart/445901234:1\n• Shorts Chino Sabbia — €39,90 — handle: shorts-chino — URL: /products/shorts-chino — Cart: /cart/445901235:1\n• Cappello Paglia — €24,90 — handle: cappello-paglia — Cart: /cart/445901236:1\n• Sconto ESTATE20: 20% su collezione Estate, 100 usi, scade 30/06, già attivo\n• 3 link carrello generati, collezione pronta da condividere su Instagram/TikTok.",
+      "Store aggiornato — Collezione 'Estate 2024' creata:\n• Maglia Lino Beige — €49,90 — handle: maglia-lino-beige — URL: /products/maglia-lino-beige — Cart: /cart/445901234:1\n• Shorts Chino Sabbia — €39,90 — handle: shorts-chino — URL: /products/shorts-chino — Cart: /cart/445901235:1\n• Cappello Paglia — €24,90 — handle: cappello-paglia — Cart: /cart/445901236:1\n• Sconto ESTATE20: 20% su collezione Estate, 100 usi, scade 30/06, già attivo\n• 3 link carrello generati, collezione pronta da condividere su Instagram/TikTok.",
     accent: "bg-green-500",
   },
   {
@@ -423,7 +423,7 @@ const SEEDS: AgentSeed[] = [
     workflow: ["Sync Sheets+Calendar", "Analyze KPIs", "Draft 10-slide deck", "Propose 3 actions"],
     previewPrompt: "Summarize Q2 performance and prep the board deck outline.",
     previewResult:
-      "📊 Board deck Q2 pronto (10 slide):\n• Revenue: €128k (+18% QoQ, +32% YoY) — driver: Shopify +18%, Lead +24%\n• Churn: 7% su SMB (vs 4% target) — causa: onboarding lento, fix proposto: check-in a 7gg\n• Pipeline: 42 lead, 18 qualified, CR 23%\n• Rischio: stock esaurimento su bestseller (2/5 SKU <10gg)\n• 3 azioni: 1) Onboarding 7gg, 2) Riordino stock, 3) Upsell su clienti high-fit\n• File: board-deck-Q2-2024.pdf + Sheets aggiornato.",
+      "Board deck Q2 pronto (10 slide):\n• Revenue: €128k (+18% QoQ, +32% YoY) — driver: Shopify +18%, Lead +24%\n• Churn: 7% su SMB (vs 4% target) — causa: onboarding lento, fix proposto: check-in a 7gg\n• Pipeline: 42 lead, 18 qualified, CR 23%\n• Rischio: stock esaurimento su bestseller (2/5 SKU <10gg)\n• 3 azioni: 1) Onboarding 7gg, 2) Riordino stock, 3) Upsell su clienti high-fit\n• File: board-deck-Q2-2024.pdf + Sheets aggiornato.",
     accent: "bg-indigo-500",
   },
 ];

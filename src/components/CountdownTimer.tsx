@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
+import { PartyPopper } from "lucide-react";
 
 const LAUNCH_DATE = new Date("2026-09-15T16:00:00");
 
@@ -116,7 +117,8 @@ export default function CountdownTimer({ locale = "en" }: { locale?: string }) {
           animate={{ opacity: 1 }}
           className="text-center mt-3 text-sm font-bold text-emerald-400"
         >
-          🎉 {locale === "it" ? "La piattaforma è live!" : "The platform is live!"}
+          <PartyPopper size={16} className="inline mr-1" />
+          {locale === "it" ? "La piattaforma è live!" : "The platform is live!"}
         </motion.p>
       )}
     </motion.div>
