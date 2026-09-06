@@ -14,7 +14,6 @@ import {
   Shield,
   User,
   Volume2,
-  AlertTriangle,
   ArrowRight,
   ExternalLink,
 } from "lucide-react";
@@ -581,6 +580,7 @@ export default function DeployAgentClient({
                   </span>
                 </label>
 
+                {/* Direct Stripe purchase: demo request is only for custom agents (/demo) */}
                 <button
                   type="button"
                   disabled={isCheckingOut || !acceptedTerms}
@@ -605,18 +605,67 @@ export default function DeployAgentClient({
                   className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Rocket size={16} />
-                  {isCheckingOut ? dict.common.close : dict.deploy.requestDemo}
+                  {isCheckingOut
+                    ? dict.common.close
+                    : locale === "it"
+                      ? "Acquista ora"
+                      : locale === "es"
+                        ? "Comprar ahora"
+                        : locale === "de"
+                          ? "Jetzt kaufen"
+                          : locale === "fr"
+                            ? "Acheter maintenant"
+                            : "Buy now"}
                 </button>
-
-                <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5">
-                  <AlertTriangle
-                    size={14}
-                    className="mt-0.5 shrink-0 text-amber-400"
-                  />
-                  <p className="text-xs leading-relaxed text-amber-200">
-                    {dict.deploy.flowNote}
-                  </p>
-                </div>
+                <p className="mt-2 text-center text-xs font-semibold text-neutral-500">
+                  {locale === "it"
+                    ? "Pagamento sicuro con Stripe — attivazione immediata."
+                    : locale === "es"
+                      ? "Pago seguro con Stripe — activación inmediata."
+                      : locale === "de"
+                        ? "Sichere Zahlung mit Stripe — sofortige Aktivierung."
+                        : locale === "fr"
+                          ? "Paiement sécurisé avec Stripe — activation immédiate."
+                          : "Secure Stripe checkout — instant activation."}
+                </p>
+                <p className="mt-2 text-center text-xs text-neutral-600">
+                  {locale === "it" ? (
+                    <>
+                      Serve un agente su misura?{" "}
+                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
+                        Richiedi una demo
+                      </Link>
+                    </>
+                  ) : locale === "es" ? (
+                    <>
+                      ¿Necesitas un agente a medida?{" "}
+                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
+                        Solicita una demo
+                      </Link>
+                    </>
+                  ) : locale === "de" ? (
+                    <>
+                      Maßgeschneiderten Agenten benötigt?{" "}
+                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
+                        Demo anfordern
+                      </Link>
+                    </>
+                  ) : locale === "fr" ? (
+                    <>
+                      Besoin d&apos;un agent sur mesure ?{" "}
+                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
+                        Demander une démo
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      Need a custom agent?{" "}
+                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
+                        Request a demo
+                      </Link>
+                    </>
+                  )}
+                </p>
               </div>
 
               {/* Delivery options */}
