@@ -44,6 +44,7 @@ export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
   // stay off for Shopify/Lead agents because enableOptionalToolsByDefault is
   // false — the global list only widens what a given agent can reach.
   enabledTools: [
+    "shopify_create_store",
     "shopify_search_products",
     "shopify_get_order_status",
     "shopify_build_cart_url",
@@ -122,6 +123,7 @@ export const FULL_PLATFORM_CONFIG: FeatureFlags = {
     "read_file",
     "write_file",
     "run_python",
+    "shopify_create_store",
     "shopify_search_products",
     "shopify_get_order_status",
     "shopify_build_cart_url",

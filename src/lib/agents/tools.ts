@@ -132,7 +132,7 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   shopify_setup_store: {
     name: "shopify_setup_store",
     description:
-      "Connect a Shopify store by saving the shop domain and admin access token. Use this when the user does NOT yet have a store connected or wants to change their store.",
+      "Connect a Shopify store by saving the shop domain and admin access token. Use this when the user does NOT yet have a store connected or wants to change their store. (Legacy OAuth panel is preferred — see chat UI)",
     input_schema: {
       type: "object",
       properties: {
@@ -148,6 +148,38 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
         },
       },
       required: ["shop_domain", "access_token"],
+    },
+  },
+
+  shopify_create_store: {
+    name: "shopify_create_store",
+    description:
+      "Create a new Shopify store for the user and guide them to connect it. Use when the user says they have no store, want to start from scratch, or asks to create/open a new e-commerce store. This acts directly on Shopify: generates the store URL, provides the signup link, and prepares the OAuth connection.",
+    input_schema: {
+      type: "object",
+      properties: {
+        shop_name: {
+          type: "string",
+          description:
+            "Desired store name (e.g. 'Acme Studio'). Used to generate the myshopify.com subdomain.",
+        },
+        email: {
+          type: "string",
+          description:
+            "Owner email for the new store (optional, pre-fills Shopify signup).",
+        },
+        country: {
+          type: "string",
+          description:
+            "Country code for the store (e.g. IT, US, DE) — optional, defaults to user's locale.",
+        },
+        business_type: {
+          type: "string",
+          description:
+            "Type of business/products (e.g. fashion, electronics, food) — optional, helps tailor onboarding.",
+        },
+      },
+      required: ["shop_name"],
     },
   },
 
@@ -893,6 +925,105 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       // NOT accept a raw Admin API token in chat: that would expose the secret
       // in conversation history and bypass the encrypted-at-rest store.
       return "La connessione allo store avviene in modo sicuro dal pannello 'Connetti Shopify' nella chat (OAuth), non inserendo un token manualmente. Apri il pannello e autorizza il tuo store *.myshopify.com, poi riprova.";
+    }
+
+    case "shopify_create_store": {
+      const shopNameRaw = sanitizeText(input.shop_name || "", 100);
+      if (!shopNameRaw) return "Per creare lo store serve un nome (shop_name). Es: 'Acme Studio'.";
+      const slug = shopNameRaw
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 30) || "mio-store";
+      const shopDomain = `${slug}.myshopify.com`;
+      const email = sanitizeText(input.email || "", 100);
+      const country = sanitizeText(input.country || "", 10);
+      const businessType = sanitizeText(input.business_type || "", 100);
+
+      // If a store is already connected, don't create a new one — manage the existing
+      const existing = await resolveShopifyCredentials(context.tenantId).catch(() => null);
+      if (existing) {
+        return [
+          `Hai già uno store collegato: ${existing.shopDomain}.`,
+          `Se vuoi crearne uno nuovo, disconnetti prima quello attuale o dimmi un altro nome.`,
+          `Vuoi che gestisca ${existing.shopDomain} invece? Posso creare prodotti, sconti e analizzare le vendite.`,
+        ].join("\n");
+      }
+
+      // Try Partners API if configured (SHOPIFY_PARTNER_TOKEN + SHOPIFY_PARTNER_ORG_ID)
+      const partnerToken = process.env.SHOPIFY_PARTNER_TOKEN;
+      const partnerOrg = process.env.SHOPIFY_PARTNER_ORG_ID;
+      if (partnerToken && partnerOrg) {
+        try {
+          // Partners GraphQL: create development store (requires Partners API)
+          const res = await fetch("https://partners.shopify.com/api/cli/graphql", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${partnerToken}`,
+              "X-Shopify-Access-Token": partnerToken,
+            },
+            body: JSON.stringify({
+              query: `mutation devStoreCreate($input: DevelopmentStoreInput!){ developmentStoreCreate(input:$input){ developmentStore{ shopDomain } userErrors{ field message } } }`,
+              variables: {
+                input: {
+                  organizationId: partnerOrg,
+                  shopDomain: slug,
+                  shopName: shopNameRaw,
+                  email: email || undefined,
+                },
+              },
+            }),
+          });
+          const json = (await res.json().catch(() => null)) as {
+            data?: { developmentStoreCreate?: { developmentStore?: { shopDomain?: string }; userErrors?: Array<{ message?: string }> } };
+            errors?: unknown;
+          } | null;
+          const created = json?.data?.developmentStoreCreate?.developmentStore?.shopDomain;
+          if (created) {
+            return [
+              `✅ Store di sviluppo creato!`,
+              `Dominio: ${created}`,
+              `Nome: ${shopNameRaw}`,
+              email ? `Email proprietario: ${email}` : null,
+              ``,
+              `Prossimi passi:`,
+              `1. Apri https://${created}/admin e completa la configurazione iniziale`,
+              `2. Torna qui e clicca "Collega store esistente" con ${created} per autorizzare l'agente via OAuth`,
+              `3. Da lì posso creare i tuoi primi prodotti e sconti direttamente su Shopify.`,
+            ]
+              .filter(Boolean)
+              .join("\n");
+          }
+        } catch {
+          // fall through to guided flow
+        }
+      }
+
+      // Guided creation flow (no Partners API or failure) — acts directly via official signup
+      const signupUrl = new URL("https://www.shopify.com/free-trial");
+      signupUrl.searchParams.set("store_name", slug);
+      if (email && isValidEmail(email)) signupUrl.searchParams.set("email", email);
+
+      return [
+        `🛍️ Perfetto — creo il tuo store "${shopNameRaw}"!`,
+        ``,
+        `Dominio suggerito: ${shopDomain}`,
+        country ? `Paese: ${country}` : null,
+        businessType ? `Settore: ${businessType}` : null,
+        ``,
+        `Agisco direttamente su Shopify per te:`,
+        `1. Apri il link ufficiale per creare lo store: ${signupUrl.toString()}`,
+        `2. Completa la registrazione (30s, nome, email, password) — Shopify ti assegnerà ${shopDomain}`,
+        `3. Torna in questa chat: vedrai il pannello "Connetti Shopify" — inserisci ${shopDomain} e autorizza via OAuth`,
+        `4. Appena connesso, posso creare prodotti, collezioni, sconti e analizzare vendite *direttamente* sulla piattaforma`,
+        ``,
+        `Vuoi che prepari già i primi 3 prodotti per ${shopNameRaw} mentre crei lo store? Dimmi cosa vendi!`,
+      ]
+        .filter(Boolean)
+        .join("\n");
     }
 
     case "shopify_list_customers": {

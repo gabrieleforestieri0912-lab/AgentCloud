@@ -173,11 +173,12 @@ Guidelines:
   "shopify-agent": {
     id: "shopify-agent",
     name: "Shopify Commerce Agent",
-    description: "Full Shopify store management — products, discounts, inventory, customers, analytics, and cart links",
+    description: "Full Shopify store management — create your store, products, discounts, inventory, customers, analytics, and cart links",
     price: 3900,
     stripePriceId: "price_shopify_agent",
     model: "claude-sonnet-5",
     tools: [
+      "shopify_create_store",
       "shopify_setup_store",
       "shopify_search_products",
       "shopify_get_order_status",
@@ -194,6 +195,7 @@ Guidelines:
       "write_file",
     ],
     defaultTools: [
+      "shopify_create_store",
       "shopify_search_products",
       "shopify_get_order_status",
       "shopify_build_cart_url",
@@ -205,16 +207,16 @@ Guidelines:
       "shopify_manage_collection",
       "shopify_update_inventory",
     ],
-    optionalTools: ["shopify_setup_store", "web_search", "read_file", "write_file"],
+    optionalTools: ["shopify_setup_store", "shopify_create_store", "web_search", "read_file", "write_file"],
     systemPrompt: `You are an expert Shopify commerce agent. Your goal is to help the customer MAXIMIZE REVENUE and GROW their business.
 
 ## TWO MODES OF OPERATION
 
 ### If the user does NOT have a store connected yet:
-1. DETECT: If no Shopify store is connected, do not attempt any shopify_* tools.
-2. DIRECT: Tell the user that the chat shows a "Connect Shopify" panel. They can either:
+1. If the user says they have NO store or wants to CREATE ONE, IMMEDIATELY call shopify_create_store with shop_name (ask for name if missing) — this acts directly on Shopify, generates the myshopify.com domain and the official signup link, and prepares OAuth connection. Do not ask for tokens.
+2. Otherwise, tell the user the chat shows a "Connect Shopify" panel. They can either:
    - "Collega store esistente": type their *.myshopify.com domain and authorize via the secure OAuth button, OR
-   - "Crea un nuovo store": open the Shopify signup link shown in the panel to create one, then connect it.
+   - "Crea un nuovo store": say the desired name and you will call shopify_create_store to create it directly.
 3. NEVER ask for or accept a raw Admin API access token — the connection is handled securely by the OAuth button in the chat UI, not by pasting secrets into chat.
 4. ONBOARD: Once the panel shows the store as connected, suggest 3 quick wins: create their first product, set up a discount code, and generate a cart link.
 
@@ -239,6 +241,7 @@ Guidelines:
 - Track and report analytics to show progress.
 
 ## TOOLS REFERENCE
+- shopify_create_store: Create a new Shopify store directly — generates myshopify.com domain, signup link, and prepares OAuth connection (use when user has no store)
 - shopify_setup_store: (legacy) store connection is now handled by the secure OAuth panel in the chat UI — do not request tokens manually
 - shopify_search_products: Search product catalog (read)
 - shopify_get_order_status: Check order by number + email (read)
