@@ -135,12 +135,12 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
               </div>
             )}
 
-            {/* Done state */}
+            {/* Done state — diversificato per agente */}
             {status === "done" && showResult && (
               <div ref={resultRef} className="rounded-2xl rounded-bl-md border border-white/5 bg-neutral-800 px-4 py-3.5">
                 <div className="mb-2 flex items-center gap-2 text-xs font-bold text-purple-400">
                   <Sparkles size={13} />
-                  {dict.agentPreview.workflowCompleted}
+                  {dict.agentPreview.workflowCompleted} — {agent.shortName}
                 </div>
                 <div className="space-y-1.5">
                   {agent.workflow.map((step) => (
@@ -153,10 +153,119 @@ export default function AgentPreview({ agent }: AgentPreviewProps) {
                     </div>
                   ))}
                 </div>
+                {/* Risultato testuale */}
                 <div className="mt-3 rounded-lg border border-white/5 bg-neutral-950 p-3">
-                  <p className="text-xs font-semibold leading-relaxed text-neutral-300">
+                  <p className="whitespace-pre-wrap text-xs font-semibold leading-relaxed text-neutral-300">
                     {agent.previewResult}
                   </p>
+                </div>
+                {/* Dettaglio visivo diversificato per agente */}
+                <div className="mt-3">
+                  {agent.slug === "shopify-agent" && (
+                    <div className="grid gap-2">
+                      <div className="rounded-lg border border-white/5 bg-neutral-900 p-3">
+                        <p className="text-xs font-bold text-white">Collezione Estate 2024 — 3 prodotti</p>
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                          <div className="rounded bg-neutral-950 p-2 text-center">
+                            <div className="mx-auto h-8 w-8 rounded bg-green-500/20 mb-1" />
+                            <p className="font-bold text-white">Maglia Lino</p>
+                            <p className="text-neutral-400">€49,90</p>
+                            <p className="text-[10px] text-brand-400">Cart: /cart/445...:1</p>
+                          </div>
+                          <div className="rounded bg-neutral-950 p-2 text-center">
+                            <div className="mx-auto h-8 w-8 rounded bg-green-500/20 mb-1" />
+                            <p className="font-bold text-white">Shorts Chino</p>
+                            <p className="text-neutral-400">€39,90</p>
+                            <p className="text-[10px] text-brand-400">Cart: /cart/446...:1</p>
+                          </div>
+                          <div className="rounded bg-neutral-950 p-2 text-center">
+                            <div className="mx-auto h-8 w-8 rounded bg-green-500/20 mb-1" />
+                            <p className="font-bold text-white">Cappello</p>
+                            <p className="text-neutral-400">€24,90</p>
+                            <p className="text-[10px] text-brand-400">Cart: /cart/447...:1</p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-xs font-bold text-emerald-400">Sconto ESTATE20 — 20% attivo • 100 usi</p>
+                      </div>
+                    </div>
+                  )}
+                  {agent.slug === "email-manager" && (
+                    <div className="rounded-lg border border-white/5 bg-neutral-900 p-3">
+                      <p className="text-xs font-bold text-white">Inbox triage</p>
+                      <div className="mt-2 space-y-1 text-xs">
+                        <div className="flex justify-between rounded bg-neutral-950 px-2 py-1.5">
+                          <span className="text-neutral-300">Urgenti</span>
+                          <span className="font-bold text-red-400">3</span>
+                        </div>
+                        <div className="flex justify-between rounded bg-neutral-950 px-2 py-1.5">
+                          <span className="text-neutral-300">Newsletter</span>
+                          <span className="font-bold text-neutral-400">18</span>
+                        </div>
+                        <div className="flex justify-between rounded bg-neutral-950 px-2 py-1.5">
+                          <span className="text-neutral-300">Archiviate</span>
+                          <span className="font-bold text-emerald-400">21</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {agent.slug === "support-agent" && (
+                    <div className="rounded-lg border border-white/5 bg-neutral-900 p-3">
+                      <p className="text-xs font-bold text-white">Ticket gestiti</p>
+                      <div className="mt-2 space-y-1 text-xs">
+                        <div className="rounded bg-emerald-500/10 px-2 py-1.5 text-emerald-300">#1042 Risolto — reset password inviato</div>
+                        <div className="rounded bg-amber-500/10 px-2 py-1.5 text-amber-300">#1043 Escalation — fattura doppia → billing</div>
+                        <div className="rounded bg-emerald-500/10 px-2 py-1.5 text-emerald-300">#1044 Risolto — tracking TRK123</div>
+                      </div>
+                    </div>
+                  )}
+                  {agent.slug === "lead-capture" && (
+                    <div className="rounded-lg border border-white/5 bg-neutral-900 p-3">
+                      <p className="text-xs font-bold text-white">Lead catturato</p>
+                      <div className="mt-2 space-y-1 text-xs text-neutral-300">
+                        <p><span className="font-bold text-white">Mario Rossi</span> — mario@acme.it — Acme SRL</p>
+                        <p>Score: <span className="font-bold text-emerald-400">Alto</span> • Fonte: form sito</p>
+                        <p className="rounded bg-brand-500/10 px-2 py-1.5 text-brand-300">Slack #sales notificato ✓ — follow-up domani 10:00</p>
+                      </div>
+                    </div>
+                  )}
+                  {agent.slug === "copywriter" && (
+                    <div className="rounded-lg border border-white/5 bg-neutral-900 p-3">
+                      <p className="text-xs font-bold text-white">Copy varianti</p>
+                      <div className="mt-2 space-y-1 text-xs">
+                        <div className="rounded bg-neutral-950 px-2 py-1.5">
+                          <p className="font-bold text-white">A — Benefit</p>
+                          <p className="text-neutral-400">Raddoppia vendite senza assumere — agenti AI 24/7</p>
+                        </div>
+                        <div className="rounded bg-neutral-950 px-2 py-1.5">
+                          <p className="font-bold text-white">B — Proof</p>
+                          <p className="text-neutral-400">Già 2.3k team usano AgentCloud</p>
+                        </div>
+                        <div className="rounded bg-neutral-950 px-2 py-1.5">
+                          <p className="font-bold text-white">C — Urgency</p>
+                          <p className="text-neutral-400">Lancia oggi, vendi domani</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {agent.slug === "calendar-booking" && (
+                    <div className="rounded-lg border border-white/5 bg-neutral-900 p-3">
+                      <p className="text-xs font-bold text-white">Booking confermato</p>
+                      <p className="mt-1 text-xs text-neutral-300">Mar 15:30-16:00 — Marco & Anna — Zoom https://zoom.us/j/123</p>
+                      <p className="text-xs text-emerald-400">Inviti inviati • promemoria 15 min • Slack #sales</p>
+                    </div>
+                  )}
+                  {agent.slug.startsWith("seo") && (
+                    <div className="rounded-lg border border-white/5 bg-neutral-900 p-3">
+                      <p className="text-xs font-bold text-white">SEO Draft</p>
+                      <p className="mt-1 text-xs text-neutral-400">H1 + 5 keywords • Meta 152 char • 3 link interni • 1.520 parole</p>
+                    </div>
+                  )}
+                  {["finance-manager", "business-manager", "personal-assistant"].includes(agent.slug) && (
+                    <div className="rounded-lg border border-white/5 bg-neutral-900 p-3">
+                      <p className="text-xs font-bold text-white">Report pronto</p>
+                      <p className="mt-1 text-xs text-neutral-400">File salvato • KPI aggiornati • 3 azioni consigliate</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
