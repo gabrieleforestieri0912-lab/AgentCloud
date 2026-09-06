@@ -916,7 +916,7 @@ export default function ChatInterface({
           </button>
         )}
 
-        {/* Input area */}
+        {/* Input area — toggle blu rimosso come richiesto */}
         <div className="px-4 sm:px-6 py-4 bg-neutral-900/80 backdrop-blur-sm border-t border-white/5">
           <div className="mx-auto flex items-end gap-3 bg-neutral-800 rounded-2xl border border-white/5 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all max-w-content">
             <textarea
