@@ -231,7 +231,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="block w-full rounded-full border border-white/10 px-4 py-3 text-center text-sm font-bold text-neutral-300 transition-colors hover:bg-white/5"
+                  className="block w-full rounded-full bg-brand-500 px-4 py-3 text-center text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
                 >
                   {dict.navbar.signIn}
                 </Link>

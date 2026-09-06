@@ -383,7 +383,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center gap-2 rounded-full border border-white/10 px-5 py-2.5 text-sm font-bold text-neutral-300 transition-colors hover:bg-white/5"
+                  className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
                 >
                   {dict.navbar.signIn}
                 </Link>
