@@ -16,6 +16,10 @@ import {
   CalendarDays,
   UserPlus,
   Megaphone,
+  Receipt,
+  Mail,
+  CalendarClock,
+  Contact,
 } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { AGENTS, localizeAgent } from "@/lib/agents";
@@ -241,6 +245,36 @@ export default function NotificationBell() {
         return (
           <span className={cls}>
             <Megaphone size={15} />
+          </span>
+        );
+      case "invoice_created":
+        return (
+          <span className={cls}>
+            <Receipt size={15} />
+          </span>
+        );
+      case "payment_reminder_sent":
+        return (
+          <span className={cls}>
+            <Mail size={15} />
+          </span>
+        );
+      case "post_scheduled":
+        return (
+          <span className={cls}>
+            <CalendarClock size={15} />
+          </span>
+        );
+      case "cv_analyzed":
+        return (
+          <span className={cls}>
+            <Contact size={15} />
+          </span>
+        );
+      default:
+        return (
+          <span className={cls}>
+            <FileText size={15} />
           </span>
         );
     }

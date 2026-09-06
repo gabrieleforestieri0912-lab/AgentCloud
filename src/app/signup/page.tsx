@@ -8,6 +8,15 @@ import BrandLogo from "@/components/BrandLogo";
 import HeroBubbles from "@/components/HeroBubbles";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createClient } from "@/lib/supabase/client";
+import {
+  validateAndSanitizeEmail,
+  validatePassword,
+  validateFullName,
+  checkClientThrottle,
+  recordFailedClientAttempt,
+  resetClientAttemptThrottle,
+  HONEYPOT_FIELD_NAME,
+} from "@/lib/forms-security";
 
 export default function SignupPage() {
   const { dict } = useLanguage();
@@ -15,6 +24,7 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [honeypotValue, setHoneypotValue] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,23 +35,61 @@ export default function SignupPage() {
   async function handleEmailSignup(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
+
+    // 1. Controllo Honeypot Anti-Bot
+    if (honeypotValue.trim().length > 0) {
+      setError("Richiesta non valida.");
+      return;
+    }
+
+    // 2. Throttling client-side contro registrazioni massive / spam
+    const throttle = checkClientThrottle("signup_attempt", 5, 60);
+    if (!throttle.allowed) {
+      setError(`Troppi tentativi consecutivi. Attendi ${throttle.retryAfterSeconds} secondi.`);
+      return;
+    }
+
+    // 3. Validazione e sanitizzazione del nome (max 80 caratteri, anti-XSS)
+    const nameCheck = validateFullName(name);
+    if (!nameCheck.valid) {
+      setError(nameCheck.error || a.errors.signupFailed);
+      return;
+    }
+
+    // 4. Validazione e sanitizzazione dell'email (RFC 5321, no byte nulli, no CRLF)
+    const emailCheck = validateAndSanitizeEmail(email);
+    if (!emailCheck.valid || !emailCheck.email) {
+      setError(emailCheck.error || a.errors.signupFailed);
+      return;
+    }
+
+    // 5. Validazione robustezza password (8-128 caratteri, anti-DoS crittografico)
+    const pwdCheck = validatePassword(password);
+    if (!pwdCheck.valid) {
+      setError(pwdCheck.error || a.errors.signupFailed);
+      return;
+    }
+
     setError("");
     setSuccess("");
     setLoading(true);
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: emailCheck.email,
         password,
         options: {
-          data: { full_name: name.trim() || undefined },
+          data: { full_name: nameCheck.name || undefined },
           emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
         },
       });
       if (error) {
+        recordFailedClientAttempt("signup_attempt", 5, 60);
         setError(a.errors.signupFailed);
         return;
       }
+      resetClientAttemptThrottle("signup_attempt");
+
       // When email confirmation is enabled there is no session yet — ask the
       // user to check their inbox; otherwise go straight to the dashboard.
       if (data.session) {
@@ -112,6 +160,28 @@ export default function SignupPage() {
 
           <div className="rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl shadow-black/40">
             <form onSubmit={handleEmailSignup} className="space-y-4">
+              {/* Campo trappola Honeypot Anti-Bot invisibile */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: "-9999px",
+                  opacity: 0,
+                  height: 0,
+                  width: 0,
+                  overflow: "hidden",
+                }}
+                aria-hidden="true"
+              >
+                <input
+                  type="text"
+                  name={HONEYPOT_FIELD_NAME}
+                  value={honeypotValue}
+                  onChange={(e) => setHoneypotValue(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+
               <label className="block">
                 <span className="mb-1.5 block text-sm font-semibold text-neutral-300">
                   {a.signup.name}

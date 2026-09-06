@@ -6,23 +6,22 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { MAX_SPOTS, getRemainingSpots, provisionAuthUser } from "@/lib/waitlist";
-import { isValidAccessCode } from "@/lib/access-code";
 import { ACCESS_COOKIE } from "@/lib/waitlist-constants";
+import { logAudit } from "@/lib/audit";
+import {
+  validateAndSanitizeEmail,
+  isHoneypotTriggered,
+} from "@/lib/forms-security";
 
-// Max signups per IP per hour (emails are additionally deduped by the DB).
+// Massimo 3 registrazioni per IP per ora (le email sono ulteriormente deduplicate a livello DB).
 const WAITLIST_LIMIT = 3;
 
-// Cookie flag so the waitlist page can show the "joined" state after a refresh.
+// Dimensione massima consentita per il corpo della richiesta JSON (2 KB = 2048 byte)
+const MAX_PAYLOAD_BYTES = 2048;
+
+// Cookie di stato per ricordare l'avvenuta iscrizione alla waitlist
 const JOINED_COOKIE = "ac_wl_joined";
-// Remembers which email joined, so the server can re-verify the signup against
-// the database (e.g. after the owner deletes entries) instead of trusting the
-// client-side cookie forever.
 const JOINED_EMAIL_COOKIE = "ac_wl_email";
-// The ACCESS_COOKIE (`ac_access`, defined in waitlist-constants) grants
-// platform access during the waitlist phase — set ONLY when a valid access
-// code is submitted (checked server-side, see src/lib/access-code.ts). The
-// proxy lets holders through the waitlist gate; everyone else stays on
-// /waitlist until the phase is lifted.
 
 const COOKIE_OPTIONS = {
   path: "/",
@@ -34,10 +33,6 @@ export async function GET() {
   try {
     const remaining = await getRemainingSpots();
 
-    // If this browser previously joined, verify the signup still exists in the
-    // database (the owner may have deleted entries). `verified` is true only
-    // when the check actually ran: on verification errors we keep the cookie
-    // state (fail-safe) instead of dropping someone's access on a hiccup.
     let joined = false;
     let verified = false;
     const joinedEmail = (await cookies()).get(JOINED_EMAIL_COOKIE)?.value;
@@ -64,59 +59,102 @@ export async function GET() {
   }
 }
 
+/**
+ * Handler POST per l'iscrizione alla Waitlist o riscatto del codice di accesso.
+ *
+ * Difese di sicurezza implementate:
+ * 1. Rate Limiting distribuito per IP contro attacchi DoS o spam.
+ * 2. Controllo dimensione massima del payload (< 2 KB) per evitare buffer overflow.
+ * 3. Trappola Honeypot (`website_hp`): neutralizza istantaneamente i bot senza toccare il DB.
+ * 4. Sanitizzazione e validazione RFC 5321 (blocco byte nulli, newline CRLF, caratteri XSS).
+ * 5. Prompt Injection detector: scarta payload progettati per confondere modelli LLM o log interni.
+ * 6. Audit logging degli eventi di sicurezza.
+ */
 export async function POST(request: Request) {
+  const clientIp = getClientIp(request);
+
   try {
-    const rl = await rateLimit("waitlist", getClientIp(request), {
+    // -------------------------------------------------------------------------
+    // 1. Controllo Rate Limiting per IP
+    // -------------------------------------------------------------------------
+    const rl = await rateLimit("waitlist", clientIp, {
       limit: WAITLIST_LIMIT,
       windowMs: RATE_LIMIT_WINDOWS.HOUR_MS,
     });
     if (!rl.allowed) {
+      logAudit("waitlist_rate_limited", { ip: clientIp });
       return NextResponse.json(
         { error: await apiErrorMessage("rateLimited") },
         { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
       );
     }
 
-    const { email: rawEmail } = await request.json();
-    const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
-
-    // The waitlist field accepts EITHER an email (join) OR the access code
-    // (platform entry for testers/partners) — the same input, no tabs. The
-    // code is validated server-side first: on success the visitor receives
-    // the platform-access cookie. This is not a waitlist signup: no DB
-    // insert, no spot consumed, no email involved.
-    if (email) {
-      if (isValidAccessCode(email)) {
-        const res = NextResponse.json({
-          success: true,
-          accessGranted: true,
-          // Best-effort count: the grant itself must never fail on a DB hiccup.
-          remaining: await getRemainingSpots().catch(() => null),
-        });
-        res.cookies.set(ACCESS_COOKIE, "1", COOKIE_OPTIONS);
-        return res;
-      }
-      // A value that doesn't even look like an email is a (wrong) code
-      // attempt — report it as such instead of a generic email error.
-      if (!email.includes("@")) {
-        return NextResponse.json(
-          { error: await apiErrorMessage("invalidAccessCode") },
-          { status: 400 },
-        );
-      }
+    // -------------------------------------------------------------------------
+    // 2. Controllo dimensione del corpo della richiesta (Anti-DoS)
+    // -------------------------------------------------------------------------
+    const contentLength = Number(request.headers.get("content-length") || 0);
+    if (contentLength > MAX_PAYLOAD_BYTES) {
+      logAudit("waitlist_payload_too_large", { ip: clientIp, size: contentLength });
+      return NextResponse.json(
+        { error: "Corpo della richiesta troppo grande." },
+        { status: 413 },
+      );
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
-        { error: await apiErrorMessage("invalidEmailAddress") },
+        { error: "Payload JSON non valido." },
         { status: 400 },
       );
     }
 
-    // Insert with the service-role client so signups are always persisted,
-    // regardless of RLS on the public `waitlist` table. Falls back to the
-    // anon client (RLS-dependent) only if the service role key is missing.
+    // -------------------------------------------------------------------------
+    // 3. Trappola Honeypot (Anti-Bot)
+    // Se un bot ha popolato il campo nascosto `website_hp`, blocchiamo la richiesta
+    // -------------------------------------------------------------------------
+    if (isHoneypotTriggered(body)) {
+      logAudit("waitlist_bot_blocked", { ip: clientIp });
+      // Ritorna errore generico per non dare feedback all'autore del bot
+      return NextResponse.json(
+        { error: "Richiesta non autorizzata." },
+        { status: 400 },
+      );
+    }
+
+    const rawEmail = body.email;
+
+    // -------------------------------------------------------------------------
+    // 4. Validazione e sanitizzazione rigorosa di email / codice di accesso
+    // -------------------------------------------------------------------------
+    const validation = validateAndSanitizeEmail(rawEmail, true);
+    if (!validation.valid || !validation.email) {
+      logAudit("waitlist_invalid_input", { ip: clientIp, reason: validation.error });
+      return NextResponse.json(
+        { error: validation.error || await apiErrorMessage("invalidEmailAddress") },
+        { status: 400 },
+      );
+    }
+
+    // Caso A: L'utente ha inserito un codice di accesso valido per tester/partner
+    if (validation.isAccessCode) {
+      logAudit("waitlist_access_code_redeemed", { ip: clientIp });
+      const res = NextResponse.json({
+        success: true,
+        accessGranted: true,
+        remaining: await getRemainingSpots().catch(() => null),
+      });
+      res.cookies.set(ACCESS_COOKIE, "1", COOKIE_OPTIONS);
+      return res;
+    }
+
+    const email = validation.email;
+
+    // -------------------------------------------------------------------------
+    // 5. Inserimento nel Database Supabase con Service Role
+    // -------------------------------------------------------------------------
     const supabase = createAdminClient() ?? (await createClient());
     const { error: dbError } = await supabase
       .from("waitlist")
@@ -124,9 +162,7 @@ export async function POST(request: Request) {
 
     if (dbError) {
       if (dbError.code === "23505") {
-        // Self-healing: a repeat join may predate auth provisioning (or it may
-        // have failed silently) — try to create the user anyway; it's a no-op
-        // when the account already exists.
+        // Utente già registrato: self-healing
         await provisionAuthUser(email);
         const remaining = await getRemainingSpots();
         const res = NextResponse.json(
@@ -144,7 +180,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Provision the Auth user so the signup shows up in Authentication → Users.
+    // Provisioning dell'utente in Auth
     await provisionAuthUser(email);
     const res = NextResponse.json({
       success: true,

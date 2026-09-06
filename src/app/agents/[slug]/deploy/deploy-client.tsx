@@ -506,7 +506,7 @@ export default function DeployAgentClient({
                         <p className="text-sm font-bold text-white">
                           {dict.deploy.starter}
                         </p>
-                        <p className="text-xs text-neutral-500">€29/mese</p>
+                        <p className="text-xs text-neutral-500">€9,99/mese</p>
                       </div>
                       <span className="text-[10px] font-semibold text-neutral-500">
                         300 conv/mese
@@ -529,7 +529,7 @@ export default function DeployAgentClient({
                         <p className="text-sm font-bold text-white">
                           {dict.deploy.growth}
                         </p>
-                        <p className="text-xs text-neutral-400">€39/mese</p>
+                        <p className="text-xs text-neutral-400">€14,99/mese</p>
                       </div>
                       <span className="rounded-full bg-brand-500/20 px-2 py-0.5 text-[10px] font-bold text-brand-300">
                         {dict.deploy.popular}

@@ -7,6 +7,7 @@ import { CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createClient } from "@/lib/supabase/client";
+import { validatePassword } from "@/lib/forms-security";
 
 export default function ResetPasswordPage() {
   const { dict } = useLanguage();
@@ -66,6 +67,14 @@ export default function ResetPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
+
+    // Validazione preventiva robustezza password (8-128 caratteri)
+    const pwdCheck = validatePassword(password);
+    if (!pwdCheck.valid) {
+      setError(pwdCheck.error || r.updateFailed);
+      return;
+    }
+
     setError("");
     setSaving(true);
     try {

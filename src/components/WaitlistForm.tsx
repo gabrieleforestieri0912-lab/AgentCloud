@@ -12,6 +12,10 @@ import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageProvider";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { MAX_SPOTS } from "@/lib/waitlist-constants";
+import {
+  validateAndSanitizeEmail,
+  HONEYPOT_FIELD_NAME,
+} from "@/lib/forms-security";
 
 // Cookie flags (mirrors the server-side constants in /api/waitlist).
 const JOINED_COOKIE = "ac_wl_joined";
@@ -50,9 +54,10 @@ export default function WaitlistForm({
   initialRemaining: number;
 }) {
   const { dict, locale } = useLanguage();
-  // The field accepts an email (join the waitlist) OR the access code (enter
-  // the platform directly) — the server tells them apart.
+  // Il campo accetta un'email (iscrizione alla waitlist) OPPURE un codice di accesso (accesso diretto).
   const [email, setEmail] = useState("");
+  // Campo trappola Honeypot (Anti-Bot): se valorizzato, la richiesta viene bloccata all'istante
+  const [honeypotValue, setHoneypotValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(
     () =>
@@ -117,6 +122,21 @@ export default function WaitlistForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    // 1. Controllo Honeypot: se un bot ha compilato il campo nascosto, blocca senza inviare nulla
+    if (honeypotValue.trim().length > 0) {
+      setError("Richiesta non valida.");
+      return;
+    }
+
+    // 2. Validazione e sanitizzazione preventiva lato client
+    const validation = validateAndSanitizeEmail(email, true);
+    if (!validation.valid || !validation.email) {
+      setError(validation.error || dict.waitlist.somethingWrong);
+      return;
+    }
+
     setError("");
     setIsSubmitting(true);
 
@@ -124,14 +144,15 @@ export default function WaitlistForm({
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email: validation.email,
+          [HONEYPOT_FIELD_NAME]: honeypotValue,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        // The 409 response carries the authoritative remaining count too, so
-        // the counter stays in sync even when the join was a duplicate.
         if (typeof data.remaining === "number") {
           setRemainingSpots(data.remaining);
         }
@@ -326,6 +347,28 @@ export default function WaitlistForm({
                 {/* Single field: an email joins the waitlist, the access code
                     unlocks the platform directly (server-side check). */}
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Trappola Honeypot Anti-Bot: invisibile ai visitatori umani, compilata solo da scraper e bot */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "-9999px",
+                      opacity: 0,
+                      height: 0,
+                      width: 0,
+                      overflow: "hidden",
+                    }}
+                    aria-hidden="true"
+                  >
+                    <input
+                      type="text"
+                      name={HONEYPOT_FIELD_NAME}
+                      value={honeypotValue}
+                      onChange={(e) => setHoneypotValue(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
                   <div>
                     <input
                       type="text"

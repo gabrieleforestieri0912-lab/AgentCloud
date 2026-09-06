@@ -30,128 +30,96 @@ export type FeatureFlags = {
  * 5 agents enabled: Shopify Agent + Lead Capture + Support Agent + Copywriter
  * + Email Manager
  */
+export const ACTIVE_10_AGENTS = [
+  "shopify-agent",
+  "lead-capture",
+  "support-agent",
+  "calendar-booking",
+  "quote-agent",
+  "reviews-agent",
+  "seo-agent",
+  "email-manager",
+  "copywriter",
+  "business-manager",
+];
+
+export const ACTIVE_15_AGENTS = [
+  ...ACTIVE_10_AGENTS,
+  "finance-manager",
+  "personal-assistant",
+  "hr-recruiter",
+  "social-media-agent",
+  "inventory-logistics",
+];
+
+export const ALL_TOOLS_LIST = [
+  "web_search",
+  "scrape_page",
+  "read_file",
+  "write_file",
+  "quote_generate",
+  "quote_send_email",
+  "google_reviews_list",
+  "google_reviews_reply",
+  "shopify_create_store",
+  "shopify_setup_store",
+  "shopify_search_products",
+  "shopify_get_order_status",
+  "shopify_build_cart_url",
+  "shopify_list_customers",
+  "shopify_get_analytics",
+  "shopify_create_product",
+  "shopify_create_discount",
+  "shopify_list_collections",
+  "shopify_manage_collection",
+  "shopify_update_inventory",
+  "calendar_search_availability",
+  "calendar_book_event",
+  "calendar_delete_event",
+  "calendar_set_reminder",
+  "get_calendar_events",
+  "list_emails",
+  "gmail_send",
+  "gmail_trash",
+  "lead_capture_submit",
+  "lead_capture_enrich",
+  "lead_capture_notify_sales",
+  "finance_get_cashflow",
+  "finance_create_invoice",
+  "finance_send_reminder",
+  "hr_parse_cv",
+  "hr_score_candidate",
+  "social_generate_calendar",
+  "social_schedule_post",
+];
+
+/**
+ * Default configuration for Shopify e-commerce vertical launch.
+ */
 export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
-  enabledAgents: [
-    "shopify-agent",
-    "lead-capture",
-    "support-agent",
-    "copywriter",
-    "email-manager",
-  ],
-
-  // Enable Shopify, Lead Capture, and the general tools used by the
-  // Support and Copywriter agents. Optional tools (web_search, scrape_page)
-  // stay off for Shopify/Lead agents because enableOptionalToolsByDefault is
-  // false — the global list only widens what a given agent can reach.
-  enabledTools: [
-    "shopify_create_store",
-    "shopify_search_products",
-    "shopify_get_order_status",
-    "shopify_build_cart_url",
-    "lead_capture_submit",
-    "lead_capture_enrich",
-    "lead_capture_notify_sales",
-    "calendar_search_availability",
-    "calendar_book_event",
-    "calendar_delete_event",
-    "calendar_set_reminder",
-    "web_search",
-    "scrape_page",
-    "read_file",
-    "write_file",
-    "list_emails",
-    "gmail_send",
-    "gmail_trash",
-    "get_calendar_events",
-  ],
-
-  // No agent-specific overrides needed
+  enabledAgents: ACTIVE_15_AGENTS,
+  enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
-
-  // Keep optional tools disabled by default
-  enableOptionalToolsByDefault: false,
+  enableOptionalToolsByDefault: true,
 };
 
 /**
  * Configuration for services vertical (restaurants, professionals, real estate)
- * 4 agents enabled: Calendar Booking + Lead Capture + Support Agent + Copywriter
  */
 export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
-  enabledAgents: [
-    "calendar-booking",
-    "lead-capture",
-    "support-agent",
-    "copywriter",
-  ],
-
-  enabledTools: [
-    "calendar_search_availability",
-    "calendar_book_event",
-    "calendar_delete_event",
-    "calendar_set_reminder",
-    "lead_capture_submit",
-    "lead_capture_enrich",
-    "lead_capture_notify_sales",
-    "web_search",
-    "scrape_page",
-    "read_file",
-    "write_file",
-    "list_emails",
-    "gmail_send",
-    "gmail_trash",
-    "get_calendar_events",
-  ],
-
+  enabledAgents: ACTIVE_15_AGENTS,
+  enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
-
-  enableOptionalToolsByDefault: false,
+  enableOptionalToolsByDefault: true,
 };
 
 /**
- * Full platform configuration (all 10 agents enabled: SEO, Business Manager,
- * Personal Assistant, Email Manager, Shopify, Calendar Booking, Lead Capture,
- * Support Agent, Copywriter, Finance Manager)
- * Use this for existing customers or when you're ready to launch everything
+ * Full platform configuration (all 15 active agents enabled)
  */
 export const FULL_PLATFORM_CONFIG: FeatureFlags = {
-  enabledAgents: [
-    "seo-agent",
-    "business-manager",
-    "personal-assistant",
-    "email-manager",
-    "shopify-agent",
-    "calendar-booking",
-    "lead-capture",
-    "support-agent",
-    "copywriter",
-    "finance-manager",
-  ],
-
-  enabledTools: [
-    "web_search",
-    "scrape_page",
-    "read_file",
-    "write_file",
-    "run_python",
-    "shopify_create_store",
-    "shopify_search_products",
-    "shopify_get_order_status",
-    "shopify_build_cart_url",
-    "calendar_search_availability",
-    "calendar_book_event",
-    "calendar_delete_event",
-    "calendar_set_reminder",
-    "get_calendar_events",
-    "list_emails",
-    "gmail_send",
-    "gmail_trash",
-    "lead_capture_submit",
-    "lead_capture_enrich",
-    "lead_capture_notify_sales",
-  ],
-
+  enabledAgents: ACTIVE_15_AGENTS,
+  enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
-
   enableOptionalToolsByDefault: true,
 };
 
@@ -160,7 +128,7 @@ export const FULL_PLATFORM_CONFIG: FeatureFlags = {
  * Priority:
  * 1. Environment variable AGENTCLOUD_FEATURE_FLAGS (JSON string)
  * 2. Environment variable AGENTCLOUD_VERTICAL (shopify | services | full)
- * 3. Default to SHOPIFY_LAUNCH_CONFIG
+ * 3. Default to FULL_PLATFORM_CONFIG (15 active agents)
  */
 export function getFeatureFlags(): FeatureFlags {
   // Check for custom JSON config
@@ -179,12 +147,12 @@ export function getFeatureFlags(): FeatureFlags {
   switch (vertical) {
     case "services":
       return SERVICES_LAUNCH_CONFIG;
+    case "shopify":
+      return SHOPIFY_LAUNCH_CONFIG;
     case "full":
     case "all":
-      return FULL_PLATFORM_CONFIG;
-    case "shopify":
     default:
-      return SHOPIFY_LAUNCH_CONFIG;
+      return FULL_PLATFORM_CONFIG;
   }
 }
 

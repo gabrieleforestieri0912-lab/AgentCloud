@@ -47,8 +47,8 @@ export const SHOPIFY_PRICING: VerticalPricing = {
     starter: {
       id: "shopify-starter",
       name: "Starter",
-      price: 2900, // €29/month
-      priceDisplay: "€29/mese",
+      price: 999, // €9,99/month (999 centesimi)
+      priceDisplay: "€9,99/mese",
       tokens: 300_000,
       features: [
         "Fino a 300.000 token/mese",
@@ -60,8 +60,8 @@ export const SHOPIFY_PRICING: VerticalPricing = {
       ],
       addons: {
         webSearch: {
-          price: 1500, // €15/month
-          priceDisplay: "+€15/mese",
+          price: 499, // €4,99/month
+          priceDisplay: "+€4,99/mese",
           description: "Web search con Tavily",
         },
       },
@@ -69,8 +69,8 @@ export const SHOPIFY_PRICING: VerticalPricing = {
     growth: {
       id: "shopify-growth",
       name: "Growth",
-      price: 3900, // €39/month
-      priceDisplay: "€39/mese",
+      price: 1499, // €14,99/month (1499 centesimi)
+      priceDisplay: "€14,99/mese",
       tokens: 1_000_000,
       features: [
         "Fino a 1.000.000 token/mese",
@@ -81,8 +81,8 @@ export const SHOPIFY_PRICING: VerticalPricing = {
       ],
       addons: {
         webSearch: {
-          price: 1500,
-          priceDisplay: "+€15/mese",
+          price: 499,
+          priceDisplay: "+€4,99/mese",
           description: "Web search con Tavily",
         },
       },
@@ -100,8 +100,8 @@ export const SERVICES_PRICING: VerticalPricing = {
     starter: {
       id: "services-starter",
       name: "Starter",
-      price: 2900, // €29/month
-      priceDisplay: "€29/mese",
+      price: 999, // €9,99/month (999 centesimi)
+      priceDisplay: "€9,99/mese",
       tokens: 300_000,
       features: [
         "Fino a 300.000 token/mese",
@@ -112,8 +112,8 @@ export const SERVICES_PRICING: VerticalPricing = {
       ],
       addons: {
         webSearch: {
-          price: 1500,
-          priceDisplay: "+€15/mese",
+          price: 499,
+          priceDisplay: "+€4,99/mese",
           description: "Web search con Tavily",
         },
       },
@@ -121,8 +121,8 @@ export const SERVICES_PRICING: VerticalPricing = {
     growth: {
       id: "services-growth",
       name: "Growth",
-      price: 3900, // €39/month
-      priceDisplay: "€39/mese",
+      price: 1499, // €14,99/month (1499 centesimi)
+      priceDisplay: "€14,99/mese",
       tokens: 1_000_000,
       features: [
         "Fino a 1.000.000 token/mese",
@@ -133,8 +133,8 @@ export const SERVICES_PRICING: VerticalPricing = {
       ],
       addons: {
         webSearch: {
-          price: 1500,
-          priceDisplay: "+€15/mese",
+          price: 499,
+          priceDisplay: "+€4,99/mese",
           description: "Web search con Tavily",
         },
       },

@@ -103,12 +103,12 @@ const it = {
     pricingItems: [
       {
         plan: "Starter",
-        price: "€29/mese",
+        price: "€9,99/mese",
         text: "Un agente per il tuo workflow",
       },
       {
         plan: "Growth",
-        price: "€39/mese",
+        price: "€14,99/mese",
         text: "Agente più integrazioni",
       },
       { plan: "Custom", price: "Su misura", text: "Sistemi multi-agente" },
@@ -947,6 +947,10 @@ const it = {
       event_booked: "{agent} ha prenotato \"{title}\" ({start})",
       lead_submitted: "{agent} ha registrato un nuovo lead: {lead}",
       lead_notified: "{agent} ha avvisato il team vendite di un nuovo lead",
+      invoice_created: "{agent} ha creato la fattura {invoice}",
+      payment_reminder_sent: "{agent} ha inviato un sollecito a {email}",
+      post_scheduled: "{agent} ha pianificato un post {platform} ({when})",
+      cv_analyzed: "{agent} ha analizzato il CV {filename}",
     },
     actions: {
       add: "aggiunti",
@@ -1114,8 +1118,8 @@ export const en: Dictionary = {
       "Google Sheets",
     ],
     pricingItems: [
-      { plan: "Starter", price: "€29/mo", text: "One workflow agent" },
-      { plan: "Growth", price: "€39/mo", text: "Agent plus integrations" },
+      { plan: "Starter", price: "€9.99/mo", text: "One workflow agent" },
+      { plan: "Growth", price: "€14.99/mo", text: "Agent plus integrations" },
       { plan: "Custom", price: "Custom", text: "Multi-agent systems" },
     ],
   },
@@ -1939,6 +1943,10 @@ export const en: Dictionary = {
       lead_submitted: "{agent} captured a new lead: {lead}",
       lead_notified:
         "{agent} alerted the sales team about a new lead",
+      invoice_created: "{agent} created invoice {invoice}",
+      payment_reminder_sent: "{agent} sent a payment reminder to {email}",
+      post_scheduled: "{agent} scheduled a {platform} post ({when})",
+      cv_analyzed: "{agent} analyzed CV {filename}",
     },
     actions: {
       add: "added",
@@ -2102,8 +2110,8 @@ export const es: Dictionary = {
       "Google Sheets",
     ],
     pricingItems: [
-      { plan: "Starter", price: "€29/mo", text: "One workflow agent" },
-      { plan: "Growth", price: "€39/mo", text: "Agent plus integrations" },
+      { plan: "Starter", price: "€9,99/mes", text: "One workflow agent" },
+      { plan: "Growth", price: "€14,99/mes", text: "Agent plus integrations" },
       { plan: "Personalizado", price: "Personalizado", text: "Multi-agent systems" },
     ],
   },
@@ -2927,6 +2935,10 @@ export const es: Dictionary = {
       lead_submitted: "{agent} captured a new lead: {lead}",
       lead_notified:
         "{agent} alerted the sales team about a new lead",
+      invoice_created: "{agent} created invoice {invoice}",
+      payment_reminder_sent: "{agent} sent a payment reminder to {email}",
+      post_scheduled: "{agent} scheduled a {platform} post ({when})",
+      cv_analyzed: "{agent} analyzed CV {filename}",
     },
     actions: {
       add: "added",
@@ -3090,8 +3102,8 @@ export const de: Dictionary = {
       "Google Sheets",
     ],
     pricingItems: [
-      { plan: "Starter", price: "€29/mo", text: "One workflow agent" },
-      { plan: "Growth", price: "€39/mo", text: "Agent plus integrations" },
+      { plan: "Starter", price: "9,99 €/Monat", text: "One workflow agent" },
+      { plan: "Growth", price: "14,99 €/Monat", text: "Agent plus integrations" },
       { plan: "Custom", price: "Custom", text: "Multi-agent systems" },
     ],
   },
@@ -3915,6 +3927,10 @@ export const de: Dictionary = {
       lead_submitted: "{agent} captured a new lead: {lead}",
       lead_notified:
         "{agent} alerted the sales team about a new lead",
+      invoice_created: "{agent} created invoice {invoice}",
+      payment_reminder_sent: "{agent} sent a payment reminder to {email}",
+      post_scheduled: "{agent} scheduled a {platform} post ({when})",
+      cv_analyzed: "{agent} analyzed CV {filename}",
     },
     actions: {
       add: "added",
@@ -4078,8 +4094,8 @@ export const fr: Dictionary = {
       "Google Sheets",
     ],
     pricingItems: [
-      { plan: "Starter", price: "€29/mo", text: "One workflow agent" },
-      { plan: "Growth", price: "€39/mo", text: "Agent plus integrations" },
+      { plan: "Starter", price: "9,99 €/mois", text: "One workflow agent" },
+      { plan: "Growth", price: "14,99 €/mois", text: "Agent plus integrations" },
       { plan: "Custom", price: "Custom", text: "Multi-agent systems" },
     ],
   },
@@ -4903,6 +4919,10 @@ export const fr: Dictionary = {
       lead_submitted: "{agent} captured a new lead: {lead}",
       lead_notified:
         "{agent} alerted the sales team about a new lead",
+      invoice_created: "{agent} created invoice {invoice}",
+      payment_reminder_sent: "{agent} sent a payment reminder to {email}",
+      post_scheduled: "{agent} scheduled a {platform} post ({when})",
+      cv_analyzed: "{agent} analyzed CV {filename}",
     },
     actions: {
       add: "added",

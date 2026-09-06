@@ -8,15 +8,54 @@ import {
 import { googleApiProxy } from "@/lib/google/api-proxy";
 import { getGoogleConnection } from "@/lib/google/connections";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
+import { executeWebSearch, formatWebSearchResults } from "@/lib/tools/tavily";
+import {
+  calculateQuote,
+  formatQuoteMarkdown,
+  sendQuoteByEmail,
+} from "@/lib/tools/quote";
+import {
+  listBusinessReviews,
+  replyToBusinessReview,
+  formatReviewsMarkdown,
+} from "@/lib/tools/reviews";
+import {
+  getFinanceCashFlow,
+  formatCashFlowMarkdown,
+  createInvoice,
+  invoiceDownloadPayload,
+  sendPaymentReminder,
+} from "@/lib/tools/finance";
+import {
+  parseCv,
+  formatParsedCvMarkdown,
+  scoreCandidate,
+  formatCandidateScoreMarkdown,
+} from "@/lib/tools/hr";
+import {
+  generateEditorialCalendar,
+  formatEditorialCalendarMarkdown,
+  schedulePost,
+} from "@/lib/tools/social";
 
 export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   web_search: {
     name: "web_search",
-    description: "Search the internet for up-to-date information on any topic",
+    description:
+      "Search the web in real-time for up-to-date information, news, market data, and documentation.",
     input_schema: {
       type: "object",
       properties: {
         query: { type: "string", description: "The search query" },
+        max_results: {
+          type: "integer",
+          description: "Max number of search results to return (1-20, default 5)",
+        },
+        search_depth: {
+          type: "string",
+          enum: ["basic", "advanced"],
+          description: "Search depth: 'basic' for fast lookup, 'advanced' for deeper research",
+        },
       },
       required: ["query"],
     },
@@ -562,6 +601,260 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
       required: ["lead_details"],
     },
   },
+
+  quote_generate: {
+    name: "quote_generate",
+    description:
+      "Calculate and generate a formal structured quote with subtotal, tax, and total breakdown.",
+    input_schema: {
+      type: "object",
+      properties: {
+        client_name: {
+          type: "string",
+          description: "Name of the prospective client",
+        },
+        client_email: {
+          type: "string",
+          description: "Email address of the client",
+        },
+        items: {
+          type: "string",
+          description:
+            'JSON array of line items with description, quantity, unitPrice. Example: [{"description":"Consulenza","quantity":1,"unitPrice":500}]',
+        },
+        currency: { type: "string", description: "Currency code (default EUR)" },
+        tax_rate: {
+          type: "number",
+          description: "Tax rate decimal, e.g. 0.22 for 22% (default 0.22)",
+        },
+        valid_days: {
+          type: "integer",
+          description: "Validity days (default 30)",
+        },
+        notes: { type: "string", description: "Optional terms or notes" },
+      },
+      required: ["client_email", "items"],
+    },
+  },
+
+  quote_send_email: {
+    name: "quote_send_email",
+    description:
+      "Send the calculated quote directly to the client via email (via Resend) with a responsive HTML template.",
+    input_schema: {
+      type: "object",
+      properties: {
+        client_name: {
+          type: "string",
+          description: "Name of the prospective client",
+        },
+        client_email: {
+          type: "string",
+          description: "Email address of the client",
+        },
+        items: {
+          type: "string",
+          description:
+            "JSON array of line items with description, quantity, unitPrice",
+        },
+        currency: { type: "string", description: "Currency code (default EUR)" },
+        notes: { type: "string", description: "Optional terms or notes" },
+      },
+      required: ["client_email", "items"],
+    },
+  },
+
+  google_reviews_list: {
+    name: "google_reviews_list",
+    description:
+      "Retrieve Google Business Profile reviews for the business location with ratings, comments, and replies.",
+    input_schema: {
+      type: "object",
+      properties: {
+        min_rating: {
+          type: "integer",
+          description: "Filter by minimum star rating (1-5)",
+        },
+        unanswered_only: {
+          type: "boolean",
+          description: "Only return reviews without a public reply",
+        },
+      },
+    },
+  },
+
+  google_reviews_reply: {
+    name: "google_reviews_reply",
+    description:
+      "Publish a reply to a specific Google Business Profile review.",
+    input_schema: {
+      type: "object",
+      properties: {
+        review_id: {
+          type: "string",
+          description: "ID of the review to reply to",
+        },
+        reply_text: {
+          type: "string",
+          description: "Text of the public reply",
+        },
+      },
+      required: ["review_id", "reply_text"],
+    },
+  },
+
+  finance_get_cashflow: {
+    name: "finance_get_cashflow",
+    description:
+      "Summarize cash flow (income, expenses, net) from an uploaded CSV (date,type,amount,description) or from Stripe balance transactions when STRIPE_SECRET_KEY is configured.",
+    input_schema: {
+      type: "object",
+      properties: {
+        filename: {
+          type: "string",
+          description: "Uploaded CSV/text filename to parse (optional)",
+        },
+        csv: {
+          type: "string",
+          description: "Raw CSV text if not reading from a file",
+        },
+        days: {
+          type: "integer",
+          description: "Lookback days for Stripe (1-90, default 30)",
+        },
+      },
+    },
+  },
+
+  finance_create_invoice: {
+    name: "finance_create_invoice",
+    description:
+      "Generate a professional invoice (HTML download + markdown summary) with line items, tax, and due date.",
+    input_schema: {
+      type: "object",
+      properties: {
+        client_name: { type: "string", description: "Client name" },
+        client_email: { type: "string", description: "Client email" },
+        items: {
+          type: "string",
+          description:
+            'JSON array of { description, quantity, unitPrice }. Example: [{"description":"Consulenza","quantity":1,"unitPrice":500}]',
+        },
+        currency: { type: "string", description: "Currency code (default EUR)" },
+        tax_rate: {
+          type: "number",
+          description: "Tax rate decimal, e.g. 0.22 (default 0.22)",
+        },
+        due_days: { type: "integer", description: "Days until due (default 30)" },
+        notes: { type: "string", description: "Optional notes" },
+      },
+      required: ["client_email", "items"],
+    },
+  },
+
+  finance_send_reminder: {
+    name: "finance_send_reminder",
+    description:
+      "Send a polite payment reminder email via Resend. Requires explicit user approval before calling.",
+    input_schema: {
+      type: "object",
+      properties: {
+        client_name: { type: "string", description: "Recipient name" },
+        client_email: { type: "string", description: "Recipient email" },
+        invoice_id: { type: "string", description: "Invoice reference" },
+        amount: { type: "number", description: "Amount due" },
+        currency: { type: "string", description: "Currency code (default EUR)" },
+        due_date: { type: "string", description: "Due date YYYY-MM-DD" },
+      },
+      required: ["client_email"],
+    },
+  },
+
+  hr_parse_cv: {
+    name: "hr_parse_cv",
+    description:
+      "Extract structured fields from a CV (name, email, phone, skills, experience, education).",
+    input_schema: {
+      type: "object",
+      properties: {
+        filename: {
+          type: "string",
+          description: "Uploaded CV filename to read",
+        },
+        cv_text: {
+          type: "string",
+          description: "Raw CV text if not reading from a file",
+        },
+      },
+    },
+  },
+
+  hr_score_candidate: {
+    name: "hr_score_candidate",
+    description:
+      "Score a candidate 0-100 against a job description using CV text and/or listed skills.",
+    input_schema: {
+      type: "object",
+      properties: {
+        filename: { type: "string", description: "Uploaded CV filename" },
+        cv_text: { type: "string", description: "Raw CV text" },
+        skills: {
+          type: "string",
+          description: "Comma-separated skills if already extracted",
+        },
+        job_description: {
+          type: "string",
+          description: "Job description or role requirements",
+        },
+      },
+      required: ["job_description"],
+    },
+  },
+
+  social_generate_calendar: {
+    name: "social_generate_calendar",
+    description:
+      "Generate a weekly editorial calendar (5-7 posts) with hook, caption, hashtags, platform, and CTA.",
+    input_schema: {
+      type: "object",
+      properties: {
+        topic: { type: "string", description: "Theme or campaign topic" },
+        brand: { type: "string", description: "Brand or business name" },
+        platforms: {
+          type: "string",
+          description: "Comma-separated platforms (e.g. Instagram, LinkedIn, TikTok)",
+        },
+        posts_count: {
+          type: "integer",
+          description: "Number of posts (5-7, default 7)",
+        },
+        language: { type: "string", description: "it or en (default it)" },
+      },
+      required: ["topic"],
+    },
+  },
+
+  social_schedule_post: {
+    name: "social_schedule_post",
+    description:
+      "Save a scheduled social post as a downloadable markdown file (local fallback when Buffer/Meta is not connected).",
+    input_schema: {
+      type: "object",
+      properties: {
+        platform: { type: "string", description: "Target platform" },
+        scheduled_at: {
+          type: "string",
+          description: "ISO datetime or human date for publication",
+        },
+        caption: { type: "string", description: "Post caption/body" },
+        hashtags: {
+          type: "string",
+          description: "Comma-separated hashtags",
+        },
+      },
+      required: ["caption"],
+    },
+  },
 };
 
 export type ToolContext = {
@@ -730,33 +1023,52 @@ export async function executeTool(
       inputKeys: Object.keys(input),
     });
   } catch {}
+
+  // ---------------------------------------------------------------------------
+  // Guardia di sicurezza: rilevamento prompt injection
+  //
+  // Prima di eseguire qualsiasi tool, serializzaiamo l'intero input in JSON
+  // e lo analizziamo con il rilevatore euristico. Se viene trovato un pattern
+  // sospetto, blocchiamo l'esecuzione e registriamo l'evento nell'audit log.
+  // In caso di errore interno nella detection, lasciamo passare (fail open).
+  // ---------------------------------------------------------------------------
+  try {
+    const { detectPromptInjection } = await import("@/lib/security");
+    const injectionCheck = detectPromptInjection(JSON.stringify(input));
+    if (injectionCheck.detected) {
+      // Registra il tentativo di injection nell'audit log per tracciabilità
+      logAudit("prompt_injection_attempt", {
+        tool: name,
+        userId: context.userId,
+        tenantId: context.tenantId || null,
+        reason: injectionCheck.reason || "unknown",
+      });
+      return "⚠️ Input non valido: rilevato contenuto potenzialmente non sicuro. Riformula la richiesta.";
+    }
+  } catch {
+    // Fail open: se la detection fallisce, non blocchiamo il tool
+  }
+
   switch (name) {
     case "web_search": {
       logAudit("tool_exec_start", { tool: "web_search" });
       try {
-        const res = await fetch(
-          `https://html.duckduckgo.com/html/?q=${encodeURIComponent(input.query)}`,
-          { headers: { "User-Agent": "AgentCloud/1.0" } },
-        );
-        const html = await res.text();
-        const snippets = html.match(
-          /<a[^>]*class="result__a"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi,
-        );
-        if (!snippets || snippets.length === 0) return "No results found";
+        const query = input.query || "";
+        if (!query.trim()) {
+          return "web_search requires a non-empty query.";
+        }
+        const maxResults = input.max_results ? Number(input.max_results) : 5;
+        const searchDepth =
+          input.search_depth === "advanced" ? "advanced" : "basic";
 
-        const results = snippets.slice(0, 5).map((s: string) => {
-          const titleMatch = s.match(/class="result__a"[^>]*>([\s\S]*?)<\/a>/);
-          const snippetMatch = s.match(
-            /class="result__snippet"[^>]*>([\s\S]*?)<\/a>/,
-          );
-          const linkMatch = s.match(/href="([^"]+)"/);
-          return [
-            `Title: ${titleMatch ? titleMatch[1].replace(/<[^>]+>/g, "").trim() : "N/A"}`,
-            `URL: ${linkMatch ? linkMatch[1] : "N/A"}`,
-            `Snippet: ${snippetMatch ? snippetMatch[1].replace(/<[^>]+>/g, "").trim() : "N/A"}`,
-          ].join("\n");
+        const response = await executeWebSearch({
+          query,
+          maxResults,
+          searchDepth,
+          includeAnswer: true,
         });
-        return results.join("\n\n");
+
+        return formatWebSearchResults(response);
       } catch (e) {
         logAudit("tool_exec_error", {
           tool: "web_search",
@@ -894,10 +1206,13 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
     }
 
     case "shopify_get_order_status": {
-      const orderNumber = input.order_number || "";
-      const email = input.email || "";
+      const orderNumber = input.order_number?.trim() || "";
+      const email = input.email?.trim() || "";
       if (!orderNumber || !email) {
         return "Order status requires both order_number and email.";
+      }
+      if (!isValidEmail(email)) {
+        return `Invalid email address: ${email}`;
       }
 
       const normalized = orderNumber.startsWith("#")
@@ -1615,6 +1930,27 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
     }
 
     case "calendar_search_availability": {
+      const startDate = input.start_date || "";
+      const endDate = input.end_date || "";
+      const attendees = (input.attendees || "")
+        .split(",")
+        .map((email) => email.trim())
+        .filter(Boolean);
+
+      if (!startDate || !endDate) {
+        return "calendar_search_availability requires start_date and end_date.";
+      }
+
+      if (!isValidIsoDate(startDate) || !isValidIsoDate(endDate)) {
+        return "calendar_search_availability requires valid ISO date/time strings for start_date and end_date.";
+      }
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (end <= start) {
+        return "End time must be after start time.";
+      }
+
       let accessToken = process.env.GOOGLE_CALENDAR_ACCESS_TOKEN;
       let calendarId = process.env.GOOGLE_CALENDAR_CALENDAR_ID;
       // Per-user OAuth connection (google_connections) takes priority — the
@@ -1637,27 +1973,6 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       }
       if (!accessToken || !calendarId) {
         return "Calendar tool not configured. Set tenant calendar credentials or GOOGLE_CALENDAR_ACCESS_TOKEN and GOOGLE_CALENDAR_CALENDAR_ID in your environment.";
-      }
-
-      const startDate = input.start_date || "";
-      const endDate = input.end_date || "";
-      const attendees = (input.attendees || "")
-        .split(",")
-        .map((email) => email.trim())
-        .filter(Boolean);
-
-      if (!startDate || !endDate) {
-        return "calendar_search_availability requires start_date and end_date.";
-      }
-
-      if (!isValidIsoDate(startDate) || !isValidIsoDate(endDate)) {
-        return "calendar_search_availability requires valid ISO date/time strings for start_date and end_date.";
-      }
-
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      if (end <= start) {
-        return "End time must be after start time.";
       }
 
       if (end.getTime() - start.getTime() > 1000 * 60 * 60 * 24 * 31) {
@@ -2053,6 +2368,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
         phone: sanitizeText(input.phone || "", MAX_LEAD_FIELD_LENGTH),
         message: sanitizeText(input.message || "", MAX_LEAD_FIELD_LENGTH),
         source: sanitizeText(input.source || "", MAX_LEAD_FIELD_LENGTH),
+        tenantId: context.tenantId || "default",
       };
 
       if (!leadDetails.email) {
@@ -2062,6 +2378,13 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       if (!isValidEmail(leadDetails.email)) {
         return `Invalid email address: ${leadDetails.email}`;
       }
+
+      logAudit("lead_capture_submit", {
+        tenantId: leadDetails.tenantId,
+        email: leadDetails.email,
+        company: leadDetails.company,
+        source: leadDetails.source,
+      });
 
       if (endpoint) {
         if (!isValidHttpsUrl(endpoint)) {
@@ -2087,7 +2410,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
         }
 
         try {
-          const message = `*New lead captured*\n• Name: ${leadDetails.name}\n• Email: ${leadDetails.email}\n• Company: ${leadDetails.company}\n• Phone: ${leadDetails.phone}\n• Source: ${leadDetails.source}\n• Message: ${leadDetails.message}`;
+          const message = `*New lead captured*\n• Name: ${leadDetails.name}\n• Email: ${leadDetails.email}\n• Company: ${leadDetails.company}\n• Phone: ${leadDetails.phone}\n• Source: ${leadDetails.source}\n• Message: ${leadDetails.message}\n• Tenant: ${leadDetails.tenantId}`;
           const res = await fetch(slackWebhook, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -2100,7 +2423,7 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
         }
       }
 
-      return "Lead capture tool not configured. Set LEAD_CAPTURE_ENDPOINT or SLACK_WEBHOOK_URL in your environment.";
+      return `✅ Lead captured successfully for tenant ${leadDetails.tenantId}: ${leadDetails.name} (${leadDetails.email}${leadDetails.company ? `, ${leadDetails.company}` : ""}). Configure LEAD_CAPTURE_ENDPOINT or SLACK_WEBHOOK_URL to forward externally.`;
     }
 
     case "lead_capture_enrich": {
@@ -2161,6 +2484,212 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       } catch (e) {
         return `Sales notification network error: ${e instanceof Error ? e.message : String(e)}`;
       }
+    }
+
+    case "quote_generate": {
+      const email = sanitizeText(input.client_email || "", MAX_LEAD_FIELD_LENGTH);
+      if (!email || !isValidEmail(email)) {
+        return `quote_generate requires a valid client_email: "${email}"`;
+      }
+      let items: any[] = [];
+      try {
+        items =
+          typeof input.items === "string" ? JSON.parse(input.items) : input.items;
+      } catch {
+        return 'Invalid items JSON format. Provide an array of { description, quantity, unitPrice }. Example: [{"description":"Consulenza","quantity":1,"unitPrice":500}]';
+      }
+      if (!Array.isArray(items) || items.length === 0) {
+        return "quote_generate requires at least one line item in items.";
+      }
+      const quote = calculateQuote({
+        clientName: sanitizeText(
+          input.client_name || "Cliente",
+          MAX_LEAD_FIELD_LENGTH,
+        ),
+        clientEmail: email,
+        items,
+        currency: input.currency || "EUR",
+        taxRate: input.tax_rate ? Number(input.tax_rate) : undefined,
+        validDays: input.valid_days ? Number(input.valid_days) : 30,
+        notes: input.notes ? sanitizeText(input.notes, 1000) : undefined,
+        tenantId: context.tenantId || "default",
+      });
+      return formatQuoteMarkdown(quote);
+    }
+
+    case "quote_send_email": {
+      const email = sanitizeText(input.client_email || "", MAX_LEAD_FIELD_LENGTH);
+      if (!email || !isValidEmail(email)) {
+        return `quote_send_email requires a valid client_email: "${email}"`;
+      }
+      let items: any[] = [];
+      try {
+        items =
+          typeof input.items === "string" ? JSON.parse(input.items) : input.items;
+      } catch {
+        return 'Invalid items JSON format. Provide an array of { description, quantity, unitPrice }';
+      }
+      if (!Array.isArray(items) || items.length === 0) {
+        return "quote_send_email requires at least one line item in items.";
+      }
+      const quote = calculateQuote({
+        clientName: sanitizeText(
+          input.client_name || "Cliente",
+          MAX_LEAD_FIELD_LENGTH,
+        ),
+        clientEmail: email,
+        items,
+        currency: input.currency || "EUR",
+        notes: input.notes ? sanitizeText(input.notes, 1000) : undefined,
+        tenantId: context.tenantId || "default",
+      });
+      const res = await sendQuoteByEmail(quote);
+      if (res.previewOnly) {
+        return `✅ Preventivo ${quote.quoteId} generato. (RESEND_API_KEY non configurata: anteprima salvata)\n\n${formatQuoteMarkdown(quote)}`;
+      }
+      if (res.ok) {
+        return `✅ Preventivo ${quote.quoteId} inviato con successo via email a ${email}! (ID: ${res.messageId || "ok"})`;
+      }
+      return `Errore durante l'invio dell'email per il preventivo ${quote.quoteId}.`;
+    }
+
+    case "google_reviews_list": {
+      const minRating = input.min_rating ? Number(input.min_rating) : undefined;
+      const unansweredOnly =
+        input.unanswered_only === "true" || (input.unanswered_only as any) === true;
+      const reviews = await listBusinessReviews({
+        tenantId: context.tenantId || context.userId,
+        minRating,
+        unansweredOnly,
+      });
+      return formatReviewsMarkdown(reviews);
+    }
+
+    case "google_reviews_reply": {
+      const reviewId = sanitizeText(input.review_id || "", 200);
+      const replyText = sanitizeText(input.reply_text || "", 2000);
+      if (!reviewId || !replyText) {
+        return "google_reviews_reply requires review_id and reply_text.";
+      }
+      const res = await replyToBusinessReview(
+        context.tenantId || context.userId,
+        reviewId,
+        replyText,
+      );
+      return res.message;
+    }
+
+    case "finance_get_cashflow": {
+      const filename = input.filename?.trim();
+      const csvText =
+        input.csv ||
+        (filename && context.files?.[filename] ? context.files[filename] : undefined);
+      if (filename && !csvText) {
+        return `File "${filename}" not found. Available files: ${Object.keys(context.files || {}).join(", ") || "none"}`;
+      }
+      const summary = await getFinanceCashFlow({
+        csvText,
+        days: input.days ? Number(input.days) : 30,
+      });
+      return formatCashFlowMarkdown(summary);
+    }
+
+    case "finance_create_invoice": {
+      const email = sanitizeText(input.client_email || "", MAX_LEAD_FIELD_LENGTH);
+      if (!email || !isValidEmail(email)) {
+        return `finance_create_invoice requires a valid client_email: "${email}"`;
+      }
+      let items: Array<{ description: string; quantity: number; unitPrice: number }> = [];
+      try {
+        const parsed =
+          typeof input.items === "string" ? JSON.parse(input.items) : input.items;
+        items = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return 'Invalid items JSON. Example: [{"description":"Consulenza","quantity":1,"unitPrice":500}]';
+      }
+      if (items.length === 0) {
+        return "finance_create_invoice requires at least one line item in items.";
+      }
+      const invoice = createInvoice({
+        clientName: sanitizeText(input.client_name || "Cliente", MAX_LEAD_FIELD_LENGTH),
+        clientEmail: email,
+        items,
+        currency: input.currency || "EUR",
+        taxRate: input.tax_rate ? Number(input.tax_rate) : undefined,
+        dueDays: input.due_days ? Number(input.due_days) : 30,
+        notes: input.notes ? sanitizeText(input.notes, 1000) : undefined,
+      });
+      return invoiceDownloadPayload(invoice);
+    }
+
+    case "finance_send_reminder": {
+      const email = sanitizeText(input.client_email || "", MAX_LEAD_FIELD_LENGTH);
+      if (!email || !isValidEmail(email)) {
+        return `finance_send_reminder requires a valid client_email: "${email}"`;
+      }
+      return sendPaymentReminder({
+        clientName: sanitizeText(input.client_name || "Cliente", MAX_LEAD_FIELD_LENGTH),
+        clientEmail: email,
+        invoiceId: input.invoice_id
+          ? sanitizeText(input.invoice_id, 80)
+          : undefined,
+        amount: input.amount ? Number(input.amount) : undefined,
+        currency: input.currency || "EUR",
+        dueDate: input.due_date ? sanitizeText(input.due_date, 32) : undefined,
+      });
+    }
+
+    case "hr_parse_cv": {
+      const filename = input.filename?.trim();
+      const cvText =
+        input.cv_text ||
+        (filename && context.files?.[filename] ? context.files[filename] : "");
+      if (!cvText.trim()) {
+        return filename
+          ? `File "${filename}" not found. Available files: ${Object.keys(context.files || {}).join(", ") || "none"}`
+          : "hr_parse_cv requires cv_text or filename of an uploaded CV.";
+      }
+      const parsed = parseCv(cvText);
+      return `cv_analyzed\n\n${formatParsedCvMarkdown(parsed)}`;
+    }
+
+    case "hr_score_candidate": {
+      const jd = input.job_description?.trim();
+      if (!jd) return "hr_score_candidate requires job_description.";
+      const filename = input.filename?.trim();
+      const cvText =
+        input.cv_text ||
+        (filename && context.files?.[filename] ? context.files[filename] : undefined);
+      const skills = input.skills
+        ? input.skills.split(",").map((s) => s.trim()).filter(Boolean)
+        : undefined;
+      const scored = scoreCandidate({ cvText, skills, jobDescription: jd });
+      return formatCandidateScoreMarkdown(scored);
+    }
+
+    case "social_generate_calendar": {
+      const topic = input.topic?.trim();
+      if (!topic) return "social_generate_calendar requires a topic.";
+      const calendar = generateEditorialCalendar({
+        topic,
+        brand: input.brand,
+        platforms: input.platforms,
+        postsCount: input.posts_count ? Number(input.posts_count) : undefined,
+        language: input.language,
+      });
+      return formatEditorialCalendarMarkdown(calendar);
+    }
+
+    case "social_schedule_post": {
+      const caption = input.caption?.trim();
+      if (!caption) return "social_schedule_post requires caption.";
+      const { filePayload } = schedulePost({
+        platform: input.platform || "Instagram",
+        scheduledAt: input.scheduled_at || new Date().toISOString(),
+        caption,
+        hashtags: input.hashtags,
+      });
+      return filePayload;
     }
 
     default:

@@ -171,12 +171,27 @@ const LABELS: Record<Locale, PromptLabels> = {
 const CENTS_TO_DISPLAY = (cents: number): string =>
   `€${(cents / 100).toFixed(0)}/mese`;
 
+const CATALOG_SLUGS = [
+  "seo-agent",
+  "business-manager",
+  "personal-assistant",
+  "email-manager",
+  "finance-manager",
+  "shopify-agent",
+  "calendar-booking",
+  "lead-capture",
+  "support-agent",
+  "copywriter",
+];
+
 function runtimeFallbackAgents(): AgentRow[] {
-  return Object.values(AGENT_RUNTIME).map((a) => ({
-    slug: a.id,
-    name: a.name,
-    display_price: CENTS_TO_DISPLAY(a.price),
-  }));
+  return CATALOG_SLUGS.map((slug) => AGENT_RUNTIME[slug])
+    .filter(Boolean)
+    .map((a) => ({
+      slug: a.id,
+      name: a.name,
+      display_price: CENTS_TO_DISPLAY(a.price),
+    }));
 }
 
 /** Which vertical preset is active (from env), used for context in the prompt. */

@@ -250,6 +250,122 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Genera link carrello",
     ],
   },
+  // --- Nuovi agenti aggiunti per il catalogo esteso (10 disponibili + 5 prossimamente) ---
+  "quote-agent": {
+    name: "Preventivi & Quote Agent",
+    shortName: "Preventivi Agent",
+    category: "E-commerce & Finance",
+    badge: "Popolare",
+    description:
+      "Raccoglie requisiti in chat, calcola subtotale, IVA e sconti e invia preventivi formali via email.",
+    longDescription:
+      "Il Preventivi Agent guida i potenziali clienti nella definizione dei servizi richiesti, genera istantaneamente una stima trasparente con calcolo delle imposte e, su richiesta dell'utente, trasmette una proposta formale via email con allegato di riepilogo.",
+    industry: "PMI, artigiani, officine e agenzie",
+    tasks: [
+      "Raccolta specifiche del progetto",
+      "Calcolo dettagliato subtotale e IVA",
+      "Applicazione sconti personalizzati",
+      "Invio preventivo formale via email",
+    ],
+    workflow: [
+      "Raccogli voci di spesa",
+      "Calcola totale e imposte",
+      "Mostra anteprima al cliente",
+      "Invia proposta via email",
+    ],
+  },
+  "reviews-agent": {
+    name: "Recensioni & Reputation Agent",
+    shortName: "Recensioni Agent",
+    category: "Customer Service",
+    badge: "Popolare",
+    description:
+      "Monitora le recensioni Google Business, rileva il sentiment e risponde con messaggi personalizzati ed empatici.",
+    longDescription:
+      "Il Recensioni Agent protegge e valorizza la reputazione del tuo locale o attività su Google Business Profile. Analizza i feedback dei clienti, individua criticità e propone bozze di risposta gentili e mirate, pronte per essere pubblicate con la tua approvazione.",
+    industry: "Ristoranti, hotel, negozi e attività locali",
+    tasks: [
+      "Monitoraggio recensioni Google Business",
+      "Analisi del sentiment clienti",
+      "Bozze di risposta personalizzate",
+      "Gestione tempestiva feedback critici",
+    ],
+    workflow: [
+      "Recupera nuove recensioni",
+      "Analizza tono e valutazione",
+      "Redigi risposta professionale",
+      "Pubblica con approvazione",
+    ],
+  },
+  "hr-recruiter": {
+    name: "HR & Recruiter Agent",
+    shortName: "HR Recruiter",
+    category: "Business & Operations",
+    badge: "Novità",
+    description:
+      "Automatizza la selezione del personale: screening CV, prequalifica candidati e organizzazione colloqui.",
+    longDescription:
+      "L'HR Recruiter Agent accelera il processo di assunzione per la tua azienda. Analizza i curricula ricevuti confrontandoli con i requisiti della posizione, formula domande di prequalifica e pianifica i primi colloqui su Calendar.",
+    industry: "PMI in crescita, agenzie e reparti risorse umane",
+    tasks: [
+      "Screening automatico dei CV",
+      "Confronto competenze e job description",
+      "Comunicazioni e feedback candidati",
+      "Pianificazione interviste e colloqui",
+    ],
+    workflow: [
+      "Ricevi candidature",
+      "Estrai competenze chiave",
+      "Assegna punteggio di adeguatezza",
+      "Pianifica primo colloquio",
+    ],
+  },
+  "social-media-agent": {
+    name: "Social Media Agent",
+    shortName: "Social Media",
+    category: "Design & Content",
+    badge: "Popolare",
+    description:
+      "Pianifica il calendario editoriale social, crea caption ingaggianti, suggerisce hashtag e analizza i trend.",
+    longDescription:
+      "Il Social Media Agent è il tuo copywriter e planner dedicato per Instagram, LinkedIn, TikTok e Facebook. Propone idee di post basate sui trend del momento, scrive testi coinvolgenti con hashtag mirati e organizza il piano editoriale settimanale.",
+    industry: "Brand, negozi, agenzie e content creator",
+    tasks: [
+      "Piani editoriali settimanali",
+      "Copy per post Instagram e LinkedIn",
+      "Ricerca hashtag e trend di settore",
+      "Adattamento formati per canale",
+    ],
+    workflow: [
+      "Individua argomenti di tendenza",
+      "Redigi testi con call to action",
+      "Seleziona hashtag ottimali",
+      "Pianifica sul calendario social",
+    ],
+  },
+  "inventory-logistics": {
+    name: "Inventory & Logistics Agent",
+    shortName: "Logistics Agent",
+    category: "E-commerce & Finance",
+    badge: "Novità",
+    description:
+      "Monitora le scorte in magazzino, allerta sui prodotti sottoscorta e traccia le spedizioni dei fornitori.",
+    longDescription:
+      "L'Inventory & Logistics Agent evita rotture di stock e ritardi nelle consegne. Controlla le giacenze di magazzino in tempo reale, calcola i tempi ottimali di riordino merci e monitora le spedizioni in transito segnalando tempestivamente le anomalie.",
+    industry: "E-commerce, rivenditori e magazzini fisici",
+    tasks: [
+      "Controllo livelli scorte magazzino",
+      "Avvisi automatici di sottoscorta",
+      "Previsione volumi di riordino",
+      "Tracciamento stato spedizioni merci",
+    ],
+    workflow: [
+      "Verifica giacenze attuali",
+      "Calcola velocità di vendita",
+      "Allerta su articoli critici",
+      "Genera bozza ordine fornitore",
+    ],
+  },
 };
 
 import type { Locale } from "./constants";

@@ -11,6 +11,14 @@ import { createClient } from "@/lib/supabase/client";
 import { t } from "@/lib/i18n/dictionaries";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
 import { AlertCircle } from "lucide-react";
+import {
+  validateAndSanitizeEmail,
+  validatePassword,
+  checkClientThrottle,
+  recordFailedClientAttempt,
+  resetClientAttemptThrottle,
+  HONEYPOT_FIELD_NAME,
+} from "@/lib/forms-security";
 
 // Reads ?error=auth_callback (set by /auth/callback when the PKCE exchange
 // fails) — isolated in a child component so it can be wrapped in Suspense
@@ -61,6 +69,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [honeypotValue, setHoneypotValue] = useState("");
   const [error, setError] = useState("");
   const [resetSent, setResetSent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -72,17 +81,45 @@ export default function LoginPage() {
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
+
+    // 1. Controllo Honeypot Anti-Bot
+    if (honeypotValue.trim().length > 0) {
+      setError("Richiesta non valida.");
+      return;
+    }
+
+    // 2. Controllo Throttling Client-Side contro attacchi brute-force / dictionary
+    const throttle = checkClientThrottle("login_attempt", 5, 30);
+    if (!throttle.allowed) {
+      setError(`Troppi tentativi falliti. Riprova tra ${throttle.retryAfterSeconds} secondi.`);
+      return;
+    }
+
+    // 3. Validazione e sanitizzazione email preventiva
+    const emailCheck = validateAndSanitizeEmail(email);
+    if (!emailCheck.valid || !emailCheck.email) {
+      setError(emailCheck.error || a.errors.invalidCredentials);
+      return;
+    }
+
+    // 4. Validazione password (lunghezza minima/massima anti DoS crittografico)
+    const pwdCheck = validatePassword(password);
+    if (!pwdCheck.valid) {
+      setError(pwdCheck.error || a.errors.invalidCredentials);
+      return;
+    }
+
     setError("");
     setLoading(true);
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: emailCheck.email,
         password,
       });
       if (error) {
-        // Supabase reports pending email confirmation distinctly — show the
-        // check-your-inbox message instead of a generic credentials error.
+        // Registra il tentativo fallito per il throttling brute force
+        recordFailedClientAttempt("login_attempt", 5, 30);
         setError(
           error.message?.toLowerCase().includes("confirm")
             ? a.signup.checkEmail
@@ -90,6 +127,9 @@ export default function LoginPage() {
         );
         return;
       }
+      // Accesso riuscito: reset contatore tentativi
+      resetClientAttemptThrottle("login_attempt");
+
       // Resume a pending OAuth connect (e.g. Shopify install) after signing
       // in — the route is an API redirect to the external provider, so use a
       // full page navigation instead of client-side routing.
@@ -111,14 +151,17 @@ export default function LoginPage() {
     if (resetting) return;
     setError("");
     setResetSent("");
-    if (!email) {
-      setError(a.errors.invalidCredentials);
+
+    const emailCheck = validateAndSanitizeEmail(email);
+    if (!emailCheck.valid || !emailCheck.email) {
+      setError(emailCheck.error || a.errors.invalidCredentials);
       return;
     }
+
     setResetting(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(emailCheck.email, {
         redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
       });
       if (error) {
@@ -197,6 +240,28 @@ export default function LoginPage() {
 
           <div className="rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl shadow-black/40">
             <form onSubmit={handleEmailLogin} className="space-y-4">
+              {/* Campo trappola Honeypot Anti-Bot invisibile */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: "-9999px",
+                  opacity: 0,
+                  height: 0,
+                  width: 0,
+                  overflow: "hidden",
+                }}
+                aria-hidden="true"
+              >
+                <input
+                  type="text"
+                  name={HONEYPOT_FIELD_NAME}
+                  value={honeypotValue}
+                  onChange={(e) => setHoneypotValue(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+
               <label className="block">
                 <span className="mb-1.5 block text-sm font-semibold text-neutral-300">
                   {a.login.email}

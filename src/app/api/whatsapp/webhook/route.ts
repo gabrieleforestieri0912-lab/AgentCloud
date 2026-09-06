@@ -1,70 +1,169 @@
 import { logAudit } from "@/lib/audit";
 import { getSiteUrl } from "@/lib/site-url";
-// use global fetch available in Next.js server runtime
+import { sendWhatsApp } from "@/lib/whatsapp/send";
 
-async function forwardToOrchestrator(message: string) {
+/**
+ * Handle message processing and response dispatch for WhatsApp.
+ */
+export async function processWhatsAppMessage(
+  from: string,
+  message: string,
+  tenantId: string = "default",
+  agentId: string = "personal-assistant",
+): Promise<string | null> {
   try {
     const res = await fetch(`${getSiteUrl()}/api/agent/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agentId: "personal-assistant",
-          messages: [{ role: "user", content: message }],
-          userId: "whatsapp",
-        }),
-      },
-    );
-    return res.ok;
-  } catch {
-    return false;
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId,
+        messages: [{ role: "user", content: message }],
+        userId: `wa_${from}`,
+        tenantId,
+      }),
+    });
+
+    if (!res.ok) {
+      logAudit("whatsapp_orchestrator_failed", {
+        status: res.status,
+        tenantId,
+      });
+      return null;
+    }
+
+    // Read SSE response from /api/agent/run
+    const raw = await res.text();
+    const lines = raw.split("\n");
+    let fullText = "";
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        try {
+          const parsed = JSON.parse(line.slice(6));
+          if (parsed.type === "text" && typeof parsed.content === "string") {
+            fullText += parsed.content;
+          }
+        } catch {}
+      }
+    }
+
+    return fullText.trim() || null;
+  } catch (err) {
+    logAudit("whatsapp_process_error", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
   }
 }
 
+/**
+ * GET /api/whatsapp/webhook
+ * Meta Cloud API Webhook Verification.
+ */
 export async function GET(req: Request) {
-  // Facebook/Meta WhatsApp webhook verification
   try {
     const url = new URL(req.url);
     const mode = url.searchParams.get("hub.mode");
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
+
     if (
       mode === "subscribe" &&
       token &&
-      token === process.env.WHATSAPP_VERIFY_TOKEN
+      token === (process.env.WHATSAPP_VERIFY_TOKEN || "agentcloud_verify_token")
     ) {
-      return new Response(challenge || "", { status: 200 });
+      return new Response(challenge || "", {
+        status: 200,
+        headers: { "Content-Type": "text/plain" },
+      });
     }
   } catch {
-    // verification failure — fall through to 400
+    // fall through to 400
   }
-  return new Response("", { status: 400 });
+  return new Response("Forbidden", { status: 403 });
 }
 
+/**
+ * POST /api/whatsapp/webhook
+ * Receives messages from Meta Cloud API, routes to agent, and responds via WhatsApp.
+ */
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    // Minimal validation
-    await logAudit("whatsapp_incoming", { body });
+    const url = new URL(req.url);
+    const tenantId = url.searchParams.get("tenantId") || "default";
+    const agentId = url.searchParams.get("agentId") || "personal-assistant";
 
-    // Forward the incoming text to the default personal assistant agent for processing.
-    // Keep this non-blocking: log and acknowledge immediately, then try to forward.
-    const text =
-      body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body ||
-      JSON.stringify(body);
-    forwardToOrchestrator(text).then((ok) => {
-      logAudit("whatsapp_forward_result", {
-        ok,
-        snippet: String(text).slice(0, 200),
+    const body = await req.json().catch(() => null);
+    if (!body) {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
       });
+    }
+
+    logAudit("whatsapp_incoming", {
+      tenantId,
+      hasEntry: Boolean(body?.entry),
     });
 
-    return new Response(JSON.stringify({ status: "received" }), {
+    const change = body?.entry?.[0]?.changes?.[0]?.value;
+    const msg = change?.messages?.[0];
+
+    // Status notifications (delivered, read) have no messages
+    if (!msg) {
+      return new Response(JSON.stringify({ status: "ignored_non_message" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const from = msg.from;
+    const text = msg.text?.body;
+
+    if (!from || !text) {
+      return new Response(JSON.stringify({ status: "no_text_or_sender" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Process message asynchronously to reply back without blocking webhook ACK
+    const replyPromise = (async () => {
+      const reply = await processWhatsAppMessage(
+        from,
+        text,
+        tenantId,
+        agentId,
+      );
+      if (reply) {
+        await sendWhatsApp(from, reply);
+        logAudit("whatsapp_reply_dispatched", {
+          tenantId,
+          from,
+          replyLength: reply.length,
+        });
+      }
+    })();
+
+    // In serverless / edge environments, wait or handle gracefully
+    try {
+      await Promise.race([
+        replyPromise,
+        new Promise((resolve) => setTimeout(resolve, 8000)),
+      ]);
+    } catch {}
+
+    return new Response(JSON.stringify({ status: "received", from }), {
       status: 200,
+      headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
-    await logAudit("whatsapp_incoming_error", {
+    logAudit("whatsapp_incoming_error", {
       error: e instanceof Error ? e.message : String(e),
     });
-    return new Response(JSON.stringify({ status: "error" }), { status: 500 });
+    return new Response(JSON.stringify({ status: "error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

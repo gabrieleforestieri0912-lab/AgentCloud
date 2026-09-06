@@ -152,3 +152,67 @@ export function updateTenantShopifyCredentials(
   store[tenantId] = s;
   writeStore(store);
 }
+
+/**
+ * Delete all credentials and data for a tenant (GDPR compliance / offboarding).
+ */
+export function deleteTenant(tenantId: string): boolean {
+  const store = readStore();
+  if (!store[tenantId]) return false;
+  delete store[tenantId];
+  writeStore(store);
+  return true;
+}
+
+/**
+ * Generate a cryptographically signed widget API key for a tenant.
+ * Non-sequential, contains a random nonce and HMAC signature.
+ */
+export function generateTenantApiKey(tenantId: string): string {
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const payload = `${tenantId}:${nonce}`;
+  const signature = crypto
+    .createHmac("sha256", keyFromEnv())
+    .update(payload)
+    .digest("hex")
+    .slice(0, 32);
+  return `ac_${Buffer.from(payload).toString("base64url")}_${signature}`;
+}
+
+/**
+ * Verify a widget API key and extract the verified tenantId.
+ */
+export function verifyTenantApiKey(
+  apiKey: string,
+): { valid: boolean; tenantId?: string } {
+  if (!apiKey || !apiKey.startsWith("ac_")) {
+    return { valid: false };
+  }
+
+  try {
+    const parts = apiKey.slice(3).split("_");
+    if (parts.length !== 2) return { valid: false };
+
+    const [b64Payload, signature] = parts;
+    const payload = Buffer.from(b64Payload, "base64url").toString("utf8");
+    const [tenantId] = payload.split(":");
+
+    if (!tenantId) return { valid: false };
+
+    const expectedSig = crypto
+      .createHmac("sha256", keyFromEnv())
+      .update(payload)
+      .digest("hex")
+      .slice(0, 32);
+
+    const match = crypto.timingSafeEqual(
+      Buffer.from(signature, "hex"),
+      Buffer.from(expectedSig, "hex"),
+    );
+
+    return match ? { valid: true, tenantId } : { valid: false };
+  } catch {
+    return { valid: false };
+  }
+}
+

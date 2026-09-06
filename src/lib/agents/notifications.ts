@@ -25,7 +25,11 @@ export type AgentNotificationKind =
   | "inventory_updated"
   | "event_booked"
   | "lead_submitted"
-  | "lead_notified";
+  | "lead_notified"
+  | "invoice_created"
+  | "payment_reminder_sent"
+  | "post_scheduled"
+  | "cv_analyzed";
 
 export const AGENT_NOTIFICATION_KINDS: AgentNotificationKind[] = [
   "file_created",
@@ -36,6 +40,10 @@ export const AGENT_NOTIFICATION_KINDS: AgentNotificationKind[] = [
   "event_booked",
   "lead_submitted",
   "lead_notified",
+  "invoice_created",
+  "payment_reminder_sent",
+  "post_scheduled",
+  "cv_analyzed",
 ];
 
 /** Neutral, locale-agnostic params stored in the DB; the UI localizes them. */
@@ -132,6 +140,47 @@ const TOOL_ACTION_RULES: Record<string, ToolActionRule> = {
     kind: "lead_notified",
     success: (r) => /Response: 2\d\d/.test(r),
     params: () => ({}),
+  },
+
+  finance_create_invoice: {
+    kind: "invoice_created",
+    success: (r) => r.startsWith('{"type":"file_created"'),
+    params: (_input, r) => {
+      try {
+        const parsed = JSON.parse(r) as { invoiceId?: string; filename?: string };
+        return {
+          invoice: parsed.invoiceId || parsed.filename || "fattura",
+        };
+      } catch {
+        return { invoice: "fattura" };
+      }
+    },
+  },
+
+  finance_send_reminder: {
+    kind: "payment_reminder_sent",
+    success: (r) => r.startsWith("payment_reminder_sent"),
+    params: (input) => ({
+      email: input.client_email || "",
+      invoice: input.invoice_id || "",
+    }),
+  },
+
+  social_schedule_post: {
+    kind: "post_scheduled",
+    success: (r) => r.startsWith('{"type":"file_created"') && r.includes('"scheduled":true'),
+    params: (input) => ({
+      platform: input.platform || "social",
+      when: input.scheduled_at || "",
+    }),
+  },
+
+  hr_parse_cv: {
+    kind: "cv_analyzed",
+    success: (r) => r.startsWith("cv_analyzed"),
+    params: (input) => ({
+      filename: input.filename || "CV",
+    }),
   },
 };
 
