@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Spinner di caricamento riusabile con testo opzionale e tre dimensioni
+ * (sm/md/lg). Animato con framer-motion.
+ */
 import { motion } from "framer-motion";
 
 type LoadingSpinnerProps = {

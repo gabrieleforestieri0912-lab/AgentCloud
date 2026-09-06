@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * Card di un agente nel marketplace.
+ *
+ * Mostra badge di disponibilità (in arrivo/attivo), icona, nome, categoria,
+ * descrizione e prezzo, con link alle azioni principali: pagina agente,
+ * deploy/acquisto e avvio della chat. Usata da MarketplaceGrid e agenti
+ * correlati in home.
+ */
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Clock, MessageSquare, Users, Zap } from "lucide-react";
 import type { Agent } from "@/lib/agents";

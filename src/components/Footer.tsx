@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Footer globale: colonne link (prodotto, azienda, legale), lingue,
+ * contatti e loghi dei brand. Testi dal dizionario i18n attivo.
+ */
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";

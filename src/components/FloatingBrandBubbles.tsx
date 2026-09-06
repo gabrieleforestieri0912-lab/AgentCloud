@@ -1,3 +1,9 @@
+/**
+ * Bolle fluttuanti dei marchi (effetto "costellazione") usate in hero e
+ * waitlist. Ogni bolla è definita da posizione/size/animazione e mostra il
+ * logo del brand; la prop `interactive` abilita hover/click. È puro layout
+ * decorativo: nessuna logica di business.
+ */
 import BrandLogo from "./BrandLogo";
 
 export type FloatingBubble = {

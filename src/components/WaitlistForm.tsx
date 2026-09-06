@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * Form waitlist: iscrizione via email OPPURE riscatto del codice d'accesso.
+ *
+ * Come funziona: un unico campo accetta un'email (iscrizione, con tetto posti
+ * MAX_SPOTS mostrato in tempo reale) o un codice di accesso (ingresso diretto
+ * alla piattaforma). Il controllo vero del codice avviene sul server in
+ * POST /api/waitlist (ACCESS_CODE è un segreto); il client fa solo una
+ * validazione di forma. Include honeypot anti-bot, conteggio posti sincronizzato
+ * col DB e modale email quando la waitlist è piena.
+ */
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail } from "lucide-react";

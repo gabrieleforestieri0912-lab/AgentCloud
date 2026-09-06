@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Sezione FAQ della landing: domande in accordion (una aperta alla volta)
+ * con animazione di apertura/chiusura e link di supporto.
+ */
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Sparkles } from "lucide-react";

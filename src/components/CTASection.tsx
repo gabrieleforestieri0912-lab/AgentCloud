@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Sezione CTA finale della landing: invita a entrare in chat o richiedere
+ * una demo. Testi localizzati (dizionario) e micro-animazioni framer-motion
+ * in ingresso allo scroll.
+ */
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Sparkles } from "lucide-react";

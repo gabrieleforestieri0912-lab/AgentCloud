@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Header dell'area applicativa (chat/dashboard/impostazioni).
+ *
+ * Mostra logo, titolo di contesto (es. nome agente attivo o email utente) e
+ * controlli condivisi: toggle sidebar, cambio lingua e campanella notifiche.
+ * La variante cambia i link di ritorno (back to home/area).
+ */
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, LayoutDashboard, MessageSquare, PanelLeft, PanelLeftClose } from "lucide-react";

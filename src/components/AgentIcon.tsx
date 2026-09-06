@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Icona di un agente: mappa la chiave icona (es. "bar-chart") dell'agente
+ * alla corrispondente icona Lucide React, con varianti di colore/brand.
+ * Centralizzare qui la mappa evita di ripetere il mapping icona→componente
+ * in ogni card/sezione che mostra agenti.
+ */
 import {
   BarChart3,
   Briefcase,

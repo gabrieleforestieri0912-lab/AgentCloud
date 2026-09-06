@@ -1,5 +1,14 @@
 "use client";
 
+/**
+ * Hero della landing con mini-chat demo dal vivo.
+ *
+ * Come funziona: il visitatore può chattare subito (back-end AI reale, niente
+ * risposte finte). La conversazione corrente e quelle "salvate" col reset
+ * vengono archiviate in localStorage con chiavi dedicate (vedi sotto) e
+ * importate da /chat alla prima apertura, così la demo prosegue nella chat
+ * completa.
+ */
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";

@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * Conto alla rovescia verso la data di lancio (LAUNCH_DATE).
+ *
+ * Come funziona: l'ora corrente viene letta con `useSyncExternalStore` (si
+ * aggiorna col timer senza ri-render continui dello stato) e viene mostrato il
+ * tempo mancante per unità (giorni/ore/minuti/secondi). A lancio avvenuto
+ * mostra il messaggio celebrativo.
+ */
 import { useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 import { PartyPopper } from "lucide-react";

@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Grafici del dashboard: barre verticali con l'andamento delle esecuzioni
+ * giornaliere e riepilogo numerico (esecuzioni, token, stato). I grafici sono
+ * costruiti in CSS puro (altezze in %) dai dati — nessuna libreria chart — e
+ * i valori vengono formattati in modo compatto (k/M) per non allargare le
+ * card.
+ */
 import { useMemo } from "react";
 import { BarChart3, Wallet, TrendingUp } from "lucide-react";
 

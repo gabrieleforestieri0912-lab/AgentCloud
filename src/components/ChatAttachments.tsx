@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * UI condivisa per gli allegati della chat (usata da tutte le chat del sito).
+ *
+ * Fornisce:
+ * - `useChatAttachments()`: hook di stato — aggiunge/rimuove/svuota allegati,
+ *   gestisce drag & drop (con contatore di profondità per i drag-enter annidati),
+ *   l'incolla da clipboard e i messaggi d'errore (troppi file / file troppo grandi).
+ * - `AttachPlusButton`: bottone "+" che apre il selettore file.
+ * - `AttachmentChips`: chip con anteprima immagine o icona file + rimozione.
+ * - `DropHint`: overlay "Rilascia qui..." mostrato durante il trascinamento.
+ */
 import { useCallback, useRef, useState } from "react";
 import { Plus, FileText, X } from "lucide-react";
 import {

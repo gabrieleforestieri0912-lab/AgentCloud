@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Banner "collega Shopify" dentro la chat dell'agente Shopify: mostra se il
+ * negozio è collegato e, se no, un campo per il dominio che avvia l'install
+ * OAuth. L'esito del round-trip viene mostrato senza ricaricare la pagina.
+ */
 import { useEffect, useState, useCallback } from "react";
 import { Store, Plus, ExternalLink } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";

@@ -1,12 +1,16 @@
 "use client";
 
+/**
+ * Costellazione di marchi/icone della hero (e di altre sezioni): app a sinistra,
+ * agenti a destra, animazioni framer-motion in float. Puramente decorativa.
+ */
 import { motion } from "framer-motion";
 import BrandLogo from "./BrandLogo";
 import { BRANDS } from "@/lib/brands";
 import { useLanguage } from "./LanguageProvider";
 
-// Brand slugs reference the central BRANDS registry (src/lib/brands.ts) so the
-// bubbles use the same original brand marks as the integrations section.
+// Gli slug dei brand referenziano il registry centrale BRANDS (src/lib/brands.ts)
+// così le bolle usano gli stessi marchi ufficiali della sezione integrazioni.
 const LEFT_BUBBLES = [
   { top: "12%", left: "10%", size: "w-10 h-10", brand: "google", delay: "0s", anim: "animate-float-gentle" },
   { top: "8%", left: "48%", size: "w-14 h-14", brand: "googledrive", delay: "0.4s", anim: "animate-float-reverse" },

@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Barra di navigazione principale (pagine marketing e app).
+ *
+ * Mostra logo, voci (agenti/integrazioni/demo), dropdown agenti in evidenza,
+ * toggle lingua, campanella notifiche e stato sessione (login / dashboard).
+ * La sessione Supabase viene ascoltata per aggiornare i pulsanti al login.
+ */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";

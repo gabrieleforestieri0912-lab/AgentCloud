@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Modale "limite demo raggiunto".
+ *
+ * Mostrata quando un utente anonimo in anteprima supera il tetto di messaggi
+ * gratuiti: spiega il limite e indirizza verso la registrazione/login.
+ */
 import Link from "next/link";
 import { X, Sparkles, Lock } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";

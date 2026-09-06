@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Sezione marketplace della landing: titolo, sottoinsieme di agenti in
+ * evidenza e CTA verso /agents. Solo presentazione.
+ */
 import Link from "next/link";
 import { Puzzle, ShoppingCart, Zap } from "lucide-react";
 import { motion } from "framer-motion";

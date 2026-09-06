@@ -1,11 +1,15 @@
 import BrandIcon from "./BrandIcon";
 import { BRANDS } from "@/lib/brands";
 
-// Brands whose official mark is inherently multi-color. simple-icons only ships
-// a single-color glyph, so for these we use an authentic logo (sourced from
-// vectorlogo.zone) stored under /public/brand-logos. Everything else falls back
-// to the official single-color simple-icons mark (which already carries the
-// correct brand color).
+/**
+ * Logo completo di un marchio: multicolore dove serve, altrimenti icona
+ * monocolore. Perché esiste: alcuni brand (Google, Instagram...) hanno un
+ * marchio intrinsecamente multicolore e simple-icons fornisce solo un glifo a
+ * colore singolo, quindi per questi usiamo il logo autentico (da
+ * vectorlogo.zone) in /public/brand-logos. Tutto il resto ripiega sul glifo
+ * monocolore ufficiale (che ha già il colore corretto del brand).
+ */
+const MULTICOLOR = new Set([
 const MULTICOLOR = new Set([
   "google",
   "googledrive",

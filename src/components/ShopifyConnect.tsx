@@ -6,11 +6,13 @@ import { normalizeShopInput } from "@/lib/shopify-input";
 type Connected = { shopDomain: string; connected: boolean };
 
 /**
- * Dashboard card that lets a logged-in user connect (OAuth) and see their
- * Shopify stores. Triggers the server-side install flow at
- * /api/shopify/install?shop=<store>.myshopify.com. Surfaces the outcome of the
- * callback (?shopify=connected | ?shopify=error&reason=...) without a full
- * reload, then strips the query params from the URL.
+ * Card del dashboard che permette all'utente loggato di collegare (OAuth) e
+ * vedere i propri negozi Shopify.
+ *
+ * Come funziona: avvia il flusso di install server-side su
+ * /api/shopify/install?shop=<store>.myshopify.com. Mostra l'esito della
+ * callback (?shopify=connected | ?shopify=error&reason=...) senza ricaricare
+ * la pagina, poi ripulisce i parametri query dall'URL.
  */
 export default function ShopifyConnect({
   connected,

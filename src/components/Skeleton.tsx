@@ -1,3 +1,7 @@
+/**
+ * Blocchi skeleton riusabili (Skeleton semplice + SkeletonLine) per mostrare
+ * aree in caricamento con un leggero pulse. Evitano il layout shift.
+ */
 type SkeletonProps = {
   className?: string;
 };

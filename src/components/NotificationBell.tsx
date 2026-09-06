@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Campanella notifiche in-app (azioni degli agenti, scadenze abbonamento).
+ *
+ * Polling periodico su /api/notifications, badge col conteggio non letto,
+ * pannello con le notifiche e azione "segna come letto" (POST su
+ * /api/notifications/read).
+ */
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n/constants";
 import Link from "next/link";

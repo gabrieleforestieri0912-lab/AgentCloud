@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Sezione "integrazioni" della landing: loghi dei servizi collegabili
+ * (Shopify, Google, Stripe...) con link alla pagina integrazioni. I loghi
+ * vengono dal registry brand condiviso.
+ */
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { motion } from "framer-motion";

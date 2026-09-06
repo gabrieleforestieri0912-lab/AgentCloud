@@ -1,4 +1,8 @@
 "use client";
+/**
+ * Sezione "funzionalità" della landing: griglia di casi d'uso (email,
+ * supporto, lead, social, finanza...) con icone Lucide e link alla chat.
+ */
 import Link from "next/link";
 import {
   Mail,

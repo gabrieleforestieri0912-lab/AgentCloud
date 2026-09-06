@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Menu di navigazione mobile (schermi < lg): overlay full-screen con link
+ * principali, dropdown agenti e toggle lingua, renderizzato in un portal per
+ * stare sopra ogni contenuto. Chiude su click di un link o del backdrop.
+ */
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";

@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Griglia marketplace con ricerca e filtri per categoria/disponibilità.
+ *
+ * Filtra gli agenti in locale (search per nome/descrizione, categoria,
+ * disponibilità) e mostra le card; gli agenti arrivano già dal server o dai
+ * feature flag.
+ */
 import { useMemo, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";

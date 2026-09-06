@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Transizione di pagina (fade/scale) basata sul pathname.
+ *
+ * Avvolge i contenuti nel layout: quando il pathname cambia fa uscire la
+ * pagina vecchia (AnimatePresence + key) e fa entrare quella nuova. Solo
+ * effetto visivo, nessuna logica.
+ */
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 

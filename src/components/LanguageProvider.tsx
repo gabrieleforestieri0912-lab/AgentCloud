@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * Provider di lingua (i18n) per i client component.
+ *
+ * Come funziona: legge la lingua corrente (dal cookie agentcloud_locale),
+ * carica il dizionario corrispondente e lo espone via `useLanguage()` a tutta
+ * l'albero dei componenti; `setLocale` scrive il cookie e fa un refresh per
+ * ri-renderizzare i server component con la nuova lingua.
+ */
 import {
   createContext,
   useCallback,

@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Sezione dashboard principale: agenti installati, utilizzo del mese,
+ * notifiche e stato abbonamento. Raccoglie i dati reali di Supabase/Stripe
+ * passati dalla pagina e li presenta in card; qui la sezione home che un
+ * tempo era demo/mock è stata ripulita dai dati finti.
+ */
 import Link from "next/link";
 import Image from "next/image";
 import {

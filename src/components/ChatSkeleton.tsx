@@ -1,3 +1,8 @@
+/**
+ * Scheletri (skeleton) per la chat: sidebar conversazioni e area messaggi in
+ * caricamento. Evitano il layout shift e comunicano che la pagina sta
+ * arrivando; riusano i blocchi base di ./Skeleton.
+ */
 import { Skeleton, SkeletonLine } from "./Skeleton";
 
 export function SidebarSkeleton() {

@@ -1,9 +1,16 @@
+/**
+ * Icona SVG di un marchio (brand) a un colore, con colore ufficiale di default.
+ *
+ * Usata ovunque serva un logo compatto: navbar, footer, card integrazioni,
+ * bolle fluttuanti. Il colore può essere forzato via prop `color` (per
+ * superfici scure o stati hover).
+ */
 import type { Brand } from "@/lib/brands";
 
 type BrandIconProps = {
   brand: Brand;
   size?: number;
-  /** Override the brand color (defaults to the official brand color). */
+  /** Sovrascrive il colore del brand (default: colore ufficiale del brand). */
   color?: string;
   className?: string;
 };

@@ -3,6 +3,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
+/**
+ * Chat principale della piattaforma (/chat).
+ *
+ * Come funziona: gestisce conversazioni multiple (sidebar + localStorage),
+ * selettore agente (con relativo system prompt e tool), invio verso /api/chat
+ * (assistente generico) o /api/agent/run (agente selezionato) e streaming SSE
+ * parola per parola in bolle che crescono. Supporta allegati (drag&drop,
+ * "+", paste) condivisi via ChatAttachments, ripristino della sessione demo
+ * dell'hero e gestione errori con link al supporto.
+ */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {

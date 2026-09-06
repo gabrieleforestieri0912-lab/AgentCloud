@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Card "Connetti Google" usata nel dashboard/account per un utente loggato:
+ * mostra stato (connesso con quale email, disconnetti) oppure avvia l'OAuth
+ * verso /api/auth/google/connect. Rilegge lo stato da /api/google/status.
+ */
 import { useEffect, useState } from "react";
 import type { Locale } from "@/lib/i18n/constants";
 import { CheckCircle2, Link2, Mail, Unlink } from "lucide-react";

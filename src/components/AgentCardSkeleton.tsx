@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Placeholder skeleton per la griglia del marketplace.
+ *
+ * Mostra card "fantasma" animate (shimmer/pulse) mentre gli agenti vengono
+ * caricati, così la pagina non salta e l'utente sa che il contenuto sta
+ * arrivando. `count` indica quante card mostrare (default 6).
+ */
 import { motion } from "framer-motion";
 
 type AgentCardSkeletonProps = {

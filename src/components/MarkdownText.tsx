@@ -5,9 +5,10 @@ import {
 } from "@/lib/markdown";
 
 /**
- * Renders the light markdown produced by the AI (bold, italic, inline code,
- * headings and bullet lists) inside chat bubbles. Used by every chat UI so
- * `**bold**` and `• lists` are displayed instead of shown as raw text.
+ * Renderizza il markdown leggero prodotto dall'AI (grassetto, corsivo, codice
+ * inline, titoli ed elenchi) dentro le bolle della chat. Usato da ogni chat
+ * così `**grassetto**` e `• elenchi` vengono visualizzati formattati invece
+ * che come testo grezzo. Il parsing arriva da src/lib/markdown.ts.
  */
 function Inline({ segments }: { segments: InlineSegment[] }) {
   return (

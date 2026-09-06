@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Toggle lingua (IT/EN/ES/DE/FR).
+ *
+ * Due varianti: `desktop` (menu a tendina sotto il pulsante) e `mobile`.
+ * Cambia la lingua tramite LanguageProvider e chiude il menu al click fuori.
+ */
 import { useState, useRef, useEffect } from "react";
 import { Languages, Check } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";

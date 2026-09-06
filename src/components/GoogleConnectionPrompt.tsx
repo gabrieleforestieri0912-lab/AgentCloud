@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Banner "connetti Google" dentro la chat, mostrato quando l'agente attivo
+ * usa tool Gmail/Calendar e non è ancora collegato. Porta all'OAuth Google e
+ * mostra eventuali errori leggibili del round-trip.
+ */
 import { useEffect, useState, useCallback } from "react";
 import { Mail, ExternalLink, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
