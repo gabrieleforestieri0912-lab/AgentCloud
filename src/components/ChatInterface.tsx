@@ -460,6 +460,13 @@ export default function ChatInterface({
     }
   }
 
+  function handleReplyToPhrase(phrase: string) {
+    const quoted = `> ${phrase.trim()}\n\n`;
+    setInput((prev) => (prev ? prev + "\n" + quoted : quoted));
+    // Focus and scroll to input
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
   return (
     <div className="flex h-dvh flex-col bg-neutral-950">
       <AppHeader
@@ -679,15 +686,15 @@ export default function ChatInterface({
               <p className="text-sm font-semibold text-white">
                 {activeAgentDisplayName}
               </p>
-              <p className="text-xs font-semibold text-neutral-500">
+              <p className="text-xs font-semibold">
                 {isTyping ? (
-                  <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-brand-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
                     {dict.chat.thinking}
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-purple-400 rounded-full" />
+                  <span className="flex items-center gap-1 text-neutral-500">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
                     {dict.chat.online}
                   </span>
                 )}
@@ -765,7 +772,7 @@ export default function ChatInterface({
                   >
                     {msg.role === "assistant" ? (
                       <>
-                        <MarkdownText text={msg.content} />
+                        <MarkdownText text={msg.content} onReply={handleReplyToPhrase} />
                         {msg.error && (
                           <a
                             href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
@@ -805,20 +812,17 @@ export default function ChatInterface({
                 height={32}
                 className="w-8 h-8 shrink-0"
               />
-              <div className="bg-neutral-800 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3.5">
-                <div className="flex gap-1.5 items-center h-4">
-                  <span
-                    className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse"
-                    style={{ animationDelay: "0ms" }}
-                  />
-                  <span
-                    className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse"
-                    style={{ animationDelay: "200ms" }}
-                  />
-                  <span
-                    className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse"
-                    style={{ animationDelay: "400ms" }}
-                  />
+              <div>
+                <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-bold text-brand-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
+                  {dict.chat.thinking}
+                </div>
+                <div className="bg-neutral-800 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3.5">
+                  <div className="flex gap-1.5 items-center h-4">
+                    <span className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse" style={{ animationDelay: "0ms" }} />
+                    <span className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse" style={{ animationDelay: "200ms" }} />
+                    <span className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse" style={{ animationDelay: "400ms" }} />
+                  </div>
                 </div>
               </div>
             </div>
