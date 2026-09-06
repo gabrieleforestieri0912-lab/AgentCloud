@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Clock, MessageSquare } from "lucide-react";
 import type { Agent } from "@/lib/agents";
 import { isAvailable } from "@/lib/agents";
@@ -32,17 +31,12 @@ export default function AgentCard({
   // Server pages pass the authoritative value; otherwise fall back to the
   // flags (which resolve to the default vertical in client bundles).
   const isAgentAvailable = available ?? isAvailable(agent.slug);
-  const router = useRouter();
 
-  // Access-code holders (and the testing client) get every agent for free:
+  // Access-code holders (and admins) get every agent for free:
   // the buy CTA opens the real conversation with the agent instead of a
-  // Stripe checkout. Regular paid checkout stays available through the
-  // agent's deploy/settings page.
-  function openChat(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    router.push(`/chat?agent=${agent.slug}`);
-  }
+  // Stripe checkout. Using a Link is more reliable than router.push inside
+  // a card with an absolute overlay.
+  const chatHref = `/chat?agent=${agent.slug}`;
 
   return (
     <article
@@ -112,15 +106,15 @@ export default function AgentCard({
         </div>
 
         {isAgentAvailable ? (
-          <button
-            type="button"
-            onClick={openChat}
+          <Link
+            href={chatHref}
             aria-label={`${dict.agentCard.buy} ${agent.name}`}
             className="relative z-20 inline-flex items-center gap-2 rounded-full border border-brand-500/40 bg-brand-500/10 px-5 py-2.5 text-sm font-semibold text-brand-300 transition-all duration-300 hover:bg-brand-500 hover:text-white"
+            onClick={(e) => e.stopPropagation()}
           >
             <MessageSquare size={16} />
             {dict.agentCard.buy}
-          </button>
+          </Link>
         ) : (
           <span className="inline-flex items-center gap-2 rounded-full bg-neutral-800 px-5 py-2.5 text-sm font-semibold text-neutral-500 cursor-not-allowed">
             {dict.agentCard.comingSoon}

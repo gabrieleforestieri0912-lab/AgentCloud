@@ -26,6 +26,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
 import { readableConnectReason } from "@/lib/connect-errors";
 import { normalizeShopInput } from "@/lib/shopify-input";
+import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import type { DeployConnections } from "./page";
 
 const NO_CONNECTIONS: DeployConnections = {
@@ -580,43 +581,53 @@ export default function DeployAgentClient({
                   </span>
                 </label>
 
-                {/* Direct Stripe purchase: demo request is only for custom agents (/demo) */}
-                <button
-                  type="button"
-                  disabled={isCheckingOut || !acceptedTerms}
-                  onClick={async () => {
-                    setIsCheckingOut(true);
-                    try {
-                      const res = await fetch("/api/checkout", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ agentId: agent.slug }),
-                      });
-                      const data = await res.json();
-                      if (data.url) {
-                        window.location.href = data.url;
+                {/* Direct Stripe purchase: admin/access holders go directly to chat with agent */}
+                {hasAccessOnClient() ? (
+                  <Link
+                    href={`/chat?agent=${agent.slug}`}
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400"
+                  >
+                    <Rocket size={16} />
+                    {locale === "it" ? "Apri chat" : "Open chat"}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isCheckingOut || !acceptedTerms}
+                    onClick={async () => {
+                      setIsCheckingOut(true);
+                      try {
+                        const res = await fetch("/api/checkout", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ agentId: agent.slug }),
+                        });
+                        const data = await res.json();
+                        if (data.url) {
+                          window.location.href = data.url;
+                        }
+                      } catch {
+                        // user stays on page on error
+                      } finally {
+                        setIsCheckingOut(false);
                       }
-                    } catch {
-                      // user stays on page on error
-                    } finally {
-                      setIsCheckingOut(false);
-                    }
-                  }}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Rocket size={16} />
-                  {isCheckingOut
-                    ? dict.common.close
-                    : locale === "it"
-                      ? "Acquista ora"
-                      : locale === "es"
-                        ? "Comprar ahora"
-                        : locale === "de"
-                          ? "Jetzt kaufen"
-                          : locale === "fr"
-                            ? "Acheter maintenant"
-                            : "Buy now"}
-                </button>
+                    }}
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Rocket size={16} />
+                    {isCheckingOut
+                      ? dict.common.close
+                      : locale === "it"
+                        ? "Acquista ora"
+                        : locale === "es"
+                          ? "Comprar ahora"
+                          : locale === "de"
+                            ? "Jetzt kaufen"
+                            : locale === "fr"
+                              ? "Acheter maintenant"
+                              : "Buy now"}
+                  </button>
+                )}
                 <p className="mt-2 text-center text-xs font-semibold text-neutral-500">
                   {locale === "it"
                     ? "Pagamento sicuro con Stripe — attivazione immediata."

@@ -209,10 +209,14 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               <div className="mt-8 flex flex-wrap gap-3">
                 {available ? (
                   <Link
-                    href={`/agents/${agent.slug}/deploy`}
+                    href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
                     className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35"
                   >
-                    {dict.agentDetail.configureAgent}
+                    {unlocked
+                      ? locale === "it"
+                        ? "Apri chat"
+                        : "Open chat"
+                      : dict.agentDetail.configureAgent}
                     <ArrowRight size={16} />
                   </Link>
                 ) : (
@@ -276,7 +280,13 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   </div>
 
                   <Link
-                    href={available ? `/agents/${agent.slug}/deploy` : "/demo"}
+                    href={
+                      !available
+                        ? "/demo"
+                        : unlocked
+                          ? `/chat?agent=${agent.slug}`
+                          : `/agents/${agent.slug}/deploy`
+                    }
                     className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition-all ${
                       available
                         ? "bg-brand-500 shadow-lg shadow-brand-500/20 hover:bg-brand-400"
@@ -284,10 +294,17 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     }`}
                   >
                     {available ? (
-                      <>
-                        {dict.agentDetail.configureAndDeploy}
-                        <ArrowRight size={16} />
-                      </>
+                      unlocked ? (
+                        <>
+                          {locale === "it" ? "Apri chat" : "Open chat"}
+                          <ArrowRight size={16} />
+                        </>
+                      ) : (
+                        <>
+                          {dict.agentDetail.configureAndDeploy}
+                          <ArrowRight size={16} />
+                        </>
+                      )
                     ) : (
                       dict.common.comingSoon
                     )}
@@ -509,10 +526,14 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             {available && (
               <Link
-                href={`/agents/${agent.slug}/deploy`}
+                href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
                 className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
               >
-                {dict.agentDetail.configureAndDeploy}
+                {unlocked
+                  ? locale === "it"
+                    ? "Apri chat"
+                    : "Open chat"
+                  : dict.agentDetail.configureAndDeploy}
                 <ArrowRight size={18} />
               </Link>
             )}
