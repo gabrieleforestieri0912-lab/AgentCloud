@@ -33,21 +33,6 @@ export type AgentNotificationKind =
   | "post_scheduled"
   | "cv_analyzed";
 
-export const AGENT_NOTIFICATION_KINDS: AgentNotificationKind[] = [
-  "file_created",
-  "product_created",
-  "discount_created",
-  "collection_updated",
-  "inventory_updated",
-  "event_booked",
-  "lead_submitted",
-  "lead_notified",
-  "invoice_created",
-  "payment_reminder_sent",
-  "post_scheduled",
-  "cv_analyzed",
-];
-
 /** Parametri neutri (senza lingua) salvati nel DB; la UI li localizza. */
 export type AgentNotificationParams = Record<string, string | number>;
 

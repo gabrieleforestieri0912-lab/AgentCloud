@@ -349,13 +349,9 @@ Se hai clienti esistenti con prezzi vecchi:
 Traccia sempre:
 
 ```typescript
-import { calculateCostPerToken } from "@/lib/billing/pricing";
-
-// Costo in centesimi per 1.000 token
-const costPerThousandTokens = calculateCostPerToken(
-  planPriceInCents,
-  tokensThisMonth,
-);
+// Costo in centesimi per 1.000 token (formula: prezzo piano / allowance * 1000)
+const costPerThousandTokens =
+  tokensThisMonth === 0 ? 0 : (planPriceInCents / tokensThisMonth) * 1000;
 
 console.log(`Costo per 1.000 token: €${(costPerThousandTokens / 100).toFixed(2)}`);
 ```

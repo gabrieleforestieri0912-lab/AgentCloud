@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
 // Pagina account: guscio server che applica i controlli di accesso (sessione
 // Supabase + codice di accesso) e delega il rendering interattivo al client
@@ -9,19 +8,16 @@ import { getSessionUser } from "@/lib/supabase/server";
 import { hasPlatformAccess } from "@/lib/access-code";
 import { isAdminEmail } from "@/lib/admin-access";
 import { getLocale } from "@/lib/i18n/locale";
-import { getDictionary } from "@/lib/i18n/dictionaries";
 import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
 import AccountClient from "./account-client";
 import { listShopifyConnections } from "@/lib/shopify/connections";
-import { getGoogleConnectionSummary } from "@/lib/google/connections";
+import { getGoogleConnectionSummary, TENANT_GOOGLE_ID } from "@/lib/google/connections";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TENANT_SHOPIFY_ID } from "@/lib/shopify/connections";
-import { TENANT_GOOGLE_ID } from "@/lib/google/connections";
 
 export default async function AccountPage() {
   const locale = await getLocale();
-  const dict = getDictionary(locale);
   const isIt = locale === "it";
 
   const user = await getSessionUser();
@@ -37,7 +33,6 @@ export default async function AccountPage() {
       : "";
   const firstName = isMock ? "Admin" : fullName.split(" ")[0] || email.split("@")[0] || "Utente";
   const isAdmin = isMock || isAdminEmail(user?.email);
-  const userId = user?.id ?? (isMock ? TENANT_GOOGLE_ID : null);
   const createdAt = isMock ? new Date().toISOString() : (user as unknown as { created_at?: string })?.created_at ?? null;
 
   // Carica dati reali solo per utenti reali, non per l'admin simulato

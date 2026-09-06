@@ -1,5 +1,5 @@
 import { anthropicProvider } from "./anthropic";
-import type { LLMProvider, LLMProviderName } from "./types";
+import type { LLMProvider } from "./types";
 
 /**
  * Risolutore del provider LLM per l'esecuzione degli agenti.
@@ -22,11 +22,6 @@ export type {
   LLMToolResult,
 } from "./types";
 
-export function isAnthropicKeyConfigured(): boolean {
-  const key = process.env.ANTHROPIC_API_KEY;
-  return Boolean(key && key.length > 10);
-}
-
 export function getLLMProvider(): LLMProvider {
   const configured = (process.env.AGENT_LLM_PROVIDER ?? "").trim().toLowerCase();
 
@@ -36,6 +31,3 @@ export function getLLMProvider(): LLMProvider {
   return anthropicProvider;
 }
 
-export function getLLMProviderName(): LLMProviderName {
-  return getLLMProvider().name;
-}

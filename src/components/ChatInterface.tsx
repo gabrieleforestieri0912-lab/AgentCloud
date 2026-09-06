@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 /**
@@ -19,7 +18,6 @@ import {
   MessageSquare,
   Plus,
   Trash2,
-  PanelLeftOpen,
   PanelLeftClose,
   Send,
   Home,

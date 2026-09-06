@@ -7,7 +7,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { User, Mail, Shield, CreditCard, Plug, Trash2, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
-import { useLanguage } from "@/components/LanguageProvider";
 
 export default function AccountClient({
   initialEmail,
@@ -32,7 +31,6 @@ export default function AccountClient({
   googleEmail: string | null;
   locale: string;
 }) {
-  const { dict } = useLanguage();
   const isIt = locale === "it";
   const [name, setName] = useState(initialName);
   const [saving, setSaving] = useState(false);

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // Webhook email in ingresso (scaffold): riceve i payload di Resend e li
 // logga. Punto di estensione per salvare/inoltrare le email in arrivo.
 import { NextResponse } from "next/server";
@@ -7,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const payload = await request.json();
 
-    const { email, to, from, subject, text, html } = payload;
+    const { from, subject } = payload;
 
     if (!from || !subject) {
       return NextResponse.json(

@@ -70,23 +70,4 @@ export async function getLocale(): Promise<Locale> {
   }
 }
 
-/**
- * Helper per middleware/proxy: rileva la lingua da una NextRequest SENZA
- * usare `next/headers`. Serve per impostare il cookie automatico alla prima
- * visita, quando il proxy non può leggere i cookie come un server component.
- */
-export function getLocaleFromRequest(req: {
-  cookies: { get(name: string): { value: string } | undefined };
-  headers: { get(name: string): string | null };
-}): Locale {
-  const cookieVal = req.cookies.get(LOCALE_COOKIE)?.value;
-  if (isLocale(cookieVal)) return cookieVal;
-  const country =
-    req.headers.get("x-vercel-ip-country") ??
-    req.headers.get("cf-ipcountry") ??
-    req.headers.get("x-country") ??
-    null;
-  const acceptLanguage = req.headers.get("accept-language");
-  return detectLocale({ country, acceptLanguage });
-}
 

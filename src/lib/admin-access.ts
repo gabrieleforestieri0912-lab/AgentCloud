@@ -16,11 +16,8 @@
  * sull'indirizzo del proprietario del progetto.
  *
  * Questo modulo va importato solo da codice server (route handler, server
- * component, server action). Usa `cookies()` indirettamente tramite
- * `getSessionUser`, che è già server-only.
+ * component, server action).
  */
-
-import { getSessionUser } from "@/lib/supabase/server";
 
 const DEFAULT_ADMIN_EMAIL = "gabriele.forestieri0912@gmail.com";
 
@@ -52,16 +49,3 @@ export function isAdminEmail(email?: string | null): boolean {
   return getAdminEmails().includes(normalized);
 }
 
-/**
- * Risolve lo stato admin della richiesta corrente dalla sessione VERIFICATA.
- * `isAdmin` è true solo quando l'email della sessione utente autenticata
- * corrisponde alla whitelist. Chiamabile solo da codice server.
- */
-export async function getCurrentAdminStatus(): Promise<{
-  isAdmin: boolean;
-  email: string | null;
-}> {
-  const user = await getSessionUser();
-  const email = user?.email ?? null;
-  return { isAdmin: isAdminEmail(email), email };
-}

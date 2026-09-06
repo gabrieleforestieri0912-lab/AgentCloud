@@ -19,7 +19,7 @@ export default function DemoLimitModal({
   onClose: () => void;
   remainingMessages?: number;
 }) {
-  const { dict, locale } = useLanguage();
+  const { locale } = useLanguage();
   const isIt = locale === "it";
 
   if (!open) return null;

@@ -148,50 +148,6 @@ export function updateTenantGoogleTokens(
   writeStore(store);
 }
 
-export function updateTenantShopifyCredentials(
-  tenantId: string,
-  shopDomain?: string,
-  accessToken?: string,
-) {
-  const store = readStore();
-  const s = store[tenantId] || { id: tenantId };
-  s.shopify = s.shopify || {};
-  if (shopDomain) s.shopify.shopDomain = shopDomain;
-  if (accessToken) s.shopify.accessToken = encrypt(accessToken);
-  store[tenantId] = s;
-  writeStore(store);
-}
-
-/**
- * Cancella tutte le credenziali e i dati di un tenant (conformità GDPR / offboarding).
- */
-export function deleteTenant(tenantId: string): boolean {
-  const store = readStore();
-  if (!store[tenantId]) return false;
-  delete store[tenantId];
-  writeStore(store);
-  return true;
-}
-
-/**
- * Genera una API key del widget firmata crittograficamente per un tenant.
- *
- * Perché firmata: l'endpoint embed deve riconoscere in modo affidabile chi
- * chiama (qual è il tenantId). La chiave non è sequenziale: contiene un nonce
- * casuale e una firma HMAC, quindi non è indovinabile né falsificabile senza
- * conoscere `TENANT_STORE_KEY`.
- */
-export function generateTenantApiKey(tenantId: string): string {
-  const nonce = crypto.randomBytes(16).toString("hex");
-  const payload = `${tenantId}:${nonce}`;
-  const signature = crypto
-    .createHmac("sha256", keyFromEnv())
-    .update(payload)
-    .digest("hex")
-    .slice(0, 32);
-  return `ac_${Buffer.from(payload).toString("base64url")}_${signature}`;
-}
-
 /**
  * Verifica una API key del widget ed estrae il tenantId autenticato.
  *

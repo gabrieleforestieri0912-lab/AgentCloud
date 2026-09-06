@@ -8,8 +8,7 @@ Implemented Stripe Payment Links system for AgentCloud billing as requested. Thi
 
 ### 1. New Files Created
 
-- **`src/app/api/billing/payment-link/route.ts`**: API endpoint that generates payment links with metadata
-- **`src/lib/stripe/payment-links.ts`**: Utility functions for managing payment links
+- **`src/app/api/billing/payment-link/route.ts`**: API endpoint that generates payment links with metadata (creates the Stripe Payment Link directly; a dedicated `src/lib/stripe/payment-links.ts` module was removed in a cleanup as dead code)
 - **`STRIPE_SETUP.md`**: Complete setup guide for Stripe configuration
 - **`PAYMENT_IMPLEMENTATION.md`**: This file
 

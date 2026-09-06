@@ -5,12 +5,12 @@ import Link from "next/link";
 import { Languages, Bell, Shield, Palette, Database, Globe, Check } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
-import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/constants";
+import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/constants";
 
 // Client delle impostazioni: preferenze locali di lingua, notifiche e dati.
 // Le preferenze (toggle ecc.) sono per ora simulabili lato client — nessuna
 // scrittura su DB, da qui il pulsante "Salva" fittizio.
-export default function SettingsClient({ locale: initialLocale, isMock, email }: { locale: Locale; isMock: boolean; email: string }) {
+export default function SettingsClient({ isMock, email }: { isMock: boolean; email: string }) {
   const { locale, setLocale } = useLanguage();
   const isIt = locale === "it";
   const [emailNotif, setEmailNotif] = useState(true);

@@ -249,14 +249,10 @@ const clientAttempts = new Map<string, ClientAttemptRecord>();
  * Blocca i tentativi ripetuti prima ancora che raggiungano le API o Supabase.
  *
  * @param actionKey Chiave identificativa dell'azione (es. "login_attempt")
- * @param maxAttempts Numero massimo di tentativi errati consentiti prima del blocco (default: 5)
- * @param cooldownSeconds Secondi di attesa obbligatoria al superamento della soglia (default: 30)
  * @returns Oggetto con stato di autorizzazione e tempo residuo di blocco
  */
 export function checkClientThrottle(
   actionKey: string,
-  maxAttempts: number = 5,
-  cooldownSeconds: number = 30,
 ): { allowed: boolean; retryAfterSeconds?: number } {
   const now = Date.now();
   const record = clientAttempts.get(actionKey);

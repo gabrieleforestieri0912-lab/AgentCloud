@@ -46,7 +46,7 @@ export default function SignupPage() {
     }
 
     // 2. Throttling client-side contro registrazioni massive / spam
-    const throttle = checkClientThrottle("signup_attempt", 5, 60);
+    const throttle = checkClientThrottle("signup_attempt");
     if (!throttle.allowed) {
       setError(`Troppi tentativi consecutivi. Attendi ${throttle.retryAfterSeconds} secondi.`);
       return;

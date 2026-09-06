@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
 import { hasPlatformAccess } from "@/lib/access-code";
-import { getLocale } from "@/lib/i18n/locale";
 import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
 import SettingsClient from "./settings-client";
@@ -10,7 +9,6 @@ import SettingsClient from "./settings-client";
 // codice di accesso), distingue l'utente mock (admin via codice) da quello
 // reale e delega la UI interattiva a SettingsClient.
 export default async function SettingsPage() {
-  const locale = await getLocale();
   const user = await getSessionUser();
   const hasAccess = await hasPlatformAccess();
   if (!user && !hasAccess) redirect("/login");
@@ -22,7 +20,7 @@ export default async function SettingsPage() {
       <AppHeader variant="dashboard" subtitle={email} />
       <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
-          <SettingsClient locale={locale} isMock={isMock} email={email} />
+          <SettingsClient isMock={isMock} email={email} />
         </div>
       </section>
       <Footer />

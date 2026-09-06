@@ -13,7 +13,7 @@ import { getGoogleConnection, updateGoogleTokens } from "./connections";
 const REFRESH_MARGIN_MS = 5 * 60 * 1000; // rinfresca 5 minuti prima della scadenza
 
 /** True se un token con questa scadenza va rinfrescato ora. */
-export function shouldRefreshToken(expiresAt: string | null): boolean {
+function shouldRefreshToken(expiresAt: string | null): boolean {
   if (!expiresAt) return true;
   const expiry = new Date(expiresAt).getTime();
   if (Number.isNaN(expiry)) return true;
@@ -27,8 +27,8 @@ export type ResolvedGoogleToken = {
 };
 
 /**
- * Get a fresh access token for a user. Returns null when the user has no
- * Google connection (or it cannot be decrypted / refreshed).
+ * Ottiene un access token Google fresco per un utente. Restituisce null quando
+ * l'utente non ha una connessione Google (o non può essere decifrata/rinfrescata).
  */
 export async function getValidGoogleAccessToken(
   userId: string,
@@ -41,10 +41,7 @@ export async function getValidGoogleAccessToken(
   let accessToken = conn.accessToken;
 
   if (shouldRefreshToken(conn.expiresAt)) {
-    const refreshed = await refreshGoogleAccessToken(
-      conn.refreshToken,
-      conn.expiresAt,
-    );
+    const refreshed = await refreshGoogleAccessToken(conn.refreshToken);
     if (!refreshed) {
       // Refresh fallito (token revocato, rete, config errata) — ripiega
       // sull'access token salvato solo se non è ancora scaduto.
@@ -68,10 +65,9 @@ export async function getValidGoogleAccessToken(
   };
 }
 
-/** Refresh an access token with Google's token endpoint. */
-export async function refreshGoogleAccessToken(
+/** Rinfresca l'access token tramite l'endpoint token di Google. */
+async function refreshGoogleAccessToken(
   refreshToken: string,
-  currentExpiresAt: string | null,
 ): Promise<{ accessToken: string; expiresAt: string } | null> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;

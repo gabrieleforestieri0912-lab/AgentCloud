@@ -39,11 +39,6 @@ export function getGoogleRedirectUri(): string {
 }
 
 /**
- * Pagina dell'app a cui il flusso OAuth rimanda con ?google=connected|error.
- */
-export const GOOGLE_SETTINGS_PATH = "/dashboard";
-
-/**
  * Costruisce l'URL di consenso Google. `access_type=offline` è necessario
  * per ottenere un refresh token; `prompt=consent` garantisce che ne venga
  * (ri)emesso uno a ogni autorizzazione, anche quando l'utente ha già

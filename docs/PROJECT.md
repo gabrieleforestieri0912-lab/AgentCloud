@@ -96,7 +96,7 @@ src/
 - Primary: **Manrope** (400–900) · Fallback: **Inter**
 
 ### Animazioni
-- `fade-in-up`, `fade-in-left`, `fade-in-right`, `scale-in` via `useInView`
+- `fade-in-up`, `fade-in-left`, `fade-in-right`, `scale-in` (reveal on scroll)
 - Stagger `animate-stagger-1..6` (80ms) · typing indicator `typing-pulse`
 
 ---

@@ -75,29 +75,10 @@ export type Agent = {
   comingSoon?: true;
 };
 
-
-
-export const AGENT_CATEGORIES: Array<"All" | AgentCategory> = [
-  "All",
-  "Business & Operations",
-  "Marketing & Sales",
-  "Customer Service",
-  "Development",
-  "AI & Data",
-  "Design & Content",
-  "E-commerce & Finance",
-];
-
 export function resolveStripePriceId(slug: string, fallback: string): string {
   const envKey =
     "STRIPE_PRICE_" + slug.replace(/[^a-z0-9]/gi, "_").toUpperCase();
   return process.env[envKey] || fallback;
-}
-
-export function getAgentPriceCents(
-  agent: Pick<Agent, "slug" | "priceCents">,
-): number {
-  return agent.priceCents;
 }
 
 type AgentSeed = Omit<Agent, "priceCents" | "stripePriceId"> & {
@@ -611,8 +592,6 @@ export function localizeAgent(agent: Agent, locale: import("./i18n/constants").L
     workflow: localized.workflow,
   };
 }
-
-export const SELLABLE_AGENTS: string[] = AGENTS.map((agent) => agent.slug);
 
 // ─── Marketplace guidato dai flag ─────────────────────────────────────────
 // Quali agenti offre il marketplace lo decidono i feature flag runtime (vedi

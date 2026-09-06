@@ -168,9 +168,3 @@ export const INTEGRATIONS: Integration[] = [
   },
 ];
 
-export function getIntegrationHref(integration: Integration): string {
-  if (integration.available && integration.agentSlug) return `/agents/${integration.agentSlug}`;
-  return "/integrations";
-}
-
-export const INTEGRATION_CATEGORIES = [...new Set(INTEGRATIONS.map((i) => i.category))];

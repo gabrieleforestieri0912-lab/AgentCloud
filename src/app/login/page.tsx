@@ -91,7 +91,7 @@ export default function LoginPage() {
     }
 
     // 2. Controllo Throttling Client-Side contro attacchi brute-force / dictionary
-    const throttle = checkClientThrottle("login_attempt", 5, 30);
+    const throttle = checkClientThrottle("login_attempt");
     if (!throttle.allowed) {
       setError(`Troppi tentativi falliti. Riprova tra ${throttle.retryAfterSeconds} secondi.`);
       return;

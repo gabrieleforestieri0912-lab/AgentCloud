@@ -168,28 +168,6 @@ export function getPlan(
 }
 
 /**
- * Calcola il costo per 1.000 token (in centesimi).
- * Usato per monitorare la redditività rispetto alle allowance dei piani.
- */
-export function calculateCostPerToken(
-  planPrice: number, // in centesimi
-  tokens: number, // allowance mensile di token
-): number {
-  if (tokens === 0) return 0;
-  return (planPrice / tokens) * 1000;
-}
-
-/**
- * Verifica se l'utilizzo è dentro i limiti del piano
- */
-export function isWithinLimit(
-  currentUsage: number,
-  planLimit: number,
-): boolean {
-  return currentUsage < planLimit;
-}
-
-/**
  * Fatturazione overage.
  *
  * L'utilizzo oltre l'allowance mensile di token non viene più bloccato con

@@ -1034,8 +1034,6 @@ const it = {
 
 export type Dictionary = typeof it;
 
-export type FeatureItem = Dictionary["features"]["items"][number];
-
 export const en: Dictionary = {
   common: {
     comingSoon: "Coming soon",

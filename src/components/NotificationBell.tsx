@@ -62,7 +62,7 @@ function formatDate(iso: string | null, locale: Locale): string {
   });
 }
 
-function timeAgo(iso: string, locale: Locale, dict: Dictionary): string {
+function timeAgo(iso: string, dict: Dictionary): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return dict.notifications.justNow;
@@ -345,7 +345,7 @@ export default function NotificationBell() {
                             {actionMessage(n)}
                           </span>
                           <span className="mt-0.5 block text-[11px] font-semibold text-neutral-500">
-                            {timeAgo(n.createdAt, locale, dict)}
+                            {timeAgo(n.createdAt, dict)}
                           </span>
                         </span>
                         {!n.read && (

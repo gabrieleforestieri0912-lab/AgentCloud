@@ -54,7 +54,6 @@ import { INTEGRATIONS as ALL_INTEGRATIONS } from "@/lib/integrations";
 const INTEGRATIONS = ALL_INTEGRATIONS.slice(0, 8);
 
 export default function Navbar({ marketplaceAgents }: NavbarProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   // True appena la lettura iniziale della sessione è conclusa — evita il
