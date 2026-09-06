@@ -18,7 +18,6 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
-import AgentPreview from "@/components/AgentPreview";
 import AgentCard from "@/components/AgentCard";
 import {
   AGENTS,
@@ -224,12 +223,6 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     {dict.common.comingSoon}
                   </span>
                 )}
-                <a
-                  href="#preview"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-7 py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:border-white/20"
-                >
-                  {dict.agentDetail.tryPreview}
-                </a>
               </div>
             </div>
 
@@ -369,9 +362,9 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
         </div>
       </section>
 
-      {/* ─── Content + Preview ─── */}
+      {/* ─── Content ─── */}
       <section className="px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl 3xl:max-w-[1720px] gap-8 lg:grid-cols-[1fr_420px] 3xl:grid-cols-[1fr_480px]">
+        <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="space-y-8">
             {/* What this agent automates */}
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/20">
@@ -477,11 +470,6 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* Sticky preview */}
-          <div id="preview" className="lg:sticky lg:top-24 lg:self-start">
-            <AgentPreview agent={agent} />
           </div>
         </div>
       </section>

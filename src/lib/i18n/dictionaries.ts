@@ -15,7 +15,6 @@ const it = {
   common: {
     comingSoon: "Prossimamente",
     comingSoonShort: "Presto disponibile",
-    installs: "installazioni",
     setup: "Setup",
     view: "Vedi",
     active: "Attivo",
@@ -176,105 +175,34 @@ const it = {
     cta: "Attiva il tuo primo agente",
     items: [
       {
-        quote: '"I clienti chiedono spesso dettagli sui prodotti"',
         title: "Assistente prodotti Shopify",
         description:
           "L'agente Shopify risponde alle domande su prodotti e ordini direttamente in chat, 24/7.",
-        card: {
-          variant: "chat",
-          title: "Conversazione agente",
-          userBubble: "Questo prodotto è disponibile in taglia 42?",
-          agentBubble:
-            "Cerco nel catalogo e ti preparo il link al carrello.",
-          summaryTitle: "Riepilogo richiesta",
-          rows: [
-            { label: "Prodotti trovati", n: 4 },
-            { label: "Link carrello generati", n: 3 },
-            { label: "Disponibilità verificata", n: 4 },
-          ],
-        },
       },
       {
-        quote: '"Voglio far comprare ai clienti in un clic"',
         title: "Link diretti al carrello",
         description:
           "Trova i prodotti nel catalogo e genera link diretti al carrello da condividere ovunque.",
-        card: {
-          variant: "campaigns",
-          title: "Link carrello generati",
-          rows: [
-            { name: "Scarpe Running", channel: "Shopify", reach: "32 click" },
-            { name: "Felpa Logo", channel: "Shopify", reach: "18 click" },
-            { name: "Borraccia", channel: "Shopify", reach: "27 click" },
-          ],
-        },
       },
       {
-        quote: '"I clienti vogliono sapere dove sono i loro ordini"',
         title: "Stato ordini in tempo reale",
         description:
           "Verifica lo stato degli ordini con numero ordine ed email e rispondi in pochi secondi.",
-        card: {
-          variant: "email",
-          title: "Stato ordine",
-          status: "Verificato",
-          rows: [
-            { label: "Ordine #1042", sub: "Spedito · consegna venerdì" },
-            { label: "Ordine #1047", sub: "In preparazione" },
-            { label: "Ordine #1049", sub: "Consegnato" },
-          ],
-        },
       },
       {
-        quote: '"Perdo i contatti che arrivano dal sito"',
         title: "Acquisizione lead automatica",
         description:
           "L'agente lead capture raccoglie i dettagli dei prospect e li arricchisce con il contesto giusto.",
-        card: {
-          variant: "leads",
-          title: "Pipeline lead",
-          todayBadge: "+12 oggi",
-          leads: [
-            { initials: "SM", name: "Sara M.", time: "2 min fa", status: "Nuovo" },
-            { initials: "JR", name: "Giacomo R.", time: "15 min fa", status: "Qualificato" },
-            { initials: "LK", name: "Laura K.", time: "1 h fa", status: "Arricchito" },
-          ],
-          conversionLabel: "Tasso di acquisizione",
-        },
       },
       {
-        quote: '"Le vendite scoprono i lead in ritardo"',
         title: "Notifiche al team vendite",
         description:
           "Quando arriva un lead, il team vendite viene avvisato su Slack con tutti i dettagli.",
-        card: {
-          variant: "projects",
-          title: "Notifiche vendite",
-          rows: [
-            { label: "Lead #231", sub: "Slack · 2 min fa" },
-            { label: "Lead #230", sub: "Slack · 18 min fa" },
-            { label: "Lead #229", sub: "Arricchito con LinkedIn" },
-          ],
-        },
       },
       {
-        quote: '"Voglio solo lead che valgono"',
         title: "Qualificazione lead",
         description:
           "Arricchisci i contatti e valuta ogni lead per concentrarti su quelli davvero pronti a comprare.",
-        card: {
-          variant: "chat",
-          title: "Analisi lead",
-          userBubble: "Quali lead sono pronti ad acquistare oggi?",
-          agentBubble:
-            "Analizzo i lead e ti indico quelli con più alto potenziale.",
-          summaryTitle: "Lead qualificati",
-          rows: [
-            { label: "Alto potenziale", n: 6 },
-            { label: "Da nutrire", n: 9 },
-            { label: "Da scartare", n: 3 },
-          ],
-        },
       },
     ],
   },
@@ -393,7 +321,6 @@ const it = {
     chartTitle: "Esecuzioni negli ultimi 7 giorni",
     chartRuns: "Esecuzioni",
     chartWeek: "Questa settimana",
-    chartDays: ["L", "M", "M", "G", "V", "S", "D"],
     sidebar: [
       "Panoramica",
       "Agenti",
@@ -401,74 +328,18 @@ const it = {
       "Esecuzioni",
       "Fatturazione",
     ],
-    stats: [
-      ["5", "Agenti installati"],
-      ["2.710", "Esecuzioni totali"],
-      ["98,3%", "Successo medio"],
-      ["412.306", "Token questo mese"],
-    ],
+    stats: [] as [string, string][],
     agentsHeading: "I tuoi agenti",
     recentActivity: "Attività recente",
-    events: [
-      [
-        "2 min fa",
-        "Agente Shopify ha applicato il codice sconto ESTATE20 e generato 3 link al carrello per la collezione estate.",
-      ],
-      [
-        "18 min fa",
-        "Agente Supporto ha risolto 4 ticket dalla knowledge base e ha inoltrato 1 rimborso al team umano.",
-      ],
-      [
-        "1 ora fa",
-        "Agente Lead Capture ha catturato 9 lead dal modulo contatti e ha avvisato le vendite su Slack.",
-      ],
-      [
-        "3 ore fa",
-        "Agente Copywriter ha consegnato 3 varianti di hero e 6 headline per la landing di lancio.",
-      ],
-      [
-        "ieri",
-        "Agente Email Manager ha smistato 214 email e fissato 5 promemoria sugli impegni della settimana.",
-      ],
-    ],
-    agents: [
-      ["Agente Shopify", "Attivo", "1.284 esecuzioni", "98,7%", "2 min fa"],
-      ["Agente Supporto", "Attivo", "512 esecuzioni", "99,2%", "18 min fa"],
-      [
-        "Agente Lead Capture",
-        "Attivo",
-        "438 esecuzioni",
-        "96,1%",
-        "1 ora fa",
-      ],
-      ["Agente Copywriter", "Attivo", "287 esecuzioni", "97,5%", "3 ore fa"],
-      [
-        "Agente Email Manager",
-        "Attivo",
-        "189 esecuzioni",
-        "98,9%",
-        "ieri",
-      ],
-    ],
+    events: [] as [string, string][],
+    agents: [] as [string, string, string, string, string][],
   },
 
   agentCard: {
     comingSoon: "Prossimamente",
-    installs: "installazioni",
     setup: "Setup",
     view: "Vedi",
     buy: "Acquista",
-  },
-
-  agentPreview: {
-    livePreview: "Anteprima live",
-    demoMode: "Modalità demo",
-    readyToSimulate: "Pronto a simulare {name} su un'attività aziendale reale.",
-    runningWorkflow: "Esecuzione del workflow...",
-    workflowCompleted: "Workflow completato",
-    running: "Esecuzione...",
-    runAgain: "Esegui di nuovo",
-    runPreview: "Esegui anteprima",
   },
 
   chat: {
@@ -539,11 +410,7 @@ const it = {
     backToMarketplace: "Torna al marketplace",
     forIndustry: "Per {industry}",
     configureAgent: "Configura agente",
-    tryPreview: "Prova la preview",
-    rating: "Valutazione",
-    installs: "Installazioni",
     setup: "Setup",
-    ratedBy: "Valutato dai team che usano questo workflow ogni settimana",
     typicalLaunch: "Tempo di lancio tipico: {setupTime}",
     gdprNote: "Progettato per workflow aziendali GDPR-ready.",
     setupPrice: "Prezzo di setup",
@@ -1163,7 +1030,6 @@ export const en: Dictionary = {
   common: {
     comingSoon: "Coming soon",
     comingSoonShort: "Coming soon",
-    installs: "installs",
     setup: "Setup",
     view: "View",
     active: "Active",
@@ -1314,103 +1180,34 @@ export const en: Dictionary = {
     cta: "Deploy Your First Agent",
     items: [
       {
-        quote: '"Customers often ask about product details"',
         title: "Shopify Product Assistant",
         description:
           "The Shopify agent answers product and order questions directly in chat, 24/7.",
-        card: {
-          variant: "chat",
-          title: "Agent conversation",
-          userBubble: "Is this product available in size 42?",
-          agentBubble: "I'll search the catalog and build you a cart link.",
-          summaryTitle: "Request summary",
-          rows: [
-            { label: "Products found", n: 4 },
-            { label: "Cart links built", n: 3 },
-            { label: "Availability checked", n: 4 },
-          ],
-        },
       },
       {
-        quote: '"I want customers to buy in one click"',
         title: "Direct Cart Links",
         description:
           "Find products in the catalog and generate direct cart links you can share anywhere.",
-        card: {
-          variant: "campaigns",
-          title: "Cart links generated",
-          rows: [
-            { name: "Running Shoes", channel: "Shopify", reach: "32 clicks" },
-            { name: "Logo Hoodie", channel: "Shopify", reach: "18 clicks" },
-            { name: "Water Bottle", channel: "Shopify", reach: "27 clicks" },
-          ],
-        },
       },
       {
-        quote: '"Customers want to know where their orders are"',
         title: "Real-time Order Status",
         description:
           "Check order status with order number and email, and answer in seconds.",
-        card: {
-          variant: "email",
-          title: "Order status",
-          status: "Verified",
-          rows: [
-            { label: "Order #1042", sub: "Shipped · delivery Friday" },
-            { label: "Order #1047", sub: "Preparing" },
-            { label: "Order #1049", sub: "Delivered" },
-          ],
-        },
       },
       {
-        quote: '"I\'m losing the contacts that come from my site"',
         title: "Automatic Lead Capture",
         description:
           "The lead capture agent collects prospect details and enriches them with the right context.",
-        card: {
-          variant: "leads",
-          title: "Lead pipeline",
-          todayBadge: "+12 today",
-          leads: [
-            { initials: "SM", name: "Sara M.", time: "2m ago", status: "New" },
-            { initials: "JR", name: "Giacomo R.", time: "15m ago", status: "Qualified" },
-            { initials: "LK", name: "Laura K.", time: "1h ago", status: "Enriched" },
-          ],
-          conversionLabel: "Capture rate",
-        },
       },
       {
-        quote: '"Sales find out about leads too late"',
         title: "Sales Notifications",
         description:
           "When a lead arrives, the sales team is notified on Slack with all the details.",
-        card: {
-          variant: "projects",
-          title: "Sales notifications",
-          rows: [
-            { label: "Lead #231", sub: "Slack · 2m ago" },
-            { label: "Lead #230", sub: "Slack · 18m ago" },
-            { label: "Lead #229", sub: "Enriched with LinkedIn" },
-          ],
-        },
       },
       {
-        quote: '"I only want leads that matter"',
         title: "Lead Qualification",
         description:
           "Enrich contacts and score each lead so you focus only on those ready to buy.",
-        card: {
-          variant: "chat",
-          title: "Lead analysis",
-          userBubble: "Which leads are ready to buy today?",
-          agentBubble: "I'll analyze the leads and flag the highest potential.",
-          summaryTitle: "Qualified leads",
-          rows: [
-            { label: "High potential", n: 6 },
-            { label: "Nurture", n: 9 },
-            { label: "Discard", n: 3 },
-          ],
-        },
       },
     ],
   },
@@ -1529,70 +1326,19 @@ export const en: Dictionary = {
     chartTitle: "Runs in the last 7 days",
     chartRuns: "Runs",
     chartWeek: "This week",
-    chartDays: ["M", "T", "W", "T", "F", "S", "S"],
     sidebar: ["Overview", "Agents", "Integrations", "Runs", "Billing"],
-    stats: [
-      ["5", "Installed agents"],
-      ["2,710", "Total runs"],
-      ["98.3%", "Avg success"],
-      ["412,306", "Tokens this month"],
-    ],
+    stats: [] as [string, string][],
     agentsHeading: "Your agents",
     recentActivity: "Recent activity",
-    events: [
-      [
-        "2 min ago",
-        "Shopify Agent applied the ESTATE20 discount code and generated 3 cart links for the summer collection.",
-      ],
-      [
-        "18 min ago",
-        "Support Agent resolved 4 tickets from the knowledge base and escalated 1 refund to the human team.",
-      ],
-      [
-        "1 hour ago",
-        "Lead Capture Agent captured 9 leads from the contact form and alerted sales on Slack.",
-      ],
-      [
-        "3 hours ago",
-        "Copywriter delivered 3 hero variants and 6 headlines for the launch landing page.",
-      ],
-      [
-        "yesterday",
-        "Email Manager triaged 214 emails and set 5 reminders for this week's commitments.",
-      ],
-    ],
-    agents: [
-      ["Shopify Agent", "Active", "1,284 runs", "98.7%", "2 min ago"],
-      ["Support Agent", "Active", "512 runs", "99.2%", "18 min ago"],
-      [
-        "Lead Capture Agent",
-        "Active",
-        "438 runs",
-        "96.1%",
-        "1 hour ago",
-      ],
-      ["Copywriter", "Active", "287 runs", "97.5%", "3 hours ago"],
-      ["Email Manager", "Active", "189 runs", "98.9%", "yesterday"],
-    ],
+    events: [] as [string, string][],
+    agents: [] as [string, string, string, string, string][],
   },
 
   agentCard: {
     comingSoon: "Coming soon",
-    installs: "installs",
     setup: "Setup",
     view: "View",
     buy: "Buy",
-  },
-
-  agentPreview: {
-    livePreview: "Live preview",
-    demoMode: "Demo mode",
-    readyToSimulate: "Ready to simulate {name} on a real business task.",
-    runningWorkflow: "Running workflow...",
-    workflowCompleted: "Workflow completed",
-    running: "Running...",
-    runAgain: "Run again",
-    runPreview: "Run preview",
   },
 
   chat: {
@@ -1663,11 +1409,7 @@ export const en: Dictionary = {
     backToMarketplace: "Back to marketplace",
     forIndustry: "For {industry}",
     configureAgent: "Configure agent",
-    tryPreview: "Try preview",
-    rating: "Rating",
-    installs: "Installs",
     setup: "Setup",
-    ratedBy: "Rated by teams using this workflow weekly",
     typicalLaunch: "Typical launch time: {setupTime}",
     gdprNote: "Built for GDPR-aware business workflows",
     setupPrice: "Setup price",
@@ -2276,7 +2018,6 @@ export const es: Dictionary = {
   common: {
     comingSoon: "Próximamente",
     comingSoonShort: "Próximamente",
-    installs: "instalaciones",
     setup: "Configuración",
     view: "Ver",
     active: "Activo",
@@ -2427,103 +2168,34 @@ export const es: Dictionary = {
     cta: "Deploy Your First Agent",
     items: [
       {
-        quote: '"Customers often ask about product details"',
         title: "Shopify Product Assistant",
         description:
           "The Shopify agent answers product and order questions directly in chat, 24/7.",
-        card: {
-          variant: "chat",
-          title: "Agent conversation",
-          userBubble: "Is this product available in size 42?",
-          agentBubble: "I'll search the catalog and build you a cart link.",
-          summaryTitle: "Request summary",
-          rows: [
-            { label: "Products found", n: 4 },
-            { label: "Cart links built", n: 3 },
-            { label: "Availability checked", n: 4 },
-          ],
-        },
       },
       {
-        quote: '"I want customers to buy in one click"',
         title: "Direct Cart Links",
         description:
           "Find products in the catalog and generate direct cart links you can share anywhere.",
-        card: {
-          variant: "campaigns",
-          title: "Cart links generated",
-          rows: [
-            { name: "Running Shoes", channel: "Shopify", reach: "32 clicks" },
-            { name: "Logo Hoodie", channel: "Shopify", reach: "18 clicks" },
-            { name: "Water Bottle", channel: "Shopify", reach: "27 clicks" },
-          ],
-        },
       },
       {
-        quote: '"Customers want to know where their orders are"',
         title: "Real-time Order Status",
         description:
           "Check order status with order number and email, and answer in seconds.",
-        card: {
-          variant: "email",
-          title: "Estado de pedidos",
-          status: "Verified",
-          rows: [
-            { label: "Order #1042", sub: "Shipped · delivery Friday" },
-            { label: "Order #1047", sub: "Preparing" },
-            { label: "Order #1049", sub: "Delivered" },
-          ],
-        },
       },
       {
-        quote: '"I\'m losing the contacts that come from my site"',
         title: "Automatic Lead Capture",
         description:
           "The lead capture agent collects prospect details and enriches them with the right context.",
-        card: {
-          variant: "leads",
-          title: "Lead pipeline",
-          todayBadge: "+12 today",
-          leads: [
-            { initials: "SM", name: "Sara M.", time: "2m ago", status: "New" },
-            { initials: "JR", name: "Giacomo R.", time: "15m ago", status: "Qualified" },
-            { initials: "LK", name: "Laura K.", time: "1h ago", status: "Enriched" },
-          ],
-          conversionLabel: "Capture rate",
-        },
       },
       {
-        quote: '"Sales find out about leads too late"',
         title: "Sales Notifications",
         description:
           "When a lead arrives, the sales team is notified on Slack with all the details.",
-        card: {
-          variant: "projects",
-          title: "Sales notifications",
-          rows: [
-            { label: "Lead #231", sub: "Slack · 2m ago" },
-            { label: "Lead #230", sub: "Slack · 18m ago" },
-            { label: "Lead #229", sub: "Enriched with LinkedIn" },
-          ],
-        },
       },
       {
-        quote: '"I only want leads that matter"',
         title: "Lead Qualification",
         description:
           "Enrich contacts and score each lead so you focus only on those ready to buy.",
-        card: {
-          variant: "chat",
-          title: "Lead analysis",
-          userBubble: "Which leads are ready to buy today?",
-          agentBubble: "I'll analyze the leads and flag the highest potential.",
-          summaryTitle: "Qualified leads",
-          rows: [
-            { label: "High potential", n: 6 },
-            { label: "Nurture", n: 9 },
-            { label: "Discard", n: 3 },
-          ],
-        },
       },
     ],
   },
@@ -2642,70 +2314,19 @@ export const es: Dictionary = {
     chartTitle: "Runs in the last 7 days",
     chartRuns: "Runs",
     chartWeek: "This week",
-    chartDays: ["M", "T", "W", "T", "F", "S", "S"],
     sidebar: ["Overview", "Agentes", "Integraciones", "Runs", "Facturación"],
-    stats: [
-      ["5", "Agentes instalados"],
-      ["2,710", "Total runs"],
-      ["98.3%", "Avg success"],
-      ["412,306", "Tokens this month"],
-    ],
+    stats: [] as [string, string][],
     agentsHeading: "Your agents",
     recentActivity: "Recent activity",
-    events: [
-      [
-        "2 min ago",
-        "Shopify Agent applied the ESTATE20 discount code and generated 3 cart links for the summer collection.",
-      ],
-      [
-        "18 min ago",
-        "Support Agent resolved 4 tickets from the knowledge base and escalated 1 refund to the human team.",
-      ],
-      [
-        "1 hour ago",
-        "Lead Capture Agent captured 9 leads from the contact form and alerted sales on Slack.",
-      ],
-      [
-        "3 hours ago",
-        "Copywriter delivered 3 hero variants and 6 headlines for the launch landing page.",
-      ],
-      [
-        "yesterday",
-        "Email Manager triaged 214 emails and set 5 reminders for this week's commitments.",
-      ],
-    ],
-    agents: [
-      ["Shopify Agent", "Activo", "1,284 runs", "98.7%", "2 min ago"],
-      ["Support Agent", "Activo", "512 runs", "99.2%", "18 min ago"],
-      [
-        "Lead Capture Agent",
-        "Activo",
-        "438 runs",
-        "96.1%",
-        "1 hour ago",
-      ],
-      ["Copywriter", "Activo", "287 runs", "97.5%", "3 hours ago"],
-      ["Email Manager", "Activo", "189 runs", "98.9%", "yesterday"],
-    ],
+    events: [] as [string, string][],
+    agents: [] as [string, string, string, string, string][],
   },
 
   agentCard: {
     comingSoon: "Próximamente",
-    installs: "instalaciones",
     setup: "Configuración",
     view: "Ver",
     buy: "Buy",
-  },
-
-  agentPreview: {
-    livePreview: "Live preview",
-    demoMode: "Demo mode",
-    readyToSimulate: "Ready to simulate {name} on a real business task.",
-    runningWorkflow: "Running workflow...",
-    workflowCompleted: "Workflow completed",
-    running: "Running...",
-    runAgain: "Run again",
-    runPreview: "Run preview",
   },
 
   chat: {
@@ -2776,11 +2397,7 @@ export const es: Dictionary = {
     backToMarketplace: "Back to marketplace",
     forIndustry: "For {industry}",
     configureAgent: "Configure agent",
-    tryPreview: "Try preview",
-    rating: "Rating",
-    installs: "Installs",
     setup: "Configuración",
-    ratedBy: "Rated by teams using this workflow weekly",
     typicalLaunch: "Typical launch time: {setupTime}",
     gdprNote: "Built for GDPR-aware business workflows",
     setupPrice: "Setup price",
@@ -3389,7 +3006,6 @@ export const de: Dictionary = {
   common: {
     comingSoon: "Demnächst",
     comingSoonShort: "Demnächst",
-    installs: "Installationen",
     setup: "Setup",
     view: "Ansehen",
     active: "Aktiv",
@@ -3540,103 +3156,34 @@ export const de: Dictionary = {
     cta: "Deploy Your First Agent",
     items: [
       {
-        quote: '"Customers often ask about product details"',
         title: "Shopify Product Assistant",
         description:
           "The Shopify agent answers product and order questions directly in chat, 24/7.",
-        card: {
-          variant: "chat",
-          title: "Agent conversation",
-          userBubble: "Is this product available in size 42?",
-          agentBubble: "I'll search the catalog and build you a cart link.",
-          summaryTitle: "Request summary",
-          rows: [
-            { label: "Products found", n: 4 },
-            { label: "Cart links built", n: 3 },
-            { label: "Availability checked", n: 4 },
-          ],
-        },
       },
       {
-        quote: '"I want customers to buy in one click"',
         title: "Direct Cart Links",
         description:
           "Find products in the catalog and generate direct cart links you can share anywhere.",
-        card: {
-          variant: "campaigns",
-          title: "Cart links generated",
-          rows: [
-            { name: "Running Shoes", channel: "Shopify", reach: "32 clicks" },
-            { name: "Logo Hoodie", channel: "Shopify", reach: "18 clicks" },
-            { name: "Water Bottle", channel: "Shopify", reach: "27 clicks" },
-          ],
-        },
       },
       {
-        quote: '"Customers want to know where their orders are"',
         title: "Real-time Order Status",
         description:
           "Check order status with order number and email, and answer in seconds.",
-        card: {
-          variant: "email",
-          title: "Order status",
-          status: "Verified",
-          rows: [
-            { label: "Order #1042", sub: "Shipped · delivery Friday" },
-            { label: "Order #1047", sub: "Preparing" },
-            { label: "Order #1049", sub: "Delivered" },
-          ],
-        },
       },
       {
-        quote: '"I\'m losing the contacts that come from my site"',
         title: "Automatic Lead Capture",
         description:
           "The lead capture agent collects prospect details and enriches them with the right context.",
-        card: {
-          variant: "leads",
-          title: "Lead pipeline",
-          todayBadge: "+12 today",
-          leads: [
-            { initials: "SM", name: "Sara M.", time: "2m ago", status: "New" },
-            { initials: "JR", name: "Giacomo R.", time: "15m ago", status: "Qualified" },
-            { initials: "LK", name: "Laura K.", time: "1h ago", status: "Enriched" },
-          ],
-          conversionLabel: "Capture rate",
-        },
       },
       {
-        quote: '"Sales find out about leads too late"',
         title: "Sales Notifications",
         description:
           "When a lead arrives, the sales team is notified on Slack with all the details.",
-        card: {
-          variant: "projects",
-          title: "Sales notifications",
-          rows: [
-            { label: "Lead #231", sub: "Slack · 2m ago" },
-            { label: "Lead #230", sub: "Slack · 18m ago" },
-            { label: "Lead #229", sub: "Enriched with LinkedIn" },
-          ],
-        },
       },
       {
-        quote: '"I only want leads that matter"',
         title: "Lead Qualification",
         description:
           "Enrich contacts and score each lead so you focus only on those ready to buy.",
-        card: {
-          variant: "chat",
-          title: "Lead analysis",
-          userBubble: "Which leads are ready to buy today?",
-          agentBubble: "I'll analyze the leads and flag the highest potential.",
-          summaryTitle: "Qualified leads",
-          rows: [
-            { label: "High potential", n: 6 },
-            { label: "Nurture", n: 9 },
-            { label: "Discard", n: 3 },
-          ],
-        },
       },
     ],
   },
@@ -3755,70 +3302,19 @@ export const de: Dictionary = {
     chartTitle: "Runs in the last 7 days",
     chartRuns: "Runs",
     chartWeek: "This week",
-    chartDays: ["M", "T", "W", "T", "F", "S", "S"],
     sidebar: ["Overview", "Agenten", "Integrationen", "Runs", "Billing"],
-    stats: [
-      ["5", "Installed agents"],
-      ["2,710", "Total runs"],
-      ["98.3%", "Avg success"],
-      ["412,306", "Tokens this month"],
-    ],
+    stats: [] as [string, string][],
     agentsHeading: "Your agents",
     recentActivity: "Recent activity",
-    events: [
-      [
-        "2 min ago",
-        "Shopify Agent applied the ESTATE20 discount code and generated 3 cart links for the summer collection.",
-      ],
-      [
-        "18 min ago",
-        "Support Agent resolved 4 tickets from the knowledge base and escalated 1 refund to the human team.",
-      ],
-      [
-        "1 hour ago",
-        "Lead Capture Agent captured 9 leads from the contact form and alerted sales on Slack.",
-      ],
-      [
-        "3 hours ago",
-        "Copywriter delivered 3 hero variants and 6 headlines for the launch landing page.",
-      ],
-      [
-        "yesterday",
-        "Email Manager triaged 214 emails and set 5 reminders for this week's commitments.",
-      ],
-    ],
-    agents: [
-      ["Shopify Agent", "Aktiv", "1,284 runs", "98.7%", "2 min ago"],
-      ["Support Agent", "Aktiv", "512 runs", "99.2%", "18 min ago"],
-      [
-        "Lead Capture Agent",
-        "Aktiv",
-        "438 runs",
-        "96.1%",
-        "1 hour ago",
-      ],
-      ["Copywriter", "Aktiv", "287 runs", "97.5%", "3 hours ago"],
-      ["Email Manager", "Aktiv", "189 runs", "98.9%", "yesterday"],
-    ],
+    events: [] as [string, string][],
+    agents: [] as [string, string, string, string, string][],
   },
 
   agentCard: {
     comingSoon: "Demnächst",
-    installs: "Installationen",
     setup: "Setup",
     view: "Ansehen",
     buy: "Buy",
-  },
-
-  agentPreview: {
-    livePreview: "Live preview",
-    demoMode: "Demo mode",
-    readyToSimulate: "Ready to simulate {name} on a real business task.",
-    runningWorkflow: "Running workflow...",
-    workflowCompleted: "Workflow completed",
-    running: "Running...",
-    runAgain: "Run again",
-    runPreview: "Run preview",
   },
 
   chat: {
@@ -3889,11 +3385,7 @@ export const de: Dictionary = {
     backToMarketplace: "Back to marketplace",
     forIndustry: "For {industry}",
     configureAgent: "Configure agent",
-    tryPreview: "Try preview",
-    rating: "Rating",
-    installs: "Installs",
     setup: "Setup",
-    ratedBy: "Rated by teams using this workflow weekly",
     typicalLaunch: "Typical launch time: {setupTime}",
     gdprNote: "Built for GDPR-aware business workflows",
     setupPrice: "Setup price",
@@ -4502,7 +3994,6 @@ export const fr: Dictionary = {
   common: {
     comingSoon: "Bientôt disponible",
     comingSoonShort: "Bientôt disponible",
-    installs: "installations",
     setup: "Configuration",
     view: "Voir",
     active: "Actif",
@@ -4653,103 +4144,34 @@ export const fr: Dictionary = {
     cta: "Deploy Your First Agent",
     items: [
       {
-        quote: '"Customers often ask about product details"',
         title: "Shopify Product Assistant",
         description:
           "The Shopify agent answers product and order questions directly in chat, 24/7.",
-        card: {
-          variant: "chat",
-          title: "Agent conversation",
-          userBubble: "Is this product available in size 42?",
-          agentBubble: "I'll search the catalog and build you a cart link.",
-          summaryTitle: "Request summary",
-          rows: [
-            { label: "Products found", n: 4 },
-            { label: "Cart links built", n: 3 },
-            { label: "Availability checked", n: 4 },
-          ],
-        },
       },
       {
-        quote: '"I want customers to buy in one click"',
         title: "Direct Cart Links",
         description:
           "Find products in the catalog and generate direct cart links you can share anywhere.",
-        card: {
-          variant: "campaigns",
-          title: "Cart links generated",
-          rows: [
-            { name: "Running Shoes", channel: "Shopify", reach: "32 clicks" },
-            { name: "Logo Hoodie", channel: "Shopify", reach: "18 clicks" },
-            { name: "Water Bottle", channel: "Shopify", reach: "27 clicks" },
-          ],
-        },
       },
       {
-        quote: '"Customers want to know where their orders are"',
         title: "Real-time Order Status",
         description:
           "Check order status with order number and email, and answer in seconds.",
-        card: {
-          variant: "email",
-          title: "Order status",
-          status: "Verified",
-          rows: [
-            { label: "Order #1042", sub: "Shipped · delivery Friday" },
-            { label: "Order #1047", sub: "Preparing" },
-            { label: "Order #1049", sub: "Delivered" },
-          ],
-        },
       },
       {
-        quote: '"I\'m losing the contacts that come from my site"',
         title: "Automatic Lead Capture",
         description:
           "The lead capture agent collects prospect details and enriches them with the right context.",
-        card: {
-          variant: "leads",
-          title: "Lead pipeline",
-          todayBadge: "+12 today",
-          leads: [
-            { initials: "SM", name: "Sara M.", time: "2m ago", status: "New" },
-            { initials: "JR", name: "Giacomo R.", time: "15m ago", status: "Qualified" },
-            { initials: "LK", name: "Laura K.", time: "1h ago", status: "Enriched" },
-          ],
-          conversionLabel: "Capture rate",
-        },
       },
       {
-        quote: '"Sales find out about leads too late"',
         title: "Sales Notifications",
         description:
           "When a lead arrives, the sales team is notified on Slack with all the details.",
-        card: {
-          variant: "projects",
-          title: "Sales notifications",
-          rows: [
-            { label: "Lead #231", sub: "Slack · 2m ago" },
-            { label: "Lead #230", sub: "Slack · 18m ago" },
-            { label: "Lead #229", sub: "Enriched with LinkedIn" },
-          ],
-        },
       },
       {
-        quote: '"I only want leads that matter"',
         title: "Lead Qualification",
         description:
           "Enrich contacts and score each lead so you focus only on those ready to buy.",
-        card: {
-          variant: "chat",
-          title: "Lead analysis",
-          userBubble: "Which leads are ready to buy today?",
-          agentBubble: "I'll analyze the leads and flag the highest potential.",
-          summaryTitle: "Qualified leads",
-          rows: [
-            { label: "High potential", n: 6 },
-            { label: "Nurture", n: 9 },
-            { label: "Discard", n: 3 },
-          ],
-        },
       },
     ],
   },
@@ -4868,70 +4290,19 @@ export const fr: Dictionary = {
     chartTitle: "Runs in the last 7 days",
     chartRuns: "Runs",
     chartWeek: "This week",
-    chartDays: ["M", "T", "W", "T", "F", "S", "S"],
     sidebar: ["Overview", "Agents", "Intégrations", "Runs", "Billing"],
-    stats: [
-      ["5", "Installed agents"],
-      ["2,710", "Total runs"],
-      ["98.3%", "Avg success"],
-      ["412,306", "Tokens this month"],
-    ],
+    stats: [] as [string, string][],
     agentsHeading: "Your agents",
     recentActivity: "Recent activity",
-    events: [
-      [
-        "2 min ago",
-        "Shopify Agent applied the ESTATE20 discount code and generated 3 cart links for the summer collection.",
-      ],
-      [
-        "18 min ago",
-        "Support Agent resolved 4 tickets from the knowledge base and escalated 1 refund to the human team.",
-      ],
-      [
-        "1 hour ago",
-        "Lead Capture Agent captured 9 leads from the contact form and alerted sales on Slack.",
-      ],
-      [
-        "3 hours ago",
-        "Copywriter delivered 3 hero variants and 6 headlines for the launch landing page.",
-      ],
-      [
-        "yesterday",
-        "Email Manager triaged 214 emails and set 5 reminders for this week's commitments.",
-      ],
-    ],
-    agents: [
-      ["Shopify Agent", "Actif", "1,284 runs", "98.7%", "2 min ago"],
-      ["Support Agent", "Actif", "512 runs", "99.2%", "18 min ago"],
-      [
-        "Lead Capture Agent",
-        "Actif",
-        "438 runs",
-        "96.1%",
-        "1 hour ago",
-      ],
-      ["Copywriter", "Actif", "287 runs", "97.5%", "3 hours ago"],
-      ["Email Manager", "Actif", "189 runs", "98.9%", "yesterday"],
-    ],
+    events: [] as [string, string][],
+    agents: [] as [string, string, string, string, string][],
   },
 
   agentCard: {
     comingSoon: "Bientôt disponible",
-    installs: "installations",
     setup: "Configuration",
     view: "Voir",
     buy: "Buy",
-  },
-
-  agentPreview: {
-    livePreview: "Live preview",
-    demoMode: "Demo mode",
-    readyToSimulate: "Ready to simulate {name} on a real business task.",
-    runningWorkflow: "Running workflow...",
-    workflowCompleted: "Workflow completed",
-    running: "Running...",
-    runAgain: "Run again",
-    runPreview: "Run preview",
   },
 
   chat: {
@@ -5002,11 +4373,7 @@ export const fr: Dictionary = {
     backToMarketplace: "Back to marketplace",
     forIndustry: "For {industry}",
     configureAgent: "Configure agent",
-    tryPreview: "Try preview",
-    rating: "Rating",
-    installs: "Installs",
     setup: "Configuration",
-    ratedBy: "Rated by teams using this workflow weekly",
     typicalLaunch: "Typical launch time: {setupTime}",
     gdprNote: "Built for GDPR-aware business workflows",
     setupPrice: "Setup price",

@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
-import type { FeatureItem } from "@/lib/i18n/dictionaries";
 
 const FEATURE_ICONS = [MessageSquare, Megaphone, BarChart3, Users, Mail, Briefcase];
 
@@ -76,23 +75,15 @@ export default function FeaturesSection() {
                   },
                 }}
               >
-                <div className="mb-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 bg-neutral-800 text-neutral-400 group-hover:bg-brand-500 group-hover:text-white transition-all duration-300">
-                    <Icon size={20} />
-                  </div>
-                  <p className="text-xs font-semibold text-neutral-500 italic mb-2">
-                    {feature.quote}
-                  </p>
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm font-semibold text-neutral-400">
-                    {feature.description}
-                  </p>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl mb-4 bg-neutral-800 text-neutral-400 group-hover:bg-brand-500 group-hover:text-white transition-all duration-300">
+                  <Icon size={20} />
                 </div>
-                <div className="mt-4">
-                  <FeatureCard feature={feature} />
-                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-sm font-semibold text-neutral-400">
+                  {feature.description}
+                </p>
               </motion.div>
             );
           })}
@@ -114,209 +105,5 @@ export default function FeaturesSection() {
         </motion.div>
       </div>
     </section>
-  );
-}
-
-type FeatureCardData =
-  | {
-      variant: "chat";
-      title: string;
-      userBubble: string;
-      agentBubble: string;
-      summaryTitle: string;
-      rows: { label: string; n: number }[];
-    }
-  | {
-      variant: "finance";
-      title: string;
-      totalLabel: string;
-      stats: { label: string; value: string }[];
-    }
-  | {
-      variant: "leads";
-      title: string;
-      todayBadge: string;
-      leads: { initials: string; name: string; time: string; status: string }[];
-      conversionLabel: string;
-    }
-  | {
-      variant: "campaigns";
-      title: string;
-      rows: { name: string; channel: string; reach: string }[];
-    }
-  | {
-      variant: "email" | "projects";
-      title: string;
-      status?: string;
-      rows: { label: string; sub: string }[];
-    };
-
-function FeatureCard({ feature }: { feature: FeatureItem }) {
-  const card = feature.card as FeatureCardData;
-
-  if (card.variant === "chat") {
-    return (
-      <div className="bg-neutral-900 rounded-xl border border-white/5 shadow-sm p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 bg-linear-to-br from-brand-500 to-pink-600 rounded-md flex items-center justify-center">
-            <Sparkles size={12} className="text-white" />
-          </div>
-          <span className="text-xs font-semibold text-neutral-400">{card.title}</span>
-        </div>
-        <div className="space-y-2">
-          <div className="flex justify-end">
-            <div className="bg-brand-500 text-white text-xs px-3 py-2 rounded-xl rounded-br-none max-w-[80%]">
-              {card.userBubble}
-            </div>
-          </div>
-          <div className="flex justify-start">
-            <div className="bg-neutral-800 text-neutral-300 text-xs font-semibold px-3 py-2 rounded-xl rounded-bl-none max-w-[80%]">
-              {card.agentBubble}
-            </div>
-          </div>
-          <div className="bg-neutral-800 rounded-lg p-3 mt-2">
-            <p className="text-xs font-semibold text-neutral-400 mb-2">
-              {card.summaryTitle}
-            </p>
-            {card.rows.map((t, idx) => (
-              <div key={idx} className="flex items-center gap-2 mb-1">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    ["bg-brand-400", "bg-pink-400", "bg-indigo-400", "bg-neutral-600"][idx % 4]
-                  }`}
-                />
-                <span className="text-xs font-semibold text-neutral-400 flex-1">
-                  {t.label}
-                </span>
-                <span className="text-xs font-semibold text-neutral-200">{t.n}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (card.variant === "finance") {
-    return (
-      <div className="bg-neutral-900 rounded-xl border border-white/5 shadow-sm p-4">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs font-semibold text-neutral-400">{card.title}</span>
-          <span className="text-xs text-purple-300 font-semibold bg-purple-500/20 px-2 py-0.5 rounded-full">
-            +12.4%
-          </span>
-        </div>
-        <p className="text-2xl font-bold text-white mb-1">€24,580</p>
-        <p className="text-xs font-semibold text-neutral-400 mb-4">{card.totalLabel}</p>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {card.stats.map((s, idx) => (
-            <div key={idx} className="bg-neutral-800 rounded-lg p-2">
-              <p className="text-sm font-bold text-neutral-100">{s.value}</p>
-              <p className="text-xs font-semibold text-neutral-400">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (card.variant === "leads") {
-    return (
-      <div className="bg-neutral-900 rounded-xl border border-white/5 shadow-sm p-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-neutral-400">{card.title}</span>
-          <span className="text-xs bg-brand-500/20 text-brand-300 rounded-full px-2 py-0.5 font-semibold">
-            {card.todayBadge}
-          </span>
-        </div>
-        <div className="space-y-2">
-          {card.leads.map((lead, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-800 transition-colors"
-            >
-              <div className="w-8 h-8 bg-linear-to-br from-brand-500 to-pink-600 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">
-                {lead.initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-neutral-200">{lead.name}</p>
-                <p className="text-xs font-semibold text-neutral-400">{lead.time}</p>
-              </div>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                  idx === 2 ? "bg-neutral-800 text-neutral-400" : "bg-purple-500/20 text-purple-300"
-                }`}
-              >
-                {lead.status}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
-          <span className="text-xs font-semibold text-neutral-400">{card.conversionLabel}</span>
-          <span className="text-sm font-bold text-white">34.2%</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (card.variant === "campaigns") {
-    return (
-      <div className="bg-neutral-900 rounded-xl border border-white/5 shadow-sm p-4 space-y-2.5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-neutral-400">{card.title}</span>
-        </div>
-        {card.rows.map((c, idx) => (
-          <div
-            key={idx}
-            className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-800 transition-colors"
-          >
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                ["bg-purple-500", "bg-brand-400", "bg-pink-400", "bg-indigo-400"][idx % 4]
-              }`}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-neutral-200">{c.name}</p>
-              <p className="text-xs font-semibold text-neutral-400">{c.channel}</p>
-            </div>
-            <span className="text-xs font-semibold text-neutral-500 whitespace-nowrap">
-              {c.reach}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // email / projects variants (label/sub rows). If a new `variant` is added
-  // to the dictionaries it must also be added to FeatureCardData above,
-  // otherwise it silently falls through to this rows branch.
-  return (
-    <div className="bg-neutral-900 rounded-xl border border-white/5 shadow-sm p-4 space-y-2.5">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-          {card.title}
-        </span>
-        {"status" in card && (
-          <span className="text-xs bg-purple-500/20 text-purple-300 rounded-full px-2 py-0.5 font-semibold">
-            {card.status}
-          </span>
-        )}
-      </div>
-      {card.rows.map((item, idx) => (
-        <div key={idx} className="flex items-center gap-3 p-2.5 rounded-lg bg-neutral-800">
-          <span
-            className={`w-2 h-2 rounded-full shrink-0 ${
-              ["bg-purple-500", "bg-brand-400", "bg-neutral-600"][idx % 3]
-            }`}
-          />
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-neutral-200 truncate">{item.label}</p>
-            <p className="text-xs text-neutral-500 truncate">{item.sub}</p>
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }

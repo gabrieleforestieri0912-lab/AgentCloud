@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock, MessageSquare, Star, Users, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, MessageSquare, Users, Zap } from "lucide-react";
 import type { Agent } from "@/lib/agents";
 import { isAvailable } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
@@ -32,7 +32,6 @@ export default function AgentCard({
 
   const benefitsTitle = isIt ? "Cosa ottieni" : "What you get";
   const ctaSubtext = isIt ? "Attiva ora" : "Activate now";
-  const installsLabel = isIt ? "installazioni" : "installs";
   const setupLabel = isIt ? "Setup" : "Setup";
 
   return (
@@ -56,7 +55,7 @@ export default function AgentCard({
         </div>
       )}
 
-      {/* Header: icon + category + rating */}
+      {/* Header: icon + category + badge */}
       <div className="relative mb-4 flex items-start gap-4">
         <div
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105 ${agent.accent}`}
@@ -88,19 +87,10 @@ export default function AgentCard({
         </div>
       </div>
 
-      {/* Social proof */}
-      <div className="relative mb-3 flex items-center gap-3 text-xs">
-        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 font-bold text-amber-300">
-          <Star size={12} className="fill-amber-300 text-amber-300" />
-          {agent.rating}
-        </span>
-        <span className="text-neutral-500 font-semibold">
-          {agent.installs} {installsLabel}
-        </span>
-        <span className="ml-auto inline-flex items-center gap-1 text-neutral-500 font-semibold">
-          <Clock size={12} />
-          {agent.setupTime}
-        </span>
+      {/* Setup time */}
+      <div className="relative mb-3 flex items-center gap-1.5 text-xs text-neutral-500 font-semibold">
+        <Clock size={12} />
+        {agent.setupTime}
       </div>
 
       {/* Persuasive description */}
