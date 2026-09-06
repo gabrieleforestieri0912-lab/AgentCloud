@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSessionUser } from "@/lib/supabase/server";
+import { hasPlatformAccess } from "@/lib/access-code";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
+import { TENANT_GOOGLE_ID } from "@/lib/google/connections";
 import {
   buildGoogleConsentUrl,
   encodeGoogleState,
@@ -34,7 +36,12 @@ export async function GET(req: NextRequest) {
   const returnTo = returnParam && isSafeRedirectPath(returnParam) ? returnParam : null;
 
   const sessionUser = await getSessionUser();
-  if (!sessionUser) {
+  const hasAccess = await hasPlatformAccess();
+  let userId: string | null = sessionUser?.id ?? null;
+  // Access-code holders (admin) without a Supabase account use the shared tenant
+  if (!userId && hasAccess) userId = TENANT_GOOGLE_ID;
+
+  if (!userId) {
     const nextPath =
       "/api/auth/google/connect" +
       (returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : "");
@@ -52,7 +59,7 @@ export async function GET(req: NextRequest) {
   }
 
   const nonce = crypto.randomBytes(24).toString("hex");
-  const state = encodeGoogleState({ nonce, userId: sessionUser.id });
+  const state = encodeGoogleState({ nonce, userId: userId! });
   const authorizeUrl = buildGoogleConsentUrl(state);
 
   const res = NextResponse.redirect(authorizeUrl);

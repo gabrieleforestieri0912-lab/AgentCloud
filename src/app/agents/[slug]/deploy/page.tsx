@@ -13,7 +13,7 @@ import {
   TENANT_SHOPIFY_ID,
   listShopifyConnections,
 } from "@/lib/shopify/connections";
-import { getGoogleConnectionSummary } from "@/lib/google/connections";
+import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/connections";
 import DeployAgentClient from "./deploy-client";
 
 export type DeployConnections = {
@@ -49,8 +49,9 @@ export default async function DeployAgentPage(props: {
   // Real connection state, so the "Connect tools" list can mark already-
   // connected services as active. The owner is resolved PER SERVICE, matching
   // where each connect route stores the row:
-  //  - Google is strictly per-user (the Google connect routes require a
-  //    session and store under the signed-in user's id).
+  //  - Google: signed-in users read their own rows; access-code holders
+  //    (admin) read the shared tenant store (TENANT_GOOGLE_ID) — same owner
+  //    /api/auth/google/* uses for code holders.
   //  - Shopify: signed-in users read their own rows; access-code holders
   //    WITHOUT a session read the shared tenant store (TENANT_SHOPIFY_ID —
   //    the same owner /api/shopify/install|callback use for code holders).
@@ -62,8 +63,7 @@ export default async function DeployAgentPage(props: {
   const shopifyOwnerId = unlocked
     ? TENANT_SHOPIFY_ID
     : user?.id ?? null;
-  // Google is strictly per-user (the Google connect routes require a session).
-  const googleOwnerId = user?.id ?? null;
+  const googleOwnerId = unlocked ? TENANT_GOOGLE_ID : user?.id ?? null;
   let connections: DeployConnections = {
     shopifyConnected: false,
     shopifyShops: [],

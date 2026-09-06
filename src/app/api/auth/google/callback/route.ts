@@ -8,7 +8,7 @@ import {
   GOOGLE_STATE_COOKIE,
   GOOGLE_RETURN_COOKIE,
 } from "@/lib/google/oauth";
-import { upsertGoogleConnection } from "@/lib/google/connections";
+import { TENANT_GOOGLE_ID, upsertGoogleConnection } from "@/lib/google/connections";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminEmail } from "@/lib/admin-access";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
@@ -73,7 +73,8 @@ export async function GET(req: NextRequest) {
   ) {
     return fail("state_mismatch");
   }
-  if (!UUID_RE.test(payload.userId)) {
+  const isTenant = payload.userId === TENANT_GOOGLE_ID;
+  if (!isTenant && !UUID_RE.test(payload.userId)) {
     return fail("state_mismatch");
   }
 
@@ -129,17 +130,19 @@ export async function GET(req: NextRequest) {
   }
 
   // 3. Connected Google account email (display nicety — non-fatal on failure).
-  // Admins opt out: their connected email is never persisted.
+  // Admins opt out: their connected email is never persisted (except for tenant).
   let googleEmail: string | null = null;
   let isAdmin = false;
-  try {
-    const admin = createAdminClient();
-    if (admin) {
-      const { data: u } = await admin.auth.admin.getUserById(payload.userId);
-      isAdmin = isAdminEmail(u?.user?.email ?? null);
+  if (!isTenant) {
+    try {
+      const admin = createAdminClient();
+      if (admin) {
+        const { data: u } = await admin.auth.admin.getUserById(payload.userId);
+        isAdmin = isAdminEmail(u?.user?.email ?? null);
+      }
+    } catch {
+      // fall back to non-admin (store the email)
     }
-  } catch {
-    // fall back to non-admin (store the email)
   }
   if (!isAdmin) {
     try {

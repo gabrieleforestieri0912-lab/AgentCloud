@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { getGoogleConnectionSummary } from "@/lib/google/connections";
+import { hasPlatformAccess } from "@/lib/access-code";
+import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/connections";
 
 /**
  * GET /api/google/status
@@ -9,10 +10,16 @@ import { getGoogleConnectionSummary } from "@/lib/google/connections";
  */
 export async function GET() {
   const user = await getSessionUser();
-  if (!user) {
+  const hasAccess = await hasPlatformAccess();
+  const userId = user?.id ?? (hasAccess ? TENANT_GOOGLE_ID : null);
+  if (!userId) {
     return NextResponse.json({ authenticated: false, connected: false });
   }
-  const conn = await getGoogleConnectionSummary(user.id).catch(() => null);
+  const conn =
+    (await getGoogleConnectionSummary(userId).catch(() => null)) ??
+    (user?.id && hasAccess
+      ? await getGoogleConnectionSummary(TENANT_GOOGLE_ID).catch(() => null)
+      : null);
   return NextResponse.json({
     authenticated: true,
     connected: conn !== null,

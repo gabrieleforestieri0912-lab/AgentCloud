@@ -11,6 +11,8 @@ import {
  * user_id we persist — the same pattern as shopify_connections.
  */
 
+export const TENANT_GOOGLE_ID = "__tenant__";
+
 export type GoogleConnectionRow = {
   user_id: string;
   google_email: string | null;

@@ -570,6 +570,14 @@ export type ToolContext = {
   files?: Record<string, string>;
 };
 
+async function getGoogleTokenForContext(context: ToolContext) {
+  let token = await getValidGoogleAccessToken(context.userId).catch(() => null);
+  if (!token && context.tenantId && context.tenantId !== context.userId) {
+    token = await getValidGoogleAccessToken(context.tenantId).catch(() => null);
+  }
+  return token;
+}
+
 const MAX_LEAD_FIELD_LENGTH = 250;
 const MAX_EVENT_TEXT_LENGTH = 500;
 
@@ -1896,8 +1904,8 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       if (!to || !isValidEmail(to.split(",")[0].trim())) return "gmail_send requires a valid 'to' email.";
       if (!subject) return "gmail_send requires a subject.";
       if (!body) return "gmail_send requires a body.";
-      const tokenData = await getValidGoogleAccessToken(context.userId);
-      if (!tokenData) return "No Google account connected. Connect Gmail from the dashboard, then retry.";
+      const tokenData = await getGoogleTokenForContext(context);
+      if (!tokenData) return "No Google account connected. Connect Gmail from the dashboard (or via chat panel for admin), then retry.";
       try {
         const headers = [
           `To: ${to}`,
@@ -1935,8 +1943,8 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       }
       const messageId = sanitizeText(input.message_id || "", 200);
       if (!messageId) return "gmail_trash requires message_id. Use list_emails first to get the ID.";
-      const tokenData = await getValidGoogleAccessToken(context.userId);
-      if (!tokenData) return "No Google account connected. Connect Gmail from the dashboard, then retry.";
+      const tokenData = await getGoogleTokenForContext(context);
+      if (!tokenData) return "No Google account connected. Connect Gmail from the dashboard (or via chat panel for admin), then retry.";
       try {
         const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(messageId)}/trash`, {
           method: "POST",
@@ -1958,8 +1966,8 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       }
       const eventId = sanitizeText(input.event_id || "", 500);
       if (!eventId) return "calendar_delete_event requires event_id. Use get_calendar_events first to find the ID.";
-      const tokenData = await getValidGoogleAccessToken(context.userId);
-      if (!tokenData) return "No Google account connected. Connect Calendar from the dashboard, then retry.";
+      const tokenData = await getGoogleTokenForContext(context);
+      if (!tokenData) return "No Google account connected. Connect Calendar from the dashboard (or via chat panel for admin), then retry.";
       try {
         const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
           method: "DELETE",
@@ -1985,8 +1993,8 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       if (!eventId) return "calendar_set_reminder requires event_id.";
       if (!Number.isFinite(minutes) || minutes < 0 || minutes > 40320) return "calendar_set_reminder requires minutes between 0 and 40320.";
       const validMethod = method === "email" ? "email" : "popup";
-      const tokenData = await getValidGoogleAccessToken(context.userId);
-      if (!tokenData) return "No Google account connected. Connect Calendar from the dashboard, then retry.";
+      const tokenData = await getGoogleTokenForContext(context);
+      if (!tokenData) return "No Google account connected. Connect Calendar from the dashboard (or via chat panel for admin), then retry.";
       try {
         const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
           method: "PATCH",
