@@ -1,0 +1,825 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
+
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import {
+  MessageSquare,
+  Plus,
+  Trash2,
+  PanelLeftOpen,
+  PanelLeftClose,
+  Send,
+  Sparkles,
+  Cloud,
+  Home,
+  Wrench,
+  Bot,
+  ChevronDown,
+} from "lucide-react";
+import Image from "next/image";
+import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
+import { useLanguage } from "./LanguageProvider";
+import MarkdownText from "./MarkdownText";
+import AppHeader from "./AppHeader";
+import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
+import GoogleConnectionPrompt from "@/components/GoogleConnectionPrompt";
+import { getEnabledTools } from "@/lib/agents/registry";
+import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
+import {
+  HERO_CONVERSATION_STORAGE_KEY,
+  HERO_CONVERSATION_HISTORY_KEY,
+} from "./HeroSection";
+
+type LocalMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+  // True for assistant bubbles that carry an error instead of an AI reply;
+  // the UI then shows a contact link below the message.
+  error?: boolean;
+};
+
+type LocalConversation = {
+  id: string;
+  title: string;
+  messages: LocalMessage[];
+  created_at: string;
+};
+
+function formatTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getConvTitle(messages: LocalMessage[], fallback: string): string {
+  const first = messages.find((m) => m.role === "user");
+  if (!first) return fallback;
+  return first.content.length > 36
+    ? first.content.substring(0, 36) + "..."
+    : first.content;
+}
+
+function generateId() {
+  return Math.random().toString(36).substring(2, 15);
+}
+
+export default function ChatInterface({
+  initialQuery,
+  agentId,
+  agentLabel,
+  availableAgents = [],
+}: {
+  initialQuery?: string;
+  agentId?: string;
+  /** Localized agent name shown when the chat was opened for one agent. */
+  agentLabel?: string;
+  availableAgents?: { slug: string; name: string }[];
+}) {
+  const { dict } = useLanguage();
+  const [conversations, setConversations] = useState<LocalConversation[]>([]);
+  const [activeAgentId, setActiveAgentId] = useState(agentId || "");
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [input, setInput] = useState(initialQuery || "");
+  const [isTyping, setIsTyping] = useState(false);
+  // True once the assistant's current reply has started streaming (its bubble
+  // grows word by word). The three-dot indicator is shown only before the
+  // first word arrives — while the typewriter is running, dots stay hidden.
+  const [hasPartialReply, setHasPartialReply] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const initializedRef = useRef(false);
+
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  // True while the user is at the bottom of the conversation. Auto-scroll
+  // only runs then: while streaming, word-by-word updates scroll the
+  // container directly (instant, no smooth animation fighting the finger),
+  // and reading older messages is never interrupted by yanking back down.
+  const stickToBottom = useRef(true);
+
+  const activeConv = conversations.find((c) => c.id === activeId);
+  const messages = useMemo(() => activeConv?.messages ?? [], [activeConv]);
+
+  // Header title: the active agent's name when one is selected (marketplace
+  // CTA or sidebar picker), otherwise the generic assistant name.
+  const activeAgentDisplayName =
+    availableAgents.find((a) => a.slug === activeAgentId)?.name ??
+    (agentLabel && activeAgentId ? agentLabel : undefined) ??
+    dict.chat.assistantName;
+
+  // Agents whose default tools read Gmail/Calendar need a Google connection:
+  // show the in-chat connect panel for them (like the Shopify one).
+  const needsGoogle =
+    Boolean(activeAgentId) &&
+    getEnabledTools(activeAgentId).some(
+      (tool) =>
+        tool === "list_emails" ||
+        tool === "get_calendar_events" ||
+        tool.startsWith("calendar_"),
+    );
+
+  const handleMessagesScroll = () => {
+    const el = messagesRef.current;
+    if (!el) return;
+    stickToBottom.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
+
+  const scrollToBottom = useCallback(() => {
+    const el = messagesRef.current;
+    if (!el || !stickToBottom.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping, scrollToBottom]);
+
+  useEffect(() => {
+    if (initialQuery && !initializedRef.current) {
+      initializedRef.current = true;
+      const conv: LocalConversation = {
+        id: generateId(),
+        title: dict.chat.newChat,
+        messages: [],
+        created_at: new Date().toISOString(),
+      };
+      setConversations([conv]);
+      setActiveId(conv.id);
+      setTimeout(() => handleSendWithText(initialQuery, conv.id), 100);
+    }
+  }, [initialQuery]);
+
+  // Import what the hero demo chat saved to localStorage as conversations:
+  // the live draft (ongoing hero chat) plus every conversation the hero's
+  // reset button committed to history. Both keys are consumed on import.
+  useEffect(() => {
+    try {
+      type StoredMsg = {
+        id?: string;
+        role: "user" | "assistant";
+        content: string;
+        created_at?: string;
+        error?: boolean;
+      };
+      const toConversation = (stored: StoredMsg[]): LocalConversation => ({
+        id: generateId(),
+        title: getConvTitle(stored as LocalMessage[], dict.chat.newChat),
+        messages: stored.map((m) => ({
+          id: m.id || generateId(),
+          role: m.role,
+          content: m.content,
+          created_at: m.created_at || new Date().toISOString(),
+          error: m.error,
+        })),
+        created_at: new Date().toISOString(),
+      });
+
+      const imported: LocalConversation[] = [];
+
+      const draftRaw = localStorage.getItem(HERO_CONVERSATION_STORAGE_KEY);
+      if (draftRaw) {
+        const stored = JSON.parse(draftRaw) as StoredMsg[];
+        if (Array.isArray(stored) && stored.length > 0) {
+          imported.push(toConversation(stored));
+        }
+      }
+
+      const historyRaw = localStorage.getItem(HERO_CONVERSATION_HISTORY_KEY);
+      if (historyRaw) {
+        const list = JSON.parse(historyRaw) as StoredMsg[][];
+        if (Array.isArray(list)) {
+          // Newest saved conversation first: it sits on top and is opened.
+          for (let i = list.length - 1; i >= 0; i--) {
+            const entry = list[i];
+            if (Array.isArray(entry) && entry.length > 0) {
+              imported.push(toConversation(entry));
+            }
+          }
+        }
+      }
+
+      localStorage.removeItem(HERO_CONVERSATION_STORAGE_KEY);
+      localStorage.removeItem(HERO_CONVERSATION_HISTORY_KEY);
+
+      if (imported.length > 0) {
+        setConversations((prev) => [...imported, ...prev]);
+        setActiveId(imported[0].id);
+        return;
+      }
+
+      // No saved conversation to open: start with a fresh empty one so the
+      // input is immediately usable (e.g. arriving from the marketplace
+      // "Compra" CTA at /chat?agent=...) instead of silently disabled.
+      if (!initializedRef.current) {
+        initializedRef.current = true;
+        const conv: LocalConversation = {
+          id: generateId(),
+          title: dict.chat.newChat,
+          messages: [],
+          created_at: new Date().toISOString(),
+        };
+        setConversations([conv]);
+        setActiveId(conv.id);
+      }
+    } catch {
+      // Malformed storage — start fresh.
+    }
+  }, []);
+
+  function switchConversation(id: string) {
+    setActiveId(id);
+    setMobileSidebarOpen(false);
+  }
+
+  function handleNewChat() {
+    const conv: LocalConversation = {
+      id: generateId(),
+      title: dict.chat.newChat,
+      messages: [],
+      created_at: new Date().toISOString(),
+    };
+    setConversations((prev) => [conv, ...prev]);
+    setActiveId(conv.id);
+    setMobileSidebarOpen(false);
+  }
+
+  function handleDelete(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (id === activeId) {
+      setActiveId(null);
+    }
+  }
+
+  async function handleSendWithText(text: string, convId: string) {
+    if (!text.trim() || !convId) return;
+    await sendMessage(text, convId);
+  }
+
+  async function sendMessage(text: string, convId: string) {
+    if (isTyping) return;
+
+    const userMsg: LocalMessage = {
+      id: generateId(),
+      role: "user",
+      content: text,
+      created_at: new Date().toISOString(),
+    };
+
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === convId
+          ? {
+              ...c,
+              messages: [...c.messages, userMsg],
+              title: getConvTitle([...c.messages, userMsg], dict.chat.newChat),
+            }
+          : c,
+      ),
+    );
+
+    setIsTyping(true);
+    setHasPartialReply(false);
+
+    // Update a single assistant message in place as the stream arrives.
+    // Returns the stable id so later chunks update the same bubble. When
+    // `error` is set the bubble is created as an error message (no AI reply),
+    // which renders a contact link underneath.
+    const patchAssistant = (
+      assistantId: string,
+      content: string,
+      error = false,
+    ) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convId
+            ? {
+                ...c,
+                messages: c.messages.some((m) => m.id === assistantId)
+                  ? c.messages.map((m) =>
+                      m.id === assistantId ? { ...m, content } : m,
+                    )
+                  : [
+                      ...c.messages,
+                      {
+                        id: assistantId,
+                        role: "assistant",
+                        content,
+                        created_at: new Date().toISOString(),
+                        error: error || undefined,
+                      },
+                    ],
+              }
+            : c,
+        ),
+      );
+    };
+
+    // Always use the real AI backend — no pre-set answers. On failure a clear
+    // error bubble with a contact link is shown instead.
+    let responseText = "";
+    // Server-side error message (localized) captured from the SSE stream.
+    let streamErrorMessage: string | null = null;
+    try {
+      // Send the full conversation history so the AI stays coherent across
+      // follow-ups (and always answers against the latest platform data).
+      const history =
+        conversations.find((c) => c.id === convId)?.messages ?? [];
+      const apiMessages = [
+        ...history.map((m) => ({ role: m.role, content: m.content })),
+        { role: "user" as const, content: text },
+      ];
+
+      // Real agent conversations run through the agent runtime so the
+      // selected agent's tools actually execute (Shopify, Gmail, Calendar,
+      // web/file tools...). The generic personal assistant (no agent) stays
+      // on the plain chat endpoint. Both stream the same SSE shape
+      // ({ type: "text" | "done" | "error", ... }), so one reader handles both.
+      const isAgentChat = Boolean(activeAgentId);
+      const providerRes = await fetch(
+        isAgentChat ? "/api/agent/run" : "/api/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            isAgentChat
+              ? { agentId: activeAgentId, messages: apiMessages }
+              : { messages: apiMessages },
+          ),
+        },
+      );
+
+      // Non-2xx: the route returns a JSON { error } (already localized
+      // server-side — e.g. subscription required, monthly limit, rate
+      // limited). Surface that real message instead of a generic one.
+      if (!providerRes.ok) {
+        let serverMessage: string | null = null;
+        try {
+          const data = (await providerRes.json()) as { error?: string };
+          if (data && typeof data.error === "string" && data.error.trim()) {
+            serverMessage = data.error;
+          }
+        } catch {
+          // ignore malformed error bodies
+        }
+        if (serverMessage) streamErrorMessage = serverMessage;
+        throw new Error("AI backend error");
+      }
+
+      if (providerRes.body) {
+        const reader = providerRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let assistantId = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            let json: {
+              type?: string;
+              content?: string;
+              message?: string;
+            };
+            try {
+              json = JSON.parse(line.slice(6));
+            } catch {
+              continue;
+            }
+
+            if (json.type === "text" && typeof json.content === "string") {
+              responseText += json.content;
+              if (!assistantId) {
+                assistantId = generateId();
+                setHasPartialReply(true);
+              }
+              patchAssistant(assistantId, responseText);
+            }
+
+            if (json.type === "error") {
+              streamErrorMessage =
+                typeof json.message === "string" && json.message.trim()
+                  ? json.message
+                  : null;
+              throw new Error("AI backend error");
+            }
+
+            if (json.type === "done") break;
+          }
+        }
+
+        // Stream ended without any content — treat as backend failure.
+        if (!responseText.trim()) throw new Error("Empty response");
+      } else {
+        throw new Error("AI backend unavailable");
+      }
+    } catch {
+      // No canned answers: show the real failure with a contact link.
+      const message =
+        streamErrorMessage && streamErrorMessage.trim()
+          ? streamErrorMessage
+          : dict.common.aiUnavailable;
+      const assistantId = generateId();
+      setHasPartialReply(true);
+      patchAssistant(assistantId, message, true);
+    }
+
+    setIsTyping(false);
+  }
+
+  async function handleSend() {
+    const text = input.trim();
+    if (!text || !activeId) return;
+    setInput("");
+    inputRef.current?.focus();
+    await sendMessage(text, activeId);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
+  function handleAppHeaderToggle() {
+    // Desktop (>=lg) toggles the persistent sidebar, mobile toggles overlay.
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setMobileSidebarOpen((v) => !v);
+    } else {
+      setSidebarOpen((v) => !v);
+    }
+  }
+
+  return (
+    <div className="flex h-dvh flex-col bg-neutral-950">
+      <AppHeader
+        variant="chat"
+        agentLabel={activeAgentDisplayName}
+        sidebarOpen={sidebarOpen || mobileSidebarOpen}
+        onToggleSidebar={handleAppHeaderToggle}
+      />
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile sidebar overlay */}
+        {mobileSidebarOpen && (
+          <div
+            className="absolute inset-0 bg-black/60 z-20 lg:hidden"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar — apribile */}
+        <aside
+          className={`
+            absolute lg:static inset-y-0 left-0 z-30
+            w-72 bg-neutral-950 border-r border-white/5
+            flex flex-col transition-all duration-300 shrink-0
+            ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+            ${sidebarOpen ? "lg:w-72 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
+          `}
+        >
+        <div className="flex items-center gap-2 p-4 border-b border-white/5">
+          <button
+            onClick={handleNewChat}
+            className="flex-1 flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 text-white text-sm font-semibold py-2.5 px-4 rounded-xl transition-all shadow-lg shadow-brand-500/20"
+          >
+            <Plus size={16} />
+            {dict.chat.newChat}
+          </button>
+          <button
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-label={dict.chat.closeSidebar}
+            className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg bg-neutral-800 text-neutral-400 hover:text-white"
+          >
+            <PanelLeftClose size={16} />
+          </button>
+        </div>
+
+        <nav className="px-3 pt-3 pb-1">
+          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
+            <Home size={16} />
+            {dict.chat.home}
+          </button>
+          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20">
+            <MessageSquare size={16} />
+            {dict.chat.chat}
+          </button>
+          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
+            <Wrench size={16} />
+            {dict.chat.tools}
+          </button>
+          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
+            <Bot size={16} />
+            {dict.chat.agents}
+          </button>
+        </nav>
+
+        {availableAgents.length > 0 && (
+          <div className="px-3 pt-1 pb-1">
+            <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
+              {dict.chat.agents}
+            </p>
+            <div className="space-y-1">
+              <button
+                onClick={() => setActiveAgentId("")}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                  activeAgentId === ""
+                    ? "bg-white/5 text-white border border-white/5"
+                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Bot size={14} className="shrink-0" />
+                <span className="truncate">{dict.chat.assistantName}</span>
+              </button>
+              {availableAgents.map((a) => (
+                <button
+                  key={a.slug}
+                  onClick={() => setActiveAgentId(a.slug)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                    activeAgentId === a.slug
+                      ? "bg-brand-500/10 text-brand-300 border border-brand-500/20"
+                      : "text-neutral-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <Bot size={14} className="shrink-0" />
+                  <span className="truncate">{a.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+          <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
+            {dict.chat.conversations}
+          </p>
+          {conversations.length === 0 ? (
+            <p className="text-xs font-semibold text-neutral-600 px-3 py-4 text-center">
+              {dict.chat.noConversations}
+            </p>
+          ) : (
+            conversations.map((conv) => (
+              <div
+                key={conv.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => switchConversation(conv.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    switchConversation(conv.id);
+                  }
+                }}
+                className={`group flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors ${
+                  conv.id === activeId
+                    ? "bg-white/5 text-white border border-white/5"
+                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <MessageSquare
+                  size={14}
+                  className={`shrink-0 ${
+                    conv.id === activeId ? "text-brand-400" : "text-neutral-600"
+                  }`}
+                />
+                <span className="truncate flex-1">{conv.title}</span>
+                <button
+                  onClick={(e) => handleDelete(e, conv.id)}
+                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/20 hover:text-red-400 transition-all shrink-0"
+                  title={dict.chat.deleteConversation}
+                  aria-label={dict.chat.deleteConversation}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="p-4 border-t border-white/5">
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-neutral-900/50">
+            <Image
+              src="/agentcloud.png"
+              alt="AgentCloud"
+              width={14}
+              height={14}
+              className="text-brand-400"
+            />
+            <span className="text-xs font-semibold text-neutral-500">
+              AgentCloud <span className="text-purple-400">v2.1</span>
+            </span>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile sidebar trigger */}
+      <button
+        onClick={() => setMobileSidebarOpen(true)}
+        className="lg:hidden fixed bottom-6 left-4 z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
+        title="Open sidebar"
+      >
+        <MessageSquare size={18} className="text-white" />
+      </button>
+
+      {/* Main chat area */}
+      <main
+        className={`flex-1 flex flex-col bg-neutral-900 transition-all duration-300 ${
+          sidebarOpen ? "lg:ml-0" : ""
+        }`}
+      >
+        {/* Chat header */}
+        <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur-sm">
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/agentcloud.png"
+              alt="AgentCloud"
+              width={28}
+              height={28}
+              className="shrink-0"
+            />
+            <div>
+              <p className="text-sm font-semibold text-white">
+                {activeAgentDisplayName}
+              </p>
+              <p className="text-xs font-semibold text-neutral-500">
+                {isTyping ? (
+                  <span className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
+                    {dict.chat.thinking}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-purple-400 rounded-full" />
+                    {dict.chat.online}
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <button className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all">
+              <Sparkles size={16} />
+            </button>
+            <button className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all">
+              <ChevronDown size={16} />
+            </button>
+          </div>
+        </div>
+
+        {activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
+        {needsGoogle && <GoogleConnectionPrompt />}
+
+        {/* Messages */}          <div
+          ref={messagesRef}
+          onScroll={handleMessagesScroll}
+          className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 mx-auto max-w-content"
+        >
+          {messages.length === 0 && !isTyping ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <Image
+                src="/agentcloud.png"
+                alt="AgentCloud"
+                width={56}
+                height={56}
+                className="mb-4"
+              />
+              <h2 className="text-xl font-semibold text-white mb-2">
+                {dict.chat.emptyTitle}
+              </h2>
+              <p className="text-sm font-semibold text-neutral-400 max-w-sm">
+                {dict.chat.emptySubtitle}
+              </p>
+            </div>
+          ) : (
+            messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex items-start gap-3 ${
+                  msg.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                {msg.role === "assistant" && (
+                  <Image
+                    src="/agentcloud.png"
+                    alt="AgentCloud"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 shrink-0"
+                  />
+                )}
+                <div
+                  className={`max-w-[75%] sm:max-w-[65%] ${msg.role === "user" ? "order-1" : ""} w-full`}
+                >
+                  <div
+                    className={`px-4 py-3 text-sm leading-relaxed ${
+                      msg.role === "user"
+                        ? "whitespace-pre-wrap bg-brand-500 text-white rounded-2xl rounded-br-md shadow-lg shadow-brand-500/20"
+                        : "bg-neutral-800 border border-white/5 text-neutral-200 rounded-2xl rounded-bl-md"
+                    }`}
+                  >
+                    {msg.role === "assistant" ? (
+                      <>
+                        <MarkdownText text={msg.content} />
+                        {msg.error && (
+                          <a
+                            href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
+                            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 underline decoration-brand-400/40 underline-offset-2 hover:text-brand-300 transition-colors"
+                          >
+                            ✉️ {dict.common.contactSupport}
+                          </a>
+                        )}
+                      </>
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
+                  <p
+                    className={`text-[10px] text-neutral-600 mt-1 ${
+                      msg.role === "user" ? "text-right" : "text-left"
+                    }`}
+                  >
+                    {formatTime(msg.created_at)}
+                  </p>
+                </div>
+                {msg.role === "user" && (
+                  <div className="w-8 h-8 rounded-xl bg-neutral-700 flex items-center justify-center shrink-0">
+                    <span className="text-white text-xs font-bold">U</span>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+
+          {isTyping && !hasPartialReply && (
+            <div className="flex items-start gap-3">
+              <Image
+                src="/agentcloud.png"
+                alt="AgentCloud"
+                width={32}
+                height={32}
+                className="w-8 h-8 shrink-0"
+              />
+              <div className="bg-neutral-800 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3.5">
+                <div className="flex gap-1.5 items-center h-4">
+                  <span
+                    className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse"
+                    style={{ animationDelay: "200ms" }}
+                  />
+                  <span
+                    className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse"
+                    style={{ animationDelay: "400ms" }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Input area */}
+        <div className="px-4 sm:px-6 py-4 bg-neutral-900/80 backdrop-blur-sm border-t border-white/5">
+          <div className="mx-auto flex items-end gap-3 bg-neutral-800 rounded-2xl border border-white/5 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all max-w-content">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={dict.chat.placeholder}
+              rows={1}
+              className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
+              style={{ fieldSizing: "content" } as React.CSSProperties}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isTyping || !activeId}
+              aria-label={dict.chat.sendMessage}
+              title={dict.chat.sendMessage}
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed"
+            >
+              <Send size={16} />
+            </button>
+          </div>
+          <p className="text-[10px] text-neutral-600 text-center mt-2">
+            {dict.chat.disclaimer}
+          </p>
+        </div>
+      </main>
+      </div>
+    </div>
+  );
+}

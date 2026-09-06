@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/billing/notify-expiring?token=$CRON_SECRET",
+      "schedule": "27 8 * * *"
+    }
+  ]
+}
