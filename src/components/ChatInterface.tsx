@@ -22,7 +22,8 @@ import MarkdownText from "./MarkdownText";
 import AppHeader from "./AppHeader";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import GoogleConnectionPrompt from "@/components/GoogleConnectionPrompt";
-import { getEnabledTools } from "@/lib/agents/registry";
+import { getEnabledTools, AGENT_RUNTIME } from "@/lib/agents/registry";
+import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 import {
   HERO_CONVERSATION_STORAGE_KEY,
@@ -90,6 +91,7 @@ export default function ChatInterface({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const initializedRef = useRef(false);
+  const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
 
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -104,8 +106,20 @@ export default function ChatInterface({
 
   // Header title: the active agent's name when one is selected (marketplace
   // CTA or sidebar picker), otherwise the generic assistant name.
+  // Admin / access-code holders see the full catalog (same handling as normal users, with history)
+  const effectiveAvailableAgents = useMemo(() => {
+    if (availableAgents.length > 0) return availableAgents;
+    if (hasAccessOnClient()) {
+      return Object.keys(AGENT_RUNTIME).map((slug) => ({
+        slug,
+        name: AGENT_RUNTIME[slug]?.name ?? slug,
+      }));
+    }
+    return [];
+  }, [availableAgents]);
+
   const activeAgentDisplayName =
-    availableAgents.find((a) => a.slug === activeAgentId)?.name ??
+    effectiveAvailableAgents.find((a) => a.slug === activeAgentId)?.name ??
     (agentLabel && activeAgentId ? agentLabel : undefined) ??
     dict.chat.assistantName;
 
@@ -136,6 +150,35 @@ export default function ChatInterface({
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
+
+  // Cronologia persistente: admin e utenti normali gestiti allo stesso modo
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as LocalConversation[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setConversations((prev) => (prev.length === 0 ? parsed : prev));
+          const firstId = (parsed[0] as LocalConversation)?.id;
+          if (firstId) setActiveId((prev) => prev ?? firstId);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (conversations.length > 0) {
+        localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(conversations));
+      } else if (initializedRef.current) {
+        // keep empty history as empty array, don't delete immediately to avoid flicker
+      }
+    } catch {
+      // ignore
+    }
+  }, [conversations]);
 
   useEffect(() => {
     if (initialQuery && !initializedRef.current) {
@@ -559,7 +602,7 @@ export default function ChatInterface({
           </div>
         )}
 
-        {availableAgents.length > 0 && (
+        {effectiveAvailableAgents.length > 0 && (
           <div className="px-3 pt-1 pb-1">
             <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
               {dict.chat.agents}
@@ -576,7 +619,7 @@ export default function ChatInterface({
                 <Bot size={14} className="shrink-0" />
                 <span className="truncate">{dict.chat.assistantName}</span>
               </button>
-              {availableAgents.map((a) => (
+              {effectiveAvailableAgents.map((a) => (
                 <button
                   key={a.slug}
                   onClick={() => setActiveAgentId(a.slug)}

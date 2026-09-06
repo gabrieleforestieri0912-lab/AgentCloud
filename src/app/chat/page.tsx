@@ -36,11 +36,20 @@ export default async function ChatPage(props: {
   const agentParam =
     typeof searchParams?.agent === "string" ? searchParams.agent : undefined;
 
-  const ownedSlugs = user ? await getOwnedAgentSlugs(user.id) : [];
-  const availableAgents = ownedSlugs.map((slug) => ({
-    slug,
-    name: AGENT_RUNTIME[slug]?.name ?? slug,
-  }));
+  // Admin / access-code holders without a Supabase user get the full catalog in chat (same handling as normal users, with history)
+  let availableAgents: { slug: string; name: string }[] = [];
+  if (user) {
+    const ownedSlugs = await getOwnedAgentSlugs(user.id);
+    availableAgents = ownedSlugs.map((slug) => ({
+      slug,
+      name: AGENT_RUNTIME[slug]?.name ?? slug,
+    }));
+  } else if (accessGranted) {
+    availableAgents = Object.keys(AGENT_RUNTIME).map((slug) => ({
+      slug,
+      name: AGENT_RUNTIME[slug]?.name ?? slug,
+    }));
+  }
 
   // When the marketplace CTA opens the chat for a specific agent
   // (/chat?agent=<slug>), show that agent's (localized) name in the header so

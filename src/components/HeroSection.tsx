@@ -8,6 +8,7 @@ import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
 import DemoLimitModal from "./DemoLimitModal";
 import { createClient } from "@/lib/supabase/client";
+import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 
 // The hero conversation is persisted here so the full chat page
@@ -108,11 +109,13 @@ export default function HeroSection() {
   }
 
   // Track auth state to enforce 10-message limit only for guests
+  // Admin / access-code holders are treated as authenticated (same handling as normal users, no demo limit, history saved)
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data }) => setIsAuthed(!!data.session));
+    const checkAccess = () => hasAccessOnClient();
+    supabase.auth.getSession().then(({ data }) => setIsAuthed(!!data.session || checkAccess()));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
-      setIsAuthed(!!session),
+      setIsAuthed(!!session || checkAccess()),
     );
     return () => sub.subscription.unsubscribe();
   }, []);
