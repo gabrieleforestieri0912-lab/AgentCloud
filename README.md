@@ -22,7 +22,7 @@ Next.js 16 (Turbopack) · React 19 · Tailwind CSS v4 · TypeScript · Supabase 
 
 ```bash
 npm install
-cp .env .env.local                 # adatta i valori: vedi PROJECT.md → Environment Variables
+cp .env .env.local                 # adatta i valori: vedi docs/PROJECT.md → Environment Variables
 npm run dev
 ```
 
@@ -39,10 +39,10 @@ npm run dev
 
 ## Environment Variables
 
-L'elenco completo e aggiornato è in **[PROJECT.md → Environment Variables](PROJECT.md#environment-variables-produzione)**. In sintesi per la produzione:
+L'elenco completo e aggiornato è in **[docs/PROJECT.md → Environment Variables](docs/PROJECT.md#environment-variables-produzione)**. In sintesi per la produzione:
 
 ```env
-# Supabase (Auth + DB) — vedi SUPABASE_AUTH.md per Google OAuth
+# Supabase (Auth + DB) — vedi docs/SUPABASE_AUTH.md per Google OAuth
 NEXT_PUBLIC_SUPABASE_URL=…
 NEXT_PUBLIC_SUPABASE_ANON_KEY=…
 SUPABASE_SERVICE_ROLE_KEY=…
@@ -54,7 +54,7 @@ NEXT_PUBLIC_SITE_URL=https://tuodominio.com
 ANTHROPIC_API_KEY=sk-ant-…
 RESEND_API_KEY=re_…
 
-# Stripe (live!) — vedi STRIPE_SETUP.md per payment links, webhook e metered price
+# Stripe (live!) — vedi docs/STRIPE_SETUP.md per payment links, webhook e metered price
 STRIPE_SECRET_KEY=sk_live_…
 STRIPE_WEBHOOK_SECRET=whsec_…
 STRIPE_OVERAGE_PRICE_ID=price_…
@@ -83,12 +83,16 @@ Esegui lo schema scelto (Supabase SQL Editor o `supabase db push`) — **riesegu
 
 ## Documentazione
 
-- **[PROJECT.md](PROJECT.md)** — architettura, routes, i18n, billing, rate limiting, env vars complete
-- **[SUPABASE_AUTH.md](SUPABASE_AUTH.md)** — setup autenticazione (email/password + Google OAuth)
-- **[STRIPE_SETUP.md](STRIPE_SETUP.md)** — payment links, webhook, overage meter, customer portal
-- **[FEATURE_FLAGS.md](FEATURE_FLAGS.md)** — verticali e configurazione agenti/tool
-- **[PRICING.md](PRICING.md)** — piani e token allowance
+Tutta la documentazione è raccolta in **`docs/`**:
+
+- **[docs/PROJECT.md](docs/PROJECT.md)** — architettura, routes, i18n, billing, rate limiting, env vars complete
+- **[docs/AGENT_CATALOG.md](docs/AGENT_CATALOG.md)** — catalogo agenti e contenuti
+- **[docs/SUPABASE_AUTH.md](docs/SUPABASE_AUTH.md)** — setup autenticazione (email/password + Google OAuth)
+- **[docs/STRIPE_SETUP.md](docs/STRIPE_SETUP.md)** — payment links, webhook, overage meter, customer portal
+- **[docs/FEATURE_FLAGS.md](docs/FEATURE_FLAGS.md)** — verticali e configurazione agenti/tool
+- **[docs/PAYMENT_IMPLEMENTATION.md](docs/PAYMENT_IMPLEMENTATION.md)** — dettagli implementativi del billing
+- **[docs/PRICING.md](docs/PRICING.md)** — piani e token allowance
 
 ## Deploy
 
-Consigliato su Vercel (o qualsiasi host Node). Prima del lancio: Google OAuth configurato in Supabase (vedi `SUPABASE_AUTH.md`), chiavi **live** Stripe, webhook Stripe configurato (4 eventi), `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, `supabase/schema.sql` eseguito.
+Consigliato su Vercel (o qualsiasi host Node). Prima del lancio: Google OAuth configurato in Supabase (vedi `docs/SUPABASE_AUTH.md`), chiavi **live** Stripe, webhook Stripe configurato (4 eventi), `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, `supabase/schema.sql` eseguito.
