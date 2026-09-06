@@ -6,6 +6,8 @@ import Image from "next/image";
 import { useLanguage } from "./LanguageProvider";
 import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
+import DemoLimitModal from "./DemoLimitModal";
+import { createClient } from "@/lib/supabase/client";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 
 // The hero conversation is persisted here so the full chat page
@@ -30,11 +32,15 @@ function heroId() {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────
+const DEMO_LIMIT = 10;
+
 export default function HeroSection() {
   const { dict } = useLanguage();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<HeroMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
@@ -46,6 +52,18 @@ export default function HeroSection() {
   const discardStreamRef = useRef(false);
 
   const hasMessages = messages.length > 0 || isTyping;
+  const userCount = messages.filter((m) => m.role === "user").length;
+  const remaining = Math.max(0, DEMO_LIMIT - userCount);
+
+  // Track auth state to enforce 10-message limit only for guests
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => setIsAuthed(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
+      setIsAuthed(!!session),
+    );
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -93,6 +111,11 @@ export default function HeroSection() {
   async function handleSend() {
     const text = input.trim();
     if (!text || isTyping) return;
+    // Demo limit for unauthenticated users: 10 user messages, then show login modal
+    if (!isAuthed && userCount >= DEMO_LIMIT) {
+      setShowLimitModal(true);
+      return;
+    }
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
@@ -575,9 +598,17 @@ export default function HeroSection() {
               </div>
             </div>
           )}
+          {hasMessages && !isAuthed && (
+            <p className="mt-3 text-center text-xs font-semibold text-neutral-500">
+              {remaining > 0
+                ? `${remaining} / ${DEMO_LIMIT} messaggi demo rimasti`
+                : `Limite demo raggiunto — accedi per continuare`}
+            </p>
+          )}
         </motion.div>
       </div>
 
+      <DemoLimitModal open={showLimitModal} onClose={() => setShowLimitModal(false)} />
     </section>
   );
 }
