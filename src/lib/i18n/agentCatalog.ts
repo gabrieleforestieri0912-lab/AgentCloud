@@ -48,7 +48,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     previewPrompt:
       "Metti in ordine la mia casella e ricordami gli impegni della settimana.",
     previewResult:
-      "Ho smistato 42 email in 6 cartelle, segnalato 3 che richiedono la tua risposta e impostato promemoria per 5 impegni della settimana.",
+      "📬 Triage completato:\n• Inbox: 42 email → 6 cartelle (Urgenti 3, Newsletter 18, Da archiviare 21)\n• Flagged: 3 email richiedono risposta entro oggi (cliente Acme, fattura #1042, meeting team)\n• Promemoria creati: 5 impegni (Lun 10:00 call Acme, Mar 14:30 review, Mer scadenza fattura, Gio demo, Ven report)\n• Digest inviato: riepilogo mattutino con priorità e scadenze.",
     example:
       "Gestisco 50 email al giorno e riduco i tempi di gestione della casella del 70%.",
   },
@@ -69,14 +69,14 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Raccomandazioni strategiche",
     ],
     workflow: [
-      "Raccogli i dati",
-      "Analizza i KPI",
-      "Prepara il report",
-      "Proponi le raccomandazioni",
+      "Sincronizza Sheets+Calendar",
+      "Analizza KPI",
+      "Crea deck 10 slide",
+      "Proponi 3 azioni",
     ],
     previewPrompt: "Prepara il report mensile con i KPI chiave e le raccomandazioni.",
     previewResult:
-      "Report pronto: 12 KPI analizzati, 3 raccomandazioni prioritarie e 2 rischi segnalati.",
+      "📊 Board deck Q2 pronto (10 slide):\n• Revenue: €128k (+18% QoQ, +32% YoY) — driver: Shopify +18%, Lead +24%\n• Churn: 7% su SMB (vs 4% target) — causa: onboarding lento, fix: check-in a 7gg\n• Pipeline: 42 lead, 18 qualified, CR 23%\n• Rischio: stock esaurimento su bestseller (2/5 SKU <10gg)\n• 3 azioni: 1) Onboarding 7gg, 2) Riordino stock, 3) Upsell su high-fit\n• File: board-deck-Q2-2024.pdf + Sheets aggiornato.",
     example:
       "Ho prodotto 12 report dirigenziali nell'ultimo anno con analisi dei KPI.",
   },
@@ -104,7 +104,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     ],
     previewPrompt: "Scrivi un articolo SEO sulla gestione dei lead per PMI.",
     previewResult:
-      "Articolo da 1.200 parole con 8 keyword, meta description e suggerimenti di link interni.",
+      "📝 Articolo SEO pronto (1.520 parole):\n• H1: Local SEO per ristoranti italiani nel 2024\n• Keywords: 'ristorante vicino a me' (2.1k/mese), 'menu ristorante' (1.4k), 'prenotazione online' (890) + 2 secondarie\n• Meta: 'Scopri come posizionare il tuo ristorante su Google con 5 step...' (152 char)\n• Links: 3 interni (menu, prenotazioni, recensioni)\n• Fonte: Ahrefs + GSC, salvato su WordPress come bozza.",
     example:
       "Ho scritto 15 articoli SEO che hanno portato +5.000 visitatori organici al mese.",
   },
@@ -132,7 +132,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     ],
     previewPrompt: "Organizza la mia settimana e prepara i punti chiave delle riunioni.",
     previewResult:
-      "Settimana organizzata: 11 attività pianificate e 3 briefing preparati.",
+      "📅 Settimana pianificata:\n• 5 task prioritizzati (1. Call Acme P0, 2. Report Q3 P1...)\n• 2 meeting spostati (standup Ven → Lun, 1:1 con Anna annullato)\n• Blocco deep-work: Mer 09:00-11:00\n• Email riepilogo pronta: 'Questa settimana: 5 priorità, 2 rinvii, 1 blocco focus' — da approvare.",
     example:
       "Ho gestito 60 attività e risparmiato 8 ore a settimana al founder.",
   },
@@ -160,7 +160,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     ],
     previewPrompt: "Trova un orario per una riunione di 30 minuti con il team domani.",
     previewResult:
-      "3 slot proposti, riunione prenotata per domani alle 10:00 con link video.",
+      "📅 Disponibilità verificata:\n• Mar 10:00, Mar 15:30, Mer 11:00 (Europe/Rome)\n• Prenotato: Mar 15:30-16:00 'Intro Call — Marco & Anna' con Zoom https://zoom.us/j/123\n• Inviti inviati a marco@acme.it, anna@agentcloud.agency + promemoria 15 min\n• Google Calendar aggiornato, Slack notificato #sales.",
     example:
       "Ho gestito 200 prenotazioni al mese senza doppie prenotazioni.",
   },
@@ -188,7 +188,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     ],
     previewPrompt: "Cattura questo lead dal modulo e avvisa il team vendite.",
     previewResult:
-      "Lead catturato, contatto arricchito e notifica inviata al canale vendite.",
+      "✅ Lead catturato:\n• Mario Rossi — mario@acme.it — Acme SRL (+39 02 1234) — Interesse: demo Shopify\n• Enrich: CEO, 12 dipendenti, Milano, LinkedIn linkedin.com/in/mariorossi\n• Score: Alto (fit perfetto, intent chiaro)\n• Slack #sales notificato con riepilogo + link HubSpot\n• Follow-up automatico programmato per domani 10:00.",
     example:
       "Ho catturato 340 lead il mese scorso con il 96% di dati validi.",
   },
@@ -216,7 +216,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     ],
     previewPrompt: "Rispondi a questo ticket sull'accesso al portale.",
     previewResult:
-      "Risposta pronta con la procedura di reset, ticket classificato come Accesso.",
+      "🎧 Ticket gestiti:\n• #1042 'Accesso portale non funziona' → Risposta inviata: procedura reset password con link + video guida (KB: onboarding.pdf)\n• #1043 'Fattura doppia' → Escalation al team billing con riepilogo cliente + priorità alta\n• #1044 'Info spedizione' → Risposta inviata: tracking #TRK123, consegna ven 12/12, link stato ordine\n• 15 ticket risolti, 2 in attesa umana, tempo medio 42s.",
     example:
       "Ho risolto l'82% dei ticket in autonomia, in media in 40 secondi.",
   },
@@ -244,7 +244,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     ],
     previewPrompt: "Scrivi 3 varianti di headline per la landing del lancio.",
     previewResult:
-      "3 headline + 3 sottotitoli consegnati, pronti per il test A/B.",
+      "✍️ Copy pronto (ricerca su 3 competitor + web_search):\n• Variante A (Benefit): 'Raddoppia le vendite senza assumere — agenti AI che lavorano 24/7'\n• Variante B (Social proof): 'Già 2.3k team usano AgentCloud per convertire di più'\n• Variante C (Urgency): 'Lancia oggi, vendi domani — setup in giornata'\n• CTA: 'Attiva ora →', 'Prova gratis', 'Vedi demo'\n• Salvato in copy-landing-pricing-2024-12-06.md con scoring 9/8/7 e vincitore consigliato A.",
     example:
       "Le mie varianti hanno migliorato la conversione del 19% nel test.",
   },
@@ -273,7 +273,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     previewPrompt:
       "Riepiloga il cash flow di questo mese e segnala le fatture non pagate.",
     previewResult:
-      "Ho riconciliato 42 transazioni, segnalato 6 fatture non pagate e preparato un riepilogo del cash flow con le 3 priorità della prossima settimana.",
+      "💰 Cash flow riconciliato (30gg):\n• Entrate: €24.320 (Stripe) — Uscite: €18.410 — Netto: +€5.910\n• 42 transazioni verificate, 2 anomalie flaggate (doppio addebito Stripe #4821)\n• Fatture insoluti: 6 (3 >30gg: Acme €1.200, Beta €890, Gamma €450) — solleciti pronti\n• Priorità settimana prossima: 1) Sollecita Acme, 2) Rinegozia fornitore X, 3) Prepara forecast Q4\n• Report salvato: cashflow-2024-12-06.pdf",
     example:
       "Ogni settimana riconcilio oltre 100 transazioni e preparo il report del cash flow prima delle 9:00.",
   },
@@ -294,14 +294,14 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Sicurezza dati",
     ],
     workflow: [
-      "Identifica l'intento",
-      "Cerca nel catalogo",
-      "Costruisci il link",
-      "Verifica lo stato",
+      "Analizza best seller",
+      "Crea 3 prodotti",
+      "Configura sconto ESTATE20",
+      "Genera link carrello",
     ],
     previewPrompt: "Trova le scarpe da running in taglia 42 e crea il link al carrello.",
     previewResult:
-      "3 prodotti trovati, link al carrello generato e disponibilità verificata.",
+      "🛍️ Store aggiornato — Ricerca 'scarpe running 42':\n• Nike Air Zoom Pegasus 42 — €129,90 — ID: gid://shopify/ProductVariant/445901234 — Cart: /cart/445901234:1 — Disponibile\n• Adidas Ultraboost 42 — €149,90 — Cart: /cart/445901235:1 — Disponibile\n• Asics Gel Kayano 42 — €119,90 — Cart: /cart/445901236:1 — 3 rimasti\n• Link carrello generato per Nike (scelta top) e verificata disponibilità in tempo reale.",
     example:
       "Ho gestito 500 richieste di prodotto con link diretti al checkout.",
   },
