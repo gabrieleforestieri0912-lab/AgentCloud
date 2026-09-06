@@ -443,13 +443,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     )}
                   </div>
                   <NotificationBell />
-                  <button
-                    onClick={handleSignOut}
-                    className="hidden items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 xl:flex"
-                  >
-                    <LogOut size={16} />
-                    {dict.navbar.logOut}
-                  </button>
                 </div>
               ) : (
                 <Link
