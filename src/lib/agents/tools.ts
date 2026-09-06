@@ -1105,8 +1105,8 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       const since = new Date(Date.now() - days * 86400000).toISOString();
 
       const graphql = `
-        query getAnalytics($since: String!) {
-          orders(first: 250, query: "created_at:>=$since") {
+        query getAnalytics($query: String!) {
+          orders(first: 250, query: $query) {
             edges {
               node {
                 totalPrice { amount currencyCode }
@@ -1125,12 +1125,13 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
           }
           shop {
             name
-            primaryDomain { host }
           }
         }
       `;
 
-      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { since });
+      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, {
+        query: `created_at:>=${since}`,
+      });
       if (result.status === 401) {
         if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
         return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
