@@ -14,6 +14,7 @@ import {
   Home,
   Wrench,
   Bot,
+  ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -134,22 +135,48 @@ export default function ChatInterface({
         tool.startsWith("calendar_"),
     );
 
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const handleMessagesScroll = () => {
     const el = messagesRef.current;
     if (!el) return;
-    stickToBottom.current =
-      el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    setIsAtBottom(atBottom);
+    stickToBottom.current = atBottom;
   };
 
-  const scrollToBottom = useCallback(() => {
-    const el = messagesRef.current;
-    if (!el || !stickToBottom.current) return;
-    el.scrollTop = el.scrollHeight;
-  }, []);
+  const scrollToBottom = useCallback(
+    (force = false) => {
+      const el = messagesRef.current;
+      if (!el) return;
+      if (!force && !isAtBottom && !stickToBottom.current) return;
+      el.scrollTo({ top: el.scrollHeight, behavior: force ? "smooth" : "auto" });
+    },
+    [isAtBottom],
+  );
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
+
+  // Permetti sempre lo scroll manuale: se l'utente scrolla verso l'alto durante lo streaming, blocca l'auto-scroll
+  useEffect(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    const onWheel = () => {
+      // Se l'utente sta scrollando verso l'alto, disattiva l'auto-scroll
+      // Verrà riattivato solo quando torna in fondo o clicca il bottone
+      if (el.scrollTop < el.scrollHeight - el.clientHeight - 120) {
+        setIsAtBottom(false);
+        stickToBottom.current = false;
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: true });
+    el.addEventListener("touchmove", onWheel, { passive: true });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("touchmove", onWheel);
+    };
+  }, []);
 
   // Cronologia persistente: admin e utenti normali gestiti allo stesso modo
   useEffect(() => {
@@ -304,6 +331,8 @@ export default function ChatInterface({
 
   async function sendMessage(text: string, convId: string) {
     if (isTyping) return;
+    setIsAtBottom(true);
+    stickToBottom.current = true;
 
     const userMsg: LocalMessage = {
       id: generateId(),
@@ -711,7 +740,7 @@ export default function ChatInterface({
 
       {/* Main chat area */}
       <main
-        className={`flex-1 flex flex-col bg-neutral-900 transition-all duration-300 ${
+        className={`flex-1 flex flex-col bg-neutral-900 transition-all duration-300 relative ${
           sidebarOpen ? "lg:ml-0" : ""
         }`}
       >
@@ -872,6 +901,20 @@ export default function ChatInterface({
           )}
 
         </div>
+
+        {!isAtBottom && messages.length > 0 && (
+          <button
+            onClick={() => {
+              setIsAtBottom(true);
+              stickToBottom.current = true;
+              scrollToBottom(true);
+            }}
+            className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-neutral-800 border border-white/10 px-3 py-1.5 text-xs font-bold text-white shadow-lg hover:bg-neutral-700"
+          >
+            <ChevronDown size={12} />
+            Vai in fondo
+          </button>
+        )}
 
         {/* Input area */}
         <div className="px-4 sm:px-6 py-4 bg-neutral-900/80 backdrop-blur-sm border-t border-white/5">
