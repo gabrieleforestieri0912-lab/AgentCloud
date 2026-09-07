@@ -19,7 +19,7 @@ import {
   Zap,
   ShoppingCart,
 } from "lucide-react";
-import AppHeader from "@/components/AppHeader";
+import DashboardShell from "@/components/DashboardShell";
 import DashboardCharts from "@/components/DashboardCharts";
 import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
@@ -314,9 +314,7 @@ export default async function DashboardPage({
     : statCards;
 
   return (
-    <main className="min-h-screen bg-neutral-950">
-      <AppHeader variant="dashboard" subtitle={email} />
-
+    <DashboardShell email={email}>
       <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -613,6 +611,6 @@ export default async function DashboardPage({
       </section>
 
       <Footer />
-    </main>
+    </DashboardShell>
   );
 }

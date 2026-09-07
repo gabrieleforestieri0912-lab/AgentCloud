@@ -24,6 +24,10 @@ import {
   Wrench,
   Bot,
   ChevronDown,
+  ShoppingCart,
+  User,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -44,6 +48,7 @@ import type { ChatAttachment } from "@/lib/chat-attachments";
 import { getEnabledTools, AGENT_RUNTIME } from "@/lib/agents/registry";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
+import { createClient } from "@/lib/supabase/client";
 import {
   HERO_CONVERSATION_STORAGE_KEY,
   HERO_CONVERSATION_HISTORY_KEY,
@@ -116,6 +121,8 @@ export default function ChatInterface({
   const [hasPartialReply, setHasPartialReply] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarUserEmail, setSidebarUserEmail] = useState<string | null>(null);
+  const [sidebarUserInitials, setSidebarUserInitials] = useState<string>("?");
   const initializedRef = useRef(false);
   const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
 
@@ -209,6 +216,38 @@ export default function ChatInterface({
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("touchmove", onWheel);
     };
+  }, []);
+
+  // Sidebar account — carica email/iniziali per gestione account in sidebar
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      const email = data.session?.user?.email ?? null;
+      setSidebarUserEmail(email);
+      const meta = data.session?.user?.user_metadata as { full_name?: string } | undefined;
+      const base = meta?.full_name || email || "?";
+      const initials = base
+        .split(/[\s@.]+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((s) => s[0]?.toUpperCase())
+        .join("") || "?";
+      setSidebarUserInitials(initials);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      const email = session?.user?.email ?? null;
+      setSidebarUserEmail(email);
+      const meta = session?.user?.user_metadata as { full_name?: string } | undefined;
+      const base = meta?.full_name || email || "?";
+      const initials = base
+        .split(/[\s@.]+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((s) => s[0]?.toUpperCase())
+        .join("") || "?";
+      setSidebarUserInitials(initials);
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   // Cronologia persistente: admin e utenti normali gestiti allo stesso modo
@@ -616,27 +655,20 @@ export default function ChatInterface({
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-neutral-950">
-      <AppHeader
-        variant="chat"
-        agentLabel={activeAgentDisplayName}
-        sidebarOpen={sidebarOpen || mobileSidebarOpen}
-        onToggleSidebar={handleAppHeaderToggle}
-      />
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Overlay sidebar mobile */}
-        {mobileSidebarOpen && (
-          <div
-            className="absolute inset-0 bg-black/60 z-20 lg:hidden"
-            onClick={() => setMobileSidebarOpen(false)}
-          />
-        )}
+    <div className="flex h-dvh bg-neutral-950">
+      {/* Overlay sidebar mobile */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
 
-        {/* Sidebar — apribile */}
-        <aside
-          className={`
-            absolute lg:static inset-y-0 left-0 z-30
-            w-72 bg-neutral-950 border-r border-white/5
+      {/* Sidebar — full height, contiene anche gestione account */}
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-30
+          w-72 bg-neutral-950 border-r border-white/5 h-dvh
             flex flex-col transition-all duration-300 shrink-0
             ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
             ${sidebarOpen ? "lg:w-72 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
@@ -823,36 +855,99 @@ export default function ChatInterface({
           )}
         </div>
 
-        <div className="p-4 border-t border-white/5">
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-neutral-900/50">
-            <Image
-              src="/agentcloud.png"
-              alt="AgentCloud"
-              width={14}
-              height={14}
-              className="text-brand-400"
-            />
-            <span className="text-xs font-semibold text-neutral-500">
+        <div className="p-3 border-t border-white/5 space-y-2">
+          {/* Account — gestione spostata dalla header alla sidebar */}
+          <div className="rounded-xl border border-white/5 bg-neutral-900 p-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300">
+                {sidebarUserInitials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-white">
+                  {sidebarUserEmail ?? "Ospite"}
+                </p>
+                <p className="text-[11px] text-neutral-500">Account</p>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-1.5">
+              <Link
+                href="/account"
+                className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+              >
+                <User size={12} />
+                Account
+              </Link>
+              <Link
+                href="/settings"
+                className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+              >
+                <Settings size={12} />
+                {dict.chat.agents === "Agenti" ? "Impostazioni" : "Settings"}
+              </Link>
+              <Link
+                href="/cart"
+                className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+              >
+                <ShoppingCart size={12} />
+                Carrello
+              </Link>
+              <Link
+                href="/dashboard"
+                className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+              >
+                <Home size={12} />
+                Dashboard
+              </Link>
+            </div>
+            {sidebarUserEmail ? (
+              <button
+                onClick={async () => {
+                  await createClient().auth.signOut();
+                  window.location.href = "/";
+                }}
+                className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs font-bold text-red-300 hover:bg-red-500/15"
+              >
+                <LogOut size={12} />
+                Esci
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="mt-2 flex w-full items-center justify-center rounded-lg bg-brand-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-brand-400"
+              >
+                Accedi
+              </Link>
+            )}
+          </div>
+          <div className="flex items-center gap-2 px-2 py-1">
+            <Image src="/agentcloud.png" alt="AgentCloud" width={14} height={14} />
+            <span className="text-xs font-semibold text-neutral-600">
               AgentCloud <span className="text-purple-400">v2.1</span>
             </span>
           </div>
         </div>
       </aside>
 
-      {/* Trigger sidebar su mobile */}
-      <button
-        onClick={() => setMobileSidebarOpen(true)}
-        className="lg:hidden fixed bottom-6 left-4 z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
-        title="Open sidebar"
-      >
-        <MessageSquare size={18} className="text-white" />
-      </button>
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+        <AppHeader
+          variant="chat"
+          agentLabel={activeAgentDisplayName}
+          sidebarOpen={sidebarOpen || mobileSidebarOpen}
+          onToggleSidebar={handleAppHeaderToggle}
+        />
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Trigger sidebar su mobile */}
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 left-4 z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
+            title="Open sidebar"
+          >
+            <MessageSquare size={18} className="text-white" />
+          </button>
 
-      {/* Area chat principale */}
-      <main
-        className={`flex-1 flex flex-col bg-neutral-900 transition-all duration-300 relative ${
-          sidebarOpen ? "lg:ml-0" : ""
-        }`}
+          {/* Area chat principale */}
+          <main
+            className="flex-1 flex flex-col bg-neutral-900 relative"
         onDragEnter={attach.onDragEnter}
         onDragOver={attach.onDragOver}
         onDragLeave={attach.onDragLeave}
@@ -1236,7 +1331,8 @@ export default function ChatInterface({
             {dict.chat.disclaimer}
           </p>
         </div>
-      </main>
+        </main>
+        </div>
       </div>
     </div>
   );
