@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Trash2, ShoppingCart, ArrowRight, Loader2 } from "lucide-react";
+import { Trash2, ShoppingCart, ArrowRight, Loader2, Package, Users } from "lucide-react";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import AgentIcon from "@/components/AgentIcon";
@@ -73,12 +73,28 @@ export default function CartPageClient() {
               <div className="space-y-3">
                 {items.map((item) => (
                   <div key={item.agent_slug} className="flex items-center gap-4 rounded-xl border border-white/5 bg-neutral-900 p-4">
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${item.accent}`}>
-                      <AgentIcon icon={item.icon} brand={item.brand} size={20} className="text-white" />
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${item.type === "bundle" ? "bg-gradient-to-br from-brand-500 to-purple-600" : item.accent}`}>
+                      {item.type === "bundle" ? (
+                        <Package size={20} className="text-white" />
+                      ) : (
+                        <AgentIcon icon={item.icon} brand={item.brand} size={20} className="text-white" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-white">{item.name}</p>
-                      <p className="text-xs text-neutral-500">{item.price} / mese</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-white">{item.name}</p>
+                        {item.type === "bundle" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-300">
+                            <Users size={10} />
+                            {item.agentSlugs?.length} {isIt ? "agenti" : "agents"}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-500">
+                        {item.type === "bundle"
+                          ? `${item.price} · ${item.period === "monthly" ? (isIt ? "Mensile" : "Monthly") : item.period === "quarterly" ? (isIt ? "Trimestrale" : "Quarterly") : (isIt ? "Annuale" : "Yearly")}`
+                          : `${item.price} / mese`}
+                      </p>
                     </div>
                     <p className="text-sm font-bold text-white">{item.price}</p>
                     <button

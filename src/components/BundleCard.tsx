@@ -13,6 +13,7 @@ import type { Bundle, BundlePeriod } from "@/lib/bundles";
 import { formatPrice, formatMonthlyPrice, getBundleAgents } from "@/lib/bundles";
 import AgentIcon from "./AgentIcon";
 import { useLanguage } from "./LanguageProvider";
+import AddBundleToCartButton from "./AddBundleToCartButton";
 
 type BundleCardProps = {
   bundle: Bundle;
@@ -149,13 +150,7 @@ export default function BundleCard({ bundle }: BundleCardProps) {
       {/* CTA */}
       <div className="relative border-t border-white/5 pt-5">
         <div className="grid grid-cols-2 gap-2">
-          <Link
-            href={`/chat?bundle=${bundle.slug}`}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-brand-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400"
-          >
-            {isIt ? "Attiva" : "Activate"}
-            <ArrowRight size={14} />
-          </Link>
+          <AddBundleToCartButton bundleSlug={bundle.slug} period={period} className="w-full justify-center py-2.5 text-sm" />
           <Link
             href={`/bundles/${bundle.slug}`}
             className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:border-white/20"

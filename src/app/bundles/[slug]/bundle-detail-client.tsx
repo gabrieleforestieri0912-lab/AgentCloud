@@ -11,6 +11,7 @@ import type { Bundle, BundlePeriod } from "@/lib/bundles";
 import { formatPrice, formatMonthlyPrice, getBundleAgents } from "@/lib/bundles";
 import AgentIcon from "@/components/AgentIcon";
 import { useLanguage } from "@/components/LanguageProvider";
+import AddBundleToCartButton from "@/components/AddBundleToCartButton";
 
 type Props = { bundle: Bundle };
 
@@ -178,13 +179,7 @@ export default function BundleDetailClient({ bundle }: Props) {
               </div>
 
               {/* CTA */}
-              <Link
-                href={`/chat?bundle=${bundle.slug}`}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
-              >
-                <Zap size={18} />
-                {isIt ? "Attiva Bundle" : "Activate Bundle"}
-              </Link>
+              <AddBundleToCartButton bundleSlug={bundle.slug} period={period} className="w-full justify-center py-3.5 text-base" />
 
               {/* Trust signals */}
               <div className="mt-5 space-y-2">

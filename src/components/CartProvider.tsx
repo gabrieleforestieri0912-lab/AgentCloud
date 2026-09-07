@@ -4,6 +4,10 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { createClient } from "@/lib/supabase/client";
 import type { Agent } from "@/lib/agents";
 import { getAgentBySlug } from "@/lib/agents";
+import type { Bundle, BundlePeriod } from "@/lib/bundles";
+import { getBundleBySlug, getBundleAgents, formatPrice } from "@/lib/bundles";
+
+export type CartItemType = "agent" | "bundle";
 
 export type CartItem = {
   agent_slug: string;
@@ -15,6 +19,10 @@ export type CartItem = {
   accent: string;
   icon: Agent["icon"];
   brand?: Agent["brand"];
+  type: CartItemType;
+  bundleSlug?: string;
+  agentSlugs?: string[];
+  period?: BundlePeriod;
 };
 
 type CartContextType = {
@@ -24,10 +32,12 @@ type CartContextType = {
   count: number;
   loading: boolean;
   add: (slug: string) => Promise<{ ok: boolean; error?: string }>;
+  addBundle: (bundleSlug: string, period: BundlePeriod) => Promise<{ ok: boolean; error?: string }>;
   remove: (slug: string) => Promise<void>;
   clear: () => Promise<void>;
   refresh: () => Promise<void>;
   isInCart: (slug: string) => boolean;
+  isBundleInCart: (slug: string) => boolean;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -51,6 +61,29 @@ function enrichLocal(slug: string, quantity = 1): CartItem | null {
     accent: ag.accent,
     icon: ag.icon,
     brand: ag.brand,
+    type: "agent",
+  };
+}
+
+function enrichBundleLocal(bundleSlug: string, period: BundlePeriod, quantity = 1): CartItem | null {
+  const bundle = getBundleBySlug(bundleSlug);
+  if (!bundle) return null;
+  const agents = getBundleAgents(bundle);
+  const monthlyCents = period === "monthly" ? bundle.pricing.monthly : period === "quarterly" ? bundle.pricing.quarterly : bundle.pricing.yearly;
+  const totalCents = period === "monthly" ? monthlyCents : period === "quarterly" ? bundle.pricing.quarterlyTotal : bundle.pricing.yearlyTotal;
+  return {
+    agent_slug: `bundle:${bundleSlug}`,
+    quantity,
+    name: bundle.name,
+    shortName: bundle.name,
+    priceCents: monthlyCents,
+    price: formatPrice(monthlyCents) + "/mo",
+    accent: agents[0]?.accent || "bg-brand-500",
+    icon: agents[0]?.icon || "bot",
+    type: "bundle",
+    bundleSlug,
+    agentSlugs: bundle.agentSlugs,
+    period,
   };
 }
 
@@ -75,13 +108,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             const slugs = JSON.parse(raw) as string[];
             if (slugs.length > 0) {
               for (const slug of slugs) {
+                // Skip bundle slugs for API sync (bundles are stored locally for now)
+                if (slug.startsWith("bundle:")) continue;
                 await fetch("/api/cart", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ agentSlug: slug }),
                 }).catch(() => {});
               }
-              localStorage.removeItem(LOCAL_KEY);
+              // Keep bundle slugs in localStorage, remove only agent slugs
+              const bundleSlugs = slugs.filter(s => s.startsWith("bundle:"));
+              if (bundleSlugs.length > 0) {
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(bundleSlugs));
+              } else {
+                localStorage.removeItem(LOCAL_KEY);
+              }
             }
           } catch {}
         }
@@ -97,7 +138,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const raw = localStorage.getItem(LOCAL_KEY);
         if (raw) {
           const slugs = JSON.parse(raw) as string[];
-          setItems(slugs.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
+          setItems(slugs.map((s) => {
+            if (s.startsWith("bundle:")) {
+              const bSlug = s.slice(7);
+              const storedPeriod = localStorage.getItem(`bundle_period_${bSlug}`) as BundlePeriod || "monthly";
+              return enrichBundleLocal(bSlug, storedPeriod);
+            }
+            return enrichLocal(s);
+          }).filter(Boolean) as CartItem[]);
         } else {
           setItems([]);
         }
@@ -107,7 +155,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (raw) {
           const slugs = JSON.parse(raw) as string[];
           if (slugs.length > 0) {
-            setItems(slugs.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
+            setItems(slugs.map((s) => {
+              if (s.startsWith("bundle:")) {
+                const bSlug = s.slice(7);
+                const storedPeriod = localStorage.getItem(`bundle_period_${bSlug}`) as BundlePeriod || "monthly";
+                return enrichBundleLocal(bSlug, storedPeriod);
+              }
+              return enrichLocal(s);
+            }).filter(Boolean) as CartItem[]);
           } else {
             setItems([]);
           }
@@ -224,14 +279,56 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new CustomEvent("cart:updated"));
   }, [refresh]);
 
-  const isInCart = useCallback((slug: string) => items.some((i) => i.agent_slug === slug), [items]);
+  const isInCart = useCallback((slug: string) => items.some((i) => i.agent_slug === slug && i.type === "agent"), [items]);
+
+  const isBundleInCart = useCallback((bundleSlug: string) => items.some((i) => i.type === "bundle" && i.bundleSlug === bundleSlug), [items]);
+
+  const addBundle = useCallback(
+    async (bundleSlug: string, period: BundlePeriod) => {
+      // For now, store bundle in localStorage (same pattern as agent add for anon)
+      const bundleKey = `bundle:${bundleSlug}`;
+      if (isBundleInCart(bundleSlug)) return { ok: false, error: "already_in_cart" } as const;
+      try {
+        const res = await fetch("/api/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentSlug: bundleKey, period }),
+        }).catch(() => null as unknown as Response);
+        if (res && res.ok) {
+          await refresh();
+          window.dispatchEvent(new CustomEvent("cart:updated"));
+          return { ok: true } as const;
+        }
+      } catch {}
+      // Fallback localStorage
+      const raw = localStorage.getItem(LOCAL_KEY);
+      const slugs: string[] = raw ? JSON.parse(raw) : [];
+      if (slugs.includes(bundleKey)) return { ok: false, error: "already_in_cart" } as const;
+      const next = [...slugs, bundleKey];
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+      // Enrich and set items
+      const enriched = next.map((s) => {
+        if (s.startsWith("bundle:")) {
+          const bSlug = s.slice(7);
+          const storedPeriod = localStorage.getItem(`bundle_period_${bSlug}`) as BundlePeriod || "monthly";
+          return enrichBundleLocal(bSlug, storedPeriod);
+        }
+        return enrichLocal(s);
+      }).filter(Boolean) as CartItem[];
+      setItems(enriched);
+      localStorage.setItem(`bundle_period_${bundleSlug}`, period);
+      window.dispatchEvent(new CustomEvent("cart:updated"));
+      return { ok: true } as const;
+    },
+    [refresh, isBundleInCart],
+  );
 
   const totalCents = items.reduce((sum, it) => sum + it.priceCents * it.quantity, 0);
   const totalDisplay = formatTotal(totalCents);
 
   return (
     <CartContext.Provider
-      value={{ items, totalCents, totalDisplay, count: items.length, loading, add, remove, clear, refresh, isInCart }}
+      value={{ items, totalCents, totalDisplay, count: items.length, loading, add, addBundle, remove, clear, refresh, isInCart, isBundleInCart }}
     >
       {children}
     </CartContext.Provider>
