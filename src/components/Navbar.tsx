@@ -31,8 +31,8 @@ import {
   type Agent,
 } from "@/lib/agents";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
+import { ShoppingCart } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
-import LanguageToggle from "./LanguageToggle";
 import NotificationBell from "./NotificationBell";
 import CartIcon from "./CartIcon";
 
@@ -386,7 +386,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
             </nav>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <LanguageToggle />
               {/* lg:flex (non md:flex): il gruppo login/account è la parte più
                   larga della navbar e inizia a ~768px, dove è ancora visibile il
                   menu hamburger. Con md: le CTA sforavano il bordo destro del
@@ -414,25 +413,19 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                         </div>
                         <div className="my-1 h-px bg-white/5" />
                         <Link
+                          href="/cart"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
+                        >
+                          <ShoppingCart size={14} />
+                          {locale === "it" ? "Carrello" : "Cart"}
+                        </Link>
+                        <Link
                           href="/dashboard"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
                         >
                           Dashboard
-                        </Link>
-                        <Link
-                          href="/chat"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
-                        >
-                          Chat
-                        </Link>
-                        <Link
-                          href="/agents"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
-                        >
-                          Marketplace
                         </Link>
                         <Link
                           href="/account"
@@ -474,7 +467,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                       </div>
                     )}
                   </div>
-                  <CartIcon />
                   <NotificationBell />
                 </div>
               ) : (

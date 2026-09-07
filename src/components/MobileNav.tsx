@@ -16,7 +16,6 @@ import AgentIcon from "./AgentIcon";
 import { AGENTS, AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
-import LanguageToggle from "./LanguageToggle";
 
 type MobileNavProps = {
   marketplaceAgents?: Agent[];
@@ -230,11 +229,6 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                     )}
                   </div>
                 ))}
-              </div>
-
-              {/* Selettore lingua */}
-              <div className="border-t border-white/10 p-4">
-                <LanguageToggle variant="mobile" />
               </div>
 
               {/* Bottone autenticazione */}

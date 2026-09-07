@@ -11,9 +11,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, LayoutDashboard, MessageSquare, PanelLeft, PanelLeftClose } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
-import LanguageToggle from "./LanguageToggle";
 import NotificationBell from "./NotificationBell";
-import CartIcon from "./CartIcon";
 
 type AppHeaderProps = {
   variant: "dashboard" | "chat";
@@ -116,8 +114,6 @@ export default function AppHeader({
             <span className="sm:hidden">Home</span>
           </Link>
 
-          <CartIcon />
-          <LanguageToggle />
           <NotificationBell />
         </div>
       </div>
