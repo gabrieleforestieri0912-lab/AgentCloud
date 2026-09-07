@@ -64,13 +64,17 @@ export default function AccountClient({
   async function handleDelete() {
     if (!confirm(isIt ? "Eliminare definitivamente l'account? Azione irreversibile." : "Permanently delete account? Irreversible.")) return;
     setDeleting(true);
+    setMsg(null);
     try {
-      const supabase = createClient();
-      // Supabase non permette la self-delete dal client; servirebbe una route API.
-      // Per ora: logout e rimando al supporto (pagina contatti).
-      await supabase.auth.signOut();
-      window.location.href = "/contact";
-    } finally {
+      const res = await fetch("/api/account/delete", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || (isIt ? "Errore cancellazione" : "Delete failed"));
+      }
+      // Account cancellato — reindirizza alla home
+      window.location.href = "/";
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
       setDeleting(false);
     }
   }
