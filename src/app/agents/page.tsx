@@ -3,6 +3,9 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MarketplaceGrid from "@/components/MarketplaceGrid";
+import { BUNDLES } from "@/lib/bundles";
+import BundleCard from "@/components/BundleCard";
+import { Sparkles } from "lucide-react";
 // Pagina marketplace (lista agenti): server component che filtra il catalogo
 // in base ai feature flag runtime e alla presenza del codice di accesso, poi
 // passa il risultato alla griglia client.
@@ -94,6 +97,34 @@ export default async function AgentsPage() {
             comingSoonLabel={dict.agentsPage.comingSoon}
             comingSoonAccessible={unlocked}
           />
+
+          {/* Sezione Bundle — offerte trimestrali e annuali */}
+          <div className="mt-14 sm:mt-16">
+            <div className="flex items-center gap-3 mb-8">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/15 text-brand-400">
+                <Sparkles size={20} />
+              </span>
+              <div>
+                <h2 className="text-2xl font-bold text-white">
+                  {isIt ? "Bundle & Risparmia" : "Bundles & Save"}
+                </h2>
+                <p className="text-sm font-semibold text-neutral-400">
+                  {isIt ? "Raggruppa agenti e risparmia fino al 30% con piani trimestrali e annuali" : "Group agents and save up to 30% with quarterly and annual plans"}
+                </p>
+              </div>
+              <Link
+                href="/bundles"
+                className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-900 px-4 py-2 text-xs font-bold text-neutral-300 transition-colors hover:border-white/20 hover:text-white"
+              >
+                {isIt ? "Vedi tutti" : "View all"}
+              </Link>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              {BUNDLES.slice(0, 2).map((bundle) => (
+                <BundleCard key={bundle.slug} bundle={bundle} />
+              ))}
+            </div>
+          </div>
 
           {/* CTA agente personalizzato — ben visibile per chi non trova ciò
               they need know we'll build it for them. */}              <div className="relative mt-14 sm:mt-16 overflow-hidden rounded-3xl border border-white/5 bg-neutral-900 p-10 text-center shadow-xl shadow-black/20 sm:p-14">
