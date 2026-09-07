@@ -11,7 +11,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function POST(req: Request) {
   const user = await getSessionUser();
-  if (!user) {
+  const { hasPlatformAccess } = await import("@/lib/access-code");
+  const hasAccess = await hasPlatformAccess();
+  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  if (!effectiveUserId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -33,7 +36,7 @@ export async function POST(req: Request) {
   let query = db
     .from("agent_notifications")
     .update({ read: true })
-    .eq("user_id", user.id);
+    .eq("user_id", effectiveUserId);
   if (ids && ids.length > 0) query = query.in("id", ids);
 
   const { error, count } = await query;

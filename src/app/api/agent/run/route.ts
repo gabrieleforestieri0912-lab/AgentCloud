@@ -251,9 +251,12 @@ export async function POST(req: Request) {
               // Le azioni importanti (file creato, prodotto pubblicato, evento
               // prenotato, lead catturato, ...) diventano notifiche in-app così
               // l'utente sa sempre cosa hanno fatto i suoi agenti. Best-effort
-              // e solo per account reali — i chiamanti anonimi in anteprima
-              // non hanno inbox. Le chiamate tool di sola lettura non notificano.
-              if (userId !== "anonymous") {
+              // e coerente tra admin e utente reale: anche i possessori del
+              // codice (anteprima senza login) ricevono notifiche sotto l'identità
+              // condivisa del tenant, così la preview è testabile come un account vero.
+              const notificationUserId =
+                userId !== "anonymous" ? userId : hasCode ? TENANT_SHOPIFY_ID : null;
+              if (notificationUserId) {
                 const action = buildActionNotification(
                   use.name,
                   use.input as Record<string, string>,
@@ -261,7 +264,7 @@ export async function POST(req: Request) {
                 );
                 if (action) {
                   await createAgentNotification({
-                    userId,
+                    userId: notificationUserId,
                     agentSlug: agentId,
                     kind: action.kind,
                     params: action.params,
@@ -302,10 +305,13 @@ export async function POST(req: Request) {
         emitter.stop();
 
         // Registra la run (conversazione + token) a fine esecuzione.
-        // Per richieste admin via codice: non salvare nulla nel DB, ma sblocca comunque le pagine
-        if (!hasCode) {
+        // Anche i possessori del codice registrano l'uso sotto l'identità del tenant
+        // così la dashboard mock mostra gli stessi grafici/costi di un utente reale.
+        const usageUserId =
+          userId !== "anonymous" ? userId : hasCode ? TENANT_SHOPIFY_ID : null;
+        if (usageUserId) {
           await recordUsageAndReportOverage({
-            user_id: userId,
+            user_id: usageUserId,
             agent_slug: agentId,
             conversation_id: conversationId,
             tokens_input: inputTokens,

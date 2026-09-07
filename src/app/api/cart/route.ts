@@ -17,45 +17,45 @@ import {
 export async function GET() {
   const user = await getSessionUser();
   const hasAccess = await hasPlatformAccess();
-  if (!user && !hasAccess) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const userId = user?.id ?? "mock-admin";
-  if (hasAccess && !user) {
-    // Mock admin senza DB: carrello vuoto ma non errore
-    return NextResponse.json({ items: [], totalCents: 0, cartId: null });
-  }
-  const { items, totalCents, cart } = await getEnrichedCart(userId);
+  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { items, totalCents, cart } = await getEnrichedCart(effectiveUserId);
   return NextResponse.json({ items, totalCents, cartId: cart?.id ?? null });
 }
 
 export async function POST(req: Request) {
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const hasAccess = await hasPlatformAccess();
+  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const agentSlug = body.agentSlug as string | undefined;
   if (!agentSlug) return NextResponse.json({ error: "agentSlug required" }, { status: 400 });
   const agent = getAgentBySlug(agentSlug);
   if (!agent) return NextResponse.json({ error: "agent not found" }, { status: 404 });
   try {
-    await addToCart(user.id, agentSlug);
+    await addToCart(effectiveUserId, agentSlug);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg === "already_owned") return NextResponse.json({ error: "already_owned" }, { status: 409 });
     return NextResponse.json({ error: msg }, { status: 400 });
   }
-  const { items, totalCents, cart } = await getEnrichedCart(user.id);
+  const { items, totalCents, cart } = await getEnrichedCart(effectiveUserId);
   return NextResponse.json({ items, totalCents, cartId: cart?.id ?? null });
 }
 
 export async function DELETE(req: Request) {
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const hasAccess = await hasPlatformAccess();
+  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const url = new URL(req.url);
   const agentSlug = url.searchParams.get("agentSlug");
   if (agentSlug) {
-    await removeFromCart(user.id, agentSlug);
+    await removeFromCart(effectiveUserId, agentSlug);
   } else {
-    await clearCart(user.id);
+    await clearCart(effectiveUserId);
   }
-  const { items, totalCents, cart } = await getEnrichedCart(user.id);
+  const { items, totalCents, cart } = await getEnrichedCart(effectiveUserId);
   return NextResponse.json({ items, totalCents, cartId: cart?.id ?? null });
 }

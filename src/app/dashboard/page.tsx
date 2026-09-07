@@ -90,22 +90,24 @@ export default async function DashboardPage({
   const dict = getDictionary(locale);
 
   // Sessione Supabase: l'utente viene risolto lato server dai cookie.
-  // L'admin via codice (hasPlatformAccess) è come se fosse loggato ma non salva nulla nel DB
+  // L'admin via codice (hasPlatformAccess) ora si comporta come utente reale
+  // con identità condivisa __tenant__, così dashboard, grafici e usage sono
+  // testabili senza differenze.
   const user = await getSessionUser();
   const hasAccess = await hasPlatformAccess();
   if (!user && !hasAccess) redirect("/login");
   const isAdminMock = !user && hasAccess;
-  const userId = user?.id ?? null;
+  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  const userId = effectiveUserId;
 
-  // ── Dati reali (service-role, lato server) con fallback graduale
-  // Per l'admin via codice (hasAccess senza utente) non leggiamo/scriviamo nulla nel DB
+  // ── Dati reali (service-role, lato server) — anche per il mock admin
   const db = createAdminClient();
   let installed: InstalledAgent[] = [];
   let totalRuns = 0;
   let totalTokens = 0;
   let dbAvailable = false;
 
-  if (db && !isAdminMock && userId) {
+  if (db && userId) {
     dbAvailable = true;
     const now = new Date();
     const periodStart = new Date(
@@ -218,7 +220,7 @@ export default async function DashboardPage({
   // Fetch delle run degli ultimi 7 giorni per i grafici (indipendente dalle
   // statistiche mensili)
   let chartRuns: Array<{ started_at: string | null; input_tokens: number | null; output_tokens: number | null }> = [];
-  if (db && !isAdminMock && userId) {
+  if (db && userId) {
     const sevenDaysAgo = isoDaysAgo(7);
     const { data } = await db
       .from("agent_runs")

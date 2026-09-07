@@ -17,12 +17,16 @@ function getStripe(): Stripe | null {
  */
 export async function POST() {
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { hasPlatformAccess } = await import("@/lib/access-code");
+  const hasAccess = await hasPlatformAccess();
+  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  const effectiveEmail = user?.email ?? (hasAccess ? "admin@agentcloud.agency" : null);
+  if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const stripe = getStripe();
   if (!stripe) return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
 
-  const { items, cart } = await getEnrichedCart(user.id);
+  const { items, cart } = await getEnrichedCart(effectiveUserId);
   if (!cart || items.length === 0) {
     return NextResponse.json({ error: "cart_empty" }, { status: 400 });
   }
@@ -51,19 +55,19 @@ export async function POST() {
     subscription_data: {
       metadata: {
         agent_ids: agentSlugs,
-        user_id: user.id,
+        user_id: effectiveUserId,
         source: "agentcloud_cart",
         cart_id: cart.id,
       },
     },
     metadata: {
       agent_ids: agentSlugs,
-      user_id: user.id,
+      user_id: effectiveUserId,
       source: "agentcloud_cart",
       cart_id: cart.id,
     },
-    client_reference_id: user.id,
-    customer_email: user.email ?? undefined,
+    client_reference_id: effectiveUserId,
+    customer_email: effectiveEmail ?? undefined,
     success_url: `${baseUrl}/dashboard?checkout=success&cart=${cart.id}`,
     cancel_url: `${baseUrl}/cart`,
   });

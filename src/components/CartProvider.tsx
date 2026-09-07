@@ -66,9 +66,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const authed = !!data.session;
     authedRef.current = authed;
     setIsAuthed(authed);
-    if (authed) {
-      try {
-        // Merge localStorage cart into DB cart on login
+    try {
+      // Se loggato o mock admin (hasAccess), prova a mergiare il localStorage nel DB
+      if (authed) {
         const raw = localStorage.getItem(LOCAL_KEY);
         if (raw) {
           try {
@@ -85,26 +85,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             }
           } catch {}
         }
-        const res = await fetch("/api/cart");
-        if (res.ok) {
-          const data = await res.json();
-          const apiItems = (data.items ?? []) as Array<{ agent_slug: string; quantity: number }>;
-          const enriched = apiItems.map((it) => enrichLocal(it.agent_slug, it.quantity)).filter(Boolean) as CartItem[];
-          setItems(enriched);
-        } else {
-          const fallbackRaw = localStorage.getItem(LOCAL_KEY);
-          if (fallbackRaw) {
-            const slugs = JSON.parse(fallbackRaw) as string[];
-            setItems(slugs.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
-          }
-        }
-      } catch {
-        // ignore
-      } finally {
-        setLoading(false);
       }
-    } else {
-      try {
+      const res = await fetch("/api/cart");
+      if (res.ok) {
+        const data = await res.json();
+        const apiItems = (data.items ?? []) as Array<{ agent_slug: string; quantity: number }>;
+        const enriched = apiItems.map((it) => enrichLocal(it.agent_slug, it.quantity)).filter(Boolean) as CartItem[];
+        setItems(enriched);
+      } else if (res.status === 401) {
+        // True anon senza codice: fallback localStorage
         const raw = localStorage.getItem(LOCAL_KEY);
         if (raw) {
           const slugs = JSON.parse(raw) as string[];
@@ -112,9 +101,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         } else {
           setItems([]);
         }
-      } catch {
-        setItems([]);
+      } else {
+        // Altro errore: fallback localStorage se presente
+        const raw = localStorage.getItem(LOCAL_KEY);
+        if (raw) {
+          const slugs = JSON.parse(raw) as string[];
+          if (slugs.length > 0) {
+            setItems(slugs.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
+          } else {
+            setItems([]);
+          }
+        }
       }
+    } catch {
+      // ignore
+    } finally {
       setLoading(false);
     }
   }, []);
@@ -139,38 +140,61 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const add = useCallback(
     async (slug: string) => {
-      if (authedRef.current) {
-        const res = await fetch("/api/cart", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentSlug: slug }),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          if (data.error === "already_owned") return { ok: false, error: "already_owned" };
-          return { ok: false, error: data.error ?? "error" };
-        }
+      // Prova sempre API prima (copre sia utente reale che mock admin via codice).
+      // Se 401 → true anon senza codice → fallback localStorage.
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentSlug: slug }),
+      }).catch(() => null as unknown as Response);
+      if (res && res.ok) {
         await refresh();
         window.dispatchEvent(new CustomEvent("cart:updated"));
         return { ok: true };
-      } else {
-        const raw = localStorage.getItem(LOCAL_KEY);
-        const slugs: string[] = raw ? JSON.parse(raw) : [];
-        if (slugs.includes(slug)) return { ok: false, error: "already_in_cart" };
-        const next = [...slugs, slug];
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-        setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
-        window.dispatchEvent(new CustomEvent("cart:updated"));
-        return { ok: true };
       }
+      if (res) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "already_owned") return { ok: false, error: "already_owned" };
+        if (res.status === 401) {
+          // Fallback localStorage per anon senza codice
+          const raw = localStorage.getItem(LOCAL_KEY);
+          const slugs: string[] = raw ? JSON.parse(raw) : [];
+          if (slugs.includes(slug)) return { ok: false, error: "already_in_cart" };
+          const next = [...slugs, slug];
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+          setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
+          window.dispatchEvent(new CustomEvent("cart:updated"));
+          return { ok: true };
+        }
+        if (data.error && data.error !== "unauthorized") {
+          return { ok: false, error: data.error ?? "error" };
+        }
+      }
+      // Fallback generico
+      const raw = localStorage.getItem(LOCAL_KEY);
+      const slugs: string[] = raw ? JSON.parse(raw) : [];
+      if (slugs.includes(slug)) return { ok: false, error: "already_in_cart" };
+      const next = [...slugs, slug];
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+      setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
+      window.dispatchEvent(new CustomEvent("cart:updated"));
+      return { ok: true };
     },
     [refresh],
   );
 
   const remove = useCallback(
     async (slug: string) => {
-      if (authedRef.current) {
-        await fetch(`/api/cart?agentSlug=${encodeURIComponent(slug)}`, { method: "DELETE" });
+      const res = await fetch(`/api/cart?agentSlug=${encodeURIComponent(slug)}`, { method: "DELETE" }).catch(() => null);
+      if (res && res.ok) {
+        await refresh();
+      } else if (res && res.status === 401) {
+        const raw = localStorage.getItem(LOCAL_KEY);
+        const slugs: string[] = raw ? JSON.parse(raw) : [];
+        const next = slugs.filter((s) => s !== slug);
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+        setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
+      } else if (res && res.ok === false && res.status !== 401) {
         await refresh();
       } else {
         const raw = localStorage.getItem(LOCAL_KEY);
@@ -185,8 +209,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const clear = useCallback(async () => {
-    if (authedRef.current) {
-      await fetch("/api/cart", { method: "DELETE" });
+    const res = await fetch("/api/cart", { method: "DELETE" }).catch(() => null);
+    if (res && res.ok) {
+      await refresh();
+    } else if (res && res.status === 401) {
+      localStorage.removeItem(LOCAL_KEY);
+      setItems([]);
+    } else if (res) {
       await refresh();
     } else {
       localStorage.removeItem(LOCAL_KEY);

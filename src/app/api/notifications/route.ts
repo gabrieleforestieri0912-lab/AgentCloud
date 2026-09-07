@@ -21,9 +21,15 @@ import { getLocale } from "@/lib/i18n/locale";
  */
 export async function GET() {
   const user = await getSessionUser();
-  if (!user) {
+  const { hasPlatformAccess } = await import("@/lib/access-code");
+  const hasAccess = await hasPlatformAccess();
+  // Consenti anche ai possessori del codice (mock admin) di vedere le notifiche
+  // come un utente reale, usando l'identità condivisa del tenant.
+  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  if (!effectiveUserId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+  const userIdForQuery = effectiveUserId;
 
   const db = createAdminClient();
   if (!db) {
@@ -39,12 +45,12 @@ export async function GET() {
     db
       .from("user_agents")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userIdForQuery)
       .eq("status", "active"),
     db
       .from("agent_notifications")
       .select("id, agent_slug, kind, params, read, created_at")
-      .eq("user_id", user.id)
+      .eq("user_id", userIdForQuery)
       .order("created_at", { ascending: false })
       .limit(50),
   ]);
@@ -65,7 +71,7 @@ export async function GET() {
   // la scadenza.
   try {
     const locale = await getLocale();
-    await notifyUserSubscriptions(db, user.id, locale);
+    await notifyUserSubscriptions(db, userIdForQuery, locale);
   } catch (err) {
     console.error("notifyUserSubscriptions failed:", err);
   }
