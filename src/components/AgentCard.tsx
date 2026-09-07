@@ -72,12 +72,12 @@ export default function AgentCard({
           <AgentIcon icon={agent.icon} brand={agent.brand} size={24} className="text-white" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+            <span className="inline-flex max-w-[150px] truncate rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
               {agent.category}
             </span>
             <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+              className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider leading-none ${
                 agent.badge === "Popular"
                   ? "bg-amber-500/15 text-amber-300 border border-amber-500/20"
                   : agent.badge === "New"
@@ -127,30 +127,33 @@ export default function AgentCard({
       </div>
 
       {/* Piè di card: prezzo + CTA */}
-      <div className="relative mt-5 flex items-center justify-between border-t border-white/5 pt-5">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">{setupLabel}</p>
-          <p className="text-xl font-bold text-white">{agent.price}</p>
-          <p className="text-xs font-semibold text-neutral-500">{agent.setupTime} · {isIt ? "senza vincoli" : "no commitment"}</p>
+      <div className="relative mt-5 border-t border-white/5 pt-5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">{setupLabel}</p>
+            <p className="text-xl font-bold text-white leading-none mt-0.5">{agent.price}</p>
+            <p className="mt-1 text-xs font-semibold text-neutral-500">{agent.setupTime} · {isIt ? "senza vincoli" : "no commitment"}</p>
+          </div>
+          {!isAgentAvailable && (
+            <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-neutral-800 px-4 py-2 text-xs font-semibold text-neutral-500 cursor-not-allowed">
+              {dict.agentCard.comingSoon}
+            </span>
+          )}
         </div>
 
-        {isAgentAvailable ? (
-          <div className="relative z-20 flex flex-col items-end gap-2">
+        {isAgentAvailable && (
+          <div className="relative z-20 mt-4 grid grid-cols-2 gap-2">
+            <AddToCartButton slug={agent.slug} className="w-full justify-center py-2.5 text-sm" />
             <Link
               href={chatHref}
               aria-label={`${dict.agentCard.buy} ${agent.name}`}
-              className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 hover:shadow-brand-500/30 hover:-translate-y-0.5"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-brand-500 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 hover:shadow-brand-500/30"
               onClick={(e) => e.stopPropagation()}
             >
               {ctaSubtext}
               <ArrowRight size={14} />
             </Link>
-            <AddToCartButton slug={agent.slug} compact />
           </div>
-        ) : (
-          <span className="inline-flex items-center gap-2 rounded-full bg-neutral-800 px-5 py-2.5 text-sm font-semibold text-neutral-500 cursor-not-allowed">
-            {dict.agentCard.comingSoon}
-          </span>
         )}
       </div>
       <Link
