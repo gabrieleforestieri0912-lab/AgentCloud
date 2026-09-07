@@ -379,7 +379,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
       </section>
 
       {/* ─── Contenuto ─── */}
-      <section className="px-4 py-16 sm:px-6 lg:px-8">
+      <section className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="space-y-8">
             {/* Cosa automatizza questo agente */}
@@ -492,7 +492,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
 
       {/* ─── Agenti correlati ─── */}
       {relatedAgents.length > 0 && (
-        <section className="border-t border-white/5 px-4 py-16 sm:px-6 lg:px-8">
+        <section className="border-t border-white/5 px-4 py-10 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
             <div className="mb-2 flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400">
@@ -519,7 +519,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
       )}
 
       {/* ─── Invito all'azione ─── */}
-      <section className="border-t border-white/5 px-4 py-20 sm:px-6 lg:px-8">
+      <section className="border-t border-white/5 px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
             {t(dict.agentDetail.readyToDeploy, { name: agent.shortName })}
