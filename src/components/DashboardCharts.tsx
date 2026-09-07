@@ -106,71 +106,55 @@ export default function DashboardCharts({
         </div>
       </div>
 
-      {/* Grafico dei costi */}
+      {/* Stato abbonamento */}
       <div className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-sm font-bold text-white">
             <Wallet size={16} className="text-emerald-400" />
-            {isIt ? "Costi stimati" : "Estimated costs"}
+            {isIt ? "Abbonamento" : "Subscription"}
           </h3>
           <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-300">
-            {formatCurrency(estimatedCostCents, locale)}/mese
+            {isIt ? "Attivo" : "Active"}
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg bg-white/5 p-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-              {isIt ? "Incluso nel piano" : "Included"}
+              {isIt ? "Esecuzioni" : "Runs"}
             </p>
-            <p className="mt-1 text-lg font-bold text-white">
-              {formatCurrency(Math.max(0, estimatedCostCents - overageCents), locale)}
-            </p>
-            <p className="text-xs text-neutral-500">
-              {totalTokens.toLocaleString(locale === "it" ? "it-IT" : "en-US")} token
-            </p>
+            <p className="mt-1 text-lg font-bold text-white">{totalRuns}</p>
+            <p className="text-xs text-neutral-500">{isIt ? "questo mese" : "this month"}</p>
           </div>
-          <div
-            className={`rounded-lg p-3 ${overageCents > 0 ? "bg-red-500/10 border border-red-500/20" : "bg-white/5"}`}
-          >
+          <div className="rounded-lg bg-white/5 p-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-              {isIt ? "Overage" : "Overage"}
+              {isIt ? "Stato" : "Status"}
             </p>
-            <p className={`mt-1 text-lg font-bold ${overageCents > 0 ? "text-red-300" : "text-white"}`}>
-              {formatCurrency(overageCents, locale)}
-            </p>
-            <p className="text-xs text-neutral-500">
-              {overageCents > 0
-                ? isIt
-                  ? "Oltre l'allowance"
-                  : "Beyond allowance"
-                : isIt
-                  ? "Nessun extra"
-                  : "No extra"}
-            </p>
+            <p className="mt-1 text-lg font-bold text-white">{isIt ? "Senza limiti" : "Unlimited"}</p>
+            <p className="text-xs text-neutral-500">{isIt ? "fino a fine periodo" : "until period end"}</p>
           </div>
         </div>
 
-        {/* Barra visuale costi/utilizzo */}
+        {/* Barra visuale utilizzo */}
         <div className="mt-4">
           <div className="mb-1.5 flex justify-between text-xs font-semibold text-neutral-500">
-            <span>{isIt ? "Utilizzo vs. costo" : "Usage vs cost"}</span>
+            <span>{isIt ? "Attività" : "Activity"}</span>
             <span>
-              {totalTokens.toLocaleString(locale === "it" ? "it-IT" : "en-US")} tok
+              {totalTokens.toLocaleString(locale === "it" ? "it-IT" : "en-US")} token
             </span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
             <div
               className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-500"
               style={{
-                width: `${Math.min(100, (totalTokens / Math.max(1, totalTokens + 5000)) * 100 + 20)}%`,
+                width: `${Math.min(100, (totalRuns / Math.max(1, totalRuns + 5)) * 100 + 20)}%`,
               }}
             />
           </div>
           <p className="mt-2 text-xs leading-5 text-neutral-500">
             {isIt
-              ? "I costi vengono calcolati sui token reali consumati. Se superi l'allowance del piano, l'extra viene fatturato automaticamente a consumo."
-              : "Costs are based on actual tokens used. Exceeding your plan allowance is billed automatically on overage."}
+              ? "Gli agenti funzionano senza limiti fino a fine abbonamento. Ricevi un promemoria 7 giorni prima della scadenza."
+              : "Agents run unlimited until subscription end. You get a reminder 7 days before expiry."}
           </p>
         </div>
       </div>

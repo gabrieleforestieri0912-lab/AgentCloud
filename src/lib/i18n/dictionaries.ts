@@ -42,6 +42,7 @@ const it = {
       "Non hai un abbonamento attivo per questo agente. Abbonati per iniziare a usarlo.",
     subscriptionInactive:
       "Il tuo abbonamento per questo agente è {status}. Riattivalo per continuare a usarlo.",
+    subscriptionExpired: "Il tuo abbonamento è scaduto. Rinnova per continuare a usare l'agente.",
     overageCapReached:
       "Hai raggiunto il tetto di sicurezza mensile di {cap} token ({multiplier}x l'allowance del tuo piano) per questo agente. Contattaci per aumentare il limite.",
     limitExceeded:
@@ -523,7 +524,7 @@ const it = {
     usageEmptyDesc: "Connetti Supabase per monitorare utilizzo e limiti.",
     controlCenter: "Centro di controllo agente",
     controlCenterDesc:
-      "I limiti sono sui token: ogni piano include un budget mensile (input + output) per agente installato. L'utilizzo oltre l'allowance viene addebitato automaticamente a {rate} per 1.000 token via Stripe, con un tetto di sicurezza a 2x l'allowance.",
+      "Gli agenti funzionano senza limiti fino a fine abbonamento mensile. Si rinnova automaticamente, ricevi un promemoria 7 giorni prima della scadenza.",
     gettingStarted: "Per iniziare",
     gettingStartedSteps: [
       "Sfoglia il marketplace",
@@ -532,7 +533,7 @@ const it = {
       "Visualizza il tuo dashboard",
     ],
     gettingStartedIntro:
-      "Ogni piano include un budget mensile di token per agente installato (input + output). Il consumo oltre l'allowance viene addebitato automaticamente a {rate} per 1.000 token via Stripe, con un tetto di sicurezza a 2x l'allowance.",
+      "Scegli l'agente, abbonati e usalo liberamente fino a fine periodo. Se non rinnovi, l'accesso si blocca a scadenza.",
     manageSubscription: "Gestisci abbonamento",
     billingError:
       "Non riusciamo ad aprire il portale di fatturazione. Assicurati di avere un abbonamento attivo e contattaci se il problema persiste.",
@@ -1079,6 +1080,7 @@ export const en: Dictionary = {
       "You don't have an active subscription for this agent. Subscribe to start using it.",
     subscriptionInactive:
       "Your subscription for this agent is {status}. Reactivate it to keep using it.",
+    subscriptionExpired: "Your subscription has expired. Renew to continue using the agent.",
     overageCapReached:
       "You've reached the monthly safety cap of {cap} tokens ({multiplier}x your plan allowance) for this agent. Contact us to raise your limit.",
     limitExceeded:
@@ -1545,7 +1547,7 @@ export const en: Dictionary = {
     usageEmptyDesc: "Connect Supabase to track usage and limits.",
     controlCenter: "Agent control center",
     controlCenterDesc:
-      "Limits are enforced on tokens: each plan sets a monthly token budget (input + output) per installed agent. Usage above the allowance is billed automatically at {rate} per 1.000 tokens via Stripe, with a safety cap at 2x the allowance.",
+      "Agents run unlimited until the end of your monthly subscription. Auto-renewed, with a reminder 7 days before expiry.",
     gettingStarted: "Getting started",
     gettingStartedSteps: [
       "Browse marketplace",
@@ -1555,7 +1557,7 @@ export const en: Dictionary = {
     ],
     manageSubscription: "Manage subscription",
     gettingStartedIntro:
-      "Each plan includes a monthly token budget per installed agent (input + output). Usage over the allowance is billed automatically at {rate} per 1.000 tokens via Stripe, with a safety cap at 2x the allowance.",
+      "Pick an agent, subscribe and use it freely until period end. If not renewed, access is paused at expiry.",
     billingError:
       "We couldn't open the billing portal. Make sure you have an active subscription, and contact us if the problem persists.",
     cancelsAtPeriodEnd: "Cancels at period end",
@@ -2093,6 +2095,7 @@ export const es: Dictionary = {
       "No tienes una suscripción activa para este agente. Suscríbete para empezar a usarlo.",
     subscriptionInactive:
       "Tu suscripción para este agente es {status}. Reactívala para seguir usándolo.",
+    subscriptionExpired: "Tu suscripción ha expirado. Renuévala para seguir usando el agente.",
     overageCapReached:
       "Has alcanzado el límite de seguridad mensual de {cap} tokens ({multiplier}x tu asignación) para este agente. Contáctanos para aumentarlo.",
     limitExceeded:
@@ -2559,7 +2562,7 @@ export const es: Dictionary = {
     usageEmptyDesc: "Connect Supabase to track usage and limits.",
     controlCenter: "Centro de control",
     controlCenterDesc:
-      "Limits are enforced on tokens: each plan sets a monthly token budget (input + output) per installed agent. Usage above the allowance is billed automatically at {rate} per 1.000 tokens via Stripe, with a safety cap at 2x the allowance.",
+      "Los agentes funcionan sin límites hasta el fin de la suscripción mensual. Renovación automática, recordatorio 7 días antes del vencimiento.",
     gettingStarted: "Primeros pasos",
     gettingStartedSteps: [
       "Browse marketplace",
@@ -2569,7 +2572,7 @@ export const es: Dictionary = {
     ],
     manageSubscription: "Gestionar suscripción",
     gettingStartedIntro:
-      "Each plan includes a monthly token budget per installed agent (input + output). Usage over the allowance is billed automatically at {rate} per 1.000 tokens via Stripe, with a safety cap at 2x the allowance.",
+      "Elige el agente, suscríbete y úsalo libremente hasta fin de periodo. Si no renuevas, el acceso se pausa al vencimiento.",
     billingError:
       "We couldn't open the billing portal. Make sure you have an active subscription, and contact us if the problem persists.",
     cancelsAtPeriodEnd: "Cancels at period end",
@@ -3107,6 +3110,7 @@ export const de: Dictionary = {
       "Du hast kein aktives Abo für diesen Agenten. Abonniere ihn, um ihn zu nutzen.",
     subscriptionInactive:
       "Dein Abo für diesen Agenten ist {status}. Reaktiviere es, um weiterzumachen.",
+    subscriptionExpired: "Il tuo abbonamento è scaduto. Rinnova per continuare a usare l'agente.",
     overageCapReached:
       "Du hast das monatliche Sicherheitslimit von {cap} Tokens ({multiplier}x dein Kontingent) erreicht. Kontaktiere uns zur Erhöhung.",
     limitExceeded:
@@ -3573,7 +3577,7 @@ export const de: Dictionary = {
     usageEmptyDesc: "Connect Supabase to track usage and limits.",
     controlCenter: "Agent control center",
     controlCenterDesc:
-      "Limits are enforced on tokens: each plan sets a monthly token budget (input + output) per installed agent. Usage above the allowance is billed automatically at {rate} per 1.000 tokens via Stripe, with a safety cap at 2x the allowance.",
+      "Agenten laufen unbegrenzt bis zum Ende deines Monatsabos. Automatische Verlängerung, Erinnerung 7 Tage vor Ablauf.",
     gettingStarted: "Getting started",
     gettingStartedSteps: [
       "Browse marketplace",
@@ -3583,7 +3587,7 @@ export const de: Dictionary = {
     ],
     manageSubscription: "Manage subscription",
     gettingStartedIntro:
-      "Each plan includes a monthly token budget per installed agent (input + output). Usage over the allowance is billed automatically at {rate} per 1.000 tokens via Stripe, with a safety cap at 2x the allowance.",
+      "Wähle den Agenten, abonniere und nutze ihn frei bis Periodenende. Ohne Verlängerung wird der Zugang bei Ablauf pausiert.",
     billingError:
       "We couldn't open the billing portal. Make sure you have an active subscription, and contact us if the problem persists.",
     cancelsAtPeriodEnd: "Cancels at period end",
@@ -4121,6 +4125,7 @@ export const fr: Dictionary = {
       "Vous n'avez pas d'abonnement actif pour cet agent. Abonnez-vous pour l'utiliser.",
     subscriptionInactive:
       "Votre abonnement pour cet agent est {status}. Réactivez-le pour continuer.",
+    subscriptionExpired: "Votre abonnement a expiré. Renouvelez-le pour continuer à utiliser l'agent.",
     overageCapReached:
       "You've reached the monthly safety cap of {cap} tokens ({multiplier}x your plan allowance) for this agent. Contact us to raise your limit.",
     limitExceeded:
@@ -4587,7 +4592,7 @@ export const fr: Dictionary = {
     usageEmptyDesc: "Connect Supabase to track usage and limits.",
     controlCenter: "Agent control center",
     controlCenterDesc:
-      "Limits are enforced on tokens: each plan sets a monthly token budget (input + output) per installed agent. Usage above the allowance is billed automatically at {rate} per 1.000 tokens via Stripe, with a safety cap at 2x the allowance.",
+      "Les agents fonctionnent sans limite jusqu'à la fin de l'abonnement mensuel. Renouvellement auto, rappel 7 jours avant l'échéance.",
     gettingStarted: "Getting started",
     gettingStartedSteps: [
       "Browse marketplace",
@@ -4597,7 +4602,7 @@ export const fr: Dictionary = {
     ],
     manageSubscription: "Manage subscription",
     gettingStartedIntro:
-      "Each plan includes a monthly token budget per installed agent (input + output). Usage over the allowance is billed automatically at {rate} per 1.000 tokens via Stripe, with a safety cap at 2x the allowance.",
+      "Choisis l'agent, abonne-toi et utilise-le librement jusqu'à fin de période. Sans renouvellement, l'accès est suspendu à l'échéance.",
     billingError:
       "We couldn't open the billing portal. Make sure you have an active subscription, and contact us if the problem persists.",
     cancelsAtPeriodEnd: "Cancels at period end",

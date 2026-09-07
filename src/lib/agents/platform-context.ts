@@ -211,10 +211,8 @@ function activeVerticalLabel(locale: Locale): string {
 function pricingLines(locale: Locale): string[] {
   const { plans } = SHOPIFY_PRICING;
   const perMonth = locale === "it" ? "mese" : "month";
-  const tokens = locale === "it" ? "token/mese" : "tokens/month";
   const lines = [plans.starter, plans.growth].map(
-    (plan) =>
-      `- **${plan.name}** — ${plan.priceDisplay} — fino a ${plan.tokens.toLocaleString("it-IT")} ${tokens}`,
+    (plan) => `- **${plan.name}** — ${plan.priceDisplay}`,
   );
   const addon = plans.starter.addons?.webSearch;
   if (addon) {

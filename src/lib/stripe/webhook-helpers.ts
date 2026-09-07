@@ -116,7 +116,7 @@ export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolutio
           : SERVICES_LAUNCH_CONFIG;
       return {
         agentIds: launchConfig.enabledAgents,
-        tokenLimit: plan.tokens,
+        tokenLimit: DEFAULT_TOKEN_LIMIT,
         // plan_id è già salvato come `${vertical}-${tier}` dalla route del payment link.
         planId: info.planId,
         vertical: info.vertical,

@@ -53,7 +53,6 @@ export async function GET(req: Request) {
 
       metadata.plan_id = `${vertical}-${planId}`;
       metadata.vertical = vertical;
-      metadata.tokens = plan.tokens.toString();
     }
     // Prezzi basati su agente (legacy, per compatibilità all'indietro)
     else if (agentId) {

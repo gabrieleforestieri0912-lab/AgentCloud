@@ -26,15 +26,8 @@ import AgentIcon from "@/components/AgentIcon";
 import { AGENTS, localizeAgent } from "@/lib/agents";
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveTokenLimit } from "@/lib/billing/usage-tracking";
-import { OVERAGE_RATE_PER_1000_TOKENS } from "@/lib/billing/pricing";
-import { calculateOverageAmountCents } from "@/lib/stripe/overage";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
-
-const overageRateDisplay = `€${(OVERAGE_RATE_PER_1000_TOKENS / 100)
-  .toFixed(2)
-  .replace(".", ",")}`;
 
 type InstalledAgent = {
   slug: string;
@@ -258,12 +251,7 @@ export default async function DashboardPage({
     };
   });
 
-  // Aggregazione costi: somma dell'overage per agente
-  for (const inst of installed) {
-    const limit = resolveTokenLimit((inst.config ?? {}) as Record<string, unknown>);
-    const over = Math.max(0, inst.tokens - limit);
-    if (over > 0) overageCentsTotal += calculateOverageAmountCents(over);
-  }
+
 
   // ── Preview con dati falsi ──────────────────────────────────────────
   // Quando non ci sono dati reali (nuovo utente / mock admin appena creato),
@@ -560,54 +548,24 @@ export default async function DashboardPage({
                   </p>
                 ) : (
                   <div className="mt-4 space-y-4">
-                    {displayInstalled.map(
-                      ({ agent, slug, tokens, status, runtimeName, config }) => {
-                        const displayName =
-                          agent?.shortName ?? runtimeName ?? slug;
-                        const limit = resolveTokenLimit(
-                          (config ?? {}) as Record<string, unknown>,
-                        );
-                        const overageTokens = Math.max(0, tokens - limit);
-                        const overage = overageTokens > 0;
-                        const pct = Math.min(100, (tokens / limit) * 100);
+                    {(() => {
+                      const maxTokens = Math.max(1, ...displayInstalled.map((a) => a.tokens));
+                      return displayInstalled.map(({ agent, slug, tokens, runs, runtimeName }) => {
+                        const displayName = agent?.shortName ?? runtimeName ?? slug;
+                        const pct = Math.min(100, (tokens / maxTokens) * 100);
                         return (
                           <div key={slug}>
                             <div className="mb-1.5 flex items-center justify-between text-sm">
-                              <span className="font-semibold text-neutral-300">
-                                {displayName}
-                              </span>
-                              <span
-                                className={overage ? "text-red-400" : "text-neutral-500"}
-                              >
-                                {formatTokens(tokens)}/{status === "active" ? formatTokens(limit) : "—"} tok
-                                {overage && t(dict.dashboard.overageAmount, { count: formatTokens(overageTokens) })}
-                              </span>
+                              <span className="font-semibold text-neutral-300">{displayName}</span>
+                              <span className="text-neutral-500">{formatTokens(tokens)} tok · {runs} run</span>
                             </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
-                            <div
-                              className={`h-full rounded-full ${
-                                overage
-                                  ? "bg-red-500"
-                                  : pct >= 80
-                                    ? "bg-amber-500"
-                                    : "bg-brand-500"
-                              }`}
-                              style={{ width: `${pct}%` }}
-                            />
+                            <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
+                              <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
+                            </div>
                           </div>
-                          {overage && (
-                            <p className="mt-1 text-xs text-red-400">
-                              {t(dict.dashboard.aboveAllowance, { rate: overageRateDisplay })}{" "}
-                              {t(dict.dashboard.overageThisMonth, {
-                                amount: (calculateOverageAmountCents(overageTokens) / 100)
-                                  .toFixed(2)
-                                  .replace(".", ","),
-                              })}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </div>
@@ -616,11 +574,11 @@ export default async function DashboardPage({
                 <Power size={20} className="mb-4 text-purple-400" />
                 <h2 className="text-xl font-bold">{dict.dashboard.controlCenter}</h2>
                 <p className="mt-2 text-sm leading-6 text-neutral-400">
-                  {t(dict.dashboard.controlCenterDesc, { rate: overageRateDisplay })}
+                  {dict.dashboard.controlCenterDesc}
                 </p>
 
                 <p className="mt-3 text-sm leading-6 text-neutral-400">
-                  {t(dict.dashboard.gettingStartedIntro, { rate: overageRateDisplay })}
+                  {dict.dashboard.gettingStartedIntro}
                 </p>
 
                 <div className="mt-5 space-y-3 border-t border-white/5 pt-5">
