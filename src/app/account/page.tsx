@@ -8,7 +8,6 @@ import { getSessionUser } from "@/lib/supabase/server";
 import { hasPlatformAccess } from "@/lib/access-code";
 import { isAdminEmail } from "@/lib/admin-access";
 import { getLocale } from "@/lib/i18n/locale";
-import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
 import AccountClient from "./account-client";
 import { listShopifyConnections } from "@/lib/shopify/connections";
@@ -58,8 +57,7 @@ export default async function AccountPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950">
-      <AppHeader variant="dashboard" subtitle={email} />
-      <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <section className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-white">{isIt ? "Account" : "Account"}</h1>

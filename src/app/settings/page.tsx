@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
 import { hasPlatformAccess } from "@/lib/access-code";
-import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
 import SettingsClient from "./settings-client";
 
@@ -17,8 +16,7 @@ export default async function SettingsPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950">
-      <AppHeader variant="dashboard" subtitle={email} />
-      <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <section className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <SettingsClient isMock={isMock} email={email} />
         </div>
