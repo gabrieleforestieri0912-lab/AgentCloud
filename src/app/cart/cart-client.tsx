@@ -6,8 +6,6 @@ import { Trash2, ShoppingCart, ArrowRight, Loader2 } from "lucide-react";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import AgentIcon from "@/components/AgentIcon";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 export default function CartPageClient() {
   const { items, totalDisplay, totalCents, remove, clear } = useCart();
@@ -35,9 +33,12 @@ export default function CartPageClient() {
 
   return (
     <main className="min-h-screen bg-neutral-950">
-      <Navbar />
-      <section className="px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+      <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
+          <Link href="/" className="mb-8 inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-500 hover:text-white transition-colors">
+            <ArrowRight size={14} className="rotate-180" />
+            {isIt ? "Torna alla home" : "Back to home"}
+          </Link>
           <div className="mb-8 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/15 text-brand-400">
               <ShoppingCart size={20} />
@@ -126,7 +127,6 @@ export default function CartPageClient() {
           )}
         </div>
       </section>
-      <Footer />
     </main>
   );
 }
