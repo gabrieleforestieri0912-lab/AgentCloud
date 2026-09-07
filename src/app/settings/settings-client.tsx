@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Languages, Bell, Shield, Palette, Database, Globe, Check, Sun, Moon, Monitor } from "lucide-react";
+import { Languages, Bell, Shield, Palette, Database, Globe, Check, Sun, Moon, Monitor, Save } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/constants";
@@ -18,10 +18,30 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
   const [emailNotif, setEmailNotif] = useState(true);
   const [productUpdates, setProductUpdates] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Carica preferenze notifiche dal localStorage (persistenza reale)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("agentcloud_settings");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { emailNotif?: boolean; productUpdates?: boolean };
+        if (typeof parsed.emailNotif === "boolean") setEmailNotif(parsed.emailNotif);
+        if (typeof parsed.productUpdates === "boolean") setProductUpdates(parsed.productUpdates);
+      }
+    } catch {}
+  }, []);
 
   function handleSave() {
+    setSaving(true);
+    try {
+      localStorage.setItem("agentcloud_settings", JSON.stringify({ emailNotif, productUpdates }));
+    } catch {}
+    // lingua e tema sono già persistiti via cookie/localStorage dai loro toggle,
+    // ma il bottone unico conferma tutte le modifiche insieme
+    setSaving(false);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => setSaved(false), 2200);
   }
 
   return (
@@ -95,9 +115,6 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
             </button>
           </label>
         </div>
-        <button onClick={handleSave} className="mt-4 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 hover:bg-neutral-100">
-          {saved ? (isIt ? "Salvato!" : "Saved!") : isIt ? "Salva preferenze" : "Save preferences"}
-        </button>
       </div>
 
       {/* Aspetto */}
@@ -177,6 +194,22 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
             {isIt ? "Contatta supporto" : "Contact support"}
           </Link>
         </div>
+      </div>
+
+      {/* Bottone unico sticky */}
+      <div className="sticky bottom-4 z-20 mt-2 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-900/95 px-4 py-3 shadow-2xl shadow-black/30 backdrop-blur">
+        <p className="hidden text-sm font-semibold text-neutral-400 sm:block">
+          {isIt ? "Tutte le modifiche verranno salvate insieme." : "All changes will be saved together."}
+        </p>
+        <span className="sm:hidden text-sm font-semibold text-neutral-500">{isIt ? "Pronto a salvare" : "Ready to save"}</span>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400 disabled:opacity-60"
+        >
+          <Save size={16} />
+          {saved ? (isIt ? "Salvato!" : "Saved!") : saving ? "..." : isIt ? "Salva modifiche" : "Save changes"}
+        </button>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { User, Mail, Shield, CreditCard, Plug, Trash2, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
+import { User, Mail, Shield, CreditCard, Plug, Trash2, LogOut, CheckCircle2, AlertCircle, Save } from "lucide-react";
 
 export default function AccountClient({
   initialEmail,
@@ -117,16 +117,11 @@ export default function AccountClient({
             </div>
           </label>
         </div>
-        <div className="mt-4 flex items-center gap-3">
-          <button onClick={handleSaveName} disabled={saving || isMock} className="rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-400 disabled:opacity-50">
-            {saving ? "..." : isIt ? "Salva nome" : "Save name"}
-          </button>
-          {msg && (
-            <span className={`inline-flex items-center gap-1 text-sm font-semibold ${msg.kind === "ok" ? "text-emerald-300" : "text-red-300"}`}>
-              {msg.kind === "ok" ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />} {msg.text}
-            </span>
-          )}
-        </div>
+        {msg && (
+          <p className={`mt-3 inline-flex items-center gap-1 text-sm font-semibold ${msg.kind === "ok" ? "text-emerald-300" : "text-red-300"}`}>
+            {msg.kind === "ok" ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />} {msg.text}
+          </p>
+        )}
       </div>
 
       {/* Piano */}
@@ -195,6 +190,22 @@ export default function AccountClient({
         </p>
         <button onClick={handleDelete} disabled={deleting || isMock} className="mt-4 rounded-full bg-red-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-red-400 disabled:opacity-50">
           {deleting ? "..." : isIt ? "Elimina account" : "Delete account"}
+        </button>
+      </div>
+
+      {/* Bottone unico sticky */}
+      <div className="sticky bottom-4 z-20 mt-2 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-900/95 px-4 py-3 shadow-2xl shadow-black/30 backdrop-blur">
+        <p className="hidden text-sm font-semibold text-neutral-400 sm:block">
+          {isIt ? "Salva tutte le modifiche dell'account." : "Save all account changes."}
+        </p>
+        <span className="sm:hidden text-sm font-semibold text-neutral-500">{isIt ? "Pronto a salvare" : "Ready to save"}</span>
+        <button
+          onClick={handleSaveName}
+          disabled={saving || isMock}
+          className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 hover:bg-brand-400 disabled:opacity-50"
+        >
+          <Save size={16} />
+          {saving ? "..." : isIt ? "Salva modifiche" : "Save changes"}
         </button>
       </div>
     </div>
