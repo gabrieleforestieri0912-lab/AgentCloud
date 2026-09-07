@@ -393,6 +393,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
               <div className="hidden items-center gap-3 lg:flex">
                 {authLoaded && (showAsLoggedIn ? (
                 <div className="flex items-center gap-3">
+                  <NotificationBell />
                   <div ref={userMenuRef} className="relative">
                     <button
                       onClick={() => setUserMenuOpen((v) => !v)}
@@ -467,7 +468,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                       </div>
                     )}
                   </div>
-                  <NotificationBell />
                 </div>
               ) : (
                 <Link
