@@ -268,38 +268,75 @@
   animation-delay: 0.48s;
 }
 
+/* ─── Reusable dark gradient classes ─── */
+.dark-gradient-main {
+  background: linear-gradient(180deg, #0a0a0f 0%, #12121a 58%, #0a0a0f 100%);
+}
+.dark-gradient-subtle {
+  background: linear-gradient(180deg, #101014 0%, #0a0a0f 100%);
+}
+.dark-gradient-cta {
+  background: linear-gradient(135deg, #101014 0%, #12121f 58%, #0f1410 100%);
+}
+
 /* ─── Light theme overrides ─── */
 html.light body {
   background: #f6f6f8 !important;
   color: #17171c;
 }
-html.light .bg-neutral-950 {
-  background-color: #f6f6f8 !important;
+
+/* ── Page/section backgrounds ── */
+html.light .bg-neutral-950,
+html.light .bg-neutral-950\/90 {
+  background-color: #ffffff !important;
 }
 html.light .bg-neutral-950\/90 {
-  background-color: rgba(255,255,255,0.9) !important;
+  background-color: rgba(255,255,255,0.92) !important;
 }
 html.light .bg-neutral-900 {
   background-color: #ffffff !important;
   border-color: #e3e3e8 !important;
 }
+html.light .bg-neutral-900\/95,
 html.light .bg-neutral-900\/80,
+html.light .bg-neutral-900\/70,
+html.light .bg-neutral-900\/60,
 html.light .bg-neutral-900\/50 {
-  background-color: rgba(255,255,255,0.92) !important;
+  background-color: rgba(255,255,255,0.95) !important;
 }
 html.light .bg-neutral-800 {
   background-color: #f1f1f4 !important;
 }
-html.light .bg-neutral-800\/40,
-html.light .bg-neutral-800\/60 {
+html.light .bg-neutral-800\/80,
+html.light .bg-neutral-800\/60,
+html.light .bg-neutral-800\/40 {
   background-color: #f1f1f4 !important;
+}
+html.light .bg-neutral-700 {
+  background-color: #e3e3e8 !important;
 }
 html.light .bg-black {
   background-color: #f6f6f8 !important;
 }
+html.light .bg-white\/5 {
+  background-color: rgba(0,0,0,0.04) !important;
+}
+html.light .bg-white\/10 {
+  background-color: rgba(0,0,0,0.06) !important;
+}
+
+/* ── Gradient backgrounds ── */
+html.light .dark-gradient-main,
+html.light .dark-gradient-subtle,
+html.light .dark-gradient-cta {
+  background: #f6f6f8 !important;
+}
+
+/* ── Text colors ── */
 html.light .text-white {
   color: #17171c !important;
 }
+html.light .text-neutral-100,
 html.light .text-neutral-200 {
   color: #2d2e39 !important;
 }
@@ -307,26 +344,93 @@ html.light .text-neutral-300 {
   color: #444555 !important;
 }
 html.light .text-neutral-400 {
-  color: #71738e !important;
+  color: #5b5c71 !important;
 }
 html.light .text-neutral-500 {
   color: #71738e !important;
 }
+html.light .text-neutral-600 {
+  color: #8e8fa4 !important;
+}
+
+/* ── Border colors ── */
 html.light .border-white\/5 {
   border-color: #e3e3e8 !important;
 }
-html.light .border-white\/10 {
+html.light .border-white\/10,
+html.light .border-white\/15 {
   border-color: #e3e3e8 !important;
 }
 html.light .border-white\/20 {
   border-color: #c6c7d2 !important;
 }
-/* Preserve brand buttons text */
+html.light .border-neutral-800 {
+  border-color: #e3e3e8 !important;
+}
+html.light .border-neutral-700\/60 {
+  border-color: #c6c7d2 !important;
+}
+
+/* ── Hover states ── */
+html.light .hover\:bg-white\/5:hover {
+  background-color: rgba(0,0,0,0.04) !important;
+}
+html.light .hover\:bg-white\/10:hover {
+  background-color: rgba(0,0,0,0.06) !important;
+}
+html.light .hover\:bg-neutral-800:hover {
+  background-color: #e3e3e8 !important;
+}
+html.light .hover\:bg-neutral-800\/60:hover {
+  background-color: #e3e3e8 !important;
+}
+html.light .hover\:bg-neutral-700:hover,
+html.light .hover\:bg-neutral-700\/60:hover {
+  background-color: #c6c7d2 !important;
+}
+html.light .hover\:text-white:hover {
+  color: #17171c !important;
+}
+html.light .hover\:border-white\/20:hover {
+  border-color: #c6c7d2 !important;
+}
+html.light .hover\:border-white\/25:hover {
+  border-color: #c6c7d2 !important;
+}
+
+/* ── Shadows: soften on light backgrounds ── */
+html.light .shadow-black\/20 {
+  --tw-shadow-color: rgba(0,0,0,0.06) !important;
+}
+html.light .shadow-black\/30 {
+  --tw-shadow-color: rgba(0,0,0,0.08) !important;
+}
+html.light .shadow-black\/40 {
+  --tw-shadow-color: rgba(0,0,0,0.10) !important;
+}
+html.light .shadow-2xl {
+  --tw-shadow: 0 25px 50px -12px rgba(0,0,0,0.10) !important;
+}
+html.light .shadow-xl {
+  --tw-shadow: 0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.06) !important;
+}
+html.light .shadow-lg {
+  --tw-shadow: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Inline radial gradient overlays: hide in light mode ── */
+html.light [style*="radial-gradient"] {
+  opacity: 0 !important;
+}
+
+/* ── Preserve brand button text (must stay white) ── */
 html.light .bg-brand-500.text-white,
 html.light .bg-brand-500 .text-white,
 html.light .bg-brand-600.text-white {
   color: #ffffff !important;
 }
 html.light .from-brand-500 { --tw-gradient-from: #038bfe !important; }
+
+/* ── Scrollbar ── */
 html.light ::-webkit-scrollbar-thumb { background: #c6c7d2; }
 html.light * { scrollbar-color: #c6c7d2 transparent; }

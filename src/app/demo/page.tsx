@@ -97,7 +97,7 @@ export default function DemoPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
+    <main className="relative min-h-screen overflow-hidden dark-gradient-main">
       <Navbar />
 
       {/* Sfondo decorativo — stesso linguaggio della sezione hero */}

@@ -16,7 +16,7 @@ export default async function Home() {
     // Un unico sfondo per tutta la landing: il gradiente (prima solo dell'hero)
     // ora attraversa ogni sezione. Le sezioni restano trasparenti; le
     // costellazioni fluttuanti sono un overlay decorativo sopra questo livello.
-    <div className="relative flex min-h-screen flex-col overflow-x-clip bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
+    <div className="relative flex min-h-screen flex-col overflow-x-clip dark-gradient-main">
 {/* Bagliore ambientale incluso nello sfondo condiviso */}
       <div
         aria-hidden="true"

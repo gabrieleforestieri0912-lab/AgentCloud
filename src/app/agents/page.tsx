@@ -56,7 +56,7 @@ export default async function AgentsPage() {
     <main className="min-h-screen bg-neutral-950">
       <Navbar marketplaceAgents={navAgents} />
 
-      <section className="bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+      <section className="dark-gradient-subtle px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-12 max-w-xl">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">

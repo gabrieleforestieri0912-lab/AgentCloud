@@ -21,7 +21,7 @@ export default function CTASection() {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
 
       <motion.div
-        className="relative mx-auto max-w-5xl rounded-2xl border border-white/5 bg-[linear-gradient(135deg,#101014_0%,#12121f_58%,#0f1410_100%)] p-8 text-center shadow-2xl shadow-brand-500/10 sm:p-12"
+        className="relative mx-auto max-w-5xl rounded-2xl border border-white/5 dark-gradient-cta p-8 text-center shadow-2xl shadow-brand-500/10 sm:p-12"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}

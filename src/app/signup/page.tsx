@@ -128,7 +128,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="relative min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#0a0a0f_0%,#12121a_58%,#0a0a0f_100%)]">
+    <main className="relative min-h-dvh overflow-x-hidden dark-gradient-main">
       {/* Sfondo decorativo — stesso linguaggio visivo dell'hero */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
       <div

@@ -157,7 +157,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
       <Navbar marketplaceAgents={marketplaceAgents} />
 
       {/* ─── Hero ─── */}
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#101014_0%,#0a0a0f_100%)] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden dark-gradient-subtle px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         {/* Bagliore del brand dietro l'intestazione */}
         <div
           className="pointer-events-none absolute inset-0 select-none"
