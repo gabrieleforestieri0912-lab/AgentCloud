@@ -13,6 +13,7 @@ import { formatPrice, formatMonthlyPrice, getBundleAgents } from "@/lib/bundles"
 import AgentIcon from "@/components/AgentIcon";
 import { useLanguage } from "@/components/LanguageProvider";
 import AddBundleToCartButton from "@/components/AddBundleToCartButton";
+import AnimatedSavingsCounter from "@/components/AnimatedSavingsCounter";
 
 const PERIODS: BundlePeriod[] = ["monthly", "quarterly", "yearly"];
 
@@ -52,6 +53,13 @@ export default function BundleDetailClient({ bundle }: Props) {
       : period === "yearly"
         ? pricing.savingsYearly
         : 0;
+
+  const monthlyTotal = pricing.monthly;
+  const discountedMonthly =
+    period === "monthly" ? monthlyTotal
+      : period === "quarterly" ? pricing.quarterly
+        : pricing.yearly;
+  const savingsCents = monthlyTotal - discountedMonthly;
 
   return (
     <section className="dark-gradient-subtle px-4 pb-20 pt-28 sm:px-6 lg:px-8">
@@ -199,6 +207,10 @@ export default function BundleDetailClient({ bundle }: Props) {
                         </motion.div>
                       )}
                     </AnimatePresence>
+                    {/* Animated savings counter */}
+                    <div className="mt-2">
+                      <AnimatedSavingsCounter savingsCents={savingsCents} percent={savingsPercent} locale={locale} />
+                    </div>
                     <AnimatePresence>
                       {period === "monthly" && (
                         <motion.p

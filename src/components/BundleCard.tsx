@@ -15,6 +15,7 @@ import { formatPrice, formatMonthlyPrice, getBundleAgents } from "@/lib/bundles"
 import AgentIcon from "./AgentIcon";
 import { useLanguage } from "./LanguageProvider";
 import AddBundleToCartButton from "./AddBundleToCartButton";
+import AnimatedSavingsCounter from "./AnimatedSavingsCounter";
 
 type BundleCardProps = {
   bundle: Bundle;
@@ -48,6 +49,14 @@ export default function BundleCard({ bundle }: BundleCardProps) {
     period === "quarterly" ? pricing.savingsQuarterly
       : period === "yearly" ? pricing.savingsYearly
         : 0;
+
+  // Risparmio mensile in centesimi
+  const monthlyTotal = pricing.monthly; // prezzo/mese senza sconto
+  const discountedMonthly =
+    period === "monthly" ? monthlyTotal
+      : period === "quarterly" ? pricing.quarterly
+        : pricing.yearly;
+  const savingsCents = monthlyTotal - discountedMonthly;
 
   const badgeColors: Record<string, string> = {
     "Best value": "bg-emerald-500/15 text-emerald-300 border-emerald-500/20",
@@ -152,6 +161,9 @@ export default function BundleCard({ bundle }: BundleCardProps) {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Animated savings counter in euros */}
+            <AnimatedSavingsCounter savingsCents={savingsCents} percent={savingsPercent} locale={locale} />
 
             {/* Monthly hint */}
             <AnimatePresence>
