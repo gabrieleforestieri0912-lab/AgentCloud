@@ -7,6 +7,7 @@ import { BUNDLES } from "@/lib/bundles";
 import { getLocale } from "@/lib/i18n/locale";
 import { pageSeo } from "@/lib/seo";
 import { AGENTS, AVAILABLE_AGENTS, localizeAgent } from "@/lib/agents";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -15,7 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = isIt
     ? "Bundle di agenti AI con offerte trimestrali e annuali. Risparmia fino al 30% rispetto al prezzo singolo. E-commerce, Marketing, Operations e All-in-One."
     : "AI agent bundles with quarterly and annual offers. Save up to 30% vs single agent pricing. E-commerce, Marketing, Operations and All-in-One.";
-  return pageSeo({ title, description, path: "/bundles", locale });
+  return {
+    ...pageSeo({ title, description, path: "/bundles", locale }),
+    robots: { index: true, follow: true },
+  };
 }
 
 export const dynamic = "force-dynamic";
@@ -25,8 +29,35 @@ export default async function BundlesPage() {
   const isIt = locale === "it";
   const navAgents = AVAILABLE_AGENTS.map((a) => localizeAgent(a, locale));
 
+  const BASE_URL = getSiteUrl();
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: isIt ? "Bundle Agenti AI" : "AI Agent Bundles",
+    description: isIt
+      ? "Bundle di agenti AI con offerte trimestrali e annuali. Risparmia fino al 30%."
+      : "AI agent bundles with quarterly and annual offers. Save up to 30%.",
+    url: `${BASE_URL}/bundles`,
+    isPartOf: { "@type": "WebSite", url: BASE_URL, name: "AgentCloud" },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: BUNDLES.length,
+      itemListElement: BUNDLES.map((b, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `${BASE_URL}/bundles/${b.slug}`,
+        name: b.name,
+        description: b.description,
+      })),
+    },
+  };
+
   return (
     <main className="min-h-screen bg-neutral-950">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar marketplaceAgents={navAgents} />
 
       <section className="dark-gradient-subtle px-4 pb-16 pt-28 sm:px-6 lg:px-8">
