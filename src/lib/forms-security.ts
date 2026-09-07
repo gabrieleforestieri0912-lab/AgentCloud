@@ -44,7 +44,6 @@ const EMAIL_SAFE_REGEX =
  */
 export function hasControlCharsOrNullBytes(text: string): boolean {
   // \0 (byte nullo), \r (carriage return), \n (newline) e caratteri ASCII di controllo 0x01-0x1F eccetto tab
-  // eslint-disable-next-line no-control-regex
   return /[\x00-\x08\x0A-\x1F\x7F]/.test(text);
 }
 

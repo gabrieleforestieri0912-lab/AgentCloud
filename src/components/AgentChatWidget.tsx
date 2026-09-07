@@ -261,7 +261,7 @@ export function AgentChatWidget({
           }
         }
       }
-    } catch (err) {
+    } catch {
       // Messaggio di errore user-friendly in caso di fallimento della connessione
       setMessages((prev) => [
         ...prev,

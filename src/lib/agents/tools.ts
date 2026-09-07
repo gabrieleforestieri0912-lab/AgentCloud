@@ -29,6 +29,7 @@ import {
   calculateQuote,
   formatQuoteMarkdown,
   sendQuoteByEmail,
+  type QuoteItem,
 } from "@/lib/tools/quote";
 import {
   listBusinessReviews,
@@ -2513,14 +2514,17 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       if (!email || !isValidEmail(email)) {
         return `quote_generate requires a valid client_email: "${email}"`;
       }
-      let items: any[] = [];
+      let items: QuoteItem[] = [];
       try {
-        items =
-          typeof input.items === "string" ? JSON.parse(input.items) : input.items;
+        const parsed: unknown =
+          typeof input.items === "string"
+            ? JSON.parse(input.items)
+            : input.items;
+        items = Array.isArray(parsed) ? (parsed as QuoteItem[]) : [];
       } catch {
         return 'Invalid items JSON format. Provide an array of { description, quantity, unitPrice }. Example: [{"description":"Consulenza","quantity":1,"unitPrice":500}]';
       }
-      if (!Array.isArray(items) || items.length === 0) {
+      if (items.length === 0) {
         return "quote_generate requires at least one line item in items.";
       }
       const quote = calculateQuote({
@@ -2544,14 +2548,17 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
       if (!email || !isValidEmail(email)) {
         return `quote_send_email requires a valid client_email: "${email}"`;
       }
-      let items: any[] = [];
+      let items: QuoteItem[] = [];
       try {
-        items =
-          typeof input.items === "string" ? JSON.parse(input.items) : input.items;
+        const parsed: unknown =
+          typeof input.items === "string"
+            ? JSON.parse(input.items)
+            : input.items;
+        items = Array.isArray(parsed) ? (parsed as QuoteItem[]) : [];
       } catch {
         return 'Invalid items JSON format. Provide an array of { description, quantity, unitPrice }';
       }
-      if (!Array.isArray(items) || items.length === 0) {
+      if (items.length === 0) {
         return "quote_send_email requires at least one line item in items.";
       }
       const quote = calculateQuote({
@@ -2577,8 +2584,11 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
 
     case "google_reviews_list": {
       const minRating = input.min_rating ? Number(input.min_rating) : undefined;
+      // L'input è tipizzato Record<string, string>, ma per sicurezza accetta
+      // anche il booleano nativo se un agente lo passa senza serializzarlo.
+      const rawUnanswered: unknown = input.unanswered_only;
       const unansweredOnly =
-        input.unanswered_only === "true" || (input.unanswered_only as any) === true;
+        rawUnanswered === true || rawUnanswered === "true";
       const reviews = await listBusinessReviews({
         tenantId: context.tenantId || context.userId,
         minRating,

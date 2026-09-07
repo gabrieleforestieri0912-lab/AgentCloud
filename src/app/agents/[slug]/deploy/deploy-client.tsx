@@ -91,30 +91,37 @@ export default function DeployAgentClient({
   } | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const parseOutcome = (
-      key: string,
-      successLabel: string,
-    ): { kind: "ok" | "err"; msg: string } | null => {
-      const val = params.get(key);
-      if (val === "connected") return { kind: "ok", msg: successLabel };
-      if (val === "error") {
-        return {
-          kind: "err",
-          msg: t(dict.common.connectFailed, {
-            reason: readableConnectReason(params.get("reason"), locale),
-          }),
-        };
+    // Legge l'esito OAuth (?shopify=/ ?google=) al mount e lo rimuove
+    // dall'URL così il banner appare una sola volta. La lettura avviene in un
+    // microtask (stesso schema usato per origin più sotto) per non aggiornare
+    // lo stato in modo sincrono dentro l'effect
+    // (react-hooks/set-state-in-effect).
+    queueMicrotask(() => {
+      const params = new URLSearchParams(window.location.search);
+      const parseOutcome = (
+        key: string,
+        successLabel: string,
+      ): { kind: "ok" | "err"; msg: string } | null => {
+        const val = params.get(key);
+        if (val === "connected") return { kind: "ok", msg: successLabel };
+        if (val === "error") {
+          return {
+            kind: "err",
+            msg: t(dict.common.connectFailed, {
+              reason: readableConnectReason(params.get("reason"), locale),
+            }),
+          };
+        }
+        return null;
+      };
+      const outcome =
+        parseOutcome("shopify", dict.common.connectSuccess) ??
+        parseOutcome("google", dict.common.connectSuccess);
+      if (outcome) {
+        setBanner(outcome);
+        window.history.replaceState({}, "", window.location.pathname);
       }
-      return null;
-    };
-    const outcome =
-      parseOutcome("shopify", dict.common.connectSuccess) ??
-      parseOutcome("google", dict.common.connectSuccess);
-    if (outcome) {
-      setBanner(outcome);
-      window.history.replaceState({}, "", window.location.pathname);
-    }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -173,7 +180,7 @@ export default function DeployAgentClient({
     const u = new URL("/api/shopify/install", window.location.origin);
     u.searchParams.set("shop", s);
     u.searchParams.set("returnTo", window.location.pathname + window.location.search);
-    window.location.href = u.toString();
+    window.location.assign(u.toString());
   };
 
   return (

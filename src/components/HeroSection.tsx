@@ -61,6 +61,11 @@ export default function HeroSection() {
   // True mentre un reset ha scartato lo stream attivo: i chunk tardivi e il
   // catch handler non devono ripopolare la conversazione azzerata.
   const discardStreamRef = useRef(false);
+  // Accumulo progressivo del testo della risposta in streaming. Un ref invece
+  // di una `let` locale: il testo viene letto dentro gli updater di
+  // setMessages e react-hooks/immutability vieta di mutare valori catturati
+  // da una closure; la mutazione di un ref è invece consentita.
+  const aiTextRef = useRef("");
 
   const hasMessages = messages.length > 0 || isTyping;
   const userCount = messages.filter((m) => m.role === "user").length;
@@ -223,8 +228,8 @@ export default function HeroSection() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let aiText = "";
       let assistantAppended = false;
+      aiTextRef.current = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -244,7 +249,8 @@ export default function HeroSection() {
           }
 
           if (json.type === "text" && typeof json.content === "string") {
-            aiText += json.content;
+            aiTextRef.current += json.content;
+            const assistantText = aiTextRef.current;
             if (!assistantAppended) {
               assistantAppended = true;
               setMessages((prev) => [
@@ -252,14 +258,16 @@ export default function HeroSection() {
                 {
                   id: aiMsgId,
                   role: "assistant",
-                  content: aiText,
+                  content: assistantText,
                   created_at: new Date().toISOString(),
                 },
               ]);
             } else {
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg.id === aiMsgId ? { ...msg, content: aiText } : msg,
+                  msg.id === aiMsgId
+                    ? { ...msg, content: assistantText }
+                    : msg,
                 ),
               );
             }
@@ -270,7 +278,7 @@ export default function HeroSection() {
       }
 
       // Stream terminato senza contenuto — trattalo come errore del backend.
-      if (!aiText.trim()) throw new Error("Empty response");
+      if (!aiTextRef.current.trim()) throw new Error("Empty response");
     } catch {
       if (discardStreamRef.current) return;
       // Niente risposte preimpostate: la chat dell'hero usa il backend AI live.

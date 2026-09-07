@@ -57,6 +57,13 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
+// Timestamp ISO di `days` giorni fa. La lettura dell'orologio vive qui, fuori
+// dal render del server component: `Date.now()` in un componente è impuro
+// (react-hooks/purity), in un helper a livello modulo è una normale utility.
+function isoDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
 // Dashboard: server component che legge i dati reali dell'utente (agenti
 // installati, run e token del mese) con Supabase service-role e li mostra in
 // card e grafici. Gli admin via codice (isAdminMock) vedono la pagina ma senza
@@ -211,7 +218,7 @@ export default async function DashboardPage({
   // statistiche mensili)
   let chartRuns: Array<{ started_at: string | null; input_tokens: number | null; output_tokens: number | null }> = [];
   if (db && !isAdminMock && userId) {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const sevenDaysAgo = isoDaysAgo(7);
     const { data } = await db
       .from("agent_runs")
       .select("started_at, input_tokens, output_tokens")

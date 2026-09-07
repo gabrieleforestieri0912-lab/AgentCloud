@@ -27,6 +27,19 @@ export type ListReviewsParams = {
   unansweredOnly?: boolean;
 };
 
+// Forma del payload restituito dalla Google Business Profile API (solo i
+// campi che ci servono): i nomi sono quelli originali dell'API, da qui lo
+// stile diverso dal tipo GoogleBusinessReview già normalizzato.
+type GoogleBusinessReviewPayload = {
+  reviewId?: string;
+  name?: string;
+  reviewer?: { displayName?: string } | null;
+  starRating?: string | number;
+  comment?: string | null;
+  createTime?: string;
+  reviewReply?: { comment?: string; updateTime?: string } | null;
+};
+
 // Store di fallback in memoria per le recensioni demo/test per-tenant
 const tenantReviewsStore = new Map<string, GoogleBusinessReview[]>();
 
@@ -71,14 +84,21 @@ export async function listBusinessReviews(
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const data = await res.json();
-        const apiReviews: GoogleBusinessReview[] = (data.reviews || []).map((r: any) => ({
-          reviewId: r.reviewId || r.name,
+        const data = (await res.json()) as {
+          reviews?: GoogleBusinessReviewPayload[];
+        };
+        const apiReviews: GoogleBusinessReview[] = (data.reviews ?? []).map((r) => ({
+          reviewId: r.reviewId || r.name || "",
           authorName: r.reviewer?.displayName || "Utente",
           rating: Number(r.starRating) || 5,
           comment: r.comment || "",
           createTime: r.createTime || new Date().toISOString(),
-          reply: r.reviewReply ? { comment: r.reviewReply.comment, updateTime: r.reviewReply.updateTime } : undefined,
+          reply: r.reviewReply?.comment
+            ? {
+                comment: r.reviewReply.comment,
+                updateTime: r.reviewReply.updateTime || "",
+              }
+            : undefined,
         }));
         return filterReviews(apiReviews, params);
       }

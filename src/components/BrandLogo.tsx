@@ -35,8 +35,10 @@ export default function BrandLogo({
 }: BrandLogoProps) {
   if (MULTICOLOR.has(slug)) {
     const brand = BRANDS[slug];
-    // eslint-disable-next-line @next/next/no-img-element
     return (
+      // I loghi autentici multicolore sono SVG statici in /public/brand-logos:
+      // next/image richiederebbe dangerouslyAllowSVG, quindi usiamo <img>.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={`/brand-logos/${slug}.svg`}
         width={size}

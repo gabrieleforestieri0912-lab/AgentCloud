@@ -47,27 +47,32 @@ export default function ShopifyConnectionPrompt() {
     window.addEventListener("focus", refresh);
     // Legge ?shopify=connected|error&reason=... (impostato sulla pagina di
     // ritorno dopo il round-trip OAuth) e lo rimuove così appare una sola volta.
-    const params = new URLSearchParams(window.location.search);
-    const val = params.get("shopify");
-    const stripParams = () => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("shopify");
-      url.searchParams.delete("reason");
-      window.history.replaceState({}, "", url.pathname + url.search);
-    };
-    if (val === "connected") {
-      setOutcome({ kind: "ok", msg: dict.common.connectSuccess });
-      stripParams();
-    } else if (val === "error") {
-      const reason = params.get("reason");
-      setOutcome({
-        kind: "err",
-        msg: t(dict.common.connectFailed, {
-          reason: readableConnectReason(reason, locale),
-        }),
-      });
-      stripParams();
-    }
+    // La lettura avviene in un microtask (stesso schema di `refresh`) per non
+    // fare scattare l'aggiornamento di stato in modo sincrono dentro l'effect
+    // (react-hooks/set-state-in-effect).
+    queueMicrotask(() => {
+      const params = new URLSearchParams(window.location.search);
+      const val = params.get("shopify");
+      const stripParams = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("shopify");
+        url.searchParams.delete("reason");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      };
+      if (val === "connected") {
+        setOutcome({ kind: "ok", msg: dict.common.connectSuccess });
+        stripParams();
+      } else if (val === "error") {
+        const reason = params.get("reason");
+        setOutcome({
+          kind: "err",
+          msg: t(dict.common.connectFailed, {
+            reason: readableConnectReason(reason, locale),
+          }),
+        });
+        stripParams();
+      }
+    });
     return () => window.removeEventListener("focus", refresh);
   }, [refresh, dict.common.connectSuccess, dict.common.connectFailed, locale]);
 

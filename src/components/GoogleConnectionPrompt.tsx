@@ -47,27 +47,34 @@ export default function GoogleConnectionPrompt() {
     queueMicrotask(refresh);
     window.addEventListener("focus", refresh);
 
-    const params = new URLSearchParams(window.location.search);
-    const val = params.get("google");
-    const stripParams = () => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("google");
-      url.searchParams.delete("reason");
-      window.history.replaceState({}, "", url.pathname + url.search);
-    };
-    if (val === "connected") {
-      setOutcome({ kind: "ok", msg: dict.common.connectSuccess });
-      stripParams();
-    } else if (val === "error") {
-      const reason = params.get("reason");
-      setOutcome({
-        kind: "err",
-        msg: t(dict.common.connectFailed, {
-          reason: readableConnectReason(reason, locale),
-        }),
-      });
-      stripParams();
-    }
+    // Legge l'esito OAuth (?google=connected|error&reason=...) e lo rimuove
+    // dall'URL così appare una sola volta. La lettura avviene in un microtask
+    // (stesso schema di `refresh` qui sopra): l'aggiornamento dello stato non
+    // scatta in modo sincrono dentro l'effect
+    // (react-hooks/set-state-in-effect).
+    queueMicrotask(() => {
+      const params = new URLSearchParams(window.location.search);
+      const val = params.get("google");
+      const stripParams = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("google");
+        url.searchParams.delete("reason");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      };
+      if (val === "connected") {
+        setOutcome({ kind: "ok", msg: dict.common.connectSuccess });
+        stripParams();
+      } else if (val === "error") {
+        const reason = params.get("reason");
+        setOutcome({
+          kind: "err",
+          msg: t(dict.common.connectFailed, {
+            reason: readableConnectReason(reason, locale),
+          }),
+        });
+        stripParams();
+      }
+    });
 
     return () => window.removeEventListener("focus", refresh);
   }, [refresh, dict.common.connectSuccess, dict.common.connectFailed, locale]);

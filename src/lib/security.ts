@@ -131,7 +131,6 @@ export function sanitizeHtml(text: string): string {
       .replace(/&#x2F;/gi, "/");
 
     // 8. Rimuove caratteri di controllo non stampabili (eccetto newline/tab)
-    // eslint-disable-next-line no-control-regex
     result = result.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 
     return result;

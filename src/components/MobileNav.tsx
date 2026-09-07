@@ -27,6 +27,16 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const pathname = usePathname();
   const { locale, dict } = useLanguage();
+  // Chiude il menu al cambio di rotta: reset dello stato derivato dal
+  // pathname DURANTE il render (pattern React per "aggiustare lo stato quando
+  // cambia una prop") invece che in un effect — evita il render sincrono extra
+  // segnalato da react-hooks/set-state-in-effect.
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (lastPathname !== pathname) {
+    setLastPathname(pathname);
+    setIsOpen(false);
+    setActiveSection(null);
+  }
 
   // Le pagine server passano la lista autoritativa; altrimenti si ripiega sul
   // cookie di accesso (chi ha il codice vede il catalogo COMPLETO anche nel
@@ -35,12 +45,6 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );
-
-  // Chiude il menu al cambio di rotta
-  useEffect(() => {
-    setIsOpen(false);
-    setActiveSection(null);
-  }, [pathname]);
 
   // Impedisce lo scroll del body quando il menu è aperto
   useEffect(() => {
