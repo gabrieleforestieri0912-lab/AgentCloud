@@ -31,7 +31,7 @@ import {
   type Agent,
 } from "@/lib/agents";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, MessageSquare } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import NotificationBell from "./NotificationBell";
 import CartIcon from "./CartIcon";
@@ -393,6 +393,15 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
               <div className="hidden items-center gap-3 lg:flex">
                 {authLoaded && (showAsLoggedIn ? (
                 <div className="flex items-center gap-3">
+                  {showAsLoggedIn && (
+                    <Link
+                      href="/chat"
+                      className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
+                    >
+                      <MessageSquare size={14} />
+                      {locale === "it" ? "Chat AI" : "AI Chat"}
+                    </Link>
+                  )}
                   <NotificationBell />
                   <div ref={userMenuRef} className="relative">
                     <button

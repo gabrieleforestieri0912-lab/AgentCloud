@@ -870,6 +870,40 @@ export default function ChatInterface({
               <p className="text-sm font-semibold text-neutral-400 max-w-sm">
                 {dict.chat.emptySubtitle}
               </p>
+              {effectiveAvailableAgents.length > 0 && (
+                <div className="mt-6 w-full max-w-md">
+                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">
+                    {dict.chat.agents}
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button
+                      onClick={() => setActiveAgentId("")}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold transition-colors ${activeAgentId === "" ? "bg-brand-500 text-white" : "border border-white/10 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white"}`}
+                    >
+                      <Bot size={14} />
+                      {dict.chat.assistantName}
+                    </button>
+                    {effectiveAvailableAgents.map((a) => (
+                      <button
+                        key={a.slug}
+                        onClick={() => {
+                          setActiveAgentId(a.slug);
+                          setTimeout(() => inputRef.current?.focus(), 0);
+                        }}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold transition-colors ${activeAgentId === a.slug ? "bg-brand-500 text-white" : "border border-white/10 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white"}`}
+                      >
+                        <Bot size={14} />
+                        {a.name}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-xs text-neutral-600">
+                    {activeAgentId
+                      ? `${dict.chat.agents} — ${activeAgentDisplayName}`
+                      : dict.chat.assistantName}
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             messages.map((msg) => (

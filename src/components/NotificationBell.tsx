@@ -353,9 +353,9 @@ export default function NotificationBell() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={dict.notifications.title}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-neutral-300 transition-colors hover:border-brand-500/40 hover:bg-white/5 hover:text-white"
+        className="relative flex h-8 w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white"
       >
-        <Bell size={17} />
+        <Bell size={18} strokeWidth={1.75} />
         {unreadCount > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
             {unreadCount}
