@@ -20,6 +20,7 @@ const MULTICOLOR = new Set([
   "whatsapp",
   "instagram",
   "tiktok",
+  "slack",
 ]);
 
 type BrandLogoProps = {
