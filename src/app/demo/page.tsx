@@ -62,6 +62,10 @@ export default function DemoPage() {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [idea, setIdea] = useState("");
+  const [integrations, setIntegrations] = useState("");
+  const [budget, setBudget] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -75,7 +79,7 @@ export default function DemoPage() {
       const res = await fetch("/api/demo/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, surname, email }),
+        body: JSON.stringify({ name, surname, email, company, idea, integrations, budget }),
       });
 
       if (!res.ok) {
@@ -234,34 +238,35 @@ export default function DemoPage() {
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-300 mb-1.5">
-                    {dict.demo.firstName}
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={dict.demo.firstNamePh}
-                    required
-                    disabled={success}
-                    className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-300 mb-1.5">
-                    {dict.demo.lastName}
-                  </label>
-                  <input
-                    type="text"
-                    value={surname}
-                    onChange={(e) => setSurname(e.target.value)}
-                    placeholder={dict.demo.lastNamePh}
-                    required
-                    disabled={success}
-                    className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
-                  />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-300 mb-1.5">
+                      {dict.demo.firstName}
+                    </label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder={dict.demo.firstNamePh}
+                      required
+                      disabled={success}
+                      className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-300 mb-1.5">
+                      {dict.demo.lastName}
+                    </label>
+                    <input
+                      type="text"
+                      value={surname}
+                      onChange={(e) => setSurname(e.target.value)}
+                      placeholder={dict.demo.lastNamePh}
+                      required
+                      disabled={success}
+                      className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -274,6 +279,63 @@ export default function DemoPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={dict.demo.emailPh}
                     required
+                    disabled={success}
+                    className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-1.5">
+                    {(dict.demo as unknown as Record<string, string>).company ?? "Azienda"}
+                  </label>
+                  <input
+                    type="text"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    placeholder={(dict.demo as unknown as Record<string, string>).companyPh ?? ""}
+                    disabled={success}
+                    className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-1.5">
+                    {(dict.demo as unknown as Record<string, string>).idea ?? "Idea"}
+                  </label>
+                  <textarea
+                    value={idea}
+                    onChange={(e) => setIdea(e.target.value)}
+                    placeholder={(dict.demo as unknown as Record<string, string>).ideaPh ?? ""}
+                    required
+                    disabled={success}
+                    rows={4}
+                    className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50 resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-1.5">
+                    {(dict.demo as unknown as Record<string, string>).integrationsLabel ?? "Integrazioni"}
+                  </label>
+                  <input
+                    type="text"
+                    value={integrations}
+                    onChange={(e) => setIntegrations(e.target.value)}
+                    placeholder={(dict.demo as unknown as Record<string, string>).integrationsPh ?? ""}
+                    disabled={success}
+                    className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-1.5">
+                    {(dict.demo as unknown as Record<string, string>).budgetLabel ?? "Budget"}
+                  </label>
+                  <input
+                    type="text"
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    placeholder={(dict.demo as unknown as Record<string, string>).budgetPh ?? ""}
                     disabled={success}
                     className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
                   />
