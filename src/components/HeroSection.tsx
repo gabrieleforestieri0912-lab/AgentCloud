@@ -19,6 +19,15 @@ import DemoLimitModal from "./DemoLimitModal";
 import { createClient } from "@/lib/supabase/client";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
+import {
+  AttachPlusButton,
+  AttachmentChips,
+  DropHint,
+  chatAttachLabels,
+  useChatAttachments,
+} from "@/components/ChatAttachments";
+import { composeUserContent } from "@/lib/chat-attachments";
+import type { ChatAttachment } from "@/lib/chat-attachments";
 
 // La conversazione dell'hero viene salvata qui così la pagina chat completa
 // (/chat) la riprende in automatico come conversazione salvata.
@@ -36,6 +45,7 @@ type HeroMessage = {
   created_at: string;
   // Bolla di errore: mostra il testo del fallimento più un link di contatto.
   error?: boolean;
+  attachments?: Pick<ChatAttachment, "id" | "name" | "kind" | "previewUrl">[];
 };
 
 function heroId() {
@@ -47,6 +57,8 @@ const DEMO_LIMIT = 10;
 
 export default function HeroSection() {
   const { dict, locale } = useLanguage();
+  const attachLabels = chatAttachLabels(dict);
+  const attach = useChatAttachments();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<HeroMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -181,9 +193,10 @@ export default function HeroSection() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, isTyping, hasMessages]);
 
-  async function sendText(text: string) {
+  async function sendText(text: string, pending: ChatAttachment[] = []) {
     const trimmed = text.trim();
-    if (!trimmed || isTyping) return;
+    const hasAttachments = pending.length > 0;
+    if ((!trimmed && !hasAttachments) || isTyping) return;
     // Limite demo per utenti non autenticati: 10 messaggi utente, poi modale di login
     if (!isAuthed && userCount >= DEMO_LIMIT) {
       setShowLimitModal(true);
@@ -192,11 +205,19 @@ export default function HeroSection() {
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
+    const apiContent = composeUserContent(trimmed, pending);
+
     const userMsg: HeroMessage = {
       id: heroId(),
       role: "user",
-      content: trimmed,
+      content: trimmed || pending.map((a) => a.name).join(", "),
       created_at: new Date().toISOString(),
+      attachments: pending.map((a) => ({
+        id: a.id,
+        name: a.name,
+        kind: a.kind,
+        previewUrl: a.previewUrl,
+      })),
     };
     setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
@@ -217,7 +238,7 @@ export default function HeroSection() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{ role: "user", content: trimmed }],
+          messages: [{ role: "user", content: apiContent }],
         }),
         signal: controller.signal,
       });
@@ -305,7 +326,8 @@ export default function HeroSection() {
   }
 
   async function handleSend() {
-    await sendText(input);
+    const pending = attach.take();
+    await sendText(input, pending);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -317,8 +339,10 @@ export default function HeroSection() {
 
   function handleChipClick(text: string) {
     const expanded = getExpandedChip(text);
-    // Mostra nella chat demo la frase ben formata, non solo la parola del chip
-    sendText(expanded);
+    // Inserisce solo il testo nell'input, senza inviare subito
+    setInput(expanded);
+    // Focus sull'input così l'utente può modificare/inviare
+    setTimeout(() => textareaRef.current?.focus(), 0);
   }
 
   // Salva una conversazione demo conclusa nella lista cronologia importata da /chat.
@@ -349,6 +373,7 @@ export default function HeroSection() {
     saveToChatHistory(messages);
     discardStreamRef.current = true;
     streamAbortRef.current?.abort();
+    attach.clear();
     setIsTyping(false);
     setMessages([]);
     setInput("");
@@ -473,8 +498,12 @@ export default function HeroSection() {
                 al viewport (min(400px, 50dvh)); oltre, l'area messaggi scorre
                 internamente, così l'hero non esplode con la conversazione. */}
             <div
-              className={`bg-neutral-900 rounded-3xl border border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.4)] transition-all duration-500 ease-out flex flex-col`}
+              className={`bg-neutral-900 rounded-3xl border border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.4)] transition-all duration-500 ease-out flex flex-col relative`}
               style={hasMessages ? { maxHeight: "min(400px, 50dvh)" } : undefined}
+              onDragEnter={attach.onDragEnter}
+              onDragOver={attach.onDragOver}
+              onDragLeave={attach.onDragLeave}
+              onDrop={attach.makeDrop(attachLabels)}
             >
               {/* ── Messages area ── */}
               {hasMessages && (
@@ -518,7 +547,31 @@ export default function HeroSection() {
                             )}
                           </>
                         ) : (
-                          msg.content
+                          <>
+                            {msg.content}
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <span className="mt-1.5 flex flex-wrap gap-1.5">
+                                {msg.attachments.map((file) =>
+                                  file.kind === "image" && file.previewUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      key={file.id}
+                                      src={file.previewUrl}
+                                      alt={file.name}
+                                      className="max-h-20 max-w-30 rounded-lg object-cover border border-white/10"
+                                    />
+                                  ) : (
+                                    <span
+                                      key={file.id}
+                                      className="inline-flex items-center rounded-lg bg-white/10 px-2 py-1 text-[11px] text-white/80"
+                                    >
+                                      {file.name}
+                                    </span>
+                                  ),
+                                )}
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                       {msg.role === "user" && (
@@ -565,66 +618,91 @@ export default function HeroSection() {
 
               {/* ── Input row ── */}
               <div
-                className={`flex items-center gap-3 px-5 ${hasMessages ? "py-3 border-t border-white/10" : "py-4"}`}
+                className={`${hasMessages ? "border-t border-white/10" : ""} relative`}
               >
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={
-                    hasMessages
-                      ? dict.hero.placeholderContinued
-                      : dict.hero.placeholderEmpty
-                  }
-                  rows={1}
-                  className="flex-1 min-w-0 bg-transparent text-base text-white placeholder-neutral-500 outline-none resize-none leading-relaxed font-medium py-2.5"
-                  style={{ minHeight: "44px", maxHeight: "140px" }}
-                />
-                {hasMessages && (
+                <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
+                {attach.attachments.length > 0 && (
+                  <div className="px-4 pt-3">
+                    <AttachmentChips
+                      items={attach.attachments}
+                      onRemove={attach.remove}
+                      removeLabel={(name) =>
+                        dict.chat.removeAttachment.replace("{name}", name)
+                      }
+                    />
+                  </div>
+                )}
+                {attach.notice && (
+                  <p className="px-5 pt-2 text-xs text-amber-400 text-left">{attach.notice}</p>
+                )}
+                <div
+                  className={`flex items-center gap-2 px-5 ${hasMessages ? "py-3" : "py-4"}`}
+                >
+                  <AttachPlusButton
+                    labels={attachLabels}
+                    disabled={isTyping}
+                    onPick={(files) => attach.addFiles(files, attachLabels)}
+                  />
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onPaste={attach.makePaste(attachLabels)}
+                    placeholder={
+                      hasMessages
+                        ? dict.hero.placeholderContinued
+                        : dict.hero.placeholderEmpty
+                    }
+                    rows={1}
+                    className="flex-1 min-w-0 bg-transparent text-base text-white placeholder-neutral-500 outline-none resize-none leading-relaxed font-medium py-2.5"
+                    style={{ minHeight: "44px", maxHeight: "140px" }}
+                  />
+                  {hasMessages && (
+                    <button
+                      id="hero-reset-btn"
+                      type="button"
+                      onClick={handleReset}
+                      aria-label={dict.hero.resetChat}
+                      title={dict.hero.resetChat}
+                      className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all"
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                      </svg>
+                    </button>
+                  )}
                   <button
-                    id="hero-reset-btn"
-                    type="button"
-                    onClick={handleReset}
-                    aria-label={dict.hero.resetChat}
-                    title={dict.hero.resetChat}
-                    className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all"
+                    id="hero-send-btn"
+                    onClick={handleSend}
+                    disabled={(!input.trim() && attach.attachments.length === 0) || isTyping}
+                    aria-label={dict.hero.sendMessage}
+                    className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-brand-500 text-white hover:bg-brand-400 transition-all disabled:bg-neutral-800 disabled:text-neutral-600 disabled:cursor-not-allowed shadow-lg shadow-brand-500/25"
                   >
                     <svg
-                      width="15"
-                      height="15"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="2"
+                      strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     >
-                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                      <path d="M3 3v5h5" />
+                      <path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z" />
                     </svg>
                   </button>
-                )}
-                <button
-                  id="hero-send-btn"
-                  onClick={handleSend}
-                  disabled={!input.trim() || isTyping}
-                  aria-label={dict.hero.sendMessage}
-                  className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-brand-500 text-white hover:bg-brand-400 transition-all disabled:bg-neutral-800 disabled:text-neutral-600 disabled:cursor-not-allowed shadow-lg shadow-brand-500/25"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z" />
-                  </svg>
-                </button>
+                </div>
               </div>
             </div>
 
