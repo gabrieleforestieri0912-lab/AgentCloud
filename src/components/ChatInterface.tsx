@@ -65,6 +65,7 @@ type LocalConversation = {
   title: string;
   messages: LocalMessage[];
   created_at: string;
+  agentSlugs?: string[];
 };
 
 function formatTime(dateStr: string) {
@@ -103,6 +104,8 @@ export default function ChatInterface({
   const attach = useChatAttachments();
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [activeAgentId, setActiveAgentId] = useState(agentId || "");
+  const [selectedAgentSlugs, setSelectedAgentSlugs] = useState<string[]>(agentId ? [agentId] : []);
+  const [agentPickerOpen, setAgentPickerOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState(initialQuery || "");
   const [isTyping, setIsTyping] = useState(false);
@@ -145,21 +148,25 @@ export default function ChatInterface({
   }, [availableAgents]);
 
   const activeAgentDisplayName =
-    effectiveAvailableAgents.find((a) => a.slug === activeAgentId)?.name ??
-    (agentLabel && activeAgentId ? agentLabel : undefined) ??
-    dict.chat.assistantName;
+    selectedAgentSlugs.length === 0
+      ? dict.chat.assistantName
+      : selectedAgentSlugs.length === 1
+        ? effectiveAvailableAgents.find((a) => a.slug === selectedAgentSlugs[0])?.name ??
+          (agentLabel && selectedAgentSlugs[0] ? agentLabel : undefined) ??
+          dict.chat.assistantName
+        : `${selectedAgentSlugs.length} agenti`;
 
   // Gli agenti i cui tool di default leggono Gmail/Calendar richiedono una
   // connessione Google: mostra per loro il pannello di connessione in chat
   // (come quello di Shopify).
-  const needsGoogle =
-    Boolean(activeAgentId) &&
-    getEnabledTools(activeAgentId).some(
+  const needsGoogle = selectedAgentSlugs.some((slug) =>
+    getEnabledTools(slug).some(
       (tool) =>
         tool === "list_emails" ||
         tool === "get_calendar_events" ||
         tool.startsWith("calendar_"),
-    );
+    ),
+  );
 
   const [isAtBottom, setIsAtBottom] = useState(true);
   const handleMessagesScroll = () => {
@@ -330,6 +337,13 @@ export default function ChatInterface({
   function switchConversation(id: string) {
     setActiveId(id);
     setMobileSidebarOpen(false);
+    const conv = conversations.find((c) => c.id === id);
+    if (conv?.agentSlugs) {
+      setSelectedAgentSlugs(conv.agentSlugs);
+      setActiveAgentId(conv.agentSlugs[0] ?? "");
+    } else {
+      // fallback to current global selection
+    }
   }
 
   function handleNewChat() {
@@ -338,6 +352,7 @@ export default function ChatInterface({
       title: dict.chat.newChat,
       messages: [],
       created_at: new Date().toISOString(),
+      agentSlugs: [...selectedAgentSlugs],
     };
     setConversations((prev) => [conv, ...prev]);
     setActiveId(conv.id);
@@ -447,105 +462,114 @@ export default function ChatInterface({
       ];
       const filesMap = toFilesMap(pending);
 
-      // Le conversazioni con agenti reali passano dal runtime agenti così gli
-      // strumenti dell'agente selezionato si eseguono davvero (Shopify, Gmail,
-      // Calendar, tool web/file...). L'assistente personale generico (senza
-      // agente) resta sull'endpoint chat semplice. Entrambi usano la stessa
-      // forma SSE ({ type: "text" | "done" | "error", ... }), quindi un unico
-      // reader gestisce entrambi.
-      const isAgentChat = Boolean(activeAgentId);
-      const providerRes = await fetch(
-        isAgentChat ? "/api/agent/run" : "/api/chat",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            isAgentChat
-              ? {
-                  agentId: activeAgentId,
-                  messages: apiMessages,
-                  files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
-                }
-              : { messages: apiMessages },
-          ),
-        },
-      );
-
-      // Non-2xx: la route risponde con un JSON { error } (già localizzato lato
-      // server — es. abbonamento richiesto, limite mensile, rate limited).
-      // Mostra quel messaggio reale invece di uno generico.
-      if (!providerRes.ok) {
-        let serverMessage: string | null = null;
-        try {
-          const data = (await providerRes.json()) as { error?: string };
-          if (data && typeof data.error === "string" && data.error.trim()) {
-            serverMessage = data.error;
-          }
-        } catch {
-          // ignora corpi di errore malformati
-        }
-        if (serverMessage) streamErrorMessage = serverMessage;
-        throw new Error("AI backend error");
+      // L'utente può inserire quanti agenti vuole nella conversazione (selectedAgentSlugs).
+      // Se nessun agente è selezionato → chat generica. Se uno o più → loop su /api/agent/run.
+      const targetSlugs = [...selectedAgentSlugs];
+      // Persisti la selezione nella conversazione per cronologia
+      if (targetSlugs.length > 0 && convId) {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === convId ? { ...c, agentSlugs: [...targetSlugs] } : c)),
+        );
       }
 
-      if (providerRes.body) {
-        const reader = providerRes.body.getReader();
+      async function streamOne(
+        url: string,
+        body: Record<string, unknown>,
+        label?: string,
+      ) {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          let serverMessage: string | null = null;
+          try {
+            const data = (await res.json()) as { error?: string };
+            if (data && typeof data.error === "string" && data.error.trim()) {
+              serverMessage = data.error;
+            }
+          } catch {}
+          if (serverMessage) streamErrorMessage = serverMessage;
+          throw new Error("AI backend error");
+        }
+        if (!res.body) throw new Error("AI backend unavailable");
+        const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
         let assistantId = "";
-
+        let localText = "";
+        const prefix = label ? `**${label}:**\n\n` : "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split("\n");
           buffer = lines.pop() || "";
-
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
-            let json: {
-              type?: string;
-              content?: string;
-              message?: string;
-            };
+            let json: { type?: string; content?: string; message?: string };
             try {
               json = JSON.parse(line.slice(6));
             } catch {
               continue;
             }
-
             if (json.type === "text" && typeof json.content === "string") {
+              localText += json.content;
               responseText += json.content;
               if (!assistantId) {
                 assistantId = generateId();
                 setHasPartialReply(true);
               }
-              patchAssistant(assistantId, responseText);
+              patchAssistant(assistantId, prefix + localText);
             }
-
             if (json.type === "error") {
               streamErrorMessage =
-                typeof json.message === "string" && json.message.trim()
-                  ? json.message
-                  : null;
+                typeof json.message === "string" && json.message.trim() ? json.message : null;
               throw new Error("AI backend error");
             }
-
             if (json.type === "done") break;
           }
         }
+        if (!localText.trim()) throw new Error("Empty response");
+      }
 
-        // Stream terminato senza contenuto — trattalo come errore del backend.
-        if (!responseText.trim()) throw new Error("Empty response");
+      if (targetSlugs.length === 0) {
+        await streamOne("/api/chat", { messages: apiMessages });
+      } else if (targetSlugs.length === 1) {
+        await streamOne("/api/agent/run", {
+          agentId: targetSlugs[0],
+          messages: apiMessages,
+          files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
+        });
       } else {
-        throw new Error("AI backend unavailable");
+        for (const slug of targetSlugs) {
+          const ag = effectiveAvailableAgents.find((a) => a.slug === slug);
+          const label = ag?.name ?? slug;
+          try {
+            await streamOne(
+              "/api/agent/run",
+              {
+                agentId: slug,
+                messages: apiMessages,
+                files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
+              },
+              label,
+            );
+          } catch (e) {
+            // Continua con gli altri agenti anche se uno fallisce
+            console.error(`Agent ${slug} failed`, e);
+          }
+        }
+        if (!responseText.trim()) throw new Error("Empty response");
       }
     } catch {
       // Niente risposte preimpostate: mostra l'errore reale con un link di contatto.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const message =
-        streamErrorMessage && streamErrorMessage.trim()
-          ? streamErrorMessage
+        // @ts-ignore — streamErrorMessage è string | null ma TS lo inferisce never per control flow
+        (streamErrorMessage as unknown as string | null)?.trim()
+          ? (streamErrorMessage as unknown as string)
           : dict.common.aiUnavailable;
       const assistantId = generateId();
       setHasPartialReply(true);
@@ -690,9 +714,17 @@ export default function ChatInterface({
             </p>
             <div className="space-y-1">
               <button
-                onClick={() => setActiveAgentId("")}
+                onClick={() => {
+                  setActiveAgentId("");
+                  setSelectedAgentSlugs([]);
+                  if (activeId) {
+                    setConversations((prev) =>
+                      prev.map((c) => (c.id === activeId ? { ...c, agentSlugs: [] } : c)),
+                    );
+                  }
+                }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                  activeAgentId === ""
+                  selectedAgentSlugs.length === 0
                     ? "bg-white/5 text-white border border-white/5"
                     : "text-neutral-400 hover:text-white hover:bg-white/5"
                 }`}
@@ -703,9 +735,17 @@ export default function ChatInterface({
               {effectiveAvailableAgents.map((a) => (
                 <button
                   key={a.slug}
-                  onClick={() => setActiveAgentId(a.slug)}
+                  onClick={() => {
+                    setActiveAgentId(a.slug);
+                    setSelectedAgentSlugs([a.slug]);
+                    if (activeId) {
+                      setConversations((prev) =>
+                        prev.map((c) => (c.id === activeId ? { ...c, agentSlugs: [a.slug] } : c)),
+                      );
+                    }
+                  }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                    activeAgentId === a.slug
+                    selectedAgentSlugs.length === 1 && selectedAgentSlugs[0] === a.slug
                       ? "bg-brand-500/10 text-brand-300 border border-brand-500/20"
                       : "text-neutral-400 hover:text-white hover:bg-white/5"
                   }`}
@@ -739,27 +779,45 @@ export default function ChatInterface({
                     switchConversation(conv.id);
                   }
                 }}
-                className={`group flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors ${
+                className={`group flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 rounded-lg text-sm text-left transition-colors ${
                   conv.id === activeId
                     ? "bg-white/5 text-white border border-white/5"
                     : "text-neutral-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <MessageSquare
-                  size={14}
-                  className={`shrink-0 ${
-                    conv.id === activeId ? "text-brand-400" : "text-neutral-600"
-                  }`}
-                />
-                <span className="truncate flex-1">{conv.title}</span>
-                <button
-                  onClick={(e) => handleDelete(e, conv.id)}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/20 hover:text-red-400 transition-all shrink-0"
-                  title={dict.chat.deleteConversation}
-                  aria-label={dict.chat.deleteConversation}
-                >
-                  <Trash2 size={12} />
-                </button>
+                <div className="flex w-full items-center gap-2.5">
+                  <MessageSquare
+                    size={14}
+                    className={`shrink-0 ${
+                      conv.id === activeId ? "text-brand-400" : "text-neutral-600"
+                    }`}
+                  />
+                  <span className="truncate flex-1">{conv.title}</span>
+                  <button
+                    onClick={(e) => handleDelete(e, conv.id)}
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/20 hover:text-red-400 transition-all shrink-0"
+                    title={dict.chat.deleteConversation}
+                    aria-label={dict.chat.deleteConversation}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+                {conv.agentSlugs && conv.agentSlugs.length > 0 && (
+                  <div className="ml-6 flex flex-wrap gap-1">
+                    {conv.agentSlugs.map((slug) => {
+                      const ag = effectiveAvailableAgents.find((a) => a.slug === slug);
+                      return (
+                        <span
+                          key={slug}
+                          className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-300"
+                        >
+                          <Bot size={10} />
+                          {ag?.name ?? slug}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -1049,6 +1107,98 @@ export default function ChatInterface({
             />
             {attach.notice && (
               <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>
+            )}
+            {/* Agenti selezionati per questa conversazione — l'utente può inserirne quanti vuole */}
+            {selectedAgentSlugs.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {selectedAgentSlugs.map((slug) => {
+                  const ag = effectiveAvailableAgents.find((a) => a.slug === slug);
+                  return (
+                    <span
+                      key={slug}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/15 border border-brand-500/20 px-2.5 py-1 text-xs font-bold text-brand-300"
+                    >
+                      <Bot size={12} />
+                      {ag?.name ?? slug}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = selectedAgentSlugs.filter((s) => s !== slug);
+                          setSelectedAgentSlugs(next);
+                          setActiveAgentId(next[0] ?? "");
+                          if (activeId) {
+                            setConversations((prev) =>
+                              prev.map((c) => (c.id === activeId ? { ...c, agentSlugs: next } : c)),
+                            );
+                          }
+                        }}
+                        className="ml-1 rounded-full p-0.5 hover:bg-white/10"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <div className="mb-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setAgentPickerOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:bg-white/10 hover:text-white"
+              >
+                <Bot size={12} />
+                {selectedAgentSlugs.length === 0
+                  ? dict.chat.agents
+                  : `${dict.chat.agents} (${selectedAgentSlugs.length})`}
+                <ChevronDown size={12} className={`${agentPickerOpen ? "rotate-180" : ""} transition-transform`} />
+              </button>
+              <span className="text-xs text-neutral-600">
+                {selectedAgentSlugs.length === 0
+                  ? dict.chat.assistantName
+                  : selectedAgentSlugs.map((s) => effectiveAvailableAgents.find((a) => a.slug === s)?.name ?? s).join(", ")}
+              </span>
+            </div>
+            {agentPickerOpen && (
+              <div className="mb-2 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl">
+                <p className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  {dict.chat.agents}
+                </p>
+                <div className="max-h-40 overflow-y-auto space-y-1">
+                  {effectiveAvailableAgents.map((a) => {
+                    const checked = selectedAgentSlugs.includes(a.slug);
+                    return (
+                      <label
+                        key={a.slug}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            let next: string[];
+                            if (e.target.checked) next = [...selectedAgentSlugs, a.slug];
+                            else next = selectedAgentSlugs.filter((s) => s !== a.slug);
+                            setSelectedAgentSlugs(next);
+                            setActiveAgentId(next[0] ?? "");
+                            if (activeId) {
+                              setConversations((prev) =>
+                                prev.map((c) => (c.id === activeId ? { ...c, agentSlugs: next } : c)),
+                              );
+                            }
+                          }}
+                          className="h-3 w-3 rounded border-white/10 bg-neutral-800 text-brand-500 focus:ring-brand-500"
+                        />
+                        <Bot size={12} className="text-neutral-400" />
+                        <span className="text-xs font-semibold text-neutral-200">{a.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {effectiveAvailableAgents.length === 0 && (
+                  <p className="px-2 py-2 text-xs text-neutral-500">{dict.chat.noConversations}</p>
+                )}
+              </div>
             )}
             <div className="flex items-end gap-2 bg-neutral-800 rounded-2xl border border-white/5 px-3 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
             <AttachPlusButton
