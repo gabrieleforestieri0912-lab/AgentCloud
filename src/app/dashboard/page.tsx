@@ -265,6 +265,66 @@ export default async function DashboardPage({
     if (over > 0) overageCentsTotal += calculateOverageAmountCents(over);
   }
 
+  // ── Preview con dati falsi ──────────────────────────────────────────
+  // Quando non ci sono dati reali (nuovo utente / mock admin appena creato),
+  // mostra un'anteprima realistica così l'utente capisce come apparirà la
+  // dashboard dopo l'uso. I dati sono solo visuali, marcati come anteprima.
+  const isPreview = installed.length === 0 && dbAvailable;
+  let displayInstalled = installed;
+  let displayTotalRuns = totalRuns;
+  let displayTotalTokens = totalTokens;
+  let displayDailyBuckets = dailyBuckets;
+  let displayOverageCents = overageCentsTotal;
+  let previewBanner = false;
+  if (isPreview) {
+    previewBanner = true;
+    const fakeSlugs = ["shopify-agent", "email-manager", "lead-capture"] as const;
+    const fakeRuns = [42, 18, 27];
+    const fakeTokens = [128000, 86000, 94000];
+    const nowIso = new Date().toISOString();
+    displayInstalled = fakeSlugs.map((slug, i) => {
+      const catalog = AGENTS.find((a) => a.slug === slug)!;
+      const localized = localizeAgent(catalog, locale);
+      return {
+        slug,
+        status: "active",
+        runs: fakeRuns[i]!,
+        tokens: fakeTokens[i]!,
+        lastRun: new Date(Date.now() - i * 3600_000 * 5).toISOString(),
+        agent: localized,
+        runtimeName: catalog.name,
+        config: {} as Record<string, unknown>,
+      } as InstalledAgent;
+    });
+    displayTotalRuns = fakeRuns.reduce((a, b) => a + b, 0);
+    displayTotalTokens = fakeTokens.reduce((a, b) => a + b, 0);
+    // 7 giorni di bucket fake con andamento realistico
+    displayDailyBuckets = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (6 - i));
+      const key = d.toISOString().slice(0, 10);
+      const base = [6, 9, 4, 12, 7, 15, 11][i] ?? 5;
+      return {
+        date: key,
+        label: dayLabels[d.getDay()],
+        runs: base,
+        tokens: base * 2800 + Math.floor(Math.random() * 800),
+      };
+    });
+    // Ricalcola overage fake (nessun overage in preview, ma mostra usage)
+    displayOverageCents = 0;
+  }
+
+  const displayStatCards: Array<[string, string, typeof Zap]> = isPreview
+    ? [
+        [String(displayInstalled.length), dict.dashboard.statInstalledAgents, Zap],
+        [formatCount(displayTotalRuns), dict.dashboard.statRunsThisMonth, Activity],
+        [formatCount(displayTotalTokens), dict.dashboard.statTokensUsed, CheckCircle2],
+        [String(displayInstalled.filter((a) => a.status === "active").length), dict.dashboard.statActiveAgents, AlertCircle],
+      ]
+    : statCards;
+
   return (
     <main className="min-h-screen bg-neutral-950">
       <AppHeader variant="dashboard" subtitle={email} />
@@ -320,8 +380,19 @@ export default async function DashboardPage({
             </div>
           )}
 
+          {previewBanner && (
+            <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+              <p className="text-sm font-semibold text-amber-200">
+                {locale === "it"
+                  ? "Anteprima con dati di esempio — così apparirà la tua dashboard con agenti attivi. I dati reali sostituiranno questa preview al primo utilizzo."
+                  : "Preview with sample data — this is how your dashboard will look with active agents. Real data will replace this preview after first use."}
+              </p>
+              <span className="shrink-0 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-300">Preview</span>
+            </div>
+          )}
+
           <div className="mb-8 grid gap-4 md:grid-cols-4">
-            {statCards.map(([value, label, Icon]) => (
+            {displayStatCards.map(([value, label, Icon]) => (
               <div
                 key={label}
                 className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm"
@@ -349,16 +420,14 @@ export default async function DashboardPage({
             configured={googleConfigured}
           />
 
-          {/* Grafici e costi — rilevanti se c'è attività, ma sempre renderizzati
-              così lo stato vuoto è informativo (specifica: "dashboard con grafici
-              e costi se l'utente li fa") */}
+          {/* Grafici e costi — in preview mostra dati falsi realistici */}
           <div className="mb-8">
             <DashboardCharts
-              daily={dailyBuckets}
-              totalTokens={totalTokens}
-              totalRuns={totalRuns}
-              estimatedCostCents={overageCentsTotal}
-              overageCents={overageCentsTotal}
+              daily={displayDailyBuckets}
+              totalTokens={displayTotalTokens}
+              totalRuns={displayTotalRuns}
+              estimatedCostCents={displayOverageCents}
+              overageCents={displayOverageCents}
               locale={locale}
             />
           </div>
@@ -371,7 +440,7 @@ export default async function DashboardPage({
                 </h2>
               </div>
 
-              {installed.length === 0 ? (
+              {displayInstalled.length === 0 ? (
                 <div className="p-10 text-center">
                   {dbAvailable ? (
                     <>
@@ -402,7 +471,7 @@ export default async function DashboardPage({
                 </div>
               ) : (
                 <div className="divide-y divide-white/5">
-                  {installed.map(({ agent, slug, status, runs, tokens, lastRun, runtimeName, config }) => {
+                  {displayInstalled.map(({ agent, slug, status, runs, tokens, lastRun, runtimeName, config }) => {
                     const displayName =
                       agent?.shortName ?? runtimeName ?? slug;
                     const category = agent?.category ?? "Agent";
@@ -483,7 +552,7 @@ export default async function DashboardPage({
                 <h2 className="text-xl font-bold text-white">
                   {dict.dashboard.monthlyUsage}
                 </h2>
-                {installed.length === 0 ? (
+                {displayInstalled.length === 0 ? (
                   <p className="mt-4 text-sm leading-6 text-neutral-400">
                     {dbAvailable
                       ? dict.dashboard.usageEmpty
@@ -491,7 +560,7 @@ export default async function DashboardPage({
                   </p>
                 ) : (
                   <div className="mt-4 space-y-4">
-                    {installed.map(
+                    {displayInstalled.map(
                       ({ agent, slug, tokens, status, runtimeName, config }) => {
                         const displayName =
                           agent?.shortName ?? runtimeName ?? slug;

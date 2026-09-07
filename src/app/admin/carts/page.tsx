@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
+import { hasPlatformAccess } from "@/lib/access-code";
 import { isAdminEmail } from "@/lib/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAgentBySlug } from "@/lib/agents";
@@ -11,7 +12,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminCartsPage() {
   const user = await getSessionUser();
-  if (!user || !isAdminEmail(user.email)) redirect("/login");
+  const hasAccess = await hasPlatformAccess();
+  const isAdmin = (user && isAdminEmail(user.email)) || (!user && hasAccess);
+  if (!isAdmin) redirect("/login");
+  const displayEmail = user?.email ?? (hasAccess ? "admin@agentcloud.agency (preview)" : "");
 
   const db = createAdminClient();
   if (!db) return <div className="p-8 text-white">DB non configurato</div>;
@@ -44,7 +48,7 @@ export default async function AdminCartsPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950">
-      <AppHeader variant="dashboard" title="Carrelli — Admin" subtitle={user.email ?? ""} />
+      <AppHeader variant="dashboard" title="Carrelli — Admin" subtitle={displayEmail} />
       <section className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 flex items-center justify-between">
