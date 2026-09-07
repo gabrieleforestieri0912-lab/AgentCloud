@@ -6,12 +6,15 @@
  */
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Sparkles, Clock, Tag, Shield, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Check, Sparkles, Clock, Tag, Shield } from "lucide-react";
 import type { Bundle, BundlePeriod } from "@/lib/bundles";
 import { formatPrice, formatMonthlyPrice, getBundleAgents } from "@/lib/bundles";
 import AgentIcon from "@/components/AgentIcon";
 import { useLanguage } from "@/components/LanguageProvider";
 import AddBundleToCartButton from "@/components/AddBundleToCartButton";
+
+const PERIODS: BundlePeriod[] = ["monthly", "quarterly", "yearly"];
 
 type Props = { bundle: Bundle };
 
@@ -131,16 +134,24 @@ export default function BundleDetailClient({ bundle }: Props) {
           {/* Right: pricing card */}
           <div className="lg:col-span-2">
             <div className="sticky top-28 rounded-2xl border border-white/5 bg-neutral-900 p-6 shadow-xl shadow-black/20">
-              {/* Period toggle */}
-              <div className="mb-6 flex gap-1 rounded-xl border border-white/10 bg-neutral-800/60 p-1">
-                {(["monthly", "quarterly", "yearly"] as BundlePeriod[]).map((p) => (
+              {/* Period toggle with sliding indicator */}
+              <div className="relative mb-6 flex gap-1 rounded-xl border border-white/10 bg-neutral-800/60 p-1">
+                <motion.div
+                  className="absolute top-1 bottom-1 rounded-lg bg-brand-500 shadow-lg shadow-brand-500/20"
+                  layout
+                  layoutId="detail-pill"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  style={{
+                    width: `calc((100% - 8px) / 3)`,
+                    left: `calc(${PERIODS.indexOf(period)} * (100% - 8px) / 3 + 4px)`,
+                  }}
+                />
+                {PERIODS.map((p) => (
                   <button
                     key={p}
                     onClick={() => setPeriod(p)}
-                    className={`flex-1 rounded-lg px-3 py-2.5 text-xs font-bold transition-all ${
-                      period === p
-                        ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
-                        : "text-neutral-400 hover:text-white hover:bg-neutral-700/50"
+                    className={`relative z-10 flex-1 rounded-lg px-3 py-2.5 text-xs font-bold transition-colors duration-200 ${
+                      period === p ? "text-white" : "text-neutral-400 hover:text-white"
                     }`}
                   >
                     {p === "monthly"
@@ -152,30 +163,56 @@ export default function BundleDetailClient({ bundle }: Props) {
                 ))}
               </div>
 
-              {/* Price */}
-              <div className="mb-6 text-center">
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-extrabold text-white">{formatPrice(monthlyPrice)}</span>
-                  <span className="text-sm font-semibold text-neutral-500">{periodLabel}</span>
-                </div>
-                {savingsPercent > 0 && (
-                  <div className="mt-3 flex items-center justify-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-400">
-                      <Tag size={12} />
-                      -{savingsPercent}% {isIt ? "risparmio" : "off"}
-                    </span>
-                    {totalDisplay && (
-                      <span className="text-sm font-semibold text-neutral-500">
-                        {isIt ? "Totale" : "Total"}: {totalDisplay}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {period === "monthly" && (
-                  <p className="mt-2 text-xs font-semibold text-neutral-500">
-                    {isIt ? "Prezzo senza bundle" : "Price without bundle"}: {formatMonthlyPrice(pricing.monthly * agents.length)}
-                  </p>
-                )}
+              {/* Animated price */}
+              <div className="relative mb-6 text-center h-[80px]">
+                <AnimatePresence mode="popLayout">
+                  <motion.div
+                    key={period}
+                    initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
+                    transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                    className="absolute inset-0 flex flex-col items-center"
+                  >
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-extrabold text-white">{formatPrice(monthlyPrice)}</span>
+                      <span className="text-sm font-semibold text-neutral-500">{periodLabel}</span>
+                    </div>
+                    <AnimatePresence>
+                      {savingsPercent > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.05 }}
+                          className="mt-3 flex items-center justify-center gap-2"
+                        >
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-400">
+                            <Tag size={12} />
+                            -{savingsPercent}% {isIt ? "risparmio" : "off"}
+                          </span>
+                          {totalDisplay && (
+                            <span className="text-sm font-semibold text-neutral-500">
+                              {isIt ? "Totale" : "Total"}: {totalDisplay}
+                            </span>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <AnimatePresence>
+                      {period === "monthly" && (
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="mt-2 text-xs font-semibold text-neutral-500"
+                        >
+                          {isIt ? "Prezzo senza bundle" : "Price without bundle"}: {formatMonthlyPrice(pricing.monthly * agents.length)}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
               {/* CTA */}
