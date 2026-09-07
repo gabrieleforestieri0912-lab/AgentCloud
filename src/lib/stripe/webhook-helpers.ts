@@ -21,6 +21,8 @@ export type CheckoutMetadata = {
   userId: string | null;
   email: string | null;
   agentId: string | null;
+  agentIds: string[] | null;
+  cartId: string | null;
   planId: string | null;
   vertical: Vertical | null;
   tokens: number | null; // monthly token allowance
@@ -46,6 +48,10 @@ export function parseCheckoutMetadata(
   const tokens = tokensRaw ? Number(tokensRaw) : null;
   const vertical = asString(metadata.vertical);
 
+  const agentIdsRaw = asString(metadata.agent_ids) ?? asString(metadata.agentIds);
+  const agentIds = agentIdsRaw
+    ? agentIdsRaw.split(",").map((s) => s.trim()).filter(Boolean)
+    : null;
   return {
     userId:
       asString(metadata.client_reference_id) ??
@@ -54,6 +60,8 @@ export function parseCheckoutMetadata(
     email:
       asString(metadata.email) ?? asString(extra?.email),
     agentId: asString(metadata.agent_id),
+    agentIds,
+    cartId: asString(metadata.cart_id),
     planId: asString(metadata.plan_id),
     vertical: vertical === "shopify" || vertical === "services" ? vertical : null,
     tokens: tokens !== null && Number.isFinite(tokens) ? tokens : null,
@@ -77,6 +85,14 @@ export type CheckoutResolution = {
  *   del piano.
  */
 export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolution {
+  if (info.agentIds && info.agentIds.length > 0) {
+    return {
+      agentIds: info.agentIds,
+      tokenLimit: info.tokens ?? DEFAULT_TOKEN_LIMIT,
+      planId: null,
+      vertical: null,
+    };
+  }
   if (info.agentId) {
     return {
       agentIds: [info.agentId],

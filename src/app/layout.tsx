@@ -10,6 +10,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { CartProvider } from "@/components/CartProvider";
 import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { LOCALE_LABELS } from "@/lib/i18n/constants";
 import { getSiteUrl } from "@/lib/site-url";
@@ -229,7 +230,7 @@ export default async function RootLayout({
             ri-renderizzerebbe l'intero albero. Il provider cambia sul posto e
             chiama router.refresh() così i contenuti server si aggiornano. */}
         <LanguageProvider initialLocale={locale}>
-          {children}
+          <CartProvider>{children}</CartProvider>
         </LanguageProvider>
         <Analytics />
         <SpeedInsights />

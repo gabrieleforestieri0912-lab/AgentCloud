@@ -34,6 +34,7 @@ import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
 import LanguageToggle from "./LanguageToggle";
 import NotificationBell from "./NotificationBell";
+import CartIcon from "./CartIcon";
 
 type MenuKey = "marketplace" | "solutions" | "integrations" | "pricing";
 
@@ -473,6 +474,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                       </div>
                     )}
                   </div>
+                  <CartIcon />
                   <NotificationBell />
                 </div>
               ) : (

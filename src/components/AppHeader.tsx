@@ -13,6 +13,7 @@ import { ArrowLeft, LayoutDashboard, MessageSquare, PanelLeft, PanelLeftClose } 
 import { useLanguage } from "./LanguageProvider";
 import LanguageToggle from "./LanguageToggle";
 import NotificationBell from "./NotificationBell";
+import CartIcon from "./CartIcon";
 
 type AppHeaderProps = {
   variant: "dashboard" | "chat";
@@ -115,6 +116,7 @@ export default function AppHeader({
             <span className="sm:hidden">Home</span>
           </Link>
 
+          <CartIcon />
           <LanguageToggle />
           <NotificationBell />
         </div>

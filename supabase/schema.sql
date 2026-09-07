@@ -463,6 +463,70 @@ as $$
 $$;
 
 
+-- -----------------------------------------------------------------------------
+-- 10. carts — carrello acquisti per utente (uno attivo per utente)
+-- 11. cart_items — righe del carrello (agenti aggiunti)
+-- -----------------------------------------------------------------------------
+create table if not exists public.carts (
+  id uuid default gen_random_uuid() primary key,
+  user_id text not null,
+  status text not null default 'active' check (status in ('active','converted','abandoned')),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create unique index if not exists uq_carts_one_active_per_user
+  on public.carts(user_id) where status = 'active';
+
+create index if not exists idx_carts_user on public.carts(user_id);
+create index if not exists idx_carts_status on public.carts(status);
+
+alter table public.carts enable row level security;
+
+drop policy if exists "Users can manage own carts" on public.carts;
+create policy "Users can manage own carts"
+  on public.carts for all
+  using (auth.uid()::text = user_id)
+  with check (auth.uid()::text = user_id);
+
+drop policy if exists "Service role can manage carts" on public.carts;
+create policy "Service role can manage carts"
+  on public.carts for all
+  using (true)
+  with check (true);
+
+drop trigger if exists trg_carts_updated_at on public.carts;
+create trigger trg_carts_updated_at
+  before update on public.carts
+  for each row execute function public.touch_updated_at();
+
+create table if not exists public.cart_items (
+  id uuid default gen_random_uuid() primary key,
+  cart_id uuid not null references public.carts(id) on delete cascade,
+  agent_slug text not null,
+  quantity integer not null default 1 check (quantity > 0 and quantity <= 10),
+  added_at timestamptz default now(),
+  unique (cart_id, agent_slug)
+);
+
+create index if not exists idx_cart_items_cart on public.cart_items(cart_id);
+create index if not exists idx_cart_items_slug on public.cart_items(agent_slug);
+
+alter table public.cart_items enable row level security;
+
+drop policy if exists "Users can manage own cart_items" on public.cart_items;
+create policy "Users can manage own cart_items"
+  on public.cart_items for all
+  using (exists (select 1 from public.carts where carts.id = cart_items.cart_id and carts.user_id = auth.uid()::text))
+  with check (exists (select 1 from public.carts where carts.id = cart_items.cart_id and carts.user_id = auth.uid()::text));
+
+drop policy if exists "Service role can manage cart_items" on public.cart_items;
+create policy "Service role can manage cart_items"
+  on public.cart_items for all
+  using (true)
+  with check (true);
+
+
 -- =============================================================================
 -- Optional: bootstrap agents_registry from the application catalog.
 --

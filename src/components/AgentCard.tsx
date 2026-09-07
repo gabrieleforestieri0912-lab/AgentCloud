@@ -14,6 +14,7 @@ import type { Agent } from "@/lib/agents";
 import { isAvailable } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
 import { useLanguage } from "./LanguageProvider";
+import AddToCartButton from "./AddToCartButton";
 
 type AgentCardProps = {
   agent: Agent;
@@ -134,15 +135,18 @@ export default function AgentCard({
         </div>
 
         {isAgentAvailable ? (
-          <Link
-            href={chatHref}
-            aria-label={`${dict.agentCard.buy} ${agent.name}`}
-            className="relative z-20 inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 hover:shadow-brand-500/30 hover:-translate-y-0.5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {ctaSubtext}
-            <ArrowRight size={14} />
-          </Link>
+          <div className="relative z-20 flex flex-col items-end gap-2">
+            <Link
+              href={chatHref}
+              aria-label={`${dict.agentCard.buy} ${agent.name}`}
+              className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 hover:shadow-brand-500/30 hover:-translate-y-0.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {ctaSubtext}
+              <ArrowRight size={14} />
+            </Link>
+            <AddToCartButton slug={agent.slug} compact />
+          </div>
         ) : (
           <span className="inline-flex items-center gap-2 rounded-full bg-neutral-800 px-5 py-2.5 text-sm font-semibold text-neutral-500 cursor-not-allowed">
             {dict.agentCard.comingSoon}

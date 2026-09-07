@@ -19,6 +19,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
 import AgentCard from "@/components/AgentCard";
+import AddToCartButton from "@/components/AddToCartButton";
 import {
   AGENTS,
   AVAILABLE_AGENTS,
@@ -211,22 +212,28 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
 
               <div className="mt-8 flex flex-wrap gap-3">
                 {available ? (
-                  <Link
-                    href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
-                    className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35"
-                  >
-                    {unlocked
-                      ? locale === "it"
-                        ? "Apri chat"
-                        : "Open chat"
-                      : dict.agentDetail.configureAgent}
-                    <ArrowRight size={16} />
-                  </Link>
+                  <>
+                    <Link
+                      href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
+                      className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35"
+                    >
+                      {unlocked
+                        ? locale === "it"
+                          ? "Apri chat"
+                          : "Open chat"
+                        : dict.agentDetail.configureAgent}
+                      <ArrowRight size={16} />
+                    </Link>
+                    <AddToCartButton slug={agent.slug} />
+                  </>
                 ) : (
                   <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-7 py-3.5 text-sm font-bold text-neutral-500">
                     {dict.common.comingSoon}
                   </span>
                 )}
+                <Link href="/cart" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white hover:bg-white/10">
+                  {locale === "it" ? "Vai al carrello" : "Go to cart"}
+                </Link>
               </div>
             </div>
 
@@ -307,6 +314,11 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     )}
                   </Link>
 
+                  {available && (
+                    <div className="mt-3">
+                      <AddToCartButton slug={agent.slug} className="w-full justify-center" />
+                    </div>
+                  )}
                   <Link
                     href="/chat"
                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"

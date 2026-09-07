@@ -100,6 +100,12 @@ async function activateSubscription(
     if (meterItemId) config.stripeSubscriptionItemId = meterItemId;
   }
 
+  // Se il checkout proviene da carrello, segna il carrello come convertito
+  if (metadata.cartId && userId) {
+    await db.from("carts").update({ status: "converted", updated_at: new Date().toISOString() }).eq("id", metadata.cartId).eq("user_id", userId);
+    await db.from("cart_items").delete().eq("cart_id", metadata.cartId);
+  }
+
   for (const agentId of resolution.agentIds) {
     // Registro grezzo degli abbonamenti Stripe (una riga per subscription x agente).
     const { error: subError } = await db.from("subscriptions").upsert(

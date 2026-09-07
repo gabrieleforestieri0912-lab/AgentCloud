@@ -17,6 +17,7 @@ import {
   Plus,
   Power,
   Zap,
+  ShoppingCart,
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import DashboardCharts from "@/components/DashboardCharts";
@@ -290,13 +291,24 @@ export default async function DashboardPage({
               </p>
             </div>
 
-            <Link
-              href="/agents"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
-            >
-              <Plus size={16} />
-              {dict.dashboard.installAgent}
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              {isAdmin && (
+                <Link
+                  href="/admin/carts"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white hover:bg-white/10"
+                >
+                  <ShoppingCart size={16} />
+                  Vedi carrelli (admin)
+                </Link>
+              )}
+              <Link
+                href="/agents"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
+              >
+                <Plus size={16} />
+                {dict.dashboard.installAgent}
+              </Link>
+            </div>
           </div>
 
           {billing === "error" && (
