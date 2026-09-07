@@ -198,6 +198,9 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
 
           if (data.type === "done") {
             setIsRunning(false);
+            try {
+              window.dispatchEvent(new CustomEvent("agentcloud:notifications-refresh"));
+            } catch {}
           }
 
           if (data.type === "error") {
@@ -318,7 +321,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
                                   key={file.id}
                                   src={file.previewUrl}
                                   alt={file.name}
-                                  className="max-h-28 max-w-[140px] rounded-lg object-cover"
+                                  className="max-h-28 max-w-35 rounded-lg object-cover"
                                 />
                               ) : (
                                 <span

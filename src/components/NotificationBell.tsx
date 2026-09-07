@@ -110,9 +110,21 @@ export default function NotificationBell() {
         });
     load();
     const interval = setInterval(load, POLL_MS);
+    // Aggiorna subito quando un agente completa un'azione (ChatInterface /
+    // PublicAgentChat dispatchano 'agentcloud:notifications-refresh')
+    const onAgentDone = () => load();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    window.addEventListener("agentcloud:notifications-refresh", onAgentDone);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onVisibility);
     return () => {
       active = false;
       clearInterval(interval);
+      window.removeEventListener("agentcloud:notifications-refresh", onAgentDone);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onVisibility);
     };
   }, []);
 
@@ -276,6 +288,54 @@ export default function NotificationBell() {
         return (
           <span className={cls}>
             <Contact size={15} />
+          </span>
+        );
+      case "email_sent":
+        return (
+          <span className={cls}>
+            <Mail size={15} />
+          </span>
+        );
+      case "email_trashed":
+        return (
+          <span className={cls}>
+            <FileText size={15} />
+          </span>
+        );
+      case "calendar_event_deleted":
+        return (
+          <span className={cls}>
+            <XCircle size={15} />
+          </span>
+        );
+      case "calendar_reminder_set":
+        return (
+          <span className={cls}>
+            <CalendarClock size={15} />
+          </span>
+        );
+      case "quote_generated":
+        return (
+          <span className={cls}>
+            <Receipt size={15} />
+          </span>
+        );
+      case "quote_sent":
+        return (
+          <span className={cls}>
+            <Mail size={15} />
+          </span>
+        );
+      case "review_replied":
+        return (
+          <span className={cls}>
+            <Megaphone size={15} />
+          </span>
+        );
+      case "store_created":
+        return (
+          <span className={cls}>
+            <ShoppingBag size={15} />
           </span>
         );
       default:

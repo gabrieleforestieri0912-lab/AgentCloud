@@ -553,6 +553,10 @@ export default function ChatInterface({
     }
 
     setIsTyping(false);
+    // Notifica alla campanella che potrebbero esserci nuove notifiche agente
+    try {
+      window.dispatchEvent(new CustomEvent("agentcloud:notifications-refresh"));
+    } catch {}
   }
 
   async function handleSend() {

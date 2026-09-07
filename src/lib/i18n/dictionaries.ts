@@ -957,6 +957,14 @@ const it = {
       payment_reminder_sent: "{agent} ha inviato un sollecito a {email}",
       post_scheduled: "{agent} ha pianificato un post {platform} ({when})",
       cv_analyzed: "{agent} ha analizzato il CV {filename}",
+      email_sent: "{agent} ha inviato un'email a {to} ({subject})",
+      email_trashed: "{agent} ha cestinato un'email ({message_id})",
+      calendar_event_deleted: "{agent} ha eliminato l'evento {event_id}",
+      calendar_reminder_set: "{agent} ha impostato un promemoria per {event_id} ({minutes} min)",
+      quote_generated: "{agent} ha generato un preventivo per {client_email}",
+      quote_sent: "{agent} ha inviato un preventivo a {client_email}",
+      review_replied: "{agent} ha risposto a una recensione ({review_id})",
+      store_created: "{agent} ha creato lo store \"{shop_name}\""
     },
     actions: {
       add: "aggiunti",
@@ -1957,6 +1965,14 @@ export const en: Dictionary = {
       payment_reminder_sent: "{agent} sent a payment reminder to {email}",
       post_scheduled: "{agent} scheduled a {platform} post ({when})",
       cv_analyzed: "{agent} analyzed CV {filename}",
+      email_sent: "{agent} sent an email to {to} ({subject})",
+      email_trashed: "{agent} trashed an email ({message_id})",
+      calendar_event_deleted: "{agent} deleted event {event_id}",
+      calendar_reminder_set: "{agent} set a reminder for {event_id} ({minutes} min)",
+      quote_generated: "{agent} generated a quote for {client_email}",
+      quote_sent: "{agent} sent a quote to {client_email}",
+      review_replied: "{agent} replied to a review ({review_id})",
+      store_created: "{agent} created the store \"{shop_name}\""
     },
     actions: {
       add: "added",
@@ -2955,6 +2971,14 @@ export const es: Dictionary = {
       payment_reminder_sent: "{agent} sent a payment reminder to {email}",
       post_scheduled: "{agent} scheduled a {platform} post ({when})",
       cv_analyzed: "{agent} analyzed CV {filename}",
+      email_sent: "{agent} sent an email to {to} ({subject})",
+      email_trashed: "{agent} trashed an email ({message_id})",
+      calendar_event_deleted: "{agent} deleted event {event_id}",
+      calendar_reminder_set: "{agent} set a reminder for {event_id} ({minutes} min)",
+      quote_generated: "{agent} generated a quote for {client_email}",
+      quote_sent: "{agent} sent a quote to {client_email}",
+      review_replied: "{agent} replied to a review ({review_id})",
+      store_created: "{agent} created the store \"{shop_name}\""
     },
     actions: {
       add: "added",
@@ -3953,6 +3977,14 @@ export const de: Dictionary = {
       payment_reminder_sent: "{agent} sent a payment reminder to {email}",
       post_scheduled: "{agent} scheduled a {platform} post ({when})",
       cv_analyzed: "{agent} analyzed CV {filename}",
+      email_sent: "{agent} sent an email to {to} ({subject})",
+      email_trashed: "{agent} trashed an email ({message_id})",
+      calendar_event_deleted: "{agent} deleted event {event_id}",
+      calendar_reminder_set: "{agent} set a reminder for {event_id} ({minutes} min)",
+      quote_generated: "{agent} generated a quote for {client_email}",
+      quote_sent: "{agent} sent a quote to {client_email}",
+      review_replied: "{agent} replied to a review ({review_id})",
+      store_created: "{agent} created the store \"{shop_name}\""
     },
     actions: {
       add: "added",
@@ -4951,6 +4983,14 @@ export const fr: Dictionary = {
       payment_reminder_sent: "{agent} sent a payment reminder to {email}",
       post_scheduled: "{agent} scheduled a {platform} post ({when})",
       cv_analyzed: "{agent} analyzed CV {filename}",
+      email_sent: "{agent} sent an email to {to} ({subject})",
+      email_trashed: "{agent} trashed an email ({message_id})",
+      calendar_event_deleted: "{agent} deleted event {event_id}",
+      calendar_reminder_set: "{agent} set a reminder for {event_id} ({minutes} min)",
+      quote_generated: "{agent} generated a quote for {client_email}",
+      quote_sent: "{agent} sent a quote to {client_email}",
+      review_replied: "{agent} replied to a review ({review_id})",
+      store_created: "{agent} created the store \"{shop_name}\""
     },
     actions: {
       add: "added",

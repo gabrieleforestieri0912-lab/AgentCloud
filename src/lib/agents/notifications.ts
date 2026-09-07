@@ -31,7 +31,15 @@ export type AgentNotificationKind =
   | "invoice_created"
   | "payment_reminder_sent"
   | "post_scheduled"
-  | "cv_analyzed";
+  | "cv_analyzed"
+  | "email_sent"
+  | "email_trashed"
+  | "calendar_event_deleted"
+  | "calendar_reminder_set"
+  | "quote_generated"
+  | "quote_sent"
+  | "review_replied"
+  | "store_created";
 
 /** Parametri neutri (senza lingua) salvati nel DB; la UI li localizza. */
 export type AgentNotificationParams = Record<string, string | number>;
@@ -116,7 +124,8 @@ const TOOL_ACTION_RULES: Record<string, ToolActionRule> = {
 
   lead_capture_submit: {
     kind: "lead_submitted",
-    success: (r) => /Response: 2\d\d/.test(r),
+    success: (r) =>
+      /Response: 2\d\d/.test(r) || r.startsWith("✅ Lead captured"),
     params: (input) => ({
       email: input.email || "",
       name: input.name || "",
@@ -169,6 +178,72 @@ const TOOL_ACTION_RULES: Record<string, ToolActionRule> = {
       filename: input.filename || "CV",
     }),
   },
+
+  gmail_send: {
+    kind: "email_sent",
+    success: (r) => r.startsWith("✅ Email sent"),
+    params: (input) => ({
+      to: input.to || "",
+      subject: input.subject || "",
+    }),
+  },
+
+  gmail_trash: {
+    kind: "email_trashed",
+    success: (r) => r.includes("moved to trash"),
+    params: (input) => ({
+      message_id: input.message_id || "",
+    }),
+  },
+
+  calendar_delete_event: {
+    kind: "calendar_event_deleted",
+    success: (r) => r.includes("deleted from Google Calendar"),
+    params: (input) => ({
+      event_id: input.event_id || "",
+    }),
+  },
+
+  calendar_set_reminder: {
+    kind: "calendar_reminder_set",
+    success: (r) => r.startsWith("✅ Reminder set"),
+    params: (input) => ({
+      event_id: input.event_id || "",
+      minutes: input.minutes || "",
+    }),
+  },
+
+  quote_generate: {
+    kind: "quote_generated",
+    success: (r) => r.includes("Preventivo") || r.includes("Quote"),
+    params: (input) => ({
+      client_email: input.client_email || "",
+    }),
+  },
+
+  quote_send_email: {
+    kind: "quote_sent",
+    success: (r) => r.includes("inviato con successo") || r.includes("sent"),
+    params: (input) => ({
+      client_email: input.client_email || "",
+    }),
+  },
+
+  google_reviews_reply: {
+    kind: "review_replied",
+    success: (r) => !r.startsWith("google_reviews_reply requires") && !r.includes("not configured") && r.length > 10,
+    params: (input) => ({
+      review_id: input.review_id || "",
+    }),
+  },
+
+  shopify_create_store: {
+    kind: "store_created",
+    success: (r) => r.includes("Store di sviluppo creato") || r.includes("Dominio suggerito"),
+    params: (input) => ({
+      shop_name: input.shop_name || "",
+    }),
+  },
 };
 
 /**
@@ -198,7 +273,13 @@ export async function createAgentNotification(input: {
   params?: AgentNotificationParams;
 }): Promise<boolean> {
   const db = createAdminClient();
-  if (!db) return false;
+  if (!db) {
+    console.warn(
+      "createAgentNotification saltata: SUPABASE_SERVICE_ROLE_KEY non configurata (notifica persa)",
+      input,
+    );
+    return false;
+  }
 
   const { error } = await db.from("agent_notifications").insert({
     user_id: input.userId,
@@ -208,7 +289,7 @@ export async function createAgentNotification(input: {
   });
 
   if (error) {
-    console.error("createAgentNotification fallita:", error);
+    console.error("createAgentNotification fallita:", error, input);
     return false;
   }
   return true;
