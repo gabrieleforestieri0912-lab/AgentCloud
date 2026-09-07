@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Languages, Bell, Shield, Palette, Database, Globe, Check } from "lucide-react";
+import { Languages, Bell, Shield, Palette, Database, Globe, Check, Sun, Moon, Monitor } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/constants";
+import { useTheme, type Theme } from "@/components/ThemeProvider";
 
 // Client delle impostazioni: preferenze locali di lingua, notifiche e dati.
 // Le preferenze (toggle ecc.) sono per ora simulabili lato client — nessuna
 // scrittura su DB, da qui il pulsante "Salva" fittizio.
 export default function SettingsClient({ isMock, email }: { isMock: boolean; email: string }) {
   const { locale, setLocale } = useLanguage();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const isIt = locale === "it";
   const [emailNotif, setEmailNotif] = useState(true);
   const [productUpdates, setProductUpdates] = useState(true);
@@ -105,11 +107,33 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
           {isIt ? "Aspetto" : "Appearance"}
         </h2>
         <p className="mt-2 text-sm text-neutral-400">
-          {isIt ? "Tema scuro ottimizzato per lavoro prolungato. Altri temi in arrivo." : "Dark theme optimized for long work sessions. More themes coming soon."}
+          {isIt ? "Scegli il tema dell'interfaccia. Sistema segue le preferenze del dispositivo." : "Choose the interface theme. System follows your device preference."}
         </p>
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-800 px-4 py-2 text-sm font-bold text-white">
-          <span className="h-2 w-2 rounded-full bg-neutral-900 border border-white/20" />
-          {isIt ? "Scuro (predefinito)" : "Dark (default)"}
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          {(
+            [
+              { value: "light" as Theme, label: isIt ? "Chiaro" : "Light", icon: Sun, desc: isIt ? "Sfondo chiaro" : "Light background" },
+              { value: "dark" as Theme, label: isIt ? "Scuro" : "Dark", icon: Moon, desc: isIt ? "Sfondo scuro" : "Dark background" },
+              { value: "system" as Theme, label: isIt ? "Sistema" : "System", icon: Monitor, desc: `${isIt ? "Attuale" : "Current"}: ${resolvedTheme === "light" ? (isIt ? "chiaro" : "light") : isIt ? "scuro" : "dark"}` },
+            ] as const
+          ).map(({ value, label, icon: Icon, desc }) => {
+            const active = theme === value;
+            return (
+              <button
+                key={value}
+                onClick={() => setTheme(value)}
+                className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${active ? "border-brand-500 bg-brand-500/10" : "border-white/5 bg-neutral-800 hover:bg-neutral-700/60"}`}
+              >
+                <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? "bg-brand-500 text-white" : "bg-white/5 text-neutral-400"}`}>
+                  <Icon size={16} />
+                </span>
+                <span className="min-w-0">
+                  <span className={`block text-sm font-bold ${active ? "text-white" : "text-neutral-200"}`}>{label} {active && <Check size={12} className="ml-1 inline text-brand-400" />}</span>
+                  <span className="block text-xs text-neutral-500">{desc}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

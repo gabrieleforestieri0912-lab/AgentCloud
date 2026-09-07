@@ -11,6 +11,8 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { CartProvider } from "@/components/CartProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { themeInitScript } from "@/lib/theme-script";
 import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { LOCALE_LABELS } from "@/lib/i18n/constants";
 import { getSiteUrl } from "@/lib/site-url";
@@ -219,6 +221,7 @@ export default async function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800;900&display=swap"
             rel="stylesheet"
         />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -230,7 +233,9 @@ export default async function RootLayout({
             ri-renderizzerebbe l'intero albero. Il provider cambia sul posto e
             chiama router.refresh() così i contenuti server si aggiornano. */}
         <LanguageProvider initialLocale={locale}>
-          <CartProvider>{children}</CartProvider>
+          <ThemeProvider>
+            <CartProvider>{children}</CartProvider>
+          </ThemeProvider>
         </LanguageProvider>
         <Analytics />
         <SpeedInsights />

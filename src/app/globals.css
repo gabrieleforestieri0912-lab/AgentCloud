@@ -267,3 +267,66 @@
 .animate-stagger-6 {
   animation-delay: 0.48s;
 }
+
+/* ─── Light theme overrides ─── */
+html.light body {
+  background: #f6f6f8 !important;
+  color: #17171c;
+}
+html.light .bg-neutral-950 {
+  background-color: #f6f6f8 !important;
+}
+html.light .bg-neutral-950\/90 {
+  background-color: rgba(255,255,255,0.9) !important;
+}
+html.light .bg-neutral-900 {
+  background-color: #ffffff !important;
+  border-color: #e3e3e8 !important;
+}
+html.light .bg-neutral-900\/80,
+html.light .bg-neutral-900\/50 {
+  background-color: rgba(255,255,255,0.92) !important;
+}
+html.light .bg-neutral-800 {
+  background-color: #f1f1f4 !important;
+}
+html.light .bg-neutral-800\/40,
+html.light .bg-neutral-800\/60 {
+  background-color: #f1f1f4 !important;
+}
+html.light .bg-black {
+  background-color: #f6f6f8 !important;
+}
+html.light .text-white {
+  color: #17171c !important;
+}
+html.light .text-neutral-200 {
+  color: #2d2e39 !important;
+}
+html.light .text-neutral-300 {
+  color: #444555 !important;
+}
+html.light .text-neutral-400 {
+  color: #71738e !important;
+}
+html.light .text-neutral-500 {
+  color: #71738e !important;
+}
+html.light .border-white\/5 {
+  border-color: #e3e3e8 !important;
+}
+html.light .border-white\/10 {
+  border-color: #e3e3e8 !important;
+}
+html.light .border-white\/20 {
+  border-color: #c6c7d2 !important;
+}
+/* Preserve brand buttons text */
+html.light .bg-brand-500.text-white,
+html.light .bg-brand-500 .text-white,
+html.light .bg-brand-600.text-white {
+  color: #ffffff !important;
+}
+html.light .from-brand-500 { --tw-gradient-from: #038bfe !important; }
+html.light ::-webkit-scrollbar-thumb { background: #c6c7d2; }
+html.light * { scrollbar-color: #c6c7d2 transparent; }
