@@ -43,7 +43,8 @@ const ACCENTS = [
   { icon: Mail, chip: "bg-sky-500/15 text-sky-300" },
 ];
 
-// Dati di esempio per la preview landing — mostrano come appare la dashboard con agenti attivi.
+// Array vuoti — niente dati finti: la dashboard mostra i dati reali quando è
+// connessa.
 
 function RunsChart({
   title,
@@ -54,9 +55,6 @@ function RunsChart({
   weekLabel: string;
   runsLabel: string;
 }) {
-  const days = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
-  const values = [6, 9, 4, 12, 7, 15, 11];
-  const max = Math.max(...values);
   return (
     <div className="rounded-xl border border-white/5 bg-neutral-900/70 p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -76,20 +74,10 @@ function RunsChart({
         </span>
       </div>
 
-      <div className="flex h-[160px] items-end gap-2 rounded-lg bg-neutral-950/50 p-3">
-        {values.map((v, i) => (
-          <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-            <div
-              className="w-full rounded-t-lg bg-gradient-to-t from-brand-500 to-pink-500 transition-all"
-              style={{ height: `${(v / max) * 110}px` }}
-            />
-            <span className="text-[10px] font-bold text-neutral-500">{days[i]}</span>
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 flex items-center justify-between text-[11px] text-neutral-500">
-        <span>0</span>
-        <span>{max} {runsLabel.toLowerCase()}</span>
+      <div className="flex h-[200px] items-center justify-center rounded-lg border border-dashed border-white/10">
+        <p className="text-sm text-neutral-500">
+          Connect your agents to see real data
+        </p>
       </div>
     </div>
   );
