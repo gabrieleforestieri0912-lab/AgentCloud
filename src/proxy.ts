@@ -97,6 +97,11 @@ export async function proxy(request: NextRequest) {
     pathname === "/reset-password" ||
     pathname === "/auth/callback";
 
+  // Le rotte marketing pubbliche restano raggiungibili durante la fase
+  // waitlist così i visitatori possono vedere il catalogo e i bundle.
+  const isPublicMarketing =
+    isPublicPath(pathname) && !pathname.startsWith("/api/");
+
   // Sviluppo locale senza chiavi Supabase: lascia passare tutto così l'app è
   // usabile prima della configurazione delle chiavi. In produzione questo
   // bypass non scatta mai — chiavi mancanti = fail closed (rotte protette → /login).
@@ -115,7 +120,7 @@ export async function proxy(request: NextRequest) {
   // src/lib/access-code.ts); il codice stesso non viene mai verificato qui.
   const isAccessVisitor = request.cookies.get(ACCESS_COOKIE)?.value === "1";
 
-  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
+  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute && !isPublicMarketing) {
     if (!isAccessVisitor) {
       // I membri normali della waitlist restano bloccati — il cookie
       // ac_wl_joined registra solo l'iscrizione, non concede accesso. Gli

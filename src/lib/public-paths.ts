@@ -29,6 +29,7 @@ export const PUBLIC_PATHS = [
   "/api/auth/google",
   "/waitlist",
   "/contact",
+  "/bundles",
   "/privacy",
   "/terms",
   "/refunds",
