@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Languages, Bell, Shield, Palette, Database, Globe, Check, Sun, Moon, Monitor, Save } from "lucide-react";
+import { Languages, Bell, Shield, Palette, Database, Globe, Check, Sun, Moon, Monitor, Save, Download, Loader2 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
-import LanguageToggle from "@/components/LanguageToggle";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/constants";
 import { useTheme, type Theme } from "@/components/ThemeProvider";
 
@@ -19,6 +18,8 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
   const [productUpdates, setProductUpdates] = useState(true);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportFeedback, setExportFeedback] = useState<string | null>(null);
 
   // Carica preferenze notifiche dal localStorage (persistenza reale)
   useEffect(() => {
@@ -42,6 +43,69 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    setExportFeedback(null);
+    try {
+      const res = await fetch("/api/account/export", { cache: "no-store" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as Record<string, unknown>));
+        const msg = typeof body.error === "string" ? body.error : `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      const data = (await res.json()) as Record<string, unknown>;
+      // Arricchisce l'export con lo snapshot del browser (GDPR: include preferenze locali)
+      try {
+        const localPrefsRaw = localStorage.getItem("agentcloud_settings");
+        if (localPrefsRaw) {
+          try {
+            data.local_preferences = JSON.parse(localPrefsRaw) as unknown;
+          } catch {
+            data.local_preferences_raw = localPrefsRaw;
+          }
+        }
+        const browserSnapshot: Record<string, string> = {};
+        for (const key of ["agentcloud_settings", "agentcloud_theme", "theme", "locale"]) {
+          const v = localStorage.getItem(key);
+          if (v) browserSnapshot[key] = v;
+        }
+        // cookie lingua salvato dal LanguageProvider (via document.cookie) — già incluso
+        if (Object.keys(browserSnapshot).length > 0) {
+          data.browser_storage_snapshot = browserSnapshot;
+        }
+        data.export_client_meta = {
+          locale,
+          theme: resolvedTheme,
+          exported_by: email,
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+        };
+      } catch {}
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const date = new Date().toISOString().slice(0, 10);
+      const safeEmail = email ? email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "_") : "utente";
+      a.download = `agentcloud-export-${safeEmail}-${date}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      setExportFeedback(isIt ? "Export scaricato!" : "Export downloaded!");
+      setTimeout(() => setExportFeedback(null), 3200);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === "unauthorized") {
+        setExportFeedback(isIt ? "Devi accedere per esportare i dati." : "You must be signed in to export data.");
+      } else {
+        setExportFeedback(isIt ? `Errore export: ${msg}` : `Export failed: ${msg}`);
+      }
+      setTimeout(() => setExportFeedback(null), 4500);
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -77,9 +141,6 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
               </button>
             );
           })}
-        </div>
-        <div className="mt-4">
-          <LanguageToggle />
         </div>
       </div>
 
@@ -185,15 +246,38 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
         <p className="mt-2 text-sm text-neutral-400">
           {isIt ? "Esporta o richiedi la cancellazione dei tuoi dati (GDPR)." : "Export or request deletion of your data (GDPR)."}
         </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <button onClick={() => alert(isIt ? "Esportazione richiesta (simulata)." : "Export requested (simulated).")} className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
-            <Globe size={14} className="mr-2 inline" />
-            {isIt ? "Esporta dati" : "Export data"}
+        <p className="mt-1 text-xs text-neutral-500">
+          {isIt
+            ? "L'export genera un file JSON con profilo, agenti, abbonamenti, cronologia, notifiche, carrello e connessioni (token omessi per sicurezza). Le preferenze locali del browser vengono aggiunte al file."
+            : "Export generates a JSON file with profile, agents, subscriptions, history, notifications, cart and connections (tokens omitted). Browser-local preferences are included."}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10 disabled:opacity-60 disabled:cursor-not-allowed"
+            aria-busy={exporting}
+          >
+            {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            {exporting ? (isIt ? "Esportazione..." : "Exporting...") : isIt ? "Esporta dati" : "Export data"}
           </button>
           <Link href="/contact" className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 hover:bg-neutral-100">
             {isIt ? "Contatta supporto" : "Contact support"}
           </Link>
+          {exportFeedback && (
+            <span
+              role="status"
+              aria-live="polite"
+              className={`text-sm font-semibold ${exportFeedback.includes("Errore") || exportFeedback.includes("failed") || exportFeedback.includes("Devi") || exportFeedback.includes("must") ? "text-red-400" : "text-emerald-400"}`}
+            >
+              {exportFeedback}
+            </span>
+          )}
         </div>
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-500">
+          <Globe size={12} />
+          {isIt ? "Formato: JSON — Art. 20 GDPR (portabilità)." : "Format: JSON — GDPR Art. 20 (portability)."}
+        </p>
       </div>
 
       {/* Bottone unico sticky */}
