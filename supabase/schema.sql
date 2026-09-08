@@ -33,6 +33,12 @@
 -- to read/write these tables after Supabase authentication; the user-facing
 -- RLS policies below remain as defense-in-depth for direct access.
 -- -----------------------------------------------------------------------------
+-- Idempotent type fix: drop dependent policies before altering type (was 0A000)
+drop policy if exists "Users can view own user_agents" on public.user_agents;
+drop policy if exists "Users can update own user_agents config" on public.user_agents;
+drop policy if exists "Users can view own agent_runs" on public.agent_runs;
+drop policy if exists "Users can insert own agent_runs" on public.agent_runs;
+
 alter table if exists public.user_agents
   drop constraint if exists user_agents_user_id_fkey;
 alter table if exists public.agent_runs
