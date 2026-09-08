@@ -1,5 +1,12 @@
 -- Allow admin via code (__tenant__) — tenant_id from uuid to text (was FK to auth.users)
 -- Admin has no Supabase user, stores connections on shared tenant __tenant__
+-- Drop RLS first: they reference tenant_id as uuid (auth.uid() = tenant_id) and would break the type change text = uuid
+drop policy if exists "Users can view own tenant integrations" on public.tenant_integrations;
+drop policy if exists "Users can insert own tenant integrations" on public.tenant_integrations;
+drop policy if exists "Users can update own tenant integrations" on public.tenant_integrations;
+drop policy if exists "Users can delete own tenant integrations" on public.tenant_integrations;
+drop policy if exists "Service role can manage tenant integrations" on public.tenant_integrations;
+
 alter table public.tenant_integrations drop constraint if exists tenant_integrations_tenant_id_fkey;
 alter table public.tenant_integrations alter column tenant_id type text using tenant_id::text;
 
@@ -24,3 +31,9 @@ drop policy if exists "Users can delete own tenant integrations" on public.tenan
 create policy "Users can delete own tenant integrations"
   on public.tenant_integrations for delete
   using (auth.uid()::text = tenant_id);
+
+drop policy if exists "Service role can manage tenant integrations" on public.tenant_integrations;
+create policy "Service role can manage tenant integrations"
+  on public.tenant_integrations for all
+  using (true)
+  with check (true);
