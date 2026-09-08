@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import SidebarAccount from "./SidebarAccount";
 import AppHeader from "./AppHeader";
@@ -21,10 +21,10 @@ export default function DashboardShell({
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/chat", label: "Chat", icon: MessageSquare },
     { href: "/agents", label: "Marketplace", icon: Store },
-    { href: "/integrations", label: "Integrazioni", icon: Plug },
+    { href: "/dashboard/integrations", label: "Integrazioni", icon: Plug },
     { href: "/cart", label: "Carrello", icon: ShoppingCart },
+    { href: "/dashboard/subscriptions", label: "I miei abbonamenti", icon: CreditCard },
     { href: "/account", label: "Account", icon: User },
-    { href: "/settings", label: "Impostazioni", icon: Settings },
   ];
   return (
     <div className="flex h-dvh bg-neutral-950">

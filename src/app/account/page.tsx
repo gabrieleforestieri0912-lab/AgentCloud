@@ -11,6 +11,7 @@ import { getLocale } from "@/lib/i18n/locale";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AccountClient from "./account-client";
+import SettingsClient from "../settings/settings-client";
 import { listShopifyConnections } from "@/lib/shopify/connections";
 import { getGoogleConnectionSummary, TENANT_GOOGLE_ID } from "@/lib/google/connections";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -82,6 +83,11 @@ export default async function AccountPage() {
             googleEmail={googleEmail}
             locale={locale}
           />
+
+          <div className="mt-8 border-t border-white/5 pt-8">
+            <h2 className="text-2xl font-bold text-white mb-6">{isIt ? "Impostazioni" : "Settings"}</h2>
+            <SettingsClient isMock={isMock} email={email} />
+          </div>
         </div>
       </section>
       <Footer />

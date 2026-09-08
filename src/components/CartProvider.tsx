@@ -277,19 +277,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const clear = useCallback(async () => {
-    const res = await fetch("/api/cart", { method: "DELETE" }).catch(() => null);
-    if (res && res.ok) {
-      await refresh();
-    } else if (res && res.status === 401) {
-      localStorage.removeItem(LOCAL_KEY);
-      setItems([]);
-    } else if (res) {
-      await refresh();
-    } else {
-      localStorage.removeItem(LOCAL_KEY);
-      setItems([]);
+    // Pulisci subito localStorage (agenti + bundle) per feedback immediato e per evitare che refresh ri-mergi i bundle
+    localStorage.removeItem(LOCAL_KEY);
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k?.startsWith("bundle_period_")) localStorage.removeItem(k!);
     }
+    setItems([]);
     window.dispatchEvent(new CustomEvent("cart:updated"));
+    try {
+      await fetch("/api/cart", { method: "DELETE" });
+    } catch {}
+    await refresh().catch(() => {});
   }, [refresh]);
 
   const isInCart = useCallback((slug: string) => items.some((i) => i.agent_slug === slug && i.type === "agent"), [items]);

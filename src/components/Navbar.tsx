@@ -462,14 +462,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                         </div>
                         <div className="my-1 h-px bg-white/5" />
                         <Link
-                          href="/cart"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
-                        >
-                          <ShoppingCart size={14} />
-                          {locale === "it" ? "Carrello" : "Cart"}
-                        </Link>
-                        <Link
                           href="/dashboard"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
