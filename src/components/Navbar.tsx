@@ -35,7 +35,7 @@ import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { ShoppingCart, MessageSquare } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import NotificationBell from "./NotificationBell";
-import CartIcon from "./CartIcon";
+import { useCart } from "./CartProvider";
 
 type MenuKey = "marketplace" | "solutions" | "integrations" | "pricing";
 
@@ -107,6 +107,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const isSignedIn = Boolean(session);
   const isAccessVisitor = hasAccessOnClient();
   const showAsLoggedIn = isSignedIn || isAccessVisitor;
+  const { count: cartCount } = useCart();
 
   const userMeta = session?.user?.user_metadata as
     | { full_name?: string }
@@ -403,10 +404,19 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                       {locale === "it" ? "Chat AI" : "AI Chat"}
                     </Link>
                   )}
-                  <NotificationBell />
-                  <Link href="/cart" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-neutral-800/60 text-neutral-300 transition-colors hover:border-white/20 hover:bg-neutral-700/60 hover:text-white">
-                    <ShoppingCart size={16} />
+                  <Link
+                    href="/cart"
+                    aria-label="Carrello"
+                    className="relative flex h-8 w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white"
+                  >
+                    <ShoppingCart size={18} strokeWidth={1.75} />
+                    {cartCount > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
+                        {cartCount}
+                      </span>
+                    )}
                   </Link>
+                  <NotificationBell />
                   <div ref={userMenuRef} className="relative">
                     <button
                       onClick={() => setUserMenuOpen((v) => !v)}
@@ -415,13 +425,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     >
                       {accountInitials}
                     </button>
-                    {userMenuOpen && typeof document !== "undefined" &&
-                      createPortal(
-                      <div className="fixed z-[60] mt-2 w-56 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl"
-                        style={{
-                          right: Math.max(16, (typeof window !== "undefined" ? window.innerWidth - 60 : 200)),
-                          top: 64,
-                        }}
+                    {userMenuOpen && (
+                      <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl"
                       >
                         <div className="px-3 py-2">
                           <p className="text-sm font-bold text-white">
@@ -485,8 +490,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                             {dict.navbar.signIn}
                           </Link>
                         )}
-                      </div>,
-                      document.body,
+                      </div>
                     )}
                   </div>
                 </div>
