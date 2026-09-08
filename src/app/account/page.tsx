@@ -68,13 +68,7 @@ export default async function AccountPage() {
             </p>
           </div>
 
-          {isMock && (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-              {isIt
-                ? "Modalità admin via codice: nessun utente Supabase creato, nessun dato salvato su DB. Le connessioni sono su tenant condiviso."
-                : "Admin via code: no Supabase user created, no DB writes. Connections are on shared tenant."}
-            </div>
-          )}
+
 
           <AccountClient
             initialEmail={email}
