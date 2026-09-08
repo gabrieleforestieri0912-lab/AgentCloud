@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
+import { hasPlatformAccess } from "@/lib/access-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -10,7 +11,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function GET(req: NextRequest) {
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ providers: [] }, { status: 200 });
+  const hasAccess = await hasPlatformAccess();
+  if (!user && !hasAccess) return NextResponse.json({ providers: [] }, { status: 200 });
+  const tenantId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  if (!tenantId) return NextResponse.json({ providers: [] }, { status: 200 });
 
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ providers: [] }, { status: 200 });
@@ -18,7 +22,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await admin
     .from("tenant_integrations")
     .select("provider, status, external_account_id, metadata, updated_at, scope")
-    .eq("tenant_id", user.id);
+    .eq("tenant_id", tenantId);
 
   if (error || !data) return NextResponse.json({ providers: [] }, { status: 200 });
 

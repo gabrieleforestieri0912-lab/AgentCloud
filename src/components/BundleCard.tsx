@@ -123,16 +123,16 @@ export default function BundleCard({ bundle }: BundleCardProps) {
         ))}
       </div>
 
-      {/* ── Animated price ── */}
-      <div className="relative mb-5 h-[72px]">
-        <AnimatePresence mode="popLayout">
+      {/* ── Animated price — altezza auto per evitare sovrapposizione risparmio ── */}
+      <div className="relative mb-5 min-h-[100px]">
+        <AnimatePresence mode="wait">
           <motion.div
             key={period}
             initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
             transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute inset-0"
+            className="relative"
           >
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-extrabold text-white">{formatPrice(monthlyPrice)}</span>

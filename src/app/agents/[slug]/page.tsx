@@ -153,21 +153,25 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   );
 
   // Stato integrazioni per mostrare già connesso se fatto da /dashboard/integrations
+  // + owned check per far diventare il bottone "Attiva ora" → "Apri in chat" e card marketplace "Già acquistato"
   const sessionUser = await getSessionUser();
   let genericConnected: Record<string, boolean> = {};
   let shopifyConnected = false;
   let googleConnected = false;
+  let isOwned = false;
   if (sessionUser?.id) {
     const admin = createAdminClient();
     if (admin) {
-      const [{ data: gRows }, { data: sRows }, { data: gShop }] = await Promise.all([
+      const [{ data: gRows }, { data: sRows }, { data: gShop }, { data: ownedRow }] = await Promise.all([
         admin.from("tenant_integrations").select("provider").eq("tenant_id", sessionUser.id).eq("status", "connected"),
         admin.from("shopify_connections").select("shop_domain, uninstalled_at").eq("user_id", sessionUser.id).is("uninstalled_at", null).limit(1),
         admin.from("google_connections").select("user_id").eq("user_id", sessionUser.id).maybeSingle(),
+        admin.from("user_agents").select("id").eq("user_id", sessionUser.id).eq("agent_slug", slug).eq("status", "active").maybeSingle(),
       ]);
       for (const r of (gRows ?? []) as Array<{ provider: string }>) genericConnected[r.provider] = true;
       shopifyConnected = Array.isArray(sRows) && sRows.length > 0;
       googleConnected = !!gShop;
+      isOwned = !!ownedRow;
     }
   }
 
@@ -234,20 +238,35 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
 
               <div className="mt-8 flex flex-wrap gap-3">
                 {available ? (
-                  <>
-                    <Link
-                      href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
-                      className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35 hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      {unlocked
-                        ? locale === "it"
-                          ? "Apri chat"
-                          : "Open chat"
-                        : dict.agentDetail.configureAgent}
-                      <ArrowRight size={16} />
-                    </Link>
-                    <AddToCartButton slug={agent.slug} />
-                  </>
+                  isOwned ? (
+                    <>
+                      <Link
+                        href={`/chat?agent=${agent.slug}`}
+                        className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-400 hover:shadow-emerald-500/35 hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        {locale === "it" ? "Apri in chat" : "Open in chat"}
+                        <ArrowRight size={16} />
+                      </Link>
+                      <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3.5 text-sm font-bold text-emerald-300">
+                        ✓ {locale === "it" ? "Già acquistato" : "Already purchased"}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
+                        className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35 hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        {unlocked
+                          ? locale === "it"
+                            ? "Apri chat"
+                            : "Open chat"
+                          : dict.agentDetail.configureAgent}
+                        <ArrowRight size={16} />
+                      </Link>
+                      <AddToCartButton slug={agent.slug} />
+                    </>
+                  )
                 ) : (
                   <span className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-neutral-900 px-7 py-3.5 text-sm font-bold text-neutral-500">
                     {dict.common.comingSoon}
@@ -306,18 +325,27 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     href={
                       !available
                         ? "/demo"
-                        : unlocked
+                        : isOwned
                           ? `/chat?agent=${agent.slug}`
-                          : `/agents/${agent.slug}/deploy`
+                          : unlocked
+                            ? `/chat?agent=${agent.slug}`
+                            : `/agents/${agent.slug}/deploy`
                     }
                     className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition-all ${
                       available
-                        ? "bg-brand-500 shadow-lg shadow-brand-500/20 hover:bg-brand-400"
+                        ? isOwned
+                          ? "bg-emerald-500 shadow-lg shadow-emerald-500/20 hover:bg-emerald-400"
+                          : "bg-brand-500 shadow-lg shadow-brand-500/20 hover:bg-brand-400"
                         : "bg-neutral-800 text-neutral-400"
                     }`}
                   >
                     {available ? (
-                      unlocked ? (
+                      isOwned ? (
+                        <>
+                          {locale === "it" ? "Apri in chat" : "Open in chat"}
+                          <ArrowRight size={16} />
+                        </>
+                      ) : unlocked ? (
                         <>
                           {locale === "it" ? "Apri chat" : "Open chat"}
                           <ArrowRight size={16} />
@@ -333,10 +361,13 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     )}
                   </Link>
 
-                  {available && (
+                  {available && !isOwned && (
                     <div className="mt-3">
                       <AddToCartButton slug={agent.slug} className="w-full justify-center" />
                     </div>
+                  )}
+                  {isOwned && (
+                    <p className="mt-3 text-center text-xs font-bold text-emerald-400">✓ {locale === "it" ? "Già acquistato — apri in chat" : "Already purchased — open in chat"}</p>
                   )}
                 </div>
 
@@ -523,17 +554,27 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             {available && (
-              <Link
-                href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
-                className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
-              >
-                {unlocked
-                  ? locale === "it"
-                    ? "Apri chat"
-                    : "Open chat"
-                  : dict.agentDetail.configureAndDeploy}
-                <ArrowRight size={18} />
-              </Link>
+              isOwned ? (
+                <Link
+                  href={`/chat?agent=${agent.slug}`}
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-400"
+                >
+                  {locale === "it" ? "Apri in chat" : "Open in chat"}
+                  <ArrowRight size={18} />
+                </Link>
+              ) : (
+                <Link
+                  href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
+                  className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
+                >
+                  {unlocked
+                    ? locale === "it"
+                      ? "Apri chat"
+                      : "Open chat"
+                    : dict.agentDetail.configureAndDeploy}
+                  <ArrowRight size={18} />
+                </Link>
+              )
             )}
           </div>
         </div>
