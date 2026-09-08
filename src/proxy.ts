@@ -186,7 +186,7 @@ export async function proxy(request: NextRequest) {
         );
       }
       const url = request.nextUrl.clone();
-      url.pathname = "/login";
+      url.pathname = "/waitlist";
       url.search = "";
       url.hash = "";
       const redirectRes = NextResponse.redirect(url);
@@ -194,9 +194,16 @@ export async function proxy(request: NextRequest) {
     }
     return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
   } catch {
-    // Errore Supabase: trattalo come non autenticato → /login
+    // Errore Supabase: trattalo come non autenticato → /waitlist
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
+      return NextResponse.json(
+        { error: getDictionary(locale).apiErrors.unauthorized },
+        { status: 401 },
+      );
+    }
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/waitlist";
     url.search = "";
     url.hash = "";
     return NextResponse.redirect(url);
