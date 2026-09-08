@@ -171,12 +171,30 @@ export async function proxy(request: NextRequest) {
     return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
   }
 
-  // Rotta protetta: richiede una sessione, altrimenti rimanda a /login
+  // ─── Rotte esenti da auth: waitlist, auth, marketing pubbliche, API pubbliche, asset ─
+  // Queste non devono mai causare redirect a /waitlist o 401 — altrimenti
+  // /waitlist stessa va in loop e le pagine pubbliche / API pubbliche diventano
+  // inaccessibili agli utenti non autenticati (causa del "too many redirects").
+  const isAsset = pathname.startsWith("/_next/") || pathname.includes(".");
+  const isApiPublic = pathname.startsWith("/api/") && isPublicPath(pathname);
+  const isExempt =
+    isWaitlistRoute || isAuthRoute || isPublicMarketing || isAsset || isApiPublic;
+  if (isExempt) {
+    try {
+      const { response } = await resolveSession(request);
+      return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
+    } catch {
+      const res = NextResponse.next();
+      return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
+    }
+  }
+
+  // Rotta protetta: richiede una sessione, altrimenti rimanda a /waitlist
   // (la destinazione voluta non viene conservata, come nel flusso attuale).
   try {
     const { response, user } = await resolveSession(request);
     if (!user) {
-      // Le route API ricevono un pulito 401 JSON invece di un redirect HTML —
+      // Le route API protette ricevono un 401 JSON invece di un redirect HTML —
       // i client che chiamano fetch() seguirebbero il redirect e proverebbero a
       // fare il parse dell'HTML.
       if (request.nextUrl.pathname.startsWith("/api/")) {
@@ -207,7 +225,8 @@ export async function proxy(request: NextRequest) {
     url.pathname = "/waitlist";
     url.search = "";
     url.hash = "";
-    return NextResponse.redirect(url);
+    const redirectRes = NextResponse.redirect(url);
+    return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
   }
 }
 
