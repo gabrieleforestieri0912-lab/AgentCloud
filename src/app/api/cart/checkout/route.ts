@@ -51,6 +51,7 @@ export async function POST() {
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
+    payment_method_types: ["card", "klarna", "amazon_pay"],
     line_items: lineItems,
     subscription_data: {
       metadata: {

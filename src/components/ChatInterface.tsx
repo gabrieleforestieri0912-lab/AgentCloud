@@ -49,6 +49,9 @@ import { getEnabledTools, AGENT_RUNTIME } from "@/lib/agents/registry";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 import { createClient } from "@/lib/supabase/client";
+import BrandLogo from "./BrandLogo";
+import { AGENTS } from "@/lib/agents";
+import { INTEGRATIONS } from "@/lib/integrations";
 import {
   HERO_CONVERSATION_STORAGE_KEY,
   HERO_CONVERSATION_HISTORY_KEY,
@@ -104,7 +107,7 @@ export default function ChatInterface({
   agentLabel?: string;
   availableAgents?: { slug: string; name: string }[];
 }) {
-  const { dict } = useLanguage();
+  const { dict, locale } = useLanguage();
   const attachLabels = chatAttachLabels(dict);
   const attach = useChatAttachments();
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
@@ -174,6 +177,21 @@ export default function ChatInterface({
         tool.startsWith("calendar_"),
     ),
   );
+
+  const activeWorkingApps = useMemo(() => {
+    if (!isTyping || hasPartialReply || selectedAgentSlugs.length === 0) return [];
+    const set = new Set<string>();
+    for (const slug of selectedAgentSlugs) {
+      const ag = AGENTS.find((a) => a.slug === slug);
+      if (ag) ag.integrations.forEach((i) => set.add(i));
+    }
+    return Array.from(set)
+      .slice(0, 3)
+      .map((name) => {
+        const integ = INTEGRATIONS.find((it) => it.name.toLowerCase() === name.toLowerCase());
+        return { name, brand: integ?.brand ?? name.toLowerCase().replace(/\s+/g, ""), available: integ?.available ?? true };
+      });
+  }, [selectedAgentSlugs, isTyping, hasPartialReply]);
 
   const [isAtBottom, setIsAtBottom] = useState(true);
   const handleMessagesScroll = () => {
@@ -1151,11 +1169,30 @@ export default function ChatInterface({
                 height={32}
                 className="w-8 h-8 shrink-0"
               />
-              <div>
-                <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-bold text-brand-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-                  {dict.chat.thinking}
-                </div>
+              <div className="max-w-[85%]">
+                {activeWorkingApps.length > 0 ? (
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1.5 text-xs font-bold text-brand-300">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500/20">
+                      <span className="h-2 w-2 rounded-full bg-brand-400 animate-pulse" />
+                    </span>
+                    <span className="flex items-center gap-1.5 flex-wrap">
+                      {locale === "it" ? "Sta lavorando su" : "Working on"}
+                      <span className="flex items-center gap-1 flex-wrap">
+                        {activeWorkingApps.map((a) => (
+                          <span key={a.name} className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs">
+                            <BrandLogo slug={a.brand} size={12} />
+                            {a.name}
+                          </span>
+                        ))}
+                      </span>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-bold text-brand-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
+                    {dict.chat.thinking}
+                  </div>
+                )}
                 <div className="bg-neutral-800 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3.5">
                   <div className="flex gap-1.5 items-center h-4">
                     <span className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse" style={{ animationDelay: "0ms" }} />
@@ -1163,6 +1200,11 @@ export default function ChatInterface({
                     <span className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse" style={{ animationDelay: "400ms" }} />
                   </div>
                 </div>
+                {activeWorkingApps.length > 0 && (
+                  <p className="mt-1.5 text-xs font-medium text-neutral-500">
+                    {locale === "it" ? "L'agente sta operando sull'app collegata" : "Agent is working on the connected app"}
+                  </p>
+                )}
               </div>
             </div>
           )}

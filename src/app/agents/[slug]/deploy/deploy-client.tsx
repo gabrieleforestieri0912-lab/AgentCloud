@@ -34,28 +34,44 @@ const NO_CONNECTIONS: DeployConnections = {
   shopifyShops: [],
   googleConnected: false,
   googleEmail: null,
+  genericConnected: {},
+  genericMeta: {},
 };
 
 /**
  * Client del form di deploy: configura l'agente (impostazioni, connessioni,
  * consenso) e offre le due opzioni di consegna (link diretto / embed).
- * Gestisce anche l'esito OAuth appena concluso (?shopify= / ?google=).
+ * Gestisce anche l'esito OAuth appena concluso (?shopify= / ?google= / ?integration=).
  *
  * Quale connettore OAuth reale corrisponde a un'etichetta di integrazione:
  *   "shopify" → OAuth Shopify (serve prima il dominio del negozio)
- *   "google"  → OAuth Google (Gmail + Calendar, lettura e scrittura: invio/
- *               cancellazione email, creazione/cancellazione eventi con promemoria)
- *   null      → nessun connettore attivo: la chat dell'agente è il punto in cui
- *               l'utente può provare l'agente e usare i suoi strumenti.
+ *   "google"  → OAuth Google (Gmail + Calendar)
+ *   "stripe" | "notion" | "slack" | "hubspot" | "google_sheets" → OAuth generico
+ *               via /api/integrations/[provider]/authorize (stessa tabella usata
+ *               dalla pagina /dashboard/integrations — single source of truth).
+ *   null      → nessun connettore attivo
  */
-type ConnectorKind = "shopify" | "google" | null;
+type ConnectorKind = "shopify" | "google" | "stripe" | "notion" | "slack" | "hubspot" | "google_sheets" | null;
+
+function genericProviderForIntegration(integration: string): Exclude<ConnectorKind, "shopify" | "google" | null> | null {
+  const k = integration.toLowerCase();
+  if (k === "stripe" || k.includes("stripe")) return "stripe";
+  if (k === "notion" || k.includes("notion")) return "notion";
+  if (k === "slack" || k.includes("slack")) return "slack";
+  if (k === "hubspot" || k.includes("hubspot")) return "hubspot";
+  if (k === "google sheets" || k === "googlesheets" || k.includes("sheets")) return "google_sheets";
+  return null;
+}
 
 function integrationKind(integration: string): ConnectorKind {
   const key = integration.toLowerCase();
   if (key.includes("shopify")) return "shopify";
-  if (key === "gmail" || key.includes("google") || key.includes("sheets")) {
-    return "google";
-  }
+  // Google legacy (Gmail/Calendar) — resta su /api/auth/google/connect per retrocompatibilità
+  if (key === "gmail" || key === "google calendar" || key === "calendar") return "google";
+  const generic = genericProviderForIntegration(integration);
+  if (generic) return generic;
+  // Google Sheets come generico ha precedenza sul legacy google
+  if (key.includes("google")) return "google";
   return null;
 }
 
@@ -114,12 +130,32 @@ export default function DeployAgentClient({
         }
         return null;
       };
-      const outcome =
-        parseOutcome("shopify", dict.common.connectSuccess) ??
-        parseOutcome("google", dict.common.connectSuccess);
-      if (outcome) {
-        setBanner(outcome);
-        window.history.replaceState({}, "", window.location.pathname);
+      // Generic integrations use ?integration=<provider>&status=connected|error&reason=...
+      const integration = params.get("integration");
+      const status = params.get("status");
+      if (integration && status) {
+        if (status === "connected") {
+          setBanner({ kind: "ok", msg: `${integration}: ${dict.common.connectSuccess}` });
+        } else if (status === "error" || status === "disconnected") {
+          const reason = params.get("reason");
+          setBanner({
+            kind: status === "disconnected" ? "ok" : "err",
+            msg: reason ? `${integration}: ${readableConnectReason(reason, locale)}` : `${integration}: ${status}`,
+          });
+        }
+        const url = new URL(window.location.href);
+        url.searchParams.delete("integration");
+        url.searchParams.delete("status");
+        url.searchParams.delete("reason");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      } else {
+        const outcome =
+          parseOutcome("shopify", dict.common.connectSuccess) ??
+          parseOutcome("google", dict.common.connectSuccess);
+        if (outcome) {
+          setBanner(outcome);
+          window.history.replaceState({}, "", window.location.pathname);
+        }
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -148,12 +184,14 @@ export default function DeployAgentClient({
    */
   const startConnect = (integration: string) => {
     const kind = integrationKind(integration);
+    const genericProvider = kind && ["stripe", "notion", "slack", "hubspot", "google_sheets"].includes(kind) ? (kind as string) : null;
     const isConnected =
       (kind === "shopify" && connections.shopifyConnected) ||
-      (kind === "google" && connections.googleConnected);
-    // Già connesso → gestisci/scollega dalla dashboard.
+      (kind === "google" && connections.googleConnected) ||
+      (genericProvider && !!(connections.genericConnected as Record<string, boolean>)[genericProvider]);
+    // Già connesso → gestisci dalla pagina integrazioni (single source of truth).
     if (isConnected) {
-      router.push("/dashboard");
+      router.push("/dashboard/integrations");
       return;
     }
     if (kind === "shopify") {
@@ -168,6 +206,11 @@ export default function DeployAgentClient({
         window.location.pathname + window.location.search,
       );
       window.location.assign(`/api/auth/google/connect?returnTo=${returnTo}`);
+      return;
+    }
+    if (genericProvider) {
+      const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.assign(`/api/integrations/${genericProvider}/authorize?returnTo=${returnTo}`);
       return;
     }
     router.push(`/chat?agent=${agent.slug}`);
@@ -360,15 +403,19 @@ export default function DeployAgentClient({
                   {agent.integrations.map((integration) => {
                     const kind = integrationKind(integration);
                     const expanded = connectingIntegration === integration;
+                    const genericProvider = kind && ["stripe", "notion", "slack", "hubspot", "google_sheets"].includes(kind) ? kind : null;
                     const connected =
                       (kind === "shopify" && connections.shopifyConnected) ||
-                      (kind === "google" && connections.googleConnected);
+                      (kind === "google" && connections.googleConnected) ||
+                      (genericProvider && !!(connections.genericConnected as Record<string, boolean>)[genericProvider]);
                     const connectedDetail =
                       kind === "shopify"
                         ? connections.shopifyShops[0]
                         : kind === "google"
                           ? connections.googleEmail
-                          : undefined;
+                          : genericProvider
+                            ? (connections.genericMeta as Record<string, { externalId: string | null }>)[genericProvider]?.externalId ?? undefined
+                            : undefined;
                     return (
                       <div key={integration}>
                         <button

@@ -131,8 +131,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         const apiItems = (data.items ?? []) as Array<{ agent_slug: string; quantity: number }>;
-        const enriched = apiItems.map((it) => enrichLocal(it.agent_slug, it.quantity)).filter(Boolean) as CartItem[];
-        setItems(enriched);
+        const enrichedApi = apiItems.map((it) => enrichLocal(it.agent_slug, it.quantity)).filter(Boolean) as CartItem[];
+        // Bundle: solo localStorage (API non gestisce bundle: bundle:slug), mergia per badge rosso immediato
+        const rawBundles = localStorage.getItem(LOCAL_KEY);
+        const bundleSlugs = rawBundles ? (JSON.parse(rawBundles) as string[]).filter((s) => s.startsWith("bundle:")) : [];
+        const bundleItems = bundleSlugs
+          .map((s) => {
+            const bSlug = s.slice(7);
+            const storedPeriod = (localStorage.getItem(`bundle_period_${bSlug}`) as BundlePeriod) || "monthly";
+            return enrichBundleLocal(bSlug, storedPeriod);
+          })
+          .filter(Boolean) as CartItem[];
+        // Evita duplicati se API dovesse mai restituire bundle
+        const apiSlugs = new Set(enrichedApi.map((i) => i.agent_slug));
+        const merged = [...enrichedApi, ...bundleItems.filter((b) => !apiSlugs.has(b.agent_slug))];
+        setItems(merged);
       } else if (res.status === 401) {
         // True anon senza codice: fallback localStorage
         const raw = localStorage.getItem(LOCAL_KEY);
@@ -300,24 +313,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           return { ok: true } as const;
         }
       } catch {}
-      // Fallback localStorage
+      // Fallback localStorage — salva periodo PRIMA di enrich per badge corretto
       const raw = localStorage.getItem(LOCAL_KEY);
       const slugs: string[] = raw ? JSON.parse(raw) : [];
       if (slugs.includes(bundleKey)) return { ok: false, error: "already_in_cart" } as const;
+      localStorage.setItem(`bundle_period_${bundleSlug}`, period);
       const next = [...slugs, bundleKey];
       localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-      // Enrich and set items
-      const enriched = next.map((s) => {
-        if (s.startsWith("bundle:")) {
-          const bSlug = s.slice(7);
-          const storedPeriod = localStorage.getItem(`bundle_period_${bSlug}`) as BundlePeriod || "monthly";
-          return enrichBundleLocal(bSlug, storedPeriod);
-        }
-        return enrichLocal(s);
-      }).filter(Boolean) as CartItem[];
+      // Enrich e set immediato per notifica rossa istantanea (senza attendere refresh)
+      const enriched = next
+        .map((s) => {
+          if (s.startsWith("bundle:")) {
+            const bSlug = s.slice(7);
+            const storedPeriod = (localStorage.getItem(`bundle_period_${bSlug}`) as BundlePeriod) || period;
+            return enrichBundleLocal(bSlug, storedPeriod);
+          }
+          return enrichLocal(s);
+        })
+        .filter(Boolean) as CartItem[];
       setItems(enriched);
-      localStorage.setItem(`bundle_period_${bundleSlug}`, period);
       window.dispatchEvent(new CustomEvent("cart:updated"));
+      // Allinea anche via refresh per merge con API (agents)
+      refresh().catch(() => {});
       return { ok: true } as const;
     },
     [refresh, isBundleInCart],

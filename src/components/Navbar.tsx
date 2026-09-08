@@ -268,24 +268,27 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                         onMouseEnter={() => openMenu(item.key)}
                         onMouseLeave={scheduleClose}
                       >
-                        <div className="rounded-xl border border-white/5 bg-neutral-950 shadow-xl shadow-black/30 animate-fade-in-up p-3">
+                        <div className="rounded-2xl border border-white/10 bg-neutral-900/95 backdrop-blur-xl shadow-2xl shadow-black/40 animate-fade-in-up p-4">
                           {item.key === "marketplace" && (
                             <div className="w-80">
+                              <p className="mb-3 px-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
+                                {locale === "it" ? "Agenti in evidenza" : "Featured agents"}
+                              </p>
                               <div className="grid grid-cols-2 gap-2">
                                 {featuredAgents.map((agent) => (
                                     <Link
                                       key={agent.slug}
                                       href={`/agents/${agent.slug}`}
-                                      className="flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-white/5"
+                                      className="flex items-center gap-3 rounded-xl border border-transparent p-3 transition-all hover:border-white/10 hover:bg-white/5 hover:shadow-sm"
                                     >
-                                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${agent.accent}`}>
+                                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${agent.accent} shadow-sm`}>
                                         <AgentIcon icon={agent.icon} brand={agent.brand} size={16} className="text-white" />
                                       </span>
                                       <div className="min-w-0">
-                                        <p className="text-sm font-bold text-white">
+                                        <p className="text-sm font-bold leading-tight text-white">
                                           {agent.name}
                                         </p>
-                                        <p className="truncate text-xs font-semibold text-neutral-400">
+                                        <p className="truncate text-xs font-medium text-neutral-500">
                                           {agent.description}
                                         </p>
                                       </div>
@@ -294,7 +297,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                                 </div>
                                 <Link
                                   href="/agents"
-                                  className="mt-2 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-bold text-brand-400 transition-colors hover:bg-brand-500/10"
+                                  className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
                                 >
                                   {dict.navbar.browseAllAgents}
                                   <ArrowRight size={14} />
@@ -303,27 +306,35 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                             )}
 
                             {item.key === "solutions" && (
-                              <div className="grid grid-cols-2 gap-2 w-72">
-                                {solutions.map(({ title, text, href }) => (
-                                  <Link
-                                    key={title}
-                                    href={href}
-                                    className="rounded-lg p-3 transition-colors hover:bg-white/5"
-                                  >
-                                    <p className="text-sm font-bold text-white">
-                                      {title}
-                                    </p>
-                                    <p className="mt-0.5 text-xs font-semibold text-neutral-400">
-                                      {text}
-                                    </p>
-                                  </Link>
-                                ))}
+                              <div className="w-80">
+                                <p className="mb-3 px-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
+                                  {locale === "it" ? "Soluzioni" : "Solutions"}
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {solutions.map(({ title, text, href }) => (
+                                    <Link
+                                      key={title}
+                                      href={href}
+                                      className="group rounded-xl border border-transparent p-3 transition-all hover:border-white/10 hover:bg-white/5"
+                                    >
+                                      <p className="text-sm font-bold text-white group-hover:text-brand-300 transition-colors">
+                                        {title}
+                                      </p>
+                                      <p className="mt-1 text-xs font-medium leading-relaxed text-neutral-500">
+                                        {text}
+                                      </p>
+                                    </Link>
+                                  ))}
+                                </div>
                               </div>
                             )}
 
                             {item.key === "integrations" && (
-                              <div className="w-80">
-                                <div className="grid grid-cols-4 gap-1">
+                              <div className="w-[420px] max-w-[90vw]">
+                                <p className="mb-3 px-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
+                                  {locale === "it" ? "Integrazioni" : "Integrations"} · {INTEGRATIONS.filter((i) => i.available).length} {locale === "it" ? "disponibili" : "available"}
+                                </p>
+                                <div className="grid max-h-[320px] grid-cols-4 gap-1 overflow-y-auto pr-1 scrollbar-thin">
                                   {INTEGRATIONS.map((integration) => {
                                     const href =
                                       integration.available && integration.agentSlug
@@ -333,14 +344,14 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                                       <Link
                                         key={integration.name}
                                         href={href}
-                                        className="flex flex-col items-center gap-1 rounded-lg px-2 py-3 text-center text-xs font-bold text-neutral-400 transition-colors hover:bg-white/5 relative"
+                                        className="group flex flex-col items-center gap-1 rounded-xl border border-transparent px-2 py-3 text-center transition-all hover:border-white/10 hover:bg-white/5"
                                       >
-                                        <span className="h-5 flex items-center justify-center">
-                                          <BrandLogo slug={integration.brand} size={22} />
+                                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
+                                          <BrandLogo slug={integration.brand} size={20} />
                                         </span>
-                                        {integration.name}
+                                        <span className="text-xs font-bold leading-tight text-neutral-300 group-hover:text-white">{integration.name}</span>
                                         {!integration.available && (
-                                          <span className="text-[10px] font-bold text-amber-300">
+                                          <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
                                             {locale === "it" ? "Presto" : "Soon"}
                                           </span>
                                         )}
@@ -350,7 +361,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                                 </div>
                                 <Link
                                   href="/integrations"
-                                  className="mt-2 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-bold text-brand-400 transition-colors hover:bg-brand-500/10"
+                                  className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-brand-500 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
                                 >
                                   {locale === "it" ? "Vedi tutte le integrazioni" : "View all integrations"}
                                   <ArrowRight size={14} />
@@ -388,10 +399,23 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
             </nav>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              {/* Mobile cart — visibile anche su < lg (prima era nascosto) */}
+              <Link
+                href="/cart"
+                aria-label="Carrello"
+                className="relative flex h-8 w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white lg:hidden"
+              >
+                <ShoppingCart size={18} strokeWidth={1.75} />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
               {/* lg:flex (non md:flex): il gruppo login/account è la parte più
-                  larga della navbar e inizia a ~768px, dove è ancora visibile il
-                  menu hamburger. Con md: le CTA sforavano il bordo destro del
-                  viewport sui tablet. */}
+                   larga della navbar e inizia a ~768px, dove è ancora visibile il
+                   menu hamburger. Con md: le CTA sforavano il bordo destro del
+                   viewport sui tablet. */}
               <div className="hidden items-center gap-3 lg:flex">
                 {authLoaded && (showAsLoggedIn ? (
                 <div className="flex items-center gap-3">
@@ -411,7 +435,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                   >
                     <ShoppingCart size={18} strokeWidth={1.75} />
                     {cartCount > 0 && (
-                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
                         {cartCount}
                       </span>
                     )}

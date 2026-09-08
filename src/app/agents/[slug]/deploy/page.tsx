@@ -21,6 +21,8 @@ export type DeployConnections = {
   shopifyShops: string[];
   googleConnected: boolean;
   googleEmail: string | null;
+  genericConnected: Record<string, boolean>;
+  genericMeta: Record<string, { externalId: string | null; updatedAt: string | null }>;
 };
 
 /**
@@ -70,6 +72,8 @@ export default async function DeployAgentPage(props: {
     shopifyShops: [],
     googleConnected: false,
     googleEmail: null,
+    genericConnected: {},
+    genericMeta: {},
   };
   if (shopifyOwnerId) {
     const shops = await listShopifyConnections(shopifyOwnerId).catch(() => []);
@@ -88,6 +92,25 @@ export default async function DeployAgentPage(props: {
       googleConnected: Boolean(google?.connected),
       googleEmail: google?.googleEmail ?? null,
     };
+  }
+  // Generic integrations (Stripe/Notion/Slack/HubSpot/Google Sheets) — same table used by /dashboard/integrations
+  // Se configurate dalla pagina integrazioni, l'agente le vede già connesse (single source of truth).
+  if (user?.id) {
+    const admin = (await import("@/lib/supabase/admin")).createAdminClient();
+    if (admin) {
+      const { data } = await admin
+        .from("tenant_integrations")
+        .select("provider, status, external_account_id, updated_at")
+        .eq("tenant_id", user.id)
+        .eq("status", "connected");
+      for (const r of (data ?? []) as Array<{ provider: string; external_account_id: string | null; updated_at: string | null }>) {
+        (connections.genericConnected as Record<string, boolean>)[r.provider] = true;
+        (connections.genericMeta as Record<string, { externalId: string | null; updatedAt: string | null }>)[r.provider] = {
+          externalId: r.external_account_id,
+          updatedAt: r.updated_at,
+        };
+      }
+    }
   }
 
   return (
