@@ -7,7 +7,6 @@
  */
 
 import {
-  DEFAULT_TOKEN_LIMIT,
   getPlan,
 } from "@/lib/billing/pricing";
 import {
@@ -71,7 +70,6 @@ export function parseCheckoutMetadata(
 
 export type CheckoutResolution = {
   agentIds: string[];
-  tokenLimit: number;
   planId: string | null;
   vertical: Vertical | null;
 };
@@ -88,7 +86,6 @@ export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolutio
   if (info.agentIds && info.agentIds.length > 0) {
     return {
       agentIds: info.agentIds,
-      tokenLimit: info.tokens ?? DEFAULT_TOKEN_LIMIT,
       planId: null,
       vertical: null,
     };
@@ -96,7 +93,6 @@ export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolutio
   if (info.agentId) {
     return {
       agentIds: [info.agentId],
-      tokenLimit: info.tokens ?? DEFAULT_TOKEN_LIMIT,
       planId: null,
       vertical: null,
     };
@@ -116,7 +112,6 @@ export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolutio
           : SERVICES_LAUNCH_CONFIG;
       return {
         agentIds: launchConfig.enabledAgents,
-        tokenLimit: DEFAULT_TOKEN_LIMIT,
         // plan_id è già salvato come `${vertical}-${tier}` dalla route del payment link.
         planId: info.planId,
         vertical: info.vertical,
@@ -126,7 +121,6 @@ export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolutio
 
   return {
     agentIds: [],
-    tokenLimit: DEFAULT_TOKEN_LIMIT,
     planId: null,
     vertical: null,
   };

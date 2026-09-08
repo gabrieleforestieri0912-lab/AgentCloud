@@ -399,7 +399,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
             </nav>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              {/* Mobile cart — visibile anche su < lg (prima era nascosto) */}
+              {/* Mobile: cart sempre visibile, poi gruppo desktop */}
               <Link
                 href="/cart"
                 aria-label="Carrello"
@@ -412,11 +412,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                   </span>
                 )}
               </Link>
-              {/* lg:flex (non md:flex): il gruppo login/account è la parte più
-                   larga della navbar e inizia a ~768px, dove è ancora visibile il
-                   menu hamburger. Con md: le CTA sforavano il bordo destro del
-                   viewport sui tablet. */}
-              <div className="hidden items-center gap-3 lg:flex">
+              <div className="flex items-center gap-2 lg:gap-3">
+                <div className="hidden items-center gap-3 lg:flex">
                 {authLoaded && (showAsLoggedIn ? (
                 <div className="flex items-center gap-3">
                   {showAsLoggedIn && (
@@ -518,6 +515,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                   {dict.navbar.signIn}
                 </Link>
               ))}
+              </div>
               </div>
             </div>
 

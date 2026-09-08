@@ -32,13 +32,11 @@ function getStripe(): Stripe | null {
 }
 
 /**
- * True quando la fatturazione overage può davvero addebitare i clienti:
- * sono configurati sia la secret key Stripe sia il Price metered dell'overage.
+ * Rimosso: sistema token eliminato — gli agenti durano fino a scadenza abbonamento, nessun limite risposte.
+ * Mantenuto per compatibilità import, sempre disabilitato.
  */
 export function isOverageBillingEnabled(): boolean {
-  return Boolean(
-    process.env.STRIPE_SECRET_KEY && process.env.STRIPE_OVERAGE_PRICE_ID,
-  );
+  return false;
 }
 
 /**
@@ -73,33 +71,9 @@ export function calculateOverageAmountCents(overageTokens: number): number {
  * chiamante logga e salta).
  */
 export async function getOrCreateMeterItem(
-  stripeSubscriptionId: string,
+  _stripeSubscriptionId: string,
 ): Promise<string | null> {
-  const stripe = getStripe();
-  const priceId = process.env.STRIPE_OVERAGE_PRICE_ID;
-  if (!stripe || !priceId) return null;
-
-  try {
-    const { data: items } = await stripe.subscriptionItems.list({
-      subscription: stripeSubscriptionId,
-      limit: 100,
-    });
-
-    const existing = items.find((item) => item.price?.id === priceId);
-    if (existing) return existing.id;
-
-    const created = await stripe.subscriptionItems.create({
-      subscription: stripeSubscriptionId,
-      price: priceId,
-    });
-    return created.id;
-  } catch (error) {
-    console.error(
-      `Failed to attach overage meter to subscription ${stripeSubscriptionId}:`,
-      error,
-    );
-    return null;
-  }
+  return null;
 }
 
 export type OverageReport = {
@@ -120,30 +94,7 @@ export type OverageReport = {
  * mai segnalare due volte la stessa run.
  */
 export async function reportOverageUsage(
-  report: OverageReport,
+  _report: OverageReport,
 ): Promise<boolean> {
-  const stripe = getStripe();
-  const units = calculateMeterUnits(report.overageTokens);
-  if (!stripe || units <= 0) return false;
-
-  const eventName =
-    process.env.STRIPE_OVERAGE_METER_EVENT || "agentcloud_token_overage";
-
-  try {
-    await stripe.billing.meterEvents.create({
-      event_name: eventName,
-      payload: {
-        stripe_customer_id: report.stripeCustomerId,
-        value: String(units),
-      },
-      identifier: `overage-${report.idempotencyKey}`,
-    });
-    return true;
-  } catch (error) {
-    console.error(
-      `Failed to report overage usage for customer ${report.stripeCustomerId}:`,
-      error,
-    );
-    return false;
-  }
+  return false;
 }

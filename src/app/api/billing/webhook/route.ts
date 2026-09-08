@@ -4,10 +4,6 @@ import {
   parseCheckoutMetadata,
   resolveCheckoutAgents,
 } from "@/lib/stripe/webhook-helpers";
-import {
-  getOrCreateMeterItem,
-  isOverageBillingEnabled,
-} from "@/lib/stripe/overage";
 import { isExpiringSoon } from "@/lib/billing/subscription-notifications";
 
 /**
@@ -85,20 +81,10 @@ async function activateSubscription(
   const customerId =
     typeof session.customer === "string" ? session.customer : null;
   const config: Record<string, unknown> = {
-    tokenLimit: resolution.tokenLimit,
     planId: resolution.planId,
     vertical: resolution.vertical,
     activatedVia: resolution.planId ? "plan" : "agent",
   };
-
-  // Aggancia subito il Price metered dell'overage all'abbonamento, così il
-  // consumo oltre la soglia token può essere fatturato dalla prima run in
-  // overage. (getOrCreateMeterItem è idempotente — tutti gli agenti dello
-  // stesso piano condividono lo stesso abbonamento e quindi lo stesso meter item.)
-  if (subscriptionId && isOverageBillingEnabled()) {
-    const meterItemId = await getOrCreateMeterItem(subscriptionId);
-    if (meterItemId) config.stripeSubscriptionItemId = meterItemId;
-  }
 
   // Se il checkout proviene da carrello, segna il carrello come convertito
   if (metadata.cartId && userId) {
