@@ -10,12 +10,13 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronRight } from "lucide-react";
+import { Menu, X, ChevronRight, ShoppingCart, MessageSquare, LayoutDashboard, User, LogOut } from "lucide-react";
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
 import { AGENTS, AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
+import { useCart } from "./CartProvider";
 
 type MobileNavProps = {
   marketplaceAgents?: Agent[];
@@ -26,6 +27,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const pathname = usePathname();
   const { locale, dict } = useLanguage();
+  const { count: cartCount } = useCart();
   // Chiude il menu al cambio di rotta: reset dello stato derivato dal
   // pathname DURANTE il render (pattern React per "aggiustare lo stato quando
   // cambia una prop") invece che in un effect — evita il render sincrono extra
@@ -88,10 +90,10 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
 
   return (
     <>
-      {/* Bottone menu mobile */}
+      {/* Bottone menu mobile — lg:hidden per allinearsi a navbar (lg:flex) */}
       <button
         onClick={() => setIsOpen(true)}
-        className="p-2 text-neutral-400 md:hidden"
+        className="p-2 text-neutral-400 lg:hidden"
         aria-label="Open navigation"
       >
         <Menu size={20} />
@@ -115,7 +117,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden"
             />
 
             {/* Menu panel */}
@@ -124,7 +126,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 z-50 h-dvh w-80 max-w-[85vw] bg-neutral-950 border-l border-white/10 md:hidden overflow-y-auto"
+              className="fixed inset-y-0 right-0 z-50 h-dvh w-80 max-w-[85vw] bg-neutral-950 border-l border-white/10 lg:hidden overflow-y-auto"
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-white/10 p-4">
@@ -231,15 +233,38 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                 ))}
               </div>
 
-              {/* Bottone autenticazione */}
-              <div className="border-t border-white/10 p-4">
+              {/* Azioni rapide — niente eliminato su mobile, tutto a portata */}
+              <div className="border-t border-white/10 p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/cart" onClick={() => setIsOpen(false)} className="relative flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-white hover:bg-white/10">
+                    <ShoppingCart size={16} />
+                    Carrello
+                    {cartCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">{cartCount}</span>}
+                  </Link>
+                  <Link href="/chat" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-3 py-3 text-sm font-bold text-white hover:bg-brand-400">
+                    <MessageSquare size={16} />
+                    Chat AI
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/dashboard" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm font-bold text-white hover:bg-neutral-700">
+                    <LayoutDashboard size={14} />
+                    Dashboard
+                  </Link>
+                  <Link href="/account" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm font-bold text-white hover:bg-neutral-700">
+                    <User size={14} />
+                    Account
+                  </Link>
+                </div>
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="block w-full rounded-full bg-brand-500 px-4 py-3 text-center text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-neutral-900 hover:bg-neutral-100"
                 >
-                  {dict.navbar.signIn}
+                  <LogOut size={16} className="rotate-180" />
+                  {dict.navbar.signIn} / Dashboard
                 </Link>
+                <p className="text-center text-xs text-neutral-500">{locale === "it" ? "Tutto visibile anche su mobile — niente nascosto" : "Everything visible on mobile — nothing hidden"}</p>
               </div>
             </motion.div>
           </>
