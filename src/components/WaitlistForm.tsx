@@ -180,10 +180,10 @@ export default function WaitlistForm({
         setRemainingSpots(data.remaining);
       }
       // I possessori del codice (validato lato server) entrano direttamente
-      // nella piattaforma — ogni agente è sbloccato per loro, nessuna card di
-      // successo necessaria.
+      // nella piattaforma — ogni agente è sbloccato per loro. Redirect a /
+      // con parametro ?access=1 per far sapere al proxy di far passare.
       if (data.accessGranted) {
-        window.location.href = "/";
+        window.location.href = "/?access=1";
         return;
       }
       setIsSuccess(true);

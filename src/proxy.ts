@@ -113,7 +113,13 @@ export async function proxy(request: NextRequest) {
   // effetti: nessun login Supabase richiesto e nessun blocco waitlist. Il
   // cookie viene impostato lato server dopo la validazione del codice (vedi
   // src/lib/access-code.ts); il codice stesso non viene mai verificato qui.
-  const isAccessVisitor = request.cookies.get(ACCESS_COOKIE)?.value === "1";
+  // Parametro ?access=1: il form waitlist lo usa dopo aver inserito il codice
+  // d'accesso valido. Imposta il cookie qui lato proxy perche' il Set-Cookie
+  // della API potrebbe non essere ancora disponibile al browser al momento
+  // del redirect.
+  const hasAccessParam = request.nextUrl.searchParams.get("access") === "1";
+  const isAccessVisitor =
+    request.cookies.get(ACCESS_COOKIE)?.value === "1" || hasAccessParam;
 
   // Le rotte marketing pubbliche (home, agents, bundles, ecc.) sono
   // accessibili anche durante la fase waitlist così il catalogo e i bundle
@@ -152,6 +158,15 @@ export async function proxy(request: NextRequest) {
   // in assenza ripiegano sul comportamento anonimo, come le anteprime pubbliche.)
   if (isAccessVisitor) {
     const res = NextResponse.next();
+    if (hasAccessParam) {
+      // Imposta il cookie ac_access qui lato proxy, cosi' le richieste
+      // successive lo avranno anche senza passare di nuovo per la API.
+      res.cookies.set(ACCESS_COOKIE, "1", {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+        sameSite: "lax",
+      });
+    }
     return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
   }
 
