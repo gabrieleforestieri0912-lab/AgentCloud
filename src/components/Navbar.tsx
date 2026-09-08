@@ -18,6 +18,7 @@ import {
   LogOut,
   User,
   Settings,
+  LayoutDashboard,
 } from "lucide-react";
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
@@ -403,6 +404,9 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     </Link>
                   )}
                   <NotificationBell />
+                  <Link href="/cart" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-neutral-800/60 text-neutral-300 transition-colors hover:border-white/20 hover:bg-neutral-700/60 hover:text-white">
+                    <ShoppingCart size={16} />
+                  </Link>
                   <div ref={userMenuRef} className="relative">
                     <button
                       onClick={() => setUserMenuOpen((v) => !v)}
@@ -441,6 +445,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
                         >
+                          <LayoutDashboard size={14} />
                           Dashboard
                         </Link>
                         <Link
