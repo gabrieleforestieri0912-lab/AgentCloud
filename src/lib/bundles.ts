@@ -32,14 +32,17 @@ export type Bundle = {
 };
 
 function calcPricing(monthlyCents: number): BundlePricing {
-  const quarterlyDiscount = 0.15; // 15% sconto trimestrale
-  const yearlyDiscount = 0.30;   // 30% sconto annuale
+  // Offerte devono costare meno della somma dei singoli: sconto anche sul mensile
+  const monthlyDiscount = 0.12; // 12% sconto mensile vs somma singoli
+  const quarterlyDiscount = 0.22; // 22% sconto trimestrale
+  const yearlyDiscount = 0.35;   // 35% sconto annuale
 
+  const monthly = Math.round(monthlyCents * (1 - monthlyDiscount));
   const quarterly = Math.round(monthlyCents * (1 - quarterlyDiscount));
   const yearly = Math.round(monthlyCents * (1 - yearlyDiscount));
 
   return {
-    monthly: monthlyCents,
+    monthly,
     quarterly,
     yearly,
     quarterlyTotal: quarterly * 3,
