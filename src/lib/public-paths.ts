@@ -21,6 +21,7 @@ export const PUBLIC_PATHS = [
   "/login",
   "/signup",
   "/reset-password",
+  "/reset",
   "/auth/callback", // destinazione del redirect Supabase PKCE / OAuth
   // Google OAuth — raggiungibile senza sessione così il flusso termina sempre
   // in un redirect leggibile (?google=error&reason=...) invece che in un 401

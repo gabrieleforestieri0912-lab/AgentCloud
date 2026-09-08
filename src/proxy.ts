@@ -95,6 +95,7 @@ export async function proxy(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/signup" ||
     pathname === "/reset-password" ||
+    pathname === "/reset" ||
     pathname === "/auth/callback";
 
   // Sviluppo locale senza chiavi Supabase: lascia passare tutto così l'app è
