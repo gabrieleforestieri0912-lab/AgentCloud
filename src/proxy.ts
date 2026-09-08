@@ -1,6 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isPublicPath } from "@/lib/public-paths";
 import {
   DEFAULT_LOCALE,
   detectLocale,
@@ -97,11 +96,6 @@ export async function proxy(request: NextRequest) {
     pathname === "/reset-password" ||
     pathname === "/auth/callback";
 
-  // Le rotte marketing pubbliche restano raggiungibili durante la fase
-  // waitlist così i visitatori possono vedere il catalogo e i bundle.
-  const isPublicMarketing =
-    isPublicPath(pathname) && !pathname.startsWith("/api/");
-
   // Sviluppo locale senza chiavi Supabase: lascia passare tutto così l'app è
   // usabile prima della configurazione delle chiavi. In produzione questo
   // bypass non scatta mai — chiavi mancanti = fail closed (rotte protette → /login).
@@ -120,13 +114,12 @@ export async function proxy(request: NextRequest) {
   // src/lib/access-code.ts); il codice stesso non viene mai verificato qui.
   const isAccessVisitor = request.cookies.get(ACCESS_COOKIE)?.value === "1";
 
-  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute && !isPublicMarketing) {
+  // ─── Fase waitlist: gate su TUTTE le rotte tranne API, asset, auth e
+  // /waitlist stessa. Anche le pagine marketing pubbliche (home, agents, ecc.)
+  // sono bloccate finché il possessore del codice non accede.
+  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
     if (!isAccessVisitor) {
-      // I membri normali della waitlist restano bloccati — il cookie
-      // ac_wl_joined registra solo l'iscrizione, non concede accesso. Gli
-      // utenti autenticati (es. proprietario/admin loggati) passano:
-      // resolveSession valida la sessione e porta i cookie di auth rinnovati
-      // su `response`.
+      // Prima prova la sessione Supabase: utenti autenticati passano.
       const { response, user } = await resolveSession(request);
       if (!user) {
         const waitlistUrl = request.nextUrl.clone();
@@ -136,11 +129,6 @@ export async function proxy(request: NextRequest) {
       }
       return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
     }
-  }
-
-  if (isPublicPath(request.nextUrl.pathname)) {
-    const res = NextResponse.next();
-    return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
   }
 
   // I possessori del codice raggiungono ogni pagina senza login — il codice è
