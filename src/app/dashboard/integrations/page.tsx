@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
 import { hasPlatformAccess } from "@/lib/access-code";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { listShopifyConnections, TENANT_SHOPIFY_ID } from "@/lib/shopify/connections";
+import { getGoogleConnectionSummary, TENANT_GOOGLE_ID } from "@/lib/google/connections";
 import DashboardShell from "@/components/DashboardShell";
 import IntegrationsGrid from "@/components/IntegrationsGrid";
 import { getLocale } from "@/lib/i18n/locale";
-import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default async function DashboardIntegrationsPage({
   searchParams,
@@ -13,7 +14,6 @@ export default async function DashboardIntegrationsPage({
   searchParams: Promise<{ integration?: string; status?: string; reason?: string }>;
 }) {
   const locale = await getLocale();
-  const dict = getDictionary(locale);
   const sp = await searchParams;
 
   const user = await getSessionUser();
@@ -21,7 +21,6 @@ export default async function DashboardIntegrationsPage({
   if (!user && !hasAccess) redirect("/login");
 
   const isMock = !user && hasAccess;
-  const tenantId = user?.id ?? (hasAccess ? "__tenant__" : null);
   // Generic integrations require real auth user (uuid FK). Mock tenant cannot have rows in tenant_integrations (uuid).
   const effectiveId = user?.id ?? null;
 
@@ -42,6 +41,12 @@ export default async function DashboardIntegrationsPage({
       .eq("tenant_id", effectiveId);
     rows = (data as typeof rows) ?? [];
   }
+
+  // Shopify + Google (existing OAuth) — così la pagina dashboard mostra TUTTE le app menzionate su agentcloud
+  const shopifyOwner = isMock ? TENANT_SHOPIFY_ID : user?.id ?? null;
+  const googleOwner = isMock ? TENANT_GOOGLE_ID : user?.id ?? null;
+  const shopifyConnections = shopifyOwner ? await listShopifyConnections(shopifyOwner).catch(() => []) : [];
+  const googleConnection = googleOwner ? await getGoogleConnectionSummary(googleOwner).catch(() => null) : null;
 
   const email = isMock ? "admin@agentcloud.agency" : (user?.email ?? "");
 
@@ -81,7 +86,7 @@ export default async function DashboardIntegrationsPage({
             </div>
           )}
 
-          <IntegrationsGrid rows={rows} locale={locale} />
+          <IntegrationsGrid rows={rows} locale={locale} shopifyConnections={shopifyConnections} googleConnection={googleConnection} />
         </div>
       </section>
     </DashboardShell>
