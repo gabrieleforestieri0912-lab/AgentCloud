@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isPublicPath } from "@/lib/public-paths";
 import {
   DEFAULT_LOCALE,
   detectLocale,
@@ -114,20 +115,35 @@ export async function proxy(request: NextRequest) {
   // src/lib/access-code.ts); il codice stesso non viene mai verificato qui.
   const isAccessVisitor = request.cookies.get(ACCESS_COOKIE)?.value === "1";
 
-  // ─── Fase waitlist: gate su TUTTE le rotte tranne API, asset, auth e
-  // /waitlist stessa. Anche le pagine marketing pubbliche (home, agents, ecc.)
-  // sono bloccate finché il possessore del codice non accede.
-  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
+  // Le rotte marketing pubbliche (home, agents, bundles, ecc.) sono
+  // accessibili anche durante la fase waitlist così il catalogo e i bundle
+  // sono visibili. La navigazione interna (/account, /settings, /dashboard)
+  // resta bloccata senza autenticazione.
+  const isPublicMarketing =
+    isPublicPath(pathname) && !pathname.startsWith("/api/");
+
+  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute && !isPublicMarketing) {
     if (!isAccessVisitor) {
       // Prima prova la sessione Supabase: utenti autenticati passano.
-      const { response, user } = await resolveSession(request);
+      // Se resolveSession lancia un errore (Supabase down, timeout, ecc.)
+      // trattalo come "no user" e manda alla waitlist — mai lasciare che
+      // un'eccezione propaghi e causi un loop di redirect.
+      let user: { id: string } | null = null;
+      let sessionResponse = NextResponse.next({ request });
+      try {
+        const resolved = await resolveSession(request);
+        user = resolved.user;
+        sessionResponse = resolved.response;
+      } catch {
+        user = null;
+      }
       if (!user) {
         const waitlistUrl = request.nextUrl.clone();
         waitlistUrl.pathname = "/waitlist";
         const redirectRes = NextResponse.redirect(waitlistUrl);
         return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
       }
-      return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
+      return needsCookie ? withLocaleCookie(sessionResponse, detectedLocale) : sessionResponse;
     }
   }
 
@@ -141,27 +157,35 @@ export async function proxy(request: NextRequest) {
 
   // Rotta protetta: richiede una sessione, altrimenti rimanda a /login
   // (la destinazione voluta non viene conservata, come nel flusso attuale).
-  const { response, user } = await resolveSession(request);
-  if (!user) {
-    // Le route API ricevono un pulito 401 JSON invece di un redirect HTML —
-    // i client che chiamano fetch() seguirebbero il redirect e proverebbero a
-    // fare il parse dell'HTML.
-    if (request.nextUrl.pathname.startsWith("/api/")) {
-      const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
-      return NextResponse.json(
-        { error: getDictionary(locale).apiErrors.unauthorized },
-        { status: 401 },
-      );
+  try {
+    const { response, user } = await resolveSession(request);
+    if (!user) {
+      // Le route API ricevono un pulito 401 JSON invece di un redirect HTML —
+      // i client che chiamano fetch() seguirebbero il redirect e proverebbero a
+      // fare il parse dell'HTML.
+      if (request.nextUrl.pathname.startsWith("/api/")) {
+        const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
+        return NextResponse.json(
+          { error: getDictionary(locale).apiErrors.unauthorized },
+          { status: 401 },
+        );
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.search = "";
+      url.hash = "";
+      const redirectRes = NextResponse.redirect(url);
+      return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
     }
+    return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
+  } catch {
+    // Errore Supabase: trattalo come non autenticato → /login
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
     url.hash = "";
-    const redirectRes = NextResponse.redirect(url);
-    return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
+    return NextResponse.redirect(url);
   }
-
-  return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
 }
 
 export const config = {
