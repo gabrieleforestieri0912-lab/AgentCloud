@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
+import { hasPlatformAccess } from "@/lib/access-code";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
 import { isSupportedProvider } from "@/lib/integrations/types";
 import { getProvider, getRedirectUri } from "@/lib/integrations/registry";
@@ -27,9 +28,12 @@ export async function GET(
   }
 
   const user = await getSessionUser();
-  if (!user) {
+  const hasAccess = await hasPlatformAccess();
+  if (!user && !hasAccess) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
+  const tenantId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  if (!tenantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const paramsUrl = req.nextUrl.searchParams;
   const code = paramsUrl.get("code");
@@ -51,7 +55,7 @@ export async function GET(
   };
   const fail = (reason: string) => {
     // mark error if row exists (best-effort)
-    void markTenantIntegration(user.id, provider, "error").catch(() => {});
+    void markTenantIntegration(tenantId, provider, "error").catch(() => {});
     return out(`integration=${provider}&status=error&reason=${encodeURIComponent(reason)}`);
   };
 
@@ -65,12 +69,15 @@ export async function GET(
   const payload = verifyState(state, cookieState);
   if (!payload) return fail("state_mismatch");
   if (payload.p !== provider) return fail("state_provider_mismatch");
-  if (payload.t !== user.id) return fail("state_tenant_mismatch");
+  if (payload.t !== tenantId) return fail("state_tenant_mismatch");
 
   const adapter = getProvider(provider);
   if (!adapter) return fail("provider_not_configured");
 
-  const redirectUri = getRedirectUri(req.url, provider as never);
+  const redirectUri =
+    provider === "google_sheets"
+      ? (process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXT_PUBLIC_URL ?? new URL(req.url).origin}/api/auth/google/callback`)
+      : getRedirectUri(req.url, provider as never);
 
   let tokens;
   try {
@@ -82,7 +89,7 @@ export async function GET(
 
   try {
     await upsertTenantIntegration({
-      tenantId: user.id,
+      tenantId,
       provider,
       tokens,
       status: "connected",

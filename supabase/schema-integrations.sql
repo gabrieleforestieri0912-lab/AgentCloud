@@ -28,12 +28,11 @@
 --      Service role bypasses RLS for token exchange / proxy.
 -- =============================================================================
 
--- Tenant model: in AgentCloud tenant == authenticated user (auth.users.id).
--- Spec example says tenant_id uuid FK -> tenants; here tenants are auth.users.
--- Using uuid FK to auth.users(id) keeps consistency with profiles(id).
+-- Tenant model: in AgentCloud tenant == authenticated user (auth.users.id) or "__tenant__" for admin via code.
+-- Was uuid FK to auth.users; changed to text to allow shared tenant "__tenant__" (admin senza utente Supabase).
 create table if not exists public.tenant_integrations (
   id uuid default gen_random_uuid() primary key,
-  tenant_id uuid not null references auth.users(id) on delete cascade,
+  tenant_id text not null,
   provider text not null check (provider in ('stripe','notion','slack','hubspot','google_sheets')),
   status text not null default 'pending' check (status in ('connected','disconnected','error','pending')),
   access_token text, -- encrypted envelope, nullable only during pending/error
@@ -56,30 +55,30 @@ create index if not exists idx_tenant_integrations_tenant_provider
 
 alter table public.tenant_integrations enable row level security;
 
--- Users can view their own integrations
+-- Users can view their own integrations (text compare to allow __tenant__ via service role bypass)
 drop policy if exists "Users can view own tenant integrations" on public.tenant_integrations;
 create policy "Users can view own tenant integrations"
   on public.tenant_integrations for select
-  using (auth.uid() = tenant_id);
+  using (auth.uid()::text = tenant_id);
 
 -- Users can insert their own integrations (callback upserts via service role, but allow self-insert)
 drop policy if exists "Users can insert own tenant integrations" on public.tenant_integrations;
 create policy "Users can insert own tenant integrations"
   on public.tenant_integrations for insert
-  with check (auth.uid() = tenant_id);
+  with check (auth.uid()::text = tenant_id);
 
 -- Users can update their own integrations
 drop policy if exists "Users can update own tenant integrations" on public.tenant_integrations;
 create policy "Users can update own tenant integrations"
   on public.tenant_integrations for update
-  using (auth.uid() = tenant_id)
-  with check (auth.uid() = tenant_id);
+  using (auth.uid()::text = tenant_id)
+  with check (auth.uid()::text = tenant_id);
 
 -- Users can delete their own integrations (disconnect)
 drop policy if exists "Users can delete own tenant integrations" on public.tenant_integrations;
 create policy "Users can delete own tenant integrations"
   on public.tenant_integrations for delete
-  using (auth.uid() = tenant_id);
+  using (auth.uid()::text = tenant_id);
 
 -- Service role manages everything (OAuth callback, Edge Function proxy, refresh)
 drop policy if exists "Service role can manage tenant integrations" on public.tenant_integrations;

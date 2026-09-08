@@ -21,8 +21,7 @@ export default async function DashboardIntegrationsPage({
   if (!user && !hasAccess) redirect("/login");
 
   const isMock = !user && hasAccess;
-  // Generic integrations require real auth user (uuid FK). Mock tenant cannot have rows in tenant_integrations (uuid).
-  const effectiveId = user?.id ?? null;
+  const effectiveId = user?.id ?? (isMock ? "__tenant__" : null);
 
   const db = createAdminClient();
   let rows: Array<{
