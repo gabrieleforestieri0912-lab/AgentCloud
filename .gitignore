@@ -49,6 +49,7 @@ logs/
 
 # database backups
 supabase/schema.sql.bak
+supabase/migrations/
 
 # tmp
 .tmp-g/
