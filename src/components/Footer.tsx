@@ -4,7 +4,6 @@
  * Footer globale: colonne link (prodotto, azienda, legale), lingue,
  * contatti e loghi dei brand. Testi dal dizionario i18n attivo.
  */
-import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import BrandIcon from "./BrandIcon";
@@ -56,11 +55,7 @@ export default function Footer() {
   ];
 
   return (
-    <motion.footer
-      initial={{ opacity: 0, y: 60 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.7, ease: "easeOut" }}
+    <footer
       className="relative border-t border-white/5 text-white"
     >
       {/* Hairline + bagliore sottile del brand perché il footer scuro si legga
@@ -212,6 +207,6 @@ export default function Footer() {
           </div>
         </div>
       </div>
-    </motion.footer>
+    </footer>
   );
 }

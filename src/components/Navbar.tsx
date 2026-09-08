@@ -411,8 +411,14 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     >
                       {accountInitials}
                     </button>
-                    {userMenuOpen && (
-                      <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl">
+                    {userMenuOpen && typeof document !== "undefined" &&
+                      createPortal(
+                      <div className="fixed z-[60] mt-2 w-56 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl"
+                        style={{
+                          right: Math.max(16, (typeof window !== "undefined" ? window.innerWidth - 60 : 200)),
+                          top: 64,
+                        }}
+                      >
                         <div className="px-3 py-2">
                           <p className="text-sm font-bold text-white">
                             {isSignedIn ? session?.user?.email : "admin@agentcloud.agency"}
@@ -474,7 +480,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                             {dict.navbar.signIn}
                           </Link>
                         )}
-                      </div>
+                      </div>,
+                      document.body,
                     )}
                   </div>
                 </div>
