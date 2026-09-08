@@ -20,6 +20,9 @@ import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
 import AgentCard from "@/components/AgentCard";
 import AddToCartButton from "@/components/AddToCartButton";
+import AgentIntegrationsCard from "@/components/AgentIntegrationsCard";
+import { getSessionUser } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   AGENTS,
   AVAILABLE_AGENTS,
@@ -148,6 +151,25 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   const marketplaceAgents = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((a) =>
     localizeAgent(a, locale),
   );
+
+  // Stato integrazioni per mostrare già connesso se fatto da /dashboard/integrations
+  const sessionUser = await getSessionUser();
+  let genericConnected: Record<string, boolean> = {};
+  let shopifyConnected = false;
+  let googleConnected = false;
+  if (sessionUser?.id) {
+    const admin = createAdminClient();
+    if (admin) {
+      const [{ data: gRows }, { data: sRows }, { data: gShop }] = await Promise.all([
+        admin.from("tenant_integrations").select("provider").eq("tenant_id", sessionUser.id).eq("status", "connected"),
+        admin.from("shopify_connections").select("shop_domain, uninstalled_at").eq("user_id", sessionUser.id).is("uninstalled_at", null).limit(1),
+        admin.from("google_connections").select("user_id").eq("user_id", sessionUser.id).maybeSingle(),
+      ]);
+      for (const r of (gRows ?? []) as Array<{ provider: string }>) genericConnected[r.provider] = true;
+      shopifyConnected = Array.isArray(sRows) && sRows.length > 0;
+      googleConnected = !!gShop;
+    }
+  }
 
   const useCases = getUseCases(slug, agent.tasks, locale);
   const faqs = getFAQs(slug, agent.shortName, locale);
@@ -318,32 +340,13 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   )}
                 </div>
 
-                {/* Card integrazioni */}
-                <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
-                  <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
-                      <Plug size={18} />
-                    </div>
-                    <div>
-                      <h2 className="text-sm font-bold text-white">
-                        {dict.agentDetail.integrationsTitle}
-                      </h2>
-                      <p className="text-xs font-semibold text-neutral-500">
-                        {t(dict.agentDetail.integrationsDesc, { name: agent.shortName })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {agent.integrations.map((integration) => (
-                      <span
-                        key={integration}
-                        className="rounded-full border border-white/10 bg-neutral-800 px-3.5 py-1.5 text-xs font-semibold text-neutral-300"
-                      >
-                        {integration}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <AgentIntegrationsCard
+                  integrations={agent.integrations}
+                  agentSlug={agent.slug}
+                  genericConnected={genericConnected}
+                  shopifyConnected={shopifyConnected}
+                  googleConnected={googleConnected}
+                />
 
                 {/* Card fiducia */}
                 <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
