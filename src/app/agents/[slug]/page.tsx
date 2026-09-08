@@ -215,7 +215,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   <>
                     <Link
                       href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
-                      className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35"
+                      className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35 hover:scale-[1.02] active:scale-[0.98]"
                     >
                       {unlocked
                         ? locale === "it"
@@ -227,13 +227,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     <AddToCartButton slug={agent.slug} />
                   </>
                 ) : (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-7 py-3.5 text-sm font-bold text-neutral-500">
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-neutral-900 px-7 py-3.5 text-sm font-bold text-neutral-500">
                     {dict.common.comingSoon}
                   </span>
                 )}
-                <Link href="/cart" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white hover:bg-white/10">
-                  {locale === "it" ? "Vai al carrello" : "Go to cart"}
-                </Link>
               </div>
             </div>
 
@@ -319,12 +316,6 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                       <AddToCartButton slug={agent.slug} className="w-full justify-center" />
                     </div>
                   )}
-                  <Link
-                    href="/chat"
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"
-                  >
-                    {dict.agentDetail.askOurAi}
-                  </Link>
                 </div>
 
                 {/* Card integrazioni */}
@@ -541,12 +532,6 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 <ArrowRight size={18} />
               </Link>
             )}
-            <Link
-              href="/chat"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-8 py-3.5 text-base font-bold text-white transition-colors hover:border-white/20"
-            >
-              {dict.agentDetail.askOurAi}
-            </Link>
           </div>
         </div>
       </section>

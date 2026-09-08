@@ -36,9 +36,9 @@ export default function AddBundleToCartButton({
   if (inCart) {
     return (
       <span
-        className={`inline-flex items-center justify-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-300 ${className}`}
+        className={`inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 ${className}`}
       >
-        <Check size={14} />
+        <Check size={15} className="text-emerald-400" />
         {isIt ? "Nel carrello" : "In cart"}
       </span>
     );
@@ -48,19 +48,19 @@ export default function AddBundleToCartButton({
     <button
       onClick={handle}
       disabled={loading}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/10 disabled:opacity-60 ${className}`}
+      className={`group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-purple-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-200 hover:from-brand-400 hover:to-purple-400 hover:shadow-xl hover:shadow-brand-500/30 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100 ${className}`}
     >
       {loading ? (
-        <Loader2 size={14} className="animate-spin" />
+        <Loader2 size={15} className="animate-spin" />
       ) : done ? (
-        <Check size={14} className="text-emerald-400" />
+        <Check size={15} className="text-white" />
       ) : (
-        <ShoppingCart size={14} />
+        <ShoppingCart size={15} className="transition-transform group-hover:scale-110" />
       )}
       {done
         ? isIt
-          ? "Aggiunto"
-          : "Added"
+          ? "Aggiunto!"
+          : "Added!"
         : isIt
           ? "Aggiungi bundle al carrello"
           : "Add bundle to cart"}
