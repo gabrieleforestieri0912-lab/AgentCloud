@@ -1,35 +1,3 @@
--- =============================================================================
--- AgentCloud — Generic multi-provider integrations: Phase 1 schema
--- =============================================================================
--- Generic table for Stripe Connect, Notion, Slack, HubSpot, Google Sheets.
--- Separate from shopify_connections (do not modify Shopify tables).
--- Tokens are stored ENCRYPTED at rest as text (AES-256-GCM envelope
--- { data, iv, tag } base64 — application-level encryption in the Edge
--- Function, key from SUPABASE_SERVICE_ROLE / INTEGRATIONS_TOKEN_ENCRYPTION_KEY,
--- never client-side). DB never stores plaintext. See
--- docs/integrations-setup.md and Phase 1 decision below.
---
--- Encryption decision (documented, fallback = app-level):
---   Proposed & adopted: application-level encryption in Edge Functions
---   (mirrors Shopify pattern: SHOPIFY_TOKEN_ENCRYPTION_KEY / 
---   GOOGLE_TOKEN_ENCRYPTION_KEY, AES-256-GCM, key derived via SHA-256 from
---   INTEGRATIONS_TOKEN_ENCRYPTION_KEY or SUPABASE_SERVICE_ROLE_KEY).
---   Alternative considered: Supabase Vault / pgsodium (column-level
---   encryption at rest). Rejected for Phase 1 because: (1) Vault requires
---   enabling pgsodium + key management in project, (2) per-tenant RLS +
---   service_role bypass already isolates rows, (3) app-level keeps
---   decrypt auto-refresh logic inside Edge Functions without DB
---   extensions. Can be revisited if compliance requires TDE without app key.
---   Confirm with Gabriele before switching — default stays app-level.
---
--- Apply AFTER schema.sql (needs public.touch_updated_at()).
--- RLS: tenant (auth.users) may only read/write its own rows
---      (mirror of shopify_connections RLS: auth.uid() = tenant_id).
---      Service role bypasses RLS for token exchange / proxy.
--- =============================================================================
-
--- Tenant model: in AgentCloud tenant == authenticated user (auth.users.id) or "__tenant__" for admin via code.
--- Was uuid FK to auth.users; changed to text to allow shared tenant "__tenant__" (admin senza utente Supabase).
 create table if not exists public.tenant_integrations (
   id uuid default gen_random_uuid() primary key,
   tenant_id text not null,
