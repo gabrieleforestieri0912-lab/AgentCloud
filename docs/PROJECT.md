@@ -1,6 +1,6 @@
 # AgentCloud
 
-**v0.5.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing Stripe con overage, backend Claude (Anthropic), Shopify OAuth multi-tenant e i18n IT/EN.
+**v0.6.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing **Stripe + PayPal** (Klarna/Amazon Pay) con overage, **42 integrazioni** (8 disponibili + 34 Prossimamente), backend Claude (Anthropic), **Shopify + Google OAuth multi-tenant + generic integrations (Stripe/Notion/Slack/HubSpot/Google Sheets)**, account unificato e i miei abbonamenti, i18n IT/EN.
 
 ---
 
@@ -11,11 +11,11 @@
 - **Tailwind CSS v4** — styling (`@theme`-based)
 - **TypeScript ^5** — type safety
 - **Supabase Auth** — autenticazione (email + password, Google OAuth, sessioni `@supabase/ssr`)
-- **Supabase** — database (billing, usage, rate limits) + form storage
-- **Stripe** — payment links, abbonamenti, customer portal, **overage billing** (Billing Meter)
-- **Anthropic Claude** — backend LLM unico (agenti `/api/agent/run`, chat `/api/chat`), risposte in **streaming parola per parola**
+- **Supabase** — database (billing, usage, rate limits, `tenant_integrations`) + form storage
+- **Stripe + PayPal** — payment links, abbonamenti, customer portal, **overage billing** (Billing Meter), **Klarna** e **Amazon Pay** abilitati su Stripe Checkout
+- **Anthropic Claude** — backend LLM unico (agenti `/api/agent/run`, chat `/api/chat`), risposte in **streaming parola per parola** + indicatore *Sta lavorando su* app collegata
 - **Resend** — email transazionali
-- **Simple Icons** — icone brand originali (integrazioni/hero) · **Lucide** — icone UI
+- **Simple Icons** — icone brand originali (42 integrazioni/hero) · **Lucide** — icone UI
 
 ---
 
@@ -23,42 +23,45 @@
 
 ```
 src/
-├── proxy.ts                 # Supabase session middleware (route pubbliche vs protette)
+├── proxy.ts                 # Supabase session middleware (route pubbliche vs protette, waitlist-only)
 ├── app/
-│   ├── layout.tsx           # Metadata dinamici, LanguageProvider
+│   ├── layout.tsx           # Metadata dinamici, LanguageProvider + CartProvider
 │   ├── page.tsx             # Homepage (hero + sezioni landing)
-│   ├── dashboard/page.tsx   # Dashboard (server component, dati reali Supabase)
-│   ├── chat/page.tsx        # Chat generica (Claude; su errore → messaggio + link contatti)
-│   ├── agents/page.tsx      # Marketplace filtrato dai feature flags
-│   ├── agents/[slug]/page.tsx        # Dettaglio agente (localizzato)
-│   ├── agents/[slug]/deploy/         # Gate server (page.tsx) + wizard client (deploy-client.tsx)
+│   ├── dashboard/page.tsx   # Dashboard (server, dati reali Supabase)
+│   ├── dashboard/integrations/page.tsx # Integrazioni 42 app (generic OAuth, stato connesso, tenant_integrations)
+│   ├── dashboard/subscriptions/page.tsx # I miei abbonamenti (attivi, storico, Stripe portal + PayPal)
+│   ├── chat/page.tsx        # Chat generica (Claude + indicatore Sta lavorando su app collegata)
+│   ├── agents/page.tsx      # Marketplace filtrato dai feature flag
+│   ├── agents/[slug]/page.tsx        # Dettaglio agente (localizzato, già acquistato → Apri in chat)
+│   ├── agents/[slug]/deploy/         # Gate server + wizard client (connesso via integrations status API)
 │   ├── agent/[id]/page.tsx  # Chat di un agente (protetto)
 │   ├── a/[slug]/            # Pagina pubblica agente + chat embed
+│   ├── account/page.tsx     # Account unificato (profilo + piano + connessioni + impostazioni) — /settings redirect
+│   ├── cart/page.tsx        # Carrello (agenti + bundle, svuota fixato, badge rosso)
+│   ├── bundles/page.tsx     # Bundle con pricing coerente (sconti 12/22/35%)
 │   ├── login | signup | waitlist | demo | contact | privacy | terms
 │   └── api/
 │       ├── agent/run/       # POST — esecuzione agente (Claude) + tool, limiti e rate limit
 │       ├── billing/webhook/ # POST — webhook Stripe (attivazione, rinnovo, cancellazione)
+│       ├── billing/paypal/create|webhook/ # PayPal Billing Subscriptions (mirror Stripe)
 │       ├── billing/payment-link/ · billing/portal/ · billing/notify-expiring/
-│       ├── checkout/        # Stripe Checkout Session (prezzo dinamico da priceCents)
+│       ├── checkout/        # Stripe Checkout Session (prezzo dinamico, Klarna/Amazon Pay)
+│       ├── cart/ · cart/checkout/ # Carrello multi-agente (Stripe Checkout con Klarna/Amazon Pay)
+│       ├── integrations/[provider]/{authorize,callback,disconnect} + status # Generic OAuth 5 provider + Edge Functions proxy
+│       ├── user/owned/      # GET owned slugs per badge Già acquistato
 │       ├── admin/           # Admin API (Bearer ADMIN_API_TOKEN)
-│       ├── email/send/      # Admin-only (Bearer ADMIN_API_TOKEN)
-│       ├── email/webhook/ · whatsapp/webhook/ · chat/ · embed/[slug]/
-│       ├── notifications/   # Campanella in-app (elenco + read per il badge)
-│       ├── shopify/         # OAuth multi-tenant install/callback/webhooks/status
+│       ├── email/send/      # Admin-only
+│       ├── notifications/   # Campanella (elenco + read)
+│       ├── shopify/ · google/ # OAuth multi-tenant legacy (shopify_connections, google_connections)
 │       └── waitlist | contact | demo/request | sitemap
-├── components/              # Navbar, Hero, sezioni landing, ChatInterface, AgentCard…
+├── components/              # Navbar (cart icon-only prima di campanella, pannelli link migliorati), ChatInterface (working-on), AgentCard (Già acquistato), IntegrationsGrid (42), BundleCard, CartProvider…
 └── lib/
     ├── i18n/                # dictionaries (it/en), locale, api-errors, agentCatalog
-    ├── billing/             # pricing, usage-tracking (limiti token, overage)
-    ├── stripe/              # overage (meter), webhook-helpers
-    ├── agents/              # registry runtime, feature-flags, platform-context (chat)
-    ├── access-code.ts       # Codice di accesso fase waitlist (server-only) — sblocca tutti gli agenti
-    ├── waitlist-constants.ts # Costanti client-safe (MAX_SPOTS, cookie `ac_access`)
-    ├── rate-limit.ts        # Rate limiting distribuito (Supabase RPC)
-    ├── request-ip.ts        # Client IP condiviso
-    ├── stream.ts            # Streaming parole per parola (SSE) per chat e agent runs
-    ├── chat-responses.ts    # (legacy) risposte locali deterministiche — non più usate dalle chat
-    └── site-url.ts          # getSiteUrl() — unica fonte della URL pubblica
+    ├── billing/ · stripe/ · paypal/ # pricing, overage, PayPal REST (sandbox/live)
+    ├── agents/ · integrations/ # registry, feature-flags, generic providers (stripe/notion/slack/hubspot/google_sheets) + Edge Functions _shared
+    ├── brands.ts            # 42 brand (simple-icons + custom Microsoft)
+    ├── integrations.ts      # Catalogo 42 integrazioni (8 disponibili + 34 Prossimamente: Microsoft/Google suite)
+    └── site-url.ts          # getSiteUrl()
 ```
 
 ---
@@ -71,12 +74,16 @@ src/
 | `/agents`, `/agents/[slug]`, `/agents/[slug]/deploy` | Marketplace / dettaglio / deploy | Pubblico |
 | `/a/[slug]` | Chat pubblica agente (embed) | Pubblico |
 | `/waitlist`, `/demo`, `/contact`, `/privacy`, `/terms`, `/login`, `/signup` | Landing/legal/auth | Pubblico |
-| `/chat` | Chat generica | Protetto (Supabase) |
+| `/chat` | Chat generica (con indicatore app collegata) | Protetto (Supabase) |
 | `/agent/[id]` | Chat agente | Protetto (Supabase) |
-| `/dashboard` | Dashboard | Protetto (Supabase) |
+| `/dashboard` | Dashboard | Protetto |
+| `/dashboard/integrations` | Integrazioni 42 app (generic OAuth) | Protetto |
+| `/dashboard/subscriptions` | I miei abbonamenti (attivi, storico) | Protetto |
+| `/account` | Account unificato (profilo + impostazioni) — `/settings` redirect | Protetto |
+| `/cart`, `/bundles` | Carrello + Bundle (pricing coerente) | Pubblico (carrello sync) |
 
-**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/payment-link`, `checkout`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `chat`, `embed/[slug]`, `notifications`, `shopify/install`, `shopify/callback`, `shopify/webhooks`, `shopify/status`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `demo/request`, `sitemap`.
-**API protette (Supabase)**: `billing/portal` (ri-verifica sessione + redirect a login).
+**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/paypal/webhook`, `billing/payment-link`, `checkout`, `cart`, `cart/checkout` (Klarna/Amazon Pay), `user/owned`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `chat`, `embed/[slug]`, `notifications`, `shopify/install`, `shopify/callback`, `shopify/webhooks`, `shopify/status`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `demo/request`, `sitemap`.
+**API protette (Supabase)**: `billing/portal`, `billing/paypal/create` (ri-verifica sessione), `integrations/[provider]/{authorize,callback,disconnect,status}` (generic OAuth, signed state).
 
 ---
 
@@ -119,11 +126,12 @@ src/
 
 ## Billing
 
-- **Payment links Stripe** → webhook `checkout.session.completed` attiva la subscription e crea le righe in `subscriptions` + `user_agents`.
-- **Limiti sui token** (input+output) mensili per agente (`tokenLimit` in config).
-- **Overage billing**: oltre l'allowance i token extra vanno al Billing Meter (`agentcloud_token_overage`, €0,30/1.000) finché non si raggiunge il **cap di sicurezza a 2x** (429).
-- **Cancellazione self-service** via Customer Portal (`/api/billing/portal`); `cancel_at_period_end` mostrato nel dashboard; alla scadenza il webhook passa gli agenti a `canceled` (blocco 402).
-- Senza `STRIPE_OVERAGE_PRICE_ID` l'overage è disabilitato: si torna al blocco 429 al plafond.
+- **Stripe + PayPal** — Checkout Session dinamico (`priceCents` agente) con **Klarna** e **Amazon Pay** abilitati (`payment_method_types: card,klarna,amazon_pay` in `checkout` e `cart/checkout`), Payment links via `billing/payment-link`, PayPal Billing Subscriptions via `billing/paypal/create` + webhook `billing/paypal/webhook` (mirror Stripe su `subscriptions`/`user_agents`, `config.paypal`).
+- **Attivazione:** webhook `checkout.session.completed` (Stripe) / `BILLING.SUBSCRIPTION.ACTIVATED` (PayPal) → `subscriptions` + `user_agents` (status `active`, `current_period_end`), carrello svuotato, badge *Già acquistato* + bottone *Apri in chat* su marketplace/dettaglio.
+- **Limiti token** mensili per agente (`tokenLimit`).
+- **Overage:** oltre allowance → Billing Meter (`agentcloud_token_overage`, €0,30/1.000) fino a **cap 2x** (429).
+- **Gestione:** `I miei abbonamenti` (`/dashboard/subscriptions`) + Customer Portal Stripe (`/api/billing/portal`), PayPal via dashboard PayPal; `cancel_at_period_end` visibile; webhook `canceled` → `user_agents` `canceled`.
+- Senza `STRIPE_OVERAGE_PRICE_ID` overage disabilitato (429 al plafond).
 
 ---
 
@@ -145,18 +153,22 @@ Backed da **Supabase** (tabella `rate_limits` + RPC atomici) — vale su tutte l
 
 ## Database
 
-Schema completo in `supabase/schema.sql` (rieseguibile: idempotente). **Dopo il deploy va rieseguito** per creare le nuove tabelle. Per la fase waitlist esiste `supabase/schema-waitlist.sql`; le tabelle dell'OAuth Shopify (`shopify_connections`) vivono in `supabase/schema-shopify-oauth.sql` (vedi sezione Shopify).
+Schema in `supabase/schema.sql` + `supabase/schema-shopify-oauth.sql` + `supabase/schema-google-oauth.sql` + `supabase/schema-integrations.sql` (unica fonte, rieseguibile). **Migrations folder rimossa** (`supabase/migrations/` ignorata via `.gitignore`) — single-file schema. Dopo deploy **rieseguire** gli schema.
 
 | Tabella | Scopo |
 |---------|-------|
 | `profiles` | Profilo utente + `stripe_customer_id` |
 | `agents_registry` | Mirror server-side del catalogo |
-| `subscriptions` | Ledger Stripe (una riga per subscription × agente) |
-| `user_agents` | Ownership autoritativa (limiti e stato per utente × agente) |
-| `agent_runs` | Log di esecuzione + conteggio token |
+| `subscriptions` | Ledger Stripe/PayPal (una riga per subscription × agente, `stripe_subscription_id` riusato per PayPal `I-...`) |
+| `user_agents` | Ownership autoritativa (limiti e stato per utente × agente, `config.paypal` per PayPal) |
+| `agent_runs` | Log + conteggio token |
 | `demo_requests`, `waitlist` | Form pubblici |
-| `agent_notifications` | Azioni importanti compiute dagli agenti (file creato, prodotto pubblicato, evento prenotato, lead catturato…) — campanella in-app, `read` per il badge |
-| **`rate_limits`** | **Bucket del rate limiting distribuito** — PK `(bucket, key, window_start)`, RLS deny-all (solo service role) |
+| `agent_notifications` | Azioni agenti — campanella, `read` badge |
+| `shopify_connections` | OAuth Shopify multi-tenant (AES-256-GCM, `user_id text` per `__tenant__`) |
+| `google_connections` | OAuth Google (Gmail/Calendar) multi-tenant |
+| `tenant_integrations` | **Generic 5 provider** (`stripe,notion,slack,hubspot,google_sheets`) — `tenant_id text` (uuid o `__tenant__` per admin via code), `unique(tenant_id,provider)`, RLS `auth.uid()::text = tenant_id`, cifratura app-level, `metadata` |
+| `carts`, `cart_items` | Carrello (uno `active` per utente, bundle gestiti via `localStorage` + merge, `status` converted) |
+| **`rate_limits`** | Bucket rate limiting — PK `(bucket, key, window_start)`, RLS deny-all |
 
 **RPC rate limits** (definiti in `schema.sql`):
 - `bump_rate_limit(p_bucket, p_key, p_window_start) → int` — incremento atomico (`insert … on conflict … count+1`), ritorna il nuovo contatore.
@@ -182,35 +194,39 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 
 | Variabile | Obbligatoria | Note |
 |-----------|:---:|------|
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | usata per billing/usage/rate limits |
-| `ANTHROPIC_API_KEY` | ✅ | esecuzione agenti (backend Claude) |
-| `RESEND_API_KEY` | ✅ | email transazionali |
-| `STRIPE_SECRET_KEY` | ✅ | prod: `sk_live_…` |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | billing/usage/rate limits + `tenant_integrations` |
+| `ANTHROPIC_API_KEY` | ✅ | Claude |
+| `RESEND_API_KEY` | ✅ | email |
+| `STRIPE_SECRET_KEY` | ✅ | `sk_live_…` |
 | `STRIPE_WEBHOOK_SECRET` | ✅ | `whsec_…` |
-| `STRIPE_OVERAGE_PRICE_ID` | ⚠️ | senza → overage disabilitato (blocco 429 al plafond) |
+| `STRIPE_OVERAGE_PRICE_ID` | ⚠️ | senza → overage disabilitato |
 | `STRIPE_OVERAGE_METER_EVENT` | – | default `agentcloud_token_overage` |
-| `ADMIN_API_TOKEN` | ✅ | admin API + `email/send` (fail-closed se assente) |
-| `ACCESS_CODE` | – | codice di accesso della fase waitlist (default generato in `src/lib/access-code.ts`); chi lo inserisce nella pagina waitlist sblocca l'intera piattaforma e **tutti** gli agenti, anche quelli “in arrivo” |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | – (se PayPal attivo) | `BAA_...`/`EJk...` live, `BAAR...` sandbox, REST `PAYPAL_MODE=sandbox|live` |
+| `PAYPAL_WEBHOOK_ID` | – | `53242420YL...` / `WH-...` |
+| `ADMIN_API_TOKEN` | ✅ | admin API |
+| `ACCESS_CODE` | – | waitlist (sblocca tutti gli agenti) |
 | `DEMO_EMAIL_TO` | – | default `info@agentcloud.io` |
 
-### Stripe Payment Links
+### Stripe Payment Links & Billing
 
 | Variabile | Note |
 |-----------|------|
-| `STRIPE_PAYMENT_LINK_<AGENTE_UPPER>` | una per agente del catalogo (slug → `_` maiuscolo, es. `STRIPE_PAYMENT_LINK_EXECUTIVE_ASSISTANT`) |
-| `STRIPE_PAYMENT_LINK_<VERTICAL>_<TIER>` | piani: `SHOPIFY_STARTER`, `SHOPIFY_GROWTH`, `SERVICES_STARTER`, `SERVICES_GROWTH` |
+| `STRIPE_PAYMENT_LINK_<AGENTE_UPPER>` | una per agente (es. `STRIPE_PAYMENT_LINK_SHOPIFY_AGENT`) — se assente, checkout dinamico `priceCents` |
+| `STRIPE_PAYMENT_LINK_<VERTICAL>_<TIER>` | piani verticali |
+| `PAYPAL_PLAN_<AGENTE_UPPER>` | opzionale: `P-...` PayPal Billing Plan già creato, altrimenti creato al volo via `lib/paypal/client` |
+| Checkout | `payment_method_types: card,klarna,amazon_pay` su `checkout` e `cart/checkout` (Klarna/Amazon Pay abilitati via Dashboard + codice) |
 
 ### Tools / integrazioni (solo se attivi)
 
 | Variabile | Uso |
 |-----------|-----|
-| `SHOPIFY_SHOP_DOMAIN`, `SHOPIFY_ADMIN_ACCESS_TOKEN` | tool Shopify |
-| `GOOGLE_CALENDAR_ACCESS_TOKEN`, `GOOGLE_CALENDAR_CALENDAR_ID`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | tool Calendar |
-| `LEAD_CAPTURE_ENDPOINT`, `LEAD_CAPTURE_ENRICH_ENDPOINT`, `SLACK_WEBHOOK_URL` | tool Lead capture |
-| `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` | webhook WhatsApp |
-| `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SHOPIFY_SCOPES` | OAuth multi-tenant dell'App pubblica Shopify (vedi sezione Shopify) |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, `GOOGLE_SCOPES` | OAuth Google Gmail/Calendar (vedi sezione Google) |
-| `TENANT_STORE_KEY` | cifratura tenant store — **mai usare il default `dev-tenant-key` in prod** (store su filesystem: non persistente su serverless) |
+| `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SHOPIFY_SCOPES`, `SHOPIFY_REDIRECT_URI`, `SHOPIFY_WEBHOOK_ADDRESS`, `SHOPIFY_TOKEN_ENCRYPTION_KEY` | OAuth Shopify (public app) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, `GOOGLE_SCOPES` (= `gmail.modify calendar spreadsheets`) | OAuth Google (Gmail/Calendar/Sheets) |
+| `STRIPE_CONNECT_CLIENT_ID` (`ca_...`), `NOTION_OAUTH_CLIENT_ID/SECRET` (`3d5d87...`), `SLACK_CLIENT_ID/SECRET` + `SLACK_SIGNING_SECRET`, `HUBSPOT_CLIENT_ID/SECRET` (`575f16...`), `GOOGLE_SHEETS` riusa Google client | Generic 5 provider (`tenant_integrations`, Edge Functions proxy) — vedi `docs/integrations-setup.md` |
+| `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | JS SDK PayPal (client, non secret) |
+| `LEAD_CAPTURE_ENDPOINT`, `SLACK_WEBHOOK_URL` | Lead capture (opzionale) |
+| `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` | WhatsApp (opzionale) |
+| `TENANT_STORE_KEY` + `INTEGRATIONS_TOKEN_ENCRYPTION_KEY` / `GOOGLE_TOKEN_ENCRYPTION_KEY` | Cifratura AES-256-GCM app-level per `shopify_connections`, `google_connections`, `tenant_integrations` — mai `dev-tenant-key` in prod |
 
 ### Runtime / feature flags
 
@@ -267,48 +283,30 @@ revocano su 401 (APP_UNINSTALLED / shop/redact). La tabella
 
 ---
 
-## Google (Gmail + Calendar) — OAuth multi-tenant
+## Google (Gmail + Calendar + Sheets) — OAuth multi-tenant
 
-Integrazione con Gmail e Google Calendar (stesso pattern della OAuth Shopify:
-token cifrati AES-256-GCM in `google_connections`, RLS per utente, niente
-INSERT dal client). Il codice (`src/lib/google/*`, `/api/auth/google/*`)
-consuma solo env var — il setup Google Cloud è manuale:
+Gmail/Calendar/Sheets (stesso pattern Shopify: token AES-256-GCM in `google_connections` per Gmail/Calendar e `tenant_integrations` `google_sheets` per Sheets, RLS `auth.uid()::text = tenant_id` con `__tenant__` per admin via code). Codice `src/lib/google/*` + `src/lib/integrations/providers/googleSheets.ts`:
 
-1. **Google Cloud Console** → crea un progetto → **APIs & Services → OAuth consent screen** (External).
-2. Abilita **Gmail API** e **Google Calendar API** nel progetto.
-3. **Credentials → Create credentials → OAuth client ID** (Web application):
-   - **Authorized redirect URIs**: `https://<host>/api/auth/google/callback`
-     (in dev: `http://localhost:3000/api/auth/google/callback`)
-4. Scope **solo lettura** ("sensitive", non "restricted"):
-   `https://www.googleapis.com/auth/gmail.readonly`,
-   `https://www.googleapis.com/auth/calendar.readonly` (override: `GOOGLE_SCOPES`).
-5. Env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`,
-   `GOOGLE_TOKEN_ENCRYPTION_KEY` (fallback: `TENANT_STORE_KEY`).
+1. **Google Cloud Console** → OAuth consent screen (External), abilita **Gmail API**, **Calendar API**, **Sheets API**.
+2. **Credentials → OAuth client ID** (Web): **Authorized redirect URIs** `https://<host>/api/auth/google/callback` (Gmail/Calendar) e `https://<host>/api/integrations/google_sheets/callback` (Sheets, ma per admin riusa il primo già whitelistato).
+3. Scope: `gmail.modify`, `calendar`, `spreadsheets` (override `GOOGLE_SCOPES` = `gmail.modify calendar spreadsheets`).
+4. Env: `GOOGLE_CLIENT_ID/SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, `INTEGRATIONS_TOKEN_ENCRYPTION_KEY`.
 
-Flusso runtime: `/api/auth/google/connect` (nonce anti-CSRF in cookie httpOnly
-+ `state` con `user_id`) → `/api/auth/google/callback` (verifica state, exchange
-code, userinfo, upsert cifrato in `google_connections`). Errori e denial
-rientrano su `/dashboard?google=error&reason=...` — mai pagina bianca. La
-tabella `google_connections` è creata da `supabase/schema-google-oauth.sql`
-(rieseguire dopo il deploy).
+Flusso: `/api/auth/google/connect` (Gmail/Calendar) o `/api/integrations/google_sheets/authorize` (Sheets, per admin usa `__tenant__`) → callback → upsert cifrato. Refresh 5m (`lib/google/token.ts` e `supabase/functions/google-sheets-proxy`).
 
-Fasi 3-4 (implementate): **refresh token** automatico (`src/lib/google/token.ts`,
-margine 5 minuti, aggiorna `access_token`/`expires_at` cifrati in DB) e
-**proxy API tipizzato** (`src/lib/google/api-proxy.ts` + route
-`POST /api/google/proxy` con sessione obbligatoria) con le azioni readonly
-`list_emails` (Gmail) e `get_calendar_events` (Calendar). Gli agenti
-chiamano lo stesso modulo con lo `userId` dal contesto di run — mai token o
-HTTP diretti dal client.
+## Generic Integrations (Stripe/Notion/Slack/HubSpot/Google Sheets) — multi-tenant
 
-Agenti collegati: **Email Manager** → tool `list_emails` (default);
-**Calendar Booking** → tool `get_calendar_events` (default) e
-`calendar_search_availability` ora legge il calendario personale dell'utente
-dalla connessione OAuth (`google_connections`) con fallback alle env legacy
-`GOOGLE_CALENDAR_ACCESS_TOKEN`/`GOOGLE_CALENDAR_CALENDAR_ID`.
-`calendar_book_event` resta sulle credenziali legacy finché non si attivano
-gli scope di scrittura (Fase 5, opzionale: `gmail.send`, `calendar.events`,
-con guardrail di conferma esplicita in UI).
+Nuovo layer generico (separato da Shopify): tabella `tenant_integrations` (`tenant_id text` per `__tenant__`, `provider`, `status`, `access_token`/`refresh_token` cifrati, `unique(tenant_id,provider)`, RLS) + Edge Functions proxy (`supabase/functions/*-proxy`) + adapter `lib/integrations/providers/*` con interfaccia `IntegrationProvider`. Setup in `docs/integrations-setup.md` (5 provider, redirect `.../api/integrations/<provider>/callback`). UI: `/dashboard/integrations` (42 app, 8 disponibili + 34 Prossimamente, Microsoft/Google suite) e `/agents/[slug]` (card integrazioni con **Già connesso** se già in `tenant_integrations`).
 
-End-to-end: dopo il deploy, applica `supabase/schema-google-oauth.sql` in
-Supabase, poi ogni utente collega l'account da `/dashboard` (bottone
-"Collega account Google" → `/api/auth/google/connect`).
+Admin via codice (`ACCESS_CODE=T5PMY2R2`, `__tenant__`): nessun `auth.users`, connessioni su tenant condiviso, badge rimosso da `/account`, ma Google/Sheets ora funzionano anche da admin (fix `tenant_id text` + `hasPlatformAccess`).
+
+## Billing — Stripe + PayPal
+
+Stripe Checkout dinamico (`priceCents`) con **Klarna** e **Amazon Pay** (`payment_method_types: card,klarna,amazon_pay` su `checkout` e `cart/checkout`), PayPal Billing Subscriptions (`lib/paypal/client.ts` REST `sandbox|live` via `PAYPAL_MODE`, `PAYPAL_CLIENT_ID/SECRET`, `PAYPAL_WEBHOOK_ID=53242420YL...`) — `POST /api/billing/paypal/create` (riusa `PAYPAL_PLAN_*` o crea product/plan al volo) + webhook `POST /api/billing/paypal/webhook` mirror Stripe su `subscriptions`/`user_agents`. Gestione in **I miei abbonamenti** (`/dashboard/subscriptions`) + Stripe Customer Portal (`/api/billing/portal`).
+
+## Account unificato + Carrello + Bundle
+
+- **Account**: `/account` unifica profilo + piano/connessioni + impostazioni (lingua/notifiche/aspetto/privacy/dati) — `/settings` redirect a `/account`, nav `DashboardShell` aggiornata.
+- **Carrello**: `CartProvider` con `localStorage` + `tenant_integrations` merge (bundle `bundle:slug` + `bundle_period_*`), badge rosso `bg-red-500` immediato, `Svuota carrello` pulisce anche `bundle_period_*`, checkout multi-agente `cart/checkout` con Klarna/Amazon Pay.
+- **Bundle**: pricing coerente `calcPricing` con sconti `monthly 12% / quarterly 22% / yearly 35%` vs somma singoli (`€9,99/€14,99`), `BundleCard` `min-h-[100px] mode wait` senza overlap `AnimatedSavingsCounter`.
+- **Marketplace**: `AgentCard` + `MarketplaceGrid` mostrano **Già acquistato** (emerald) e CTA **Apri in chat** (`/chat?agent=slug`) quando `user_agents` `status=active` (`GET /api/user/owned`), altrimenti `Aggiungi al carrello`.

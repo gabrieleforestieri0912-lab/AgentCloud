@@ -1,13 +1,14 @@
-# Stripe Payment Links Setup Guide
+# Billing Setup Guide — Stripe + PayPal (Klarna / Amazon Pay)
 
 ## Overview
 
-AgentCloud uses **Stripe Payment Links** for billing. This is a simple, secure system where:
+AgentCloud uses **Stripe + PayPal** for billing. Both providers write to the **same** Supabase tables (`subscriptions` / `user_agents`, PayPal flagged via `config.paypal`).
 
-- Payment links are created once in Stripe Dashboard (no code)
-- Links are stored as environment variables
-- Customers are redirected to Stripe's hosted payment page
-- Webhooks automatically activate subscriptions
+- **Stripe Payment Links** — created once in Stripe Dashboard, stored as env vars, customers redirected to Stripe hosted page
+- **Stripe Checkout (dynamic)** — `POST /api/checkout` and `POST /api/cart/checkout` create Checkout Sessions with dynamic `priceCents` from the catalog (no pre-created Stripe product needed), with **Klarna** and **Amazon Pay** enabled via `payment_method_types: card,klarna,amazon_pay` (Dashboard + code — see §5b)
+- **PayPal Billing Subscriptions** — `POST /api/billing/paypal/create` + webhook `POST /api/billing/paypal/webhook` mirror Stripe on the same tables (see §5c)
+- Webhooks automatically activate subscriptions for either provider
+- Subscription management via **I miei abbonamenti** (`/dashboard/subscriptions`) + **Stripe Customer Portal** (`/api/billing/portal`); PayPal subscriptions are managed via the PayPal dashboard
 
 ## Step 1: Create Stripe Account
 
@@ -94,6 +95,16 @@ NEXT_PUBLIC_URL=http://localhost:3000
 STRIPE_PAYMENT_LINK_SHOPIFY_AGENT=https://buy.stripe.com/...
 STRIPE_PAYMENT_LINK_EMAIL_MANAGER=https://buy.stripe.com/...
 # ... (one per catalog agent, slug → uppercase with underscores)
+
+# PayPal — Billing Subscriptions (alongside Stripe, same tables)
+PAYPAL_CLIENT_ID=your_paypal_client_id
+PAYPAL_CLIENT_SECRET=your_paypal_client_secret
+PAYPAL_MODE=sandbox # sandbox | live
+PAYPAL_WEBHOOK_ID=WH-... # or e.g. 53242420YL... — PayPal webhook ID for signature verification
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=your_paypal_client_id # client ID for JS SDK (no secret)
+# Optional: reuse pre-created PayPal Billing Plans (one per agent, otherwise created on the fly)
+# PAYPAL_PLAN_SHOPIFY_AGENT=P-...
+# PAYPAL_PLAN_EMAIL_MANAGER=P-...
 ```
 
 ### Agent Slug Mapping
@@ -157,6 +168,62 @@ lo salva nella config dell'agente e il dashboard mostra il chip
 e i run vengono bloccati (402). Fino ad allora l'accesso resta attivo fino
 alla fine del periodo pagato.
 
+> **Gestione unificata:** `/dashboard/subscriptions` (**I miei abbonamenti**) mostra sia
+> abbonamenti Stripe che PayPal (badge **PayPal** quando `user_agents.config.paypal === true`,
+> **Stripe** quando `config.stripeSubscriptionItemId` è presente). Le fatture Stripe sono nel
+> Customer Portal; quelle PayPal nel dashboard PayPal. Entrambi i provider scrivono sulle stesse
+> tabelle `subscriptions` / `user_agents` (PayPal riusa `stripe_subscription_id` per l'ID `I-...`).
+
+### 5b. Klarna & Amazon Pay — Stripe Checkout (`payment_method_types: card,klarna,amazon_pay`)
+
+Checkout dinamico e carrello multi-agente usano **Stripe Checkout Sessions** con tre metodi abilitati:
+
+```ts
+// src/app/api/checkout/route.ts:74  — singolo agente
+payment_method_types: ["card", "klarna", "amazon_pay"]
+// src/app/api/cart/checkout/route.ts:54 — carrello (N agenti, N line_items)
+payment_method_types: ["card", "klarna", "amazon_pay"]
+```
+
+**Abilitazione:**
+
+1. **Stripe Dashboard → Settings → Payments → Payment methods** → attiva **Klarna** e **Amazon Pay** (oltre a Card). Senza questo, Checkout rifiuta `payment_method_types` non abilitati.
+2. **Codice già configurato** nei due endpoint sopra — nessun env aggiuntivo. Il prezzo è dinamico (`priceCents` del catalogo, `price_data` con `currency: eur`, `recurring: month`).
+3. Verifica in **test mode** con le carte/metodi di test Stripe; Klarna e Amazon Pay compaiono automaticamente nel Checkout se abilitati e disponibili per `EUR`.
+
+### 5c. PayPal Billing Subscriptions — alongside Stripe (same tables)
+
+PayPal è alternativo a Stripe e **scrive sugli stessi `subscriptions` / `user_agents`** (flag `config.paypal`).
+
+**Env richieste (nessun secret hardcodato, solo placeholder):**
+
+```env
+PAYPAL_CLIENT_ID=your_paypal_client_id
+PAYPAL_CLIENT_SECRET=your_paypal_client_secret
+PAYPAL_MODE=sandbox # sandbox | live
+PAYPAL_WEBHOOK_ID=WH-... # PayPal webhook ID per verify-webhook-signature
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=your_paypal_client_id # JS SDK (client, non secret)
+# Opzionale — riusa plan già creati:
+PAYPAL_PLAN_SHOPIFY_AGENT=P-...
+PAYPAL_PLAN_EMAIL_MANAGER=P-...
+```
+
+**Come funziona:**
+
+- `POST /api/billing/paypal/create` (`src/app/api/billing/paypal/create/route.ts`) — richiede `agentId`, verifica `isAvailable` + `isPayPalConfigured()`, riusa `PAYPAL_PLAN_<AGENT>` se presente altrimenti crea **product + billing plan** al volo via `src/lib/paypal/client.ts` (`/v1/catalogs/products`, `/v1/billing/plans` — `interval_unit: MONTH`, `total_cycles: 0`, `auto_bill_outstanding: true`), poi crea la subscription (`/v1/billing/subscriptions` con `custom_id: {agent_id, user_id, source}`) e restituisce `approveUrl` per il redirect utente.
+- `POST /api/billing/paypal/webhook` (`src/app/api/billing/paypal/webhook/route.ts`) — verifica firma via `verifyPayPalWebhook` (`/v1/notifications/verify-webhook-signature` con `PAYPAL_WEBHOOK_ID`; se non impostato, skip best-effort). Eventi:
+  - `BILLING.SUBSCRIPTION.ACTIVATED` → `upsert` su `subscriptions` (`stripe_subscription_id = PayPal I-...`, `status: active`) + `user_agents` (`status: active`, `config: {paypal: true, subscriptionId}`, `cancelled_at: null`)
+  - `BILLING.SUBSCRIPTION.CANCELLED` / `SUSPENDED` → `status: canceled` su entrambe le tabelle
+  - Mirror dello stesso flow Stripe, acceso/spento via presenza di `PAYPAL_CLIENT_ID/SECRET`.
+- Client REST in `src/lib/paypal/client.ts` — `PAYPAL_MODE=sandbox|live` seleziona `api-m.sandbox.paypal.com` vs `api-m.paypal.com`, OAuth `client_credentials` → `access_token`.
+
+**Setup Dashboard PayPal:**
+
+1. Crea app in **PayPal Developer Dashboard** → ottieni `Client ID` / `Secret` per `sandbox` e `live`.
+2. Crea webhook su `https://yourdomain.com/api/billing/paypal/webhook` per eventi `BILLING.SUBSCRIPTION.ACTIVATED`, `BILLING.SUBSCRIPTION.CANCELLED`, `BILLING.SUBSCRIPTION.SUSPENDED` (e opz. `PAYMENT.SALE.COMPLETED`) → copia **Webhook ID** (`WH-...` o `53242420YL...`) in `PAYPAL_WEBHOOK_ID`.
+3. Per `live`, usa credenziali live e `PAYPAL_MODE=live`.
+4. Opzionale: crea manualmente Billing Plans e metti i `P-...` in `PAYPAL_PLAN_*` per evitare creazione al volo.
+
 ## Step 6: Configure Supabase Database
 
 Run the schema from `supabase/schema.sql` in your Supabase SQL Editor:
@@ -198,12 +265,25 @@ stripe listen --forward-to localhost:3000/api/billing/webhook
 stripe trigger checkout.session.completed
 ```
 
-### Test Full Flow
+### Test Full Flow — Stripe
 
 1. Visit payment link URL
 2. Complete test payment (use Stripe test card: `4242 4242 4242 4242`)
 3. Check Supabase `subscriptions` table for new entry
 4. Check `user_agents` table for activated agent
+
+### Test Full Flow — Stripe Checkout (Klarna / Amazon Pay)
+
+1. `POST /api/checkout` con `{agentId}` o `POST /api/cart/checkout` (carrello) → ottieni `url`
+2. Apri `url` in test mode → verifica che **Card, Klarna, Amazon Pay** compaiano (se abilitati in Dashboard)
+3. Completa con metodo di test → webhook `checkout.session.completed` attiva come sopra
+
+### Test Full Flow — PayPal (sandbox)
+
+1. Imposta `PAYPAL_MODE=sandbox` + credenziali sandbox + `PAYPAL_WEBHOOK_ID` del webhook sandbox
+2. `POST /api/billing/paypal/create` con `{agentId}` → ottieni `approveUrl`
+3. Approva su sandbox PayPal → webhook `BILLING.SUBSCRIPTION.ACTIVATED` scrive su `subscriptions`/`user_agents` (`config.paypal: true`)
+4. Verifica badge **PayPal** in `/dashboard/subscriptions` e cancellazione via `BILLING.SUBSCRIPTION.CANCELLED`
 
 ## Step 8: Configure Feature Flags (Optional)
 
@@ -286,6 +366,7 @@ Set all environment variables in your hosting platform (Vercel, Railway, etc.):
 - `STRIPE_SECRET_KEY` (use live key `sk_live_`)
 - `STRIPE_WEBHOOK_SECRET`
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (use live key `pk_live_`)
+- PayPal (if active): `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE=live`, `PAYPAL_WEBHOOK_ID`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID`, optional `PAYPAL_PLAN_*`
 - Supabase credentials
 - Resend API key
 
@@ -303,7 +384,7 @@ Set all environment variables in your hosting platform (Vercel, Railway, etc.):
 
 ## How It Works
 
-### Payment Flow
+### Payment Flow — Stripe Payment Links (manual)
 
 ```
 1. Sales person closes deal via email
@@ -320,6 +401,36 @@ Set all environment variables in your hosting platform (Vercel, Railway, etc.):
    ↓
 7. Customer can now access the agent
 ```
+
+### Payment Flow — Stripe Checkout (dynamic, Klarna/Amazon Pay) + Cart
+
+```
+1. User clicks “Buy” on agent card / cart → POST /api/checkout or /api/cart/checkout
+   ↓
+2. Server creates Stripe Checkout Session (payment_method_types: card,klarna,amazon_pay,
+   price_data from catalog priceCents, EUR, monthly)
+   ↓
+3. Redirect to Stripe Checkout (Card + Klarna + Amazon Pay if enabled in Dashboard)
+   ↓
+4. checkout.session.completed → webhook activates subscriptions + user_agents,
+   clears cart, badge Già acquistato
+```
+
+### Payment Flow — PayPal Billing Subscriptions
+
+```
+1. User chooses PayPal → POST /api/billing/paypal/create (plan reused or created)
+   ↓
+2. Redirect to PayPal approveUrl
+   ↓
+3. PayPal sends BILLING.SUBSCRIPTION.ACTIVATED to /api/billing/paypal/webhook
+   ↓
+4. Webhook mirrors Stripe: upsert subscriptions + user_agents (config.paypal:true)
+   ↓
+5. /dashboard/subscriptions shows PayPal badge; managed via PayPal dashboard
+```
+
+> **Unified storage:** Both Stripe and PayPal write to the same `subscriptions` (ledger, `stripe_subscription_id` reused for PayPal `I-...`) and `user_agents` (authoritative ownership, `config.paypal` flag) tables. Management is unified in `/dashboard/subscriptions`; Stripe adds Customer Portal (`/api/billing/portal`).
 
 ### Metadata Flow
 

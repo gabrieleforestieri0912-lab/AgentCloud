@@ -12,6 +12,7 @@
 >   (+ alias `https://agentcloud.agency/api/integrations/<provider>/callback` if your Vercel project still accepts the apex — the proxy 308s apex → www, but registering both avoids mismatch).
 >
 > After completing a provider section, tick the checkbox and paste the env values into `.env.local` only.
+> **Note 2026-09:** `supabase/migrations/` è stata rimossa — single source è `supabase/schema-integrations.sql` (rieseguibile). `tenant_integrations.tenant_id` è ora `text` per supportare admin via codice `__tenant__`. Il catalogo `/integrations` mostra **42 app** (8 disponibili + 34 *Prossimamente*, incluse suite Microsoft/Google estese) ma i 5 provider OAuth generici restano Stripe/Notion/Slack/HubSpot/Google Sheets — PayPal è billing separato (`PAYPAL_*`), non generico.
 
 ---
 
@@ -130,18 +131,18 @@ HUBSPOT_CLIENT_SECRET=...
 
 ---
 
-## 5) Google Sheets — reuse existing Google Cloud OAuth client
+## 5) Google Sheets — reuse existing Google Cloud OAuth client (now also via generic)
 
-**Explicitly: do NOT create a new OAuth client.** AgentCloud already has a Google Cloud OAuth consent screen + Web Application client (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` used for Gmail/Calendar). Sheets reuses it.
+**Explicitly: do NOT create a new OAuth client.** AgentCloud already has a Google Cloud OAuth consent screen + Web Application client (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` used for Gmail/Calendar). Sheets reuses it **ma ora ha anche un flow generico** `.../api/integrations/google_sheets/callback` (per tenant `__tenant__` admin via code, con `tenant_id text`).
 
 **Dashboard:** https://console.cloud.google.com → Select the **same project** used for Gmail/Calendar → **APIs & Services → OAuth consent screen** and **Credentials**
 
 1. [ ] **OAuth consent screen → Scopes → Add scopes** → Add:
    * `https://www.googleapis.com/auth/spreadsheets`
-   * Keep existing `gmail.modify` + `calendar` scopes already approved. Do not remove them.
-2. [ ] **Credentials → OAuth 2.0 Client IDs → [existing Web application]** → **Authorized redirect URIs** → verify the existing entry still includes the handler used by the Google proxy (e.g. `https://www.agentcloud.agency/api/auth/google/callback` or the Supabase callback — **do NOT change Sheets to `/api/integrations/google_sheets/callback` as a new URI on the Google side**). Sheets flow reuses the existing Google OAuth flow:
-   * Sheets tokens are obtained via the **same** Google authorize endpoint (`https://accounts.google.com/o/oauth2/v2/auth`) with the extra `spreadsheets` scope appended. No separate Hub registration is needed; the Env vars remain the existing pair.
-   * If you prefer a dedicated Sheets callback at `/api/integrations/google_sheets/callback`, confirm with me first — **fallback is reuse of the existing Google client & callback**, which the provider adapter for `google_sheets` will implement by adding the spreadsheets scope to the shared `buildGoogleConsentUrl` flow rather than creating a duplicate client.
+   * Keep existing `gmail.modify` + `calendar` + `spreadsheets` (ora `GOOGLE_SCOPES` include tutti e tre).
+2. [ ] **Credentials → OAuth 2.0 Client IDs → [existing Web application]** → **Authorized redirect URIs** → aggiungi **entrambi**:
+   * `https://www.agentcloud.agency/api/auth/google/callback` (Gmail/Calendar legacy)
+   * `https://www.agentcloud.agency/api/integrations/google_sheets/callback` (generic, necessario per admin `__tenant__` e per `supabase/functions/google-sheets-proxy`) + le varianti `http://localhost:3000/...` per dev. Sheets può riusare il primo se già whitelistato, ma aggiungere il secondo evita `redirect_uri_mismatch` per il flow generico.
 3. [ ] **No new env vars** — reuse:
    ```env
    GOOGLE_CLIENT_ID=...          # already in .env.local
