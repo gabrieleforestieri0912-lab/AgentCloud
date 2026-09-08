@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, Check, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { ShoppingCart, Check, Loader2, MessageSquare } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useLanguage } from "./LanguageProvider";
+import { useOwned } from "@/hooks/useOwned";
 
 export default function AddToCartButton({
   slug,
@@ -15,11 +17,25 @@ export default function AddToCartButton({
   className?: string;
 }) {
   const { add, isInCart } = useCart();
+  const { isOwned } = useOwned();
   const { locale } = useLanguage();
   const isIt = locale === "it";
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const owned = isOwned(slug);
   const inCart = isInCart(slug);
+
+  if (owned) {
+    return (
+      <Link
+        href={`/chat?agent=${slug}`}
+        className={`inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 ${className} ${compact ? "!px-3 !py-1.5 !text-xs" : ""}`}
+      >
+        <MessageSquare size={15} />
+        {isIt ? "Apri in chat" : "Open in chat"}
+      </Link>
+    );
+  }
 
   async function handle() {
     if (inCart) return;

@@ -9,12 +9,13 @@
  * correlati in home.
  */
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock, Users, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, Users, Zap, MessageSquare } from "lucide-react";
 import type { Agent } from "@/lib/agents";
 import { isAvailable } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
 import { useLanguage } from "./LanguageProvider";
 import AddToCartButton from "./AddToCartButton";
+import { useOwned } from "@/hooks/useOwned";
 
 type AgentCardProps = {
   agent: Agent;
@@ -30,6 +31,8 @@ export default function AgentCard({
   comingSoonTag = false,
 }: AgentCardProps) {
   const { dict, locale } = useLanguage();
+  const { isOwned } = useOwned();
+  const owned = isOwned(agent.slug);
   const isAgentAvailable = available ?? isAvailable(agent.slug);
   const isIt = locale === "it";
 
@@ -55,7 +58,12 @@ export default function AgentCard({
         <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-500/[0.04] to-purple-500/[0.04] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       )}
 
-      {(!isAgentAvailable || comingSoonTag) && (
+      {owned && isAgentAvailable ? (
+        <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-300">
+          <CheckCircle2 size={12} />
+          {isIt ? "Già acquistato" : "Owned"}
+        </div>
+      ) : (!isAgentAvailable || comingSoonTag) && (
         <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-400">
           <Clock size={12} />
           {dict.agentCard.comingSoon}
