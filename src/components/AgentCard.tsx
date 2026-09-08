@@ -9,7 +9,7 @@
  * correlati in home.
  */
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock, MessageSquare, Users, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, Users, Zap } from "lucide-react";
 import type { Agent } from "@/lib/agents";
 import { isAvailable } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
@@ -31,7 +31,6 @@ export default function AgentCard({
 }: AgentCardProps) {
   const { dict, locale } = useLanguage();
   const isAgentAvailable = available ?? isAvailable(agent.slug);
-  const chatHref = `/chat?agent=${agent.slug}`;
   const isIt = locale === "it";
 
   const persuasiveTagline =
@@ -40,7 +39,6 @@ export default function AgentCard({
       : `Perfect for ${agent.industry} — setup ${agent.setupTime.toLowerCase()}`;
 
   const benefitsTitle = isIt ? "Cosa ottieni" : "What you get";
-  const ctaSubtext = isIt ? "Attiva ora" : "Activate now";
   const setupLabel = isIt ? "Setup" : "Setup";
 
   return (
@@ -142,28 +140,11 @@ export default function AgentCard({
         </div>
 
         {isAgentAvailable && (
-          <div className="relative z-20 mt-4 grid grid-cols-2 gap-2">
+          <div className="relative z-20 mt-4">
             <AddToCartButton slug={agent.slug} className="w-full justify-center py-2.5 text-sm" />
-            <Link
-              href={chatHref}
-              aria-label={`${dict.agentCard.buy} ${agent.name}`}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-brand-500 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 hover:shadow-brand-500/30"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {ctaSubtext}
-              <ArrowRight size={14} />
-            </Link>
           </div>
         )}
       </div>
-      <Link
-        href="/chat"
-        className="relative z-20 mt-3 inline-flex items-center justify-center gap-1 text-xs font-bold text-neutral-500 hover:text-brand-400 transition-colors"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <MessageSquare size={12} />
-        {isIt ? "Parla con un esperto" : "Talk to an expert"}
-      </Link>
 
       {/* Overlay cliccabile dell'intera card (tranne la CTA) */}
       {isAgentAvailable && (
