@@ -122,14 +122,11 @@ export async function proxy(request: NextRequest) {
   const isAccessVisitor =
     request.cookies.get(ACCESS_COOKIE)?.value === "1" || hasAccessParam;
 
-  // Le rotte marketing pubbliche (home, agents, bundles, ecc.) sono
-  // accessibili anche durante la fase waitlist così il catalogo e i bundle
-  // sono visibili. La navigazione interna (/account, /settings, /dashboard)
-  // resta bloccata senza autenticazione.
-  const isPublicMarketing =
-    isPublicPath(pathname) && !pathname.startsWith("/api/");
-
-  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute && !isPublicMarketing) {
+  // Durante la fase waitlist TUTTE le pagine (anche marketing: /, /agents,
+  // /bundles, /demo) restano bloccate su /waitlist per i visitatori senza
+  // accesso. Solo /waitlist, gli asset/API pubbliche e le route auth restano
+  // raggiungibili; autenticati / possessori di ac_access passano ovunque.
+  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
     if (!isAccessVisitor) {
       // Prima prova la sessione Supabase: utenti autenticati passano.
       // Se resolveSession lancia un errore (Supabase down, timeout, ecc.)
@@ -171,14 +168,14 @@ export async function proxy(request: NextRequest) {
     return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
   }
 
-  // ─── Rotte esenti da auth: waitlist, auth, marketing pubbliche, API pubbliche, asset ─
+  // ─── Rotte esenti da auth: waitlist, auth, API pubbliche, asset ─
   // Queste non devono mai causare redirect a /waitlist o 401 — altrimenti
-  // /waitlist stessa va in loop e le pagine pubbliche / API pubbliche diventano
-  // inaccessibili agli utenti non autenticati (causa del "too many redirects").
+  // /waitlist stessa va in loop (causa "too many redirects"). Tutte le altre
+  // pagine (anche marketing) ricadono nel gate waitlist qui sotto.
   const isAsset = pathname.startsWith("/_next/") || pathname.includes(".");
   const isApiPublic = pathname.startsWith("/api/") && isPublicPath(pathname);
   const isExempt =
-    isWaitlistRoute || isAuthRoute || isPublicMarketing || isAsset || isApiPublic;
+    isWaitlistRoute || isAuthRoute || isAsset || isApiPublic;
   if (isExempt) {
     try {
       const { response } = await resolveSession(request);
