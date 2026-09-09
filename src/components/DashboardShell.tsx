@@ -47,7 +47,7 @@ export default function DashboardShell({
             </span>
             <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
           </Link>
-          <button onClick={() => setMobileOpen(false)} className="lg:hidden rounded-lg p-1 text-neutral-500 hover:text-white">
+          <button onClick={() => setMobileOpen(false)} className="lg:hidden flex h-11 w-11 items-center justify-center rounded-lg text-neutral-500 hover:text-white">
             <X size={16} />
           </button>
         </div>
@@ -77,7 +77,7 @@ export default function DashboardShell({
         <div className="flex items-center gap-2 border-b border-white/5 bg-neutral-950/90 px-4 py-2 lg:hidden">
           <button
             onClick={() => setMobileOpen(true)}
-            className="rounded-lg border border-white/10 bg-white/5 p-2 text-neutral-400 hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-neutral-400 hover:text-white"
           >
             <Menu size={16} />
           </button>
