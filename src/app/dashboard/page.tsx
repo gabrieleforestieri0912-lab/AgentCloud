@@ -252,63 +252,19 @@ export default async function DashboardPage({
 
   // ── Preview con dati falsi ──────────────────────────────────────────
   // Quando non ci sono dati reali (nuovo utente / mock admin appena creato),
-  // mostra un'anteprima realistica così l'utente capisce come apparirà la
-  // dashboard dopo l'uso. I dati sono solo visuali, marcati come anteprima.
-  const isPreview = installed.length === 0 && dbAvailable;
-  let displayInstalled = installed;
-  let displayTotalRuns = totalRuns;
-  let displayTotalTokens = totalTokens;
-  let displayDailyBuckets = dailyBuckets;
-  let displayOverageCents = overageCentsTotal;
-  let previewBanner = false;
-  if (isPreview) {
-    previewBanner = true;
-    const fakeSlugs = ["shopify-agent", "email-manager", "lead-capture"] as const;
-    const fakeRuns = [42, 18, 27];
-    const fakeTokens = [128000, 86000, 94000];
-    const nowIso = new Date().toISOString();
-    displayInstalled = fakeSlugs.map((slug, i) => {
-      const catalog = AGENTS.find((a) => a.slug === slug)!;
-      const localized = localizeAgent(catalog, locale);
-      return {
-        slug,
-        status: "active",
-        runs: fakeRuns[i]!,
-        tokens: fakeTokens[i]!,
-        lastRun: new Date(Date.now() - i * 3600_000 * 5).toISOString(),
-        agent: localized,
-        runtimeName: catalog.name,
-        config: {} as Record<string, unknown>,
-      } as InstalledAgent;
-    });
-    displayTotalRuns = fakeRuns.reduce((a, b) => a + b, 0);
-    displayTotalTokens = fakeTokens.reduce((a, b) => a + b, 0);
-    // 7 giorni di bucket fake con andamento realistico
-    displayDailyBuckets = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      d.setDate(d.getDate() - (6 - i));
-      const key = d.toISOString().slice(0, 10);
-      const base = [6, 9, 4, 12, 7, 15, 11][i] ?? 5;
-      return {
-        date: key,
-        label: dayLabels[d.getDay()],
-        runs: base,
-        tokens: base * 2800 + Math.floor(Math.random() * 800),
-      };
-    });
-    // Ricalcola overage fake (nessun overage in preview, ma mostra usage)
-    displayOverageCents = 0;
-  }
+  const displayInstalled = installed;
+  const displayTotalRuns = totalRuns;
+  const displayTotalTokens = totalTokens;
+  const displayDailyBuckets = dailyBuckets;
+  const displayOverageCents = overageCentsTotal;
+  const previewBanner = false;
 
-  const displayStatCards: Array<[string, string, typeof Zap]> = isPreview
-    ? [
+  const displayStatCards: Array<[string, string, typeof Zap]> = [
         [String(displayInstalled.length), dict.dashboard.statInstalledAgents, Zap],
         [formatCount(displayTotalRuns), dict.dashboard.statRunsThisMonth, Activity],
         [formatCount(displayTotalTokens), dict.dashboard.statTokensUsed, CheckCircle2],
         [String(displayInstalled.filter((a) => a.status === "active").length), dict.dashboard.statActiveAgents, AlertCircle],
-      ]
-    : statCards;
+      ];
 
   return (
     <DashboardShell email={email}>
