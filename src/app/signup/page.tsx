@@ -97,6 +97,30 @@ export default function SignupPage() {
       // chiede all'utente di controllare la casella; altrimenti si va
       // direttamente alla dashboard.
       if (data.session) {
+        // Beta access: complete waitlist redemption if pending session cookie exists
+        if (process.env.NEXT_PUBLIC_ENABLE_WAITLIST_BETA_BYPASS === "true") {
+          const sessionMatch = document.cookie.match(/waitlist_session=([^;]+)/);
+          const sessionToken = sessionMatch?.[1];
+          if (sessionToken) {
+            try {
+              const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+              const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+              await fetch(`${supabaseUrl}/functions/v1/complete-waitlist-redemption`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${data.session.access_token}`,
+                  "apikey": anonKey,
+                },
+                body: JSON.stringify({ session_token: sessionToken }),
+              });
+            } catch {
+              // Non-blocking: user still has normal account
+            }
+            // Clear the cookie
+            document.cookie = "waitlist_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          }
+        }
         router.push("/dashboard");
         router.refresh();
       } else {

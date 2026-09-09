@@ -132,6 +132,34 @@ export default function LoginPage() {
       // Accesso riuscito: reset contatore tentativi
       resetClientAttemptThrottle("login_attempt");
 
+      // Beta access: complete waitlist redemption if pending session cookie exists
+      if (process.env.NEXT_PUBLIC_ENABLE_WAITLIST_BETA_BYPASS === "true") {
+        const sessionMatch = document.cookie.match(/waitlist_session=([^;]+)/);
+        const sessionToken = sessionMatch?.[1];
+        if (sessionToken) {
+          try {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+            const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) {
+              await fetch(`${supabaseUrl}/functions/v1/complete-waitlist-redemption`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${session.access_token}`,
+                  "apikey": anonKey,
+                },
+                body: JSON.stringify({ session_token: sessionToken }),
+              });
+            }
+          } catch {
+            // Non-blocking: user still has normal account
+          }
+          // Clear the cookie
+          document.cookie = "waitlist_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        }
+      }
+
       // Riprende una connessione OAuth in sospeso (es. install Shopify) dopo
       // il login — la route è un redirect API verso il provider esterno,
       // quindi serve una navigazione piena, non un routing client-side.
