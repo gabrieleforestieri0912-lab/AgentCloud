@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
 import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getSessionUser } from "@/lib/supabase/server";
 
 import { pageSeo } from "@/lib/seo";
@@ -26,6 +27,7 @@ export default async function ChatPage(props: {
   searchParams?: Promise<{ q?: string; agent?: string }>;
 }) {
   const locale = await getLocale();
+  const dict = getDictionary(locale);
   const user = await getSessionUser();
   // I possessori del codice saltano del tutto il login: il codice concede
   // accesso alla piattaforma senza account Supabase. Non hanno agenti
@@ -50,6 +52,10 @@ export default async function ChatPage(props: {
       slug,
       name: AGENT_RUNTIME[slug]?.name ?? slug,
     }));
+  }
+  // La chat è sempre usabile con l'assistente generico, anche senza agenti acquistati
+  if (availableAgents.length === 0) {
+    availableAgents = [{ slug: "", name: dict.chat.assistantName }];
   }
 
   // Quando la CTA del marketplace apre la chat per un agente specifico
