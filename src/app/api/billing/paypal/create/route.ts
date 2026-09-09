@@ -21,6 +21,29 @@ export async function POST(req: Request) {
     const agent = getAgentBySlug(agentId);
     if (!agent) return NextResponse.json({ error: await apiErrorMessage("agentNotFound") }, { status: 404 });
 
+    // BETA BYPASS: beta_tester/internal_qa skip PayPal checkout
+    // Remove/disable via ENABLE_WAITLIST_BETA_BYPASS=false before Stripe goes live.
+    if (process.env.ENABLE_WAITLIST_BETA_BYPASS === "true") {
+      const betaUser = await getSessionUser();
+      if (betaUser) {
+        const { createAdminClient } = await import("@/lib/supabase/admin");
+        const admin = createAdminClient();
+        if (admin) {
+          const { data: profile } = await admin
+            .from("profiles")
+            .select("role")
+            .eq("id", betaUser.id)
+            .maybeSingle();
+          if (profile?.role === "beta_tester" || profile?.role === "internal_qa") {
+            return NextResponse.json({
+              url: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/chat?agent=${agentId}`,
+              beta_bypass: true,
+            });
+          }
+        }
+      }
+    }
+
     const unlocked = await hasPlatformAccess();
     if (!isAvailable(agentId) && !unlocked) return NextResponse.json({ error: await apiErrorMessage("notSubscribed") }, { status: 400 });
 

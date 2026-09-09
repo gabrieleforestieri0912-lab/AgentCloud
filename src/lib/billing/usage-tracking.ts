@@ -96,8 +96,24 @@ export async function assertRunAllowed(
 ): Promise<RunCheck> {
   if (isAdmin) return { allowed: true, overage: false };
   if (!userId || userId === "anonymous") return { allowed: true, overage: false };
+
   const db = await getDb();
   if (!db) return { allowed: true, overage: false };
+
+  // BETA BYPASS: beta_tester/internal_qa roles are exempt from usage limits
+  // and billing checks for the duration of the beta program.
+  // Remove/disable via ENABLE_WAITLIST_BETA_BYPASS=false before Stripe goes live.
+  if (process.env.ENABLE_WAITLIST_BETA_BYPASS === "true") {
+    const { data: profile } = await db
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profile?.role === "beta_tester" || profile?.role === "internal_qa") {
+      return { allowed: true, overage: false };
+    }
+  }
+
   const userAgent = await getUserAgent(userId, agentSlug);
   if (!userAgent) {
     return {

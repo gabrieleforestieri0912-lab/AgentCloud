@@ -21,8 +21,11 @@ import {
 } from "@/lib/agents/notifications";
 import { TENANT_SHOPIFY_ID } from "@/lib/shopify/connections";
 
-const MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
-const MAX_ITERATIONS = 10;
+const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
+const DEFAULT_MAX_ITERATIONS = 10;
+// BETA BYPASS: higher limits for beta_tester/internal_qa
+const BETA_MAX_TOKENS = 16384;
+const BETA_MAX_ITERATIONS = 25;
 
 // Rate limit per i chiamanti anonimi in anteprima (pagine pubbliche / embed).
 // Due livelli: un filtro burst in memoria economico (per istanza) e il limite
@@ -98,6 +101,23 @@ export async function POST(req: Request) {
   // dal body, quindi non può essere falsificato dalla waitlist pubblica.
   const hasCode = await hasPlatformAccess();
   const isAdmin = isAdminEmail(sessionUser?.email) || hasCode;
+
+  // BETA BYPASS: beta_tester/internal_qa get unlimited tokens and iterations
+  let isBeta = false;
+  if (process.env.ENABLE_WAITLIST_BETA_BYPASS === "true" && sessionUser) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    if (admin) {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("role")
+        .eq("id", sessionUser.id)
+        .maybeSingle();
+      isBeta = profile?.role === "beta_tester" || profile?.role === "internal_qa";
+    }
+  }
+  const MAX_TOKENS = isBeta ? BETA_MAX_TOKENS : DEFAULT_MAX_TOKENS;
+  const MAX_ITERATIONS = isBeta ? BETA_MAX_ITERATIONS : DEFAULT_MAX_ITERATIONS;
 
   // Le connessioni a servizi esterni (Shopify, …) sono salvate per utente,
   // tranne per i possessori del codice senza account: condividono la

@@ -42,6 +42,30 @@ export async function POST(req: Request) {
       );
     }
 
+    // BETA BYPASS: beta_tester/internal_qa skip checkout entirely
+    // Remove/disable via ENABLE_WAITLIST_BETA_BYPASS=false before Stripe goes live.
+    if (process.env.ENABLE_WAITLIST_BETA_BYPASS === "true") {
+      const user = await getSessionUser();
+      if (user) {
+        const { createAdminClient } = await import("@/lib/supabase/admin");
+        const admin = createAdminClient();
+        if (admin) {
+          const { data: profile } = await admin
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (profile?.role === "beta_tester" || profile?.role === "internal_qa") {
+            // Beta users go straight to chat, no checkout needed
+            return NextResponse.json({
+              url: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/chat?agent=${agentId}`,
+              beta_bypass: true,
+            });
+          }
+        }
+      }
+    }
+
     // La disponibilità vale per il pubblico: i possessori del codice (il
     // cliente di test) possono configurare/comprare ogni agente, inclusi
     // quelli "coming soon".
