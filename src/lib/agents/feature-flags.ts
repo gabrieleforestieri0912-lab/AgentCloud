@@ -47,11 +47,6 @@ export const ACTIVE_10_AGENTS = [
 
 export const ACTIVE_15_AGENTS = [
   ...ACTIVE_10_AGENTS,
-  "finance-manager",
-  "personal-assistant",
-  "hr-recruiter",
-  "social-media-agent",
-  "inventory-logistics",
 ];
 
 export const ALL_TOOLS_LIST = [
@@ -119,7 +114,14 @@ export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
  * Configurazione piattaforma completa (tutti i 15 agenti attivi abilitati)
  */
 export const FULL_PLATFORM_CONFIG: FeatureFlags = {
-  enabledAgents: ACTIVE_15_AGENTS,
+  enabledAgents: [
+    ...ACTIVE_10_AGENTS,
+    "finance-manager",
+    "personal-assistant",
+    "hr-recruiter",
+    "social-media-agent",
+    "inventory-logistics",
+  ],
   enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
   enableOptionalToolsByDefault: true,

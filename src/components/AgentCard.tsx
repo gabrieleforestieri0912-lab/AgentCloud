@@ -71,7 +71,7 @@ export default function AgentCard({
       )}
 
       {/* Intestazione: icona + categoria + badge */}
-      <div className="relative mb-4 flex items-start gap-4 pt-2">
+      <div className="relative mb-4 flex items-start gap-4 pt-10">
         <div
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105 ${agent.accent}`}
         >
