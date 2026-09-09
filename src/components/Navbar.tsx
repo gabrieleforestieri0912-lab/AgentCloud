@@ -110,8 +110,9 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const { count: cartCount } = useCart();
 
   const userMeta = session?.user?.user_metadata as
-    | { full_name?: string }
+    | { full_name?: string; avatar_url?: string; picture?: string }
     | undefined;
+  const avatarUrl = userMeta?.avatar_url || userMeta?.picture || null;
   const accountInitials = isSignedIn
     ? (userMeta?.full_name || session?.user?.email || "?")
         .split(/[\s@.]+/)
@@ -442,9 +443,19 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     <button
                       onClick={() => setUserMenuOpen((v) => !v)}
                       aria-label="Account"
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-brand-500/15 text-sm font-bold text-brand-300 transition-colors hover:border-brand-500/40 hover:bg-brand-500/25"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-brand-500/15 text-sm font-bold text-brand-300 transition-colors hover:border-brand-500/40 hover:bg-brand-500/25 overflow-hidden"
                     >
-                      {accountInitials}
+                      {avatarUrl ? (
+                        <Image
+                          src={avatarUrl}
+                          alt="Account"
+                          width={36}
+                          height={36}
+                          className="h-9 w-9 rounded-full object-cover"
+                        />
+                      ) : (
+                        accountInitials
+                      )}
                     </button>
                     {userMenuOpen && (
                       <div className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl"
