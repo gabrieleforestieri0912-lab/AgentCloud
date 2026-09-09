@@ -107,6 +107,33 @@ export async function proxy(request: NextRequest) {
       const redirectRes = NextResponse.redirect(url);
       return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
     }
+
+    // ─── Force Full Auth gate: waitlist-only accounts must complete auth ─
+    // Check if user has auth_method_completed = false in profiles.
+    // If so, redirect to /login?reason=complete_account (unless already on auth pages).
+    if (!isAuthRoute && !pathname.startsWith("/api/")) {
+      try {
+        const { createClient } = await import("@/lib/supabase/server");
+        const supabase = await createClient();
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("auth_method_completed")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profile && profile.auth_method_completed === false) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/login";
+          url.search = "reason=complete_account";
+          url.hash = "";
+          const redirectRes = NextResponse.redirect(url);
+          return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
+        }
+      } catch {
+        // If profile check fails, let user through (fail open for auth gate)
+      }
+    }
+
     return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
   } catch {
     // Errore Supabase → trattalo come non autenticato

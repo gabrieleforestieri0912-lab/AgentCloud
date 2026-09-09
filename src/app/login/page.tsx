@@ -36,6 +36,16 @@ function CallbackErrorNotice() {
   );
 }
 
+function CompleteAccountNotice() {
+  const searchParams = useSearchParams();
+  if (searchParams.get("reason") !== "complete_account") return null;
+  return (
+    <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+      Per accedere alla piattaforma, effettua il login con Google o imposta una password.
+    </p>
+  );
+}
+
 // La destinazione "next" usata dagli handler di submit. Lettura diretta da
 // window.location (questo componente è montato solo lato client) così la page
 // stessa non chiama mai useSearchParams durante il prerender statico.
@@ -158,6 +168,27 @@ export default function LoginPage() {
           // Clear the cookie
           document.cookie = "waitlist_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         }
+      }
+
+      // Set auth_method_completed = true (password login = full auth)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+          await fetch(`${supabaseUrl}/rest/v1/profiles?auth_method_completed=eq.false`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${session.access_token}`,
+              "apikey": anonKey,
+              "Prefer": "return=minimal",
+            },
+            body: JSON.stringify({ auth_method_completed: true }),
+          });
+        }
+      } catch {
+        // Non-blocking
       }
 
       // Riprende una connessione OAuth in sospeso (es. install Shopify) dopo
@@ -325,6 +356,7 @@ export default function LoginPage() {
               {!error && (
                 <Suspense fallback={null}>
                   <CallbackErrorNotice />
+                  <CompleteAccountNotice />
                 </Suspense>
               )}
               {error && (

@@ -33,6 +33,20 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=auth_callback`);
   }
 
+  // --- Set auth_method_completed = true for this user ---
+  // Google OAuth = full auth method, so mark as completed.
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ auth_method_completed: true })
+        .eq("id", user.id);
+    }
+  } catch {
+    // Non-blocking: auth gate will catch on next request if needed
+  }
+
   // --- Beta access: complete waitlist redemption if pending session cookie exists ---
   if (BYPASS_ENABLED) {
     const cookieHeader = request.headers.get("cookie") || "";

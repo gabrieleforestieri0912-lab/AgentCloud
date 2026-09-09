@@ -121,6 +121,23 @@ export default function SignupPage() {
             document.cookie = "waitlist_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           }
         }
+        // Set auth_method_completed = true (signup = full auth)
+        try {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+          await fetch(`${supabaseUrl}/rest/v1/profiles?auth_method_completed=eq.false`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${data.session.access_token}`,
+              "apikey": anonKey,
+              "Prefer": "return=minimal",
+            },
+            body: JSON.stringify({ auth_method_completed: true }),
+          });
+        } catch {
+          // Non-blocking
+        }
         router.push("/dashboard");
         router.refresh();
       } else {
