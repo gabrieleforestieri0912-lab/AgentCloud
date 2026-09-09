@@ -179,11 +179,11 @@ export default function WaitlistForm({
       if (typeof data.remaining === "number") {
         setRemainingSpots(data.remaining);
       }
-      // Codice valido: redirect al login per completare l'autenticazione.
-      // Il cookie waitlist_session è impostato; al login il codice beta
-      // viene completato e il ruolo beta_tester assegnato.
+      // Codice valido: redirect alla landing page con bottone "Inizia Ora"
+      // nella navbar. Il cookie waitlist_session è impostato; al login il
+      // codice beta viene completato e il ruolo beta_tester assegnato.
       if (data.accessGranted) {
-        window.location.href = "/login";
+        window.location.href = "/";
         return;
       }
       setIsSuccess(true);

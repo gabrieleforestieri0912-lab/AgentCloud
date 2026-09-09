@@ -76,7 +76,12 @@ export async function proxy(request: NextRequest) {
   const isApiOrAsset = isAsset || pathname.startsWith("/api/");
 
   // Rotte esenti: waitlist, auth, asset, API pubbliche
-  if (isWaitlistRoute || isAuthRoute || isApiPublic || isAsset) {
+  // La landing page (/) è accessibile anche con un waitlist_session cookie
+  // (utente che ha inserito il codice admin ma non si è ancora autenticato).
+  const hasWaitlistSession = request.cookies.get("waitlist_session")?.value;
+  const isLandingWithSession = pathname === "/" && hasWaitlistSession;
+
+  if (isWaitlistRoute || isAuthRoute || isApiPublic || isAsset || isLandingWithSession) {
     if (isWaitlistRoute && !needsCookie) return NextResponse.next();
     let res: NextResponse = NextResponse.next();
     try {

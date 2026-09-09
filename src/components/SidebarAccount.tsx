@@ -5,34 +5,54 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { User, ShoppingCart, Home, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import type { Session } from "@supabase/supabase-js";
+
+function getInitials(session: Session | null): string {
+  const e = session?.user?.email ?? null;
+  const meta = session?.user?.user_metadata as { full_name?: string } | undefined;
+  const base = meta?.full_name || e || "?";
+  return base
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join("") || "?";
+}
 
 export default function SidebarAccount() {
-  const [email, setEmail] = useState<string | null>(null);
-  const [initials, setInitials] = useState("?");
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
+
   useEffect(() => {
+    let mounted = true;
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
-      const e = data.session?.user?.email ?? null;
-      setEmail(e);
-      const meta = data.session?.user?.user_metadata as { full_name?: string } | undefined;
-      const base = meta?.full_name || e || "?";
-      const ini = base
-        .split(/[\s@.]+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((s) => s[0]?.toUpperCase())
-        .join("") || "?";
-      setInitials(ini);
+      if (mounted) {
+        setSession(data.session);
+        setAuthLoaded(true);
+      }
     });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      if (mounted) {
+        setSession(next);
+        setAuthLoaded(true);
+      }
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
+
+  const email = session?.user?.email ?? null;
+  const initials = getInitials(session);
   return (
-    <div className="rounded-xl border border-white/5 bg-neutral-900 p-3">
-      <div className="flex items-center gap-2.5">
+    <div className="rounded-xl border border-white/5 bg-neutral-900 p-3">        <div className="flex items-center gap-2.5">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300">
-          {initials}
+          {authLoaded ? initials : "…"}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-bold text-white">{email ?? "Ospite"}</p>
+          <p className="truncate text-xs font-bold text-white">{authLoaded ? (email ?? "Ospite") : "Caricamento…"}</p>
           <p className="text-[11px] text-neutral-500">Account</p>
         </div>
       </div>
@@ -59,7 +79,7 @@ export default function SidebarAccount() {
         </button>
       ) : (
         <Link href="/login" className="mt-2 flex w-full items-center justify-center rounded-lg bg-brand-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-brand-400">
-          Accedi
+          Inizia Ora
         </Link>
       )}
       <div className="mt-3 flex items-center gap-2 px-1">

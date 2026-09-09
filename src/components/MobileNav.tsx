@@ -261,7 +261,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                   className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-neutral-900 hover:bg-neutral-100"
                 >
                   <LogOut size={16} className="rotate-180" />
-                  {dict.navbar.signIn} / Dashboard
+                  {locale === "it" ? "Inizia Ora" : "Start Now"}
                 </Link>
                 <p className="text-center text-xs text-neutral-500">{dict.chat.everythingOnMobile}</p>
               </div>
