@@ -173,7 +173,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const PANEL_WIDTH: Record<MenuKey, number> = {
     marketplace: 320,
     solutions: 288,
-    integrations: 320,
+    integrations: 420,
     pricing: 320,
   };
 
