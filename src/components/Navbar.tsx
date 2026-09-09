@@ -61,7 +61,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   // True appena la lettura iniziale della sessione è conclusa — evita il
   // flash di un frame del bottone "Accedi" per gli utenti loggati prima che
   // l'hydration risolva.
-  const [authLoaded, setAuthLoaded] = useState(false);
+  const [authLoaded, setAuthLoaded] = useState(true);
   const router = useRouter();
   const { locale, dict } = useLanguage();
   // Le pagine che risolvono i flag lato server passano la lista autoritativa;
