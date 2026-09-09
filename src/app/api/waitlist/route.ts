@@ -78,22 +78,7 @@ export async function POST(request: Request) {
 
   try {
     // -------------------------------------------------------------------------
-    // 1. Controllo Rate Limiting per IP
-    // -------------------------------------------------------------------------
-    const rl = await rateLimit("waitlist", clientIp, {
-      limit: WAITLIST_LIMIT,
-      windowMs: RATE_LIMIT_WINDOWS.HOUR_MS,
-    });
-    if (!rl.allowed) {
-      logAudit("waitlist_rate_limited", { ip: clientIp });
-      return NextResponse.json(
-        { error: await apiErrorMessage("rateLimited") },
-        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
-      );
-    }
-
-    // -------------------------------------------------------------------------
-    // 2. Controllo dimensione del corpo della richiesta (Anti-DoS)
+    // 1. Controllo dimensione del corpo della richiesta (Anti-DoS)
     // -------------------------------------------------------------------------
     const contentLength = Number(request.headers.get("content-length") || 0);
     if (contentLength > MAX_PAYLOAD_BYTES) {
@@ -115,12 +100,11 @@ export async function POST(request: Request) {
     }
 
     // -------------------------------------------------------------------------
-    // 3. Trappola Honeypot (Anti-Bot)
+    // 2. Trappola Honeypot (Anti-Bot)
     // Se un bot ha popolato il campo nascosto `website_hp`, blocchiamo la richiesta
     // -------------------------------------------------------------------------
     if (isHoneypotTriggered(body)) {
       logAudit("waitlist_bot_blocked", { ip: clientIp });
-      // Ritorna errore generico per non dare feedback all'autore del bot
       return NextResponse.json(
         { error: "Richiesta non autorizzata." },
         { status: 400 },
@@ -130,7 +114,7 @@ export async function POST(request: Request) {
     const rawEmail = body.email;
 
     // -------------------------------------------------------------------------
-    // 4. Validazione e sanitizzazione rigorosa di email / codice di accesso
+    // 3. Validazione e sanitizzazione rigorosa di email / codice di accesso
     // -------------------------------------------------------------------------
     const validation = validateAndSanitizeEmail(rawEmail, true);
     if (!validation.valid || !validation.email) {
@@ -143,6 +127,7 @@ export async function POST(request: Request) {
 
     // Caso A: L'utente ha inserito un codice di accesso — valida via Edge Function,
     // crea pending session, imposta cookie e reindirizza al login/registrazione.
+    // Il rate limiting NON si applica ai codici accesso (beta bypass).
     if (validation.isAccessCode) {
       if (!BYPASS_ENABLED) {
         logAudit("waitlist_access_code_disabled", { ip: clientIp });
@@ -199,6 +184,21 @@ export async function POST(request: Request) {
     }
 
     const email = validation.email;
+
+    // -------------------------------------------------------------------------
+    // 4. Rate Limiting per IP (solo per iscrizioni email, NON per codici accesso)
+    // -------------------------------------------------------------------------
+    const rl = await rateLimit("waitlist", clientIp, {
+      limit: WAITLIST_LIMIT,
+      windowMs: RATE_LIMIT_WINDOWS.HOUR_MS,
+    });
+    if (!rl.allowed) {
+      logAudit("waitlist_rate_limited", { ip: clientIp });
+      return NextResponse.json(
+        { error: await apiErrorMessage("rateLimited") },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+      );
+    }
 
     // -------------------------------------------------------------------------
     // 5. Inserimento nel Database Supabase con Service Role
