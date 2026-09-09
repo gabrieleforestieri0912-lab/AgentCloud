@@ -1,150 +1,161 @@
 "use client";
 
 /**
- * Costellazione di marchi/agenti della hero (e di altre sezioni):
- * app e agenti mischiati insieme, animazioni framer-motion in float.
- * Puramente decorativa — nascosta sotto lg.
+ * Costellazione di marchi/icone della hero (e di altre sezioni): app a sinistra,
+ * agenti a destra, animazioni framer-motion in float. Puramente decorativa.
  */
 import { motion } from "framer-motion";
 import BrandLogo from "./BrandLogo";
-import AgentIcon from "./AgentIcon";
 import { BRANDS } from "@/lib/brands";
-import { AGENTS, localizeAgent } from "@/lib/agents";
 import { useLanguage } from "./LanguageProvider";
-import type { Locale } from "@/lib/i18n/constants";
 
-// Bubble unificato: brand (logo app) OPPURE agente (icona + nome)
-type Bubble =
-  | { kind: "brand"; top: string; left: string; size: string; brand: string; delay: string; anim: string }
-  | { kind: "agent"; top: string; left: string; size: string; agentSlug: string; delay: string; anim: string };
+// Gli slug dei brand referenziano il registry centrale BRANDS (src/lib/brands.ts)
+// così le bolle usano gli stessi marchi ufficiali della sezione integrazioni.
+const LEFT_BUBBLES = [
+  { top: "12%", left: "10%", size: "w-10 h-10", brand: "google", delay: "0s", anim: "animate-float-gentle" },
+  { top: "8%", left: "48%", size: "w-14 h-14", brand: "googledrive", delay: "0.4s", anim: "animate-float-reverse" },
+  { top: "10%", left: "76%", size: "w-9 h-9", brand: "apple", delay: "1.3s", anim: "animate-float-gentle" },
+  { top: "25%", left: "18%", size: "w-14 h-14", brand: "facebook", delay: "2.0s", anim: "animate-float-gentle" },
+  { top: "22%", left: "68%", size: "w-10 h-10", brand: "github", delay: "0.7s", anim: "animate-float-reverse" },
+  { top: "38%", left: "3%", size: "w-11 h-11", brand: "stripe", delay: "1.8s", anim: "animate-float-reverse" },
+  { top: "40%", left: "42%", size: "w-14 h-14", brand: "instagram", delay: "1.1s", anim: "animate-float-gentle" },
+  { top: "36%", left: "80%", size: "w-10 h-10", brand: "tiktok", delay: "2.5s", anim: "animate-float-gentle" },
+  { top: "54%", left: "24%", size: "w-14 h-14", brand: "discord", delay: "0.3s", anim: "animate-float-reverse" },
+  { top: "56%", left: "66%", size: "w-12 h-12", brand: "whatsapp", delay: "1.5s", anim: "animate-float-gentle" },
+  { top: "72%", left: "8%", size: "w-11 h-11", brand: "gmail", delay: "2.2s", anim: "animate-float-gentle" },
+  { top: "68%", left: "50%", size: "w-12 h-12", brand: "trello", delay: "0.9s", anim: "animate-float-reverse" },
+  { top: "70%", left: "84%", size: "w-9 h-9", brand: "android", delay: "0.5s", anim: "animate-float-gentle" },
+  { top: "86%", left: "18%", size: "w-13 h-13", brand: "dropbox", delay: "1.6s", anim: "animate-float-gentle" },
+  { top: "84%", left: "56%", size: "w-12 h-12", brand: "hubspot", delay: "2.8s", anim: "animate-float-reverse" },
+  { top: "90%", left: "35%", size: "w-13 h-13", brand: "shopify", delay: "1.9s", anim: "animate-float-gentle" },
+];
 
-// Lista mista app + agenti, distribuita organicamente su entrambi i lati.
-// Gli agenti usano il loro icon e accent; le app usano BrandLogo.
-const BUBBLES: Bubble[] = [
-  // ── Lato sinistro — zigzag su tutta la larghezza (0-60%)
-  //    Altezza residua = ~580px; con 12 bolle ≈ 48px di gap verticale minimo.
-  //    Alterniamo posizione orizzontale (destra/sinistra) per evitare sovrapposizioni.
-  { kind: "brand",  top: "4%",  left: "5%",  size: "w-10 h-10", brand: "google",       delay: "0s",   anim: "animate-float-gentle" },
-  { kind: "agent",  top: "12%", left: "32%", size: "w-11 h-11", agentSlug: "shopify-agent",  delay: "0.5s", anim: "animate-float-reverse" },
-  { kind: "brand",  top: "21%", left: "8%",  size: "w-9 h-9",   brand: "facebook",     delay: "1.1s", anim: "animate-float-gentle" },
-  { kind: "agent",  top: "30%", left: "38%", size: "w-10 h-10", agentSlug: "lead-capture",  delay: "0.3s", anim: "animate-float-gentle" },
-  { kind: "brand",  top: "39%", left: "3%",  size: "w-11 h-11", brand: "instagram",    delay: "1.7s", anim: "animate-float-reverse" },
-  { kind: "agent",  top: "48%", left: "28%", size: "w-9 h-9",   agentSlug: "support-agent",  delay: "0.8s", anim: "animate-float-gentle" },
-  { kind: "brand",  top: "57%", left: "12%", size: "w-10 h-10", brand: "discord",      delay: "0.4s", anim: "animate-float-gentle" },
-  { kind: "agent",  top: "66%", left: "40%", size: "w-10 h-10", agentSlug: "seo-agent",     delay: "1.4s", anim: "animate-float-reverse" },
-  { kind: "brand",  top: "75%", left: "5%",  size: "w-9 h-9",   brand: "gmail",        delay: "2.0s", anim: "animate-float-gentle" },
-  { kind: "agent",  top: "84%", left: "30%", size: "w-9 h-9",   agentSlug: "copywriter",    delay: "0.6s", anim: "animate-float-reverse" },
-  { kind: "brand",  top: "92%", left: "10%", size: "w-10 h-10", brand: "shopify",      delay: "1.3s", anim: "animate-float-gentle" },
-
-  // ── Lato destro — zigzag su tutta la larghezza (40-100%)
-  { kind: "agent",  top: "6%",  left: "55%", size: "w-10 h-10", agentSlug: "business-manager", delay: "0.2s", anim: "animate-float-gentle" },
-  { kind: "brand",  top: "15%", left: "80%", size: "w-9 h-9",   brand: "stripe",          delay: "0.9s", anim: "animate-float-reverse" },
-  { kind: "agent",  top: "24%", left: "62%", size: "w-11 h-11", agentSlug: "email-manager",   delay: "0.5s", anim: "animate-float-gentle" },
-  { kind: "brand",  top: "33%", left: "85%", size: "w-10 h-10", brand: "github",          delay: "1.5s", anim: "animate-float-gentle" },
-  { kind: "agent",  top: "42%", left: "55%", size: "w-9 h-9",   agentSlug: "reviews-agent",   delay: "0.7s", anim: "animate-float-reverse" },
-  { kind: "brand",  top: "51%", left: "78%", size: "w-10 h-10", brand: "whatsapp",       delay: "1.2s", anim: "animate-float-gentle" },
-  { kind: "agent",  top: "60%", left: "65%", size: "w-10 h-10", agentSlug: "social-media-agent", delay: "0.3s", anim: "animate-float-gentle" },
-  { kind: "brand",  top: "69%", left: "88%", size: "w-8 h-8",   brand: "hubspot",        delay: "2.1s", anim: "animate-float-reverse" },
-  { kind: "agent",  top: "78%", left: "58%", size: "w-11 h-11", agentSlug: "quote-agent",     delay: "1.0s", anim: "animate-float-gentle" },
-  { kind: "brand",  top: "87%", left: "82%", size: "w-9 h-9",   brand: "trello",         delay: "0.5s", anim: "animate-float-reverse" },
-  { kind: "agent",  top: "95%", left: "68%", size: "w-9 h-9",   agentSlug: "personal-assistant", delay: "1.6s", anim: "animate-float-gentle" },
+// Avatar degli agenti — bolle con ruolo + iniziali che rispecchiano il lato
+// destro dell'hero.
+const RIGHT_BUBBLES = [
+  { top: "12%", left: "48%", size: "w-14 h-14", role: "Product Manager", initials: "PM", avatarBg: "bg-blue-500", delay: "0.2s", anim: "animate-float-gentle" },
+  { top: "14%", left: "76%", size: "w-10 h-10", role: "Developer", initials: "DE", avatarBg: "bg-cyan-500", delay: "1.5s", anim: "animate-float-reverse" },
+  { top: "26%", left: "8%", size: "w-14 h-14", role: "Marketer", initials: "MA", avatarBg: "bg-purple-500", delay: "0.8s", anim: "animate-float-gentle" },
+  { top: "24%", left: "60%", size: "w-10 h-10", role: "Sales Rep", initials: "SR", avatarBg: "bg-amber-500", delay: "2.3s", anim: "animate-float-gentle" },
+  { top: "38%", left: "30%", size: "w-12 h-12", role: "Solo Founder", initials: "SF", avatarBg: "bg-orange-500", delay: "1.7s", anim: "animate-float-reverse" },
+  { top: "40%", left: "76%", size: "w-10 h-10", role: "Designer", initials: "DS", avatarBg: "bg-pink-500", delay: "0.5s", anim: "animate-float-gentle" },
+  { top: "52%", left: "16%", size: "w-11 h-11", role: "Data Analyst", initials: "DA", avatarBg: "bg-indigo-500", delay: "1.2s", anim: "animate-float-reverse" },
+  { top: "54%", left: "52%", size: "w-12 h-12", role: "Customer Success", initials: "CS", avatarBg: "bg-emerald-500", delay: "0.4s", anim: "animate-float-gentle" },
+  { top: "68%", left: "24%", size: "w-14 h-14", role: "Community Lead", initials: "CL", avatarBg: "bg-red-500", delay: "1.1s", anim: "animate-float-gentle" },
+  { top: "66%", left: "72%", size: "w-10 h-10", role: "Finance Ops", initials: "FO", avatarBg: "bg-teal-500", delay: "2.8s", anim: "animate-float-reverse" },
+  { top: "82%", left: "8%", size: "w-11 h-11", role: "Operations", initials: "OP", avatarBg: "bg-neutral-600", delay: "0.6s", anim: "animate-float-gentle" },
+  { top: "84%", left: "48%", size: "w-14 h-14", role: "Course Creator", initials: "CC", avatarBg: "bg-blue-600", delay: "1.6s", anim: "animate-float-reverse" },
 ];
 
 /**
- * Costellazioni decorative fluttuanti — app e agenti mischiati su entrambi i
- * lati. Posizionate in assoluto: il genitore deve essere `relative`; nascoste
- * sotto `lg`. I keyframe di float vivono in globals.css.
+ * Costellazioni decorative fluttuanti della hero — marchi delle app a
+ * sinistra, avatar degli agenti a destra. Posizionate in assoluto: il genitore
+ * deve essere `relative`; nascoste sotto `lg`. I keyframe di float vivono in
+ * globals.css.
  */
 export default function HeroBubbles() {
-  const { locale } = useLanguage();
-
-  // Split: prime 11 = sinistra, resto = destra
-  const leftBubbles = BUBBLES.slice(0, 11);
-  const rightBubbles = BUBBLES.slice(11);
+  const { dict } = useLanguage();
+  const roles = dict.hero.roles;
 
   return (
     <>
-      {/* COSTELLAZIONE SINISTRA */}
+      {/* COSTELLAZIONE FLUTTUANTE SINISTRA (app) */}
       <motion.div
         className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-80 xl:w-96 h-150 pointer-events-none select-none z-0"
         initial="hidden"
         animate="visible"
         variants={{
           hidden: {},
-          visible: { transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+          visible: {
+            transition: {
+              staggerChildren: 0.05,
+              delayChildren: 0.1,
+            },
+          },
         }}
         aria-hidden="true"
       >
-        {leftBubbles.map((b, idx) => (
-          <BubbleItem key={idx} bubble={b} locale={locale} />
-        ))}
+        {LEFT_BUBBLES.map((b, idx) => {
+          if (!BRANDS[b.brand]) return null;
+          // Icona scalata alla dimensione della bolla (es. w-12 = 48px → 20px).
+          // La cifra in `w-12` è un indice di spaziatura Tailwind: px = indice × 4.
+          const bubblePx = Number(b.size.match(/\d+/)?.[0] ?? 12) * 4;
+          const iconSize = Math.round(bubblePx * 0.42);
+          return (
+            <motion.div
+              key={idx}
+              className={`absolute rounded-full border border-white/10 bg-neutral-900 flex items-center justify-center shadow-[0_6px_20px_rgba(0,0,0,0.3)] transition-all ${b.size} ${b.anim}`}
+              style={{
+                top: b.top,
+                left: b.left,
+                animationDelay: b.delay,
+              }}
+              variants={{
+                hidden: { opacity: 0, scale: 0 },
+                visible: {
+                  opacity: 1,
+                  scale: 1,
+                  transition: { type: "spring", stiffness: 80, damping: 12 },
+                },
+              }}
+            >
+              <BrandLogo slug={b.brand} size={iconSize} />
+            </motion.div>
+          );
+        })}
       </motion.div>
 
-      {/* COSTELLAZIONE DESTRA */}
+      {/* COSTELLAZIONE FLUTTUANTE DESTRA (agenti) */}
       <motion.div
         className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-80 xl:w-96 h-150 pointer-events-none select-none z-0"
         initial="hidden"
         animate="visible"
         variants={{
           hidden: {},
-          visible: { transition: { staggerChildren: 0.05, delayChildren: 0.15 } },
+          visible: {
+            transition: {
+              staggerChildren: 0.05,
+              delayChildren: 0.15,
+            },
+          },
         }}
         aria-hidden="true"
       >
-        {rightBubbles.map((b, idx) => (
-          <BubbleItem key={idx} bubble={b} locale={locale} />
+        {RIGHT_BUBBLES.map((b, idx) => (
+          <motion.div
+            key={idx}
+            className={`absolute flex flex-col items-center ${b.anim}`}
+            style={{
+              top: b.top,
+              left: b.left,
+              animationDelay: b.delay,
+            }}
+            variants={{
+              hidden: { opacity: 0, scale: 0 },
+              visible: {
+                opacity: 1,
+                scale: 1,
+                transition: { type: "spring", stiffness: 80, damping: 12 },
+              },
+            }}
+          >
+            <span className="text-[9px] font-bold text-white/70 uppercase tracking-wider whitespace-nowrap mb-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5 leading-none pointer-events-auto">
+              {roles[idx] ?? b.role}
+            </span>
+            <div
+              className={`rounded-full border border-white/10 bg-neutral-900 flex items-center justify-center shadow-[0_6px_20px_rgba(0,0,0,0.3)] ${b.size}`}
+            >
+              <div
+                className={`w-full h-full rounded-full ${b.avatarBg} flex items-center justify-center scale-95 border-2 border-white/20 shadow-inner`}
+              >
+                <span className="text-[11px] font-bold text-white leading-none tracking-tight select-none">
+                  {b.initials}
+                </span>
+              </div>
+            </div>
+          </motion.div>
         ))}
       </motion.div>
     </>
-  );
-}
-
-function BubbleItem({ bubble, locale }: { bubble: Bubble; locale: Locale }) {
-  if (bubble.kind === "brand") {
-    const brandData = BRANDS[bubble.brand];
-    if (!brandData) return null;
-    const bubblePx = Number(bubble.size.match(/\d+/)?.[0] ?? 12) * 4;
-    const iconSize = Math.round(bubblePx * 0.42);
-    return (
-      <motion.div
-        className={`absolute rounded-full border border-white/10 bg-neutral-900 flex items-center justify-center shadow-[0_6px_20px_rgba(0,0,0,0.3)] transition-all ${bubble.size} ${bubble.anim}`}
-        style={{ top: bubble.top, left: bubble.left, animationDelay: bubble.delay }}
-        variants={{
-          hidden: { opacity: 0, scale: 0 },
-          visible: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 80, damping: 12 } },
-        }}
-      >
-        <BrandLogo slug={bubble.brand} size={iconSize} />
-      </motion.div>
-    );
-  }
-
-  // Agent bubble: icona + nome
-  const agent = AGENTS.find((a) => a.slug === bubble.agentSlug);
-  if (!agent) return null;
-  const localized = localizeAgent(agent, locale);
-  const bubblePx = Number(bubble.size.match(/\d+/)?.[0] ?? 12) * 4;
-  const iconSize = Math.round(bubblePx * 0.42);
-
-  return (
-    <motion.div
-      className={`absolute flex flex-col items-center ${bubble.anim}`}
-      style={{ top: bubble.top, left: bubble.left, animationDelay: bubble.delay }}
-      variants={{
-        hidden: { opacity: 0, scale: 0 },
-        visible: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 80, damping: 12 } },
-      }}
-    >
-      <span className="text-[9px] font-bold text-white/70 uppercase tracking-wider whitespace-nowrap mb-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5 leading-none pointer-events-auto">
-        {localized.shortName}
-      </span>
-      <div
-        className={`rounded-full border border-white/10 bg-neutral-900 flex items-center justify-center shadow-[0_6px_20px_rgba(0,0,0,0.3)] ${bubble.size}`}
-      >
-        <div className={`w-full h-full rounded-full ${localized.accent} flex items-center justify-center scale-95 border-2 border-white/20 shadow-inner`}>
-          <AgentIcon icon={localized.icon} brand={localized.brand} size={iconSize} className="text-white" />
-        </div>
-      </div>
-    </motion.div>
   );
 }

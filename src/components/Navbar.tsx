@@ -447,13 +447,13 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                       {accountInitials}
                     </button>
                     {userMenuOpen && (
-                      <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl"
+                      <div className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl"
                       >
                         <div className="px-3 py-2">
-                          <p className="text-sm font-bold text-white">
+                          <p className="truncate text-sm font-bold text-white">
                             {isSignedIn ? session?.user?.email : "admin@agentcloud.agency"}
                           </p>
-                          <p className="text-xs text-neutral-500">
+                          <p className="truncate text-xs text-neutral-500">
                             {isSignedIn ? "Account" : dict.chat.adminMockLogged}
                           </p>
                         </div>
