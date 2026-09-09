@@ -59,7 +59,7 @@ async function resolveSession(request: NextRequest) {
   return { user, response: supabaseResponse };
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const { locale: detectedLocale, needsCookie } = getLocaleForRequest(request);
