@@ -6,12 +6,15 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { MAX_SPOTS, getRemainingSpots, provisionAuthUser } from "@/lib/waitlist";
-import { ACCESS_COOKIE } from "@/lib/waitlist-constants";
 import { logAudit } from "@/lib/audit";
 import {
   validateAndSanitizeEmail,
   isHoneypotTriggered,
 } from "@/lib/forms-security";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const BYPASS_ENABLED = process.env.ENABLE_WAITLIST_BETA_BYPASS === "true";
 
 // Massimo 3 registrazioni per IP per ora (le email sono ulteriormente deduplicate a livello DB).
 const WAITLIST_LIMIT = 3;
@@ -138,16 +141,61 @@ export async function POST(request: Request) {
       );
     }
 
-    // Caso A: L'utente ha inserito un codice di accesso valido per tester/partner
+    // Caso A: L'utente ha inserito un codice di accesso — valida via Edge Function,
+    // crea pending session, imposta cookie e reindirizza al login/registrazione.
     if (validation.isAccessCode) {
-      logAudit("waitlist_access_code_redeemed", { ip: clientIp });
-      const res = NextResponse.json({
-        success: true,
-        accessGranted: true,
-        remaining: await getRemainingSpots().catch(() => null),
-      });
-      res.cookies.set(ACCESS_COOKIE, "1", COOKIE_OPTIONS);
-      return res;
+      if (!BYPASS_ENABLED) {
+        logAudit("waitlist_access_code_disabled", { ip: clientIp });
+        return NextResponse.json(
+          { error: "Accesso beta non disponibile al momento." },
+          { status: 403 },
+        );
+      }
+
+      logAudit("waitlist_access_code_validating", { ip: clientIp });
+
+      try {
+        const validateRes = await fetch(`${SUPABASE_URL}/functions/v1/validate-waitlist-code`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ code: validation.email }),
+        });
+
+        const validateData = await validateRes.json();
+
+        if (!validateRes.ok) {
+          logAudit("waitlist_access_code_invalid", { ip: clientIp, error: validateData.error });
+          return NextResponse.json(
+            { error: validateData.message || "Codice non valido" },
+            { status: validateRes.status },
+          );
+        }
+
+        logAudit("waitlist_access_code_valid", { ip: clientIp, role: validateData.role });
+
+        // Set pending session cookie (30 min) and redirect to login
+        const res = NextResponse.json({
+          success: true,
+          accessGranted: true,
+          remaining: await getRemainingSpots().catch(() => null),
+        });
+        res.cookies.set("waitlist_session", validateData.session_token, {
+          path: "/",
+          maxAge: validateData.expires_in || 1800,
+          sameSite: "lax",
+          secure: true,
+        });
+        return res;
+      } catch (e) {
+        console.error("Waitlist code validation failed:", e);
+        return NextResponse.json(
+          { error: "Errore durante la validazione del codice." },
+          { status: 500 },
+        );
+      }
     }
 
     const email = validation.email;

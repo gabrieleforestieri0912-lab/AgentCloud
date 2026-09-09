@@ -179,11 +179,11 @@ export default function WaitlistForm({
       if (typeof data.remaining === "number") {
         setRemainingSpots(data.remaining);
       }
-      // I possessori del codice (validato lato server) entrano direttamente
-      // nella piattaforma — ogni agente è sbloccato per loro. Redirect a /
-      // con parametro ?access=1 per far sapere al proxy di far passare.
+      // I possessori del codice (validato lato server) vengono reindirizzati
+      // al login/registrazione — il cookie waitlist_session è già stato
+      // impostato dal server, così dopo auth il ruolo beta viene assegnato.
       if (data.accessGranted) {
-        window.location.href = "/?access=1";
+        window.location.href = "/login";
         return;
       }
       setIsSuccess(true);
