@@ -248,12 +248,31 @@ export default async function DashboardPage({
 
   // ── Preview con dati falsi ──────────────────────────────────────────
   // Quando non ci sono dati reali (nuovo utente / mock admin appena creato),
-  const displayInstalled = installed;
-  const displayTotalRuns = totalRuns;
-  const displayTotalTokens = totalTokens;
-  const displayDailyBuckets = dailyBuckets;
-  const displayOverageCents = overageCentsTotal;
-  const previewBanner = false;
+  // mostra dati di esempio per dare un'idea di come apparirà la dashboard.
+  const hasRealData = installed.length > 0 || totalRuns > 0;
+  const isPreview = !hasRealData;
+
+  // Dati placeholder per la preview
+  const placeholderInstalled = [
+    { slug: "shopify-agent", status: "active", runs: 342, tokens: 18500, lastRun: new Date(Date.now() - 2 * 3600000).toISOString(), agent: AGENTS.find((a) => a.slug === "shopify-agent") ? localizeAgent(AGENTS.find((a) => a.slug === "shopify-agent")!, locale) : null, runtimeName: "Shopify Agent", config: {} },
+    { slug: "email-manager", status: "active", runs: 215, tokens: 12800, lastRun: new Date(Date.now() - 5 * 3600000).toISOString(), agent: AGENTS.find((a) => a.slug === "email-manager") ? localizeAgent(AGENTS.find((a) => a.slug === "email-manager")!, locale) : null, runtimeName: "Email Manager", config: {} },
+    { slug: "lead-capture", status: "active", runs: 189, tokens: 9200, lastRun: new Date(Date.now() - 8 * 3600000).toISOString(), agent: AGENTS.find((a) => a.slug === "lead-capture") ? localizeAgent(AGENTS.find((a) => a.slug === "lead-capture")!, locale) : null, runtimeName: "Lead Capture", config: {} },
+    { slug: "support-agent", status: "active", runs: 101, tokens: 4700, lastRun: new Date(Date.now() - 12 * 3600000).toISOString(), agent: AGENTS.find((a) => a.slug === "support-agent") ? localizeAgent(AGENTS.find((a) => a.slug === "support-agent")!, locale) : null, runtimeName: "Support Agent", config: {} },
+  ];
+
+  const placeholderDailyBuckets = dayLabels.map((label, i) => ({
+    date: new Date(Date.now() - (6 - i) * 86400000).toISOString().slice(0, 10),
+    label,
+    runs: [45, 72, 58, 91, 67, 83, 54][i],
+    tokens: [3200, 5100, 4200, 6500, 4800, 5900, 3800][i],
+  }));
+
+  const displayInstalled = isPreview ? placeholderInstalled : installed;
+  const displayTotalRuns = isPreview ? 847 : totalRuns;
+  const displayTotalTokens = isPreview ? 45200 : totalTokens;
+  const displayDailyBuckets = isPreview ? placeholderDailyBuckets : dailyBuckets;
+  const displayOverageCents = isPreview ? 0 : overageCentsTotal;
+  const previewBanner = isPreview;
 
   const displayStatCards: Array<[string, string, typeof Zap]> = [
         [String(displayInstalled.length), dict.dashboard.statInstalledAgents, Zap],
