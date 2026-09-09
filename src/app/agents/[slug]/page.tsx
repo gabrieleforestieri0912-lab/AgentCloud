@@ -300,7 +300,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   <Link
                     href={
                       !available
-                        ? "/demo"
+                        ? "/contact"
                         : isOwned
                           ? `/chat?agent=${agent.slug}`
                           : true

@@ -140,7 +140,7 @@ export default function FAQSection() {
           <p className="text-sm font-semibold text-neutral-400">
             {dict.faq.stillQuestions}{" "}
             <Link
-              href="/demo"
+              href="/contact"
               className="text-brand-400 font-bold hover:text-brand-300 transition-colors"
             >
               {dict.faq.contactSupport}

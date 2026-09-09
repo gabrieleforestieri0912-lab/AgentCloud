@@ -122,7 +122,7 @@ export default function MarketplaceSection() {
           </div>
 
           <Link
-            href="/demo"
+            href="/contact"
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 hover:shadow-lg hover:shadow-brand-500/30 active:scale-[0.98] sm:mt-0"
           >
             <Zap size={16} />

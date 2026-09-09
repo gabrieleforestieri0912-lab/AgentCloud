@@ -146,8 +146,7 @@ export default async function AboutPage() {
               {about.ctaText}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-              <Link
-                href="/demo"
+              <Link                 href="/contact"
                 className="rounded-full bg-brand-500 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
               >
                 {about.ctaDemo}

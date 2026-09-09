@@ -109,8 +109,7 @@ export default function ContactPage() {
                     <h3 className="text-sm font-bold text-white">
                       {dict.contact.scheduleCall}
                     </h3>
-                    <Link
-                      href="/demo"
+                    <Link                       href="/contact"
                       className="text-sm font-semibold text-neutral-400 hover:text-brand-400 transition-colors"
                     >
                       {dict.contact.bookDemo}

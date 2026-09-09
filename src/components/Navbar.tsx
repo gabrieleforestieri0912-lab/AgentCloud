@@ -143,7 +143,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     { key: "integrations" as MenuKey, label: dict.navbar.integrations, href: "/integrations" },
   ];
   // Le soluzioni puntano al proprio agente quando la piattaforma lo offre già;
-  // le altre non sono ancora disponibili e rimandano alla richiesta demo.
+  // le altre non sono ancora disponibili e rimandano alla richiesta agente personalizzato.
   const SOLUTION_LINKS: Record<string, string> = {
     "E-commerce & Shopify": "/agents/shopify-agent",
     "Shopify & E-commerce": "/agents/shopify-agent",
@@ -155,7 +155,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const solutions = dict.navbar.solutionsItems.map((s) => ({
     title: s.title,
     text: s.text,
-    href: SOLUTION_LINKS[s.title] ?? "/demo",
+    href: SOLUTION_LINKS[s.title] ?? "/contact",
   }));
 
   // Periodo di grazia: il menu resta aperto mentre il mouse viaggia dal link

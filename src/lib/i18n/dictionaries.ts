@@ -73,7 +73,7 @@ const it = {
     signIn: "Accedi",
     settings: "Impostazioni",
     subscriptions: "Abbonamenti",
-    requestDemo: "Richiedi demo",
+    requestDemo: "Agente personalizzato",
     menu: "Menu",
     solutionsItems: [
       {
@@ -502,7 +502,7 @@ const it = {
     subtitle:
       "Scegli tra agenti AI preconfigurati per marketing, operations, supporto, finanza e altro. Ogni agente può usare ricerca, caricamenti di file e azioni con strumenti per portare a termine il lavoro.",
     startChat: "Inizia una chat",
-    requestDemo: "Richiedi una demo",
+    requestDemo: "Agente personalizzato",
     availableNow: "Disponibili ora",
     comingSoon: "In arrivo",
     agentsCount: "{count} agenti",
@@ -570,9 +570,9 @@ const it = {
     starter: "Starter",
     growth: "Growth",
     popular: "Popolare",
-    requestDemo: "Richiedi demo",
+    requestDemo: "Agente personalizzato",
     flowNote:
-      "Questo flusso indirizza gli interessati a un modulo di richiesta demo.",
+      "Questo flusso indirizza gli interessati a un modulo di richiesta agente personalizzato.",
     deliveryOptions: "Opzioni di consegna",
     deliveryOptionsDesc: "Scegli come i tuoi clienti raggiungono questo agente",
     directLink: "Link diretto",
@@ -599,7 +599,7 @@ const it = {
     buyNow: "Acquista ora",
     stripeSecureDesc: "Pagamento sicuro con Stripe — attivazione immediata.",
     customAgentPrompt: "Serve un agente su misura?",
-    requestDemoLabel: "Richiedi una demo",
+    requestDemoLabel: "Agente personalizzato",
     manage: "Gestisci",
   },
 
@@ -1289,7 +1289,7 @@ const it = {
     comingSoon: "Prossimamente",
     goToAgent: "Vai all'agente",
     browseAgents: "Vedi agenti",
-    requestDemo: "Richiedi demo",
+    requestDemo: "Agente personalizzato",
   },
   cartPage: {
     backToHome: "Torna alla home",
@@ -1374,7 +1374,7 @@ export const en: Dictionary = {
     signIn: "Sign in",
     settings: "Settings",
     subscriptions: "Subscriptions",
-    requestDemo: "Request demo",
+    requestDemo: "Custom agent",
     menu: "Menu",
     solutionsItems: [
       {
@@ -1782,7 +1782,7 @@ export const en: Dictionary = {
     subtitle:
       "Choose from pre-configured AI agents for marketing, operations, support, finance and more. Each agent can use research, file uploads and tool actions to get work done.",
     startChat: "Start a chat",
-    requestDemo: "Request a demo",
+    requestDemo: "Custom agent",
     availableNow: "Available now",
     comingSoon: "Coming soon",
     agentsCount: "{count} agents",
@@ -1849,9 +1849,9 @@ export const en: Dictionary = {
     starter: "Starter",
     growth: "Growth",
     popular: "Popular",
-    requestDemo: "Request demo",
+    requestDemo: "Custom agent",
     flowNote:
-      "This flow now routes interested buyers to a live demo request form.",
+      "This flow routes interested buyers to a custom agent request form.",
     deliveryOptions: "Delivery options",
     deliveryOptionsDesc: "Choose how your customers reach this agent",
     directLink: "Direct link",
@@ -1878,7 +1878,7 @@ export const en: Dictionary = {
     buyNow: "Buy now",
     stripeSecureDesc: "Secure Stripe checkout — instant activation.",
     customAgentPrompt: "Need a custom agent?",
-    requestDemoLabel: "Request a demo",
+    requestDemoLabel: "Custom agent",
     manage: "Manage",
   },
 
@@ -2569,7 +2569,7 @@ export const en: Dictionary = {
     comingSoon: "Coming soon",
     goToAgent: "Go to agent",
     browseAgents: "Browse agents",
-    requestDemo: "Request demo",
+    requestDemo: "Custom agent",
   },
   cartPage: {
     backToHome: "Back to home",
@@ -2652,7 +2652,7 @@ export const es: Dictionary = {
     signIn: "Iniciar sesión",
     settings: "Configuración",
     subscriptions: "Suscripciones",
-    requestDemo: "Solicitar demo",
+    requestDemo: "Agente personalizado",
     menu: "Menú",
     solutionsItems: [
       {
@@ -3058,7 +3058,7 @@ export const es: Dictionary = {
     subtitle:
       "Choose from pre-configured AI agents for marketing, operations, support, finance and more. Each agent can use research, file uploads and tool actions to get work done.",
     startChat: "Start a chat",
-    requestDemo: "Request a demo",
+    requestDemo: "Custom agent",
     availableNow: "Available now",
     comingSoon: "Próximamente",
     agentsCount: "{count} agents",
@@ -3125,9 +3125,9 @@ export const es: Dictionary = {
     starter: "Starter",
     growth: "Growth",
     popular: "Popular",
-    requestDemo: "Solicitar demo",
+    requestDemo: "Agente personalizado",
     flowNote:
-      "This flow now routes interested buyers to a live demo request form.",
+      "This flow routes interested buyers to a custom agent request form.",
     deliveryOptions: "Delivery options",
     deliveryOptionsDesc: "Choose how your customers reach this agent",
     directLink: "Direct link",
@@ -3156,7 +3156,7 @@ export const es: Dictionary = {
     buyNow: "Acheter maintenant",
     stripeSecureDesc: "Paiement sécurisé avec Stripe — activation immédiate.",
     customAgentPrompt: "Besoin d'un agent sur mesure ?",
-    requestDemoLabel: "Demander une démo",
+    requestDemoLabel: "Agent personnalisé",
   },
 
   agentCard: {
@@ -3846,7 +3846,7 @@ export const es: Dictionary = {
     comingSoon: "Próximamente",
     goToAgent: "Ir al agente",
     browseAgents: "Ver agentes",
-    requestDemo: "Solicitar demo",
+    requestDemo: "Agente personalizado",
   },
   cartPage: {
     backToHome: "Volver al inicio",
@@ -3929,7 +3929,7 @@ export const de: Dictionary = {
     signIn: "Anmelden",
     settings: "Einstellungen",
     subscriptions: "Abonnements",
-    requestDemo: "Demo anfordern",
+    requestDemo: "Individueller Agent",
     menu: "Menü",
     solutionsItems: [
       {
@@ -4335,7 +4335,7 @@ export const de: Dictionary = {
     subtitle:
       "Choose from pre-configured AI agents for marketing, operations, support, finance and more. Each agent can use research, file uploads and tool actions to get work done.",
     startChat: "Start a chat",
-    requestDemo: "Request a demo",
+    requestDemo: "Custom agent",
     availableNow: "Available now",
     comingSoon: "Demnächst",
     agentsCount: "{count} agents",
@@ -4402,9 +4402,9 @@ export const de: Dictionary = {
     starter: "Starter",
     growth: "Growth",
     popular: "Popular",
-    requestDemo: "Demo anfordern",
+    requestDemo: "Individueller Agent",
     flowNote:
-      "This flow now routes interested buyers to a live demo request form.",
+      "This flow routes interested buyers to a custom agent request form.",
     deliveryOptions: "Delivery options",
     deliveryOptionsDesc: "Choose how your customers reach this agent",
     directLink: "Direct link",
@@ -4432,7 +4432,7 @@ export const de: Dictionary = {
     buyNow: "Jetzt kaufen",
     stripeSecureDesc: "Sichere Zahlung mit Stripe — sofortige Aktivierung.",
     customAgentPrompt: "Maßgeschneiderten Agenten benötigt?",
-    requestDemoLabel: "Demo anfordern",
+    requestDemoLabel: "Individueller Agent",
   },
 
   agentCard: {
@@ -5205,7 +5205,7 @@ export const fr: Dictionary = {
     signIn: "Se connecter",
     settings: "Paramètres",
     subscriptions: "Abonnements",
-    requestDemo: "Demander une démo",
+    requestDemo: "Agent personnalisé",
     menu: "Menu",
     solutionsItems: [
       {
@@ -5611,7 +5611,7 @@ export const fr: Dictionary = {
     subtitle:
       "Choose from pre-configured AI agents for marketing, operations, support, finance and more. Each agent can use research, file uploads and tool actions to get work done.",
     startChat: "Start a chat",
-    requestDemo: "Request a demo",
+    requestDemo: "Custom agent",
     availableNow: "Available now",
     comingSoon: "Bientôt disponible",
     agentsCount: "{count} agents",
@@ -5678,7 +5678,7 @@ export const fr: Dictionary = {
     starter: "Starter",
     growth: "Growth",
     popular: "Popular",
-    requestDemo: "Demander une démo",
+    requestDemo: "Agent personnalisé",
     flowNote:
       "This flow now routes interested buyers to a live demo request form.",
     deliveryOptions: "Delivery options",
@@ -5708,7 +5708,7 @@ export const fr: Dictionary = {
     buyNow: "Acheter maintenant",
     stripeSecureDesc: "Paiement sécurisé avec Stripe — activation immédiate.",
     customAgentPrompt: "Besoin d'un agent sur mesure ?",
-    requestDemoLabel: "Demander une démo",
+    requestDemoLabel: "Agent personnalisé",
   },
 
   agentCard: {
@@ -6398,7 +6398,7 @@ export const fr: Dictionary = {
     comingSoon: "Bientôt disponible",
     goToAgent: "Aller à l'agent",
     browseAgents: "Voir les agents",
-    requestDemo: "Demander une démo",
+    requestDemo: "Agent personnalisé",
   },
   cartPage: {
     backToHome: "Retour à l'accueil",

@@ -76,11 +76,10 @@ export default async function AgentsPage() {
               >
                 {dict.agentsPage.startChat}
               </Link>
-              <Link
-                href="/demo"
-                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"
-              >
-                {dict.agentsPage.requestDemo}
+              <Link                 href="/contact"
+                 className="inline-flex items-center justify-center rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"
+               >
+                 {dict.agentsPage.requestDemo}
               </Link>
             </div>
           </div>

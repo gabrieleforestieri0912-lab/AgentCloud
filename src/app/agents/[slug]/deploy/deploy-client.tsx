@@ -678,8 +678,7 @@ export default function DeployAgentClient({
                 </p>
                 <p className="mt-2 text-center text-xs text-neutral-600">
                   <>
-                    {dict.deploy.customAgentPrompt}{" "}
-                    <Link href="/demo" className="font-bold text-brand-400 hover:underline">
+                    {dict.deploy.customAgentPrompt}{" "}                     <Link href="/contact" className="font-bold text-brand-400 hover:underline">
                       {dict.deploy.requestDemoLabel}
                     </Link>
                   </>
