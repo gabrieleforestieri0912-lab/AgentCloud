@@ -884,7 +884,7 @@ export default function ChatInterface({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-white">
-                  {sidebarUserEmail ?? "Ospite"}
+                  {sidebarUserEmail || "Ospite"}
                 </p>
                 <p className="text-[11px] text-neutral-500">Account</p>
               </div>
