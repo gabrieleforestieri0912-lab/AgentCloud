@@ -92,7 +92,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
       {/* Bottone menu mobile — lg:hidden per allinearsi a navbar (lg:flex) */}
       <button
         onClick={() => setIsOpen(true)}
-        className="p-2 text-neutral-400 lg:hidden"
+        className="flex h-11 w-11 items-center justify-center text-neutral-400 lg:hidden"
         aria-label="Open navigation"
       >
         <Menu size={20} />
@@ -149,7 +149,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                 </Link>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-2 text-neutral-400 hover:text-white"
+                  className="flex h-11 w-11 items-center justify-center text-neutral-400 hover:text-white"
                   aria-label="Close navigation"
                 >
                   <X size={20} />
@@ -178,10 +178,10 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                         <AnimatePresence>
                           {activeSection === section.id && (
                             <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.2 }}
+                              initial={{ opacity: 0, y: -8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -8 }}
+                              transition={{ duration: 0.15 }}
                               className="overflow-hidden"
                             >
                               <div className="ml-4 border-l border-white/10 pl-4 pb-2">
