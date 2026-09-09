@@ -32,7 +32,7 @@ export default function FloatingBrandBubbles({
 }) {
   return (
     <div
-      className="hidden md:block absolute inset-0 z-0 pointer-events-none select-none opacity-50"
+      className="hidden lg:block absolute inset-0 z-0 pointer-events-none select-none opacity-50"
       aria-hidden="true"
     >
       {bubbles.map((b, idx) => {
