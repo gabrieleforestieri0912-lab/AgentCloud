@@ -179,11 +179,11 @@ export default function WaitlistForm({
       if (typeof data.remaining === "number") {
         setRemainingSpots(data.remaining);
       }
-      // Codice valido: redirect a /signup per registrarsi con qualunque email.
-      // Il cookie waitlist_session è già stato impostato dal server,
-      // così dopo la registrazione il ruolo beta viene assegnato.
+      // Codice valido: redirect alla landing page con cookie attivo.
+      // L'utente puo sfogliare la landing e autenticarsi quando vuole.
+      // Se non si autentica, le pagine protette lo respingeranno normalmente.
       if (data.accessGranted) {
-        window.location.href = "/signup";
+        window.location.href = "/";
         return;
       }
       setIsSuccess(true);
