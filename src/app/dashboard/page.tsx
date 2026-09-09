@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin-access";
-
 import ShopifyConnect from "@/components/ShopifyConnect";
 import GoogleConnect from "@/components/GoogleConnect";
 import { TENANT_SHOPIFY_ID, listShopifyConnections } from "@/lib/shopify/connections";
@@ -16,7 +14,6 @@ import {
   Plus,
   Power,
   Zap,
-  ShoppingCart,
 } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
 import DashboardCharts from "@/components/DashboardCharts";
@@ -169,8 +166,7 @@ export default async function DashboardPage({
   const greeting = firstName
     ? t(dict.dashboard.welcomeBack, { name: firstName })
     : dict.dashboard.welcomeBackGeneric;
-  const email = false ? "admin@agentcloud.agency" : (user?.email ?? "");
-  const isAdmin = false || isAdminEmail(user?.email);
+  const email = user?.email ?? "";
 
   const shopifyOwnerForConnections = false ? user?.id ?? null : user?.id ?? null;
   const googleOwnerForConnections = false ? user?.id ?? null : user?.id ?? null;
@@ -278,13 +274,8 @@ export default async function DashboardPage({
                   {dict.dashboard.myAgents}
                 </span>
               </div>
-              <h1 className="flex flex-wrap items-center gap-3 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+              <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
                 {greeting}
-                {isAdmin && (
-                  <span className="rounded-full border border-brand-500/40 bg-brand-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-300">
-                    Admin
-                  </span>
-                )}
               </h1>
               <p className="mt-2 text-sm text-neutral-500">{email}</p>
               <p className="mt-2 max-w-2xl text-lg leading-8 text-neutral-400">
@@ -293,15 +284,6 @@ export default async function DashboardPage({
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {isAdmin && (
-                <Link
-                  href="/admin/carts"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white hover:bg-white/10"
-                >
-                  <ShoppingCart size={16} />
-                  Vedi carrelli (admin)
-                </Link>
-              )}
               <Link
                 href="/agents"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
