@@ -264,7 +264,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                   <LogOut size={16} className="rotate-180" />
                   {dict.navbar.signIn} / Dashboard
                 </Link>
-                <p className="text-center text-xs text-neutral-500">{locale === "it" ? "Tutto visibile anche su mobile — niente nascosto" : "Everything visible on mobile — nothing hidden"}</p>
+                <p className="text-center text-xs text-neutral-500">{dict.chat.everythingOnMobile}</p>
               </div>
             </motion.div>
           </>

@@ -450,12 +450,8 @@ export default function DeployAgentClient({
                               ) : (
                                 <span className="text-xs font-semibold text-neutral-500">
                                   {kind
-                                    ? locale === "it"
-                                      ? "Collegamento sicuro OAuth"
-                                      : "Secure OAuth connection"
-                                    : locale === "it"
-                                      ? "Provalo nella chat dell'agente"
-                                      : "Try it in the agent chat"}
+                                    ? dict.deploy.oauthSecure
+                                    : dict.deploy.tryInChat}
                                 </span>
                               )}
                             </span>
@@ -501,9 +497,7 @@ export default function DeployAgentClient({
                               </button>
                             </div>
                             <p className="mt-2 text-xs text-neutral-500">
-                              {locale === "it"
-                                ? "Verrà avviato il flusso OAuth di Shopify per autorizzare l'accesso dell'agente al tuo store."
-                                : "The Shopify OAuth flow will start to authorize the agent's access to your store."}
+                              {dict.deploy.shopifyOAuthDesc}
                             </p>
                           </div>
                         )}
@@ -648,7 +642,7 @@ export default function DeployAgentClient({
                     className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400"
                   >
                     <Rocket size={16} />
-                    {locale === "it" ? "Apri chat" : "Open chat"}
+                    {dict.deploy.openChat}
                   </Link>
                 ) : (
                   <button
@@ -677,65 +671,19 @@ export default function DeployAgentClient({
                     <Rocket size={16} />
                     {isCheckingOut
                       ? dict.common.close
-                      : locale === "it"
-                        ? "Acquista ora"
-                        : locale === "es"
-                          ? "Comprar ahora"
-                          : locale === "de"
-                            ? "Jetzt kaufen"
-                            : locale === "fr"
-                              ? "Acheter maintenant"
-                              : "Buy now"}
+                      : dict.deploy.buyNow}
                   </button>
                 )}
                 <p className="mt-2 text-center text-xs font-semibold text-neutral-500">
-                  {locale === "it"
-                    ? "Pagamento sicuro con Stripe — attivazione immediata."
-                    : locale === "es"
-                      ? "Pago seguro con Stripe — activación inmediata."
-                      : locale === "de"
-                        ? "Sichere Zahlung mit Stripe — sofortige Aktivierung."
-                        : locale === "fr"
-                          ? "Paiement sécurisé avec Stripe — activation immédiate."
-                          : "Secure Stripe checkout — instant activation."}
+                  {dict.deploy.stripeSecureDesc}
                 </p>
                 <p className="mt-2 text-center text-xs text-neutral-600">
-                  {locale === "it" ? (
-                    <>
-                      Serve un agente su misura?{" "}
-                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
-                        Richiedi una demo
-                      </Link>
-                    </>
-                  ) : locale === "es" ? (
-                    <>
-                      ¿Necesitas un agente a medida?{" "}
-                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
-                        Solicita una demo
-                      </Link>
-                    </>
-                  ) : locale === "de" ? (
-                    <>
-                      Maßgeschneiderten Agenten benötigt?{" "}
-                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
-                        Demo anfordern
-                      </Link>
-                    </>
-                  ) : locale === "fr" ? (
-                    <>
-                      Besoin d&apos;un agent sur mesure ?{" "}
-                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
-                        Demander une démo
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      Need a custom agent?{" "}
-                      <Link href="/demo" className="font-bold text-brand-400 hover:underline">
-                        Request a demo
-                      </Link>
-                    </>
-                  )}
+                  <>
+                    {dict.deploy.customAgentPrompt}{" "}
+                    <Link href="/demo" className="font-bold text-brand-400 hover:underline">
+                      {dict.deploy.requestDemoLabel}
+                    </Link>
+                  </>
                 </p>
               </div>
 

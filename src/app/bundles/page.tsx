@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import BundleCard from "@/components/BundleCard";
 import { BUNDLES } from "@/lib/bundles";
 import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
 import { AGENTS, AVAILABLE_AGENTS, localizeAgent } from "@/lib/agents";
 import { getSiteUrl } from "@/lib/site-url";
@@ -27,6 +28,7 @@ export const dynamic = "force-dynamic";
 export default async function BundlesPage() {
   const locale = await getLocale();
   const isIt = locale === "it";
+  const dict = getDictionary(locale);
   const navAgents = AVAILABLE_AGENTS.map((a) => localizeAgent(a, locale));
 
   const BASE_URL = getSiteUrl();
@@ -65,10 +67,10 @@ export default async function BundlesPage() {
           {/* Hero */}
           <div className="mb-12 max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">
-              {isIt ? "Bundle & Risparmia" : "Bundles & Save"}
+              {dict.bundlePage.bundlesAndSave}
             </p>
             <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              {isIt ? "Bundle di Agenti AI" : "AI Agent Bundles"}
+              {dict.bundlePage.aiAgentBundles}
             </h1>
             <p className="mt-6 text-lg leading-8 text-neutral-400">
               {isIt
@@ -80,7 +82,7 @@ export default async function BundlesPage() {
                 href="/agents"
                 className="inline-flex items-center justify-center rounded-full border border-white/10 bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:border-white/20"
               >
-                {isIt ? "Vedi agenti singoli" : "See single agents"}
+                {dict.bundlePage.seeSingleAgents}
               </Link>
             </div>
           </div>
@@ -90,19 +92,19 @@ export default async function BundlesPage() {
             <div className="rounded-xl border border-white/5 bg-neutral-900/50 p-4 text-center">
               <p className="text-2xl font-extrabold text-emerald-400">-15%</p>
               <p className="mt-1 text-sm font-semibold text-neutral-400">
-                {isIt ? "Piano Trimestrale" : "Quarterly Plan"}
+                {dict.bundlePage.quarterlyPlan}
               </p>
             </div>
             <div className="rounded-xl border border-white/5 bg-neutral-900/50 p-4 text-center">
               <p className="text-2xl font-extrabold text-emerald-400">-30%</p>
               <p className="mt-1 text-sm font-semibold text-neutral-400">
-                {isIt ? "Piano Annuale" : "Yearly Plan"}
+                {dict.bundlePage.yearlyPlan}
               </p>
             </div>
             <div className="rounded-xl border border-white/5 bg-neutral-900/50 p-4 text-center">
               <p className="text-2xl font-extrabold text-brand-400">{BUNDLES.length}</p>
               <p className="mt-1 text-sm font-semibold text-neutral-400">
-                {isIt ? "Bundle Disponibili" : "Available Bundles"}
+                {dict.bundlePage.availableBundles}
               </p>
             </div>
           </div>
@@ -125,28 +127,26 @@ export default async function BundlesPage() {
             />
             <div className="relative">
               <p className="mb-3 text-sm font-bold uppercase tracking-widest text-brand-400">
-                {isIt ? "Su misura" : "Custom"}
+                {dict.bundlePage.custom}
               </p>
               <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                {isIt ? "Nessun bundle ti torna?" : "No bundle fits?"}
+                {dict.bundlePage.noBundleFits}
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-neutral-400">
-                {isIt
-                  ? "Crea il tuo bundle personalizzato scegliendo gli agenti che ti servono. Contattaci per un preventivo su misura."
-                  : "Create your custom bundle by picking the agents you need. Contact us for a tailored quote."}
+                {dict.bundlePage.customBundleDesc}
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <Link
                   href="/contact"
                   className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
                 >
-                  {isIt ? "Contattaci" : "Contact us"}
+                  {dict.bundlePage.contactUs}
                 </Link>
                 <Link
                   href="/chat"
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-800 px-8 py-3.5 text-base font-bold text-white transition-colors hover:border-white/20"
                 >
-                  {isIt ? "Chiedi alla nostra AI" : "Ask our AI"}
+                  {dict.bundlePage.askOurAI}
                 </Link>
               </div>
             </div>

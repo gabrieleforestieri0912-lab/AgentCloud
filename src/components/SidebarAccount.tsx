@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { User, Settings, ShoppingCart, Home, LogOut } from "lucide-react";
+import { User, ShoppingCart, Home, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SidebarAccount() {
@@ -36,12 +36,9 @@ export default function SidebarAccount() {
           <p className="text-[11px] text-neutral-500">Account</p>
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-1.5">
+      <div className="mt-3 grid grid-cols-3 gap-1.5">
         <Link href="/account" className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10">
           <User size={12} /> Account
-        </Link>
-        <Link href="/settings" className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10">
-          <Settings size={12} /> Impostazioni
         </Link>
         <Link href="/cart" className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10">
           <ShoppingCart size={12} /> Carrello

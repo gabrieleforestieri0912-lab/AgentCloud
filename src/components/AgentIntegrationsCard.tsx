@@ -27,7 +27,7 @@ function providerForIntegration(label: string): string | null {
 }
 
 export default function AgentIntegrationsCard({ integrations, agentSlug, genericConnected, shopifyConnected, googleConnected }: Props) {
-  const { locale } = useLanguage();
+  const { locale, dict } = useLanguage();
   return (
     <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
       <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
@@ -35,9 +35,9 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
           <Plug size={18} />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white">{locale === "it" ? "Integrazioni" : "Integrations"}</h2>
+          <h2 className="text-sm font-bold text-white">{dict.agentIntegrations.integrations}</h2>
           <p className="text-xs font-semibold text-neutral-500">
-            {locale === "it" ? "Collega i tuoi strumenti — se già connessi da /dashboard/integrations appaiono come già connessi" : "Connect your tools — if already connected from /dashboard/integrations they show as connected"}
+            {dict.agentIntegrations.connectToolsDesc}
           </p>
         </div>
       </div>
@@ -66,15 +66,15 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
                   {connected ? <CheckCircle2 size={16} /> : <Plug size={16} />}
                 </span>
                 <span className="text-sm font-bold text-white">{label}</span>
-                {connected && <span className="text-xs font-bold text-emerald-400">· {locale === "it" ? "Connesso" : "Connected"}</span>}
+                {connected && <span className="text-xs font-bold text-emerald-400">· {locale === "it" ? dict.agentIntegrations.connected : dict.agentIntegrations.connected}</span>}
               </span>
               {connected ? (
                 <Link href="/dashboard/integrations" className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20">
-                  {locale === "it" ? "Gestisci" : "Manage"} <ArrowRight size={12} />
+                  {dict.agentIntegrations.manage} <ArrowRight size={12} />
                 </Link>
               ) : (
                 <Link href={href} className="inline-flex items-center gap-1 rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white hover:bg-brand-400">
-                  {locale === "it" ? "Connetti" : "Connect"} <ArrowRight size={12} />
+                  {dict.agentIntegrations.connect} <ArrowRight size={12} />
                 </Link>
               )}
             </div>

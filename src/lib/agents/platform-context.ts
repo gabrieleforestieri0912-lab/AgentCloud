@@ -293,13 +293,13 @@ export async function buildPlatformSystemPrompt(
           "- **Shopify** — negozio collegato dal cliente via OAuth (prodotti, ordini, clienti, sconti, analytics)",
           "- **Stripe** — abbonamenti, pagamenti e fatturazione",
           "- **Google Calendar** — prenotazioni e appuntamenti",
-          "- **Web search** — ricerca sul web (Tavily)",
+          "- **Web search** — ricerca sul web via Chrome/Tavily",
         ]
       : [
           "- **Shopify** — the customer's store connected via OAuth (products, orders, customers, discounts, analytics)",
           "- **Stripe** — subscriptions, payments and billing",
           "- **Google Calendar** — bookings and appointments",
-          "- **Web search** — web search (Tavily)",
+          "- **Web search** — web search via Chrome/Tavily",
         ]),
     "",
     labels.contactsTitle,

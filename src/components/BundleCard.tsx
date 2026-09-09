@@ -24,7 +24,7 @@ type BundleCardProps = {
 const PERIODS: BundlePeriod[] = ["monthly", "quarterly", "yearly"];
 
 export default function BundleCard({ bundle }: BundleCardProps) {
-  const { locale } = useLanguage();
+  const { locale, dict } = useLanguage();
   const isIt = locale === "it";
   const [period, setPeriod] = useState<BundlePeriod>("monthly");
   const agents = getBundleAgents(bundle);
@@ -41,9 +41,9 @@ export default function BundleCard({ bundle }: BundleCardProps) {
         : null;
 
   const periodLabel =
-    period === "monthly" ? (isIt ? "/mese" : "/month")
-      : period === "quarterly" ? (isIt ? "/mese (fatt. trimestrale)" : "/mo (billed quarterly)")
-        : (isIt ? "/mese (fatt. annuale)" : "/mo (billed annually)");
+    period === "monthly" ? dict.bundleDetail.pricePerMonth
+      : period === "quarterly" ? dict.bundleDetail.pricePerMonthQuarterly
+        : dict.bundleDetail.pricePerMonthYearly;
 
   const savingsPercent =
     period === "quarterly" ? pricing.savingsQuarterly
@@ -115,10 +115,10 @@ export default function BundleCard({ bundle }: BundleCardProps) {
             }`}
           >
             {p === "monthly"
-              ? isIt ? "Mensile" : "Monthly"
+              ? dict.bundleDetail.monthly
               : p === "quarterly"
-                ? isIt ? "Trimestrale" : "Quarterly"
-                : isIt ? "Annuale" : "Yearly"}
+                ? dict.bundleDetail.monthly
+                : dict.bundleDetail.yearly}
           </button>
         ))}
       </div>
@@ -155,7 +155,7 @@ export default function BundleCard({ bundle }: BundleCardProps) {
                   </span>
                   {totalDisplay && (
                     <span className="text-xs font-semibold text-neutral-500">
-                      {isIt ? "Totale" : "Total"}: {totalDisplay}
+                      {dict.bundleDetail.total}: {totalDisplay}
                     </span>
                   )}
                 </motion.div>
@@ -175,7 +175,7 @@ export default function BundleCard({ bundle }: BundleCardProps) {
                   transition={{ duration: 0.2 }}
                   className="mt-2 text-xs font-semibold text-neutral-500"
                 >
-                  {isIt ? "Prezzo singolo agente" : "Single agent price"}: {formatMonthlyPrice(pricing.monthly)}
+                  {dict.bundleDetail.priceWithoutBundle}: {formatMonthlyPrice(pricing.monthly)}
                 </motion.p>
               )}
             </AnimatePresence>
@@ -186,7 +186,7 @@ export default function BundleCard({ bundle }: BundleCardProps) {
       {/* Agents included */}
       <div className="relative flex-1 mb-5">
         <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-          {isIt ? "Agenti inclusi" : "Included agents"}
+          {dict.bundleDetail.includedAgents}
         </p>
         <div className="space-y-2">
           {agents.map((agent, i) => (
@@ -215,12 +215,12 @@ export default function BundleCard({ bundle }: BundleCardProps) {
             href={`/bundles/${bundle.slug}`}
             className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:border-white/20"
           >
-            {isIt ? "Dettagli" : "Details"}
+            {dict.common.view}
           </Link>
         </div>
         <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-neutral-500">
           <Clock size={11} />
-          {isIt ? "Setup rapido · senza vincoli" : "Quick setup · no commitment"}
+          {dict.bundleDetail.quickSetupDesc}
         </div>
       </div>
     </div>

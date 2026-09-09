@@ -56,6 +56,7 @@ import {
   HERO_CONVERSATION_STORAGE_KEY,
   HERO_CONVERSATION_HISTORY_KEY,
 } from "./HeroSection";
+import ExportReportButton from "./ExportReportButton";
 
 type LocalMessage = {
   id: string;
@@ -971,50 +972,27 @@ export default function ChatInterface({
         onDragLeave={attach.onDragLeave}
         onDrop={attach.makeDrop(attachLabels)}
       >
-        {/* Intestazione chat */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur-sm">
-          <div className="flex items-center gap-2.5">
-            <Image
-              src="/agentcloud.png"
-              alt="AgentCloud"
-              width={28}
-              height={28}
-              className="shrink-0"
-            />
+        {/* Intestazione chat — Claude-style clean header */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleNewChat}
+              title={dict.chat.newChat}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 transition-all"
+            >
+              <Plus size={16} />
+            </button>
             <div>
               <p className="text-sm font-semibold text-white">
                 {activeAgentDisplayName}
               </p>
-              <p className="text-xs font-semibold">
-                {isTyping ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-brand-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-                    {dict.chat.thinking}
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-neutral-500">
-                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                    {dict.chat.online}
-                  </span>
-                )}
-              </p>
+              {isTyping && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-brand-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
+                  {dict.chat.thinking}
+                </span>
+              )}
             </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleNewChat}
-              title={dict.chat.newChat}
-              className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all"
-            >
-              <Plus size={16} />
-            </button>
-            <Link
-              href="/agents"
-              title={dict.chat.agents}
-              className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all"
-            >
-              <Bot size={16} />
-            </Link>
           </div>
         </div>
 
@@ -1024,21 +1002,22 @@ export default function ChatInterface({
         {/* Messaggi */}          <div
           ref={messagesRef}
           onScroll={handleMessagesScroll}
-          className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 mx-auto max-w-content"
+          className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6 mx-auto max-w-content"
         >
           {messages.length === 0 && !isTyping ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Image
-                src="/agentcloud.png"
-                alt="AgentCloud"
-                width={56}
-                height={56}
-                className="mb-4"
-              />
-              <h2 className="text-xl font-semibold text-white mb-2">
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-white/5">
+                <Image
+                  src="/agentcloud.png"
+                  alt="AgentCloud"
+                  width={40}
+                  height={40}
+                />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">
                 {dict.chat.emptyTitle}
               </h2>
-              <p className="text-sm font-semibold text-neutral-400 max-w-sm">
+              <p className="text-sm text-neutral-400 max-w-md leading-relaxed">
                 {dict.chat.emptySubtitle}
               </p>
               {effectiveAvailableAgents.length > 0 && (
@@ -1085,13 +1064,15 @@ export default function ChatInterface({
                 }`}
               >
                 {msg.role === "assistant" && (
-                  <Image
-                    src="/agentcloud.png"
-                    alt="AgentCloud"
-                    width={32}
-                    height={32}
-                    className="w-8 h-8 shrink-0"
-                  />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-white/5 mt-0.5">
+                    <Image
+                      src="/agentcloud.png"
+                      alt="AgentCloud"
+                      width={16}
+                      height={16}
+                      className="w-4 h-4"
+                    />
+                  </div>
                 )}
                 <div
                   className={`max-w-[75%] sm:max-w-[65%] ${msg.role === "user" ? "order-1" : ""} w-full`}
@@ -1099,8 +1080,8 @@ export default function ChatInterface({
                   <div
                     className={`px-4 py-3 text-sm leading-relaxed ${
                       msg.role === "user"
-                        ? "whitespace-pre-wrap bg-brand-500 text-white rounded-2xl rounded-br-md shadow-lg shadow-brand-500/20"
-                        : "bg-neutral-800 border border-white/5 text-neutral-200 rounded-2xl rounded-bl-md"
+                        ? "whitespace-pre-wrap bg-white/5 text-white rounded-2xl rounded-br-md border border-white/5"
+                        : "text-neutral-200"
                     }`}
                   >
                     {msg.role === "assistant" ? (
@@ -1152,12 +1133,29 @@ export default function ChatInterface({
                   </p>
                 </div>
                 {msg.role === "user" && (
-                  <div className="w-8 h-8 rounded-xl bg-neutral-700 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-neutral-700 flex items-center justify-center shrink-0">
                     <span className="text-white text-xs font-bold">U</span>
                   </div>
                 )}
               </div>
             ))
+          )}
+
+          {/* Export buttons - show when there are messages */}
+          {messages.length > 0 && (
+            <div className="flex justify-center py-2">
+              <ExportReportButton
+                type="chat"
+                messages={messages.map((m) => ({
+                  role: m.role,
+                  content: m.content,
+                  agentName: m.role === "assistant" ? (activeAgentDisplayName || "Assistente") : undefined,
+                  timestamp: m.created_at,
+                }))}
+                agentName={activeAgentDisplayName || "AgentCloud"}
+                agentSlug={activeAgentId || "agent"}
+              />
+            </div>
           )}
 
           {isTyping && !hasPartialReply && (
@@ -1337,7 +1335,7 @@ export default function ChatInterface({
                 )}
               </div>
             )}
-            <div className="flex items-end gap-2 bg-neutral-800 rounded-2xl border border-white/5 px-3 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+            <div className="flex items-end gap-2 bg-neutral-800 rounded-2xl border border-white/10 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
             <AttachPlusButton
               labels={attachLabels}
               disabled={isTyping}
@@ -1363,7 +1361,7 @@ export default function ChatInterface({
               }
               aria-label={dict.chat.sendMessage}
               title={dict.chat.sendMessage}
-              className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed"
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
             >
               <Send size={16} />
             </button>

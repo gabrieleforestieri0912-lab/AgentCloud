@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
 import DashboardCharts from "@/components/DashboardCharts";
+import DashboardExportBar from "@/components/DashboardExportBar";
 import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
 import { AGENTS, localizeAgent } from "@/lib/agents";
@@ -416,6 +417,16 @@ export default async function DashboardPage({
               overageCents={displayOverageCents}
               locale={locale}
             />
+            <div className="mt-4">
+              <DashboardExportBar
+                agentName={displayInstalled[0]?.slug || "AgentCloud"}
+                agentSlug={displayInstalled[0]?.slug || "agent"}
+                totalRuns={displayTotalRuns}
+                totalTokens={displayTotalTokens}
+                estimatedCostCents={displayOverageCents}
+                daily={displayDailyBuckets}
+              />
+            </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">

@@ -100,11 +100,7 @@ export default function MarketplaceGrid({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={
-              locale === "it"
-                ? "Cerca agenti per nome, categoria o funzionalità..."
-                : "Search agents by name, category or feature..."
-            }
+            placeholder={dict.marketplaceGrid.searchPlaceholder}
             className="w-full rounded-xl border border-white/10 bg-neutral-900 py-3 pl-11 pr-10 text-sm font-semibold text-white placeholder-neutral-500 outline-none transition-colors focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
           />
           {query && (
@@ -119,7 +115,7 @@ export default function MarketplaceGrid({
 
         {/* Conteggio risultati */}
         <div className="mb-4 text-sm font-semibold text-neutral-500">
-          {locale === "it" ? `${filteredAvailable.length} agenti trovati` : `${filteredAvailable.length} agents found`}
+          {`${filteredAvailable.length} ${dict.marketplaceGrid.agentsFound}`}
         </div>
 
         {/* Filtri per categoria */}
@@ -130,7 +126,7 @@ export default function MarketplaceGrid({
             className="mb-3 flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-300 hover:bg-neutral-800 lg:hidden"
           >
             <SlidersHorizontal size={16} />
-            {locale === "it" ? "Filtri" : "Filters"}
+            {dict.marketplaceGrid.filters}
             {selectedCategory && (
               <span className="rounded-full bg-brand-500/20 px-2 py-0.5 text-xs text-brand-300">
                 1
@@ -149,7 +145,7 @@ export default function MarketplaceGrid({
                   : "border border-white/10 bg-neutral-900 text-neutral-400 hover:border-white/20 hover:text-white"
               }`}
             >
-              {locale === "it" ? "Tutti" : "All"}
+              {dict.marketplaceGrid.all}
             </button>
             {categories.map((category) => (
               <button
@@ -185,12 +181,10 @@ export default function MarketplaceGrid({
           <div className="rounded-2xl border border-white/5 bg-neutral-900 p-12 text-center">
             <Search size={48} className="mx-auto mb-4 text-neutral-600" />
             <h3 className="text-lg font-bold text-white">
-              {locale === "it" ? "Nessun agente trovato" : "No agents found"}
+              {dict.marketplaceGrid.noAgentsFound}
             </h3>
             <p className="mt-2 text-sm text-neutral-400">
-              {locale === "it"
-                ? "Prova a selezionare un'altra categoria"
-                : "Try selecting a different category"}
+              {dict.marketplaceGrid.tryDifferentCategory}
             </p>
           </div>
         )}
@@ -213,12 +207,12 @@ export default function MarketplaceGrid({
               {t(dict.agentsPage.agentsCount, { count: comingSoonCount })}
             </span>
             <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-300">
-              {locale === "it" ? "In arrivo" : "Soon"}
+              {dict.marketplaceGrid.soon}
             </span>
           </div>
           {filteredComingSoon.length === 0 ? (
             <p className="text-sm text-neutral-500">
-              {locale === "it" ? "Nessun agente in arrivo corrisponde alla ricerca." : "No upcoming agents match your search."}
+              {dict.marketplaceGrid.noUpcomingMatch}
             </p>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">

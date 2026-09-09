@@ -6,6 +6,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import { User, Mail, Shield, CreditCard, Plug, Trash2, LogOut, CheckCircle2, AlertCircle, Save } from "lucide-react";
 
 export default function AccountClient({
@@ -31,7 +33,7 @@ export default function AccountClient({
   googleEmail: string | null;
   locale: string;
 }) {
-  const isIt = locale === "it";
+  const { dict } = useLanguage();
   const [name, setName] = useState(initialName);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -39,7 +41,7 @@ export default function AccountClient({
 
   async function handleSaveName() {
     if (isMock) {
-      setMsg({ kind: "err", text: isIt ? "Modalità mock: nessuna scrittura su DB." : "Mock mode: no DB writes." });
+      setMsg({ kind: "err", text: dict.chat.accountMockError });
       return;
     }
     setSaving(true);
@@ -48,7 +50,7 @@ export default function AccountClient({
       const supabase = createClient();
       const { error } = await supabase.auth.updateUser({ data: { full_name: name } });
       if (error) throw error;
-      setMsg({ kind: "ok", text: isIt ? "Nome aggiornato." : "Name updated." });
+      setMsg({ kind: "ok", text: dict.chat.accountNameUpdated });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
     } finally {
@@ -62,14 +64,14 @@ export default function AccountClient({
   }
 
   async function handleDelete() {
-    if (!confirm(isIt ? "Eliminare definitivamente l'account? Azione irreversibile." : "Permanently delete account? Irreversible.")) return;
+    if (!confirm(dict.chat.accountDeleteConfirm)) return;
     setDeleting(true);
     setMsg(null);
     try {
       const res = await fetch("/api/account/delete", { method: "POST" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || (isIt ? "Errore cancellazione" : "Delete failed"));
+        throw new Error(data.error || (dict.chat.accountDeleteError));
       }
       // Account cancellato — reindirizza alla home
       window.location.href = "/";
@@ -97,21 +99,21 @@ export default function AccountClient({
           <div className="flex-1">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <User size={16} className="text-brand-400" />
-              {isIt ? "Profilo" : "Profile"}
+              {dict.chat.accountProfile}
               {isAdmin && <span className="rounded-full bg-brand-500/15 px-2 py-0.5 text-xs font-bold text-brand-300">Admin</span>}
             </h2>
             <p className="text-sm text-neutral-500">{firstName} · {initialEmail}</p>
-            {createdAt && <p className="text-xs text-neutral-600">{isIt ? "Creato il" : "Created"} {new Date(createdAt).toLocaleDateString(locale === "it" ? "it-IT" : "en-US")}</p>}
+            {createdAt && <p className="text-xs text-neutral-600">{dict.chat.createdOn} {new Date(createdAt).toLocaleDateString(locale === "it" ? "it-IT" : "en-US")}</p>}
           </div>
           <button onClick={handleSignOut} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-300 hover:bg-white/5">
-            <LogOut size={14} /> {isIt ? "Esci" : "Sign out"}
+            <LogOut size={14} /> {dict.navbar.logOut}
           </button>
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-neutral-300">{isIt ? "Nome" : "Name"}</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={isIt ? "Mario Rossi" : "John Doe"} className="w-full rounded-xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500/50" />
+            <span className="mb-1.5 block text-sm font-semibold text-neutral-300">{dict.chat.accountName}</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={dict.chat.accountNamePlaceholder} className="w-full rounded-xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500/50" />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-neutral-300">Email</span>
@@ -132,17 +134,17 @@ export default function AccountClient({
       <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h3 className="flex items-center gap-2 text-lg font-bold text-white">
           <CreditCard size={16} className="text-brand-400" />
-          {isIt ? "Piano e fatturazione" : "Plan & billing"}
+          {dict.chat.accountPlanBilling}
         </h3>
         <p className="mt-2 text-sm text-neutral-400">
-          {plan ? (isIt ? `Piano attuale: ${plan}` : `Current plan: ${plan}`) : isIt ? "Nessun piano attivo." : "No active plan."}
+          {plan ? t(dict.chat.accountCurrentPlan, { plan }) : dict.chat.accountNoPlan}
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/agents" className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 hover:bg-neutral-100">
-            {isIt ? "Sfoglia agenti" : "Browse agents"}
+            {dict.chat.accountBrowseAgents}
           </Link>
           <Link href="/api/billing/portal" className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
-            {isIt ? "Gestisci abbonamento" : "Manage billing"}
+            {dict.chat.accountManageBilling}
           </Link>
         </div>
       </div>
@@ -151,18 +153,18 @@ export default function AccountClient({
       <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h3 className="flex items-center gap-2 text-lg font-bold text-white">
           <Plug size={16} className="text-purple-400" />
-          {isIt ? "Connessioni" : "Connections"}
+          {dict.chat.accountConnections}
         </h3>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-white/5 bg-neutral-800 p-4">
             <p className="text-sm font-bold text-white">Shopify</p>
-            <p className="text-xs text-neutral-500">{shopifyShops.length ? shopifyShops.join(", ") : isIt ? "Non collegato" : "Not connected"}</p>
-            <Link href="/integrations" className="mt-3 inline-flex text-xs font-bold text-brand-400 hover:underline">{isIt ? "Gestisci" : "Manage"} →</Link>
+            <p className="text-xs text-neutral-500">{shopifyShops.length ? shopifyShops.join(", ") : dict.chat.accountNotConnected}</p>
+            <Link href="/integrations" className="mt-3 inline-flex text-xs font-bold text-brand-400 hover:underline">{dict.chat.accountManage} →</Link>
           </div>
           <div className="rounded-xl border border-white/5 bg-neutral-800 p-4">
             <p className="text-sm font-bold text-white">Google</p>
-            <p className="text-xs text-neutral-500">{googleEmail ?? (isIt ? "Non collegato" : "Not connected")}</p>
-            <Link href="/dashboard" className="mt-3 inline-flex text-xs font-bold text-brand-400 hover:underline">{isIt ? "Gestisci" : "Manage"} →</Link>
+            <p className="text-xs text-neutral-500">{googleEmail ?? (dict.chat.accountNotConnected)}</p>
+            <Link href="/dashboard" className="mt-3 inline-flex text-xs font-bold text-brand-400 hover:underline">{dict.chat.accountManage} →</Link>
           </div>
         </div>
       </div>
@@ -171,11 +173,11 @@ export default function AccountClient({
       <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h3 className="flex items-center gap-2 text-lg font-bold text-white">
           <Shield size={16} className="text-emerald-400" />
-          {isIt ? "Sicurezza" : "Security"}
+          {dict.chat.accountSecurity}
         </h3>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/reset-password" className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
-            {isIt ? "Cambia password" : "Change password"}
+            {dict.chat.accountChangePassword}
           </Link>
           <Link href="/privacy" className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
             Privacy
@@ -187,29 +189,29 @@ export default function AccountClient({
       <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
         <h3 className="flex items-center gap-2 text-lg font-bold text-red-300">
           <Trash2 size={16} />
-          {isIt ? "Zona pericolosa" : "Danger zone"}
+          {dict.chat.accountDangerZone}
         </h3>
         <p className="mt-2 text-sm text-red-200/70">
-          {isIt ? "Eliminare l'account è irreversibile. Contatta il supporto se hai bisogno di assistenza." : "Deleting your account is irreversible. Contact support if you need help."}
+          {dict.chat.accountDangerDesc}
         </p>
         <button onClick={handleDelete} disabled={deleting || isMock} className="mt-4 rounded-full bg-red-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-red-400 disabled:opacity-50">
-          {deleting ? "..." : isIt ? "Elimina account" : "Delete account"}
+          {deleting ? "..." : dict.chat.accountDelete}
         </button>
       </div>
 
       {/* Bottone unico sticky */}
       <div className="sticky bottom-4 z-20 mt-2 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-900/95 px-4 py-3 shadow-2xl shadow-black/30 backdrop-blur">
         <p className="hidden text-sm font-semibold text-neutral-400 sm:block">
-          {isIt ? "Salva tutte le modifiche dell'account." : "Save all account changes."}
+          {dict.chat.accountSaveAll}
         </p>
-        <span className="sm:hidden text-sm font-semibold text-neutral-500">{isIt ? "Pronto a salvare" : "Ready to save"}</span>
+        <span className="sm:hidden text-sm font-semibold text-neutral-500">{dict.chat.accountReadyToSave}</span>
         <button
           onClick={handleSaveName}
           disabled={saving || isMock}
           className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 hover:bg-brand-400 disabled:opacity-50"
         >
           <Save size={16} />
-          {saving ? "..." : isIt ? "Salva modifiche" : "Save changes"}
+          {saving ? "..." : dict.chat.settingsSaveChanges}
         </button>
       </div>
     </div>

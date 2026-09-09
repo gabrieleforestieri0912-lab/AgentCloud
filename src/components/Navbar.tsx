@@ -17,8 +17,8 @@ import {
   ArrowRight,
   LogOut,
   User,
-  Settings,
   LayoutDashboard,
+  CreditCard,
 } from "lucide-react";
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
@@ -34,6 +34,7 @@ import {
 import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { ShoppingCart, MessageSquare } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import NotificationBell from "./NotificationBell";
 import { useCart } from "./CartProvider";
 
@@ -212,7 +213,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
         className="fixed left-0 right-0 top-0 z-50"
       >
         <div className="mx-auto mt-3 max-w-7xl 3xl:max-w-[1720px] px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
-          <div className="flex h-16 items-center justify-between rounded-full border border-white/10 bg-neutral-950/90 px-6 shadow-lg shadow-black/20 backdrop-blur-xl">
+          <div className="flex h-16 items-center justify-between rounded-full border border-white/10 bg-neutral-950 px-6 shadow-lg shadow-black/20">
             <Link href="/" className="group flex items-center gap-2.5">
               <div className="relative h-9 w-9">
                 <Image
@@ -272,7 +273,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                           {item.key === "marketplace" && (
                             <div className="w-80">
                               <p className="mb-3 px-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                                {locale === "it" ? "Agenti in evidenza" : "Featured agents"}
+                                {dict.chat.featuredAgents}
                               </p>
                               <div className="grid grid-cols-2 gap-2">
                                 {featuredAgents.map((agent) => (
@@ -308,7 +309,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                             {item.key === "solutions" && (
                               <div className="w-80">
                                 <p className="mb-3 px-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                                  {locale === "it" ? "Soluzioni" : "Solutions"}
+                                  {dict.chat.solutions}
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
                                   {solutions.map(({ title, text, href }) => (
@@ -332,7 +333,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                             {item.key === "integrations" && (
                               <div className="w-[420px] max-w-[90vw]">
                                 <p className="mb-3 px-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                                  {locale === "it" ? "Integrazioni" : "Integrations"} · {INTEGRATIONS.filter((i) => i.available).length} {locale === "it" ? "disponibili" : "available"}
+                                  {t(dict.chat.integrationsCount, { count: INTEGRATIONS.filter((i) => i.available).length })}
                                 </p>
                                 <div className="grid max-h-[320px] grid-cols-4 gap-1 overflow-y-auto pr-1 scrollbar-thin">
                                   {INTEGRATIONS.map((integration) => {
@@ -352,7 +353,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                                         <span className="text-xs font-bold leading-tight text-neutral-300 group-hover:text-white">{integration.name}</span>
                                         {!integration.available && (
                                           <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
-                                            {locale === "it" ? "Presto" : "Soon"}
+                                            {dict.chat.comingSoon}
                                           </span>
                                         )}
                                       </Link>
@@ -363,7 +364,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                                   href="/integrations"
                                   className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-brand-500 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
                                 >
-                                  {locale === "it" ? "Vedi tutte le integrazioni" : "View all integrations"}
+                                  {dict.chat.viewAllIntegrations}
                                   <ArrowRight size={14} />
                                 </Link>
                               </div>
@@ -422,7 +423,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                       className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
                     >
                       <MessageSquare size={14} />
-                      {locale === "it" ? "Chat AI" : "AI Chat"}
+                      {dict.chat.aiChat}
                     </Link>
                   )}
                   <Link
@@ -454,7 +455,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                             {isSignedIn ? session?.user?.email : "admin@agentcloud.agency"}
                           </p>
                           <p className="text-xs text-neutral-500">
-                            {isSignedIn ? "Account" : "Admin · mock loggato"}
+                            {isSignedIn ? "Account" : dict.chat.adminMockLogged}
                           </p>
                         </div>
                         <div className="my-1 h-px bg-white/5" />
@@ -475,12 +476,12 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                           Account
                         </Link>
                         <Link
-                          href="/settings"
+                          href="/api/billing/portal"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
                         >
-                          <Settings size={14} />
-                          {locale === "it" ? "Impostazioni" : "Settings"}
+                          <CreditCard size={14} />
+                          {dict.navbar.subscriptions}
                         </Link>
                         <div className="my-1 h-px bg-white/5" />
                         {isSignedIn ? (

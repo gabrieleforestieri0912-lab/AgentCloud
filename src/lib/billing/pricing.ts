@@ -59,7 +59,7 @@ export const SHOPIFY_PRICING: VerticalPricing = {
         webSearch: {
           price: 499, // €4,99/mese
           priceDisplay: "+€4,99/mese",
-          description: "Web search con Tavily",
+          description: "Web search via Chrome/Tavily",
         },
       },
     },
@@ -78,7 +78,7 @@ export const SHOPIFY_PRICING: VerticalPricing = {
         webSearch: {
           price: 499,
           priceDisplay: "+€4,99/mese",
-          description: "Web search con Tavily",
+          description: "Web search via Chrome/Tavily",
         },
       },
     },
@@ -107,7 +107,7 @@ export const SERVICES_PRICING: VerticalPricing = {
         webSearch: {
           price: 499,
           priceDisplay: "+€4,99/mese",
-          description: "Web search con Tavily",
+          description: "Web search via Chrome/Tavily",
         },
       },
     },
@@ -126,7 +126,7 @@ export const SERVICES_PRICING: VerticalPricing = {
         webSearch: {
           price: 499,
           priceDisplay: "+€4,99/mese",
-          description: "Web search con Tavily",
+          description: "Web search via Chrome/Tavily",
         },
       },
     },

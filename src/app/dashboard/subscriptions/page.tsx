@@ -5,11 +5,13 @@ import { hasPlatformAccess } from "@/lib/access-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 import DashboardShell from "@/components/DashboardShell";
 import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { CreditCard, Calendar, CheckCircle2, XCircle, Clock, Receipt, ExternalLink } from "lucide-react";
 
 export default async function SubscriptionsPage() {
   const locale = await getLocale();
   const isIt = locale === "it";
+  const dict = getDictionary(locale);
   const user = await getSessionUser();
   const hasAccess = await hasPlatformAccess();
   if (!user && !hasAccess) redirect("/login");
@@ -48,45 +50,45 @@ export default async function SubscriptionsPage() {
       <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight text-white">{isIt ? "I miei abbonamenti" : "My subscriptions"}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">{dict.subscriptionsPage.mySubscriptions}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-400">
-              {isIt ? "Gestisci fatturazione, metodi di pagamento e storico abbonamenti. Stripe e PayPal supportati." : "Manage billing, payment methods and subscription history. Stripe and PayPal supported."}
+              {dict.subscriptionsPage.subscriptionsDesc}
             </p>
           </div>
 
           {/* Billing actions */}
           <div className="mb-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
-              <h2 className="flex items-center gap-2 text-lg font-bold text-white"><CreditCard size={18} className="text-brand-400" /> {isIt ? "Fatturazione" : "Billing"}</h2>
-              <p className="mt-2 text-sm text-neutral-400">{isIt ? "Gestisci metodi di pagamento, fatture e rinnovi." : "Manage payment methods, invoices and renewals."}</p>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-white"><CreditCard size={18} className="text-brand-400" /> {dict.subscriptionsPage.billing}</h2>
+              <p className="mt-2 text-sm text-neutral-400">{dict.subscriptionsPage.billingDesc}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link href="/api/billing/portal" className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 hover:bg-neutral-100">
-                  {isIt ? "Gestisci su Stripe" : "Manage on Stripe"} <ExternalLink size={14} />
+                  {dict.subscriptionsPage.manageOnStripe} <ExternalLink size={14} />
                 </Link>
                 <Link href="/cart" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
-                  {isIt ? "Vai al carrello" : "Go to cart"}
+                  {dict.subscriptionsPage.goToCart}
                 </Link>
               </div>
-              <p className="mt-3 text-xs text-neutral-500">{isIt ? "PayPal: gestito via dashboard PayPal dopo l'attivazione." : "PayPal: managed via PayPal dashboard after activation."}</p>
+              <p className="mt-3 text-xs text-neutral-500">{dict.subscriptionsPage.paypalNote}</p>
             </div>
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
-              <h2 className="flex items-center gap-2 text-lg font-bold text-white"><Receipt size={18} className="text-emerald-400" /> {isIt ? "Storico fatture" : "Invoice history"}</h2>
-              <p className="mt-2 text-sm text-neutral-400">{isIt ? "Le fatture Stripe sono nel portale. PayPal nel suo dashboard." : "Stripe invoices are in the portal. PayPal in its dashboard."}</p>
-              <p className="mt-3 text-xs text-neutral-500">{isIt ? "Storico locale sotto (ultimi 20)." : "Local history below (last 20)."}</p>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-white"><Receipt size={18} className="text-emerald-400" /> {dict.subscriptionsPage.invoiceHistory}</h2>
+              <p className="mt-2 text-sm text-neutral-400">{dict.subscriptionsPage.invoiceHistoryDesc}</p>
+              <p className="mt-3 text-xs text-neutral-500">{dict.subscriptionsPage.localHistory}</p>
             </div>
           </div>
 
           {/* Attivi */}
           <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2"><CheckCircle2 size={18} className="text-emerald-400" /> {isIt ? `Attivi (${active.length})` : `Active (${active.length})`}</h2>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2"><CheckCircle2 size={18} className="text-emerald-400" /> {`${dict.subscriptionsPage.active} (${active.length})`}</h2>
             {active.length === 0 ? (
-              <p className="mt-4 text-sm text-neutral-500">{isIt ? "Nessun abbonamento attivo." : "No active subscriptions."} <Link href="/agents" className="font-bold text-brand-400 hover:underline">{isIt ? "Sfoglia agenti" : "Browse agents"}</Link></p>
+              <p className="mt-4 text-sm text-neutral-500">{dict.subscriptionsPage.noActiveSubscriptions} <Link href="/agents" className="font-bold text-brand-400 hover:underline">{dict.subscriptionsPage.browseAgents}</Link></p>
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {active.map((s) => (
                   <div key={s.agent_slug} className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
                     <p className="text-sm font-bold text-white">{s.agent_slug}</p>
-                    <p className="text-xs text-emerald-300 flex items-center gap-1"><Calendar size={12} /> {isIt ? "Attivo dal" : "Active since"} {formatDate(s.activated_at)} · {isIt ? "prossimo rinnovo" : "next renewal"} {formatDate(s.current_period_end)}</p>
+                    <p className="text-xs text-emerald-300 flex items-center gap-1"><Calendar size={12} /> {dict.subscriptionsPage.activeSince} {formatDate(s.activated_at)} · {dict.subscriptionsPage.nextRenewal} {formatDate(s.current_period_end)}</p>
                     {!!(s.config as Record<string, unknown>)?.paypal && <span className="mt-1 inline-flex rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-bold text-blue-300">PayPal</span>}
                     {!!(s.config as Record<string, unknown>)?.stripeSubscriptionItemId && <span className="ml-1 inline-flex rounded-full bg-violet-500/15 px-2 py-0.5 text-xs font-bold text-violet-300">Stripe</span>}
                   </div>
@@ -97,9 +99,9 @@ export default async function SubscriptionsPage() {
 
           {/* Storico */}
           <div className="mt-6 rounded-2xl border border-white/5 bg-neutral-900 p-6">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2"><Clock size={18} className="text-neutral-400" /> {isIt ? "Storico abbonamenti" : "Subscription history"}</h2>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2"><Clock size={18} className="text-neutral-400" /> {dict.subscriptionsPage.subscriptionHistory}</h2>
             {history.length === 0 ? (
-              <p className="mt-4 text-sm text-neutral-500">{isIt ? "Nessuno storico." : "No history."}</p>
+              <p className="mt-4 text-sm text-neutral-500">{dict.subscriptionsPage.noHistory}</p>
             ) : (
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-left text-sm">
@@ -132,8 +134,8 @@ export default async function SubscriptionsPage() {
               </div>
             )}
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/api/billing/portal" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white hover:bg-white/10">{isIt ? "Gestisci fatturazione" : "Manage billing"}</Link>
-              <Link href="/agents" className="rounded-full bg-brand-500 px-4 py-2 text-xs font-bold text-white hover:bg-brand-400">{isIt ? "Aggiungi agente" : "Add agent"}</Link>
+              <Link href="/api/billing/portal" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white hover:bg-white/10">{dict.subscriptionsPage.manageBilling}</Link>
+              <Link href="/agents" className="rounded-full bg-brand-500 px-4 py-2 text-xs font-bold text-white hover:bg-brand-400">{dict.subscriptionsPage.addAgent}</Link>
             </div>
           </div>
 

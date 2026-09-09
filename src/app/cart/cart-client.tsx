@@ -9,7 +9,7 @@ import AgentIcon from "@/components/AgentIcon";
 
 export default function CartPageClient() {
   const { items, totalDisplay, totalCents, remove, clear } = useCart();
-  const { locale } = useLanguage();
+  const { locale, dict } = useLanguage();
   const isIt = locale === "it";
   const [checkingOut, setCheckingOut] = useState(false);
 
@@ -24,7 +24,7 @@ export default function CartPageClient() {
       } else if (data.error === "unauthorized") {
         window.location.href = "/login";
       } else {
-        alert(data.error || (isIt ? "Errore checkout" : "Checkout error"));
+        alert(data.error || dict.cartPage.checkoutError);
       }
     } finally {
       setCheckingOut(false);
@@ -37,20 +37,18 @@ export default function CartPageClient() {
         <div className="mx-auto max-w-4xl">
           <Link href="/" className="mb-8 inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-500 hover:text-white transition-colors">
             <ArrowRight size={14} className="rotate-180" />
-            {isIt ? "Torna alla home" : "Back to home"}
+            {dict.cartPage.backToHome}
           </Link>
           <div className="mb-8 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/15 text-brand-400">
               <ShoppingCart size={20} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">{isIt ? "Carrello" : "Cart"}</h1>
+              <h1 className="text-2xl font-bold text-white">{dict.cartPage.cartTitle}</h1>
               <p className="text-sm text-neutral-500">
                 {items.length === 0
-                  ? isIt
-                    ? "Nessun agente nel carrello"
-                    : "No agents in cart"
-                  : `${items.length} ${isIt ? "agenti" : "agents"} — ${totalDisplay}`}
+                  ? dict.cartPage.noAgentsInCart
+                  : `${items.length} ${dict.cartPage.agentsLabel} — ${totalDisplay}`}
               </p>
             </div>
           </div>
@@ -59,13 +57,13 @@ export default function CartPageClient() {
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-10 text-center">
               <ShoppingCart size={32} className="mx-auto text-neutral-600" />
               <p className="mt-4 text-sm font-semibold text-neutral-400">
-                {isIt ? "Il carrello è vuoto. Aggiungi agenti dal marketplace." : "Your cart is empty. Add agents from the marketplace."}
+                {dict.cartPage.emptyCartDesc}
               </p>
               <Link
                 href="/agents"
                 className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-2.5 text-sm font-bold text-white hover:bg-brand-400"
               >
-                {isIt ? "Sfoglia agenti" : "Browse agents"} <ArrowRight size={14} />
+                {dict.cartPage.browseAgents} <ArrowRight size={14} />
               </Link>
             </div>
           ) : (
@@ -86,13 +84,13 @@ export default function CartPageClient() {
                         {item.type === "bundle" && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-300">
                             <Users size={10} />
-                            {item.agentSlugs?.length} {isIt ? "agenti" : "agents"}
+                            {item.agentSlugs?.length} {dict.cartPage.bundleLabel}
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-neutral-500">
                         {item.type === "bundle"
-                          ? `${item.price} · ${item.period === "monthly" ? (isIt ? "Mensile" : "Monthly") : item.period === "quarterly" ? (isIt ? "Trimestrale" : "Quarterly") : (isIt ? "Annuale" : "Yearly")}`
+                          ? `${item.price} · ${item.period === "monthly" ? dict.cartPage.monthlyLabel : item.period === "quarterly" ? dict.cartPage.quarterlyLabel : dict.cartPage.yearlyLabel}`
                           : `${item.price} / mese`}
                       </p>
                     </div>
@@ -114,20 +112,20 @@ export default function CartPageClient() {
                     onClick={() => clear()}
                     className="rounded-full border border-white/10 px-4 py-2 text-xs font-bold text-neutral-400 hover:bg-white/5 hover:text-white"
                   >
-                    {isIt ? "Svuota carrello" : "Clear cart"}
+                    {dict.cartPage.clearCart}
                   </button>
                   <Link
                     href="/agents"
                     className="rounded-full border border-white/10 px-4 py-2 text-xs font-bold text-white hover:bg-white/5"
                   >
-                    {isIt ? "Continua acquisti" : "Continue shopping"}
+                    {dict.cartPage.continueShopping}
                   </Link>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-xs text-neutral-500">{isIt ? "Totale" : "Total"}</p>
+                    <p className="text-xs text-neutral-500">{dict.cartPage.totalLabel}</p>
                     <p className="text-xl font-bold text-white">{totalDisplay}</p>
-                    <p className="text-xs text-neutral-600">{isIt ? "IVA inclusa" : "VAT included"} — {totalCents > 0 ? `${items.length} × abbonamento mensile` : ""}</p>
+                    <p className="text-xs text-neutral-600">{dict.cartPage.vatIncluded} — {totalCents > 0 ? `${items.length} × abbonamento mensile` : ""}</p>
                   </div>
                   <button
                     onClick={handleCheckout}
@@ -135,7 +133,7 @@ export default function CartPageClient() {
                     className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 hover:bg-brand-400 disabled:opacity-60"
                   >
                     {checkingOut ? <Loader2 size={16} className="animate-spin" /> : null}
-                    {isIt ? "Vai al checkout" : "Checkout"} <ArrowRight size={16} />
+                    {dict.cartPage.checkout} <ArrowRight size={16} />
                   </button>
                 </div>
               </div>

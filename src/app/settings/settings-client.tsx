@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Languages, Bell, Shield, Palette, Database, Globe, Check, Sun, Moon, Monitor, Save, Download, Loader2 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/constants";
 import { useTheme, type Theme } from "@/components/ThemeProvider";
 
@@ -11,7 +12,7 @@ import { useTheme, type Theme } from "@/components/ThemeProvider";
 // Le preferenze (toggle ecc.) sono per ora simulabili lato client — nessuna
 // scrittura su DB, da qui il pulsante "Salva" fittizio.
 export default function SettingsClient({ isMock, email }: { isMock: boolean; email: string }) {
-  const { locale, setLocale } = useLanguage();
+  const { dict, locale, setLocale } = useLanguage();
   const { theme, resolvedTheme, setTheme } = useTheme();
   const isIt = locale === "it";
   const [emailNotif, setEmailNotif] = useState(true);
@@ -93,14 +94,14 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1500);
-      setExportFeedback(isIt ? "Export scaricato!" : "Export downloaded!");
+      setExportFeedback(dict.chat.settingsExportSuccess);
       setTimeout(() => setExportFeedback(null), 3200);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg === "unauthorized") {
-        setExportFeedback(isIt ? "Devi accedere per esportare i dati." : "You must be signed in to export data.");
+        setExportFeedback(dict.chat.settingsExportUnauthorized);
       } else {
-        setExportFeedback(isIt ? `Errore export: ${msg}` : `Export failed: ${msg}`);
+        setExportFeedback(t(dict.chat.settingsExportError, { msg }));
       }
       setTimeout(() => setExportFeedback(null), 4500);
     } finally {
@@ -111,9 +112,9 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">{isIt ? "Impostazioni" : "Settings"}</h1>
+        <h1 className="text-3xl font-bold text-white">{dict.chat.settingsPageTitle}</h1>
         <p className="mt-2 text-neutral-400">
-          {isIt ? `Gestisci preferenze per ${email}` : `Manage preferences for ${email}`}
+          {t(dict.chat.settingsPageDesc, { email })}
           {isMock && <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-300">Mock admin</span>}
         </p>
       </div>
@@ -122,10 +123,10 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
       <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h2 className="flex items-center gap-2 text-lg font-bold text-white">
           <Languages size={16} className="text-brand-400" />
-          {isIt ? "Lingua" : "Language"}
+          {dict.chat.settingsLanguage}
         </h2>
         <p className="mt-1 text-sm text-neutral-500">
-          {isIt ? "Scegli la lingua della piattaforma (rilevata automaticamente dal paese)." : "Choose platform language (auto-detected from country)."}
+          {dict.chat.settingsLanguageDesc}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {LOCALES.map((code) => {
@@ -148,13 +149,13 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
       <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h2 className="flex items-center gap-2 text-lg font-bold text-white">
           <Bell size={16} className="text-purple-400" />
-          {isIt ? "Notifiche" : "Notifications"}
+          {dict.chat.settingsNotifications}
         </h2>
         <div className="mt-4 space-y-4">
           <label className="flex items-center justify-between rounded-xl border border-white/5 bg-neutral-800 p-4">
             <div>
-              <p className="text-sm font-bold text-white">{isIt ? "Email notifiche" : "Email notifications"}</p>
-              <p className="text-xs text-neutral-500">{isIt ? "Ricevi aggiornamenti su agenti e fatturazione." : "Receive updates on agents and billing."}</p>
+              <p className="text-sm font-bold text-white">{dict.chat.settingsEmailNotif}</p>
+              <p className="text-xs text-neutral-500">{dict.chat.settingsEmailNotifDesc}</p>
             </div>
             <button
               onClick={() => setEmailNotif((v) => !v)}
@@ -165,8 +166,8 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
           </label>
           <label className="flex items-center justify-between rounded-xl border border-white/5 bg-neutral-800 p-4">
             <div>
-              <p className="text-sm font-bold text-white">{isIt ? "Aggiornamenti prodotto" : "Product updates"}</p>
-              <p className="text-xs text-neutral-500">{isIt ? "Novità su agenti e integrazioni." : "News on agents and integrations."}</p>
+              <p className="text-sm font-bold text-white">{dict.chat.settingsProductUpdates}</p>
+              <p className="text-xs text-neutral-500">{dict.chat.settingsProductUpdatesDesc}</p>
             </div>
             <button
               onClick={() => setProductUpdates((v) => !v)}
@@ -182,17 +183,17 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
       <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h2 className="flex items-center gap-2 text-lg font-bold text-white">
           <Palette size={16} className="text-pink-400" />
-          {isIt ? "Aspetto" : "Appearance"}
+          {dict.chat.settingsAppearance}
         </h2>
         <p className="mt-2 text-sm text-neutral-400">
-          {isIt ? "Scegli il tema dell'interfaccia. Sistema segue le preferenze del dispositivo." : "Choose the interface theme. System follows your device preference."}
+          {dict.chat.settingsAppearanceDesc}
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
           {(
             [
-              { value: "light" as Theme, label: isIt ? "Chiaro" : "Light", icon: Sun, desc: isIt ? "Sfondo chiaro" : "Light background" },
-              { value: "dark" as Theme, label: isIt ? "Scuro" : "Dark", icon: Moon, desc: isIt ? "Sfondo scuro" : "Dark background" },
-              { value: "system" as Theme, label: isIt ? "Sistema" : "System", icon: Monitor, desc: `${isIt ? "Attuale" : "Current"}: ${resolvedTheme === "light" ? (isIt ? "chiaro" : "light") : isIt ? "scuro" : "dark"}` },
+              { value: "light" as Theme, label: dict.chat.settingsLight, icon: Sun, desc: dict.chat.settingsLightDesc },
+              { value: "dark" as Theme, label: dict.chat.settingsDark, icon: Moon, desc: dict.chat.settingsDarkDesc },
+              { value: "system" as Theme, label: dict.chat.settingsSystem, icon: Monitor, desc: t(dict.chat.settingsSystemDesc, { theme: resolvedTheme === "light" ? (locale === "it" ? "chiaro" : "light") : locale === "it" ? "scuro" : "dark" }) },
             ] as const
           ).map(({ value, label, icon: Icon, desc }) => {
             const active = theme === value;
@@ -219,17 +220,17 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
       <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h2 className="flex items-center gap-2 text-lg font-bold text-white">
           <Shield size={16} className="text-emerald-400" />
-          {isIt ? "Privacy e dati" : "Privacy & data"}
+          {dict.chat.settingsPrivacy}
         </h2>
         <p className="mt-2 text-sm text-neutral-400">
-          {isIt ? "Gestisci i tuoi dati e consulta le policy." : "Manage your data and view policies."}
+          {dict.chat.settingsPrivacyDesc}
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <Link href="/privacy" className="rounded-xl border border-white/5 bg-neutral-800 p-4 text-sm font-bold text-white hover:bg-neutral-700">
             Privacy
           </Link>
           <Link href="/terms" className="rounded-xl border border-white/5 bg-neutral-800 p-4 text-sm font-bold text-white hover:bg-neutral-700">
-            {isIt ? "Termini" : "Terms"}
+            {dict.chat.settingsTerms}
           </Link>
           <Link href="/account" className="rounded-xl border border-white/5 bg-neutral-800 p-4 text-sm font-bold text-white hover:bg-neutral-700">
             Account
@@ -241,15 +242,13 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
       <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h2 className="flex items-center gap-2 text-lg font-bold text-white">
           <Database size={16} className="text-sky-400" />
-          {isIt ? "Dati" : "Data"}
+          {dict.chat.settingsData}
         </h2>
         <p className="mt-2 text-sm text-neutral-400">
-          {isIt ? "Esporta o richiedi la cancellazione dei tuoi dati (GDPR)." : "Export or request deletion of your data (GDPR)."}
+          {dict.chat.settingsDataDesc}
         </p>
         <p className="mt-1 text-xs text-neutral-500">
-          {isIt
-            ? "L'export genera un file JSON con profilo, agenti, abbonamenti, cronologia, notifiche, carrello e connessioni (token omessi per sicurezza). Le preferenze locali del browser vengono aggiunte al file."
-            : "Export generates a JSON file with profile, agents, subscriptions, history, notifications, cart and connections (tokens omitted). Browser-local preferences are included."}
+          {dict.chat.settingsDataExportDesc}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
@@ -259,10 +258,10 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
             aria-busy={exporting}
           >
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-            {exporting ? (isIt ? "Esportazione..." : "Exporting...") : isIt ? "Esporta dati" : "Export data"}
+            {exporting ? (dict.chat.settingsExporting) : dict.chat.settingsExportData}
           </button>
           <Link href="/contact" className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 hover:bg-neutral-100">
-            {isIt ? "Contatta supporto" : "Contact support"}
+            {dict.chat.settingsContactSupport}
           </Link>
           {exportFeedback && (
             <span
@@ -276,23 +275,23 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
         </div>
         <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-500">
           <Globe size={12} />
-          {isIt ? "Formato: JSON — Art. 20 GDPR (portabilità)." : "Format: JSON — GDPR Art. 20 (portability)."}
+          {dict.chat.settingsExportFormat}
         </p>
       </div>
 
       {/* Bottone unico sticky */}
       <div className="sticky bottom-4 z-20 mt-2 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-900/95 px-4 py-3 shadow-2xl shadow-black/30 backdrop-blur">
         <p className="hidden text-sm font-semibold text-neutral-400 sm:block">
-          {isIt ? "Tutte le modifiche verranno salvate insieme." : "All changes will be saved together."}
+          {dict.chat.settingsAllChangesSaved}
         </p>
-        <span className="sm:hidden text-sm font-semibold text-neutral-500">{isIt ? "Pronto a salvare" : "Ready to save"}</span>
+        <span className="sm:hidden text-sm font-semibold text-neutral-500">{dict.chat.settingsReadyToSave}</span>
         <button
           onClick={handleSave}
           disabled={saving}
           className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400 disabled:opacity-60"
         >
           <Save size={16} />
-          {saved ? (isIt ? "Salvato!" : "Saved!") : saving ? "..." : isIt ? "Salva modifiche" : "Save changes"}
+          {saved ? (dict.chat.settingsSaved) : saving ? "..." : dict.chat.settingsSaveChanges}
         </button>
       </div>
     </div>

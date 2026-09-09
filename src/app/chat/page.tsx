@@ -42,15 +42,13 @@ export default async function ChatPage(props: {
 
   // Gli admin / possessori del codice senza utente Supabase vedono in chat
   // l'intero catalogo (stessa gestione degli utenti normali, con cronologia).
+  // Solo gli agenti a cui l'utente si è effettivamente abbonato vengono
+  // mostrati nella chat. Un nuovo utente parte con la lista vuota e
+  // aggiunge agenti man mano che li acquista dal marketplace.
   let availableAgents: { slug: string; name: string }[] = [];
   if (user) {
     const ownedSlugs = await getOwnedAgentSlugs(user.id);
     availableAgents = ownedSlugs.map((slug) => ({
-      slug,
-      name: AGENT_RUNTIME[slug]?.name ?? slug,
-    }));
-  } else if (accessGranted) {
-    availableAgents = Object.keys(AGENT_RUNTIME).map((slug) => ({
       slug,
       name: AGENT_RUNTIME[slug]?.name ?? slug,
     }));

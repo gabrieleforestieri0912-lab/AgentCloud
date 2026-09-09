@@ -106,17 +106,17 @@ export default async function AgentsPage() {
               </span>
               <div>
                 <h2 className="text-2xl font-bold text-white">
-                  {isIt ? "Bundle & Risparmia" : "Bundles & Save"}
+                  {dict.marketplacePage.bundlesAndSave}
                 </h2>
                 <p className="text-sm font-semibold text-neutral-400">
-                  {isIt ? "Raggruppa agenti e risparmia fino al 30% con piani trimestrali e annuali" : "Group agents and save up to 30% with quarterly and annual plans"}
+                  {dict.marketplacePage.bundlesDesc}
                 </p>
               </div>
               <Link
                 href="/bundles"
                 className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-900 px-4 py-2 text-xs font-bold text-neutral-300 transition-colors hover:border-white/20 hover:text-white"
               >
-                {isIt ? "Vedi tutti" : "View all"}
+                {dict.marketplacePage.viewAll}
               </Link>
             </div>
             <div className="grid gap-6 md:grid-cols-2">
@@ -137,7 +137,7 @@ export default async function AgentsPage() {
             />
             <div className="relative">
               <p className="mb-3 text-sm font-bold uppercase tracking-widest text-brand-400">
-                {isIt ? "Su misura" : "Custom"}
+                {dict.marketplacePage.customTitle}
               </p>
               <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
                 {isIt
@@ -154,13 +154,13 @@ export default async function AgentsPage() {
                   href="/contact"
                   className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
                 >
-                  {isIt ? "Contattaci" : "Contact us"}
+                  {dict.marketplacePage.contactUs}
                 </Link>
                 <Link
                   href="/chat"
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-800 px-8 py-3.5 text-base font-bold text-white transition-colors hover:border-white/20"
                 >
-                  {isIt ? "Chiedi alla nostra AI" : "Ask our AI"}
+                  {dict.marketplacePage.askOurAI}
                 </Link>
               </div>
             </div>

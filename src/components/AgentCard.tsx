@@ -42,7 +42,7 @@ export default function AgentCard({
       : `Perfect for ${agent.industry} — setup ${agent.setupTime.toLowerCase()}`;
 
   const benefitsTitle = isIt ? "Cosa ottieni" : "What you get";
-  const setupLabel = isIt ? "Setup" : "Setup";
+  const setupLabel = dict.agentCard.setup;
 
   return (
     <article
@@ -66,7 +66,7 @@ export default function AgentCard({
       ) : (!isAgentAvailable || comingSoonTag) && (
         <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-400">
           <Clock size={12} />
-          {dict.agentCard.comingSoon}
+          {dict.common.comingSoon}
         </div>
       )}
 
@@ -142,7 +142,7 @@ export default function AgentCard({
           </div>
           {!isAgentAvailable && (
             <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-neutral-800 px-4 py-2 text-xs font-semibold text-neutral-500 cursor-not-allowed">
-              {dict.agentCard.comingSoon}
+              {dict.common.comingSoon}
             </span>
           )}
         </div>
@@ -156,7 +156,7 @@ export default function AgentCard({
 
       {/* Overlay cliccabile dell'intera card (tranne la CTA) */}
       {isAgentAvailable && (
-        <Link href={`/agents/${agent.slug}`} aria-label={`${dict.agentCard.view} ${agent.name}`} className="absolute inset-0 rounded-2xl" />
+        <Link href={`/agents/${agent.slug}`} aria-label={`${dict.common.view} ${agent.name}`} className="absolute inset-0 rounded-2xl" />
       )}
     </article>
   );

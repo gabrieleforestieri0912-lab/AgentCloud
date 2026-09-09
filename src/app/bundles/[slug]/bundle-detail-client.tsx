@@ -20,7 +20,7 @@ const PERIODS: BundlePeriod[] = ["monthly", "quarterly", "yearly"];
 type Props = { bundle: Bundle };
 
 export default function BundleDetailClient({ bundle }: Props) {
-  const { locale } = useLanguage();
+  const { locale, dict } = useLanguage();
   const isIt = locale === "it";
   const [period, setPeriod] = useState<BundlePeriod>("yearly");
   const agents = getBundleAgents(bundle);
@@ -42,10 +42,10 @@ export default function BundleDetailClient({ bundle }: Props) {
 
   const periodLabel =
     period === "monthly"
-      ? isIt ? "/mese" : "/month"
+      ? dict.bundleDetail.pricePerMonth
       : period === "quarterly"
-        ? isIt ? "/mese (fatt. trimestrale)" : "/mo (billed quarterly)"
-        : isIt ? "/mese (fatt. annuale)" : "/mo (billed annually)";
+        ? dict.bundleDetail.pricePerMonthQuarterly
+        : dict.bundleDetail.pricePerMonthYearly;
 
   const savingsPercent =
     period === "quarterly"
@@ -70,7 +70,7 @@ export default function BundleDetailClient({ bundle }: Props) {
           className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm font-bold text-neutral-400 backdrop-blur transition-colors hover:border-white/20 hover:text-white"
         >
           <ArrowLeft size={14} />
-          {isIt ? "Tutti i bundle" : "All bundles"}
+          {dict.bundleDetail.allBundles}
         </Link>
 
         {/* Header */}
@@ -91,7 +91,7 @@ export default function BundleDetailClient({ bundle }: Props) {
           {/* Left: agents list */}
           <div className="lg:col-span-3 space-y-4">
             <h2 className="text-xl font-bold text-white">
-              {isIt ? "Agenti inclusi" : "Included agents"}
+              {dict.bundleDetail.includedAgents}
             </h2>
             <div className="space-y-3">
               {agents.map((agent) => (
@@ -109,7 +109,7 @@ export default function BundleDetailClient({ bundle }: Props) {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold text-neutral-300">{formatMonthlyPrice(agent.priceCents)}</p>
-                    <p className="text-[10px] text-neutral-500">{isIt ? "singolo" : "standalone"}</p>
+                    <p className="text-[10px] text-neutral-500">{dict.bundleDetail.standalone}</p>
                   </div>
                 </Link>
               ))}
@@ -118,15 +118,15 @@ export default function BundleDetailClient({ bundle }: Props) {
             {/* Features */}
             <div className="mt-6 rounded-xl border border-white/5 bg-neutral-900 p-5">
               <h3 className="mb-3 text-sm font-bold text-white">
-                {isIt ? "Cosa include ogni bundle" : "Every bundle includes"}
+                {dict.bundleDetail.bundleIncludesTitle}
               </h3>
               <div className="space-y-2.5">
                 {[
-                  isIt ? "Setup rapido (stesso giorno o 1 giorno)" : "Quick setup (same day or 1 day)",
-                  isIt ? "Integrazioni native con i tuoi strumenti" : "Native integrations with your tools",
-                  isIt ? "Supporto prioritario via chat" : "Priority support via chat",
-                  isIt ? "Aggiornamenti automatici degli agenti" : "Automatic agent updates",
-                  isIt ? "Nessun vincolo, cancella quando vuoi" : "No commitment, cancel anytime",
+                  dict.bundleDetail.quickSetupDesc,
+                  dict.bundleDetail.nativeIntegrationsDesc,
+                  dict.bundleDetail.prioritySupportDesc,
+                  dict.bundleDetail.autoUpdatesDesc,
+                  dict.bundleDetail.noCommitmentDesc,
                 ].map((feature) => (
                   <div key={feature} className="flex items-center gap-2.5">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
@@ -163,10 +163,10 @@ export default function BundleDetailClient({ bundle }: Props) {
                     }`}
                   >
                     {p === "monthly"
-                      ? isIt ? "Mensile" : "Monthly"
+                      ? dict.bundleDetail.monthly
                       : p === "quarterly"
-                        ? isIt ? "Trim." : "Qtr."
-                        : isIt ? "Annuale" : "Yearly"}
+                        ? dict.bundleDetail.quarterlyShort
+                        : dict.bundleDetail.yearly}
                   </button>
                 ))}
               </div>
@@ -197,11 +197,11 @@ export default function BundleDetailClient({ bundle }: Props) {
                         >
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-400">
                             <Tag size={12} />
-                            -{savingsPercent}% {isIt ? "risparmio" : "off"}
+                            -{savingsPercent}% {dict.bundleDetail.savings}
                           </span>
                           {totalDisplay && (
                             <span className="text-sm font-semibold text-neutral-500">
-                              {isIt ? "Totale" : "Total"}: {totalDisplay}
+                              {dict.bundleDetail.total}: {totalDisplay}
                             </span>
                           )}
                         </motion.div>
@@ -219,7 +219,7 @@ export default function BundleDetailClient({ bundle }: Props) {
                           exit={{ opacity: 0 }}
                           className="mt-2 text-xs font-semibold text-neutral-500"
                         >
-                          {isIt ? "Prezzo senza bundle" : "Price without bundle"}: {formatMonthlyPrice(pricing.monthly * agents.length)}
+                          {dict.bundleDetail.priceWithoutBundle}: {formatMonthlyPrice(pricing.monthly * agents.length)}
                         </motion.p>
                       )}
                     </AnimatePresence>

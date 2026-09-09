@@ -19,19 +19,19 @@ export default function DemoLimitModal({
   onClose: () => void;
   remainingMessages?: number;
 }) {
-  const { locale } = useLanguage();
+  const { locale, dict } = useLanguage();
   const isIt = locale === "it";
 
   if (!open) return null;
 
-  const title = isIt ? "Accedi per continuare" : "Sign in to continue";
+  const title = dict.demoLimitModal.signInToContinue;
   const desc = isIt
     ? "Hai usato i 10 messaggi gratuiti della chat demo. Accedi con il tuo account per continuare la conversazione nella chat completa — la ritroverai già salvata."
     : "You've used the 10 free messages of the demo chat. Sign in to continue in the full chat — your conversation will be waiting there.";
 
-  const loginLabel = isIt ? "Accedi" : "Sign in";
-  const signupLabel = isIt ? "Crea account" : "Create account";
-  const continueAsGuest = isIt ? "Continua come ospite" : "Continue as guest";
+  const loginLabel = dict.demoLimitModal.signIn;
+  const signupLabel = dict.demoLimitModal.createAccount;
+  const continueAsGuest = dict.demoLimitModal.continueAsGuest;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -51,7 +51,7 @@ export default function DemoLimitModal({
         <p className="mt-2 text-sm leading-6 text-neutral-400">{desc}</p>
         {typeof remainingMessages === "number" && (
           <p className="mt-2 text-xs font-semibold text-amber-300">
-            {isIt ? `${remainingMessages} messaggi rimasti` : `${remainingMessages} messages left`}
+            {`${remainingMessages} ${dict.demoLimitModal.messagesLeft}`}
           </p>
         )}
         <div className="mt-6 flex flex-col gap-3">
@@ -72,13 +72,11 @@ export default function DemoLimitModal({
             onClick={onClose}
             className="text-xs font-semibold text-neutral-500 hover:text-neutral-300"
           >
-            {continueAsGuest} — {isIt ? "vedi la demo" : "explore demo"}
+            {continueAsGuest} — {dict.demoLimitModal.exploreDemo}
           </button>
         </div>
         <p className="mt-4 text-center text-xs text-neutral-600">
-          {isIt
-            ? "Dopo l'accesso verrai reindirizzato a /chat con la conversazione salvata."
-            : "After signing in you'll be redirected to /chat with your conversation saved."}
+          {dict.demoLimitModal.redirectNote}
         </p>
       </div>
     </div>
