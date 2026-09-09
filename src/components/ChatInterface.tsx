@@ -1296,7 +1296,7 @@ export default function ChatInterface({
               </span>
             </div>
             {agentPickerOpen && (
-              <div className="mb-2 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl">
+              <div className="mb-2 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl max-h-[50dvh] sm:max-h-40 overflow-y-auto">
                 <p className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-neutral-500">
                   {dict.chat.agents}
                 </p>
