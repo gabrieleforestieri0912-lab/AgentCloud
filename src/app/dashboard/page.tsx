@@ -419,7 +419,7 @@ export default async function DashboardPage({
                   )}
                 </div>
               ) : (
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-white/5 max-md:space-y-3 max-md:divide-none max-md:p-3">
                   {displayInstalled.map(({ agent, slug, status, runs, tokens, lastRun, runtimeName, config }) => {
                     const displayName =
                       agent?.shortName ?? runtimeName ?? slug;
@@ -432,7 +432,7 @@ export default async function DashboardPage({
                     return (
                       <div
                         key={slug}
-                        className="grid gap-4 p-5 lg:grid-cols-[1fr_120px_120px_120px_110px] lg:items-center"
+                        className="grid gap-4 p-5 lg:grid-cols-[1fr_120px_120px_120px_110px] lg:items-center max-md:rounded-lg max-md:border max-md:border-white/5 max-md:bg-neutral-900/50"
                       >
                         <div className="flex items-center gap-3">
                           <div
