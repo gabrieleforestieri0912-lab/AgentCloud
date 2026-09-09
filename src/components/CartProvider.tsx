@@ -88,7 +88,26 @@ function enrichBundleLocal(bundleSlug: string, period: BundlePeriod, quantity = 
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  // Initialize from localStorage synchronously to avoid flash of empty cart
+  const [items, setItems] = useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem(LOCAL_KEY);
+      if (!raw) return [];
+      const slugs = JSON.parse(raw) as string[];
+      return slugs
+        .map((s) => {
+          if (s.startsWith("bundle:")) {
+            const bSlug = s.slice(7);
+            const storedPeriod = (localStorage.getItem(`bundle_period_${bSlug}`) as BundlePeriod) || "monthly";
+            return enrichBundleLocal(bSlug, storedPeriod);
+          }
+          return enrichLocal(s);
+        })
+        .filter(Boolean) as CartItem[];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [isAuthed, setIsAuthed] = useState(false);
   const authedRef = useRef(false);
@@ -147,7 +166,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const merged = [...enrichedApi, ...bundleItems.filter((b) => !apiSlugs.has(b.agent_slug))];
         setItems(merged);
       } else if (res.status === 401) {
-        // True anon senza codice: fallback localStorage
+        // True anon senza codice: fallback localStorage — keep existing items if localStorage is empty
         const raw = localStorage.getItem(LOCAL_KEY);
         if (raw) {
           const slugs = JSON.parse(raw) as string[];
@@ -159,30 +178,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             }
             return enrichLocal(s);
           }).filter(Boolean) as CartItem[]);
-        } else {
-          setItems([]);
         }
+        // Don't clear items if localStorage is empty — keep what we have
       } else {
-        // Altro errore: fallback localStorage se presente
-        const raw = localStorage.getItem(LOCAL_KEY);
-        if (raw) {
-          const slugs = JSON.parse(raw) as string[];
-          if (slugs.length > 0) {
-            setItems(slugs.map((s) => {
-              if (s.startsWith("bundle:")) {
-                const bSlug = s.slice(7);
-                const storedPeriod = localStorage.getItem(`bundle_period_${bSlug}`) as BundlePeriod || "monthly";
-                return enrichBundleLocal(bSlug, storedPeriod);
-              }
-              return enrichLocal(s);
-            }).filter(Boolean) as CartItem[]);
-          } else {
-            setItems([]);
-          }
-        }
+        // Altro errore: keep existing items (from localStorage init or previous fetch)
       }
     } catch {
-      // ignore
+      // On network error, keep existing items (from localStorage init)
     } finally {
       setLoading(false);
     }
