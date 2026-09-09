@@ -3,6 +3,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MarketplaceGrid from "@/components/MarketplaceGrid";
+import FloatingBrandBubbles from "@/components/FloatingBrandBubbles";
 import { BUNDLES } from "@/lib/bundles";
 import BundleCard from "@/components/BundleCard";
 import { Sparkles } from "lucide-react";
@@ -54,10 +55,30 @@ export default async function AgentsPage() {
   const isIt = locale === "it";
 
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="relative min-h-screen bg-neutral-950 overflow-hidden">
       <Navbar marketplaceAgents={navAgents} />
 
-      <section className="dark-gradient-subtle px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+      {/* Floating brand bubbles decoration */}
+      <FloatingBrandBubbles
+        bubbles={[
+          { top: "10%", left: "4%", size: "w-12 h-12", brand: "shopify", delay: "0s", anim: "animate-float-gentle" },
+          { top: "15%", left: "90%", size: "w-11 h-11", brand: "stripe", delay: "1.2s", anim: "animate-float-reverse" },
+          { top: "25%", left: "2%", size: "w-10 h-10", brand: "instagram", delay: "0.7s", anim: "animate-float-gentle" },
+          { top: "22%", left: "92%", size: "w-12 h-12", brand: "gmail", delay: "1.9s", anim: "animate-float-reverse" },
+          { top: "40%", left: "5%", size: "w-11 h-11", brand: "whatsapp", delay: "0.4s", anim: "animate-float-reverse" },
+          { top: "38%", left: "88%", size: "w-10 h-10", brand: "notion", delay: "2.2s", anim: "animate-float-gentle" },
+          { top: "55%", left: "3%", size: "w-10 h-10", brand: "hubspot", delay: "1.5s", anim: "animate-float-gentle" },
+          { top: "53%", left: "91%", size: "w-12 h-12", brand: "facebook", delay: "0.9s", anim: "animate-float-reverse" },
+          { top: "65%", left: "8%", size: "w-11 h-11", brand: "discord", delay: "1.8s", anim: "animate-float-gentle" },
+          { top: "63%", left: "85%", size: "w-10 h-10", brand: "google", delay: "0.5s", anim: "animate-float-reverse" },
+          { top: "78%", left: "4%", size: "w-12 h-12", brand: "github", delay: "1.1s", anim: "animate-float-gentle" },
+          { top: "76%", left: "93%", size: "w-11 h-11", brand: "trello", delay: "2.0s", anim: "animate-float-reverse" },
+          { top: "88%", left: "6%", size: "w-10 h-10", brand: "linkedin", delay: "0.8s", anim: "animate-float-gentle" },
+          { top: "86%", left: "87%", size: "w-12 h-12", brand: "dropbox", delay: "1.6s", anim: "animate-float-reverse" },
+        ]}
+      />
+
+      <section className="relative z-10 dark-gradient-subtle px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-12 max-w-xl">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">
