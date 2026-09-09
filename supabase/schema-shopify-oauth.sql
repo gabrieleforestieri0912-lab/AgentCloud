@@ -1,17 +1,3 @@
--- =============================================================================
--- AgentCloud — Shopify OAuth multi-tenant: Phase 1 schema
--- =============================================================================
--- Per-shop Shopify connections. One row per (AgentCloud user, Shopify shop).
--- The access_token is stored ENCRYPTED at rest as a jsonb envelope
--- { data, iv, tag } produced by the application (AES-256-GCM, key from
--- SHOPIFY_TOKEN_ENCRYPTION_KEY). The database NEVER stores the plaintext token.
---
--- Apply AFTER schema.sql (or schema-waitlist.sql): this relies on the
--- public.touch_updated_at() trigger function already created by those files.
--- Row Level Security is enabled; users may only read/write their own rows,
--- while the service role (server-side webhooks, token exchange) bypasses RLS.
--- =============================================================================
-
 create table if not exists public.shopify_connections (
   id uuid default gen_random_uuid() primary key,
   user_id text not null,
@@ -46,7 +32,7 @@ create policy "Users can insert own shopify connections"
 
 -- Users can only update their own connections.
 drop policy if exists "Users can update own shopify connections" on public.shopify_connections;
-create policy "Users can update own shopify_connections"
+create policy "Users can update own shopify connections"
   on public.shopify_connections for update
   using (auth.uid()::text = user_id)
   with check (auth.uid()::text = user_id);

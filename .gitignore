@@ -50,6 +50,11 @@ logs/
 # database backups
 supabase/schema.sql.bak
 supabase/migrations/
+supabase/.temp/
+supabase/supabase/.temp/
+
+# secrets / tenant data
+data/tenants.json
 
 # tmp
 .tmp-g/

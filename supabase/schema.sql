@@ -1,39 +1,3 @@
--- =============================================================================
--- AgentCloud — unified database schema
--- =============================================================================
--- Run this file in Supabase SQL Editor (or via supabase-cli db push) to
--- provision the entire application schema in one shot.
---
--- Tables:
---   1. profiles            — one row per authenticated user, holds Stripe customer
---   2. agents_registry     — server-side mirror of the agent catalog
---   3. subscriptions       — Stripe subscription ledger (per agent purchase)
---   4. user_agents         — owned agent instances (one per user x agent)
---   5. agent_runs          — activity log for runs/conversations on owned agents
---   6. demo_requests       — public demo contact form submissions
---   7. waitlist            — public waitlist signups
---   8. rate_limits         — distributed rate limiting buckets
---   9. agent_notifications — important actions performed by agents (in-app bell)
---
--- Auth:
---   - Authentication is handled by Supabase Auth (auth.users).
---   - All tables have Row Level Security enabled.
---   - "Service role can manage" policies allow server-side webhooks to write
---     while users only see their own rows.
--- =============================================================================
-
-
--- -----------------------------------------------------------------------------
--- 0. Migration (run once on existing installs; harmless on fresh installs)
---
--- Authentication is handled by Supabase Auth (auth.users), so user
--- identifiers are UUIDs. The user_id columns remain `text` for backward
--- compatibility with rows created before the Supabase migration; new rows
--- store the auth.users UUID as text. The service role key is used server-side
--- to read/write these tables after Supabase authentication; the user-facing
--- RLS policies below remain as defense-in-depth for direct access.
--- -----------------------------------------------------------------------------
--- Idempotent type fix: drop dependent policies before altering type (was 0A000)
 drop policy if exists "Users can view own user_agents" on public.user_agents;
 drop policy if exists "Users can update own user_agents config" on public.user_agents;
 drop policy if exists "Users can view own agent_runs" on public.agent_runs;
