@@ -33,6 +33,7 @@ import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { useLanguage } from "./LanguageProvider";
 import MarkdownText from "./MarkdownText";
+import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import GoogleConnectionPrompt from "@/components/GoogleConnectionPrompt";
@@ -116,6 +117,7 @@ export default function ChatInterface({
   const [agentPickerOpen, setAgentPickerOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState(initialQuery || "");
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   // True da quando la risposta corrente dell'assistente ha iniziato lo
   // streaming (la bolla cresce parola per parola). L'indicatore a tre puntini
@@ -1350,6 +1352,12 @@ export default function ChatInterface({
               rows={1}
               className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
               style={{ fieldSizing: "content" } as React.CSSProperties}
+            />
+            <VoiceInput
+              onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)}
+              onVoiceModeToggle={setIsVoiceMode}
+              disabled={isTyping || !activeId}
+              isVoiceMode={isVoiceMode}
             />
             <button
               onClick={handleSend}
