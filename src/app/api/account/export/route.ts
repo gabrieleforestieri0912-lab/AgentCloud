@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser, createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hasPlatformAccess } from "@/lib/access-code";
 
 /**
  * GET /api/account/export
@@ -16,10 +15,9 @@ import { hasPlatformAccess } from "@/lib/access-code";
  */
 export async function GET() {
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
 
   // Utente mock (codice di accesso, nessuna sessione Supabase) -> export sintetico
-  if (!user && hasAccess) {
+  if (!user) {
     return NextResponse.json({
       exported_at: new Date().toISOString(),
       account: {

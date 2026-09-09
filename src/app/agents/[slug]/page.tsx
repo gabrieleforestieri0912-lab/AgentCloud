@@ -33,7 +33,6 @@ import {
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
-import { hasPlatformAccess } from "@/lib/access-code";
 
 type AgentDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -139,8 +138,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   const agent = localizeAgent(rawAgent, locale);
   // I possessori del codice sbloccano ogni agente — inclusi quelli "coming
   // soon" — così CTA di deploy e card trattano l'intero catalogo come attivo.
-  const unlocked = await hasPlatformAccess();
-  const available = unlocked || isAvailable(slug);
+  const available = true || isAvailable(slug);
 
   const relatedAgents = AGENTS.filter(
     (a) => a.slug !== agent.slug && a.category === agent.category,
@@ -148,7 +146,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
     .slice(0, 3)
     .map((a) => localizeAgent(a, locale));
 
-  const marketplaceAgents = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((a) =>
+  const marketplaceAgents = (true ? AGENTS : AVAILABLE_AGENTS).map((a) =>
     localizeAgent(a, locale),
   );
 
@@ -254,10 +252,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   ) : (
                     <>
                       <Link
-                        href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
+                        href={true ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
                         className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35 hover:scale-[1.02] active:scale-[0.98]"
                       >
-                        {unlocked
+                        {true
                           ? locale === "it"
                             ? "Apri chat"
                             : "Open chat"
@@ -327,7 +325,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                         ? "/demo"
                         : isOwned
                           ? `/chat?agent=${agent.slug}`
-                          : unlocked
+                          : true
                             ? `/chat?agent=${agent.slug}`
                             : `/agents/${agent.slug}/deploy`
                     }
@@ -345,7 +343,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                           {locale === "it" ? "Apri in chat" : "Open in chat"}
                           <ArrowRight size={16} />
                         </>
-                      ) : unlocked ? (
+                      ) : true ? (
                         <>
                           {locale === "it" ? "Apri chat" : "Open chat"}
                           <ArrowRight size={16} />
@@ -535,7 +533,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 <AgentCard
                   key={a.slug}
                   agent={a}
-                  available={unlocked || isAvailable(a.slug)}
+                  available={true || isAvailable(a.slug)}
                 />
               ))}
             </div>
@@ -564,10 +562,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 </Link>
               ) : (
                 <Link
-                  href={unlocked ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
+                  href={true ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
                   className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
                 >
-                  {unlocked
+                  {true
                     ? locale === "it"
                       ? "Apri chat"
                       : "Open chat"

@@ -17,7 +17,6 @@ import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
 import DemoLimitModal from "./DemoLimitModal";
 import { createClient } from "@/lib/supabase/client";
-import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import {
   AttachPlusButton,
@@ -141,7 +140,7 @@ export default function HeroSection() {
   // gestione degli utenti normali: niente limite demo, cronologia salvata)
   useEffect(() => {
     const supabase = createClient();
-    const checkAccess = () => hasAccessOnClient();
+    const checkAccess = () => false;
     supabase.auth.getSession().then(({ data }) => setIsAuthed(!!data.session || checkAccess()));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
       setIsAuthed(!!session || checkAccess()),

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { getSessionUser } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
-import { ACCESS_COOKIE } from "@/lib/waitlist-constants";
 import {
   normalizeShop,
   verifyShopifyHmac,
@@ -35,8 +34,7 @@ import { registerShopifyWebhooks } from "@/lib/shopify/webhooks";
  */
 export async function GET(req: NextRequest) {
   const sessionUser = await getSessionUser();
-  const isAccessHolder = req.cookies.get(ACCESS_COOKIE)?.value === "1";
-  if (!sessionUser && !isAccessHolder) {
+  if (!sessionUser) {
     // Sessione scaduta a metà flusso: il codice monouso non è riutilizzabile,
     // quindi l'utente deve solo riavviare la connessione dopo il login.
     const loginUrl = new URL("/login", req.url);
@@ -45,7 +43,7 @@ export async function GET(req: NextRequest) {
   }
   // I possessori del codice (con o senza sessione) collegano lo store tenant
   // condiviso; gli utenti normali loggati collegano il proprio store.
-  const ownerId = isAccessHolder ? TENANT_SHOPIFY_ID : sessionUser!.id;
+  const ownerId = sessionUser!.id;
 
   const returnBase = () => {
     const c = req.cookies.get(SHOPIFY_RETURN_COOKIE)?.value;

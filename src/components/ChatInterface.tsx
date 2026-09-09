@@ -46,7 +46,6 @@ import {
 import { composeUserContent, toFilesMap } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import { getEnabledTools, AGENT_RUNTIME } from "@/lib/agents/registry";
-import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 import { createClient } from "@/lib/supabase/client";
 import BrandLogo from "./BrandLogo";
@@ -149,7 +148,7 @@ export default function ChatInterface({
   // degli utenti normali, con cronologia)
   const effectiveAvailableAgents = useMemo(() => {
     if (availableAgents.length > 0) return availableAgents;
-    if (hasAccessOnClient()) {
+    if (false) {
       return Object.keys(AGENT_RUNTIME).map((slug) => ({
         slug,
         name: AGENT_RUNTIME[slug]?.name ?? slug,

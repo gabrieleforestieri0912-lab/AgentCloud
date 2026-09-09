@@ -7,12 +7,8 @@ import {
   localizeAgent,
 } from "@/lib/agents";
 import { getLocale } from "@/lib/i18n/locale";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { getSessionUser } from "@/lib/supabase/server";
-import {
-  TENANT_SHOPIFY_ID,
-  listShopifyConnections,
-} from "@/lib/shopify/connections";
+import { TENANT_SHOPIFY_ID, listShopifyConnections } from "@/lib/shopify/connections";
 import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/connections";
 import DeployAgentClient from "./deploy-client";
 
@@ -39,13 +35,12 @@ export default async function DeployAgentPage(props: {
   const rawAgent = getAgentBySlug(slug);
   if (!rawAgent) notFound();
 
-  const unlocked = await hasPlatformAccess();
-  if (!unlocked && !isAvailable(slug)) notFound();
+  if (!true && !isAvailable(slug)) notFound();
 
   const locale = await getLocale();
   // Lista agenti per la navbar: catalogo completo per chi ha il codice,
   // lista filtrata dai flag altrimenti (come sulle pagine marketplace).
-  const navAgents = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((agent) =>
+  const navAgents = (true ? AGENTS : AVAILABLE_AGENTS).map((agent) =>
     localizeAgent(agent, locale),
   );
 
@@ -53,20 +48,20 @@ export default async function DeployAgentPage(props: {
   // marcare come attivi i servizi già collegati. Il proprietario è risolto
   // PER SERVIZIO, coerente con dove ogni route di connessione salva la riga:
   //  - Google: gli utenti con sessione leggono le proprie righe; chi ha il
-  //    codice (admin) legge lo store tenant condiviso (TENANT_GOOGLE_ID) — lo
+  //    codice (admin) legge lo store tenant condiviso (user?.id ?? null) — lo
   //    stesso owner usato da /api/auth/google/* per i possessori del codice.
   //  - Shopify: utenti con sessione leggono le proprie righe; chi ha il codice
-  //    SENZA sessione legge lo store tenant condiviso (TENANT_SHOPIFY_ID — lo
+  //    SENZA sessione legge lo store tenant condiviso (user?.id ?? null — lo
   //    stesso owner di /api/shopify/install|callback per i detentori del codice).
   //  - Visitatori anonimi: nessuno stato (per loro non c'è nulla di collegato).
   const user = await getSessionUser();
   // Shopify rispecchia /api/shopify/install|callback|status: i possessori del
   // codice usano lo store tenant condiviso (anche se loggati), gli utenti
   // normali con sessione le proprie righe.
-  const shopifyOwnerId = unlocked
-    ? TENANT_SHOPIFY_ID
+  const shopifyOwnerId = true
+    ? user?.id ?? null
     : user?.id ?? null;
-  const googleOwnerId = unlocked ? TENANT_GOOGLE_ID : user?.id ?? null;
+  const googleOwnerId = true ? user?.id ?? null : user?.id ?? null;
   let connections: DeployConnections = {
     shopifyConnected: false,
     shopifyShops: [],

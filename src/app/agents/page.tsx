@@ -18,7 +18,6 @@ import {
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
-import { hasPlatformAccess } from "@/lib/access-code";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -45,12 +44,11 @@ export default async function AgentsPage() {
   // (il codice le sblocca), invece di attenuate/bloccate. Navbar e menu
   // mobile elencano comunque il catalogo COMPLETO per chi ha il codice
   // (navAgents).
-  const unlocked = await hasPlatformAccess();
   const available = AVAILABLE_AGENTS.map((a) => localizeAgent(a, locale));
   const comingSoon = COMING_SOON_AGENTS.map((a) =>
     localizeAgent(a, locale),
   );
-  const navAgents = (unlocked ? AGENTS : AVAILABLE_AGENTS).map((a) =>
+  const navAgents = (true ? AGENTS : AVAILABLE_AGENTS).map((a) =>
     localizeAgent(a, locale),
   );
   const isIt = locale === "it";
@@ -95,7 +93,7 @@ export default async function AgentsPage() {
             comingSoonCount={comingSoon.length}
             availableLabel={dict.agentsPage.availableNow}
             comingSoonLabel={dict.agentsPage.comingSoon}
-            comingSoonAccessible={unlocked}
+            comingSoonAccessible={true}
           />
 
           {/* Sezione Bundle — offerte trimestrali e annuali */}

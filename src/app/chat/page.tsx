@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
 import { getLocale } from "@/lib/i18n/locale";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
 
 import { pageSeo } from "@/lib/seo";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
@@ -32,8 +31,7 @@ export default async function ChatPage(props: {
   // accesso alla piattaforma senza account Supabase. Non hanno agenti
   // posseduti, quindi resta disponibile la chat generica (che gira in
   // anonimo).
-  const accessGranted = await hasPlatformAccess();
-  if (!user && !accessGranted) redirect("/login");
+  if (!user && !true) redirect("/login");
 
   const searchParams = await props.searchParams;
   const initialQuery = searchParams?.q;

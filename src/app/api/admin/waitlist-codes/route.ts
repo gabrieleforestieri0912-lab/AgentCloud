@@ -12,7 +12,6 @@
 
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { isAdminEmail } from "@/lib/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -37,8 +36,7 @@ function generateCode(): string {
 export async function POST(request: Request) {
   // Auth check
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  const isAdmin = (user && isAdminEmail(user.email)) || (!user && hasAccess);
+  const isAdmin = (user && isAdminEmail(user.email));
 
   if (!isAdmin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

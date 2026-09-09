@@ -11,9 +11,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function POST(req: Request) {
   const user = await getSessionUser();
-  const { hasPlatformAccess } = await import("@/lib/access-code");
-  const hasAccess = await hasPlatformAccess();
-  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  const effectiveUserId = user?.id ?? null;
   if (!effectiveUserId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

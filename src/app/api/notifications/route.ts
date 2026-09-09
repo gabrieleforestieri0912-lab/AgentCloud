@@ -21,11 +21,9 @@ import { getLocale } from "@/lib/i18n/locale";
  */
 export async function GET() {
   const user = await getSessionUser();
-  const { hasPlatformAccess } = await import("@/lib/access-code");
-  const hasAccess = await hasPlatformAccess();
   // Consenti anche ai possessori del codice (mock admin) di vedere le notifiche
   // come un utente reale, usando l'identità condivisa del tenant.
-  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  const effectiveUserId = user?.id ?? null;
   if (!effectiveUserId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

@@ -17,10 +17,8 @@ function getStripe(): Stripe | null {
  */
 export async function POST() {
   const user = await getSessionUser();
-  const { hasPlatformAccess } = await import("@/lib/access-code");
-  const hasAccess = await hasPlatformAccess();
-  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
-  const effectiveEmail = user?.email ?? (hasAccess ? "admin@agentcloud.agency" : null);
+  const effectiveUserId = user?.id ?? null;
+  const effectiveEmail = user?.email ?? null;
   if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   // BETA BYPASS: beta_tester/internal_qa skip cart checkout entirely

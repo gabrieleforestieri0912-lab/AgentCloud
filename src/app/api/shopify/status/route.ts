@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
-import {
-  TENANT_SHOPIFY_ID,
-  listShopifyConnections,
-} from "@/lib/shopify/connections";
+import { TENANT_SHOPIFY_ID, listShopifyConnections } from "@/lib/shopify/connections";
 
 /**
  * GET /api/shopify/status
@@ -18,20 +14,16 @@ import {
  */
 export async function GET() {
   const user = await getSessionUser();
-  const hasCode = await hasPlatformAccess();
-  if (!user && !hasCode) {
+  if (!user) {
     return NextResponse.json({
       authenticated: false,
       connected: false,
       shops: [],
     });
   }
-  // I possessori del codice collegano lo store tenant condiviso (nessuna
-  // email, nessun account); gli utenti loggati senza codice leggono le proprie righe.
-  const ownerId = hasCode ? TENANT_SHOPIFY_ID : user!.id;
-  const shops = await listShopifyConnections(ownerId).catch(() => []);
+  const shops = await listShopifyConnections(user.id).catch(() => []);
   return NextResponse.json({
-    authenticated: Boolean(user),
+    authenticated: true,
     connected: shops.some((s) => s.connected),
     shops: shops.filter((s) => s.connected).map((s) => s.shopDomain),
   });

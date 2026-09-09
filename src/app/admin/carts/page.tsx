@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { isAdminEmail } from "@/lib/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAgentBySlug } from "@/lib/agents";
@@ -12,10 +11,9 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminCartsPage() {
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  const isAdmin = (user && isAdminEmail(user.email)) || (!user && hasAccess);
+  const isAdmin = (user && isAdminEmail(user.email));
   if (!isAdmin) redirect("/login");
-  const displayEmail = user?.email ?? (hasAccess ? "admin@agentcloud.agency (preview)" : "");
+  const displayEmail = user?.email ?? "";
 
   const db = createAdminClient();
   if (!db) return <div className="p-8 text-white">DB non configurato</div>;

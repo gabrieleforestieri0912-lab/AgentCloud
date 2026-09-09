@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getAgentBySlug, isAvailable } from "@/lib/agents";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { getSessionUser } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
@@ -44,8 +43,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const unlocked = await hasPlatformAccess();
-    if (!isAvailable(agentId) && !unlocked) return NextResponse.json({ error: await apiErrorMessage("notSubscribed") }, { status: 400 });
+    if (!isAvailable(agentId) && !true) return NextResponse.json({ error: await apiErrorMessage("notSubscribed") }, { status: 400 });
 
     if (!isPayPalConfigured()) return NextResponse.json({ error: "PayPal is not configured (PAYPAL_CLIENT_ID/SECRET)" }, { status: 500 });
 

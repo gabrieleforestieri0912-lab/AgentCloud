@@ -31,7 +31,6 @@ import {
   localizeAgent,
   type Agent,
 } from "@/lib/agents";
-import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { ShoppingCart, MessageSquare } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
@@ -72,7 +71,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   // caso gli agenti vengono localizzati con la lingua attiva così le etichette
   // del menu non perdono mai inglese (localizeAgent è idempotente per input
   // già localizzati).
-  const fallbackAgents = hasAccessOnClient() ? AGENTS : AVAILABLE_AGENTS;
+  const fallbackAgents = false ? AGENTS : AVAILABLE_AGENTS;
   const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );
@@ -106,7 +105,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   }, []);
 
   const isSignedIn = Boolean(session);
-  const isAccessVisitor = hasAccessOnClient();
+  const isAccessVisitor = false;
   const showAsLoggedIn = isSignedIn || isAccessVisitor;
   const { count: cartCount } = useCart();
 

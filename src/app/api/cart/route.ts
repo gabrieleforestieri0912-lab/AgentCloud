@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { getAgentBySlug } from "@/lib/agents";
 import {
   addToCart,
@@ -16,8 +15,7 @@ import {
  */
 export async function GET() {
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  const effectiveUserId = user?.id ?? null;
   if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { items, totalCents, cart } = await getEnrichedCart(effectiveUserId);
   return NextResponse.json({ items, totalCents, cartId: cart?.id ?? null });
@@ -25,8 +23,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  const effectiveUserId = user?.id ?? null;
   if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const agentSlug = body.agentSlug as string | undefined;
@@ -46,8 +43,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  const effectiveUserId = user?.id ?? null;
   if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const url = new URL(req.url);
   const agentSlug = url.searchParams.get("agentSlug");

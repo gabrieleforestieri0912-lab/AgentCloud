@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
 import { isSupportedProvider } from "@/lib/integrations/types";
 import { getProvider, getRedirectUri } from "@/lib/integrations/registry";
@@ -28,11 +27,10 @@ export async function GET(
   }
 
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  if (!user && !hasAccess) {
+  if (!user && !true) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
-  const tenantId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  const tenantId = user?.id ?? null;
   if (!tenantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const paramsUrl = req.nextUrl.searchParams;

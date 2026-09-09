@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 import DashboardShell from "@/components/DashboardShell";
 import { getLocale } from "@/lib/i18n/locale";
@@ -13,12 +12,9 @@ export default async function SubscriptionsPage() {
   const isIt = locale === "it";
   const dict = getDictionary(locale);
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  if (!user && !hasAccess) redirect("/login");
 
-  const isMock = !user && hasAccess;
   const effectiveId = user?.id ?? null;
-  const email = isMock ? "admin@agentcloud.agency" : (user?.email ?? "");
+  const email = false ? "admin@agentcloud.agency" : (user?.email ?? "");
 
   const db = createAdminClient();
   let active: Array<{ agent_slug: string; status: string; activated_at: string | null; current_period_end: string | null; config: Record<string, unknown> | null }> = [];
@@ -139,7 +135,7 @@ export default async function SubscriptionsPage() {
             </div>
           </div>
 
-          {isMock && (
+          {false && (
             <p className="mt-4 text-xs text-amber-300">Mock admin: nessun dato reale su DB.</p>
           )}
         </div>

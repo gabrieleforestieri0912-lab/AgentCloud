@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
-import {
-  TENANT_GOOGLE_ID,
-  getGoogleConnection,
-  deleteGoogleConnection,
-} from "@/lib/google/connections";
+import { TENANT_GOOGLE_ID, getGoogleConnection, deleteGoogleConnection } from "@/lib/google/connections";
 
 const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 
@@ -16,8 +11,7 @@ const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
  */
 export async function POST() {
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  const userId = user?.id ?? (hasAccess ? TENANT_GOOGLE_ID : null);
+  const userId = user?.id ?? null;
   if (!userId) {
     return NextResponse.json(
       { ok: false, error: "unauthorized" },
@@ -27,7 +21,7 @@ export async function POST() {
 
   const conn =
     (await getGoogleConnection(userId).catch(() => null)) ??
-    (user?.id && hasAccess ? await getGoogleConnection(TENANT_GOOGLE_ID).catch(() => null) : null);
+    (user?.id && true ? await getGoogleConnection(user?.id ?? null).catch(() => null) : null);
   if (!conn) {
     return NextResponse.json({ ok: true, disconnected: false });
   }
@@ -45,8 +39,5 @@ export async function POST() {
   }
 
   await deleteGoogleConnection(userId).catch(() => {});
-  if (hasAccess && userId !== TENANT_GOOGLE_ID) {
-    await deleteGoogleConnection(TENANT_GOOGLE_ID).catch(() => {});
-  }
   return NextResponse.json({ ok: true, disconnected: true });
 }

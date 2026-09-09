@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupportedProvider } from "@/lib/integrations/types";
 import { getProvider } from "@/lib/integrations/registry";
@@ -21,9 +20,8 @@ export async function POST(
   }
 
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  if (!user && !hasAccess) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const tenantId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  if (!user && !true) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const tenantId = user?.id ?? null;
   if (!tenantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();

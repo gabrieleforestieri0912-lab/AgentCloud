@@ -8,7 +8,6 @@ import {
   LOCALE_COOKIE,
 } from "@/lib/i18n/constants";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { ACCESS_COOKIE } from "@/lib/waitlist-constants";
 
 function getLocaleForRequest(request: NextRequest) {
   const cookieVal = request.cookies.get(LOCALE_COOKIE)?.value;
@@ -32,169 +31,69 @@ function withLocaleCookie(response: NextResponse, locale: string) {
   return response;
 }
 
-/**
- * Proxy Next.js (middleware): applica locale automatica, blocco waitlist e
- * protezione delle rotte, rinnovando i cookie di sessione Supabase lungo il
- * percorso. Qui in particolare aggiorna i cookie di sessione e risolve
- * l'utente corrente, seguendo il pattern ufficiale @supabase/ssr.
- */
 async function resolveSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  // Deploy mal configurato: fail closed (tratta come non autenticato) così le
-  // rotte protette rimandano a /login invece di lanciare un 500.
-  if (!url || !anonKey) return { response, user: null };
-
-  const supabase = createServerClient(url, anonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value),
-        );
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
-        );
+  let supabaseResponse = NextResponse.next({ request });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options),
+          );
+        },
       },
     },
-  });
-
-  // getUser() valida l'access token e lo rinnova se serve; i cookie rinnovati
-  // finiscono su `response` tramite setAll.
+  );
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  return { response, user };
+  return { user, response: supabaseResponse };
 }
 
-export async function proxy(request: NextRequest) {
-  // ─── Locale automatica: senza cookie esplicito, rileva da paese/Accept-Language e salva
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
   const { locale: detectedLocale, needsCookie } = getLocaleForRequest(request);
 
-  // ─── Fase waitlist: blocca la piattaforma ──────────────────────────
-  // Durante la fase waitlist ogni pagina viene rimandata a /waitlist così la
-  // piattaforma resta chiusa. Sono escluse le route API, gli asset statici e
-  // la stessa pagina waitlist.
-  const { pathname } = request.nextUrl;
+  // ─── Rotte esenti da auth ─
   const isWaitlistRoute = pathname === "/waitlist";
-  const isApiOrAsset =
-    pathname.startsWith("/api/") ||
-    pathname.startsWith("/_next/") ||
-    pathname.includes(".");
-
-  // Le route di auth restano raggiungibili durante la fase waitlist così il
-  // proprietario (e gli account pre-provisionati) possono accedere. Il resto
-  // dell'app resta bloccato sulla waitlist finché la fase non viene rimossa.
   const isAuthRoute =
+    pathname.startsWith("/auth/") ||
     pathname === "/login" ||
     pathname === "/signup" ||
-    pathname === "/reset-password" ||
-    pathname === "/reset" ||
-    pathname === "/auth/callback";
-
-  // Sviluppo locale senza chiavi Supabase: lascia passare tutto così l'app è
-  // usabile prima della configurazione delle chiavi. In produzione questo
-  // bypass non scatta mai — chiavi mancanti = fail closed (rotte protette → /login).
-  const supabaseConfigured = Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  );
-  if (!supabaseConfigured && process.env.NODE_ENV !== "production") {
-    const res = NextResponse.next();
-    return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
-  }
-
-  // I visitatori con un codice di accesso valido sono ospiti a tutti gli
-  // effetti: nessun login Supabase richiesto e nessun blocco waitlist. Il
-  // cookie viene impostato lato server dopo la validazione del codice (vedi
-  // src/lib/access-code.ts); il codice stesso non viene mai verificato qui.
-  // Parametro ?access=1: il form waitlist lo usa dopo aver inserito il codice
-  // d'accesso valido. Imposta il cookie qui lato proxy perche' il Set-Cookie
-  // della API potrebbe non essere ancora disponibile al browser al momento
-  // del redirect.
-  const hasAccessParam = request.nextUrl.searchParams.get("access") === "1";
-  const isAccessVisitor =
-    request.cookies.get(ACCESS_COOKIE)?.value === "1" || hasAccessParam;
-
-  // Durante la fase waitlist TUTTE le pagine (anche marketing: /, /agents,
-  // /bundles, /demo) restano bloccate su /waitlist per i visitatori senza
-  // accesso. Solo /waitlist, gli asset/API pubbliche e le route auth restano
-  // raggiungibili; autenticati / possessori di ac_access passano ovunque.
-  if (!isWaitlistRoute && !isApiOrAsset && !isAuthRoute) {
-    if (!isAccessVisitor) {
-      // Prima prova la sessione Supabase: utenti autenticati passano.
-      // Se resolveSession lancia un errore (Supabase down, timeout, ecc.)
-      // trattalo come "no user" e manda alla waitlist — mai lasciare che
-      // un'eccezione propaghi e causi un loop di redirect.
-      let user: { id: string } | null = null;
-      let sessionResponse = NextResponse.next({ request });
-      try {
-        const resolved = await resolveSession(request);
-        user = resolved.user;
-        sessionResponse = resolved.response;
-      } catch {
-        user = null;
-      }
-      if (!user) {
-        const waitlistUrl = request.nextUrl.clone();
-        waitlistUrl.pathname = "/waitlist";
-        const redirectRes = NextResponse.redirect(waitlistUrl);
-        return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
-      }
-      return needsCookie ? withLocaleCookie(sessionResponse, detectedLocale) : sessionResponse;
-    }
-  }
-
-  // I possessori del codice raggiungono ogni pagina senza login — il codice è
-  // il loro invito. (Gli handler API risolvono comunque la sessione da soli e
-  // in assenza ripiegano sul comportamento anonimo, come le anteprime pubbliche.)
-  if (isAccessVisitor) {
-    const res = NextResponse.next();
-    if (hasAccessParam) {
-      // Imposta il cookie ac_access qui lato proxy, cosi' le richieste
-      // successive lo avranno anche senza passare di nuovo per la API.
-      res.cookies.set(ACCESS_COOKIE, "1", {
-        path: "/",
-        maxAge: 60 * 60 * 24 * 365,
-        sameSite: "lax",
-      });
-    }
-    return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
-  }
-
-  // ─── Rotte esenti da auth: waitlist, auth, API pubbliche, asset ─
-  // Queste non devono mai causare redirect a /waitlist o 401 — altrimenti
-  // /waitlist stessa va in loop (causa "too many redirects"). Tutte le altre
-  // pagine (anche marketing) ricadono nel gate waitlist qui sotto.
+    pathname === "/reset-password";
   const isAsset = pathname.startsWith("/_next/") || pathname.includes(".");
   const isApiPublic = pathname.startsWith("/api/") && isPublicPath(pathname);
-  const isExempt =
-    isWaitlistRoute || isAuthRoute || isAsset || isApiPublic;
-  if (isExempt) {
+  const isApiOrAsset = isAsset || pathname.startsWith("/api/");
+
+  // Rotte esenti: waitlist, auth, asset, API pubbliche
+  if (isWaitlistRoute || isAuthRoute || isApiPublic || isAsset) {
+    if (isWaitlistRoute && !needsCookie) return NextResponse.next();
+    let res: NextResponse = NextResponse.next();
     try {
-      const { response } = await resolveSession(request);
-      return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
+      const resolved = await resolveSession(request);
+      res = resolved.response;
     } catch {
-      const res = NextResponse.next();
-      return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
+      res = NextResponse.next();
     }
+    return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
   }
 
-  // Rotta protetta: richiede una sessione, altrimenti rimanda a /waitlist
-  // (la destinazione voluta non viene conservata, come nel flusso attuale).
+  // ─── Rotte protette: richiedono sessione ─
   try {
     const { response, user } = await resolveSession(request);
     if (!user) {
-      // Le route API protette ricevono un 401 JSON invece di un redirect HTML —
-      // i client che chiamano fetch() seguirebbero il redirect e proverebbero a
-      // fare il parse dell'HTML.
-      if (request.nextUrl.pathname.startsWith("/api/")) {
+      // API protette → 401 JSON; pagine → redirect a /waitlist
+      if (pathname.startsWith("/api/")) {
         const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
         return NextResponse.json(
           { error: getDictionary(locale).apiErrors.unauthorized },
@@ -210,8 +109,8 @@ export async function proxy(request: NextRequest) {
     }
     return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
   } catch {
-    // Errore Supabase: trattalo come non autenticato → /waitlist
-    if (request.nextUrl.pathname.startsWith("/api/")) {
+    // Errore Supabase → trattalo come non autenticato
+    if (pathname.startsWith("/api/")) {
       const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
       return NextResponse.json(
         { error: getDictionary(locale).apiErrors.unauthorized },

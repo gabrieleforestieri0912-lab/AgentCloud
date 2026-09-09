@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { isAdminEmail } from "@/lib/admin-access";
 
 import ShopifyConnect from "@/components/ShopifyConnect";
@@ -61,7 +60,7 @@ function isoDaysAgo(days: number): string {
 
 // Dashboard: server component che legge i dati reali dell'utente (agenti
 // installati, run e token del mese) con Supabase service-role e li mostra in
-// card e grafici. Gli admin via codice (isAdminMock) vedono la pagina ma senza
+// card e grafici. Gli admin via codice (false) vedono la pagina ma senza
 // letture/scritture sul DB.
 function timeAgo(iso: string | null, dict: ReturnType<typeof getDictionary>): string {
   if (!iso) return "—";
@@ -88,10 +87,7 @@ export default async function DashboardPage({
   // con identità condivisa __tenant__, così dashboard, grafici e usage sono
   // testabili senza differenze.
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  if (!user && !hasAccess) redirect("/login");
-  const isAdminMock = !user && hasAccess;
-  const effectiveUserId = user?.id ?? (hasAccess ? "__tenant__" : null);
+  const effectiveUserId = user?.id ?? null;
   const userId = effectiveUserId;
 
   // ── Dati reali (service-role, lato server) — anche per il mock admin
@@ -162,22 +158,22 @@ export default async function DashboardPage({
     });
   }
 
-  const fullName = isAdminMock
+  const fullName = false
     ? "Admin"
     : typeof user?.user_metadata?.full_name === "string"
       ? user.user_metadata.full_name
       : "";
-  const firstName = isAdminMock
+  const firstName = false
     ? "Admin"
     : fullName.split(" ")[0] || (user?.email ?? "").split("@")[0];
   const greeting = firstName
     ? t(dict.dashboard.welcomeBack, { name: firstName })
     : dict.dashboard.welcomeBackGeneric;
-  const email = isAdminMock ? "admin@agentcloud.agency" : (user?.email ?? "");
-  const isAdmin = isAdminMock || isAdminEmail(user?.email);
+  const email = false ? "admin@agentcloud.agency" : (user?.email ?? "");
+  const isAdmin = false || isAdminEmail(user?.email);
 
-  const shopifyOwnerForConnections = isAdminMock ? TENANT_SHOPIFY_ID : user?.id ?? null;
-  const googleOwnerForConnections = isAdminMock ? TENANT_GOOGLE_ID : user?.id ?? null;
+  const shopifyOwnerForConnections = false ? user?.id ?? null : user?.id ?? null;
+  const googleOwnerForConnections = false ? user?.id ?? null : user?.id ?? null;
   const shopifyConnections = shopifyOwnerForConnections
     ? await listShopifyConnections(shopifyOwnerForConnections).catch(() => [])
     : [];

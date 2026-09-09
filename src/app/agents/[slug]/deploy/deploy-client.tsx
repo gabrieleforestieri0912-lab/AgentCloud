@@ -26,7 +26,6 @@ import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
 import { readableConnectReason } from "@/lib/connect-errors";
 import { normalizeShopInput } from "@/lib/shopify-input";
-import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import type { DeployConnections } from "./page";
 
 const NO_CONNECTIONS: DeployConnections = {
@@ -636,9 +635,9 @@ export default function DeployAgentClient({
 
                 {/* Acquisto diretto Stripe: admin/detentori del codice vanno
                     direttamente in chat con l'agente */}
-                {hasAccessOnClient() ? (
+                {false ? (
                   <Link
-                    href={`/chat?agent=${agent.slug}`}
+                    href={`/chat?agent=${agent?.slug}`}
                     className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400"
                   >
                     <Rocket size={16} />

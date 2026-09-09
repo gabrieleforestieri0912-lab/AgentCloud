@@ -14,7 +14,6 @@ import { Menu, X, ChevronRight, ShoppingCart, MessageSquare, LayoutDashboard, Us
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
 import { AGENTS, AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
-import { hasAccessOnClient } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
 
@@ -42,7 +41,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   // Le pagine server passano la lista autoritativa; altrimenti si ripiega sul
   // cookie di accesso (chi ha il codice vede il catalogo COMPLETO anche nel
   // menu mobile).
-  const fallbackAgents = hasAccessOnClient() ? AGENTS : AVAILABLE_AGENTS;
+  const fallbackAgents = false ? AGENTS : AVAILABLE_AGENTS;
   const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );

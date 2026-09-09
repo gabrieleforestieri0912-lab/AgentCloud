@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
-import { hasPlatformAccess } from "@/lib/access-code";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { listShopifyConnections, TENANT_SHOPIFY_ID } from "@/lib/shopify/connections";
-import { getGoogleConnectionSummary, TENANT_GOOGLE_ID } from "@/lib/google/connections";
+import { TENANT_SHOPIFY_ID, listShopifyConnections } from "@/lib/shopify/connections";
+import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/connections";
 import DashboardShell from "@/components/DashboardShell";
 import IntegrationsGrid from "@/components/IntegrationsGrid";
 import { getLocale } from "@/lib/i18n/locale";
@@ -17,11 +16,8 @@ export default async function DashboardIntegrationsPage({
   const sp = await searchParams;
 
   const user = await getSessionUser();
-  const hasAccess = await hasPlatformAccess();
-  if (!user && !hasAccess) redirect("/login");
 
-  const isMock = !user && hasAccess;
-  const effectiveId = user?.id ?? (isMock ? "__tenant__" : null);
+  const effectiveId = user?.id ?? (false ? "__tenant__" : null);
 
   const db = createAdminClient();
   let rows: Array<{
@@ -42,12 +38,12 @@ export default async function DashboardIntegrationsPage({
   }
 
   // Shopify + Google (existing OAuth) — così la pagina dashboard mostra TUTTE le app menzionate su agentcloud
-  const shopifyOwner = isMock ? TENANT_SHOPIFY_ID : user?.id ?? null;
-  const googleOwner = isMock ? TENANT_GOOGLE_ID : user?.id ?? null;
+  const shopifyOwner = false ? user?.id ?? null : user?.id ?? null;
+  const googleOwner = false ? user?.id ?? null : user?.id ?? null;
   const shopifyConnections = shopifyOwner ? await listShopifyConnections(shopifyOwner).catch(() => []) : [];
   const googleConnection = googleOwner ? await getGoogleConnectionSummary(googleOwner).catch(() => null) : null;
 
-  const email = isMock ? "admin@agentcloud.agency" : (user?.email ?? "");
+  const email = false ? "admin@agentcloud.agency" : (user?.email ?? "");
 
   return (
     <DashboardShell email={email}>

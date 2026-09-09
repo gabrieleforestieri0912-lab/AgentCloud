@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSessionUser } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
-import { ACCESS_COOKIE } from "@/lib/waitlist-constants";
 import {
   normalizeShop,
   buildAuthorizeUrl,
@@ -53,8 +52,7 @@ export async function GET(req: NextRequest) {
   //    (per-utente), che è ciò che persiste il callback.
   //  - Chiunque altro → prima accedi, poi questa route gira di nuovo.
   const sessionUser = await getSessionUser();
-  const isAccessHolder = req.cookies.get(ACCESS_COOKIE)?.value === "1";
-  if (!sessionUser && !isAccessHolder) {
+  if (!sessionUser) {
     const nextPath =
       `/api/shopify/install?shop=${encodeURIComponent(shop)}` +
       (returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : "");

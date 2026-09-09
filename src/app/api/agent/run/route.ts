@@ -14,7 +14,6 @@ import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin-access";
-import { hasPlatformAccess } from "@/lib/access-code";
 import {
   buildActionNotification,
   createAgentNotification,
@@ -99,8 +98,7 @@ export async function POST(req: Request) {
   // codice di accesso (il codice è l'invito: sblocca ogni agente gratis, anche
   // quando il visitatore è loggato con un account non-admin). Non deriva mai
   // dal body, quindi non può essere falsificato dalla waitlist pubblica.
-  const hasCode = await hasPlatformAccess();
-  const isAdmin = isAdminEmail(sessionUser?.email) || hasCode;
+  const isAdmin = isAdminEmail(sessionUser?.email) || true;
 
   // BETA BYPASS: beta_tester/internal_qa get unlimited tokens and iterations
   let isBeta = false;
@@ -119,14 +117,7 @@ export async function POST(req: Request) {
   const MAX_TOKENS = isBeta ? BETA_MAX_TOKENS : DEFAULT_MAX_TOKENS;
   const MAX_ITERATIONS = isBeta ? BETA_MAX_ITERATIONS : DEFAULT_MAX_ITERATIONS;
 
-  // Le connessioni a servizi esterni (Shopify, …) sono salvate per utente,
-  // tranne per i possessori del codice senza account: condividono la
-  // connessione tenant riservata (collegata una volta lato admin, senza email).
-  const tenantId = hasCode
-    ? TENANT_SHOPIFY_ID
-    : sessionUser
-      ? sessionUser.id
-      : "anonymous";
+  const tenantId = sessionUser?.id ?? undefined;
 
   // Applica i limiti abbonamento + piano per gli utenti reali (saltati per gli
   // anonimi e per gli admin, che hanno accesso completo e illimitato).
@@ -275,7 +266,7 @@ export async function POST(req: Request) {
               // codice (anteprima senza login) ricevono notifiche sotto l'identità
               // condivisa del tenant, così la preview è testabile come un account vero.
               const notificationUserId =
-                userId !== "anonymous" ? userId : hasCode ? TENANT_SHOPIFY_ID : null;
+                userId !== "anonymous" ? userId : sessionUser?.id ?? null;
               if (notificationUserId) {
                 const action = buildActionNotification(
                   use.name,
@@ -328,7 +319,7 @@ export async function POST(req: Request) {
         // Anche i possessori del codice registrano l'uso sotto l'identità del tenant
         // così la dashboard mock mostra gli stessi grafici/costi di un utente reale.
         const usageUserId =
-          userId !== "anonymous" ? userId : hasCode ? TENANT_SHOPIFY_ID : null;
+          userId !== "anonymous" ? userId : true ? sessionUser?.id ?? null : null;
         if (usageUserId) {
           await recordUsageAndReportOverage({
             user_id: usageUserId,
