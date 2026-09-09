@@ -237,33 +237,11 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
               <div className="mt-8 flex flex-wrap gap-3">
                 {available ? (
                   isOwned ? (
-                    <>
-                      <Link
-                        href={`/chat?agent=${agent.slug}`}
-                        className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-400 hover:shadow-emerald-500/35 hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        {locale === "it" ? "Apri in chat" : "Open in chat"}
-                        <ArrowRight size={16} />
-                      </Link>
-                      <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3.5 text-sm font-bold text-emerald-300">
-                        ✓ {locale === "it" ? "Già acquistato" : "Already purchased"}
-                      </span>
-                    </>
+                    <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3.5 text-sm font-bold text-emerald-300">
+                      ✓ {locale === "it" ? "Già acquistato" : "Already purchased"}
+                    </span>
                   ) : (
-                    <>
-                      <Link
-                        href={true ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
-                        className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-500/35 hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        {true
-                          ? locale === "it"
-                            ? "Apri chat"
-                            : "Open chat"
-                          : dict.agentDetail.configureAgent}
-                        <ArrowRight size={16} />
-                      </Link>
-                      <AddToCartButton slug={agent.slug} />
-                    </>
+                    <AddToCartButton slug={agent.slug} />
                   )
                 ) : (
                   <span className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-neutral-900 px-7 py-3.5 text-sm font-bold text-neutral-500">
