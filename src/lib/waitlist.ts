@@ -31,8 +31,14 @@ async function countTakenSpots(): Promise<number> {
         const { data, error } = await admin.auth.admin.listUsers({ page });
         if (error) throw error;
         const users = data?.users ?? [];
-        taken += users.length;
+        // Conta solo gli utenti della waitlist (source="waitlist").
+        // Gli utenti che accedono via Google/email login dopo aver usato il
+        // codice non devono occupare posti della lista d'attesa.
         for (const u of users) {
+          const source = (u.user_metadata as Record<string, unknown> | undefined)?.source;
+          if (source === "waitlist") {
+            taken += 1;
+          }
           if (u.email) emails.add(u.email.toLowerCase());
         }
         total = data?.total;
