@@ -353,10 +353,10 @@ const it = {
   chat: {
     newChat: "Nuova chat",
     assistantName: "Assistente personale",
-    googleConnectTitle: "Collega il tuo account Google",
+    googleConnectTitle: "Autorizza l'accesso a Gmail e Calendar",
     googleConnectDesc:
-      "Collega Gmail e Google Calendar così l'agente lavora sui tuoi dati reali.",
-    googleConnectAction: "Collega account Google",
+      "Hai effettuato l'accesso con Google, ma per usare Gmail e Calendar devi autorizzare l'accesso ai dati. Concedi i permessi per continuare.",
+    googleConnectAction: "Autorizza Google",
     googleConnectedLine: "Account Google collegato: {email}",
     googleReadOnlyHint:
       "Accesso completo a Gmail e Google Calendar: invio, eliminazione email e gestione eventi con promemoria (consenso OAuth sicuro).",
@@ -653,8 +653,8 @@ const it = {
     hoursAgo: "{n} h",
     daysAgo: "{n} g",
     googleConnectDesc:
-      "Collega il tuo account Google (Gmail e Calendario) per dare agli agenti accesso completo: lettura, invio ed eliminazione email, creazione/eliminazione eventi e promemoria.",
-    googleConnectButton: "Collega account Google",
+      "Per usare Gmail e Calendar devi autorizzare l'accesso ai dati del tuo account Google. È un passaggio separato dal login iniziale.",
+    googleConnectButton: "Autorizza Google",
     googleConnectedBadge: "Connesso",
     googleConnectedMsg: "Account Google collegato con successo.",
     googleConnectFailed: "Collegamento non riuscito ({reason}).",
@@ -1633,10 +1633,10 @@ export const en: Dictionary = {
   chat: {
     newChat: "New Chat",
     assistantName: "Personal assistant",
-    googleConnectTitle: "Connect your Google account",
+    googleConnectTitle: "Authorize Gmail and Calendar access",
     googleConnectDesc:
-      "Connect Gmail and Google Calendar so the agent can work on your real data.",
-    googleConnectAction: "Connect Google account",
+      "You signed in with Google, but to use Gmail and Calendar you need to authorize data access. Grant permissions to continue.",
+    googleConnectAction: "Authorize Google",
     googleConnectedLine: "Google account connected: {email}",
     googleReadOnlyHint:
       "Full access to Gmail and Google Calendar: send, delete emails and manage events with reminders (secure OAuth consent).",
@@ -1939,8 +1939,8 @@ export const en: Dictionary = {
     hoursAgo: "{n} h",
     daysAgo: "{n} d",
     googleConnectDesc:
-      "Conecta tu cuenta de Google (Gmail y Calendario) para dar a los agentes acceso completo: lectura, envío/eliminación de emails y gestión de eventos con recordatorios.",
-    googleConnectButton: "Connect Google account",
+      "Para usar Gmail y Calendar necesitas autorizar el acceso a los datos de tu cuenta Google. Es un paso separado del login inicial.",
+    googleConnectButton: "Autorizar Google",
     googleConnectedBadge: "Connected",
     googleConnectedMsg: "Google account connected successfully.",
     googleConnectFailed: "Connection failed ({reason}).",
@@ -2911,10 +2911,10 @@ export const es: Dictionary = {
   chat: {
     newChat: "New Chat",
     assistantName: "Asistente personal",
-    googleConnectTitle: "Connect your Google account",
+    googleConnectTitle: "Autoriza el acceso a Gmail y Calendar",
     googleConnectDesc:
-      "Conecta Gmail y Google Calendar para que el agente pueda trabajar con tus datos reales.",
-    googleConnectAction: "Connect Google account",
+      "Has iniciado sesión con Google, pero para usar Gmail y Calendar necesitas autorizar el acceso a los datos. Concede los permisos para continuar.",
+    googleConnectAction: "Autorizar Google",
     googleConnectedLine: "Google account connected: {email}",
     googleReadOnlyHint:
       "Vollzugriff auf Gmail und Google Kalender: Senden, Löschen von E-Mails und Verwalten von Terminen mit Erinnerungen (sichere OAuth-Zustimmung).",
@@ -3216,8 +3216,8 @@ export const es: Dictionary = {
     hoursAgo: "{n} h",
     daysAgo: "{n} d",
     googleConnectDesc:
-      "Connect your Google account (Gmail and Calendar) to give agents full access: read, send/delete emails and manage events with reminders.",
-    googleConnectButton: "Connect Google account",
+      "To use Gmail and Calendar you need to authorize data access to your Google account. This is a separate step from the initial login.",
+    googleConnectButton: "Authorize Google",
     googleConnectedBadge: "Connected",
     googleConnectedMsg: "Google account connected successfully.",
     googleConnectFailed: "Connection failed ({reason}).",
@@ -4188,9 +4188,9 @@ export const de: Dictionary = {
   chat: {
     newChat: "New Chat",
     assistantName: "Persönlicher Assistent",
-    googleConnectTitle: "Connect your Google account",
+    googleConnectTitle: "Zugriff auf Gmail und Calendar autorisieren",
     googleConnectDesc:
-      "Verbinde Gmail und Google Kalender, damit der Agent mit deinen echten Daten arbeiten kann.",
+      "Du hast dich mit Google angemeldet, aber um Gmail und Calendar zu nutzen, musst du den Datenzugriff autorisieren. erteile die Berechtigungen, um fortzufahren.",
     googleConnectAction: "Connect Google account",
     googleConnectedLine: "Google account connected: {email}",
     googleReadOnlyHint:
@@ -4492,8 +4492,8 @@ export const de: Dictionary = {
     hoursAgo: "{n} h",
     daysAgo: "{n} d",
     googleConnectDesc:
-      "Conecta tu cuenta de Google (Gmail y Calendario) para dar a los agentes acceso completo: lectura, envío/eliminación de emails y gestión de eventos con recordatorios.",
-    googleConnectButton: "Connect Google account",
+      "Para usar Gmail y Calendar necesitas autorizar el acceso a los datos de tu cuenta Google. Es un paso separado del login inicial.",
+    googleConnectButton: "Autorizar Google",
     googleConnectedBadge: "Connected",
     googleConnectedMsg: "Google account connected successfully.",
     googleConnectFailed: "Connection failed ({reason}).",
@@ -5464,9 +5464,9 @@ export const fr: Dictionary = {
   chat: {
     newChat: "New Chat",
     assistantName: "Assistant personnel",
-    googleConnectTitle: "Connect your Google account",
+    googleConnectTitle: "Autorisez l'accès à Gmail et Calendar",
     googleConnectDesc:
-      "Connectez Gmail et Google Calendar pour que l'agent puisse travailler avec vos données réelles.",
+      "Vous vous êtes connecté avec Google, mais pour utiliser Gmail et Calendar, vous devez autoriser l'accès aux données. Accordez les permissions pour continuer.",
     googleConnectAction: "Connect Google account",
     googleConnectedLine: "Google account connected: {email}",
     googleReadOnlyHint:
@@ -5768,8 +5768,8 @@ export const fr: Dictionary = {
     hoursAgo: "{n} h",
     daysAgo: "{n} d",
     googleConnectDesc:
-      "Verbinde dein Google-Konto (Gmail und Kalender), um Agenten Vollzugriff zu geben: Lesen, Senden/Löschen von E-Mails und Verwalten von Terminen mit Erinnerungen.",
-    googleConnectButton: "Connect Google account",
+      "Um Gmail und Calendar zu nutzen, musst du den Datenzugriff auf dein Google-Konto autorisieren. Dies ist ein separater Schritt von der anfänglichen Anmeldung.",
+    googleConnectButton: "Google autorisieren",
     googleConnectedBadge: "Connected",
     googleConnectedMsg: "Google account connected successfully.",
     googleConnectFailed: "Connection failed ({reason}).",
