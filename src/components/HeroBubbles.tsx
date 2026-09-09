@@ -21,33 +21,33 @@ type Bubble =
 // Lista mista app + agenti, distribuita organicamente su entrambi i lati.
 // Gli agenti usano il loro icon e accent; le app usano BrandLogo.
 const BUBBLES: Bubble[] = [
-  // ── Lato sinistro (principalmente app, qualche agente) ──
-  { kind: "brand", top: "8%", left: "8%", size: "w-11 h-11", brand: "google", delay: "0s", anim: "animate-float-gentle" },
-  { kind: "agent", top: "14%", left: "28%", size: "w-13 h-13", agentSlug: "shopify-agent", delay: "0.6s", anim: "animate-float-reverse" },
-  { kind: "brand", top: "22%", left: "5%", size: "w-10 h-10", brand: "facebook", delay: "1.2s", anim: "animate-float-gentle" },
-  { kind: "agent", top: "30%", left: "22%", size: "w-12 h-12", agentSlug: "lead-capture", delay: "0.3s", anim: "animate-float-gentle" },
-  { kind: "brand", top: "38%", left: "10%", size: "w-12 h-12", brand: "instagram", delay: "1.8s", anim: "animate-float-reverse" },
-  { kind: "agent", top: "46%", left: "6%", size: "w-11 h-11", agentSlug: "support-agent", delay: "0.9s", anim: "animate-float-gentle" },
-  { kind: "brand", top: "54%", left: "20%", size: "w-10 h-10", brand: "discord", delay: "0.4s", anim: "animate-float-gentle" },
-  { kind: "agent", top: "62%", left: "14%", size: "w-13 h-13", agentSlug: "seo-agent", delay: "1.5s", anim: "animate-float-reverse" },
-  { kind: "brand", top: "70%", left: "5%", size: "w-11 h-11", brand: "gmail", delay: "2.1s", anim: "animate-float-gentle" },
-  { kind: "agent", top: "78%", left: "18%", size: "w-10 h-10", agentSlug: "copywriter", delay: "0.7s", anim: "animate-float-reverse" },
-  { kind: "brand", top: "86%", left: "10%", size: "w-12 h-12", brand: "shopify", delay: "1.4s", anim: "animate-float-gentle" },
-  { kind: "agent", top: "92%", left: "26%", size: "w-11 h-11", agentSlug: "calendar-booking", delay: "2.0s", anim: "animate-float-gentle" },
+  // ── Lato sinistro — zigzag su tutta la larghezza (0-60%)
+  //    Altezza residua = ~580px; con 12 bolle ≈ 48px di gap verticale minimo.
+  //    Alterniamo posizione orizzontale (destra/sinistra) per evitare sovrapposizioni.
+  { kind: "brand",  top: "4%",  left: "5%",  size: "w-10 h-10", brand: "google",       delay: "0s",   anim: "animate-float-gentle" },
+  { kind: "agent",  top: "12%", left: "32%", size: "w-11 h-11", agentSlug: "shopify-agent",  delay: "0.5s", anim: "animate-float-reverse" },
+  { kind: "brand",  top: "21%", left: "8%",  size: "w-9 h-9",   brand: "facebook",     delay: "1.1s", anim: "animate-float-gentle" },
+  { kind: "agent",  top: "30%", left: "38%", size: "w-10 h-10", agentSlug: "lead-capture",  delay: "0.3s", anim: "animate-float-gentle" },
+  { kind: "brand",  top: "39%", left: "3%",  size: "w-11 h-11", brand: "instagram",    delay: "1.7s", anim: "animate-float-reverse" },
+  { kind: "agent",  top: "48%", left: "28%", size: "w-9 h-9",   agentSlug: "support-agent",  delay: "0.8s", anim: "animate-float-gentle" },
+  { kind: "brand",  top: "57%", left: "12%", size: "w-10 h-10", brand: "discord",      delay: "0.4s", anim: "animate-float-gentle" },
+  { kind: "agent",  top: "66%", left: "40%", size: "w-10 h-10", agentSlug: "seo-agent",     delay: "1.4s", anim: "animate-float-reverse" },
+  { kind: "brand",  top: "75%", left: "5%",  size: "w-9 h-9",   brand: "gmail",        delay: "2.0s", anim: "animate-float-gentle" },
+  { kind: "agent",  top: "84%", left: "30%", size: "w-9 h-9",   agentSlug: "copywriter",    delay: "0.6s", anim: "animate-float-reverse" },
+  { kind: "brand",  top: "92%", left: "10%", size: "w-10 h-10", brand: "shopify",      delay: "1.3s", anim: "animate-float-gentle" },
 
-  // ── Lato destro (principalmente agenti, qualche app) ──
-  { kind: "agent", top: "10%", left: "68%", size: "w-12 h-12", agentSlug: "business-manager", delay: "0.2s", anim: "animate-float-gentle" },
-  { kind: "brand", top: "16%", left: "82%", size: "w-10 h-10", brand: "stripe", delay: "1.0s", anim: "animate-float-reverse" },
-  { kind: "agent", top: "24%", left: "74%", size: "w-13 h-13", agentSlug: "email-manager", delay: "0.5s", anim: "animate-float-gentle" },
-  { kind: "brand", top: "32%", left: "88%", size: "w-11 h-11", brand: "github", delay: "1.6s", anim: "animate-float-gentle" },
-  { kind: "agent", top: "40%", left: "70%", size: "w-10 h-10", agentSlug: "reviews-agent", delay: "0.8s", anim: "animate-float-reverse" },
-  { kind: "brand", top: "48%", left: "84%", size: "w-12 h-12", brand: "whatsapp", delay: "1.3s", anim: "animate-float-gentle" },
-  { kind: "agent", top: "56%", left: "76%", size: "w-12 h-12", agentSlug: "social-media-agent", delay: "0.3s", anim: "animate-float-gentle" },
-  { kind: "brand", top: "64%", left: "90%", size: "w-9 h-9", brand: "hubspot", delay: "2.2s", anim: "animate-float-reverse" },
-  { kind: "agent", top: "72%", left: "72%", size: "w-13 h-13", agentSlug: "quote-agent", delay: "1.1s", anim: "animate-float-gentle" },
-  { kind: "brand", top: "80%", left: "86%", size: "w-10 h-10", brand: "trello", delay: "0.6s", anim: "animate-float-reverse" },
-  { kind: "agent", top: "88%", left: "78%", size: "w-11 h-11", agentSlug: "personal-assistant", delay: "1.7s", anim: "animate-float-gentle" },
-  { kind: "brand", top: "94%", left: "70%", size: "w-10 h-10", brand: "dropbox", delay: "2.5s", anim: "animate-float-gentle" },
+  // ── Lato destro — zigzag su tutta la larghezza (40-100%)
+  { kind: "agent",  top: "6%",  left: "55%", size: "w-10 h-10", agentSlug: "business-manager", delay: "0.2s", anim: "animate-float-gentle" },
+  { kind: "brand",  top: "15%", left: "80%", size: "w-9 h-9",   brand: "stripe",          delay: "0.9s", anim: "animate-float-reverse" },
+  { kind: "agent",  top: "24%", left: "62%", size: "w-11 h-11", agentSlug: "email-manager",   delay: "0.5s", anim: "animate-float-gentle" },
+  { kind: "brand",  top: "33%", left: "85%", size: "w-10 h-10", brand: "github",          delay: "1.5s", anim: "animate-float-gentle" },
+  { kind: "agent",  top: "42%", left: "55%", size: "w-9 h-9",   agentSlug: "reviews-agent",   delay: "0.7s", anim: "animate-float-reverse" },
+  { kind: "brand",  top: "51%", left: "78%", size: "w-10 h-10", brand: "whatsapp",       delay: "1.2s", anim: "animate-float-gentle" },
+  { kind: "agent",  top: "60%", left: "65%", size: "w-10 h-10", agentSlug: "social-media-agent", delay: "0.3s", anim: "animate-float-gentle" },
+  { kind: "brand",  top: "69%", left: "88%", size: "w-8 h-8",   brand: "hubspot",        delay: "2.1s", anim: "animate-float-reverse" },
+  { kind: "agent",  top: "78%", left: "58%", size: "w-11 h-11", agentSlug: "quote-agent",     delay: "1.0s", anim: "animate-float-gentle" },
+  { kind: "brand",  top: "87%", left: "82%", size: "w-9 h-9",   brand: "trello",         delay: "0.5s", anim: "animate-float-reverse" },
+  { kind: "agent",  top: "95%", left: "68%", size: "w-9 h-9",   agentSlug: "personal-assistant", delay: "1.6s", anim: "animate-float-gentle" },
 ];
 
 /**
@@ -58,9 +58,9 @@ const BUBBLES: Bubble[] = [
 export default function HeroBubbles() {
   const { locale } = useLanguage();
 
-  // Split roughly 50/50 left/right per la distribuzione visiva
-  const leftBubbles = BUBBLES.slice(0, 12);
-  const rightBubbles = BUBBLES.slice(12);
+  // Split: prime 11 = sinistra, resto = destra
+  const leftBubbles = BUBBLES.slice(0, 11);
+  const rightBubbles = BUBBLES.slice(11);
 
   return (
     <>
