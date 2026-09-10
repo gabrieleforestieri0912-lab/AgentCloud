@@ -911,7 +911,7 @@ export default function ChatInterface({
               </div>
               <div className="min-w-0 flex-1 text-left">
                 <p className="truncate text-xs font-bold text-white">
-                  {sidebarAuthLoaded ? (sidebarUserEmail || "Ospite") : "Caricamento…"}
+                  {sidebarUserEmail || "…"}
                 </p>
               </div>
               <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform ${accountMenuOpen ? "rotate-180" : ""}`} />
@@ -948,25 +948,16 @@ export default function ChatInterface({
                     Dashboard
                   </Link>
                 </div>
-                {sidebarUserEmail ? (
-                  <button
-                    onClick={async () => {
-                      await createClient().auth.signOut();
-                      window.location.href = "/";
-                    }}
-                    className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs font-bold text-red-300 hover:bg-red-500/15"
-                  >
-                    <LogOut size={12} />
-                    Esci
-                  </button>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="mt-1 flex w-full items-center justify-center rounded-lg bg-brand-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-brand-400"
-                  >
-                    Accedi
-                  </Link>
-                )}
+                <button
+                  onClick={async () => {
+                    await createClient().auth.signOut();
+                    window.location.href = "/";
+                  }}
+                  className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs font-bold text-red-300 hover:bg-red-500/15"
+                >
+                  <LogOut size={12} />
+                  Esci
+                </button>
               </div>
             )}
           </div>

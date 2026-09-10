@@ -26,12 +26,31 @@ export default function SidebarAccount() {
   useEffect(() => {
     let mounted = true;
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) {
-        setSession(data.session);
+
+    // Retry mechanism for session loading after OAuth redirect
+    const loadSession = (attempt = 0) => {
+      supabase.auth.getSession().then(({ data, error }) => {
+        if (!mounted) return;
+        if (error) console.warn("[SidebarAccount] getSession error:", error.message);
+        const sess = data.session;
+        if (!sess && attempt < 3) {
+          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
+          return;
+        }
+        setSession(sess);
         setAuthLoaded(true);
-      }
-    });
+      }).catch((err) => {
+        if (!mounted) return;
+        console.warn("[SidebarAccount] getSession failed:", err);
+        if (attempt < 3) {
+          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
+        } else {
+          setAuthLoaded(true);
+        }
+      });
+    };
+    loadSession();
+
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (mounted) {
         setSession(next);
@@ -52,7 +71,7 @@ export default function SidebarAccount() {
           {authLoaded ? initials : "…"}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-bold text-white">{authLoaded ? (email ?? "Ospite") : "Caricamento…"}</p>
+          <p className="truncate text-xs font-bold text-white">{email || "…"}</p>
           <p className="text-[11px] text-neutral-500">Account</p>
         </div>
       </div>
@@ -67,21 +86,15 @@ export default function SidebarAccount() {
           <Home size={12} /> Dashboard
         </Link>
       </div>
-      {email ? (
-        <button
-          onClick={async () => {
-            await createClient().auth.signOut();
-            window.location.href = "/";
-          }}
-          className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs font-bold text-red-300 hover:bg-red-500/15"
-        >
-          <LogOut size={12} /> Esci
-        </button>
-      ) : (
-        <Link href="/login" className="mt-2 flex w-full items-center justify-center rounded-lg bg-brand-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-brand-400">
-          Inizia Ora
-        </Link>
-      )}
+      <button
+        onClick={async () => {
+          await createClient().auth.signOut();
+          window.location.href = "/";
+        }}
+        className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs font-bold text-red-300 hover:bg-red-500/15"
+      >
+        <LogOut size={12} /> Esci
+      </button>
       <div className="mt-3 flex items-center gap-2 px-1">
         <Image src="/agentcloud.png" alt="AgentCloud" width={14} height={14} />
         <span className="text-xs font-semibold text-neutral-600">
