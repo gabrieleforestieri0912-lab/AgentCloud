@@ -67,7 +67,7 @@ export default function DashboardShell({
           </button>
         </div>
         {/* Navigation — clean pill style */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
+        <nav data-onboard="dashboard-nav" className="flex-1 overflow-y-auto p-3 space-y-0.5">
           {nav.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href !== "/" && pathname.startsWith(href));
             return (
@@ -92,7 +92,7 @@ export default function DashboardShell({
           })}
         </nav>
         {/* Account */}
-        <div className="p-3 border-t border-white/[0.06]">
+        <div data-onboard="dashboard-account" className="p-3 border-t border-white/[0.06]">
           <SidebarAccount />
         </div>
       </aside>

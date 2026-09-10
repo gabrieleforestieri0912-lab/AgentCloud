@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
-import ShopifyConnect from "@/components/ShopifyConnect";
-import GoogleConnect from "@/components/GoogleConnect";
-import { TENANT_SHOPIFY_ID, listShopifyConnections } from "@/lib/shopify/connections";
-import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/connections";
 import {
   Activity,
   AlertCircle,
@@ -167,18 +163,6 @@ export default async function DashboardPage({
     : dict.dashboard.welcomeBackGeneric;
   const email = user?.email ?? "";
 
-  const shopifyOwnerForConnections = false ? user?.id ?? null : user?.id ?? null;
-  const googleOwnerForConnections = false ? user?.id ?? null : user?.id ?? null;
-  const shopifyConnections = shopifyOwnerForConnections
-    ? await listShopifyConnections(shopifyOwnerForConnections).catch(() => [])
-    : [];
-  const googleConnection = googleOwnerForConnections
-    ? await getGoogleConnectionSummary(googleOwnerForConnections).catch(() => null)
-    : null;
-  const googleConfigured = Boolean(
-    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
-  );
-
   const statCards: Array<[string, string, typeof Zap]> = [
     [String(installed.length), dict.dashboard.statInstalledAgents, Zap],
     [formatCount(totalRuns), dict.dashboard.statRunsThisMonth, Activity],
@@ -282,7 +266,7 @@ export default async function DashboardPage({
             </div>
           )}
 
-          <div className="mb-8 grid gap-4 md:grid-cols-4">
+          <div data-onboard="dashboard-stats" className="mb-8 grid gap-4 md:grid-cols-4">
             {statCards.map(([value, label, Icon]) => (
               <div
                 key={label}
@@ -297,21 +281,7 @@ export default async function DashboardPage({
             ))}
           </div>
 
-          <ShopifyConnect
-            connected={shopifyConnections.map((c) => ({
-              shopDomain: c.shopDomain,
-              connected: c.connected,
-            }))}
-          />
-
-          <GoogleConnect
-            connected={googleConnection}
-            s={dict.dashboard}
-            locale={locale}
-            configured={googleConfigured}
-          />
-
-          {/* Grafici e costi — in preview mostra dati falsi realistici */}
+          {/* Grafici e costi */}
           <div className="mb-8">
             <DashboardCharts
               daily={dailyBuckets}
@@ -333,7 +303,7 @@ export default async function DashboardPage({
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          <div data-onboard="dashboard-agents" className="grid gap-6 lg:grid-cols-[1fr_360px]">
             <div className="rounded-lg border border-white/5 bg-neutral-900 shadow-sm">
               <div className="border-b border-white/5 p-5">
                 <h2 className="text-xl font-bold text-white">

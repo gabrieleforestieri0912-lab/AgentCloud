@@ -32,6 +32,9 @@ import {
   CheckCircle2,
   Clock3,
   ArrowRight,
+  Pencil,
+  Archive,
+  RotateCcw,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -80,6 +83,8 @@ type LocalConversation = {
   messages: LocalMessage[];
   created_at: string;
   agentSlugs?: string[];
+  archived_at?: string;
+  deleted_at?: string;
 };
 
 function formatTime(dateStr: string) {
@@ -141,6 +146,10 @@ export default function ChatInterface({
   // Pannello attivo nella sidebar: chat, tools o agents
   const [sidebarView, setSidebarView] = useState<"chat" | "tools" | "agents">("chat");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [showAgentPicker, setShowAgentPicker] = useState(false);
   const initializedRef = useRef(false);
   const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
 
@@ -507,6 +516,51 @@ export default function ChatInterface({
     }
   }
 
+  function handleArchive(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, archived_at: c.archived_at ? undefined : new Date().toISOString() } : c))
+    );
+  }
+
+  function startRename(id: string, currentTitle: string) {
+    setRenamingId(id);
+    setRenameValue(currentTitle);
+  }
+
+  function confirmRename(id: string) {
+    if (!renameValue.trim()) return;
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, title: renameValue.trim() } : c))
+    );
+    setRenamingId(null);
+    setRenameValue("");
+  }
+
+  function handleAddAgentToConversation(slug: string) {
+    if (!activeId) return;
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeId) return c;
+        const slugs = c.agentSlugs ?? [];
+        if (slugs.includes(slug)) return c;
+        if (slugs.length >= 5) return c;
+        return { ...c, agentSlugs: [...slugs, slug] };
+      })
+    );
+    setShowAgentPicker(false);
+  }
+
+  function handleRemoveAgentFromConversation(slug: string) {
+    if (!activeId) return;
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeId) return c;
+        return { ...c, agentSlugs: (c.agentSlugs ?? []).filter((s) => s !== slug) };
+      })
+    );
+  }
+
   async function handleSendWithText(text: string, convId: string) {
     if (!text.trim() || !convId) return;
     await sendMessage(text, convId, []);
@@ -784,6 +838,7 @@ export default function ChatInterface({
         {/* Header: New Chat + Close */}
         <div className="flex items-center gap-2 p-4 border-b border-white/[0.06]">
           <button
+            data-onboard="new-chat"
             onClick={handleNewChat}
             className="flex-1 flex items-center justify-center gap-2 bg-white text-neutral-900 text-sm font-bold py-2.5 px-4 rounded-full transition-all hover:bg-neutral-100 shadow-lg shadow-white/5"
           >
@@ -803,7 +858,7 @@ export default function ChatInterface({
         </div>
 
         {/* Navigation — pill style like header */}
-        <nav className="px-3 pt-4 pb-2">
+        <nav data-onboard="nav" className="px-3 pt-4 pb-2">
           <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
             <Link
               href="/"
@@ -849,16 +904,36 @@ export default function ChatInterface({
         </nav>
 
         {/* Conversations list */}
-        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
-          <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest px-3 py-2">
-            {dict.chat.conversations}
-          </p>
-          {conversations.length === 0 ? (
+        <div data-onboard="conversations" className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
+          <div className="flex items-center justify-between px-3 py-2">
+            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+              {showArchived ? (locale === "it" ? "Archiviate" : "Archived") : dict.chat.conversations}
+            </p>
+            <button
+              onClick={() => setShowArchived((v) => !v)}
+              className="text-[10px] font-bold text-neutral-500 hover:text-white transition-all"
+            >
+              {showArchived
+                ? locale === "it"
+                  ? "Attive"
+                  : "Active"
+                : locale === "it"
+                ? "Archiviate"
+                : "Archived"}
+            </button>
+          </div>
+          {conversations.filter((c) => showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at).length === 0 ? (
             <p className="text-xs text-neutral-600 px-3 py-6 text-center">
-              {dict.chat.noConversations}
+              {showArchived
+                ? locale === "it"
+                  ? "Nessuna conversazione archiviata"
+                  : "No archived conversations"
+                : dict.chat.noConversations}
             </p>
           ) : (
-            conversations.map((conv) => (
+            conversations
+              .filter((c) => showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at)
+              .map((conv) => (
               <div
                 key={conv.id}
                 role="button"
@@ -885,15 +960,45 @@ export default function ChatInterface({
                       className={`${conv.id === activeId ? "text-brand-400" : "text-neutral-500"}`}
                     />
                   </div>
-                  <span className="truncate flex-1 font-medium">{conv.title}</span>
-                  <button
-                    onClick={(e) => handleDelete(e, conv.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/15 hover:text-red-400 transition-all shrink-0"
-                    title={dict.chat.deleteConversation}
-                    aria-label={dict.chat.deleteConversation}
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                  {renamingId === conv.id ? (
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") confirmRename(conv.id);
+                        if (e.key === "Escape") setRenamingId(null);
+                      }}
+                      onBlur={() => confirmRename(conv.id)}
+                      className="flex-1 bg-transparent border-b border-brand-500 text-white text-sm outline-none px-0 py-0"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span className="truncate flex-1 font-medium">{conv.title}</span>
+                  )}
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startRename(conv.id, conv.title); }}
+                      className="p-1 rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
+                      title={locale === "it" ? "Rinomina" : "Rename"}
+                    >
+                      <Pencil size={10} />
+                    </button>
+                    <button
+                      onClick={(e) => handleArchive(e, conv.id)}
+                      className="p-1 rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
+                      title={conv.archived_at ? (locale === "it" ? "Ripristina" : "Restore") : (locale === "it" ? "Archivia" : "Archive")}
+                    >
+                      {conv.archived_at ? <RotateCcw size={10} /> : <Archive size={10} />}
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, conv.id)}
+                      className="p-1 rounded-lg hover:bg-red-500/15 text-neutral-500 hover:text-red-400 transition-all"
+                      title={dict.chat.deleteConversation}
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  </div>
                 </div>
                 {conv.agentSlugs && conv.agentSlugs.length > 0 && (
                   <div className="ml-8 flex flex-wrap gap-1">
@@ -917,7 +1022,7 @@ export default function ChatInterface({
         </div>
 
         {/* Account section — modern pill style */}
-        <div className="p-3 border-t border-white/[0.06]">
+        <div data-onboard="account" className="p-3 border-t border-white/[0.06]">
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
             <button
               onClick={() => setAccountMenuOpen((v) => !v)}
@@ -1417,6 +1522,7 @@ export default function ChatInterface({
 
         {/* Input area — solo quando ci sono messaggi */}
         <div
+          data-onboard="chat-input"
           className="px-4 sm:px-6 py-4 bg-neutral-900/80 backdrop-blur-sm border-t border-white/5"
           onDragEnter={attach.onDragEnter}
           onDragOver={attach.onDragOver}
