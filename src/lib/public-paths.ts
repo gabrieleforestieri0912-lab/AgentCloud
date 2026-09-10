@@ -28,6 +28,7 @@ export const PUBLIC_PATHS = [
   // spoglio. /connect richiede comunque la sessione; /callback è protetto
   // dallo stato CSRF (nonce cookie + user_id) verificato dentro l'handler.
   "/api/auth/google",
+  "/api/auth/google/callback",
   "/waitlist",
   "/contact",
   "/bundles",
