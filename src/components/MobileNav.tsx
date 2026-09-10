@@ -334,7 +334,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                     <button
                       onClick={async () => {
                         await createClient().auth.signOut();
-                        window.location.href = "/";
+                        window.location.href = "/waitlist";
                       }}
                       className="flex w-full items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300 hover:bg-red-500/15 transition-all"
                     >
