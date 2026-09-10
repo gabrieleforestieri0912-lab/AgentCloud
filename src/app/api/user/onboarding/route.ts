@@ -63,8 +63,8 @@ export async function GET() {
     .eq("id", user.id)
     .maybeSingle();
 
-  return {
+  return NextResponse.json({
     chat: profile?.has_seen_chat_onboarding ?? false,
     dashboard: profile?.has_seen_dashboard_onboarding ?? false,
-  };
+  });
 }
