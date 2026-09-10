@@ -34,11 +34,22 @@ export async function getOwnedAgentSlugs(userId: string): Promise<string[]> {
 
   const { data, error } = await admin
     .from("user_agents")
-    .select("agent_slug")
+    .select("agent_slug, status, current_period_end")
     .eq("user_id", userId)
-    .eq("status", "active");
+    .in("status", ["active", "trial"]);
   if (error || !data) return [];
-  return (data as Array<{ agent_slug: string }>)
+
+  const now = new Date();
+  return (data as Array<{ agent_slug: string; status: string; current_period_end: string | null }>)
+    .filter((r) => {
+      // Active agents are always owned
+      if (r.status === "active") return true;
+      // Trial agents are owned only if not expired
+      if (r.status === "trial" && r.current_period_end) {
+        return new Date(r.current_period_end) > now;
+      }
+      return false;
+    })
     .map((r) => r.agent_slug)
     .filter((slug) => Boolean(getAgentRuntimeConfig(slug)));
 }

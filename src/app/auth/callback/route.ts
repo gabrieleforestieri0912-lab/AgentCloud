@@ -35,13 +35,24 @@ export async function GET(request: Request) {
 
   // --- Set auth_method_completed = true for this user ---
   // Google OAuth = full auth method, so mark as completed.
+  let userId: string | null = null;
+  let hasAgents = false;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      userId = user.id;
       await supabase
         .from("profiles")
         .update({ auth_method_completed: true })
         .eq("id", user.id);
+
+      // Check if user already has any agents (trial or active)
+      const { data: existingAgents } = await supabase
+        .from("user_agents")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+      hasAgents = (existingAgents?.length ?? 0) > 0;
     }
   } catch {
     // Non-blocking: auth gate will catch on next request if needed
@@ -76,7 +87,12 @@ export async function GET(request: Request) {
   }
 
   // Consenti solo destinazioni relative same-origin per evitare open redirect.
-  const safeNext = isSafeRedirectPath(next) ? next : "/dashboard";
+  // If user has no agents, redirect to agent selection page for free trial
+  let defaultDest = "/dashboard";
+  if (userId && !hasAgents) {
+    defaultDest = "/select-agent";
+  }
+  const safeNext = isSafeRedirectPath(next) ? next : defaultDest;
   const response = NextResponse.redirect(`${origin}${safeNext}`);
 
   // Clear the waitlist_session cookie after attempted redemption
