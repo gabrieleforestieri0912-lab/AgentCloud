@@ -126,7 +126,9 @@ export default function ChatInterface({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarUserEmail, setSidebarUserEmail] = useState<string | null>(null);
-  const [sidebarUserInitials, setSidebarUserInitials] = useState<string>("?");
+  const [sidebarUserInitials, setSidebarUserInitials] = useState<string>("");
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [sidebarAuthLoaded, setSidebarAuthLoaded] = useState(false);
   const initializedRef = useRef(false);
   const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
 
@@ -241,6 +243,7 @@ export default function ChatInterface({
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
+      setSidebarAuthLoaded(true);
       const email = data.session?.user?.email ?? null;
       setSidebarUserEmail(email);
       const meta = data.session?.user?.user_metadata as { full_name?: string } | undefined;
@@ -254,6 +257,7 @@ export default function ChatInterface({
       setSidebarUserInitials(initials);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setSidebarAuthLoaded(true);
       const email = session?.user?.email ?? null;
       setSidebarUserEmail(email);
       const meta = session?.user?.user_metadata as { full_name?: string } | undefined;
@@ -809,67 +813,74 @@ export default function ChatInterface({
         </div>
 
         <div className="p-3 border-t border-white/5 space-y-2">
-          {/* Account — gestione spostata dalla header alla sidebar */}
-          <div className="rounded-xl border border-white/5 bg-neutral-900 p-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300">
-                {sidebarUserInitials}
+          {/* Account — menu collassabile */}
+          <div className="rounded-xl border border-white/5 bg-neutral-900 overflow-hidden">
+            <button
+              onClick={() => setAccountMenuOpen((v) => !v)}
+              className="w-full flex items-center gap-2.5 p-3 hover:bg-white/5 transition-colors"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300 shrink-0">
+                {sidebarAuthLoaded ? (sidebarUserInitials || "?") : "…"}
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 text-left">
                 <p className="truncate text-xs font-bold text-white">
-                  {sidebarUserEmail || "Ospite"}
+                  {sidebarAuthLoaded ? (sidebarUserEmail || "Ospite") : "Caricamento…"}
                 </p>
-                <p className="text-[11px] text-neutral-500">Account</p>
               </div>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-1.5">
-              <Link
-                href="/account"
-                className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
-              >
-                <User size={12} />
-                Account
-              </Link>
-              <Link
-                href="/settings"
-                className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
-              >
-                <Settings size={12} />
-                {dict.chat.agents === "Agenti" ? "Impostazioni" : "Settings"}
-              </Link>
-              <Link
-                href="/cart"
-                className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
-              >
-                <ShoppingCart size={12} />
-                Carrello
-              </Link>
-              <Link
-                href="/dashboard"
-                className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
-              >
-                <Home size={12} />
-                Dashboard
-              </Link>
-            </div>
-            {sidebarUserEmail ? (
-              <button
-                onClick={async () => {
-                  await createClient().auth.signOut();
-                  window.location.href = "/";
-                }}
-                className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs font-bold text-red-300 hover:bg-red-500/15"
-              >
-                <LogOut size={12} />
-                Esci
-              </button>
-            ) : (
-              <Link
-                href="/login"
-                className="mt-2 flex w-full items-center justify-center rounded-lg bg-brand-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-brand-400"
-              >
-                Accedi
-              </Link>
+              <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform ${accountMenuOpen ? "rotate-180" : ""}`} />
+            </button>
+            {accountMenuOpen && (
+              <div className="px-3 pb-3 space-y-1 border-t border-white/5">
+                <div className="grid grid-cols-2 gap-1.5 pt-2">
+                  <Link
+                    href="/account"
+                    className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+                  >
+                    <User size={12} />
+                    Account
+                  </Link>
+                  <Link
+                    href="/settings"
+                    className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+                  >
+                    <Settings size={12} />
+                    {dict.chat.agents === "Agenti" ? "Impostazioni" : "Settings"}
+                  </Link>
+                  <Link
+                    href="/cart"
+                    className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+                  >
+                    <ShoppingCart size={12} />
+                    Carrello
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+                  >
+                    <Home size={12} />
+                    Dashboard
+                  </Link>
+                </div>
+                {sidebarUserEmail ? (
+                  <button
+                    onClick={async () => {
+                      await createClient().auth.signOut();
+                      window.location.href = "/";
+                    }}
+                    className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs font-bold text-red-300 hover:bg-red-500/15"
+                  >
+                    <LogOut size={12} />
+                    Esci
+                  </button>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="mt-1 flex w-full items-center justify-center rounded-lg bg-brand-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-brand-400"
+                  >
+                    Accedi
+                  </Link>
+                )}
+              </div>
             )}
           </div>
 
