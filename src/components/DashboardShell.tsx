@@ -32,26 +32,28 @@ export default function DashboardShell({
       {mobileOpen && (
         <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
-      {/* Sidebar full height */}
+      {/* Sidebar — glassmorphism style matching chat */}
       <aside
         className={`
-          fixed lg:static inset-y-0 left-0 z-40 w-72 bg-neutral-950 border-r border-white/5
-          flex flex-col h-dvh shrink-0 transition-transform duration-200
+          fixed lg:static inset-y-0 left-0 z-40 w-72 bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06]
+          flex flex-col h-dvh shrink-0 transition-transform duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
-        <div className="flex h-14 items-center justify-between gap-2 border-b border-white/5 px-4">
+        {/* Header */}
+        <div className="flex h-14 items-center justify-between gap-2 border-b border-white/[0.06] px-4">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="relative h-7 w-7 overflow-hidden rounded-lg">
               <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="28px" />
             </span>
             <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
           </Link>
-          <button onClick={() => setMobileOpen(false)} className="lg:hidden flex h-11 w-11 items-center justify-center rounded-lg text-neutral-500 hover:text-white">
+          <button onClick={() => setMobileOpen(false)} className="lg:hidden flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all">
             <X size={16} />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+        {/* Navigation — clean pill style */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
           {nav.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href !== "/" && pathname.startsWith(href));
             return (
@@ -59,17 +61,24 @@ export default function DashboardShell({
                 key={href}
                 href={href}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                  active ? "bg-white/5 text-white border border-white/5" : "text-neutral-400 hover:bg-white/5 hover:text-white"
+                className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
+                  active
+                    ? "bg-white/[0.06] text-white border border-white/[0.08]"
+                    : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
-                <Icon size={16} />
+                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+                  active ? "bg-brand-500/15" : "bg-white/5"
+                }`}>
+                  <Icon size={14} className={active ? "text-brand-400" : ""} />
+                </div>
                 {label}
               </Link>
             );
           })}
         </nav>
-        <div className="p-3 border-t border-white/5">
+        {/* Account */}
+        <div className="p-3 border-t border-white/[0.06]">
           <SidebarAccount />
         </div>
       </aside>

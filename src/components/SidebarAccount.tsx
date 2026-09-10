@@ -65,41 +65,46 @@ export default function SidebarAccount() {
 
   const email = session?.user?.email ?? null;
   const initials = getInitials(session);
+  const avatarUrl = (session?.user?.user_metadata as { avatar_url?: string; picture?: string } | undefined)?.avatar_url || (session?.user?.user_metadata as { picture?: string } | undefined)?.picture || null;
+
   return (
-    <div className="rounded-xl border border-white/5 bg-neutral-900 p-3">        <div className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300">
-          {authLoaded ? initials : "…"}
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+      <div className="flex items-center gap-3 p-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+          ) : authLoaded ? (
+            initials
+          ) : (
+            <span className="animate-pulse">…</span>
+          )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-bold text-white">{email || "…"}</p>
-          <p className="text-[11px] text-neutral-500">Account</p>
+          <p className="truncate text-sm font-bold text-white">{email || "…"}</p>
+          <p className="text-[10px] text-neutral-500 font-medium">Account</p>
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-1.5">
-        <Link href="/account" className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10">
+      <div className="px-3 pb-3 grid grid-cols-3 gap-1.5">
+        <Link href="/account" className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all">
           <User size={12} /> Account
         </Link>
-        <Link href="/cart" className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10">
+        <Link href="/cart" className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all">
           <ShoppingCart size={12} /> Carrello
         </Link>
-        <Link href="/dashboard" className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10">
+        <Link href="/dashboard" className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all">
           <Home size={12} /> Dashboard
         </Link>
       </div>
-      <button
-        onClick={async () => {
-          await createClient().auth.signOut();
-          window.location.href = "/";
-        }}
-        className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs font-bold text-red-300 hover:bg-red-500/15"
-      >
-        <LogOut size={12} /> Esci
-      </button>
-      <div className="mt-3 flex items-center gap-2 px-1">
-        <Image src="/agentcloud.png" alt="AgentCloud" width={14} height={14} />
-        <span className="text-xs font-semibold text-neutral-600">
-          AgentCloud <span className="text-purple-400">v2.1</span>
-        </span>
+      <div className="px-3 pb-3">
+        <button
+          onClick={async () => {
+            await createClient().auth.signOut();
+            window.location.href = "/";
+          }}
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
+        >
+          <LogOut size={12} /> Esci
+        </button>
       </div>
     </div>
   );
