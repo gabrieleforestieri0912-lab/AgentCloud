@@ -21,9 +21,9 @@ import {
   PanelLeftClose,
   Send,
   Home,
+  ChevronDown,
   Wrench,
   Bot,
-  ChevronDown,
   ShoppingCart,
   User,
   Settings,
@@ -114,7 +114,6 @@ export default function ChatInterface({
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [activeAgentId, setActiveAgentId] = useState(agentId || "");
   const [selectedAgentSlugs, setSelectedAgentSlugs] = useState<string[]>(agentId ? [agentId] : []);
-  const [agentPickerOpen, setAgentPickerOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState(initialQuery || "");
   const [isVoiceMode, setIsVoiceMode] = useState(false);
@@ -689,7 +688,7 @@ export default function ChatInterface({
         className={`
           fixed lg:static inset-y-0 left-0 z-30
           w-72 bg-neutral-950 border-r border-white/5 h-dvh
-            flex flex-col transition-all duration-300 shrink-0
+            flex flex-col transition-all duration-300 shrink-0 overflow-y-auto
             ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
             ${sidebarOpen ? "lg:w-72 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
           `}
@@ -703,9 +702,12 @@ export default function ChatInterface({
             {dict.chat.newChat}
           </button>
           <button
-            onClick={() => setMobileSidebarOpen(false)}
+            onClick={() => {
+              setMobileSidebarOpen(false);
+              setSidebarOpen(false);
+            }}
             aria-label={dict.chat.closeSidebar}
-            className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg bg-neutral-800 text-neutral-400 hover:text-white"
+            className="w-9 h-9 flex items-center justify-center rounded-lg bg-neutral-800 text-neutral-400 hover:text-white"
           >
             <PanelLeftClose size={16} />
           </button>
@@ -739,76 +741,7 @@ export default function ChatInterface({
           </Link>
         </nav>
 
-        {/* Strumenti attivi per l'agente corrente */}
-        {activeAgentId && getEnabledTools(activeAgentId).length > 0 && (
-          <div className="px-3 pt-1 pb-1">
-            <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
-              {dict.chat.tools}
-            </p>
-            <div className="space-y-1">
-              {getEnabledTools(activeAgentId).map((tool) => (
-                <div
-                  key={tool}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-xs font-semibold text-neutral-400"
-                >
-                  <Wrench size={12} />
-                  {tool}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {effectiveAvailableAgents.length > 0 && (
-          <div className="px-3 pt-1 pb-1">
-            <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
-              {dict.chat.agents}
-            </p>
-            <div className="space-y-1">
-              <button
-                onClick={() => {
-                  setActiveAgentId("");
-                  setSelectedAgentSlugs([]);
-                  if (activeId) {
-                    setConversations((prev) =>
-                      prev.map((c) => (c.id === activeId ? { ...c, agentSlugs: [] } : c)),
-                    );
-                  }
-                }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                  selectedAgentSlugs.length === 0
-                    ? "bg-white/5 text-white border border-white/5"
-                    : "text-neutral-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Bot size={14} className="shrink-0" />
-                <span className="truncate">{dict.chat.assistantName}</span>
-              </button>
-              {effectiveAvailableAgents.map((a) => (
-                <button
-                  key={a.slug}
-                  onClick={() => {
-                    setActiveAgentId(a.slug);
-                    setSelectedAgentSlugs([a.slug]);
-                    if (activeId) {
-                      setConversations((prev) =>
-                        prev.map((c) => (c.id === activeId ? { ...c, agentSlugs: [a.slug] } : c)),
-                      );
-                    }
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                    selectedAgentSlugs.length === 1 && selectedAgentSlugs[0] === a.slug
-                      ? "bg-brand-500/10 text-brand-300 border border-brand-500/20"
-                      : "text-neutral-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <Bot size={14} className="shrink-0" />
-                  <span className="truncate">{a.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
           <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
@@ -939,12 +872,7 @@ export default function ChatInterface({
               </Link>
             )}
           </div>
-          <div className="flex items-center gap-2 px-2 py-1">
-            <Image src="/agentcloud.png" alt="AgentCloud" width={14} height={14} />
-            <span className="text-xs font-semibold text-neutral-600">
-              AgentCloud <span className="text-purple-400">v2.1</span>
-            </span>
-          </div>
+
         </div>
       </aside>
 
@@ -1021,40 +949,7 @@ export default function ChatInterface({
               <p className="text-sm text-neutral-400 max-w-md leading-relaxed">
                 {dict.chat.emptySubtitle}
               </p>
-              {effectiveAvailableAgents.length > 0 && (
-                <div className="mt-6 w-full max-w-md">
-                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">
-                    {dict.chat.agents}
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <button
-                      onClick={() => setActiveAgentId("")}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold transition-colors ${activeAgentId === "" ? "bg-brand-500 text-white" : "border border-white/10 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white"}`}
-                    >
-                      <Bot size={14} />
-                      {dict.chat.assistantName}
-                    </button>
-                    {effectiveAvailableAgents.map((a) => (
-                      <button
-                        key={a.slug}
-                        onClick={() => {
-                          setActiveAgentId(a.slug);
-                          setTimeout(() => inputRef.current?.focus(), 0);
-                        }}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold transition-colors ${activeAgentId === a.slug ? "bg-brand-500 text-white" : "border border-white/10 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white"}`}
-                      >
-                        <Bot size={14} />
-                        {a.name}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="mt-3 text-xs text-neutral-600">
-                    {activeAgentId
-                      ? `${dict.chat.agents} — ${activeAgentDisplayName}`
-                      : dict.chat.assistantName}
-                  </p>
-                </div>
-              )}
+
             </div>
           ) : (
             messages.map((msg) => (
@@ -1245,97 +1140,7 @@ export default function ChatInterface({
               <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>
             )}
             {/* Agenti selezionati per questa conversazione — l'utente può inserirne quanti vuole */}
-            {selectedAgentSlugs.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                {selectedAgentSlugs.map((slug) => {
-                  const ag = effectiveAvailableAgents.find((a) => a.slug === slug);
-                  return (
-                    <span
-                      key={slug}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/15 border border-brand-500/20 px-2.5 py-1 text-xs font-bold text-brand-300"
-                    >
-                      <Bot size={12} />
-                      {ag?.name ?? slug}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = selectedAgentSlugs.filter((s) => s !== slug);
-                          setSelectedAgentSlugs(next);
-                          setActiveAgentId(next[0] ?? "");
-                          if (activeId) {
-                            setConversations((prev) =>
-                              prev.map((c) => (c.id === activeId ? { ...c, agentSlugs: next } : c)),
-                            );
-                          }
-                        }}
-                        className="ml-1 rounded-full p-0.5 hover:bg-white/10"
-                      >
-                        <Trash2 size={10} />
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-            <div className="mb-2 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setAgentPickerOpen((v) => !v)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:bg-white/10 hover:text-white"
-              >
-                <Bot size={12} />
-                {selectedAgentSlugs.length === 0
-                  ? dict.chat.agents
-                  : `${dict.chat.agents} (${selectedAgentSlugs.length})`}
-                <ChevronDown size={12} className={`${agentPickerOpen ? "rotate-180" : ""} transition-transform`} />
-              </button>
-              <span className="text-xs text-neutral-600">
-                {selectedAgentSlugs.length === 0
-                  ? dict.chat.assistantName
-                  : selectedAgentSlugs.map((s) => effectiveAvailableAgents.find((a) => a.slug === s)?.name ?? s).join(", ")}
-              </span>
-            </div>
-            {agentPickerOpen && (
-              <div className="mb-2 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-xl max-h-[50dvh] sm:max-h-40 overflow-y-auto">
-                <p className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-neutral-500">
-                  {dict.chat.agents}
-                </p>
-                <div className="max-h-40 overflow-y-auto space-y-1">
-                  {effectiveAvailableAgents.map((a) => {
-                    const checked = selectedAgentSlugs.includes(a.slug);
-                    return (
-                      <label
-                        key={a.slug}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => {
-                            let next: string[];
-                            if (e.target.checked) next = [...selectedAgentSlugs, a.slug];
-                            else next = selectedAgentSlugs.filter((s) => s !== a.slug);
-                            setSelectedAgentSlugs(next);
-                            setActiveAgentId(next[0] ?? "");
-                            if (activeId) {
-                              setConversations((prev) =>
-                                prev.map((c) => (c.id === activeId ? { ...c, agentSlugs: next } : c)),
-                              );
-                            }
-                          }}
-                          className="h-3 w-3 rounded border-white/10 bg-neutral-800 text-brand-500 focus:ring-brand-500"
-                        />
-                        <Bot size={12} className="text-neutral-400" />
-                        <span className="text-xs font-semibold text-neutral-200">{a.name}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-                {effectiveAvailableAgents.length === 0 && (
-                  <p className="px-2 py-2 text-xs text-neutral-500">{dict.chat.noConversations}</p>
-                )}
-              </div>
-            )}
+
             <div className="flex items-end gap-2 bg-neutral-800 rounded-2xl border border-white/10 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
             <AttachPlusButton
               labels={attachLabels}
