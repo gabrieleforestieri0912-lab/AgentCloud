@@ -16,6 +16,8 @@ import AgentIcon from "./AgentIcon";
 import { AGENTS, AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
+import { createClient } from "@/lib/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
 type MobileNavProps = {
   marketplaceAgents?: Agent[];
@@ -24,9 +26,64 @@ type MobileNavProps = {
 export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const pathname = usePathname();
   const { locale, dict } = useLanguage();
   const { count: cartCount } = useCart();
+
+  // Session loading with retry mechanism
+  useEffect(() => {
+    let mounted = true;
+    const supabase = createClient();
+
+    const applySession = (sess: Session | null) => {
+      if (!mounted) return;
+      setSession(sess);
+    };
+
+    const loadSession = (attempt = 0) => {
+      supabase.auth.getSession().then(({ data, error }) => {
+        if (!mounted) return;
+        if (error) console.warn("[MobileNav] getSession error:", error.message);
+        const sess = data.session;
+        if (!sess && attempt < 3) {
+          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
+          return;
+        }
+        applySession(sess);
+      }).catch((err) => {
+        if (!mounted) return;
+        console.warn("[MobileNav] getSession failed:", err);
+        if (attempt < 3) {
+          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
+        } else {
+          applySession(null);
+        }
+      });
+    };
+    loadSession();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      applySession(next);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  const isSignedIn = Boolean(session);
+  const userMeta = session?.user?.user_metadata as { full_name?: string; avatar_url?: string; picture?: string } | undefined;
+  const avatarUrl = userMeta?.avatar_url || userMeta?.picture || null;
+  const userEmail = session?.user?.email || null;
+  const userInitials = isSignedIn
+    ? (userMeta?.full_name || session?.user?.email || "?")
+        .split(/[\s@.]+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((s) => s[0]?.toUpperCase())
+        .join("") || "?"
+    : null;
   // Chiude il menu al cambio di rotta: reset dello stato derivato dal
   // pathname DURANTE il render (pattern React per "aggiustare lo stato quando
   // cambia una prop") invece che in un effect — evita il render sincrono extra
@@ -255,14 +312,46 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                     Account
                   </Link>
                 </div>
-                <Link
-                  href="/login"
-                  onClick={() => setIsOpen(false)}
-                  className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-neutral-900 hover:bg-neutral-100"
-                >
-                  <LogOut size={16} className="rotate-180" />
-                  {locale === "it" ? "Inizia Ora" : "Start Now"}
-                </Link>
+                {isSignedIn ? (
+                  <>
+                    {/* User info */}
+                    <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                        ) : userInitials ? (
+                          userInitials
+                        ) : (
+                          "?"
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-white">{userEmail || "…"}</p>
+                        <p className="text-[10px] text-neutral-500 font-medium">Account</p>
+                      </div>
+                    </div>
+                    {/* Sign out */}
+                    <button
+                      onClick={async () => {
+                        await createClient().auth.signOut();
+                        window.location.href = "/";
+                      }}
+                      className="flex w-full items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300 hover:bg-red-500/15 transition-all"
+                    >
+                      <LogOut size={16} />
+                      Esci
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-neutral-900 hover:bg-neutral-100"
+                  >
+                    <LogOut size={16} className="rotate-180" />
+                    {locale === "it" ? "Inizia Ora" : "Start Now"}
+                  </Link>
+                )}
                 <p className="text-center text-xs text-neutral-500">{dict.chat.everythingOnMobile}</p>
               </div>
             </motion.div>

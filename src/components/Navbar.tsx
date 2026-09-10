@@ -80,22 +80,44 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const featuredAgents = getFeaturedAgents(agents);
 
   // Tiene traccia della sessione Supabase in modo reattivo (lettura iniziale +
-  // cambi di stato dell'auth).
+  // cambi di stato dell'auth). Include retry per gestire race conditions
+  // post-redirect OAuth dove i cookie di sessione non sono ancora disponibili.
   useEffect(() => {
     let mounted = true;
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) {
-        setSession(data.session);
-        setAuthLoaded(true);
-      }
-    });
+
+    const applySession = (sess: Session | null) => {
+      if (!mounted) return;
+      setSession(sess);
+      setAuthLoaded(true);
+    };
+
+    // Retry mechanism: up to 3 attempts with progressive delay
+    const loadSession = (attempt = 0) => {
+      supabase.auth.getSession().then(({ data, error }) => {
+        if (!mounted) return;
+        if (error) console.warn("[Navbar] getSession error:", error.message);
+        const sess = data.session;
+        if (!sess && attempt < 3) {
+          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
+          return;
+        }
+        applySession(sess);
+      }).catch((err) => {
+        if (!mounted) return;
+        console.warn("[Navbar] getSession failed:", err);
+        if (attempt < 3) {
+          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
+        } else {
+          applySession(null);
+        }
+      });
+    };
+    loadSession();
+
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, nextSession) => {
-        if (mounted) {
-          setSession(nextSession);
-          setAuthLoaded(true);
-        }
+        applySession(nextSession);
       },
     );
     return () => {
