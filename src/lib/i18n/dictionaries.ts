@@ -371,6 +371,10 @@ const it = {
     emptyTitle: "Cosa vorresti automatizzare?",
     emptySubtitle:
       "Chiedimi qualsiasi cosa sull'automazione della tua azienda. Posso aiutarti con email, supporto, lead e altro.",
+    suggestion1: "Gestisci le mie email in arrivo",
+    suggestion2: "Crea una campagna marketing",
+    suggestion3: "Analizza le mie vendite Shopify",
+    suggestion4: "Programma un appuntamento su Google Calendar",
     placeholder: "Scrivi al tuo agente AI...",
     sendMessage: "Invia messaggio",
     disclaimer:
@@ -1651,6 +1655,10 @@ export const en: Dictionary = {
     emptyTitle: "What would you like to automate?",
     emptySubtitle:
       "Ask me anything about automating your business. I can help with emails, support, leads, and more.",
+    suggestion1: "Manage my incoming emails",
+    suggestion2: "Create a marketing campaign",
+    suggestion3: "Analyze my Shopify sales",
+    suggestion4: "Schedule a Google Calendar appointment",
     placeholder: "Message your AI Agent...",
     sendMessage: "Send message",
     disclaimer:
@@ -2929,6 +2937,10 @@ export const es: Dictionary = {
     emptyTitle: "¿Qué te gustaría automatizar?",
     emptySubtitle:
       "Pregúntame cualquier cosa sobre automatizar tu negocio. Puedo ayudarte con emails, soporte, leads y más.",
+    suggestion1: "Gestiona mis emails entrantes",
+    suggestion2: "Crea una campaña de marketing",
+    suggestion3: "Analiza mis ventas de Shopify",
+    suggestion4: "Programa una cita en Google Calendar",
     placeholder: "Message your AI Agent...",
     sendMessage: "Enviar mensaje",
     disclaimer:
@@ -4206,6 +4218,10 @@ export const de: Dictionary = {
     emptyTitle: "Was möchtest du automatisieren?",
     emptySubtitle:
       "Frag mich alles zur Automatisierung deines Business. Ich helfe bei E-Mails, Support, Leads u.v.m.",
+    suggestion1: "Verwalte meine eingehenden E-Mails",
+    suggestion2: "Erstelle eine Marketingkampagne",
+    suggestion3: "Analysiere meine Shopify-Verkäufe",
+    suggestion4: "Termin in Google Calendar planen",
     placeholder: "Message your AI Agent...",
     sendMessage: "Nachricht senden",
     disclaimer:
@@ -5482,6 +5498,10 @@ export const fr: Dictionary = {
     emptyTitle: "Que souhaitez-vous automatiser ?",
     emptySubtitle:
       "Demandez-moi tout sur l'automatisation de votre entreprise. Je peux aider avec les e-mails, le support, les leads, etc.",
+    suggestion1: "Gérez mes e-mails entrants",
+    suggestion2: "Créez une campagne marketing",
+    suggestion3: "Analysez mes ventes Shopify",
+    suggestion4: "Planifiez un rendez-vous Google Calendar",
     placeholder: "Message your AI Agent...",
     sendMessage: "Envoyer le message",
     disclaimer:

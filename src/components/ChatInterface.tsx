@@ -1066,29 +1066,33 @@ export default function ChatInterface({
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="flex-1 flex flex-col items-center justify-center px-4"
             >
-              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-white/5">
-                <Image
-                  src="/agentcloud.png"
-                  alt="AgentCloud"
-                  width={40}
-                  height={40}
-                />
+              {/* Welcome message */}
+              <div className="mb-8 text-center">
+                <div className="mb-6 flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-white/5">
+                  <Image
+                    src="/agentcloud.png"
+                    alt="AgentCloud"
+                    width={40}
+                    height={40}
+                  />
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-2">
+                  {dict.chat.emptyTitle}
+                </h2>
+                <p className="text-base text-neutral-400 max-w-lg leading-relaxed">
+                  {dict.chat.emptySubtitle}
+                </p>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">
-                {dict.chat.emptyTitle}
-              </h2>
-              <p className="text-sm text-neutral-400 max-w-md leading-relaxed">
-                {dict.chat.emptySubtitle}
-              </p>
-              {/* Input centrato nella pagina */}
-              <div className="mt-8 w-full max-w-content px-4 sm:px-6">
+
+              {/* Input ridotto centrato */}
+              <div className="w-full max-w-2xl px-4">
                 <div
                   onDragEnter={attach.onDragEnter}
                   onDragOver={attach.onDragOver}
                   onDragLeave={attach.onDragLeave}
                   onDrop={attach.makeDrop(attachLabels)}
                 >
-                  <div className="relative mx-auto max-w-content">
+                  <div className="relative">
                     <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
                     <AttachmentChips
                       items={attach.attachments}
@@ -1123,6 +1127,25 @@ export default function ChatInterface({
                   </div>
                   <p className="text-[10px] text-neutral-600 text-center mt-2">{dict.chat.disclaimer}</p>
                 </div>
+              </div>
+
+              {/* Suggerimenti cliccabili */}
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-2xl px-4">
+                {[dict.chat.suggestion1, dict.chat.suggestion2, dict.chat.suggestion3, dict.chat.suggestion4].map(
+                  (suggestion, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setInput(suggestion);
+                        setTimeout(() => inputRef.current?.focus(), 0);
+                      }}
+                      className="group flex items-center gap-2 rounded-xl border border-white/5 bg-neutral-800/50 px-4 py-3 text-left text-sm text-neutral-300 hover:bg-neutral-800 hover:border-white/10 hover:text-white transition-all"
+                    >
+                      <MessageSquare size={14} className="text-neutral-500 group-hover:text-brand-400 transition-colors shrink-0" />
+                      <span className="truncate">{suggestion}</span>
+                    </button>
+                  ),
+                )}
               </div>
             </motion.div>
           ) : (
