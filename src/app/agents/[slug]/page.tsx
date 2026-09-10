@@ -529,28 +529,18 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
             {t(dict.agentDetail.readyToDeployDesc, { category: agent.category })}
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            {available && (
-              isOwned ? (
-                <Link
-                  href={`/chat?agent=${agent.slug}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-400"
-                >
-                  {locale === "it" ? "Apri in chat" : "Open in chat"}
-                  <ArrowRight size={18} />
-                </Link>
-              ) : (
-                <Link
-                  href={true ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
-                  className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
-                >
-                  {true
-                    ? locale === "it"
-                      ? "Apri chat"
-                      : "Open chat"
-                    : dict.agentDetail.configureAndDeploy}
-                  <ArrowRight size={18} />
-                </Link>
-              )
+            {available && !isOwned && (
+              <Link
+                href={true ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
+                className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
+              >
+                {true
+                  ? locale === "it"
+                    ? "Apri chat"
+                    : "Open chat"
+                  : dict.agentDetail.configureAndDeploy}
+                <ArrowRight size={18} />
+              </Link>
             )}
           </div>
         </div>
