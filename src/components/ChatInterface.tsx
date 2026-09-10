@@ -13,6 +13,7 @@
  * dell'hero e gestione errori con link al supporto.
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
   MessageSquare,
@@ -129,6 +130,8 @@ export default function ChatInterface({
   const [sidebarUserInitials, setSidebarUserInitials] = useState<string>("");
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [sidebarAuthLoaded, setSidebarAuthLoaded] = useState(false);
+  // L'input parte centrato nella pagina; dopo il primo messaggio si sposta in basso
+  const [inputCentered, setInputCentered] = useState(true);
   const initializedRef = useRef(false);
   const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
 
@@ -472,6 +475,7 @@ export default function ChatInterface({
 
     setIsTyping(true);
     setHasPartialReply(false);
+    if (inputCentered) setInputCentered(false);
 
     // Aggiorna un singolo messaggio dell'assistente man mano che lo stream
     // arriva. Restituisce l'id stabile così i chunk successivi aggiornano la
@@ -939,13 +943,17 @@ export default function ChatInterface({
         {activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
         {needsGoogle && <GoogleConnectionPrompt />}
 
-        {/* Messaggi */}          <div
-          ref={messagesRef}
-          onScroll={handleMessagesScroll}
-          className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6 mx-auto max-w-content"
-        >
+        {/* Layout condizionale: centrato quando vuoto, in basso quando ci sono messaggi */}
+        <AnimatePresence mode="wait">
           {messages.length === 0 && !isTyping ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+            <motion.div
+              key="centered"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="flex-1 flex flex-col items-center justify-center px-4"
+            >
               <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-white/5">
                 <Image
                   src="/agentcloud.png"
@@ -960,10 +968,65 @@ export default function ChatInterface({
               <p className="text-sm text-neutral-400 max-w-md leading-relaxed">
                 {dict.chat.emptySubtitle}
               </p>
-
-            </div>
+              {/* Input centrato nella pagina */}
+              <div className="mt-8 w-full max-w-content px-4 sm:px-6">
+                <div
+                  onDragEnter={attach.onDragEnter}
+                  onDragOver={attach.onDragOver}
+                  onDragLeave={attach.onDragLeave}
+                  onDrop={attach.makeDrop(attachLabels)}
+                >
+                  <div className="relative mx-auto max-w-content">
+                    <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
+                    <AttachmentChips
+                      items={attach.attachments}
+                      onRemove={attach.remove}
+                      removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
+                    />
+                    {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
+                    <div className="flex items-center gap-2 bg-neutral-800 rounded-2xl border border-white/10 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+                      <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+                      <textarea
+                        ref={inputRef}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onPaste={attach.makePaste(attachLabels)}
+                        placeholder={dict.chat.placeholder}
+                        rows={1}
+                        className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
+                        style={{ fieldSizing: "content" } as React.CSSProperties}
+                      />
+                      <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
+                      <button
+                        onClick={handleSend}
+                        disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
+                        aria-label={dict.chat.sendMessage}
+                        title={dict.chat.sendMessage}
+                        className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
+                      >
+                        <Send size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-neutral-600 text-center mt-2">{dict.chat.disclaimer}</p>
+                </div>
+              </div>
+            </motion.div>
           ) : (
-            messages.map((msg) => (
+            <motion.div
+              key="messages"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="flex-1 flex flex-col"
+            >
+            <div
+              ref={messagesRef}
+              onScroll={handleMessagesScroll}
+              className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6 mx-auto max-w-content"
+            >
+            {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex items-start gap-3 ${
@@ -1045,8 +1108,7 @@ export default function ChatInterface({
                   </div>
                 )}
               </div>
-            ))
-          )}
+            ))}
 
           {/* Export buttons - show when there are messages */}
           {messages.length > 0 && (
@@ -1130,7 +1192,7 @@ export default function ChatInterface({
           </button>
         )}
 
-        {/* Input area — toggle blu rimosso come richiesto */}
+        {/* Input area — solo quando ci sono messaggi */}
         <div
           className="px-4 sm:px-6 py-4 bg-neutral-900/80 backdrop-blur-sm border-t border-white/5"
           onDragEnter={attach.onDragEnter}
@@ -1143,57 +1205,39 @@ export default function ChatInterface({
             <AttachmentChips
               items={attach.attachments}
               onRemove={attach.remove}
-              removeLabel={(name) =>
-                dict.chat.removeAttachment.replace("{name}", name)
-              }
+              removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
             />
-            {attach.notice && (
-              <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>
-            )}
-            {/* Agenti selezionati per questa conversazione — l'utente può inserirne quanti vuole */}
-
+            {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
             <div className="flex items-center gap-2 bg-neutral-800 rounded-2xl border border-white/10 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-            <AttachPlusButton
-              labels={attachLabels}
-              disabled={isTyping}
-              onPick={(files) => attach.addFiles(files, attachLabels)}
-            />
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onPaste={attach.makePaste(attachLabels)}
-              placeholder={dict.chat.placeholder}
-              rows={1}
-              className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
-              style={{ fieldSizing: "content" } as React.CSSProperties}
-            />
-            <VoiceInput
-              onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)}
-              onVoiceModeToggle={setIsVoiceMode}
-              disabled={isTyping || !activeId}
-              isVoiceMode={isVoiceMode}
-            />
-            <button
-              onClick={handleSend}
-              disabled={
-                (!input.trim() && attach.attachments.length === 0) ||
-                isTyping ||
-                !activeId
-              }
-              aria-label={dict.chat.sendMessage}
-              title={dict.chat.sendMessage}
-              className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
-            >
-              <Send size={16} />
-            </button>
+              <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onPaste={attach.makePaste(attachLabels)}
+                placeholder={dict.chat.placeholder}
+                rows={1}
+                className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
+                style={{ fieldSizing: "content" } as React.CSSProperties}
+              />
+              <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
+              <button
+                onClick={handleSend}
+                disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
+                aria-label={dict.chat.sendMessage}
+                title={dict.chat.sendMessage}
+                className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
+              >
+                <Send size={16} />
+              </button>
             </div>
           </div>
-          <p className="text-[10px] text-neutral-600 text-center mt-2">
-            {dict.chat.disclaimer}
-          </p>
+          <p className="text-[10px] text-neutral-600 text-center mt-2">{dict.chat.disclaimer}</p>
         </div>
+        </motion.div>
+          )}
+        </AnimatePresence>
         </main>
         </div>
       </div>
