@@ -18,7 +18,6 @@ import {
 import DashboardShell from "@/components/DashboardShell";
 import DashboardCharts from "@/components/DashboardCharts";
 import DashboardExportBar from "@/components/DashboardExportBar";
-import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
 import { AGENTS, localizeAgent } from "@/lib/agents";
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
@@ -244,43 +243,6 @@ export default async function DashboardPage({
     };
   });
 
-
-
-  // ── Preview con dati falsi ──────────────────────────────────────────
-  // Quando non ci sono dati reali (nuovo utente / mock admin appena creato),
-  // mostra dati di esempio per dare un'idea di come apparirà la dashboard.
-  const hasRealData = installed.length > 0 || totalRuns > 0;
-  const isPreview = !hasRealData;
-
-  // Dati placeholder per la preview
-  const placeholderInstalled = [
-    { slug: "shopify-agent", status: "active", runs: 342, tokens: 18500, lastRun: new Date(Date.now() - 2 * 3600000).toISOString(), agent: AGENTS.find((a) => a.slug === "shopify-agent") ? localizeAgent(AGENTS.find((a) => a.slug === "shopify-agent")!, locale) : null, runtimeName: "Shopify Agent", config: {} },
-    { slug: "email-manager", status: "active", runs: 215, tokens: 12800, lastRun: new Date(Date.now() - 5 * 3600000).toISOString(), agent: AGENTS.find((a) => a.slug === "email-manager") ? localizeAgent(AGENTS.find((a) => a.slug === "email-manager")!, locale) : null, runtimeName: "Email Manager", config: {} },
-    { slug: "lead-capture", status: "active", runs: 189, tokens: 9200, lastRun: new Date(Date.now() - 8 * 3600000).toISOString(), agent: AGENTS.find((a) => a.slug === "lead-capture") ? localizeAgent(AGENTS.find((a) => a.slug === "lead-capture")!, locale) : null, runtimeName: "Lead Capture", config: {} },
-    { slug: "support-agent", status: "active", runs: 101, tokens: 4700, lastRun: new Date(Date.now() - 12 * 3600000).toISOString(), agent: AGENTS.find((a) => a.slug === "support-agent") ? localizeAgent(AGENTS.find((a) => a.slug === "support-agent")!, locale) : null, runtimeName: "Support Agent", config: {} },
-  ];
-
-  const placeholderDailyBuckets = dayLabels.map((label, i) => ({
-    date: new Date(Date.now() - (6 - i) * 86400000).toISOString().slice(0, 10),
-    label,
-    runs: [45, 72, 58, 91, 67, 83, 54][i],
-    tokens: [3200, 5100, 4200, 6500, 4800, 5900, 3800][i],
-  }));
-
-  const displayInstalled = isPreview ? placeholderInstalled : installed;
-  const displayTotalRuns = isPreview ? 847 : totalRuns;
-  const displayTotalTokens = isPreview ? 45200 : totalTokens;
-  const displayDailyBuckets = isPreview ? placeholderDailyBuckets : dailyBuckets;
-  const displayOverageCents = isPreview ? 0 : overageCentsTotal;
-  const previewBanner = isPreview;
-
-  const displayStatCards: Array<[string, string, typeof Zap]> = [
-        [String(displayInstalled.length), dict.dashboard.statInstalledAgents, Zap],
-        [formatCount(displayTotalRuns), dict.dashboard.statRunsThisMonth, Activity],
-        [formatCount(displayTotalTokens), dict.dashboard.statTokensUsed, CheckCircle2],
-        [String(displayInstalled.filter((a) => a.status === "active").length), dict.dashboard.statActiveAgents, AlertCircle],
-      ];
-
   return (
     <DashboardShell email={email}>
       <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
@@ -320,19 +282,8 @@ export default async function DashboardPage({
             </div>
           )}
 
-          {previewBanner && (
-            <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
-              <p className="text-sm font-semibold text-amber-200">
-                {locale === "it"
-                  ? "Anteprima con dati di esempio — così apparirà la tua dashboard con agenti attivi. I dati reali sostituiranno questa preview al primo utilizzo."
-                  : "Preview with sample data — this is how your dashboard will look with active agents. Real data will replace this preview after first use."}
-              </p>
-              <span className="shrink-0 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-300">Preview</span>
-            </div>
-          )}
-
           <div className="mb-8 grid gap-4 md:grid-cols-4">
-            {displayStatCards.map(([value, label, Icon]) => (
+            {statCards.map(([value, label, Icon]) => (
               <div
                 key={label}
                 className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm"
@@ -363,21 +314,21 @@ export default async function DashboardPage({
           {/* Grafici e costi — in preview mostra dati falsi realistici */}
           <div className="mb-8">
             <DashboardCharts
-              daily={displayDailyBuckets}
-              totalTokens={displayTotalTokens}
-              totalRuns={displayTotalRuns}
-              estimatedCostCents={displayOverageCents}
-              overageCents={displayOverageCents}
+              daily={dailyBuckets}
+              totalTokens={totalTokens}
+              totalRuns={totalRuns}
+              estimatedCostCents={overageCentsTotal}
+              overageCents={overageCentsTotal}
               locale={locale}
             />
             <div className="mt-4">
               <DashboardExportBar
-                agentName={displayInstalled[0]?.slug || "AgentCloud"}
-                agentSlug={displayInstalled[0]?.slug || "agent"}
-                totalRuns={displayTotalRuns}
-                totalTokens={displayTotalTokens}
-                estimatedCostCents={displayOverageCents}
-                daily={displayDailyBuckets}
+                agentName={installed[0]?.slug || "AgentCloud"}
+                agentSlug={installed[0]?.slug || "agent"}
+                totalRuns={totalRuns}
+                totalTokens={totalTokens}
+                estimatedCostCents={overageCentsTotal}
+                daily={dailyBuckets}
               />
             </div>
           </div>
@@ -390,7 +341,7 @@ export default async function DashboardPage({
                 </h2>
               </div>
 
-              {displayInstalled.length === 0 ? (
+              {installed.length === 0 ? (
                 <div className="p-10 text-center">
                   {dbAvailable ? (
                     <>
@@ -421,7 +372,7 @@ export default async function DashboardPage({
                 </div>
               ) : (
                 <div className="divide-y divide-white/5 max-md:space-y-3 max-md:divide-none max-md:p-3">
-                  {displayInstalled.map(({ agent, slug, status, runs, tokens, lastRun, runtimeName, config }) => {
+                  {installed.map(({ agent, slug, status, runs, tokens, lastRun, runtimeName, config }) => {
                     const displayName =
                       agent?.shortName ?? runtimeName ?? slug;
                     const category = agent?.category ?? "Agent";
@@ -502,7 +453,7 @@ export default async function DashboardPage({
                 <h2 className="text-xl font-bold text-white">
                   {dict.dashboard.monthlyUsage}
                 </h2>
-                {displayInstalled.length === 0 ? (
+                {installed.length === 0 ? (
                   <p className="mt-4 text-sm leading-6 text-neutral-400">
                     {dbAvailable
                       ? dict.dashboard.usageEmpty
@@ -511,8 +462,8 @@ export default async function DashboardPage({
                 ) : (
                   <div className="mt-4 space-y-4">
                     {(() => {
-                      const maxTokens = Math.max(1, ...displayInstalled.map((a) => a.tokens));
-                      return displayInstalled.map(({ agent, slug, tokens, runs, runtimeName }) => {
+                      const maxTokens = Math.max(1, ...installed.map((a) => a.tokens));
+                      return installed.map(({ agent, slug, tokens, runs, runtimeName }) => {
                         const displayName = agent?.shortName ?? runtimeName ?? slug;
                         const pct = Math.min(100, (tokens / maxTokens) * 100);
                         return (
@@ -573,8 +524,6 @@ export default async function DashboardPage({
           </div>
         </div>
       </section>
-
-      <Footer />
     </DashboardShell>
   );
 }
