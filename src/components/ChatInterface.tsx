@@ -29,6 +29,9 @@ import {
   User,
   Settings,
   LogOut,
+  CheckCircle2,
+  Clock3,
+  ArrowRight,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -132,6 +135,8 @@ export default function ChatInterface({
   const [sidebarAuthLoaded, setSidebarAuthLoaded] = useState(false);
   // L'input parte centrato nella pagina; dopo il primo messaggio si sposta in basso
   const [inputCentered, setInputCentered] = useState(true);
+  // Pannello attivo nella sidebar: chat, tools o agents
+  const [sidebarView, setSidebarView] = useState<"chat" | "tools" | "agents">("chat");
   const initializedRef = useRef(false);
   const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
 
@@ -729,24 +734,39 @@ export default function ChatInterface({
             <Home size={16} />
             {dict.chat.home}
           </Link>
-          <div className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20">
+          <button
+            onClick={() => setSidebarView("chat")}
+            className={`flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              sidebarView === "chat"
+                ? "text-brand-400 bg-brand-500/10 border border-brand-500/20"
+                : "text-neutral-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
             <MessageSquare size={16} />
             {dict.chat.chat}
-          </div>
-          <Link
-            href="/integrations"
-            className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+          </button>
+          <button
+            onClick={() => setSidebarView("tools")}
+            className={`flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              sidebarView === "tools"
+                ? "text-brand-400 bg-brand-500/10 border border-brand-500/20"
+                : "text-neutral-400 hover:text-white hover:bg-white/5"
+            }`}
           >
             <Wrench size={16} />
             {dict.chat.tools}
-          </Link>
-          <Link
-            href="/agents"
-            className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+          </button>
+          <button
+            onClick={() => setSidebarView("agents")}
+            className={`flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              sidebarView === "agents"
+                ? "text-brand-400 bg-brand-500/10 border border-brand-500/20"
+                : "text-neutral-400 hover:text-white hover:bg-white/5"
+            }`}
           >
             <Bot size={16} />
             {dict.chat.agents}
-          </Link>
+          </button>
         </nav>
 
 
@@ -916,7 +936,7 @@ export default function ChatInterface({
         onDragLeave={attach.onDragLeave}
         onDrop={attach.makeDrop(attachLabels)}
       >
-        {/* Intestazione chat — Claude-style clean header */}
+        {/* Header — always shown */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/5">
           <div className="flex items-center gap-3">
             <button
@@ -928,9 +948,9 @@ export default function ChatInterface({
             </button>
             <div>
               <p className="text-sm font-semibold text-white">
-                {activeAgentDisplayName}
+                {sidebarView === "tools" ? dict.chat.tools : sidebarView === "agents" ? dict.chat.agents : activeAgentDisplayName}
               </p>
-              {isTyping && (
+              {sidebarView === "chat" && isTyping && (
                 <span className="inline-flex items-center gap-1.5 text-xs text-brand-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
                   {dict.chat.thinking}
@@ -940,10 +960,102 @@ export default function ChatInterface({
           </div>
         </div>
 
-        {activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
-        {needsGoogle && <GoogleConnectionPrompt />}
+        {sidebarView === "chat" && activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
+        {sidebarView === "chat" && needsGoogle && <GoogleConnectionPrompt />}
 
-        {/* Layout condizionale: centrato quando vuoto, in basso quando ci sono messaggi */}
+        {/* ── Tools panel ────────────────────────────────────── */}
+        {sidebarView === "tools" && (
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+            <div className="mx-auto max-w-3xl space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-white mb-1">{dict.chat.tools}</h2>
+                <p className="text-sm text-neutral-400">
+                  {locale === "it"
+                    ? "Collega AgentCloud ai tuoi strumenti. Ogni integrazione viene gestita dall'agente corrispondente."
+                    : "Connect AgentCloud to your tools. Each integration is managed by its corresponding agent."}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {INTEGRATIONS.filter((i) => i.available).map((integ) => (
+                  <div key={integ.name} className="flex items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/50 px-4 py-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5">
+                      <BrandLogo slug={integ.brand} size={24} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-white truncate">{integ.name}</p>
+                      <p className="text-xs text-neutral-500 truncate">{integ.description}</p>
+                    </div>
+                    <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                      <CheckCircle2 size={10} />
+                      {locale === "it" ? "Attivo" : "Active"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {INTEGRATIONS.filter((i) => !i.available).length > 0 && (
+                <>
+                  <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider">
+                    {locale === "it" ? "Prossimamente" : "Coming soon"}
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {INTEGRATIONS.filter((i) => !i.available).map((integ) => (
+                      <div key={integ.name} className="flex items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/30 px-4 py-3 opacity-60">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5">
+                          <BrandLogo slug={integ.brand} size={24} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-white truncate">{integ.name}</p>
+                          <p className="text-xs text-neutral-500 truncate">{integ.description}</p>
+                        </div>
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-500/10 px-2 py-0.5 text-[10px] font-bold text-neutral-500">
+                          <Clock3 size={10} />
+                          {locale === "it" ? "In arrivo" : "Soon"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Agents panel ────────────────────────────────────── */}
+        {sidebarView === "agents" && (
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+            <div className="mx-auto max-w-3xl space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-white mb-1">{dict.chat.agents}</h2>
+                <p className="text-sm text-neutral-400">
+                  {locale === "it"
+                    ? "Sfoglia il catalogo agenti e acquista quelli di cui hai bisogno."
+                    : "Browse the agent catalog and purchase the ones you need."}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {AGENTS.map((agent) => (
+                  <Link
+                    key={agent.slug}
+                    href={`/agents/${agent.slug}`}
+                    className="flex items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/50 px-4 py-3 hover:bg-neutral-800 hover:border-white/10 transition-all"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+                      <Bot size={20} className="text-brand-400" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-white truncate">{agent.name}</p>
+                      <p className="text-xs text-neutral-500 truncate">{agent.description}</p>
+                    </div>
+                    <ArrowRight size={14} className="text-neutral-600 shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Chat panel ────────────────────────────────────── */}
+        {sidebarView === "chat" && (
         <AnimatePresence mode="wait">
           {messages.length === 0 && !isTyping ? (
             <motion.div
@@ -1238,6 +1350,7 @@ export default function ChatInterface({
         </motion.div>
           )}
         </AnimatePresence>
+        )}
         </main>
         </div>
       </div>
