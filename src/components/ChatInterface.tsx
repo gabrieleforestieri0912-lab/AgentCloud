@@ -131,6 +131,7 @@ export default function ChatInterface({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarUserEmail, setSidebarUserEmail] = useState<string | null>(null);
   const [sidebarUserInitials, setSidebarUserInitials] = useState<string>("");
+  const [sidebarUserAvatar, setSidebarUserAvatar] = useState<string | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [sidebarAuthLoaded, setSidebarAuthLoaded] = useState(false);
   // L'input parte centrato nella pagina; dopo il primo messaggio si sposta in basso
@@ -286,25 +287,12 @@ export default function ChatInterface({
   // Sidebar account — carica email/iniziali per gestione account in sidebar
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data }) => {
-      setSidebarAuthLoaded(true);
-      const email = data.session?.user?.email ?? null;
-      setSidebarUserEmail(email);
-      const meta = data.session?.user?.user_metadata as { full_name?: string } | undefined;
-      const base = meta?.full_name || email || "?";
-      const initials = base
-        .split(/[\s@.]+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((s) => s[0]?.toUpperCase())
-        .join("") || "?";
-      setSidebarUserInitials(initials);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+
+    const applySession = (session: { user: { email?: string; user_metadata?: Record<string, unknown> } } | null) => {
       setSidebarAuthLoaded(true);
       const email = session?.user?.email ?? null;
       setSidebarUserEmail(email);
-      const meta = session?.user?.user_metadata as { full_name?: string } | undefined;
+      const meta = session?.user?.user_metadata as { full_name?: string; avatar_url?: string; picture?: string } | undefined;
       const base = meta?.full_name || email || "?";
       const initials = base
         .split(/[\s@.]+/)
@@ -313,7 +301,40 @@ export default function ChatInterface({
         .map((s) => s[0]?.toUpperCase())
         .join("") || "?";
       setSidebarUserInitials(initials);
+      // Google avatar
+      const avatar = meta?.avatar_url || meta?.picture || null;
+      setSidebarUserAvatar(typeof avatar === "string" ? avatar : null);
+    };
+
+    // 1. Prova a leggere la sessione esistente (con retry)
+    const loadSession = (attempt = 0) => {
+      supabase.auth.getSession().then(({ data, error }) => {
+        if (error) {
+          console.warn("[ChatInterface] getSession error:", error.message);
+        }
+        const session = data.session;
+        if (!session && attempt < 3) {
+          // La sessione potrebbe non essere pronta ancora dopo il redirect OAuth
+          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
+          return;
+        }
+        applySession(session);
+      }).catch((err) => {
+        console.warn("[ChatInterface] getSession failed:", err);
+        if (attempt < 3) {
+          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
+        } else {
+          setSidebarAuthLoaded(true);
+        }
+      });
+    };
+    loadSession();
+
+    // 2. Ascolta i cambiamenti di auth (login/logout)
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      applySession(session);
     });
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -879,8 +900,14 @@ export default function ChatInterface({
               onClick={() => setAccountMenuOpen((v) => !v)}
               className="w-full flex items-center gap-2.5 p-3 hover:bg-white/5 transition-colors"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300 shrink-0">
-                {sidebarAuthLoaded ? (sidebarUserInitials || "?") : "…"}
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300 shrink-0 overflow-hidden">
+                {sidebarUserAvatar ? (
+                  <img src={sidebarUserAvatar} alt="" className="h-full w-full object-cover" />
+                ) : sidebarAuthLoaded ? (
+                  sidebarUserInitials || "?"
+                ) : (
+                  "…"
+                )}
               </div>
               <div className="min-w-0 flex-1 text-left">
                 <p className="truncate text-xs font-bold text-white">
