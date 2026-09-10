@@ -133,7 +133,8 @@ export default function ChatInterface({
   const [sidebarUserInitials, setSidebarUserInitials] = useState<string>("");
   const [sidebarUserAvatar, setSidebarUserAvatar] = useState<string | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [sidebarAuthLoaded, setSidebarAuthLoaded] = useState(false);
+  // Start as true to avoid flash — session loads in background
+  const [sidebarAuthLoaded, setSidebarAuthLoaded] = useState(true);
   // L'input parte centrato nella pagina; dopo il primo messaggio si sposta in basso
   const [inputCentered, setInputCentered] = useState(true);
   // Pannello attivo nella sidebar: chat, tools o agents

@@ -21,7 +21,7 @@ function getInitials(session: Session | null): string {
 
 export default function SidebarAccount() {
   const [session, setSession] = useState<Session | null>(null);
-  const [authLoaded, setAuthLoaded] = useState(false);
+  const [authLoaded, setAuthLoaded] = useState(true);
 
   useEffect(() => {
     let mounted = true;
