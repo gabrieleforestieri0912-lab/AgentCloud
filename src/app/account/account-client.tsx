@@ -59,7 +59,7 @@ export default function AccountClient({
   }
 
   async function handleSignOut() {
-    await createClient().auth.signOut();
+    try { await createClient().auth.signOut(); } catch {}
     window.location.href = "/waitlist";
   }
 

@@ -1079,7 +1079,7 @@ export default function ChatInterface({
                 </div>
                 <button
                   onClick={async () => {
-                    await createClient().auth.signOut();
+                    try { await createClient().auth.signOut(); } catch {}
                     window.location.href = "/waitlist";
                   }}
                   className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"

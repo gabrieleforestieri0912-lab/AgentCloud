@@ -156,7 +156,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   }, [userMenuOpen]);
 
   async function handleSignOut() {
-    await createClient().auth.signOut();
+    try { await createClient().auth.signOut(); } catch {}
     window.location.href = "/waitlist";
   }
 
