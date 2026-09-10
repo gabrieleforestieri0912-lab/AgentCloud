@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import SidebarAccount from "./SidebarAccount";
 import AppHeader from "./AppHeader";
+import DashboardOnboarding from "./DashboardOnboarding";
 
 export default function DashboardShell({
   children,
@@ -16,7 +17,17 @@ export default function DashboardShell({
   email: string;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    fetch("/api/user/onboarding")
+      .then((r) => r.json())
+      .then((data: { dashboard?: boolean }) => {
+        if (data.dashboard === false) setShowOnboarding(true);
+      })
+      .catch(() => {});
+  }, []);
   const nav = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/chat", label: "Chat", icon: MessageSquare },
@@ -28,6 +39,9 @@ export default function DashboardShell({
   ];
   return (
     <div className="flex h-dvh bg-neutral-950">
+      {showOnboarding && (
+        <DashboardOnboarding onComplete={() => setShowOnboarding(false)} />
+      )}
       {/* Mobile overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setMobileOpen(false)} />

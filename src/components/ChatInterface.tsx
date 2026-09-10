@@ -41,6 +41,7 @@ import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import GoogleConnectionPrompt from "@/components/GoogleConnectionPrompt";
+import ChatOnboarding from "./ChatOnboarding";
 import {
   AttachPlusButton,
   AttachmentChips,
@@ -139,6 +140,7 @@ export default function ChatInterface({
   const [inputCentered, setInputCentered] = useState(true);
   // Pannello attivo nella sidebar: chat, tools o agents
   const [sidebarView, setSidebarView] = useState<"chat" | "tools" | "agents">("chat");
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const initializedRef = useRef(false);
   const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
 
@@ -337,6 +339,16 @@ export default function ChatInterface({
     });
 
     return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Check onboarding state
+  useEffect(() => {
+    fetch("/api/user/onboarding")
+      .then((r) => r.json())
+      .then((data: { chat?: boolean }) => {
+        if (data.chat === false) setShowOnboarding(true);
+      })
+      .catch(() => {});
   }, []);
 
   // Cronologia persistente: admin e utenti normali gestiti allo stesso modo
@@ -746,6 +758,11 @@ export default function ChatInterface({
 
   return (
     <div className="flex h-dvh bg-neutral-950">
+      {/* Chat onboarding tour */}
+      {showOnboarding && (
+        <ChatOnboarding onComplete={() => setShowOnboarding(false)} />
+      )}
+
       {/* Overlay sidebar mobile */}
       {mobileSidebarOpen && (
         <div
