@@ -1152,7 +1152,7 @@ export default function ChatInterface({
             )}
             {/* Agenti selezionati per questa conversazione — l'utente può inserirne quanti vuole */}
 
-            <div className="flex items-end gap-2 bg-neutral-800 rounded-2xl border border-white/10 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+            <div className="flex items-center gap-2 bg-neutral-800 rounded-2xl border border-white/10 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
             <AttachPlusButton
               labels={attachLabels}
               disabled={isTyping}
