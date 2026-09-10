@@ -753,22 +753,23 @@ export default function ChatInterface({
         />
       )}
 
-      {/* Sidebar — full height, contiene anche gestione account */}
+      {/* Sidebar — glassmorphism style matching header */}
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-30
-          w-72 bg-neutral-950 border-r border-white/5 h-dvh
+          w-72 bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] h-dvh
             flex flex-col transition-all duration-300 shrink-0 overflow-y-auto
             ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
             ${sidebarOpen ? "lg:w-72 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
           `}
         >
-        <div className="flex items-center gap-2 p-4 border-b border-white/5">
+        {/* Header: New Chat + Close */}
+        <div className="flex items-center gap-2 p-4 border-b border-white/[0.06]">
           <button
             onClick={handleNewChat}
-            className="flex-1 flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 text-white text-sm font-semibold py-2.5 px-4 rounded-xl transition-all shadow-lg shadow-brand-500/20"
+            className="flex-1 flex items-center justify-center gap-2 bg-white text-neutral-900 text-sm font-bold py-2.5 px-4 rounded-full transition-all hover:bg-neutral-100 shadow-lg shadow-white/5"
           >
-            <Plus size={16} />
+            <Plus size={16} strokeWidth={2.5} />
             {dict.chat.newChat}
           </button>
           <button
@@ -777,63 +778,65 @@ export default function ChatInterface({
               setSidebarOpen(false);
             }}
             aria-label={dict.chat.closeSidebar}
-            className="w-9 h-9 flex items-center justify-center rounded-lg bg-neutral-800 text-neutral-400 hover:text-white"
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
           >
             <PanelLeftClose size={16} />
           </button>
         </div>
 
-        <nav className="px-3 pt-3 pb-1 space-y-1">
-          <Link
-            href="/"
-            className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            <Home size={16} />
-            {dict.chat.home}
-          </Link>
-          <button
-            onClick={() => setSidebarView("chat")}
-            className={`flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-              sidebarView === "chat"
-                ? "text-brand-400 bg-brand-500/10 border border-brand-500/20"
-                : "text-neutral-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            <MessageSquare size={16} />
-            {dict.chat.chat}
-          </button>
-          <button
-            onClick={() => setSidebarView("tools")}
-            className={`flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-              sidebarView === "tools"
-                ? "text-brand-400 bg-brand-500/10 border border-brand-500/20"
-                : "text-neutral-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            <Wrench size={16} />
-            {dict.chat.tools}
-          </button>
-          <button
-            onClick={() => setSidebarView("agents")}
-            className={`flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-              sidebarView === "agents"
-                ? "text-brand-400 bg-brand-500/10 border border-brand-500/20"
-                : "text-neutral-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            <Bot size={16} />
-            {dict.chat.agents}
-          </button>
+        {/* Navigation — pill style like header */}
+        <nav className="px-3 pt-4 pb-2">
+          <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+            <Link
+              href="/"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-neutral-400 hover:text-white hover:bg-white/5 transition-all"
+            >
+              <Home size={14} />
+              <span className="hidden sm:inline">{dict.chat.home}</span>
+            </Link>
+            <button
+              onClick={() => setSidebarView("chat")}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                sidebarView === "chat"
+                  ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
+                  : "text-neutral-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <MessageSquare size={14} />
+              <span className="hidden sm:inline">{dict.chat.chat}</span>
+            </button>
+            <button
+              onClick={() => setSidebarView("tools")}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                sidebarView === "tools"
+                  ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
+                  : "text-neutral-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Wrench size={14} />
+              <span className="hidden sm:inline">{dict.chat.tools}</span>
+            </button>
+            <button
+              onClick={() => setSidebarView("agents")}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                sidebarView === "agents"
+                  ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
+                  : "text-neutral-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Bot size={14} />
+              <span className="hidden sm:inline">{dict.chat.agents}</span>
+            </button>
+          </div>
         </nav>
 
-
-
-        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-          <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest px-3 py-2">
+        {/* Conversations list */}
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
+          <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest px-3 py-2">
             {dict.chat.conversations}
           </p>
           {conversations.length === 0 ? (
-            <p className="text-xs font-semibold text-neutral-600 px-3 py-4 text-center">
+            <p className="text-xs text-neutral-600 px-3 py-6 text-center">
               {dict.chat.noConversations}
             </p>
           ) : (
@@ -849,23 +852,25 @@ export default function ChatInterface({
                     switchConversation(conv.id);
                   }
                 }}
-                className={`group flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 rounded-lg text-sm text-left transition-colors ${
+                className={`group flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 rounded-xl text-sm text-left transition-all ${
                   conv.id === activeId
-                    ? "bg-white/5 text-white border border-white/5"
-                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                    ? "bg-white/[0.06] text-white border border-white/[0.08]"
+                    : "text-neutral-400 hover:text-white hover:bg-white/[0.03]"
                 }`}
               >
                 <div className="flex w-full items-center gap-2.5">
-                  <MessageSquare
-                    size={14}
-                    className={`shrink-0 ${
-                      conv.id === activeId ? "text-brand-400" : "text-neutral-600"
-                    }`}
-                  />
-                  <span className="truncate flex-1">{conv.title}</span>
+                  <div className={`flex h-6 w-6 items-center justify-center rounded-lg shrink-0 ${
+                    conv.id === activeId ? "bg-brand-500/15" : "bg-white/5"
+                  }`}>
+                    <MessageSquare
+                      size={12}
+                      className={`${conv.id === activeId ? "text-brand-400" : "text-neutral-500"}`}
+                    />
+                  </div>
+                  <span className="truncate flex-1 font-medium">{conv.title}</span>
                   <button
                     onClick={(e) => handleDelete(e, conv.id)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/20 hover:text-red-400 transition-all shrink-0"
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/15 hover:text-red-400 transition-all shrink-0"
                     title={dict.chat.deleteConversation}
                     aria-label={dict.chat.deleteConversation}
                   >
@@ -873,15 +878,15 @@ export default function ChatInterface({
                   </button>
                 </div>
                 {conv.agentSlugs && conv.agentSlugs.length > 0 && (
-                  <div className="ml-6 flex flex-wrap gap-1">
+                  <div className="ml-8 flex flex-wrap gap-1">
                     {conv.agentSlugs.map((slug) => {
                       const ag = effectiveAvailableAgents.find((a) => a.slug === slug);
                       return (
                         <span
                           key={slug}
-                          className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-300"
+                          className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-300"
                         >
-                          <Bot size={10} />
+                          <Bot size={8} />
                           {ag?.name ?? slug}
                         </span>
                       );
@@ -893,56 +898,57 @@ export default function ChatInterface({
           )}
         </div>
 
-        <div className="p-3 border-t border-white/5 space-y-2">
-          {/* Account — menu collassabile */}
-          <div className="rounded-xl border border-white/5 bg-neutral-900 overflow-hidden">
+        {/* Account section — modern pill style */}
+        <div className="p-3 border-t border-white/[0.06]">
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
             <button
               onClick={() => setAccountMenuOpen((v) => !v)}
-              className="w-full flex items-center gap-2.5 p-3 hover:bg-white/5 transition-colors"
+              className="w-full flex items-center gap-3 p-3 hover:bg-white/[0.04] transition-all"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300 shrink-0 overflow-hidden">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
                 {sidebarUserAvatar ? (
                   <img src={sidebarUserAvatar} alt="" className="h-full w-full object-cover" />
                 ) : sidebarAuthLoaded ? (
                   sidebarUserInitials || "?"
                 ) : (
-                  "…"
+                  <span className="animate-pulse">…</span>
                 )}
               </div>
               <div className="min-w-0 flex-1 text-left">
-                <p className="truncate text-xs font-bold text-white">
+                <p className="truncate text-sm font-bold text-white">
                   {sidebarUserEmail || "…"}
                 </p>
+                <p className="text-[10px] text-neutral-500 font-medium">Account</p>
               </div>
-              <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform ${accountMenuOpen ? "rotate-180" : ""}`} />
+              <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform duration-200 ${accountMenuOpen ? "rotate-180" : ""}`} />
             </button>
             {accountMenuOpen && (
-              <div className="px-3 pb-3 space-y-1 border-t border-white/5">
+              <div className="px-3 pb-3 space-y-1 border-t border-white/[0.06]">
                 <div className="grid grid-cols-2 gap-1.5 pt-2">
                   <Link
                     href="/account"
-                    className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <User size={12} />
                     Account
                   </Link>
                   <Link
                     href="/settings"
-                    className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <Settings size={12} />
-                    {dict.chat.agents === "Agenti" ? "Impostazioni" : "Settings"}
+                    {locale === "it" ? "Impostazioni" : "Settings"}
                   </Link>
                   <Link
                     href="/cart"
-                    className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <ShoppingCart size={12} />
-                    Carrello
+                    {locale === "it" ? "Carrello" : "Cart"}
                   </Link>
                   <Link
                     href="/dashboard"
-                    className="flex items-center justify-center gap-1 rounded-lg bg-white/5 px-2 py-1.5 text-xs font-bold text-white hover:bg-white/10"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <Home size={12} />
                     Dashboard
@@ -953,7 +959,7 @@ export default function ChatInterface({
                     await createClient().auth.signOut();
                     window.location.href = "/";
                   }}
-                  className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs font-bold text-red-300 hover:bg-red-500/15"
+                  className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
                 >
                   <LogOut size={12} />
                   Esci
