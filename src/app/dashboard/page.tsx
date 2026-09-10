@@ -85,6 +85,7 @@ export default async function DashboardPage({
   // ── Dati reali (service-role, lato server) — anche per il mock admin
   const db = createAdminClient();
   let installed: InstalledAgent[] = [];
+  let agentUsage: Array<{ slug: string; name: string; runs: number; tokens: number }> = [];
   let totalRuns = 0;
   let totalTokens = 0;
   let dbAvailable = false;
@@ -148,6 +149,16 @@ export default async function DashboardPage({
         config: (ua.config ?? {}) as Record<string, unknown>,
       };
     });
+
+    // Agent usage data for pie chart
+    agentUsage = installed
+      .filter((a) => a.runs > 0)
+      .map((a) => ({
+        slug: a.slug,
+        name: a.agent?.shortName ?? a.slug,
+        runs: a.runs,
+        tokens: a.tokens,
+      }));
   }
 
   const fullName = false
@@ -290,6 +301,7 @@ export default async function DashboardPage({
               estimatedCostCents={overageCentsTotal}
               overageCents={overageCentsTotal}
               locale={locale}
+              agentUsage={agentUsage}
             />
             <div className="mt-4">
               <DashboardExportBar
