@@ -810,16 +810,8 @@ export default function ChatInterface({
             ${sidebarOpen ? "lg:w-72 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
           `}
         >
-        {/* Header: New Chat + Close */}
-        <div className="flex items-center gap-2 p-4 border-b border-white/[0.06]">
-          <button
-            data-onboard="new-chat"
-            onClick={handleNewChat}
-            className="flex-1 flex items-center justify-center gap-2 bg-white text-neutral-900 text-sm font-bold py-2.5 px-4 rounded-full transition-all hover:bg-neutral-100 shadow-lg shadow-white/5"
-          >
-            <Plus size={16} strokeWidth={2.5} />
-            {dict.chat.newChat}
-          </button>
+        {/* Header: Close sidebar (left) + Home (right) */}
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <button
             onClick={() => {
               setMobileSidebarOpen(false);
@@ -830,18 +822,18 @@ export default function ChatInterface({
           >
             <PanelLeftClose size={16} />
           </button>
+          <Link
+            href="/"
+            data-onboard="home"
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <Home size={16} />
+          </Link>
         </div>
 
-        {/* Navigation — pill style like header */}
+        {/* Navigation — pill style: Chat / Tools / Agents */}
         <nav data-onboard="nav" className="px-3 pt-4 pb-2">
           <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-            <Link
-              href="/"
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-neutral-400 hover:text-white hover:bg-white/5 transition-all"
-            >
-              <Home size={14} />
-              <span className="hidden sm:inline">{dict.chat.home}</span>
-            </Link>
             <button
               onClick={() => setSidebarView("chat")}
               className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -877,6 +869,18 @@ export default function ChatInterface({
             </button>
           </div>
         </nav>
+
+        {/* New Chat button */}
+        <div className="px-3 pb-2">
+          <button
+            data-onboard="new-chat"
+            onClick={handleNewChat}
+            className="w-full flex items-center justify-center gap-2 bg-white text-neutral-900 text-sm font-bold py-2.5 px-4 rounded-full transition-all hover:bg-neutral-100 shadow-lg shadow-white/5"
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            {dict.chat.newChat}
+          </button>
+        </div>
 
         {/* Conversations list */}
         <div data-onboard="conversations" className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
