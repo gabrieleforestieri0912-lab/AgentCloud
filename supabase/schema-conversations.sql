@@ -1,10 +1,3 @@
--- =============================================================================
--- Schema: Multi-agent conversations + chat history management
--- =============================================================================
-
--- 1. conversations — estende con campi per archiviazione, eliminazione soft, titolo
---    Se la tabella non esiste, la crea. Se esiste, aggiunge le colonne mancanti.
-
 create table if not exists public.conversations (
   id uuid default gen_random_uuid() primary key,
   user_id text not null,
@@ -98,10 +91,6 @@ create policy "Users can manage own conversation_messages"
   on public.conversation_messages for all
   using (auth.uid()::text = user_id)
   with check (auth.uid()::text = user_id);
-
--- =============================================================================
--- Auto-update updated_at on conversations
--- =============================================================================
 
 drop trigger if exists trg_conversations_updated_at on public.conversations;
 create trigger trg_conversations_updated_at
