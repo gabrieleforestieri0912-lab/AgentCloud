@@ -76,12 +76,14 @@ export async function proxy(request: NextRequest) {
   const isApiOrAsset = isAsset || pathname.startsWith("/api/");
 
   // Rotte esenti: waitlist, auth, asset, API pubbliche
-  // La landing page (/) è accessibile anche con un waitlist_session cookie
-  // (utente che ha inserito il codice admin ma non si è ancora autenticato).
+  // Utenti con waitlist_session cookie (hanno inserito il codice admin ma non
+  // hanno ancora fatto login) possono navigare tutte le pagine pubbliche come
+  // normali visitatori non autenticati.
   const hasWaitlistSession = request.cookies.get("waitlist_session")?.value;
-  const isLandingWithSession = pathname === "/" && hasWaitlistSession;
+  const isPublicPage = isPublicPath(pathname) && !pathname.startsWith("/api/");
+  const isWaitlistUserOnPublicPage = hasWaitlistSession && isPublicPage;
 
-  if (isWaitlistRoute || isAuthRoute || isApiPublic || isAsset || isLandingWithSession) {
+  if (isWaitlistRoute || isAuthRoute || isApiPublic || isAsset || isWaitlistUserOnPublicPage) {
     if (isWaitlistRoute && !needsCookie) return NextResponse.next();
     let res: NextResponse = NextResponse.next();
     try {
@@ -97,7 +99,7 @@ export async function proxy(request: NextRequest) {
   try {
     const { response, user } = await resolveSession(request);
     if (!user) {
-      // API protette → 401 JSON; pagine → redirect a /waitlist
+      // API protette → 401 JSON; pagine → redirect a /login (o /waitlist se no waitlist_session)
       if (pathname.startsWith("/api/")) {
         const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
         return NextResponse.json(
@@ -105,8 +107,10 @@ export async function proxy(request: NextRequest) {
           { status: 401 },
         );
       }
+      // Utente con waitlist_session ma non loggato → redirect a /login
+      // Utente senza nulla → redirect a /waitlist
       const url = request.nextUrl.clone();
-      url.pathname = "/waitlist";
+      url.pathname = hasWaitlistSession ? "/login" : "/waitlist";
       url.search = "";
       url.hash = "";
       const redirectRes = NextResponse.redirect(url);
@@ -150,7 +154,7 @@ export async function proxy(request: NextRequest) {
       );
     }
     const url = request.nextUrl.clone();
-    url.pathname = "/waitlist";
+    url.pathname = hasWaitlistSession ? "/login" : "/waitlist";
     url.search = "";
     url.hash = "";
     const redirectRes = NextResponse.redirect(url);
