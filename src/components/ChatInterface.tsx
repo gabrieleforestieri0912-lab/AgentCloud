@@ -252,11 +252,13 @@ export default function ChatInterface({
   }, [selectedAgentSlugs, isTyping, hasPartialReply]);
 
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const isAtBottomRef = useRef(true);
   const handleMessagesScroll = () => {
     const el = messagesRef.current;
     if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
     setIsAtBottom(atBottom);
+    isAtBottomRef.current = atBottom;
     stickToBottom.current = atBottom;
   };
 
@@ -264,15 +266,24 @@ export default function ChatInterface({
     (force = false) => {
       const el = messagesRef.current;
       if (!el) return;
-      if (!force && !isAtBottom && !stickToBottom.current) return;
+      // Usa il ref durante lo streaming (aggiornato istantaneamente)
+      // e lo stato per le altre occasioni
+      const atBottom = force || isAtBottomRef.current || stickToBottom.current;
+      if (!atBottom) return;
       el.scrollTo({ top: el.scrollHeight, behavior: force ? "smooth" : "auto" });
     },
-    [isAtBottom],
+    [],
   );
 
+  // Scroll quando i messaggi cambiano (incluso durante streaming)
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping, scrollToBottom]);
+  }, [messages, scrollToBottom]);
+
+  // Scroll quando inizia/finisce lo streaming
+  useEffect(() => {
+    if (isTyping) scrollToBottom(true);
+  }, [isTyping, scrollToBottom]);
 
   // Permetti sempre lo scroll manuale: se l'utente scrolla verso l'alto durante lo streaming, blocca l'auto-scroll
   useEffect(() => {
@@ -1223,14 +1234,14 @@ export default function ChatInterface({
 
         {/* ── Chat panel ────────────────────────────────────── */}
         {sidebarView === "chat" && (
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           {messages.length === 0 && !isTyping ? (
             <motion.div
               key="centered"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -30 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.15 } }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
               className="flex-1 flex flex-col items-center justify-center px-4"
             >
               {/* Welcome message */}
@@ -1328,9 +1339,9 @@ export default function ChatInterface({
           ) : (
             <motion.div
               key="messages"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
               className="flex-1 flex flex-col"
             >
             <div
