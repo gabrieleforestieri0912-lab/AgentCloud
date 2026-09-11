@@ -6,6 +6,7 @@ import BrandLogo from "./BrandLogo";
 import { INTEGRATIONS } from "@/lib/integrations";
 import { CheckCircle2, Plug, Unplug, Clock3, AlertCircle, Loader2, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "./LanguageProvider";
 
 type Row = {
   provider: string;
@@ -65,6 +66,8 @@ export default function IntegrationsGrid({
   shopifyConnections?: ShopifyConn[];
   googleConnection?: GoogleConn;
 }) {
+  const { dict } = useLanguage();
+  const ig = dict.integrationsGrid;
   const [busy, setBusy] = useState<string | null>(null);
   const byProvider = new Map(rows.map((r) => [r.provider, r]));
 
@@ -128,7 +131,7 @@ export default function IntegrationsGrid({
               </div>
               <p className="mt-3 text-sm leading-6 text-neutral-400 line-clamp-3">{app.description}</p>
               <span className="mt-4 inline-flex w-fit rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-300">
-                {locale === "it" ? "Prossimamente" : "Coming soon"}
+                {ig.comingSoon}
               </span>
             </div>
           );
@@ -158,7 +161,7 @@ export default function IntegrationsGrid({
                 }`}
               >
                 {connected ? <CheckCircle2 size={12} /> : error ? <AlertCircle size={12} /> : <Plug size={12} />}
-                {isGeneric ? (row?.status ?? (locale === "it" ? "Non connesso" : "Not connected")) : connected ? (locale === "it" ? "Connesso" : "Connected") : locale === "it" ? "Non connesso" : "Not connected"}
+                {isGeneric ? (row?.status ?? ig.notConnected) : connected ? ig.connectedStatus : ig.notConnected}
               </span>
             </div>
 
@@ -168,7 +171,7 @@ export default function IntegrationsGrid({
               <div className="mt-3 space-y-1 text-xs text-neutral-500">
                 {workspace && (
                   <p className="truncate">
-                    <span className="font-semibold text-neutral-400">Account:</span> {workspace}
+                    <span className="font-semibold text-neutral-400">{ig.accountLabel}</span> {workspace}
                   </p>
                 )}
                 {updatedAt && (
@@ -189,11 +192,11 @@ export default function IntegrationsGrid({
                     className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white hover:bg-white/10 disabled:opacity-50"
                   >
                     {busy === genericProvider ? <Loader2 size={14} className="animate-spin" /> : <Unplug size={14} />}
-                    {locale === "it" ? "Disconnetti" : "Disconnect"}
+                    {ig.disconnect}
                   </button>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-300">
-                    <CheckCircle2 size={14} /> {locale === "it" ? "Collegato" : "Linked"}
+                    <CheckCircle2 size={14} /> {ig.linked}
                   </span>
                 )
               ) : isShopify || isGoogle ? (
@@ -201,21 +204,21 @@ export default function IntegrationsGrid({
                   href={hrefForConnect}
                   className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400"
                 >
-                  <Plug size={14} /> {locale === "it" ? "Connetti" : "Connect"}
+                  <Plug size={14} /> {ig.connect}
                 </Link>
               ) : isGeneric ? (
                 <a
                   href={hrefForConnect}
                   className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400"
                 >
-                  <Plug size={14} /> {locale === "it" ? "Connetti" : "Connect"}
+                  <Plug size={14} /> {ig.connect}
                 </a>
               ) : (
                 <Link
                   href={hrefForConnect}
                   className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-4 py-2 text-sm font-bold text-white hover:bg-white/10 border border-white/10"
                 >
-                  {locale === "it" ? "Vedi agente" : "View agent"} <ArrowRight size={14} />
+                  {ig.viewAgent} <ArrowRight size={14} />
                 </Link>
               )}
             </div>

@@ -6,6 +6,7 @@ import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/conne
 import DashboardShell from "@/components/DashboardShell";
 import IntegrationsGrid from "@/components/IntegrationsGrid";
 import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default async function DashboardIntegrationsPage({
   searchParams,
@@ -13,6 +14,7 @@ export default async function DashboardIntegrationsPage({
   searchParams: Promise<{ integration?: string; status?: string; reason?: string }>;
 }) {
   const locale = await getLocale();
+  const dict = getDictionary(locale);
   const sp = await searchParams;
 
   const user = await getSessionUser();
@@ -51,12 +53,10 @@ export default async function DashboardIntegrationsPage({
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-6">
             <h1 className="text-3xl font-bold tracking-tight text-white">
-              {locale === "it" ? "Integrazioni" : "Integrations"}
+              {dict.dashboardIntegrations.title}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-400">
-              {locale === "it"
-                ? "Collega Stripe, Notion, Slack, HubSpot e Google Sheets. Ogni provider è OAuth per-tenant, i token sono cifrati e proxati via Edge Function — mai esposti al browser."
-                : "Connect Stripe, Notion, Slack, HubSpot and Google Sheets. Per-tenant OAuth, tokens encrypted and proxied via Edge Functions — never exposed to the browser."}
+              {dict.dashboardIntegrations.desc}
             </p>
           </div>
 
@@ -72,11 +72,11 @@ export default async function DashboardIntegrationsPage({
             >
               {sp.integration ? `${sp.integration}: ` : ""}
               {sp.status === "connected"
-                ? locale === "it" ? "Connesso" : "Connected"
+                ? dict.dashboardIntegrations.connected
                 : sp.status === "disconnected"
-                  ? locale === "it" ? "Disconnesso" : "Disconnected"
+                  ? dict.dashboardIntegrations.disconnected
                   : sp.reason
-                    ? `Errore: ${sp.reason}`
+                    ? `${dict.dashboardIntegrations.errorPrefix} ${sp.reason}`
                     : sp.status}
             </div>
           )}

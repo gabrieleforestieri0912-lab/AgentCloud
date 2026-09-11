@@ -20,7 +20,8 @@ export default function DashboardShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const pathname = usePathname();
-  const { locale } = useLanguage();
+  const { dict } = useLanguage();
+  const ds = dict.dashboardShell;
 
   useEffect(() => {
     fetch("/api/user/onboarding")
@@ -30,15 +31,14 @@ export default function DashboardShell({
       })
       .catch(() => {});
   }, []);
-  const isIt = locale === "it";
   const nav = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/chat", label: isIt ? "Chat" : "Chat", icon: MessageSquare },
-    { href: "/agents", label: isIt ? "Marketplace" : "Marketplace", icon: Store },
-    { href: "/dashboard/integrations", label: isIt ? "Integrazioni" : "Integrations", icon: Plug },
-    { href: "/cart", label: isIt ? "Carrello" : "Cart", icon: ShoppingCart },
-    { href: "/dashboard/subscriptions", label: isIt ? "I miei abbonamenti" : "My subscriptions", icon: CreditCard },
-    { href: "/account", label: "Account", icon: User },
+    { href: "/dashboard", label: ds.navDashboard, icon: LayoutDashboard },
+    { href: "/chat", label: ds.navChat, icon: MessageSquare },
+    { href: "/agents", label: ds.navMarketplace, icon: Store },
+    { href: "/dashboard/integrations", label: ds.navIntegrations, icon: Plug },
+    { href: "/cart", label: ds.navCart, icon: ShoppingCart },
+    { href: "/dashboard/subscriptions", label: ds.navSubscriptions, icon: CreditCard },
+    { href: "/account", label: ds.navAccount, icon: User },
   ];
   return (
     <div className="flex h-dvh bg-neutral-950">
@@ -107,7 +107,7 @@ export default function DashboardShell({
           >
             <Menu size={16} />
           </button>
-          <span className="text-sm font-bold text-white">Dashboard</span>
+          <span className="text-sm font-bold text-white">{ds.mobileTitle}</span>
         </div>
         <div className="hidden lg:block">
           <AppHeader variant="dashboard" subtitle={email} />

@@ -7,6 +7,7 @@
  */
 
 import ExportReportButton from "./ExportReportButton";
+import { useLanguage } from "./LanguageProvider";
 
 type DashboardExportBarProps = {
   agentName: string;
@@ -25,11 +26,13 @@ export default function DashboardExportBar({
   estimatedCostCents,
   daily,
 }: DashboardExportBarProps) {
+  const { dict } = useLanguage();
+  const eb = dict.dashboardExportBar;
   return (
     <div className="flex items-center justify-between rounded-lg border border-white/5 bg-neutral-900 p-4">
       <div>
-        <p className="text-sm font-bold text-white">Esporta Report</p>
-        <p className="text-xs text-neutral-500">Scarica i dati in PDF o per Looker Studio</p>
+        <p className="text-sm font-bold text-white">{eb.title}</p>
+        <p className="text-xs text-neutral-500">{eb.desc}</p>
       </div>
       <ExportReportButton
         type="dashboard"

@@ -55,12 +55,16 @@ import { INTEGRATIONS as ALL_INTEGRATIONS } from "@/lib/integrations";
 // per un accesso rapido
 const INTEGRATIONS = ALL_INTEGRATIONS.slice(0, 8);
 
+let cachedSession: Session | null | undefined = undefined;
+let cachedAuthLoaded = false;
+
 export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  // False finché la sessione non è stata effettivamente verificata —
-  // evita il flash "Inizia Ora" per utenti loggati durante la navigazione.
-  const [authLoaded, setAuthLoaded] = useState(false);
+  const [session, setSession] = useState<Session | null>(() => (cachedSession !== undefined ? cachedSession : null));
+  // Usa il valore cached per evitare il flash vuoto ad ogni navigazione
+  // (Navbar viene rimontata per pagina). Senza cache, authLoaded=false
+  // nasconderebbe account/notifiche/carrello/chat per ~1s ad ogni route change.
+  const [authLoaded, setAuthLoaded] = useState(() => cachedAuthLoaded);
   const router = useRouter();
   const { locale, dict } = useLanguage();
   // Le pagine che risolvono i flag lato server passano la lista autoritativa;
@@ -89,6 +93,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, nextSession) => {
         if (!mounted) return;
+        cachedSession = nextSession;
+        cachedAuthLoaded = true;
         setSession(nextSession);
         setAuthLoaded(true);
       },
@@ -99,6 +105,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
       if (!mounted) return;
       supabase.auth.getSession().then(({ data }) => {
         if (!mounted) return;
+        cachedSession = data.session;
+        cachedAuthLoaded = true;
         setSession(data.session);
         setAuthLoaded(true);
       }).catch(() => {});
@@ -147,6 +155,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
 
   async function handleSignOut() {
     try { await createClient().auth.signOut(); } catch {}
+    cachedSession = null;
+    cachedAuthLoaded = true;
     window.location.replace("/waitlist");
   }
 
@@ -415,7 +425,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
               {/* Mobile: cart sempre visibile, poi gruppo desktop */}
               <Link
                 href="/cart"
-                aria-label="Carrello"
+                aria-label={dict.navbar.ariaCart}
                 className="relative flex h-8 w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white lg:hidden"
               >
                 <ShoppingCart size={18} strokeWidth={1.75} />
@@ -427,20 +437,19 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
               </Link>
               <div className="flex items-center gap-2 lg:gap-3">
                 <div className="hidden items-center gap-3 lg:flex">
-                {authLoaded && (showAsLoggedIn ? (
+                {authLoaded ? (
+                  showAsLoggedIn ? (
                 <div className="flex items-center gap-3">
-                  {showAsLoggedIn && (
-                    <Link
-                      href="/chat"
-                      className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
-                    >
-                      <MessageSquare size={14} />
-                      {dict.chat.aiChat}
-                    </Link>
-                  )}
+                  <Link
+                    href="/chat"
+                    className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
+                  >
+                    <MessageSquare size={14} />
+                    {dict.chat.aiChat}
+                  </Link>
                   <Link
                     href="/cart"
-                    aria-label="Carrello"
+                    aria-label={dict.navbar.ariaCart}
                     className="relative flex h-8 w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white"
                   >
                     <ShoppingCart size={18} strokeWidth={1.75} />
@@ -454,7 +463,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                   <div ref={userMenuRef} className="relative">
                     <button
                       onClick={() => setUserMenuOpen((v) => !v)}
-                      aria-label="Account"
+                      aria-label={dict.navbar.ariaAccount}
                       className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-brand-500/15 text-sm font-bold text-brand-300 transition-colors hover:border-brand-500/40 hover:bg-brand-500/25 overflow-hidden"
                     >
                       {avatarUrl ? (
@@ -490,7 +499,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                           className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
                         >
                           <LayoutDashboard size={14} />
-                          Dashboard
+                          {dict.navbar.dashboardLabel}
                         </Link>
                         <Link
                           href="/account"
@@ -498,7 +507,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                           className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
                         >
                           <User size={14} />
-                          Account
+                          {dict.navbar.accountLabel}
                         </Link>
                         <Link
                           href="/api/billing/portal"
@@ -533,14 +542,25 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     )}
                   </div>
                 </div>
-              ) : (
+                  ) : (
                 <Link
                   href="/login"
                   className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-400"
                 >
-                  {locale === "it" ? "Inizia Ora" : "Start Now"}
+                  {dict.navbar.startNow}
                 </Link>
-              ))}
+                  )
+                ) : (
+                  /* Placeholder durante il caricamento iniziale: mantiene lo stesso spazio
+                     dei bottoni account/notifiche/carrello/chat per evitare lo “scomparire”
+                     ad ogni navigazione (Navbar viene rimontata per pagina). */
+                  <div className="flex items-center gap-3 opacity-40" aria-hidden>
+                    <div className="hidden sm:inline-flex h-8 w-24 rounded-full bg-white/10 animate-pulse" />
+                    <div className="h-8 w-8 rounded-full bg-white/10 animate-pulse" />
+                    <div className="h-8 w-8 rounded-full bg-white/10 animate-pulse" />
+                    <div className="h-9 w-9 rounded-full bg-white/10 animate-pulse" />
+                  </div>
+                )}
               </div>
               </div>
             </div>

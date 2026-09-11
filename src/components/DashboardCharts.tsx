@@ -33,6 +33,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
+import { useLanguage } from "./LanguageProvider";
 
 type DailyPoint = {
   label: string;
@@ -111,7 +112,8 @@ export default function DashboardCharts({
   locale,
   agentUsage = [],
 }: DashboardChartsProps) {
-  const isIt = locale === "it";
+  const { dict } = useLanguage();
+  const dc = dict.dashboardCharts;
   const maxRuns = Math.max(1, ...daily.map((d) => d.runs));
   const maxTokens = Math.max(1, ...daily.map((d) => d.tokens));
 
@@ -152,7 +154,7 @@ export default function DashboardCharts({
                 {formatCompact(totalRuns, locale)}
               </p>
               <p className="text-xs text-neutral-500">
-                {isIt ? "Esecuzioni" : "Runs"}
+                {dc.runsLabel}
               </p>
             </div>
           </div>
@@ -174,7 +176,7 @@ export default function DashboardCharts({
               {trend > 0 ? `+${trend}%` : trend < 0 ? `${trend}%` : "—"}
             </span>
             <span className="text-xs text-neutral-500">
-              {isIt ? "vs prima metà" : "vs first half"}
+              {dc.vsFirstHalf}
             </span>
           </div>
         </div>
@@ -190,12 +192,12 @@ export default function DashboardCharts({
                 {formatCompact(totalTokens, locale)}
               </p>
               <p className="text-xs text-neutral-500">
-                {isIt ? "Token utilizzati" : "Tokens used"}
+                {dc.tokensUsed}
               </p>
             </div>
           </div>
           <p className="text-xs text-neutral-500">
-            {isIt ? "questo mese" : "this month"}
+            {dc.thisMonth}
           </p>
         </div>
 
@@ -210,12 +212,12 @@ export default function DashboardCharts({
                 {formatCurrency(estimatedCostCents, locale)}
               </p>
               <p className="text-xs text-neutral-500">
-                {isIt ? "Costo stimato" : "Estimated cost"}
+                {dc.estimatedCost}
               </p>
             </div>
           </div>
           <p className="text-xs text-neutral-500">
-            {isIt ? "incluso nel piano" : "included in plan"}
+            {dc.includedInPlan}
           </p>
         </div>
 
@@ -230,18 +232,12 @@ export default function DashboardCharts({
                 {formatCurrency(overageCents, locale)}
               </p>
               <p className="text-xs text-neutral-500">
-                {isIt ? "Overage" : "Overage"}
+                {dc.overage}
               </p>
             </div>
           </div>
           <p className="text-xs text-neutral-500">
-            {overageCents === 0
-              ? isIt
-                ? "Nessun extra"
-                : "No overage"
-              : isIt
-              ? "额外费用"
-              : "extra charges"}
+            {overageCents === 0 ? dc.noOverage : dc.extraCharges}
           </p>
         </div>
       </div>
@@ -252,14 +248,12 @@ export default function DashboardCharts({
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
           <h3 className="flex items-center gap-2 text-sm font-bold text-white mb-4">
             <BarChart3 size={16} className="text-brand-400" />
-            {isIt ? "Esecuzioni · ultimi 7 giorni" : "Runs · last 7 days"}
+            {dc.runsLast7}
           </h3>
 
           {daily.every((d) => d.runs === 0) ? (
             <p className="py-16 text-center text-sm text-neutral-500">
-              {isIt
-                ? "Nessuna esecuzione negli ultimi 7 giorni."
-                : "No runs in the last 7 days."}
+              {dc.noRuns}
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
@@ -280,7 +274,7 @@ export default function DashboardCharts({
                 <Tooltip content={<CustomTooltip locale={locale} />} />
                 <Bar
                   dataKey="runs"
-                  name={isIt ? "Esecuzioni" : "Runs"}
+                  name={dc.runs}
                   fill="#6366f1"
                   radius={[6, 6, 0, 0]}
                 />
@@ -293,14 +287,12 @@ export default function DashboardCharts({
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
           <h3 className="flex items-center gap-2 text-sm font-bold text-white mb-4">
             <Zap size={16} className="text-purple-400" />
-            {isIt ? "Uso per agente" : "Usage by agent"}
+            {dc.usageByAgent}
           </h3>
 
           {pieData.length === 0 ? (
             <p className="py-16 text-center text-sm text-neutral-500">
-              {isIt
-                ? "Nessun dato di utilizzo."
-                : "No usage data yet."}
+              {dc.noUsage}
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
@@ -353,7 +345,7 @@ export default function DashboardCharts({
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
           <h3 className="flex items-center gap-2 text-sm font-bold text-white mb-4">
             <Coins size={16} className="text-purple-400" />
-            {isIt ? "Token al giorno" : "Tokens per day"}
+            {dc.tokensPerDay}
           </h3>
           <ResponsiveContainer width="100%" height={160}>
             <AreaChart data={daily}>
@@ -381,7 +373,7 @@ export default function DashboardCharts({
               <Area
                 type="monotone"
                 dataKey="tokens"
-                name={isIt ? "Token" : "Tokens"}
+                name={dc.tokensUsed}
                 stroke="#8b5cf6"
                 strokeWidth={2}
                 fill="url(#tokenGradient)"
