@@ -343,7 +343,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     </div>
                   )}
                   {isOwned && (
-                    <p className="mt-3 text-center text-xs font-bold text-emerald-400">✓ {locale === "it" ? "Già acquistato — apri in chat" : "Already purchased — open in chat"}</p>
+                    <p className="mt-3 text-center text-xs font-bold text-emerald-400">✓ {locale === "it" ? "Già acquistato" : "Already purchased"}</p>
                   )}
                 </div>
 

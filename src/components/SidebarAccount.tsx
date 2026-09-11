@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { User, ShoppingCart, Home, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Session } from "@supabase/supabase-js";
+import { useLanguage } from "./LanguageProvider";
 
 function getInitials(session: Session | null): string {
   const e = session?.user?.email ?? null;
@@ -22,6 +23,7 @@ function getInitials(session: Session | null): string {
 export default function SidebarAccount() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoaded, setAuthLoaded] = useState(true);
+  const { locale } = useLanguage();
 
   useEffect(() => {
     let mounted = true;
@@ -81,7 +83,7 @@ export default function SidebarAccount() {
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-white">{email || "…"}</p>
-          <p className="text-[10px] text-neutral-500 font-medium">Account</p>
+          <p className="text-[10px] text-neutral-500 font-medium">{locale === "it" ? "Account" : "Account"}</p>
         </div>
       </div>
       <div className="px-3 pb-3 grid grid-cols-3 gap-1.5">
@@ -89,7 +91,7 @@ export default function SidebarAccount() {
           <User size={12} /> Account
         </Link>
         <Link href="/cart" className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all">
-          <ShoppingCart size={12} /> Carrello
+          <ShoppingCart size={12} /> {locale === "it" ? "Carrello" : "Cart"}
         </Link>
         <Link href="/dashboard" className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all">
           <Home size={12} /> Dashboard
@@ -103,7 +105,7 @@ export default function SidebarAccount() {
           }}
           className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
         >
-          <LogOut size={12} /> Esci
+          <LogOut size={12} /> {locale === "it" ? "Esci" : "Sign out"}
         </button>
       </div>
     </div>

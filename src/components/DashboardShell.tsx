@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import SidebarAccount from "./SidebarAccount";
 import AppHeader from "./AppHeader";
 import DashboardOnboarding from "./DashboardOnboarding";
+import { useLanguage } from "./LanguageProvider";
 
 export default function DashboardShell({
   children,
@@ -19,6 +20,7 @@ export default function DashboardShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const pathname = usePathname();
+  const { locale } = useLanguage();
 
   useEffect(() => {
     fetch("/api/user/onboarding")
@@ -28,13 +30,14 @@ export default function DashboardShell({
       })
       .catch(() => {});
   }, []);
+  const isIt = locale === "it";
   const nav = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/chat", label: "Chat", icon: MessageSquare },
-    { href: "/agents", label: "Marketplace", icon: Store },
-    { href: "/dashboard/integrations", label: "Integrazioni", icon: Plug },
-    { href: "/cart", label: "Carrello", icon: ShoppingCart },
-    { href: "/dashboard/subscriptions", label: "I miei abbonamenti", icon: CreditCard },
+    { href: "/chat", label: isIt ? "Chat" : "Chat", icon: MessageSquare },
+    { href: "/agents", label: isIt ? "Marketplace" : "Marketplace", icon: Store },
+    { href: "/dashboard/integrations", label: isIt ? "Integrazioni" : "Integrations", icon: Plug },
+    { href: "/cart", label: isIt ? "Carrello" : "Cart", icon: ShoppingCart },
+    { href: "/dashboard/subscriptions", label: isIt ? "I miei abbonamenti" : "My subscriptions", icon: CreditCard },
     { href: "/account", label: "Account", icon: User },
   ];
   return (
