@@ -296,11 +296,15 @@ export default function ChatInterface({
     };
   }, []);
 
-  // Sidebar account — carica email/iniziali per gestione account in sidebar
+  // Sidebar account — carica email/iniziali per gestione account in sidebar.
+  // Usa lo stesso pattern affidabile di SidebarAccount: salva l'intero Session,
+  // ha mounted guard, e usa getSession() con retry + onAuthStateChange.
   useEffect(() => {
+    let mounted = true;
     const supabase = createClient();
 
     const applySession = (session: { user: { email?: string; user_metadata?: Record<string, unknown> } } | null) => {
+      if (!mounted) return;
       setSidebarAuthLoaded(true);
       const email = session?.user?.email ?? null;
       setSidebarUserEmail(email);
@@ -321,17 +325,18 @@ export default function ChatInterface({
     // 1. Prova a leggere la sessione esistente (con retry)
     const loadSession = (attempt = 0) => {
       supabase.auth.getSession().then(({ data, error }) => {
+        if (!mounted) return;
         if (error) {
           console.warn("[ChatInterface] getSession error:", error.message);
         }
         const session = data.session;
         if (!session && attempt < 3) {
-          // La sessione potrebbe non essere pronta ancora dopo il redirect OAuth
           setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
           return;
         }
         applySession(session);
       }).catch((err) => {
+        if (!mounted) return;
         console.warn("[ChatInterface] getSession failed:", err);
         if (attempt < 3) {
           setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
@@ -344,10 +349,13 @@ export default function ChatInterface({
 
     // 2. Ascolta i cambiamenti di auth (login/logout)
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      applySession(session);
+      if (mounted) applySession(session);
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   // Check onboarding state
