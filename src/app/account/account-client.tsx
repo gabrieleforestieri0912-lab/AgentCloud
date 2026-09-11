@@ -60,7 +60,7 @@ export default function AccountClient({
 
   async function handleSignOut() {
     try { await createClient().auth.signOut(); } catch {}
-    window.location.href = "/waitlist";
+    window.location.replace("/waitlist");
   }
 
   async function handleDelete() {

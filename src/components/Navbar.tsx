@@ -142,7 +142,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
 
   async function handleSignOut() {
     try { await createClient().auth.signOut(); } catch {}
-    window.location.href = "/waitlist";
+    window.location.replace("/waitlist");
   }
 
   const menuItems = [

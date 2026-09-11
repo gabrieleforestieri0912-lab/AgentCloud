@@ -99,7 +99,7 @@ export default function SidebarAccount() {
         <button
           onClick={async () => {
             try { await createClient().auth.signOut(); } catch {}
-            window.location.href = "/waitlist";
+            window.location.replace("/waitlist");
           }}
           className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
         >
