@@ -158,7 +158,11 @@ export default function SignupPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: "email profile",
+          queryParams: { access_type: "offline", prompt: "consent" },
+        },
       });
       if (error) setError(a.errors.googleFailed);
     } catch {

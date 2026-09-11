@@ -67,14 +67,15 @@ export default function SidebarAccount() {
 
   const email = session?.user?.email ?? null;
   const initials = getInitials(session);
-  const avatarUrl = (session?.user?.user_metadata as { avatar_url?: string; picture?: string } | undefined)?.avatar_url || (session?.user?.user_metadata as { picture?: string } | undefined)?.picture || null;
+  const rawAvatarUrl = (session?.user?.user_metadata as { avatar_url?: string; picture?: string } | undefined)?.avatar_url || (session?.user?.user_metadata as { picture?: string } | undefined)?.picture || null;
+  const avatarUrl = rawAvatarUrl ? rawAvatarUrl.replace(/=s\d+-c$/, "=s200-c") : null;
 
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
       <div className="flex items-center gap-3 p-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
           {avatarUrl ? (
-            <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
           ) : authLoaded ? (
             initials
           ) : (

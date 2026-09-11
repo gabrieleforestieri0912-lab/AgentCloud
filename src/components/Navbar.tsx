@@ -119,7 +119,12 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const userMeta = session?.user?.user_metadata as
     | { full_name?: string; avatar_url?: string; picture?: string }
     | undefined;
-  const avatarUrl = userMeta?.avatar_url || userMeta?.picture || null;
+  // Supabase mappa Google `picture` -> `avatar_url`, ma gestiamo entrambi + fallback
+  const rawAvatarUrl = userMeta?.avatar_url || userMeta?.picture || null;
+  // Normalizza s96-c -> s200-c per qualità migliore, se presente
+  const avatarUrl = rawAvatarUrl
+    ? rawAvatarUrl.replace(/=s\d+-c$/, "=s200-c")
+    : null;
   const accountInitials = isSignedIn
     ? (userMeta?.full_name || session?.user?.email || "?")
         .split(/[\s@.]+/)
@@ -453,12 +458,15 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                       className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-brand-500/15 text-sm font-bold text-brand-300 transition-colors hover:border-brand-500/40 hover:bg-brand-500/25 overflow-hidden"
                     >
                       {avatarUrl ? (
-                        <Image
+                        // <img> invece di next/image: evita blocco remotePatterns e gestisce referrer Google
+                        <img
                           src={avatarUrl}
                           alt="Account"
-                          width={36}
-                          height={36}
+                          referrerPolicy="no-referrer"
                           className="h-9 w-9 rounded-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = "none";
+                          }}
                         />
                       ) : (
                         accountInitials

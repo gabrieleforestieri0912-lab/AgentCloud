@@ -249,7 +249,11 @@ export default function LoginPage() {
       }`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo },
+        options: {
+          redirectTo,
+          scopes: "email profile",
+          queryParams: { access_type: "offline", prompt: "consent" },
+        },
       });
       if (error) setError(a.errors.googleFailed);
     } catch {

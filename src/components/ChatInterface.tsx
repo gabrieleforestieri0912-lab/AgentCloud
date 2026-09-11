@@ -1020,7 +1020,7 @@ export default function ChatInterface({
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
                 {sidebarSession?.user?.user_metadata?.avatar_url || sidebarSession?.user?.user_metadata?.picture ? (
-                  <img src={(sidebarSession.user.user_metadata.avatar_url || sidebarSession.user.user_metadata.picture) as string} alt="" className="h-full w-full object-cover" />
+                  <img src={(sidebarSession.user.user_metadata.avatar_url || sidebarSession.user.user_metadata.picture) as string} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
                 ) : sidebarAuthLoaded ? (
                   (sidebarSession?.user?.user_metadata?.full_name || sidebarSession?.user?.email || "?")
                     .split(/[\s@.]+/)
