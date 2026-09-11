@@ -135,9 +135,7 @@ export default function ChatInterface({
   const [hasPartialReply, setHasPartialReply] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [sidebarUserEmail, setSidebarUserEmail] = useState<string | null>(null);
-  const [sidebarUserInitials, setSidebarUserInitials] = useState<string>("");
-  const [sidebarUserAvatar, setSidebarUserAvatar] = useState<string | null>(null);
+  const [sidebarSession, setSidebarSession] = useState<import("@supabase/supabase-js").Session | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   // Start as true to avoid flash — session loads in background
   const [sidebarAuthLoaded, setSidebarAuthLoaded] = useState(true);
@@ -296,65 +294,34 @@ export default function ChatInterface({
     };
   }, []);
 
-  // Sidebar account — carica email/iniziali per gestione account in sidebar.
-  // Usa lo stesso pattern affidabile di SidebarAccount: salva l'intero Session,
-  // ha mounted guard, e usa getSession() con retry + onAuthStateChange.
+  // Sidebar account — usa lo stesso pattern affidabile di SidebarAccount:
+  // salva l'intero Session object, ha mounted guard, e usa onAuthStateChange
+  // come fonte primaria + getSession() come fallback dopo 1s.
   useEffect(() => {
     let mounted = true;
     const supabase = createClient();
 
-    const applySession = (session: { user: { email?: string; user_metadata?: Record<string, unknown> } } | null) => {
+    // onAuthStateChange è la fonte primaria — viene chiamato subito con la sessione corrente
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!mounted) return;
+      setSidebarSession(nextSession);
       setSidebarAuthLoaded(true);
-      const email = session?.user?.email ?? null;
-      setSidebarUserEmail(email);
-      const meta = session?.user?.user_metadata as { full_name?: string; avatar_url?: string; picture?: string } | undefined;
-      const base = meta?.full_name || email || "?";
-      const initials = base
-        .split(/[\s@.]+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((s) => s[0]?.toUpperCase())
-        .join("") || "?";
-      setSidebarUserInitials(initials);
-      // Google avatar
-      const avatar = meta?.avatar_url || meta?.picture || null;
-      setSidebarUserAvatar(typeof avatar === "string" ? avatar : null);
-    };
-
-    // 1. Prova a leggere la sessione esistente (con retry)
-    const loadSession = (attempt = 0) => {
-      supabase.auth.getSession().then(({ data, error }) => {
-        if (!mounted) return;
-        if (error) {
-          console.warn("[ChatInterface] getSession error:", error.message);
-        }
-        const session = data.session;
-        if (!session && attempt < 3) {
-          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
-          return;
-        }
-        applySession(session);
-      }).catch((err) => {
-        if (!mounted) return;
-        console.warn("[ChatInterface] getSession failed:", err);
-        if (attempt < 3) {
-          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
-        } else {
-          setSidebarAuthLoaded(true);
-        }
-      });
-    };
-    loadSession();
-
-    // 2. Ascolta i cambiamenti di auth (login/logout)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) applySession(session);
     });
+
+    // Fallback: se onAuthStateChange non si attiva entro 1s, prova getSession
+    const fallback = setTimeout(() => {
+      if (!mounted) return;
+      supabase.auth.getSession().then(({ data }) => {
+        if (!mounted) return;
+        setSidebarSession(data.session);
+        setSidebarAuthLoaded(true);
+      }).catch(() => {});
+    }, 1000);
 
     return () => {
       mounted = false;
-      sub.subscription.unsubscribe();
+      clearTimeout(fallback);
+      subscription.subscription.unsubscribe();
     };
   }, []);
 
@@ -1037,17 +1004,22 @@ export default function ChatInterface({
               className="w-full flex items-center gap-3 p-3 hover:bg-white/[0.04] transition-all"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
-                {sidebarUserAvatar ? (
-                  <img src={sidebarUserAvatar} alt="" className="h-full w-full object-cover" />
+                {sidebarSession?.user?.user_metadata?.avatar_url || sidebarSession?.user?.user_metadata?.picture ? (
+                  <img src={(sidebarSession.user.user_metadata.avatar_url || sidebarSession.user.user_metadata.picture) as string} alt="" className="h-full w-full object-cover" />
                 ) : sidebarAuthLoaded ? (
-                  sidebarUserInitials || "?"
+                  (sidebarSession?.user?.user_metadata?.full_name || sidebarSession?.user?.email || "?")
+                    .split(/[\s@.]+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((s: string) => s[0]?.toUpperCase())
+                    .join("") || "?"
                 ) : (
                   <span className="animate-pulse">…</span>
                 )}
               </div>
               <div className="min-w-0 flex-1 text-left">
                 <p className="truncate text-sm font-bold text-white">
-                  {sidebarUserEmail || "…"}
+                  {sidebarSession?.user?.email || "…"}
                 </p>
                 <p className="text-[10px] text-neutral-500 font-medium">Account</p>
               </div>
