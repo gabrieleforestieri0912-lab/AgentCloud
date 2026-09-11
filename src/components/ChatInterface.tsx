@@ -818,16 +818,16 @@ export default function ChatInterface({
               setSidebarOpen(false);
             }}
             aria-label={dict.chat.closeSidebar}
-            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+            className="w-11 h-11 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
           >
-            <PanelLeftClose size={16} />
+            <PanelLeftClose size={18} />
           </button>
           <Link
             href="/"
             data-onboard="home"
-            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+            className="w-11 h-11 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
           >
-            <Home size={16} />
+            <Home size={18} />
           </Link>
         </div>
 
@@ -836,7 +836,7 @@ export default function ChatInterface({
           <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
             <button
               onClick={() => setSidebarView("chat")}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                 sidebarView === "chat"
                   ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
                   : "text-neutral-400 hover:text-white hover:bg-white/5"
@@ -847,7 +847,7 @@ export default function ChatInterface({
             </button>
             <button
               onClick={() => setSidebarView("tools")}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                 sidebarView === "tools"
                   ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
                   : "text-neutral-400 hover:text-white hover:bg-white/5"
@@ -858,7 +858,7 @@ export default function ChatInterface({
             </button>
             <button
               onClick={() => setSidebarView("agents")}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                 sidebarView === "agents"
                   ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
                   : "text-neutral-400 hover:text-white hover:bg-white/5"
@@ -955,27 +955,27 @@ export default function ChatInterface({
                   ) : (
                     <span className="truncate flex-1 font-medium">{conv.title}</span>
                   )}
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 sm:group-hover:opacity-100 transition-all shrink-0">
                     <button
                       onClick={(e) => { e.stopPropagation(); startRename(conv.id, conv.title); }}
-                      className="p-1 rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
+                      className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
                       title={locale === "it" ? "Rinomina" : "Rename"}
                     >
-                      <Pencil size={10} />
+                      <Pencil size={12} />
                     </button>
                     <button
                       onClick={(e) => handleArchive(e, conv.id)}
-                      className="p-1 rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
+                      className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
                       title={conv.archived_at ? (locale === "it" ? "Ripristina" : "Restore") : (locale === "it" ? "Archivia" : "Archive")}
                     >
-                      {conv.archived_at ? <RotateCcw size={10} /> : <Archive size={10} />}
+                      {conv.archived_at ? <RotateCcw size={12} /> : <Archive size={12} />}
                     </button>
                     <button
                       onClick={(e) => handleDelete(e, conv.id)}
-                      className="p-1 rounded-lg hover:bg-red-500/15 text-neutral-500 hover:text-red-400 transition-all"
+                      className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-red-500/15 text-neutral-500 hover:text-red-400 transition-all"
                       title={dict.chat.deleteConversation}
                     >
-                      <Trash2 size={10} />
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
@@ -1034,28 +1034,28 @@ export default function ChatInterface({
                 <div className="grid grid-cols-2 gap-1.5 pt-2">
                   <Link
                     href="/account"
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <User size={12} />
                     Account
                   </Link>
                   <Link
                     href="/settings"
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <Settings size={12} />
                     {locale === "it" ? "Impostazioni" : "Settings"}
                   </Link>
                   <Link
                     href="/cart"
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <ShoppingCart size={12} />
                     {locale === "it" ? "Carrello" : "Cart"}
                   </Link>
                   <Link
                     href="/dashboard"
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <Home size={12} />
                     Dashboard
@@ -1066,10 +1066,10 @@ export default function ChatInterface({
                     try { await createClient().auth.signOut(); } catch {}
                     window.location.replace("/waitlist");
                   }}
-                  className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
+                  className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2.5 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
                 >
                   <LogOut size={12} />
-                  Esci
+                  {locale === "it" ? "Esci" : "Sign out"}
                 </button>
               </div>
             )}
