@@ -58,10 +58,9 @@ const INTEGRATIONS = ALL_INTEGRATIONS.slice(0, 8);
 export default function Navbar({ marketplaceAgents }: NavbarProps) {
   const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  // True appena la lettura iniziale della sessione è conclusa — evita il
-  // flash di un frame del bottone "Accedi" per gli utenti loggati prima che
-  // l'hydration risolva.
-  const [authLoaded, setAuthLoaded] = useState(true);
+  // False finché la sessione non è stata effettivamente verificata —
+  // evita il flash "Inizia Ora" per utenti loggati durante la navigazione.
+  const [authLoaded, setAuthLoaded] = useState(false);
   const router = useRouter();
   const { locale, dict } = useLanguage();
   // Le pagine che risolvono i flag lato server passano la lista autoritativa;
@@ -79,49 +78,35 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   // prescindere da quanto cresce il catalogo (vedi FEATURED_AGENT_SLUGS).
   const featuredAgents = getFeaturedAgents(agents);
 
-  // Tiene traccia della sessione Supabase in modo reattivo (lettura iniziale +
-  // cambi di stato dell'auth). Include retry per gestire race conditions
-  // post-redirect OAuth dove i cookie di sessione non sono ancora disponibili.
+  // Tiene traccia della sessione Supabase in modo reattivo.
+  // onAuthStateChange viene chiamato subito con la sessione corrente
+  // (anche durante la navigazione), quindi è la fonte primaria.
   useEffect(() => {
     let mounted = true;
     const supabase = createClient();
 
-    const applySession = (sess: Session | null) => {
-      if (!mounted) return;
-      setSession(sess);
-      setAuthLoaded(true);
-    };
-
-    // Retry mechanism: up to 3 attempts with progressive delay
-    const loadSession = (attempt = 0) => {
-      supabase.auth.getSession().then(({ data, error }) => {
-        if (!mounted) return;
-        if (error) console.warn("[Navbar] getSession error:", error.message);
-        const sess = data.session;
-        if (!sess && attempt < 3) {
-          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
-          return;
-        }
-        applySession(sess);
-      }).catch((err) => {
-        if (!mounted) return;
-        console.warn("[Navbar] getSession failed:", err);
-        if (attempt < 3) {
-          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
-        } else {
-          applySession(null);
-        }
-      });
-    };
-    loadSession();
-
+    // onAuthStateChange fires immediately with the current session
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, nextSession) => {
-        applySession(nextSession);
+        if (!mounted) return;
+        setSession(nextSession);
+        setAuthLoaded(true);
       },
     );
+
+    // Fallback: if onAuthStateChange doesn't fire within 1s, try getSession
+    const fallback = setTimeout(() => {
+      if (!mounted) return;
+      supabase.auth.getSession().then(({ data }) => {
+        if (!mounted) return;
+        setSession(data.session);
+        setAuthLoaded(true);
+      }).catch(() => {});
+    }, 1000);
+
     return () => {
       mounted = false;
+      clearTimeout(fallback);
       subscription.subscription.unsubscribe();
     };
   }, []);

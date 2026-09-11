@@ -31,43 +31,28 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const { locale, dict } = useLanguage();
   const { count: cartCount } = useCart();
 
-  // Session loading with retry mechanism
+  // Session loading — onAuthStateChange fires immediately with current session
   useEffect(() => {
     let mounted = true;
     const supabase = createClient();
 
-    const applySession = (sess: Session | null) => {
-      if (!mounted) return;
-      setSession(sess);
-    };
-
-    const loadSession = (attempt = 0) => {
-      supabase.auth.getSession().then(({ data, error }) => {
-        if (!mounted) return;
-        if (error) console.warn("[MobileNav] getSession error:", error.message);
-        const sess = data.session;
-        if (!sess && attempt < 3) {
-          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
-          return;
-        }
-        applySession(sess);
-      }).catch((err) => {
-        if (!mounted) return;
-        console.warn("[MobileNav] getSession failed:", err);
-        if (attempt < 3) {
-          setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
-        } else {
-          applySession(null);
-        }
-      });
-    };
-    loadSession();
-
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      applySession(next);
+      if (!mounted) return;
+      setSession(next);
     });
+
+    // Fallback if onAuthStateChange doesn't fire within 1s
+    const fallback = setTimeout(() => {
+      if (!mounted) return;
+      supabase.auth.getSession().then(({ data }) => {
+        if (!mounted) return;
+        setSession(data.session);
+      }).catch(() => {});
+    }, 1000);
+
     return () => {
       mounted = false;
+      clearTimeout(fallback);
       sub.subscription.unsubscribe();
     };
   }, []);
