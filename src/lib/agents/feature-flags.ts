@@ -47,6 +47,11 @@ export const ACTIVE_10_AGENTS = [
 
 export const ACTIVE_15_AGENTS = [
   ...ACTIVE_10_AGENTS,
+  "finance-manager",
+  "personal-assistant",
+  "hr-recruiter",
+  "social-media-agent",
+  "inventory-logistics",
 ];
 
 export const ALL_TOOLS_LIST = [
@@ -54,6 +59,7 @@ export const ALL_TOOLS_LIST = [
   "scrape_page",
   "read_file",
   "write_file",
+  "run_python",
   "quote_generate",
   "quote_send_email",
   "google_reviews_list",

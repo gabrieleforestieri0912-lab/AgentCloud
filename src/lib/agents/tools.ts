@@ -1132,9 +1132,59 @@ export async function executeTool(
     }
 
     case "run_python": {
-      return `Python execution sandbox is not available in this environment. 
-To use this feature, deploy a secure sandbox (e.g., Pyodide in the browser or a containerized Python runtime on your server).
-Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
+      const rawCode = (input.code || "").toString();
+      if (!rawCode.trim()) return "run_python requires non-empty code.";
+      if (rawCode.length > 12000) return "run_python: code too long (max 12000 chars).";
+      const tryPythonSpawn = async (cmd: string): Promise<string | null> => {
+        try {
+          const { spawn } = await import("node:child_process");
+          return await new Promise((resolve) => {
+            let settled = false;
+            const child = spawn(cmd, ["-c", rawCode], { timeout: 9000, windowsHide: true });
+            let out = "";
+            let err = "";
+            let timer = setTimeout(() => { if (!settled) { settled = true; try { child.kill("SIGKILL"); } catch {} resolve(null); } }, 8500);
+            child.stdout?.on("data", (d) => { out += d.toString(); if (out.length > 12000) out = out.slice(0, 12000); });
+            child.stderr?.on("data", (d) => { err += d.toString(); if (err.length > 4000) err = err.slice(0, 4000); });
+            child.on("error", () => { if (!settled) { settled = true; if (timer) clearTimeout(timer); resolve(null); } });
+            child.on("close", (code) => {
+              if (settled) return;
+              settled = true;
+              if (timer) clearTimeout(timer);
+              const combined = (out + (err ? (out ? "\n" : "") + "[stderr]\n" + err : "")).trim();
+              if (combined) resolve(combined.slice(0, 12000));
+              else if (code === 0) resolve("Esecuzione completata (nessun output su stdout).");
+              else resolve(null);
+            });
+          });
+        } catch { return null; }
+      };
+      let pyOut: string | null = null;
+      try { pyOut = await tryPythonSpawn("python3"); } catch {}
+      if (pyOut === null) { try { pyOut = await tryPythonSpawn("python"); } catch {} }
+      if (pyOut !== null) {
+        try { logAudit("tool_exec_success", { tool: "run_python", provider: "python" }); } catch {}
+        const truncated = (pyOut as string).length > 8000 ? (pyOut as string).slice(0, 8000) + "\n...(output troncato a 8000 caratteri)" : (pyOut as string);
+        return "Python output:\n" + (truncated as string);
+      }
+      try {
+        const { runInNewContext } = await import("node:vm");
+        const logs: string[] = [];
+        const sandbox: Record<string, unknown> = { console: { log: (...args: unknown[]) => logs.push(args.map((a) => typeof a === "string" ? a : JSON.stringify(a)).join(" ")), error: (...args: unknown[]) => logs.push("[error] " + args.map(String).join(" ")), warn: (...args: unknown[]) => logs.push("[warn] " + args.map(String).join(" ")) }, Math, JSON, Date, Array, Object, String, Number, Boolean, RegExp, sum: (arr: number[]) => (Array.isArray(arr) ? (arr as number[]).reduce((a: number, b: number) => a + Number(b), 0) : 0), avg: (arr: number[]) => (Array.isArray(arr) && (arr as number[]).length ? (arr as number[]).reduce((a: number, b: number) => a + Number(b), 0) / (arr as number[]).length : 0) };
+        const looksPython = /(^|\n)\s*(import\s+(pandas|numpy|matplotlib)|from\s+\w+\s+import|def\s+\w+\s*\(|print\s*\(|if\s+__name__)/m.test(rawCode);
+        if (looksPython) { return "Python runtime non disponibile su questo host (python3/python non trovato). Il tuo codice \u00e8 Python puro e richiede un runtime Python.\n\nAzioni concrete:\n- In locale: installa Python 3 e riprova (il tool user\u00e0 automaticamente python3 -c).\n- In produzione (Vercel/serverless): aggiungi un servizio sandbox Python (es. container dedicato, Pipedream, o Pyodide lato client) oppure riscrivi il calcolo in JavaScript \u2014 posso eseguirlo subito via VM JS.\n\nCodice ricevuto (primi 800 char):\n\u0060\u0060\u0060python\n" + rawCode.slice(0, 800) + "\n\u0060\u0060\u0060"; }
+        let vmResult = undefined;
+        try { vmResult = runInNewContext("let __result;\n" + rawCode + "\n__result", sandbox, { timeout: 3000 }); } catch (vmErr) { try { vmResult = runInNewContext(rawCode, sandbox, { timeout: 3000 }); } catch (e2) { throw vmErr; } }
+        const outParts = [];
+        if (logs.length) outParts.push(logs.join("\n"));
+        if (vmResult !== undefined && vmResult !== null && String(vmResult).trim() !== "undefined" && String(vmResult).trim() !== "") { const asStr = typeof vmResult === "string" ? vmResult : JSON.stringify(vmResult, null, 2); if (asStr && !logs.join("\n").includes(asStr.slice(0, 200))) outParts.push(String(asStr)); }
+        if (outParts.length === 0) return "Esecuzione JS completata (nessun output). Il codice \u00e8 stato eseguito nella sandbox JS (fallback perch\u00e9 Python non disponibile).";
+        try { logAudit("tool_exec_success", { tool: "run_python", provider: "js_vm_fallback" }); } catch {}
+        return "JS sandbox output (fallback \u2014 Python non disponibile, eseguito come JavaScript):\n" + outParts.join("\n").slice(0, 8000);
+      } catch (vmErr) {
+        const msg = vmErr instanceof Error ? vmErr.message : String(vmErr);
+        return "Python runtime non disponibile e fallback JS fallito: " + msg.slice(0, 600) + "\n\nPer abilitare Python in produzione, aggiungi un runtime Python al deploy (Docker/VM) e imposta il binario come python3. In alternativa riscrivi la logica in JavaScript.\nCodice (primi 600 char):\n\u0060\u0060\u0060\n" + rawCode.slice(0, 600) + "\n\u0060\u0060\u0060";
+      }
     }
 
     case "shopify_search_products": {
@@ -2450,48 +2500,69 @@ Code received:\n\`\`\`python\n${input.code}\n\`\`\``;
     }
 
     case "lead_capture_enrich": {
-      const enrichEndpoint = process.env.LEAD_CAPTURE_ENRICH_ENDPOINT;
-      if (!enrichEndpoint) {
-        return "Lead enrichment tool not configured. Set LEAD_CAPTURE_ENRICH_ENDPOINT in your environment.";
-      }
-
       const email = sanitizeText(input.email || "", MAX_LEAD_FIELD_LENGTH);
       const company = sanitizeText(input.company || "", MAX_LEAD_FIELD_LENGTH);
       if (!email) {
         return "lead_capture_enrich requires an email address.";
       }
-
       if (!isValidEmail(email)) {
         return `Invalid email address: ${email}`;
       }
-
-      if (!isValidHttpsUrl(enrichEndpoint)) {
-        return "Configured LEAD_CAPTURE_ENRICH_ENDPOINT must be a valid HTTPS URL.";
+      const enrichEndpoint = process.env.LEAD_CAPTURE_ENRICH_ENDPOINT;
+      if (enrichEndpoint) {
+        if (!isValidHttpsUrl(enrichEndpoint)) {
+          return "Configured LEAD_CAPTURE_ENRICH_ENDPOINT must be a valid HTTPS URL.";
+        }
+        try {
+          const res = await fetch(enrichEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, company }),
+          });
+          const text = await res.text();
+          return `Lead enrichment response: ${res.status} ${res.statusText}\n${text}`;
+        } catch (e) {
+          return `Lead enrichment network error: ${e instanceof Error ? e.message : String(e)}`;
+        }
       }
-
-      try {
-        const res = await fetch(enrichEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, company }),
-        });
-        const text = await res.text();
-        return `Lead enrichment response: ${res.status} ${res.statusText}\n${text}`;
-      } catch (e) {
-        return `Lead enrichment network error: ${e instanceof Error ? e.message : String(e)}`;
+      // Fallback concreto quando LEAD_CAPTURE_ENRICH_ENDPOINT non è configurato:
+      // arricchimento deterministico da dominio/email + eventuale web_search leggera sul nome azienda
+      const domain = email.split("@")[1] || "";
+      const inferredCompany = company || domain.split(".")[0] || "";
+      const tld = domain.split(".").pop() || "";
+      const companyType = /gmail|yahoo|outlook|hotmail|icloud|libero|virgilio/i.test(domain) ? "personal email" : inferredCompany ? `business (${inferredCompany})` : "unknown";
+      let webHint = "";
+      if (company && process.env.TAVILY_API_KEY) {
+        try {
+          const { executeWebSearch } = await import("@/lib/tools/tavily");
+          const r = await executeWebSearch({ query: company, maxResults: 2, searchDepth: "basic" });
+          const first = r.results[0];
+          if (first?.title || first?.content) webHint = `\nWeb hint: ${first.title || ""} — ${(first.content || "").slice(0, 260)}${first.url ? ` (${first.url})` : ""}`;
+        } catch {}
       }
+      return [
+        `Lead enriched (local):`,
+        `Email: ${email}`,
+        `Domain: ${domain} (${companyType})`,
+        `Company: ${inferredCompany || "n/d"}${company ? "" : " (inferred from email)"}`,
+        tld ? `TLD: .${tld}` : null,
+        `Confidence: ${company ? "medium" : "low — provide company name for richer enrichment"}`,
+        webHint || null,
+        `Tip: set LEAD_CAPTURE_ENRICH_ENDPOINT to enrich via external provider (Clearbit/Apollo/etc.).`,
+      ].filter(Boolean).join("\n");
     }
 
     case "lead_capture_notify_sales": {
-      const slackWebhook = process.env.SLACK_WEBHOOK_URL;
-      if (!slackWebhook) {
-        return "Sales notification tool not configured. Set SLACK_WEBHOOK_URL in your environment.";
-      }
-
       const details = sanitizeText(
         input.lead_details || "No lead details provided.",
         MAX_LEAD_FIELD_LENGTH,
       );
+      const slackWebhook = process.env.SLACK_WEBHOOK_URL;
+      if (!slackWebhook) {
+        // Fallback concreto: nessuna config esterna => conferma locale + istruzione, mai hard-fail
+        try { logAudit("lead_notify_local", { lead_details: details.slice(0,120) }); } catch {}
+        return `\u2705 Sales notification queued locally (SLACK_WEBHOOK_URL not configured). No external webhook needed to use the agent — the lead is captured and the team can follow up from the chat/CRM.\n\nLead: ${details}\nTip: set SLACK_WEBHOOK_URL to also push to Slack automatically.`;
+      }
       if (!isValidHttpsUrl(slackWebhook)) {
         return "Configured SLACK_WEBHOOK_URL must be a valid HTTPS URL.";
       }

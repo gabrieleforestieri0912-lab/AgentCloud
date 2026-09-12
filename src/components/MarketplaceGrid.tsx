@@ -190,44 +190,35 @@ export default function MarketplaceGrid({
         )}
       </div>
 
-      {/* Divisore netto */}
-      {comingSoonAgents.length > 0 && <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />}
+      {/* Divisore netto — sempre visibile tra disponibili e in arrivo */}
+      <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-      {/* Coming soon agents section */}
-      {filteredComingSoon.length > 0 && (
-        <div className="rounded-2xl border border-white/5 bg-neutral-900/40 p-6 sm:p-8">
-          <div className="mb-6 flex flex-wrap items-center gap-3">
-            <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800 text-neutral-400">
-                <Search size={14} />
-              </span>
-              {comingSoonLabel}
-            </h2>
-            <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs font-bold text-neutral-400">
-              {t(dict.agentsPage.agentsCount, { count: comingSoonCount })}
-            </span>
-            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-300">
-              {dict.marketplaceGrid.soon}
-            </span>
-          </div>
-          {filteredComingSoon.length === 0 ? (
-            <p className="text-sm text-neutral-500">
-              {dict.marketplaceGrid.noUpcomingMatch}
-            </p>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">
-              {filteredComingSoon.map((agent) => (
-                <AgentCard
-                  key={agent.slug}
-                  agent={agent}
-                  available={comingSoonAccessible}
-                  comingSoonTag={comingSoonAccessible}
-                />
-              ))}
-            </div>
-          )}
+      {/* Coming soon agents section — stesso layout/elenco dei disponibili */}
+      <div>
+        <div className="mb-6 flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-white">{comingSoonLabel}</h2>
+          <span className="rounded-full bg-brand-500/10 px-3 py-1 text-xs font-bold text-brand-300">
+            {t(dict.agentsPage.agentsCount, { count: comingSoonCount })}
+          </span>
         </div>
-      )}
+
+        {filteredComingSoon.length === 0 ? (
+          <p className="text-sm text-neutral-500">
+            {dict.marketplaceGrid.noUpcomingMatch}
+          </p>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">
+            {filteredComingSoon.map((agent) => (
+              <AgentCard
+                key={agent.slug}
+                agent={agent}
+                available={comingSoonAccessible}
+                comingSoonTag={comingSoonAccessible}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
