@@ -16,14 +16,14 @@
  */
 import type { LLMTool } from "@/lib/llm";
 import { logAudit } from "@/lib/audit";
-import { getTenantCredentials, updateTenantGoogleTokens } from "@/lib/tenants";
+import { getTenantCredentials } from "@/lib/tenants";
 import {
   getShopifyConnection,
   revokeShopifyConnection,
 } from "@/lib/shopify/connections";
 import { googleApiProxy } from "@/lib/google/api-proxy";
-import { getGoogleConnection } from "@/lib/google/connections";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
+import { googleSheetsRequest } from "@/lib/google/sheets";
 import { executeWebSearch, formatWebSearchResults } from "@/lib/tools/tavily";
 import {
   calculateQuote,
@@ -474,6 +474,74 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
     },
   },
 
+  sheets_read_range: {
+    name: "sheets_read_range",
+    description:
+      "Read values from the connected Google Sheets spreadsheet (A1 range, e.g. Sheet1!A1:D20). Accepts the spreadsheet URL or its ID.",
+    input_schema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: {
+          type: "string",
+          description: "Spreadsheet ID or full Google Sheets URL",
+        },
+        range: {
+          type: "string",
+          description: "Range in A1 notation to read, e.g. Sheet1!A1:D20",
+        },
+      },
+      required: ["spreadsheet_id", "range"],
+    },
+  },
+
+  sheets_update_range: {
+    name: "sheets_update_range",
+    description:
+      "Overwrite a range in the connected Google Sheets spreadsheet. values is a JSON array of rows, e.g. [[\"Nome\",\"Email\"],[\"Mario\",\"m@x.it\"]] — the range is written exactly as provided.",
+    input_schema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: {
+          type: "string",
+          description: "Spreadsheet ID or full Google Sheets URL",
+        },
+        range: {
+          type: "string",
+          description: "Range in A1 notation to write, e.g. Sheet1!A1:B2",
+        },
+        values: {
+          type: "string",
+          description: "JSON array of rows (array of arrays of cell values)",
+        },
+      },
+      required: ["spreadsheet_id", "range", "values"],
+    },
+  },
+
+  sheets_append_row: {
+    name: "sheets_append_row",
+    description:
+      "Append rows at the end of a table in the connected Google Sheets spreadsheet (e.g. Sheet1!A:C — good for logs, orders, leads). values is a JSON array of rows.",
+    input_schema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: {
+          type: "string",
+          description: "Spreadsheet ID or full Google Sheets URL",
+        },
+        range: {
+          type: "string",
+          description: "Table range in A1 notation, e.g. Sheet1!A:C",
+        },
+        values: {
+          type: "string",
+          description: "JSON array of rows (array of arrays of cell values)",
+        },
+      },
+      required: ["spreadsheet_id", "range", "values"],
+    },
+  },
+
   gmail_send: {
     name: "gmail_send",
     description:
@@ -886,6 +954,66 @@ async function getGoogleTokenForContext(context: ToolContext) {
     token = await getValidGoogleAccessToken(context.tenantId).catch(() => null);
   }
   return token;
+}
+
+/**
+ * Risolve credenziali e calendario per i tool Google Calendar.
+ *
+ * Ordine di priorità:
+ *   1. connessione OAuth dell'utente (google_connections) — con refresh
+ *      automatico dell'access token scaduto;
+ *   2. connessione OAuth del tenant (admin via codice);
+ *   3. credenziali legacy (env GOOGLE_CALENDAR_ACCESS_TOKEN /
+ *      GOOGLE_CALENDAR_CALENDAR_ID oppure store tenant) per i setup non OAuth.
+ * Restituisce null quando non esiste alcuna credenziale utilizzabile.
+ */
+async function resolveCalendarAccess(
+  context: ToolContext,
+): Promise<{ accessToken: string; calendarId: string } | null> {
+  const token = await getGoogleTokenForContext(context);
+  if (token) {
+    return { accessToken: token.accessToken, calendarId: "primary" };
+  }
+
+  let accessToken = process.env.GOOGLE_CALENDAR_ACCESS_TOKEN;
+  let calendarId = process.env.GOOGLE_CALENDAR_CALENDAR_ID;
+  if (context.tenantId) {
+    const creds = getTenantCredentials(context.tenantId);
+    if (creds?.google) {
+      calendarId = creds.google.calendarId || calendarId;
+      accessToken = creds.google.accessToken || accessToken;
+    }
+  }
+  if (!accessToken || !calendarId) return null;
+  return { accessToken, calendarId };
+}
+
+/**
+ * Tenant di riferimento per la connessione Google Sheets di un run: l'utente
+ * che ha avviato l'agente, con fallback sul tenant (admin via codice).
+ */
+function sheetsTenantId(context: ToolContext): string | null {
+  if (context.userId && context.userId !== "anonymous") return context.userId;
+  return context.tenantId ?? null;
+}
+
+/**
+ * Le matrici di celle per Google Sheets arrivano dal modello come stringa JSON
+ * (gli input dei tool sono tutte stringhe): qui vengono validate una volta sola.
+ */
+function parseSheetValues(
+  raw: string | undefined,
+): { ok: true; values: unknown } | { ok: false; error: string } {
+  if (!raw || !raw.trim()) return { ok: false, error: "values is required." };
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return { ok: false, error: 'values must be a JSON array of rows, e.g. [["Nome","Email"]].' };
+    }
+    return { ok: true, values: parsed };
+  } catch {
+    return { ok: false, error: 'values must be valid JSON, e.g. [["Nome","Email"]].' };
+  }
 }
 
 const MAX_LEAD_FIELD_LENGTH = 250;
@@ -2023,29 +2151,12 @@ export async function executeTool(
         return "End time must be after start time.";
       }
 
-      let accessToken = process.env.GOOGLE_CALENDAR_ACCESS_TOKEN;
-      let calendarId = process.env.GOOGLE_CALENDAR_CALENDAR_ID;
-      // La connessione OAuth per utente (google_connections) ha priorità —
-      // l'agente legge il calendario dell'utente invece delle credenziali env
-      // legacy. Le var legacy restano il fallback per gli setup non OAuth.
-      if (context.userId && context.userId !== "anonymous") {
-        const conn = await getGoogleConnection(context.userId).catch(() => null);
-        if (conn) {
-          accessToken = conn.accessToken;
-          calendarId = "primary";
-        }
+      const resolved = await resolveCalendarAccess(context);
+      if (!resolved) {
+        return "Calendar tool not configured. Connect Google Calendar from the dashboard, or set GOOGLE_CALENDAR_ACCESS_TOKEN and GOOGLE_CALENDAR_CALENDAR_ID in your environment.";
       }
-      const tenantId = context.tenantId;
-      if (tenantId) {
-        const creds = getTenantCredentials(tenantId);
-        if (creds?.google) {
-          calendarId = creds.google.calendarId || calendarId;
-          accessToken = creds.google.accessToken || accessToken;
-        }
-      }
-      if (!accessToken || !calendarId) {
-        return "Calendar tool not configured. Set tenant calendar credentials or GOOGLE_CALENDAR_ACCESS_TOKEN and GOOGLE_CALENDAR_CALENDAR_ID in your environment.";
-      }
+      const accessToken = resolved.accessToken;
+      const calendarId = resolved.calendarId;
 
       if (end.getTime() - start.getTime() > 1000 * 60 * 60 * 24 * 31) {
         return "Requested range cannot exceed 31 days.";
@@ -2058,46 +2169,6 @@ export async function executeTool(
       }
 
       try {
-        // Se il tenant ha fornito un refresh token salvato in memoria, prova a
-        // rinnovare l'access token quando manca.
-        if ((!accessToken || accessToken.length < 10) && tenantId) {
-          const creds = getTenantCredentials(tenantId);
-          const refreshToken = creds?.google?.refreshToken;
-          const clientId = process.env.GOOGLE_CLIENT_ID;
-          const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-          if (refreshToken && clientId && clientSecret) {
-            try {
-              const tokenRes = await fetch(
-                "https://oauth2.googleapis.com/token",
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                  },
-                  body: new URLSearchParams({
-                    client_id: clientId,
-                    client_secret: clientSecret,
-                    grant_type: "refresh_token",
-                    refresh_token: refreshToken,
-                  }).toString(),
-                },
-              );
-              if (tokenRes.ok) {
-                const tokenJson = await tokenRes.json();
-                accessToken = tokenJson.access_token || accessToken;
-                try {
-                  updateTenantGoogleTokens(
-                    tenantId,
-                    accessToken,
-                    tokenJson.refresh_token,
-                  );
-                } catch {}
-              }
-            } catch {
-              // errore nel refresh del token — ripiega sull'access token salvato
-            }
-          }
-        }
         const freeBusyResponse = await fetch(
           "https://www.googleapis.com/calendar/v3/freeBusy",
           {
@@ -2141,19 +2212,12 @@ export async function executeTool(
     }
 
     case "calendar_book_event": {
-      let accessToken = process.env.GOOGLE_CALENDAR_ACCESS_TOKEN;
-      let calendarId = process.env.GOOGLE_CALENDAR_CALENDAR_ID;
-      const tenantId = context.tenantId;
-      if (tenantId) {
-        const creds = getTenantCredentials(tenantId);
-        if (creds?.google) {
-          calendarId = creds.google.calendarId || calendarId;
-          accessToken = creds.google.accessToken || accessToken;
-        }
+      const resolved = await resolveCalendarAccess(context);
+      if (!resolved) {
+        return "Calendar tool not configured. Connect Google Calendar from the dashboard, or set GOOGLE_CALENDAR_ACCESS_TOKEN and GOOGLE_CALENDAR_CALENDAR_ID in your environment.";
       }
-      if (!accessToken || !calendarId) {
-        return "Calendar tool not configured. Set tenant calendar credentials or GOOGLE_CALENDAR_ACCESS_TOKEN and GOOGLE_CALENDAR_CALENDAR_ID in your environment.";
-      }
+      const accessToken = resolved.accessToken;
+      const calendarId = resolved.calendarId;
 
       const title = sanitizeText(
         input.title || "Untitled event",
@@ -2199,48 +2263,7 @@ export async function executeTool(
           return `Invalid attendee email: ${email}`;
         }
         attendeeObjects.push({ email });
-      }
-
-      try {
-        // Tenta il refresh se manca l'accessToken ma c'è il refresh token
-        if ((!accessToken || accessToken.length < 10) && tenantId) {
-          const creds = getTenantCredentials(tenantId);
-          const refreshToken = creds?.google?.refreshToken;
-          const clientId = process.env.GOOGLE_CLIENT_ID;
-          const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-          if (refreshToken && clientId && clientSecret) {
-            try {
-              const tokenRes = await fetch(
-                "https://oauth2.googleapis.com/token",
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                  },
-                  body: new URLSearchParams({
-                    client_id: clientId,
-                    client_secret: clientSecret,
-                    grant_type: "refresh_token",
-                    refresh_token: refreshToken,
-                  }).toString(),
-                },
-              );
-              if (tokenRes.ok) {
-                const tokenJson = await tokenRes.json();
-                accessToken = tokenJson.access_token || accessToken;
-                try {
-                  updateTenantGoogleTokens(
-                    tenantId,
-                    accessToken,
-                    tokenJson.refresh_token,
-                  );
-                } catch {}
-              }
-            } catch {
-              // errore nel refresh del token — ripiega sull'access token salvato
-            }
-          }
-        }
+      }      try {
         const res = await fetch(
           `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
           {
@@ -2429,6 +2452,65 @@ export async function executeTool(
         context.userId,
       );
       return eventsResult.ok ? String(eventsResult.data) : eventsResult.error;
+    }
+
+    case "sheets_read_range": {
+      const tenantId = sheetsTenantId(context);
+      if (!tenantId) {
+        return "sheets_read_range requires a connected Google Sheets account. Please log in and connect Google Sheets from the dashboard, then retry.";
+      }
+      const spreadsheetId = sanitizeText(input.spreadsheet_id || "", 500);
+      const range = sanitizeText(input.range || "", 200);
+      if (!spreadsheetId) {
+        return "sheets_read_range requires spreadsheet_id (the spreadsheet ID or its URL).";
+      }
+      if (!range) return "sheets_read_range requires a range, e.g. Sheet1!A1:D20.";
+      const result = await googleSheetsRequest(
+        "getValues",
+        { spreadsheetId, range },
+        tenantId,
+      );
+      return result.ok ? result.data : result.error;
+    }
+
+    case "sheets_update_range": {
+      const tenantId = sheetsTenantId(context);
+      if (!tenantId) {
+        return "sheets_update_range requires a connected Google Sheets account. Please log in and connect Google Sheets from the dashboard, then retry.";
+      }
+      const spreadsheetId = sanitizeText(input.spreadsheet_id || "", 500);
+      const range = sanitizeText(input.range || "", 200);
+      if (!spreadsheetId || !range) {
+        return "sheets_update_range requires spreadsheet_id and range.";
+      }
+      const parsed = parseSheetValues(input.values);
+      if (!parsed.ok) return `sheets_update_range: ${parsed.error}`;
+      const result = await googleSheetsRequest(
+        "updateValues",
+        { spreadsheetId, range, values: parsed.values },
+        tenantId,
+      );
+      return result.ok ? result.data : result.error;
+    }
+
+    case "sheets_append_row": {
+      const tenantId = sheetsTenantId(context);
+      if (!tenantId) {
+        return "sheets_append_row requires a connected Google Sheets account. Please log in and connect Google Sheets from the dashboard, then retry.";
+      }
+      const spreadsheetId = sanitizeText(input.spreadsheet_id || "", 500);
+      const range = sanitizeText(input.range || "", 200);
+      if (!spreadsheetId || !range) {
+        return "sheets_append_row requires spreadsheet_id and range (e.g. Sheet1!A:C).";
+      }
+      const parsed = parseSheetValues(input.values);
+      if (!parsed.ok) return `sheets_append_row: ${parsed.error}`;
+      const result = await googleSheetsRequest(
+        "appendValues",
+        { spreadsheetId, range, values: parsed.values },
+        tenantId,
+      );
+      return result.ok ? result.data : result.error;
     }
 
     case "lead_capture_submit": {

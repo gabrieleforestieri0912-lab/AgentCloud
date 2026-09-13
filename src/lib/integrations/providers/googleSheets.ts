@@ -4,8 +4,9 @@ import type { IntegrationProvider } from "../types";
  * Google Sheets — reuses existing Google Cloud OAuth client (Phase 0).
  * Env: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (same as Gmail/Calendar).
  * No new client; just adds spreadsheets scope to consent. Redirect is
- * https://<domain>/api/integrations/google_sheets/callback (dedicated
- * callback for the integrations layer, separate from /api/auth/google/callback).
+ * https://<domain>/api/integrations/google_sheets/callback (callback dedicato
+ * del layer integrazioni, separato da /api/auth/google/callback) — va
+ * registrato tra gli Authorized redirect URIs dello stesso OAuth client.
  * Mirrors src/lib/google/oauth.ts buildGoogleConsentUrl but scoped to sheets.
  */
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
@@ -51,13 +52,29 @@ export const googleSheetsProvider: IntegrationProvider = {
     const expiresIn = json.expires_in as number | undefined;
     const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
     const scope = (json.scope as string | undefined) ?? SHEETS_SCOPE;
+
+    // Email dell'account collegato: serve solo per l'etichetta nella UI
+    // (IntegrationsGrid) — un errore qui non deve far fallire la connessione.
+    let email: string | null = null;
+    try {
+      const infoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (infoRes.ok) {
+        const info = (await infoRes.json()) as { email?: string };
+        email = info.email ?? null;
+      }
+    } catch {
+      // ignora — i token sono ciò che conta
+    }
+
     return {
       accessToken,
       refreshToken,
       expiresAt,
       scope,
-      externalAccountId: null,
-      metadata: { token_type: json.token_type, scope },
+      externalAccountId: email,
+      metadata: { token_type: json.token_type, scope, google_email: email },
       raw: json,
     };
   },

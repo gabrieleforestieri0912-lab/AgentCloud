@@ -75,8 +75,17 @@ Guidelines:
       "write_file",
       "run_python",
       "scrape_page",
+      "sheets_read_range",
+      "sheets_update_range",
+      "sheets_append_row",
     ],
-    defaultTools: ["read_file", "write_file"],
+    defaultTools: [
+      "read_file",
+      "write_file",
+      "sheets_read_range",
+      "sheets_update_range",
+      "sheets_append_row",
+    ],
     optionalTools: ["web_search", "scrape_page", "run_python"],
     systemPrompt: `You are a world-class business operations manager and strategic advisor.
 

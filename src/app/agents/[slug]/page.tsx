@@ -21,8 +21,10 @@ import AgentIcon from "@/components/AgentIcon";
 import AgentCard from "@/components/AgentCard";
 import AddToCartButton from "@/components/AddToCartButton";
 import AgentIntegrationsCard from "@/components/AgentIntegrationsCard";
+import { OwnedProvider } from "@/components/OwnedProvider";
 import { getSessionUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
 import {
   AGENTS,
   AVAILABLE_AGENTS,
@@ -173,10 +175,15 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
     }
   }
 
+  // Stessa fonte di /api/user/owned (include il bypass beta di admin e beta
+  // tester) seminata nelle card client: nessuna CTA di acquisto che lampeggia.
+  const ownedSlugs = sessionUser?.id ? await getOwnedAgentSlugs(sessionUser.id) : [];
+
   const useCases = getUseCases(slug, agent.tasks, locale);
   const faqs = getFAQs(slug, agent.shortName, locale);
 
   return (
+    <OwnedProvider initialOwned={ownedSlugs}>
     <main className="min-h-screen bg-neutral-950">
       <Navbar marketplaceAgents={marketplaceAgents} />
 
@@ -548,5 +555,6 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
 
       <Footer />
     </main>
+    </OwnedProvider>
   );
 }

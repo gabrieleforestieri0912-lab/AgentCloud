@@ -19,6 +19,9 @@ import {
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
+import { getSessionUser } from "@/lib/supabase/server";
+import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
+import { OwnedProvider } from "@/components/OwnedProvider";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -37,6 +40,11 @@ export const dynamic = "force-dynamic";
 export default async function AgentsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
+  // Ownership risolta qui (stessa fonte di /api/user/owned, incluso il bypass
+  // beta di admin/beta tester) e passata alle card: così il primo paint mostra
+  // già "Apri in chat" invece di far lampeggiare la CTA di acquisto.
+  const sessionUser = await getSessionUser();
+  const initialOwned = sessionUser?.id ? await getOwnedAgentSlugs(sessionUser.id) : [];
   // Tutti — inclusi i possessori del codice — vedono il marketplace diviso
   // come lo vede un cliente reale: una griglia "Disponibili ora" più una
   // sezione "In arrivo", così gli admin capiscono a colpo d'occhio quali
@@ -106,15 +114,17 @@ export default async function AgentsPage() {
           </div>
 
           {/* Griglia marketplace con filtri per categoria */}
-          <MarketplaceGrid
-            availableAgents={available}
-            comingSoonAgents={comingSoon}
-            availableCount={available.length}
-            comingSoonCount={comingSoon.length}
-            availableLabel={dict.agentsPage.availableNow}
-            comingSoonLabel={dict.agentsPage.comingSoon}
-            comingSoonAccessible={true}
-          />
+          <OwnedProvider initialOwned={initialOwned}>
+            <MarketplaceGrid
+              availableAgents={available}
+              comingSoonAgents={comingSoon}
+              availableCount={available.length}
+              comingSoonCount={comingSoon.length}
+              availableLabel={dict.agentsPage.availableNow}
+              comingSoonLabel={dict.agentsPage.comingSoon}
+              comingSoonAccessible={true}
+            />
+          </OwnedProvider>
 
           {/* Sezione Bundle — offerte trimestrali e annuali */}
           <div className="mt-14 sm:mt-16">

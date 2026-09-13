@@ -41,11 +41,12 @@ export async function GET(
   if (!adapter) return NextResponse.json({ error: "Provider not configured" }, { status: 500 });
 
   const { state, cookieValue } = buildState(tenantId, provider);
-  // Google Sheets re-uses existing Google OAuth redirect (già whitelistato in Google Cloud Console)
-  const redirectUri =
-    provider === "google_sheets"
-      ? (process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXT_PUBLIC_URL ?? new URL(req.url).origin}/api/auth/google/callback`)
-      : getRedirectUri(req.url, provider as never);
+  // Ogni provider usa il proprio callback /api/integrations/<provider>/callback: lo
+  // state firmato viene salvato nel cookie ac_integrations_state e verificato dal
+  // callback dello stesso provider. Per google_sheets questo significa che in Google
+  // Cloud Console va whitelistata https://<host>/api/integrations/google_sheets/callback
+  // (vedi docs/integrations-setup.md §5).
+  const redirectUri = getRedirectUri(req.url, provider as never);
 
   let authUrl: string;
   try {

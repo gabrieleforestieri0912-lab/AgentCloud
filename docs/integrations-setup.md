@@ -142,7 +142,7 @@ HUBSPOT_CLIENT_SECRET=...
    * Keep existing `gmail.modify` + `calendar` + `spreadsheets` (ora `GOOGLE_SCOPES` include tutti e tre).
 2. [ ] **Credentials → OAuth 2.0 Client IDs → [existing Web application]** → **Authorized redirect URIs** → aggiungi **entrambi**:
    * `https://www.agentcloud.agency/api/auth/google/callback` (Gmail/Calendar legacy)
-   * `https://www.agentcloud.agency/api/integrations/google_sheets/callback` (generic, necessario per admin `__tenant__` e per `supabase/functions/google-sheets-proxy`) + le varianti `http://localhost:3000/...` per dev. Sheets può riusare il primo se già whitelistato, ma aggiungere il secondo evita `redirect_uri_mismatch` per il flow generico.
+   * `https://www.agentcloud.agency/api/integrations/google_sheets/callback` — **obbligatorio**: il flow generico (`/api/integrations/google_sheets/authorize` → callback) invia e poi riverifica questo redirect, quindi senza di esso si ottiene `redirect_uri_mismatch`. Aggiungi anche le varianti `http://localhost:3000/...` per dev.
 3. [ ] **No new env vars** — reuse:
    ```env
    GOOGLE_CLIENT_ID=...          # already in .env.local

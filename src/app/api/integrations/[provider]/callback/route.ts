@@ -72,10 +72,10 @@ export async function GET(
   const adapter = getProvider(provider);
   if (!adapter) return fail("provider_not_configured");
 
-  const redirectUri =
-    provider === "google_sheets"
-      ? (process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXT_PUBLIC_URL ?? new URL(req.url).origin}/api/auth/google/callback`)
-      : getRedirectUri(req.url, provider as never);
+  // Deve essere identico a quello usato in authorize: il token exchange con Google
+  // fallisce se redirect_uri non coincide carattere per carattere con quello del passo
+  // di autorizzazione (per google_sheets: /api/integrations/google_sheets/callback).
+  const redirectUri = getRedirectUri(req.url, provider as never);
 
   let tokens;
   try {

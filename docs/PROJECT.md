@@ -288,11 +288,11 @@ revocano su 401 (APP_UNINSTALLED / shop/redact). La tabella
 Gmail/Calendar/Sheets (stesso pattern Shopify: token AES-256-GCM in `google_connections` per Gmail/Calendar e `tenant_integrations` `google_sheets` per Sheets, RLS `auth.uid()::text = tenant_id` con `__tenant__` per admin via code). Codice `src/lib/google/*` + `src/lib/integrations/providers/googleSheets.ts`:
 
 1. **Google Cloud Console** → OAuth consent screen (External), abilita **Gmail API**, **Calendar API**, **Sheets API**.
-2. **Credentials → OAuth client ID** (Web): **Authorized redirect URIs** `https://<host>/api/auth/google/callback` (Gmail/Calendar) e `https://<host>/api/integrations/google_sheets/callback` (Sheets, ma per admin riusa il primo già whitelistato).
+2. **Credentials → OAuth client ID** (Web): **Authorized redirect URIs** `https://<host>/api/auth/google/callback` (Gmail/Calendar) e `https://<host>/api/integrations/google_sheets/callback` (Sheets — **obbligatorio**: il flusso generico usa e verifica il proprio callback, senza questa URI si ottiene `redirect_uri_mismatch`).
 3. Scope: `gmail.modify`, `calendar`, `spreadsheets` (override `GOOGLE_SCOPES` = `gmail.modify calendar spreadsheets`).
 4. Env: `GOOGLE_CLIENT_ID/SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, `INTEGRATIONS_TOKEN_ENCRYPTION_KEY`.
 
-Flusso: `/api/auth/google/connect` (Gmail/Calendar) o `/api/integrations/google_sheets/authorize` (Sheets, per admin usa `__tenant__`) → callback → upsert cifrato. Refresh 5m (`lib/google/token.ts` e `supabase/functions/google-sheets-proxy`).
+Flusso: `/api/auth/google/connect` (Gmail/Calendar) o `/api/integrations/google_sheets/authorize` (Sheets) → callback → upsert cifrato. Refresh 5m (`lib/google/token.ts` per Gmail/Calendar, `lib/google/sheets.ts` per Sheets — gemello su `tenant_integrations`; `supabase/functions/google-sheets-proxy` resta il proxy Edge). I tool agente di Sheets sono `sheets_read_range`, `sheets_update_range`, `sheets_append_row`.
 
 ## Generic Integrations (Stripe/Notion/Slack/HubSpot/Google Sheets) — multi-tenant
 
