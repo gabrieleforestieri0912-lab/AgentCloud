@@ -1,0 +1,14 @@
+# File esclusi dal caricamento del deployment (sintassi come .gitignore).
+#
+# `brand/` contiene i sorgenti grafici del marchio, non usati dal build: in
+# particolare `brand/agentcloud.mp4` pesa 144 MB e supera il limite di Vercel di
+# 100 MB per singolo file, facendo fallire il deploy con
+# "Error: File size limit exceeded (100 MB)". I loghi davvero serviti dall'app
+# vivono in `public/`, quindi il build funziona senza questa cartella.
+brand/
+
+# Le variabili d'ambiente arrivano dalla dashboard/CLI di Vercel: il file .env
+# locale può contenere chiavi di sviluppo e non deve entrare nel deployment.
+.env
+.env.*
+!.env.example

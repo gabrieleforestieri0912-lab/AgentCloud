@@ -18,7 +18,7 @@ import {
  * GET /api/auth/google/connect[?returnTo=<path>]
  *   1. Richiede una sessione AgentCloud autenticata (i token sono salvati per
  *      utente). Il login fa parte del flusso: gli utenti non loggati vengono
- *      mandati a /login?intent=google&next=… e qui riprendono da soli dopo.
+ *      mandati a /login?intent=google&next=... e qui riprendono da soli dopo.
  *   2. Genera un nonce casuale, lo incorpora (con userId) nello `state` OAuth
  *      (JSON base64url) e salva il nonce in un cookie httpOnly a breve durata
  *      per la verifica al callback (anti-CSRF).

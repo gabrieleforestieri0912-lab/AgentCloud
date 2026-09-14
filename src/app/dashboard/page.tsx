@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
+import { accountIdentityFromUser } from "@/lib/account-identity";
 import {
   Activity,
   AlertCircle,
@@ -239,7 +240,7 @@ export default async function DashboardPage({
   });
 
   return (
-    <DashboardShell email={email}>
+    <DashboardShell email={email} account={accountIdentityFromUser(user)}>
       <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">

@@ -13,7 +13,7 @@ import { createWordEmitter } from "@/lib/stream";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin-access";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import {
   buildActionNotification,
   createAgentNotification,
@@ -94,11 +94,12 @@ export async function POST(req: Request) {
   const sessionUser = await getSessionUser();
   const userId = sessionUser?.id ?? "anonymous";
 
-  // Stato admin: email di sessione in whitelist OPPURE validi possessori del
-  // codice di accesso (il codice è l'invito: sblocca ogni agente gratis, anche
-  // quando il visitatore è loggato con un account non-admin). Non deriva mai
-  // dal body, quindi non può essere falsificato dalla waitlist pubblica.
-  const isAdmin = isAdminEmail(sessionUser?.email) || true;
+  // Stato admin: email di sessione in whitelist OPPURE `profiles.role = 'admin'`.
+  // Deriva sempre dalla sessione verificata dal server e mai dal body, quindi
+  // non può essere falsificato dalla waitlist pubblica. (Questo controllo
+  // terminava con `|| true`, quindi era sempre vero: ogni chiamante, anche
+  // anonimo, saltava i limiti di utilizzo e di fatturazione.)
+  const isAdmin = await resolveIsAdmin(sessionUser);
 
   // BETA BYPASS: beta_tester/internal_qa get unlimited tokens and iterations
   let isBeta = false;

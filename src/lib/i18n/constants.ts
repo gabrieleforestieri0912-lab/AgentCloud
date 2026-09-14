@@ -28,7 +28,7 @@ export function isLocale(value: unknown): value is Locale {
 }
 
 /**
- * Mappa paese → locale per il rilevamento automatico geografico.
+ * Mappa paese -> locale per il rilevamento automatico geografico.
  * Usa gli header Vercel (`x-vercel-ip-country`), Cloudflare (`cf-ipcountry`)
  * e simili. Solo i paesi elencati vengono mappati a una lingua specifica;
  * tutti gli altri ripiegano su Accept-Language / default.

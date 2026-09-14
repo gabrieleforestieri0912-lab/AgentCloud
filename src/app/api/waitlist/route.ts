@@ -6,6 +6,7 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { MAX_SPOTS, getRemainingSpots, provisionAuthUser } from "@/lib/waitlist";
+import { hasLaunched } from "@/lib/waitlist-constants";
 import { logAudit } from "@/lib/audit";
 import {
   validateAndSanitizeEmail,
@@ -181,6 +182,25 @@ export async function POST(request: Request) {
           { status: 500 },
         );
       }
+    }
+
+    // -------------------------------------------------------------------------
+    // 3-bis. Lancio avvenuto: la waitlist è chiusa
+    // Le iscrizioni via email non vengono più accettate (410 Gone) e nessun
+    // utente Auth viene creato. Il ramo con il codice di accesso sopra resta
+    // attivo per admin/beta; la pagina /waitlist è già rediretta dal proxy,
+    // quindi questa guardia protegge solo le chiamate dirette all'API.
+    // -------------------------------------------------------------------------
+    if (hasLaunched()) {
+      logAudit("waitlist_closed", { ip: clientIp });
+      return NextResponse.json(
+        {
+          error:
+            "La waitlist è chiusa: la piattaforma è live, accedi o crea un account.",
+          closed: true,
+        },
+        { status: 410 },
+      );
     }
 
     const email = validation.email;

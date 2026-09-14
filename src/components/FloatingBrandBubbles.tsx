@@ -45,7 +45,7 @@ export default function FloatingBrandBubbles({
             style={{ top: b.top, left: b.left, animationDelay: b.delay }}
           >
             {/* BrandLogo renderizza il marchio ufficiale multicolore quando
-                esiste (Google, WhatsApp, Instagram, Gmail, …) e ripiega sul
+                esiste (Google, WhatsApp, Instagram, Gmail, ...) e ripiega sul
                 glifo ufficiale monocromatico altrimenti — come nell'hero. */}
             <BrandLogo slug={b.brand} size={iconSize} />
           </div>

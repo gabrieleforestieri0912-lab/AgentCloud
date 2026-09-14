@@ -73,7 +73,7 @@ src/
 | `/` | Homepage | Pubblico |
 | `/agents`, `/agents/[slug]`, `/agents/[slug]/deploy` | Marketplace / dettaglio / deploy | Pubblico |
 | `/a/[slug]` | Chat pubblica agente (embed) | Pubblico |
-| `/waitlist`, `/demo`, `/contact`, `/privacy`, `/terms`, `/login`, `/signup` | Landing/legal/auth | Pubblico |
+| `/waitlist`, `/demo`, `/contact`, `/about`, `/integrations`, `/privacy`, `/terms`, `/refunds`, `/login`, `/signup` | Landing/legal/auth | Pubblico |
 | `/chat` | Chat generica (con indicatore app collegata) | Protetto (Supabase) |
 | `/agent/[id]` | Chat agente | Protetto (Supabase) |
 | `/dashboard` | Dashboard | Protetto |
@@ -197,6 +197,8 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | billing/usage/rate limits + `tenant_integrations` |
 | `ANTHROPIC_API_KEY` | ✅ | Claude |
 | `RESEND_API_KEY` | ✅ | email |
+| `QUOTE_FROM_EMAIL` | – | mittente dei preventivi degli agenti (default `preventivi@agentcloud.agency`) |
+| `FINANCE_FROM_EMAIL` | – | mittente dei solleciti di pagamento (default `finance@agentcloud.agency`) |
 | `STRIPE_SECRET_KEY` | ✅ | `sk_live_…` |
 | `STRIPE_WEBHOOK_SECRET` | ✅ | `whsec_…` |
 | `STRIPE_OVERAGE_PRICE_ID` | ⚠️ | senza → overage disabilitato |
@@ -204,8 +206,9 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | – (se PayPal attivo) | `BAA_...`/`EJk...` live, `BAAR...` sandbox, REST `PAYPAL_MODE=sandbox|live` |
 | `PAYPAL_WEBHOOK_ID` | – | `53242420YL...` / `WH-...` |
 | `ADMIN_API_TOKEN` | ✅ | admin API |
+| `ADMIN_EMAILS` | ✅ | email admin separate da virgola: chi ci compare riceve `profiles.role = 'admin'` al primo accesso. Vedi `src/lib/admin-access.ts` e `supabase/schema-admin-role.sql` |
 | `ACCESS_CODE` | – | waitlist (sblocca tutti gli agenti) |
-| `DEMO_EMAIL_TO` | – | default `info@agentcloud.io` |
+| `DEMO_EMAIL_TO` | – | default `support@agentcloud.agency` |
 
 ### Stripe Payment Links & Billing
 
@@ -232,6 +235,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 
 | Variabile | Default | Note |
 |-----------|---------|------|
+| `GOOGLE_SITE_VERIFICATION` | – | token **tag HTML** di Google Search Console: emesso come `<meta name="google-site-verification">` in `layout.tsx` (verifica della proprietà per la revisione OAuth) |
 | `AGENT_LLM_PROVIDER` | `anthropic` | backend del runtime agenti (unico supportato: Anthropic). Default: Anthropic se `ANTHROPIC_API_KEY` è configurata |
 | `AGENT_LLM_MODEL` | `claude-sonnet-5` | modello usato dal backend Claude quando non specificato per-request |
 | `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata LLM (Claude) |
@@ -306,6 +310,7 @@ Stripe Checkout dinamico (`priceCents`) con **Klarna** e **Amazon Pay** (`paymen
 
 ## Account unificato + Carrello + Bundle
 
+- **Pagine pubbliche senza login**: `PUBLIC_PATHS` (`src/lib/public-paths.ts`) è applicata dal proxy **prima** del controllo di sessione — home, marketing (`/about`, `/integrations`, `/bundles`), marketplace e legali (`/privacy`, `/terms`, `/refunds`) rispondono ai visitatori anonimi (requisito della verifica OAuth Google: la home non può stare dietro un redirect a `/login`); solo le pagine protette rimandano a `/login` (o `/waitlist` prima del lancio).
 - **Account**: `/account` unifica profilo + piano/connessioni + impostazioni (lingua/notifiche/aspetto/privacy/dati) — `/settings` redirect a `/account`, nav `DashboardShell` aggiornata.
 - **Carrello**: `CartProvider` con `localStorage` + `tenant_integrations` merge (bundle `bundle:slug` + `bundle_period_*`), badge rosso `bg-red-500` immediato, `Svuota carrello` pulisce anche `bundle_period_*`, checkout multi-agente `cart/checkout` con Klarna/Amazon Pay.
 - **Bundle**: pricing coerente `calcPricing` con sconti `monthly 12% / quarterly 22% / yearly 35%` vs somma singoli (`€9,99/€14,99`), `BundleCard` `min-h-[100px] mode wait` senza overlap `AnimatedSavingsCounter`.

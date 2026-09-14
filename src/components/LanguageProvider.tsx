@@ -33,11 +33,11 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
  * state loss:
  *
  * 1. The React context updates immediately, so every client component
- *    (navbars, hero, chat, forms…) re-renders in the new language at once.
+ *    (navbars, hero, chat, forms...) re-renders in the new language at once.
  * 2. The choice is persisted in a cookie.
  * 3. A debounced `router.refresh()` re-fetches the server components of the
  *    current route in the background, so content rendered on the server
- *    (page headings, legal pages, agent pages…) catches up in the new
+ *    (page headings, legal pages, agent pages...) catches up in the new
  *    language. It is a soft in-place refresh — not a full page reload — and
  *    rapid toggling is coalesced into a single refresh.
  */

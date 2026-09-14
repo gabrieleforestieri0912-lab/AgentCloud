@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/supabase/server";
+import { accountIdentityFromUser } from "@/lib/account-identity";
 import { createAdminClient } from "@/lib/supabase/admin";
 import DashboardShell from "@/components/DashboardShell";
 import { getLocale } from "@/lib/i18n/locale";
@@ -42,7 +43,7 @@ export default async function SubscriptionsPage() {
   };
 
   return (
-    <DashboardShell email={email}>
+    <DashboardShell email={email} account={accountIdentityFromUser(user)}>
       <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-6">

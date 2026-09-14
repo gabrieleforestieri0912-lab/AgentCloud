@@ -4,6 +4,7 @@ import ChatInterface from "@/components/ChatInterface";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getSessionUser } from "@/lib/supabase/server";
+import { accountIdentityFromUser } from "@/lib/account-identity";
 
 import { pageSeo } from "@/lib/seo";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
@@ -77,6 +78,7 @@ export default async function ChatPage(props: {
   return (
     <main className="min-h-screen bg-neutral-950">
       <ChatInterface
+        account={accountIdentityFromUser(user)}
         initialQuery={initialQuery}
         agentId={agentParam}
         agentLabel={agentLabel}

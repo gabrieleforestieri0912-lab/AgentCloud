@@ -13,6 +13,7 @@ import {
   SERVICES_LAUNCH_CONFIG,
   SHOPIFY_LAUNCH_CONFIG,
 } from "@/lib/agents/feature-flags";
+import { getBundleBySlug } from "@/lib/bundles";
 
 export type Vertical = "shopify" | "services";
 
@@ -82,15 +83,42 @@ export type CheckoutResolution = {
  * - Checkout basati su piano: tutti gli agenti del verticale, con l'allowance
  *   del piano.
  */
+function expandBundleIds(ids: string[]): string[] {
+  const out: string[] = [];
+  for (const id of ids) {
+    if (id.startsWith("bundle:")) {
+      const bundleSlug = id.slice(7).split(":")[0];
+      const bundle = getBundleBySlug(bundleSlug);
+      if (bundle) out.push(...bundle.agentSlugs);
+      else out.push(id);
+    } else {
+      out.push(id);
+    }
+  }
+  // dedup
+  return [...new Set(out)];
+}
+
 export function resolveCheckoutAgents(info: CheckoutMetadata): CheckoutResolution {
   if (info.agentIds && info.agentIds.length > 0) {
     return {
-      agentIds: info.agentIds,
+      agentIds: expandBundleIds(info.agentIds),
       planId: null,
       vertical: null,
     };
   }
   if (info.agentId) {
+    if (info.agentId.startsWith("bundle:")) {
+      const bundleSlug = info.agentId.slice(7).split(":")[0];
+      const bundle = getBundleBySlug(bundleSlug);
+      if (bundle) {
+        return {
+          agentIds: [...new Set(bundle.agentSlugs)],
+          planId: null,
+          vertical: null,
+        };
+      }
+    }
     return {
       agentIds: [info.agentId],
       planId: null,

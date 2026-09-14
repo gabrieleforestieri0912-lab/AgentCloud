@@ -90,7 +90,7 @@ export default function ShopifyConnectionPrompt() {
   }
 
   const connectExisting = () => {
-    // Accetta sia link completi al negozio (https://…/admin) sia domini nudi.
+    // Accetta sia link completi al negozio (https://.../admin) sia domini nudi.
     const s = normalizeShopInput(shop) ?? shop.trim().toLowerCase();
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);

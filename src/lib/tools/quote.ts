@@ -9,6 +9,7 @@
 
 import { getResend } from "@/lib/resend";
 import { logAudit } from "@/lib/audit";
+import { QUOTE_FROM_EMAIL } from "@/lib/email-config";
 
 export type QuoteItem = {
   description: string;
@@ -189,7 +190,7 @@ export async function sendQuoteByEmail(
 
   try {
     const resend = getResend();
-    const fromAddress = process.env.QUOTE_FROM_EMAIL || "preventivi@agentcloud.io";
+    const fromAddress = QUOTE_FROM_EMAIL;
     const res = await resend.emails.send({
       from: `AgentCloud Quotes <${fromAddress}>`,
       to: quote.clientEmail,

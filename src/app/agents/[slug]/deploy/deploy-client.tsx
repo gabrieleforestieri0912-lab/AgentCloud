@@ -176,7 +176,7 @@ export default function DeployAgentClient({
    * Cosa succede quando l'utente clicca "Connetti" su uno strumento:
    *  - Shopify → apre inline il form per il dominio del negozio, poi OAuth
    *    (/api/shopify/install?shop=<dominio>)
-   *  - Strumenti Google (Gmail, Google Calendar, …) → consenso OAuth Google
+   *  - Strumenti Google (Gmail, Google Calendar, ...) → consenso OAuth Google
    *    (/api/auth/google/connect)
    *  - Qualsiasi altro strumento → apre la chat live dell'agente, dove si può
    *    provare l'agente e usare gli strumenti disponibili.
@@ -216,7 +216,7 @@ export default function DeployAgentClient({
   };
 
   const connectShopify = (domain: string) => {
-    // Accetta sia link completi al negozio (https://…/admin) sia domini nudi.
+    // Accetta sia link completi al negozio (https://.../admin) sia domini nudi.
     const s = normalizeShopInput(domain) ?? domain.trim().toLowerCase();
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);

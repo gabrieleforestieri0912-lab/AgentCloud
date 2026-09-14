@@ -4,6 +4,7 @@
  */
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAgentBySlug } from "@/lib/agents";
+import { getBundleBySlug, getBundleAgents, formatPrice, type BundlePeriod } from "@/lib/bundles";
 
 export type CartItemRow = {
   id: string;
@@ -31,9 +32,68 @@ export type EnrichedCartItem = CartItemRow & {
   icon: string;
   brand?: string;
   accent: string;
+  type: "agent" | "bundle";
+  bundleSlug?: string;
+  period?: BundlePeriod;
+  agentSlugs?: string[];
 };
 
+export function isBundleSlug(slug: string): boolean {
+  return slug.startsWith("bundle:");
+}
+
+export function parseBundleSlug(slug: string): { bundleSlug: string; period: BundlePeriod } | null {
+  if (!isBundleSlug(slug)) return null;
+  const rest = slug.slice(7); // remove "bundle:"
+  const parts = rest.split(":");
+  const bundleSlug = parts[0];
+  const period = (parts[1] as BundlePeriod) || "monthly";
+  if (!["monthly", "quarterly", "yearly"].includes(period)) return { bundleSlug, period: "monthly" };
+  return { bundleSlug, period: period as BundlePeriod };
+}
+
+export function bundleSlugForDb(bundleSlug: string, period: BundlePeriod): string {
+  return `bundle:${bundleSlug}:${period}`;
+}
+
 export function enrichCartItem(row: CartItemRow): EnrichedCartItem | null {
+  // Bundle branch
+  if (isBundleSlug(row.agent_slug)) {
+    const parsed = parseBundleSlug(row.agent_slug);
+    if (!parsed) return null;
+    const bundle = getBundleBySlug(parsed.bundleSlug);
+    if (!bundle) return null;
+    const period = parsed.period;
+    let priceCents: number;
+    let recurringLabel: string;
+    if (period === "quarterly") {
+      priceCents = bundle.pricing.quarterlyTotal;
+      recurringLabel = "quarterly";
+    } else if (period === "yearly") {
+      priceCents = bundle.pricing.yearlyTotal;
+      recurringLabel = "yearly";
+    } else {
+      priceCents = bundle.pricing.monthly;
+      recurringLabel = "monthly";
+    }
+    const agents = getBundleAgents(bundle);
+    return {
+      ...row,
+      name: bundle.name,
+      shortName: bundle.name,
+      priceCents,
+      price: formatPrice(period === "monthly" ? bundle.pricing.monthly : period === "quarterly" ? bundle.pricing.quarterly : bundle.pricing.yearly) + "/mo",
+      description: bundle.description,
+      icon: agents[0]?.icon || bundle.icon || "bot",
+      brand: agents[0]?.brand,
+      accent: agents[0]?.accent || "bg-brand-500",
+      type: "bundle",
+      bundleSlug: parsed.bundleSlug,
+      period,
+      agentSlugs: bundle.agentSlugs,
+    };
+  }
+  // Agent branch
   const agent = getAgentBySlug(row.agent_slug);
   if (!agent) return null;
   return {
@@ -46,6 +106,7 @@ export function enrichCartItem(row: CartItemRow): EnrichedCartItem | null {
     icon: agent.icon,
     brand: agent.brand,
     accent: agent.accent,
+    type: "agent",
   };
 }
 
@@ -94,6 +155,45 @@ export async function getCartWithItems(userId: string): Promise<CartWithItems | 
 }
 
 export async function addToCart(userId: string, agentSlug: string) {
+  const isBundle = isBundleSlug(agentSlug);
+  if (isBundle) {
+    const parsed = parseBundleSlug(agentSlug);
+    if (!parsed) throw new Error("Invalid bundle slug");
+    const bundle = getBundleBySlug(parsed.bundleSlug);
+    if (!bundle) throw new Error("Bundle not found");
+    const normalized = bundleSlugForDb(parsed.bundleSlug, parsed.period);
+    const cart = await getOrCreateActiveCart(userId);
+    const db = createAdminClient()!;
+    // Se lo stesso bundle esiste già con periodo diverso, consideralo già in carrello (evita duplicati)
+    const { data: existingBundle } = await db
+      .from("cart_items")
+      .select("*")
+      .eq("cart_id", cart.id)
+      .like("agent_slug", `bundle:${parsed.bundleSlug}:%`);
+    if (existingBundle && existingBundle.length > 0) {
+      // Se esiste già con stesso periodo, ritorna; se periodo diverso, aggiorna
+      const exact = existingBundle.find((r) => r.agent_slug === normalized);
+      if (exact) return exact as CartItemRow;
+      // periodo diverso: aggiorna la riga esistente
+      const { data: updated, error: updErr } = await db
+        .from("cart_items")
+        .update({ agent_slug: normalized })
+        .eq("id", existingBundle[0].id)
+        .select("*")
+        .single();
+      if (updErr) throw updErr;
+      await db.from("carts").update({ updated_at: new Date().toISOString() }).eq("id", cart.id);
+      return updated as CartItemRow;
+    }
+    const { data: inserted, error } = await db
+      .from("cart_items")
+      .insert({ cart_id: cart.id, agent_slug: normalized, quantity: 1 })
+      .select("*")
+      .single();
+    if (error) throw error;
+    await db.from("carts").update({ updated_at: new Date().toISOString() }).eq("id", cart.id);
+    return inserted as CartItemRow;
+  }
   const agent = getAgentBySlug(agentSlug);
   if (!agent) throw new Error("Agent not found");
   const cart = await getOrCreateActiveCart(userId);
@@ -131,7 +231,24 @@ export async function removeFromCart(userId: string, agentSlug: string) {
   const cart = await getCartWithItems(userId);
   if (!cart) return;
   const db = createAdminClient()!;
-  await db.from("cart_items").delete().eq("cart_id", cart.id).eq("agent_slug", agentSlug);
+  if (isBundleSlug(agentSlug)) {
+    const parsed = parseBundleSlug(agentSlug);
+    if (parsed) {
+      // Rimuove qualsiasi periodo dello stesso bundle
+      await db
+        .from("cart_items")
+        .delete()
+        .eq("cart_id", cart.id)
+        .like("agent_slug", `bundle:${parsed.bundleSlug}:%`);
+      // Fallback per vecchi record senza periodo (bundle:slug)
+      await db.from("cart_items").delete().eq("cart_id", cart.id).eq("agent_slug", `bundle:${parsed.bundleSlug}`);
+      await db.from("cart_items").delete().eq("cart_id", cart.id).eq("agent_slug", agentSlug);
+    } else {
+      await db.from("cart_items").delete().eq("cart_id", cart.id).eq("agent_slug", agentSlug);
+    }
+  } else {
+    await db.from("cart_items").delete().eq("cart_id", cart.id).eq("agent_slug", agentSlug);
+  }
   await db.from("carts").update({ updated_at: new Date().toISOString() }).eq("id", cart.id);
 }
 

@@ -162,7 +162,7 @@ function formatValues(range: string, values: unknown): string {
     return `${index + 1}. ${cells}`;
   });
   const truncated =
-    rows.length > shown.length ? `\n… ${rows.length - shown.length} more rows not shown.` : "";
+    rows.length > shown.length ? `\n... ${rows.length - shown.length} more rows not shown.` : "";
   return `${range} (${shown.length} rows):\n${lines.join("\n")}${truncated}`;
 }
 

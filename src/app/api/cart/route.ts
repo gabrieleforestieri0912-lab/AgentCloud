@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
 import { getAgentBySlug } from "@/lib/agents";
+import { getBundleBySlug } from "@/lib/bundles";
 import {
   addToCart,
   getEnrichedCart,
   removeFromCart,
   clearCart,
+  isBundleSlug,
+  parseBundleSlug,
 } from "@/lib/cart";
 
 /**
@@ -26,10 +29,24 @@ export async function POST(req: Request) {
   const effectiveUserId = user?.id ?? null;
   if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
-  const agentSlug = body.agentSlug as string | undefined;
+  let agentSlug = body.agentSlug as string | undefined;
+  const period = body.period as string | undefined;
   if (!agentSlug) return NextResponse.json({ error: "agentSlug required" }, { status: 400 });
-  const agent = getAgentBySlug(agentSlug);
-  if (!agent) return NextResponse.json({ error: "agent not found" }, { status: 404 });
+  // Bundle branch: agentSlug like "bundle:ecommerce-starter" + period
+  if (isBundleSlug(agentSlug)) {
+    const parsed = parseBundleSlug(agentSlug);
+    // Support legacy call { agentSlug: "bundle:slug", period: "quarterly" }
+    if (parsed && !agentSlug.includes(":", 7 + parsed.bundleSlug.length) && period) {
+      agentSlug = `bundle:${parsed.bundleSlug}:${period}`;
+    }
+    const p = parseBundleSlug(agentSlug);
+    if (!p) return NextResponse.json({ error: "invalid bundle slug" }, { status: 400 });
+    const bundle = getBundleBySlug(p.bundleSlug);
+    if (!bundle) return NextResponse.json({ error: "bundle not found" }, { status: 404 });
+  } else {
+    const agent = getAgentBySlug(agentSlug);
+    if (!agent) return NextResponse.json({ error: "agent not found" }, { status: 404 });
+  }
   try {
     await addToCart(effectiveUserId, agentSlug);
   } catch (e) {

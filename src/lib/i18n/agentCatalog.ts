@@ -29,7 +29,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     description:
       "Metti in ordine la casella, non perdere mai un impegno importante e ricevi un riepilogo quotidiano.",
     longDescription:
-      "L'agente Email Manager porta ordine nella tua casella e tiene sotto controllo ogni impegno. Smista i messaggi in arrivo, etichetta e archivia ciò che conta, scrive risposte chiare da approvare e sorveglia scadenze, riunioni e follow-up nascosti nelle conversazioni — trasformandoli in impegni tracciati con promemoria. Riepiloga la giornata in un breve digest, segnala ciò che richiede una decisione e segue ogni follow-up fino a conclusione. Collegato a Gmail, Google Calendar, Outlook e Slack, ti fa risparmiare ore di gestione email ogni settimana: rispondi a ciò che conta e nessun appuntamento importante ti sfugge.",
+      "L'agente Email Manager porta ordine nella tua casella e tiene sotto controllo ogni impegno. Smista i messaggi in arrivo, etichetta e archivia ciò che conta, scrive risposte chiare da approvare e sorveglia scadenze, riunioni e follow-up nascosti nelle conversazioni - trasformandoli in impegni tracciati con promemoria. Riepiloga la giornata in un breve digest, segnala ciò che richiede una decisione e segue ogni follow-up fino a conclusione. Collegato a Gmail, Google Calendar, Outlook e Slack, ti fa risparmiare ore di gestione email ogni settimana: rispondi a ciò che conta e nessun appuntamento importante ti sfugge.",
     industry: "Founder, dirigenti e professionisti",
     tasks: [
       "Smistamento casella",
@@ -52,7 +52,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     description:
       "Un COO in chat: report, pianificazione e supporto alle decisioni.",
     longDescription:
-      "L'agente Business Manager funge da capo di gabinetto per imprenditori e founder. Legge i tuoi dati operativi, redige report dirigenziali, coordina il lavoro tra team e supporta pianificazione e decisioni. Collegato a Google Calendar, Gmail, Sheets e Slack, trasforma fogli sparsi e aggiornamenti di stato in un quadro chiaro del business — così i leader hanno numeri e narrativa per decidere più in fretta e far crescere l'azienda senza lasciare nulla per strada.",
+      "L'agente Business Manager funge da capo di gabinetto per imprenditori e founder. Legge i tuoi dati operativi, redige report dirigenziali, coordina il lavoro tra team e supporta pianificazione e decisioni. Collegato a Google Calendar, Gmail, Sheets e Slack, trasforma fogli sparsi e aggiornamenti di stato in un quadro chiaro del business - così i leader hanno numeri e narrativa per decidere più in fretta e far crescere l'azienda senza lasciare nulla per strada.",
     industry: "PMI e founder",
     tasks: [
       "Report dirigenziali",
@@ -75,7 +75,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     description:
       "Scrivi articoli strutturati e orientati alle keyword che si posizionano davvero.",
     longDescription:
-      "L'agente contenuti SEO ricerca gli argomenti, analizza per cosa si posizionano i competitor e produce articoli completi e ottimizzati per le keyword. Pianifica l'architettura H1/H2, inserisce le keyword target in modo naturale e aggiunge automaticamente meta description e link interni. Collegato ad Ahrefs, Google Search Console, WordPress e Notion, aiuta il team contenuti a pubblicare di più, posizionarsi prima e convertire meglio — con ogni pezzo mirato a una reale intenzione di ricerca.",
+      "L'agente contenuti SEO ricerca gli argomenti, analizza per cosa si posizionano i competitor e produce articoli completi e ottimizzati per le keyword. Pianifica l'architettura H1/H2, inserisce le keyword target in modo naturale e aggiunge automaticamente meta description e link interni. Collegato ad Ahrefs, Google Search Console, WordPress e Notion, aiuta il team contenuti a pubblicare di più, posizionarsi prima e convertire meglio - con ogni pezzo mirato a una reale intenzione di ricerca.",
     industry: "Team content marketing",
     tasks: [
       "Ricerca keyword",
@@ -98,7 +98,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     description:
       "Pianifica la giornata, svuota la lista attività e recupera ore ogni settimana.",
     longDescription:
-      "L'assistente personale organizza la tua giornata come farebbe un grande supporto. Pianifica il calendario, gestisce le liste di attività, riassume note e documenti, blocca tempo per il lavoro profondo e suggerisce in modo proattivo cosa affrontare per primo. Collegato a Google Calendar, Gmail, Notion e Slack, tiene sulla giusta rotta professionisti e solopreneur impegnati — aiutandoti a recuperare diverse ore a settimana togliendoti le piccole logiche operative della giornata.",
+      "L'assistente personale organizza la tua giornata come farebbe un grande supporto. Pianifica il calendario, gestisce le liste di attività, riassume note e documenti, blocca tempo per il lavoro profondo e suggerisce in modo proattivo cosa affrontare per primo. Collegato a Google Calendar, Gmail, Notion e Slack, tiene sulla giusta rotta professionisti e solopreneur impegnati - aiutandoti a recuperare diverse ore a settimana togliendoti le piccole logiche operative della giornata.",
     industry: "Professionisti e solopreneur",
     tasks: [
       "Pianificazione giornata",
@@ -121,7 +121,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     description:
       "Trova gli orari liberi, prenota le riunioni e invia gli inviti in automatico.",
     longDescription:
-      "L'agente Prenotazioni gestisce la pianificazione end-to-end. Cerca la disponibilità sui calendari dei partecipanti, propone gli slot migliori, prenota la riunione, conferma i presenti e allega il link video. Collegato a Google Calendar, Outlook, Zoom e Slack, elimina l'interminabile botta e risposta 'quando ti va?' — un vero risparmio di tempo per vendite consulenziali, servizi e qualsiasi team che vive di chiamate prenotate.",
+      "L'agente Prenotazioni gestisce la pianificazione end-to-end. Cerca la disponibilità sui calendari dei partecipanti, propone gli slot migliori, prenota la riunione, conferma i presenti e allega il link video. Collegato a Google Calendar, Outlook, Zoom e Slack, elimina l'interminabile botta e risposta 'quando ti va?' - un vero risparmio di tempo per vendite consulenziali, servizi e qualsiasi team che vive di chiamate prenotate.",
     industry: "Team scheduling e riunioni",
     tasks: [
       "Cerca disponibilità",
@@ -144,7 +144,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     description:
       "Cattura ogni lead, arricchiscilo e avvisa le vendite in pochi secondi.",
     longDescription:
-      "L'agente Lead Capture non lascia mai scappare un prospect. Raccoglie i dettagli da form, chat e sito, arricchisce i contatti con dati firmografici e contestuali e avvisa il team vendite con un alert su Slack e il prossimo passo consigliato. Collegato a Slack, HubSpot, Salesforce e Zapier, trasforma le tue fonti di lead in una pipeline sempre attiva — così le vendite reagiscono subito e nessuna richiesta in entrata resta senza risposta.",
+      "L'agente Lead Capture non lascia mai scappare un prospect. Raccoglie i dettagli da form, chat e sito, arricchisce i contatti con dati firmografici e contestuali e avvisa il team vendite con un alert su Slack e il prossimo passo consigliato. Collegato a Slack, HubSpot, Salesforce e Zapier, trasforma le tue fonti di lead in una pipeline sempre attiva - così le vendite reagiscono subito e nessuna richiesta in entrata resta senza risposta.",
     industry: "Vendite e lead generation",
     tasks: [
       "Cattura lead",
@@ -167,7 +167,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     description:
       "Rispondi a ogni ticket 24/7 ed escalada solo ciò che richiede un umano.",
     longDescription:
-      "L'agente Supporto risolve i problemi dei tuoi clienti 24 ore su 24. Addestrato sulla tua knowledge base, risponde ai ticket in pochi secondi, scrive risposte accurate, classifica ogni problema ed escalada al tuo team umano solo quando il caso richiede davvero una persona. Collegato a Zendesk, Intercom, Help Scout e Slack, riduce nettamente il tempo di prima risposta e il backlog dei ticket — permettendoti un supporto rapido e costante senza aumentare l'organico.",
+      "L'agente Supporto risolve i problemi dei tuoi clienti 24 ore su 24. Addestrato sulla tua knowledge base, risponde ai ticket in pochi secondi, scrive risposte accurate, classifica ogni problema ed escalada al tuo team umano solo quando il caso richiede davvero una persona. Collegato a Zendesk, Intercom, Help Scout e Slack, riduce nettamente il tempo di prima risposta e il backlog dei ticket - permettendoti un supporto rapido e costante senza aumentare l'organico.",
     industry: "Team assistenza clienti",
     tasks: [
       "Risposte 24/7",
@@ -190,7 +190,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     description:
       "Scrivi copy che convertono su landing, annunci ed email.",
     longDescription:
-      "L'agente Copywriter scrive le parole che trasformano i visitatori in clienti. Produce copy adattato alla piattaforma per landing page, annunci, email e UI di prodotto — con più varianti pronte per i test A/B. Integrato con Webflow, WordPress, Mailchimp e Notion, elimina l'attesa del freelance e dei brief, dando al team marketing copy in linea col brand in pochi minuti e la varietà di varianti necessaria per ottimizzare davvero la conversione.",
+      "L'agente Copywriter scrive le parole che trasformano i visitatori in clienti. Produce copy adattato alla piattaforma per landing page, annunci, email e UI di prodotto - con più varianti pronte per i test A/B. Integrato con Webflow, WordPress, Mailchimp e Notion, elimina l'attesa del freelance e dei brief, dando al team marketing copy in linea col brand in pochi minuti e la varietà di varianti necessaria per ottimizzare davvero la conversione.",
     industry: "Team marketing e prodotto",
     tasks: [
       "Copy landing",
@@ -211,9 +211,9 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     category: "E-commerce & Finance",
     badge: "Novità",
     description:
-      "Tieni sotto controllo fatture, spese e cash flow — senza il caos dei fogli di calcolo.",
+      "Tieni sotto controllo fatture, spese e cash flow - senza il caos dei fogli di calcolo.",
     longDescription:
-      "L'agente Finance Manager tiene in ordine i numeri della tua azienda. Concilia entrate e uscite, prepara fatture chiare e messaggi di sollecito di pagamento da approvare, e trasforma i dati sparsi in un briefing del cash flow in linguaggio semplice: cosa è entrato, cosa è uscito, cosa è in scadenza e cosa prioritizzare. Segnala le anomalie invece di nasconderle, si collega a Stripe, QuickBooks, Google Sheets e Slack, e non inventa mai cifre — così founder e piccoli team hanno una panoramica finanziaria affidabile in pochi minuti invece del caos dei fogli di calcolo.",
+      "L'agente Finance Manager tiene in ordine i numeri della tua azienda. Concilia entrate e uscite, prepara fatture chiare e messaggi di sollecito di pagamento da approvare, e trasforma i dati sparsi in un briefing del cash flow in linguaggio semplice: cosa è entrato, cosa è uscito, cosa è in scadenza e cosa prioritizzare. Segnala le anomalie invece di nasconderle, si collega a Stripe, QuickBooks, Google Sheets e Slack, e non inventa mai cifre - così founder e piccoli team hanno una panoramica finanziaria affidabile in pochi minuti invece del caos dei fogli di calcolo.",
     industry: "PMI e founder",
     tasks: [
       "Fatture e pagamenti",
@@ -236,7 +236,7 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
     description:
       "Cerca i prodotti, crea link al carrello e controlla gli ordini del tuo store.",
     longDescription:
-      "L'agente Shopify gestisce il commerce conversazionale del tuo negozio. Cerca nel catalogo, costruisce link diretti al carrello per specifiche varianti, controlla lo stato degli ordini in modo sicuro con numero ordine ed email e segnala la disponibilità in pochi secondi. Collegato al tuo store Shopify, a Stripe, Slack ed email, dà allo shopper la risposta e il passo successivo all'istante — trasformando una domanda sui prodotti in un link d'acquisto a tutti gli effetti invece che in una conversazione senza sbocco.",
+      "L'agente Shopify gestisce il commerce conversazionale del tuo negozio. Cerca nel catalogo, costruisce link diretti al carrello per specifiche varianti, controlla lo stato degli ordini in modo sicuro con numero ordine ed email e segnala la disponibilità in pochi secondi. Collegato al tuo store Shopify, a Stripe, Slack ed email, dà allo shopper la risposta e il passo successivo all'istante - trasformando una domanda sui prodotti in un link d'acquisto a tutti gli effetti invece che in una conversazione senza sbocco.",
     industry: "Negozi Shopify",
     tasks: [
       "Ricerca prodotti",

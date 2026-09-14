@@ -57,6 +57,14 @@ export const viewport: Viewport = {
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const meta = META[locale];
+  // Token di verifica di Google Search Console (metodo "tag HTML").
+  // Valorizzando GOOGLE_SITE_VERIFICATION (o NEXT_PUBLIC_…) con il token del
+  // proprio account il meta tag viene emesso in <head> su tutte le pagine:
+  // è così che Google verifica la proprietà del dominio dell'home page
+  // durante la revisione OAuth. Senza la variabile non viene emesso nulla.
+  const siteVerification =
+    process.env.GOOGLE_SITE_VERIFICATION ||
+    process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
   const title = {
     default: meta.title,
     template: "%s | AgentCloud",
@@ -97,6 +105,9 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: BASE_URL,
     },
+    ...(siteVerification
+      ? { verification: { google: siteVerification } }
+      : {}),
   };
 }
 

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin-access";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAgentBySlug } from "@/lib/agents";
 import Link from "next/link";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminCartsPage() {
   const user = await getSessionUser();
-  const isAdmin = (user && isAdminEmail(user.email));
+  const isAdmin = await resolveIsAdmin(user);
   if (!isAdmin) redirect("/login");
   const displayEmail = user?.email ?? "";
 
@@ -84,7 +84,7 @@ export default async function AdminCartsPage() {
                         <User size={14} className="text-neutral-500" />
                         <span className="font-semibold text-white">{email}</span>
                         <span className="text-neutral-600">·</span>
-                        <span className="text-xs text-neutral-500">{cart.user_id.slice(0, 8)}…</span>
+                        <span className="text-xs text-neutral-500">{cart.user_id.slice(0, 8)}...</span>
                       </div>
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-bold ${

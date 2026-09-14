@@ -57,7 +57,7 @@ function formatDate(date: Date, locale: string = "it-IT"): string {
  * Tronca un testo alla lunghezza massima.
  */
 function truncate(text: string, maxLen: number = 80): string {
-  return text.length > maxLen ? text.substring(0, maxLen) + "…" : text;
+  return text.length > maxLen ? text.substring(0, maxLen) + "..." : text;
 }
 
 /**

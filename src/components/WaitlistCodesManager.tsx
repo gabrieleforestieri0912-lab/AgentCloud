@@ -288,7 +288,7 @@ export default function WaitlistCodesManager({ codes, redemptions }: Props) {
                   return (
                     <tr key={r.id} className="text-neutral-300">
                       <td className="py-2 font-bold text-white">
-                        {r.profiles?.email ?? r.user_id.slice(0, 8) + "…"}
+                        {r.profiles?.email ?? r.user_id.slice(0, 8) + "..."}
                       </td>
                       <td className="py-2 font-mono text-xs">{code?.code ?? "—"}</td>
                       <td className="py-2">{formatDate(r.redeemed_at)}</td>

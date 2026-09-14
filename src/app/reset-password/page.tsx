@@ -112,7 +112,7 @@ export default function ResetPasswordPage() {
             {status === "checking" && (
               <div className="flex items-center justify-center gap-2 py-8 text-neutral-400">
                 <Loader2 size={18} className="animate-spin" />
-                <span className="text-sm">…</span>
+                <span className="text-sm">...</span>
               </div>
             )}
 

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import SidebarAccount from "./SidebarAccount";
+import type { AccountIdentity } from "@/lib/account-identity";
 import AppHeader from "./AppHeader";
 import DashboardOnboarding from "./DashboardOnboarding";
 import { useLanguage } from "./LanguageProvider";
@@ -13,9 +14,12 @@ import { useLanguage } from "./LanguageProvider";
 export default function DashboardShell({
   children,
   email,
+  account = null,
 }: {
   children: React.ReactNode;
   email: string;
+  /** Identità risolta lato server, per la sidebar account. */
+  account?: AccountIdentity | null;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -96,7 +100,7 @@ export default function DashboardShell({
         </nav>
         {/* Account */}
         <div data-onboard="dashboard-account" className="p-3 border-t border-white/[0.06]">
-          <SidebarAccount />
+          <SidebarAccount account={account} />
         </div>
       </aside>
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">

@@ -10,7 +10,7 @@ import {
 } from "@/lib/google/oauth";
 import { TENANT_GOOGLE_ID, upsertGoogleConnection } from "@/lib/google/connections";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isAdminEmail } from "@/lib/admin-access";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -142,7 +142,12 @@ export async function GET(req: NextRequest) {
       const admin = createAdminClient();
       if (admin) {
         const { data: u } = await admin.auth.admin.getUserById(payload.userId);
-        isAdmin = isAdminEmail(u?.user?.email ?? null);
+        // Whitelist email OPPURE ruolo 'admin' in profiles: vale la stessa
+        // regola del resto dell'app (src/lib/admin-access.ts).
+        isAdmin = await resolveIsAdmin({
+          id: payload.userId,
+          email: u?.user?.email ?? null,
+        });
       }
     } catch {
       // ripiega su non-admin (salva l'email)

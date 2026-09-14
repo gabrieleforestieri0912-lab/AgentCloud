@@ -9,21 +9,30 @@ import Footer from "@/components/Footer";
 import HeroBubbles from "@/components/HeroBubbles";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLegalDocument } from "@/lib/i18n/legal";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
+  const isIt = locale === "it";
+  // Il titolo del documento: il template del layout aggiunge " | AgentCloud".
+  const { title } = getLegalDocument(locale, "privacy");
   return {
-    title:
-      locale === "it"
-        ? "Informativa Privacy | AgentCloud"
-        : "Privacy Policy | AgentCloud",
+    title,
+    description: isIt
+      ? "Come AgentCloud raccoglie, usa, condivide e conserva i dati personali: titolare del trattamento, basi giuridiche, cookie, trasferimenti internazionali, conservazione e diritti GDPR."
+      : "How AgentCloud collects, uses, shares and retains personal data: data controller, legal bases, cookies, international transfers, retention periods and your GDPR rights.",
+    alternates: {
+      canonical: `${getSiteUrl()}/privacy`,
+    },
   };
 }
 
 export default async function PrivacyPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const legal = dict.legal.privacy;
+  // Documento localizzato: it/en dal dizionario, es/de/fr tradotti in legal.ts.
+  const legal = getLegalDocument(locale, "privacy");
 
   return (
     <main className="relative min-h-screen overflow-x-hidden dark-gradient-main">
@@ -55,16 +64,36 @@ export default async function PrivacyPage() {
           <div className="prose prose-invert max-w-none space-y-6 text-neutral-400">
             <p>{legal.lastUpdated}</p>
 
-            {legal.sections.map((section) => (
-              <div key={section.heading}>
+            {legal.sections.map((section, index) => (
+              <section
+                key={section.heading}
+                id={`sezione-${index + 1}`}
+                className="scroll-mt-28"
+              >
                 <h2 className="text-xl font-bold text-white">
                   {section.heading}
                 </h2>
                 {section.paragraphs.map((paragraph, i) => (
                   <p key={i}>{paragraph}</p>
                 ))}
-              </div>
+              </section>
             ))}
+
+            {/* Rimandi incrociati: i tre documenti legali si completano a vicenda. */}
+            <p className="flex flex-wrap gap-x-6 gap-y-2">
+              <Link
+                href="/terms"
+                className="font-semibold text-brand-400 hover:text-brand-300"
+              >
+                {dict.legal.seeTerms}
+              </Link>
+              <Link
+                href="/refunds"
+                className="font-semibold text-brand-400 hover:text-brand-300"
+              >
+                {dict.legal.seeRefunds}
+              </Link>
+            </p>
           </div>
         </div>
       </section>

@@ -1,18 +1,23 @@
 "use client";
 
 /**
- * Conto alla rovescia verso la data di lancio (LAUNCH_DATE).
+ * Conto alla rovescia verso la data di lancio.
  *
  * Come funziona: l'ora corrente viene letta con `useSyncExternalStore` (si
  * aggiorna col timer senza ri-render continui dello stato) e viene mostrato il
  * tempo mancante per unità (giorni/ore/minuti/secondi). A lancio avvenuto
  * mostra il messaggio celebrativo.
+ *
+ * La data arriva da `LAUNCH_AT` (lib/waitlist-constants): è la stessa costante
+ * che il proxy usa per chiudere /waitlist al lancio, così countdown e chiusura
+ * della route non possono divergere.
  */
 import { useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 import { PartyPopper } from "lucide-react";
+import { LAUNCH_AT } from "@/lib/waitlist-constants";
 
-const LAUNCH_DATE = new Date("2026-09-15T16:00:00");
+const LAUNCH_DATE = new Date(LAUNCH_AT);
 
 interface TimeUnit {
   value: number;

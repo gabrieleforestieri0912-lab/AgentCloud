@@ -58,7 +58,10 @@ import { getEnabledTools, AGENT_RUNTIME } from "@/lib/agents/registry";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 import { createClient } from "@/lib/supabase/client";
 import BrandLogo from "./BrandLogo";
-import { AGENTS } from "@/lib/agents";
+import AgentAvatar from "./AgentAvatar";
+import type { AccountIdentity } from "@/lib/account-identity";
+import AgentIcon from "./AgentIcon";
+import { AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { INTEGRATIONS } from "@/lib/integrations";
 import {
   HERO_CONVERSATION_STORAGE_KEY,
@@ -75,6 +78,10 @@ type LocalMessage = {
   // risposta AI; la UI mostra allora un link di contatto sotto il messaggio.
   error?: boolean;
   attachments?: Pick<ChatAttachment, "id" | "name" | "kind" | "previewUrl">[];
+  // Agente che ha prodotto la bolla (assente per l'assistente generico):
+  // serve a mostrare avatar e nome corretti anche dopo un reload.
+  agentSlug?: string;
+  agentName?: string;
 };
 
 type LocalConversation = {
@@ -111,12 +118,15 @@ export default function ChatInterface({
   agentId,
   agentLabel,
   availableAgents = [],
+  account = null,
 }: {
   initialQuery?: string;
   agentId?: string;
   /** Nome localizzato dell'agente mostrato quando la chat è stata aperta per un agente. */
   agentLabel?: string;
   availableAgents?: { slug: string; name: string }[];
+  /** Identità risolta lato server (email/nome/avatar) per la sidebar account. */
+  account?: AccountIdentity | null;
 }) {
   const { dict, locale } = useLanguage();
   const attachLabels = chatAttachLabels(dict);
@@ -137,8 +147,9 @@ export default function ChatInterface({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarSession, setSidebarSession] = useState<import("@supabase/supabase-js").Session | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  // Start as true to avoid flash — session loads in background
-  const [sidebarAuthLoaded, setSidebarAuthLoaded] = useState(true);
+  // L'identità arriva dal server (prop `account`): la sidebar mostra subito
+  // l'account reale e non i segnaposto "?"/"..." mentre la sessione del browser
+  // si carica in background.
   // L'input parte centrato nella pagina; dopo il primo messaggio si sposta in basso
   const [inputCentered, setInputCentered] = useState(true);
   // Pannello attivo nella sidebar: chat, tools o agents
@@ -224,6 +235,96 @@ export default function ChatInterface({
           dict.chat.assistantName
         : `${selectedAgentSlugs.length} agenti`;
 
+  // Catalogo localizzato per slug: serve agli avatar dei messaggi, alla pill
+  // dell'agente che sta conversando e al selettore dell'header.
+  const agentsBySlug = useMemo(() => {
+    const map = new Map<string, Agent>();
+    for (const a of AGENTS) map.set(a.slug, localizeAgent(a, locale));
+    return map;
+  }, [locale]);
+
+  /** Agente che ha prodotto una bolla (null per l'assistente generico). */
+  const agentForMessage = useCallback(
+    (msg: LocalMessage) =>
+      msg.agentSlug ? agentsBySlug.get(msg.agentSlug) ?? null : null,
+    [agentsBySlug],
+  );
+
+  const selectedAgents = useMemo(
+    () =>
+      selectedAgentSlugs
+        .map((slug) => agentsBySlug.get(slug))
+        .filter((a): a is Agent => Boolean(a)),
+    [selectedAgentSlugs, agentsBySlug],
+  );
+
+  const activeAgent = selectedAgents.length === 1 ? selectedAgents[0] : null;
+
+  // Diagnostica: se il server conosce l'utente ma la sessione non è leggibile
+  // dal browser, l'account resta mostrato (dati del server) — ma lo segnaliamo
+  // in console, perché lo stesso problema riguarda anche navbar e carrello.
+  useEffect(() => {
+    if (!account || sidebarSession) return;
+    const timer = setTimeout(() => {
+      console.warn(
+        "[account] sessione non leggibile dal browser (cookie sb-* assenti o non aggiornati): l'account è mostrato dai dati del server.",
+      );
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [account, sidebarSession]);
+
+  // Identità mostrata nella sidebar account: prima quella risolta dal server
+  // (immediata), poi — appena disponibile — la sessione letta nel browser, che
+  // la sostituisce arricchendola con l'avatar.
+  const accountEmail = sidebarSession?.user?.email || account?.email || "";
+  const accountAvatarUrl =
+    sidebarSession?.user?.user_metadata?.avatar_url ||
+    sidebarSession?.user?.user_metadata?.picture ||
+    account?.avatarUrl ||
+    null;
+  const accountLabelBase =
+    sidebarSession?.user?.user_metadata?.full_name ||
+    sidebarSession?.user?.email ||
+    account?.name ||
+    account?.email ||
+    "";
+
+  /** Agenti che l'utente può mettere nella conversazione (dal suo catalogo). */
+  const selectableAgents = useMemo(() => {
+    const bySlug = new Map<string, Agent>();
+    for (const a of effectiveAvailableAgents) {
+      if (!a.slug) continue;
+      const ag = agentsBySlug.get(a.slug);
+      if (ag) bySlug.set(a.slug, ag);
+    }
+    // La conversazione può contenere agenti fuori dal catalogo dell'utente — es.
+    // arrivando dalla CTA del marketplace su /chat?agent=<slug>: devono comunque
+    // comparire nel selettore (e potersi togliere), altrimenti la pill mostra un
+    // agente che la lista dichiara inesistente.
+    for (const slug of selectedAgentSlugs) {
+      if (bySlug.has(slug)) continue;
+      const ag = agentsBySlug.get(slug);
+      if (ag) bySlug.set(slug, ag);
+    }
+    return Array.from(bySlug.values());
+  }, [effectiveAvailableAgents, agentsBySlug, selectedAgentSlugs]);
+
+  /** Aggiunge/toglie un agente dalla conversazione e lo persiste nella cronologia. */
+  function toggleAgent(slug: string) {
+    const next = selectedAgentSlugs.includes(slug)
+      ? selectedAgentSlugs.filter((s) => s !== slug)
+      : [...selectedAgentSlugs, slug];
+    setSelectedAgentSlugs(next);
+    setActiveAgentId(next[0] ?? "");
+    if (activeId) {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeId ? { ...c, agentSlugs: [...next] } : c,
+        ),
+      );
+    }
+  }
+
   // Gli agenti i cui tool di default leggono Gmail/Calendar richiedono una
   // connessione Google: mostra per loro il pannello di connessione in chat
   // (come quello di Shopify).
@@ -252,58 +353,151 @@ export default function ChatInterface({
   }, [selectedAgentSlugs, isTyping, hasPartialReply]);
 
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const isAtBottomRef = useRef(true);
+  // Il contenitore dei messaggi esiste solo quando c'è una conversazione, e
+  // AnimatePresence lo monta DOPO l'animazione di uscita della schermata vuota:
+  // al primo render con messaggi `messagesRef.current` è ancora null, quindi un
+  // effetto che dipende solo da `hasMessages` non aggancerebbe mai i listener
+  // (rotella, touch, osservatori). Teniamo il nodo anche nello stato così gli
+  // effetti ripartono quando il contenitore è davvero nel DOM.
+  const [messagesNode, setMessagesNode] = useState<HTMLDivElement | null>(null);
+  const attachMessages = useCallback((node: HTMLDivElement | null) => {
+    messagesRef.current = node;
+    setMessagesNode(node);
+  }, []);
+  // Solo per lo scroll "smooth": gli eventi generati a metà animazione non
+  // devono essere letti come uno scroll dell'utente.
+  const smoothScrollUntil = useRef(0);
+  // Ultima posizione di fondo impostata da NOI: serve a distinguere un vero
+  // scroll dell'utente (scrollTop ben sopra il fondo) dagli eventi provocati dal
+  // contenuto che cresce mentre il pin sta arrivando.
+  const pinnedScrollTop = useRef(0);
+  const lastTouchY = useRef<number | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const unpin = useCallback(() => {
+    stickToBottom.current = false;
+    setIsAtBottom(false);
+  }, []);
+
+  /**
+   * Riporta in fondo la conversazione (istantaneo durante lo streaming, smooth
+   * su richiesta).
+   *
+   * Non combatte con l'utente: se la posizione è più in alto del fondo che
+   * abbiamo impostato NOI (es. sta trascinando la barra mentre l'AI scrive),
+   * l'auto-scroll si stacca invece di riportarla giù a ogni token.
+   */
+  const pinToBottom = useCallback(
+    (smooth = false, force = false) => {
+      const el = messagesRef.current;
+      if (!el) return;
+      if (force) {
+        // Richiesta esplicita dell'utente (bottone "Vai in fondo"): riaggancia
+        // anche se l'auto-scroll era staccato.
+        stickToBottom.current = true;
+        setIsAtBottom(true);
+      } else if (!stickToBottom.current) {
+        return;
+      }
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+      const movedByUser =
+        !force &&
+        !atBottom &&
+        Date.now() >= smoothScrollUntil.current &&
+        el.scrollTop < pinnedScrollTop.current - 24;
+      if (movedByUser) {
+        unpin();
+        return;
+      }
+      if (smooth) smoothScrollUntil.current = Date.now() + 800;
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+      pinnedScrollTop.current = el.scrollHeight - el.clientHeight;
+    },
+    [unpin],
+  );
+
   const handleMessagesScroll = () => {
     const el = messagesRef.current;
     if (!el) return;
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-    setIsAtBottom(atBottom);
-    isAtBottomRef.current = atBottom;
-    stickToBottom.current = atBottom;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 100) {
+      // L'utente è tornato in fondo: da qui in poi si segue di nuovo lo stream.
+      stickToBottom.current = true;
+      setIsAtBottom(true);
+      return;
+    }
+    // Durante l'animazione di avvio gli eventi intermedi non sono dell'utente.
+    if (Date.now() < smoothScrollUntil.current) return;
+    // Contenuto cresciuto mentre il pin stava arrivando? scrollTop resta al
+    // fondo precedente: non è l'utente che risale. Si stacca solo quando la
+    // posizione è più in alto del fondo che abbiamo impostato noi.
+    if (el.scrollTop < pinnedScrollTop.current - 24) unpin();
   };
 
-  const scrollToBottom = useCallback(
-    (force = false) => {
-      const el = messagesRef.current;
-      if (!el) return;
-      // Usa il ref durante lo streaming (aggiornato istantaneamente)
-      // e lo stato per le altre occasioni
-      const atBottom = force || isAtBottomRef.current || stickToBottom.current;
-      if (!atBottom) return;
-      el.scrollTo({ top: el.scrollHeight, behavior: force ? "smooth" : "auto" });
-    },
-    [],
-  );
+  // Cambio di conversazione: il fondo memorizzato è quello della conversazione
+  // precedente e non va usato per decidere se l'utente si è spostato.
+  useEffect(() => {
+    pinnedScrollTop.current = 0;
+  }, [activeId]);
 
   // Scroll quando i messaggi cambiano (incluso durante streaming)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    pinToBottom();
+  }, [messages, pinToBottom]);
 
-  // Scroll quando inizia/finisce lo streaming
+  // Con l'inizio dello streaming si parte dal fondo della conversazione.
   useEffect(() => {
-    if (isTyping) scrollToBottom(true);
-  }, [isTyping, scrollToBottom]);
+    if (isTyping) pinToBottom(true);
+  }, [isTyping, pinToBottom]);
 
-  // Permetti sempre lo scroll manuale: se l'utente scrolla verso l'alto durante lo streaming, blocca l'auto-scroll
+  // Il contenuto cresce anche senza un nuovo messaggio (blocchi markdown che si
+  // assestano, immagini/allegati che caricano, tool call che si espandono):
+  // osserviamo l'altezza reale del contenuto e restiamo incollati al fondo
+  // finché l'utente non risale.
   useEffect(() => {
-    const el = messagesRef.current;
+    const el = messagesNode;
+    const content = contentRef.current;
+    if (!el || !content || typeof ResizeObserver === "undefined") return;
+    const pin = () => pinToBottom();
+    const observer = new ResizeObserver(pin);
+    observer.observe(content);
+    const mutations = new MutationObserver(pin);
+    mutations.observe(content, { childList: true, subtree: true, characterData: true });
+    return () => {
+      observer.disconnect();
+      mutations.disconnect();
+    };
+  }, [messagesNode, pinToBottom]);
+
+  // Lo scroll manuale dell'utente (rotella verso l'alto, dito verso il basso)
+  // stacca l'auto-scroll; tornare in fondo lo riattiva. Questi listener coprono
+  // il caso in cui il contenitore non si muove (nessun overflow residuo) e il
+  // caso della rotella: il rilevamento posizionale in handleMessagesScroll da
+  // solo non basterebbe durante lo streaming.
+  useEffect(() => {
+    const el = messagesNode;
     if (!el) return;
-    const onWheel = () => {
-      // Se l'utente sta scrollando verso l'alto, disattiva l'auto-scroll
-      // Verrà riattivato solo quando torna in fondo o clicca il bottone
-      if (el.scrollTop < el.scrollHeight - el.clientHeight - 120) {
-        setIsAtBottom(false);
-        stickToBottom.current = false;
-      }
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY < 0) unpin();
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const y = e.touches[0]?.clientY ?? null;
+      if (y === null) return;
+      const prev = lastTouchY.current;
+      lastTouchY.current = y;
+      if (prev !== null && y > prev + 4) unpin();
+    };
+    const onTouchEnd = () => {
+      lastTouchY.current = null;
     };
     el.addEventListener("wheel", onWheel, { passive: true });
-    el.addEventListener("touchmove", onWheel, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: true });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
     return () => {
       el.removeEventListener("wheel", onWheel);
-      el.removeEventListener("touchmove", onWheel);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
     };
-  }, []);
+  }, [messagesNode, unpin]);
 
   // Sidebar account — usa lo stesso pattern affidabile di SidebarAccount:
   // salva l'intero Session object, ha mounted guard, e usa onAuthStateChange
@@ -316,7 +510,7 @@ export default function ChatInterface({
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!mounted) return;
       setSidebarSession(nextSession);
-      setSidebarAuthLoaded(true);
+
     });
 
     // Fallback: se onAuthStateChange non si attiva entro 1s, prova getSession
@@ -325,7 +519,7 @@ export default function ChatInterface({
       supabase.auth.getSession().then(({ data }) => {
         if (!mounted) return;
         setSidebarSession(data.session);
-        setSidebarAuthLoaded(true);
+  
       }).catch(() => {});
     }, 1000);
 
@@ -461,8 +655,11 @@ export default function ChatInterface({
           messages: [],
           created_at: new Date().toISOString(),
         };
-        setConversations([conv]);
-        setActiveId(conv.id);
+        // La cronologia già caricata ha la precedenza: sovrascrivendola con
+        // questa conversazione vuota l'intera cronologia dell'utente spariva a
+        // ogni ricarica della pagina.
+        setConversations((prev) => (prev.length > 0 ? prev : [conv]));
+        setActiveId((prev) => prev ?? conv.id);
       }
     } catch {
       // Storage malformato — si riparte da zero.
@@ -523,30 +720,6 @@ export default function ChatInterface({
     setRenameValue("");
   }
 
-  function handleAddAgentToConversation(slug: string) {
-    if (!activeId) return;
-    setConversations((prev) =>
-      prev.map((c) => {
-        if (c.id !== activeId) return c;
-        const slugs = c.agentSlugs ?? [];
-        if (slugs.includes(slug)) return c;
-        if (slugs.length >= 5) return c;
-        return { ...c, agentSlugs: [...slugs, slug] };
-      })
-    );
-    setShowAgentPicker(false);
-  }
-
-  function handleRemoveAgentFromConversation(slug: string) {
-    if (!activeId) return;
-    setConversations((prev) =>
-      prev.map((c) => {
-        if (c.id !== activeId) return c;
-        return { ...c, agentSlugs: (c.agentSlugs ?? []).filter((s) => s !== slug) };
-      })
-    );
-  }
-
   async function handleSendWithText(text: string, convId: string) {
     if (!text.trim() || !convId) return;
     await sendMessage(text, convId, []);
@@ -600,6 +773,7 @@ export default function ChatInterface({
       assistantId: string,
       content: string,
       error = false,
+      agent?: { slug: string; name: string },
     ) => {
       setConversations((prev) =>
         prev.map((c) =>
@@ -608,7 +782,14 @@ export default function ChatInterface({
                 ...c,
                 messages: c.messages.some((m) => m.id === assistantId)
                   ? c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content } : m,
+                      m.id === assistantId
+                        ? {
+                            ...m,
+                            content,
+                            agentSlug: m.agentSlug ?? agent?.slug,
+                            agentName: m.agentName ?? agent?.name,
+                          }
+                        : m,
                     )
                   : [
                       ...c.messages,
@@ -618,6 +799,8 @@ export default function ChatInterface({
                         content,
                         created_at: new Date().toISOString(),
                         error: error || undefined,
+                        agentSlug: agent?.slug,
+                        agentName: agent?.name,
                       },
                     ],
               }
@@ -653,10 +836,21 @@ export default function ChatInterface({
         );
       }
 
+      // Nome localizzato dell'agente che sta rispondendo: finisce nella pill
+      // dell'header, nel prefisso della bolla (così il modello nei turni
+      // multi-agente sa chi ha detto cosa) e nell'avatar del messaggio.
+      const agentMeta = (slug: string) => ({
+        slug,
+        name:
+          effectiveAvailableAgents.find((a) => a.slug === slug)?.name ??
+          AGENTS.find((a) => a.slug === slug)?.name ??
+          slug,
+      });
+
       async function streamOne(
         url: string,
         body: Record<string, unknown>,
-        label?: string,
+        agent?: { slug: string; name: string },
       ) {
         const res = await fetch(url, {
           method: "POST",
@@ -680,7 +874,7 @@ export default function ChatInterface({
         let buffer = "";
         let assistantId = "";
         let localText = "";
-        const prefix = label ? `**${label}:**\n\n` : "";
+        const prefix = agent ? `**${agent.name}:**\n\n` : "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -702,7 +896,7 @@ export default function ChatInterface({
                 assistantId = generateId();
                 setHasPartialReply(true);
               }
-              patchAssistant(assistantId, prefix + localText);
+              patchAssistant(assistantId, prefix + localText, false, agent);
             }
             if (json.type === "error") {
               streamErrorMessage =
@@ -718,15 +912,17 @@ export default function ChatInterface({
       if (targetSlugs.length === 0) {
         await streamOne("/api/chat", { messages: apiMessages });
       } else if (targetSlugs.length === 1) {
-        await streamOne("/api/agent/run", {
-          agentId: targetSlugs[0],
-          messages: apiMessages,
-          files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
-        });
+        await streamOne(
+          "/api/agent/run",
+          {
+            agentId: targetSlugs[0],
+            messages: apiMessages,
+            files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
+          },
+          agentMeta(targetSlugs[0]),
+        );
       } else {
         for (const slug of targetSlugs) {
-          const ag = effectiveAvailableAgents.find((a) => a.slug === slug);
-          const label = ag?.name ?? slug;
           try {
             await streamOne(
               "/api/agent/run",
@@ -735,7 +931,7 @@ export default function ChatInterface({
                 messages: apiMessages,
                 files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
               },
-              label,
+              agentMeta(slug),
             );
           } catch (e) {
             // Continua con gli altri agenti anche se uno fallisce
@@ -993,13 +1189,24 @@ export default function ChatInterface({
                 {conv.agentSlugs && conv.agentSlugs.length > 0 && (
                   <div className="ml-8 flex flex-wrap gap-1">
                     {conv.agentSlugs.map((slug) => {
-                      const ag = effectiveAvailableAgents.find((a) => a.slug === slug);
+                      const ag = agentsBySlug.get(slug);
                       return (
                         <span
                           key={slug}
-                          className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-300"
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-white ${
+                            ag?.accent ?? "bg-brand-500/10 text-brand-300"
+                          }`}
                         >
-                          <Bot size={8} />
+                          {ag ? (
+                            <AgentIcon
+                              icon={ag.icon}
+                              brand={ag.brand}
+                              size={10}
+                              className="text-white"
+                            />
+                          ) : (
+                            <Bot size={8} />
+                          )}
                           {ag?.name ?? slug}
                         </span>
                       );
@@ -1019,22 +1226,22 @@ export default function ChatInterface({
               className="w-full flex items-center gap-3 p-3 hover:bg-white/[0.04] transition-all"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
-                {sidebarSession?.user?.user_metadata?.avatar_url || sidebarSession?.user?.user_metadata?.picture ? (
-                  <img src={(sidebarSession.user.user_metadata.avatar_url || sidebarSession.user.user_metadata.picture) as string} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
-                ) : sidebarAuthLoaded ? (
-                  (sidebarSession?.user?.user_metadata?.full_name || sidebarSession?.user?.email || "?")
+                {accountAvatarUrl ? (
+                  <img src={accountAvatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
+                ) : accountLabelBase ? (
+                  accountLabelBase
                     .split(/[\s@.]+/)
                     .filter(Boolean)
                     .slice(0, 2)
                     .map((s: string) => s[0]?.toUpperCase())
                     .join("") || "?"
                 ) : (
-                  <span className="animate-pulse">…</span>
+                  <span className="animate-pulse">...</span>
                 )}
               </div>
               <div className="min-w-0 flex-1 text-left">
                 <p className="truncate text-sm font-bold text-white">
-                  {sidebarSession?.user?.email || "…"}
+                  {accountEmail || "..."}
                 </p>
                 <p className="text-[10px] text-neutral-500 font-medium">Account</p>
               </div>
@@ -1096,7 +1303,7 @@ export default function ChatInterface({
           sidebarOpen={sidebarOpen || mobileSidebarOpen}
           onToggleSidebar={handleAppHeaderToggle}
         />
-        <div className="flex flex-1 overflow-hidden relative">
+        <div className="flex flex-1 min-h-0 overflow-hidden relative">
           {/* Trigger sidebar su mobile */}
           <button
             onClick={() => setMobileSidebarOpen(true)}
@@ -1108,7 +1315,7 @@ export default function ChatInterface({
 
           {/* Area chat principale */}
           <main
-            className="flex-1 flex flex-col bg-neutral-900 relative"
+            className="flex-1 flex flex-col min-h-0 bg-neutral-900 relative"
         onDragEnter={attach.onDragEnter}
         onDragOver={attach.onDragOver}
         onDragLeave={attach.onDragLeave}
@@ -1124,10 +1331,100 @@ export default function ChatInterface({
             >
               <Plus size={16} />
             </button>
-            <div>
-              <p className="text-sm font-semibold text-white">
-                {sidebarView === "tools" ? dict.chat.tools : sidebarView === "agents" ? dict.chat.agents : activeAgentDisplayName}
-              </p>
+            <div className="relative">
+              {sidebarView === "chat" ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAgentPicker((v) => !v)}
+                  aria-expanded={showAgentPicker}
+                  aria-haspopup="listbox"
+                  title={locale === "it" ? "Cambia agente" : "Change agent"}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 transition-all hover:bg-white/10"
+                >
+                  {selectedAgents.length > 1 ? (
+                    <span className="flex items-center -space-x-2 pl-1">
+                      {selectedAgents.slice(0, 3).map((a) => (
+                        <AgentAvatar
+                          key={a.slug}
+                          agent={a}
+                          size="sm"
+                          className="ring-2 ring-neutral-900"
+                        />
+                      ))}
+                    </span>
+                  ) : activeAgent ? (
+                    <AgentAvatar agent={activeAgent} size="sm" />
+                  ) : (
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+                      <Image
+                        src="/agentcloud.png"
+                        alt="AgentCloud"
+                        width={16}
+                        height={16}
+                        className="w-4 h-4"
+                      />
+                    </span>
+                  )}
+                  <span className="max-w-[170px] truncate text-sm font-bold text-white">
+                    {activeAgentDisplayName}
+                  </span>
+                  <ChevronDown
+                    size={14}
+                    className={`text-neutral-400 transition-transform ${showAgentPicker ? "rotate-180" : ""}`}
+                  />
+                </button>
+              ) : (
+                <p className="text-sm font-semibold text-white">
+                  {sidebarView === "tools" ? dict.chat.tools : dict.chat.agents}
+                </p>
+              )}
+
+              {showAgentPicker && sidebarView === "chat" && (
+                <>
+                  <button
+                    type="button"
+                    aria-label={locale === "it" ? "Chiudi" : "Close"}
+                    className="fixed inset-0 z-40 cursor-default"
+                    onClick={() => setShowAgentPicker(false)}
+                  />
+                  <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl">
+                    <p className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                      {locale === "it" ? "Agenti nella chat" : "Agents in this chat"}
+                    </p>
+                    {selectableAgents.length === 0 ? (
+                      <p className="px-2 py-2 text-xs text-neutral-500">
+                        {locale === "it"
+                          ? "Nessun agente disponibile: aggiungili dal marketplace."
+                          : "No agents available: add them from the marketplace."}
+                      </p>
+                    ) : (
+                      <div className="max-h-72 overflow-y-auto">
+                        {selectableAgents.map((a) => {
+                          const isSelected = selectedAgentSlugs.includes(a.slug);
+                          return (
+                            <button
+                              key={a.slug}
+                              type="button"
+                              onClick={() => toggleAgent(a.slug)}
+                              className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-all ${
+                                isSelected ? "bg-white/10" : "hover:bg-white/5"
+                              }`}
+                            >
+                              <AgentAvatar agent={a} size="sm" />
+                              <span className="min-w-0 flex-1 truncate text-xs font-bold text-white">
+                                {a.name}
+                              </span>
+                              {isSelected && (
+                                <CheckCircle2 size={14} className="shrink-0 text-emerald-400" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
               {sidebarView === "chat" && isTyping && (
                 <span className="inline-flex items-center gap-1.5 text-xs text-brand-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
@@ -1342,13 +1639,14 @@ export default function ChatInterface({
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="flex-1 flex flex-col"
+              className="flex-1 flex flex-col min-h-0"
             >
             <div
-              ref={messagesRef}
+              ref={attachMessages}
               onScroll={handleMessagesScroll}
-              className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6 mx-auto max-w-content"
+              className="flex-1 overflow-y-auto px-4 sm:px-6 py-6"
             >
+            <div ref={contentRef} className="space-y-6 mx-auto max-w-content">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -1356,20 +1654,32 @@ export default function ChatInterface({
                   msg.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                {msg.role === "assistant" && (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-white/5 mt-0.5">
-                    <Image
-                      src="/agentcloud.png"
-                      alt="AgentCloud"
-                      width={16}
-                      height={16}
-                      className="w-4 h-4"
-                    />
-                  </div>
-                )}
+                {msg.role === "assistant" &&
+                  (agentForMessage(msg) ? (
+                    <div className="mt-0.5 shrink-0">
+                      <AgentAvatar agent={agentForMessage(msg)!} size="sm" />
+                    </div>
+                  ) : (
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+                      <Image
+                        src="/agentcloud.png"
+                        alt="AgentCloud"
+                        width={16}
+                        height={16}
+                        className="w-4 h-4"
+                      />
+                    </div>
+                  ))}
                 <div
                   className={`max-w-[75%] sm:max-w-[65%] ${msg.role === "user" ? "order-1" : ""} w-full`}
                 >
+                  {/* Chi sta parlando: nome dell'agente sopra la bolla */}
+                  {msg.role === "assistant" && msg.agentName && (
+                    <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                      <span className={`h-1.5 w-1.5 rounded-full ${agentForMessage(msg)?.accent ?? "bg-brand-400"}`} />
+                      {msg.agentName}
+                    </p>
+                  )}
                   <div
                     className={`px-4 py-3 text-sm leading-relaxed ${
                       msg.role === "user"
@@ -1441,7 +1751,10 @@ export default function ChatInterface({
                 messages={messages.map((m) => ({
                   role: m.role,
                   content: m.content,
-                  agentName: m.role === "assistant" ? (activeAgentDisplayName || "Assistente") : undefined,
+                  agentName:
+                    m.role === "assistant"
+                      ? (m.agentName ?? activeAgentDisplayName)
+                      : undefined,
                   timestamp: m.created_at,
                 }))}
                 agentName={activeAgentDisplayName || "AgentCloud"}
@@ -1452,13 +1765,17 @@ export default function ChatInterface({
 
           {isTyping && !hasPartialReply && (
             <div className="flex items-start gap-3">
-              <Image
-                src="/agentcloud.png"
-                alt="AgentCloud"
-                width={32}
-                height={32}
-                className="w-8 h-8 shrink-0"
-              />
+              {activeAgent ? (
+                <AgentAvatar agent={activeAgent} size="sm" />
+              ) : (
+                <Image
+                  src="/agentcloud.png"
+                  alt="AgentCloud"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 shrink-0"
+                />
+              )}
               <div className="max-w-[85%]">
                 {activeWorkingApps.length > 0 ? (
                   <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1.5 text-xs font-bold text-brand-300">
@@ -1499,15 +1816,12 @@ export default function ChatInterface({
             </div>
           )}
 
+            </div>
         </div>
 
         {!isAtBottom && messages.length > 0 && (
           <button
-            onClick={() => {
-              setIsAtBottom(true);
-              stickToBottom.current = true;
-              scrollToBottom(true);
-            }}
+            onClick={() => pinToBottom(true, true)}
             className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-neutral-800 border border-white/10 px-3 py-1.5 text-xs font-bold text-white shadow-lg hover:bg-neutral-700"
           >
             <ChevronDown size={12} />

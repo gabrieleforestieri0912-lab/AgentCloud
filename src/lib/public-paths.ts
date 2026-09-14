@@ -13,7 +13,13 @@
  */
 export const PUBLIC_PATHS = [
   // Pagine marketing / pubbliche
+  // Home, vetrina e pagine legali devono essere consultabili senza login:
+  // sono la superficie che Google controlla durante la verifica OAuth (la
+  // home non può trovarsi dietro un redirect a /login) e che i motori di
+  // ricerca indicizzano (vedi anche sitemap.ts / robots.ts).
   "/",
+  "/about",
+  "/integrations",
   "/demo",
   "/agents",
   "/a", // pagine chat pubbliche dell'agente

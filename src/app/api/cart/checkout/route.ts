@@ -37,10 +37,11 @@ export async function POST() {
         const { items: cartItems } = await getEnrichedCart(effectiveUserId);
         if (cartItems.length > 0) {
           const slugs = cartItems.map((i) => i.agent_slug).join(",");
-          // Clear the cart
+          // Clear the cart (fix: cancella via cart_id, non user_id inesistente su cart_items)
           const db = createAdminClient();
-          if (db && user) {
-            await db.from("cart_items").delete().eq("user_id", user.id);
+          if (db && user && cartItems[0]) {
+            const { data: cart } = await db.from("carts").select("id").eq("user_id", user.id).eq("status", "active").maybeSingle();
+            if (cart) await db.from("cart_items").delete().eq("cart_id", cart.id);
           }
           return NextResponse.json({
             url: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/chat${slugs ? `?agent=${slugs.split(",")[0]}` : ""}`,
@@ -65,21 +66,55 @@ export async function POST() {
 
   const baseUrl = getSiteUrl();
 
-  // Stripe Checkout: una session subscription con N line_items (uno per agente).
+  // Stripe Checkout: una session subscription con N line_items (uno per agente/bundle).
   // Ogni line_item ha price_data dinamico. Metadata contiene lista agenti.
   const agentSlugs = items.map((i) => i.agent_slug).join(",");
-  const lineItems = items.map((item) => ({
-    price_data: {
-      currency: "eur",
-      unit_amount: item.priceCents,
-      recurring: { interval: "month" as const },
-      product_data: {
-        name: `AgentCloud — ${item.shortName}`,
-        description: item.description,
+  const lineItems = items.map((item) => {
+    // Bundle: interval dipende dal periodo
+    if (item.type === "bundle") {
+      const period = (item as unknown as { period?: string }).period as string;
+      if (period === "quarterly") {
+        return {
+          price_data: {
+            currency: "eur",
+            unit_amount: item.priceCents,
+            recurring: { interval: "month" as const, interval_count: 3 },
+            product_data: {
+              name: `AgentCloud — ${item.shortName} (Trimestrale)`,
+              description: item.description,
+            },
+          },
+          quantity: item.quantity,
+        };
+      }
+      if (period === "yearly") {
+        return {
+          price_data: {
+            currency: "eur",
+            unit_amount: item.priceCents,
+            recurring: { interval: "year" as const },
+            product_data: {
+              name: `AgentCloud — ${item.shortName} (Annuale)`,
+              description: item.description,
+            },
+          },
+          quantity: item.quantity,
+        };
+      }
+    }
+    return {
+      price_data: {
+        currency: "eur",
+        unit_amount: item.priceCents,
+        recurring: { interval: "month" as const },
+        product_data: {
+          name: `AgentCloud — ${item.shortName}`,
+          description: item.description,
+        },
       },
-    },
-    quantity: item.quantity,
-  }));
+      quantity: item.quantity,
+    };
+  });
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",

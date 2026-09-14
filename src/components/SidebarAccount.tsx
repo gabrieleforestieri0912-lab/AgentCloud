@@ -6,12 +6,13 @@ import { useEffect, useState } from "react";
 import { User, ShoppingCart, Home, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Session } from "@supabase/supabase-js";
+import type { AccountIdentity } from "@/lib/account-identity";
 import { useLanguage } from "./LanguageProvider";
 
-function getInitials(session: Session | null): string {
+function getInitials(session: Session | null, account?: AccountIdentity | null): string {
   const e = session?.user?.email ?? null;
   const meta = session?.user?.user_metadata as { full_name?: string } | undefined;
-  const base = meta?.full_name || e || "?";
+  const base = meta?.full_name || e || account?.name || account?.email || "?";
   return base
     .split(/[\s@.]+/)
     .filter(Boolean)
@@ -20,9 +21,13 @@ function getInitials(session: Session | null): string {
     .join("") || "?";
 }
 
-export default function SidebarAccount() {
+export default function SidebarAccount({
+  account = null,
+}: {
+  /** Identità risolta lato server: mostrata subito, senza segnaposto. */
+  account?: AccountIdentity | null;
+}) {
   const [session, setSession] = useState<Session | null>(null);
-  const [authLoaded, setAuthLoaded] = useState(true);
   const { locale } = useLanguage();
 
   useEffect(() => {
@@ -40,14 +45,11 @@ export default function SidebarAccount() {
           return;
         }
         setSession(sess);
-        setAuthLoaded(true);
       }).catch((err) => {
         if (!mounted) return;
         console.warn("[SidebarAccount] getSession failed:", err);
         if (attempt < 3) {
           setTimeout(() => loadSession(attempt + 1), 300 * (attempt + 1));
-        } else {
-          setAuthLoaded(true);
         }
       });
     };
@@ -56,7 +58,6 @@ export default function SidebarAccount() {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (mounted) {
         setSession(next);
-        setAuthLoaded(true);
       }
     });
     return () => {
@@ -65,9 +66,24 @@ export default function SidebarAccount() {
     };
   }, []);
 
-  const email = session?.user?.email ?? null;
-  const initials = getInitials(session);
-  const rawAvatarUrl = (session?.user?.user_metadata as { avatar_url?: string; picture?: string } | undefined)?.avatar_url || (session?.user?.user_metadata as { picture?: string } | undefined)?.picture || null;
+  // Diagnostica: se il server conosce l'utente ma la sessione non è leggibile
+  // dal browser, l'account resta mostrato (dati del server) — ma lo segnaliamo
+  // in console, perché lo stesso problema riguarda anche navbar e carrello.
+  useEffect(() => {
+    if (!account || session) return;
+    const timer = setTimeout(() => {
+      console.warn(
+        "[account] sessione non leggibile dal browser (cookie sb-* assenti o non aggiornati): l'account è mostrato dai dati del server.",
+      );
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [account, session]);
+
+  // Il server conosce già l'utente (le pagine dashboard sono protette): la
+  // sessione del browser, quando arriva, arricchisce l'identità con l'avatar.
+  const email = session?.user?.email || account?.email || null;
+  const initials = getInitials(session, account);
+  const rawAvatarUrl = (session?.user?.user_metadata as { avatar_url?: string; picture?: string } | undefined)?.avatar_url || (session?.user?.user_metadata as { picture?: string } | undefined)?.picture || account?.avatarUrl || null;
   const avatarUrl = rawAvatarUrl ? rawAvatarUrl.replace(/=s\d+-c$/, "=s200-c") : null;
 
   return (
@@ -76,14 +92,14 @@ export default function SidebarAccount() {
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
           {avatarUrl ? (
             <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
-          ) : authLoaded ? (
+          ) : email || initials !== "?" ? (
             initials
           ) : (
-            <span className="animate-pulse">…</span>
+            <span className="animate-pulse">...</span>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-white">{email || "…"}</p>
+          <p className="truncate text-sm font-bold text-white">{email || "..."}</p>
           <p className="text-[10px] text-neutral-500 font-medium">{locale === "it" ? "Account" : "Account"}</p>
         </div>
       </div>

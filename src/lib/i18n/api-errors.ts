@@ -18,7 +18,7 @@ export type ApiErrorKey = keyof Dictionary["apiErrors"];
 
 export type ApiErrorParams = Record<string, string | number>;
 
-/** Lookup puro — testabile senza cookie. */
+/** Lookup puro - testabile senza cookie. */
 export function apiErrorMessageForLocale(
   locale: Locale,
   key: ApiErrorKey,

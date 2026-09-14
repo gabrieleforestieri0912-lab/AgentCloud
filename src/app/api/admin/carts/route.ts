@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin-access";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAgentBySlug } from "@/lib/agents";
 
@@ -10,7 +10,7 @@ import { getAgentBySlug } from "@/lib/agents";
  */
 export async function GET() {
   const user = await getSessionUser();
-  if (!user || !isAdminEmail(user.email)) {
+  if (!user || !(await resolveIsAdmin(user))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   const db = createAdminClient();

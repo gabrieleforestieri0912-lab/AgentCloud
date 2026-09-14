@@ -12,7 +12,7 @@
 
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin-access";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import AppHeader from "@/components/AppHeader";
 import WaitlistCodesManager from "@/components/WaitlistCodesManager";
@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminWaitlistCodesPage() {
   const user = await getSessionUser();
-  const isAdmin = (user && isAdminEmail(user.email));
+  const isAdmin = await resolveIsAdmin(user);
   if (!isAdmin) redirect("/login");
 
   const db = createAdminClient();

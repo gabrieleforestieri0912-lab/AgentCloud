@@ -12,7 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin-access";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +36,7 @@ function generateCode(): string {
 export async function POST(request: Request) {
   // Auth check
   const user = await getSessionUser();
-  const isAdmin = (user && isAdminEmail(user.email));
+  const isAdmin = await resolveIsAdmin(user);
 
   if (!isAdmin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

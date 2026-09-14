@@ -9,21 +9,20 @@ import Footer from "@/components/Footer";
 import HeroBubbles from "@/components/HeroBubbles";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLegalDocument } from "@/lib/i18n/legal";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  return {
-    title:
-      locale === "it"
-        ? "Termini di Servizio | AgentCloud"
-        : "Terms of Service | AgentCloud",
-  };
+  // Il titolo del documento: il template del layout aggiunge " | AgentCloud".
+  const { title } = getLegalDocument(locale, "terms");
+  return { title };
 }
 
 export default async function TermsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const legal = dict.legal.terms;
+  // Documento localizzato: it/en dal dizionario, es/de/fr tradotti in legal.ts.
+  const legal = getLegalDocument(locale, "terms");
 
   return (
     <main className="relative min-h-screen overflow-x-hidden dark-gradient-main">
@@ -66,12 +65,19 @@ export default async function TermsPage() {
               </div>
             ))}
 
-            <p>
+            {/* Rimandi incrociati: i tre documenti legali si completano a vicenda. */}
+            <p className="flex flex-wrap gap-x-6 gap-y-2">
               <Link
                 href="/refunds"
                 className="font-semibold text-brand-400 hover:text-brand-300"
               >
                 {dict.legal.seeRefunds}
+              </Link>
+              <Link
+                href="/privacy"
+                className="font-semibold text-brand-400 hover:text-brand-300"
+              >
+                {dict.legal.seePrivacy}
               </Link>
             </p>
           </div>

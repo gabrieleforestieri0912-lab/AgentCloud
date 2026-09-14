@@ -8,6 +8,8 @@ import {
   LOCALE_COOKIE,
 } from "@/lib/i18n/constants";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { hasLaunched } from "@/lib/waitlist-constants";
+import { ensureAdminRole } from "@/lib/admin-access";
 
 function getLocaleForRequest(request: NextRequest) {
   const cookieVal = request.cookies.get(LOCALE_COOKIE)?.value;
@@ -66,6 +68,7 @@ export async function proxy(request: NextRequest) {
 
   // ─── Rotte esenti da auth ─
   const isWaitlistRoute = pathname === "/waitlist";
+  const launched = hasLaunched();
   const isAuthRoute =
     pathname.startsWith("/auth/") ||
     pathname === "/login" ||
@@ -73,17 +76,32 @@ export async function proxy(request: NextRequest) {
     pathname === "/reset-password";
   const isAsset = pathname.startsWith("/_next/") || pathname.includes(".");
   const isApiPublic = pathname.startsWith("/api/") && isPublicPath(pathname);
-  const isApiOrAsset = isAsset || pathname.startsWith("/api/");
 
-  // Rotte esenti: waitlist, auth, asset, API pubbliche
-  // Utenti con waitlist_session cookie (hanno inserito il codice admin ma non
-  // hanno ancora fatto login) possono navigare tutte le pagine pubbliche come
-  // normali visitatori non autenticati.
+  // Rotte esenti: waitlist, auth, asset, API pubbliche, pagine pubbliche.
+  // Le pagine in `PUBLIC_PATHS` (home, marketing, legali) devono restare
+  // raggiungibili **senza sessione**: sono la vetrina pubblica dell'app e la
+  // verifica OAuth di Google le controlla da un browser non autenticato
+  // ("home page is behind a login page"). Prima di questa correzione la
+  // whitelist veniva calcolata ma non applicata: chi non era loggato finiva
+  // sempre su /waitlist (pre-lancio) o /login (post-lancio).
   const hasWaitlistSession = request.cookies.get("waitlist_session")?.value;
   const isPublicPage = isPublicPath(pathname) && !pathname.startsWith("/api/");
-  const isWaitlistUserOnPublicPage = hasWaitlistSession && isPublicPage;
 
-  if (isWaitlistRoute || isAuthRoute || isApiPublic || isAsset || isWaitlistUserOnPublicPage) {
+  // ─── Lancio avvenuto: la waitlist è chiusa ───
+  // Al termine del conto alla rovescia /waitlist non è più raggiungibile: si
+  // viene rimandati alla home (anche per i flussi di post-logout che oggi
+  // atterrano qui). La home resta pubblica: sono le sole pagine protette a
+  // mandare i visitatori anonimi su /login.
+  if (isWaitlistRoute && launched) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    url.hash = "";
+    const redirectRes = NextResponse.redirect(url);
+    return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
+  }
+
+  if (isWaitlistRoute || isAuthRoute || isApiPublic || isAsset || isPublicPage) {
     if (isWaitlistRoute && !needsCookie) return NextResponse.next();
     let res: NextResponse = NextResponse.next();
     try {
@@ -106,11 +124,12 @@ export async function proxy(request: NextRequest) {
           { error: getDictionary(locale).apiErrors.unauthorized },
           { status: 401 },
         );
-      }
-      // Utente con waitlist_session ma non loggato → redirect a /login
-      // Utente senza nulla → redirect a /waitlist
+      }        // Utente con waitlist_session ma non loggato → redirect a /login
+        // Utente senza nulla → redirect a /waitlist (prima del lancio) o a /login
+        // (dopo: la waitlist è chiusa e non deve diventare un anello di redirect)
+        // Le pagine pubbliche non arrivano qui: escono prima dalla whitelist.
       const url = request.nextUrl.clone();
-      url.pathname = hasWaitlistSession ? "/login" : "/waitlist";
+      url.pathname = hasWaitlistSession || launched ? "/login" : "/waitlist";
       url.search = "";
       url.hash = "";
       const redirectRes = NextResponse.redirect(url);
@@ -126,9 +145,20 @@ export async function proxy(request: NextRequest) {
         const supabase = await createClient();
         const { data: profile } = await supabase
           .from("profiles")
-          .select("auth_method_completed")
+          .select("auth_method_completed, role")
           .eq("id", user.id)
           .maybeSingle();
+
+        // Punto unico di promozione ad admin: ogni richiesta di pagina
+        // autenticata passa da qui, quindi vale per tutti i metodi di accesso
+        // (password, Google, link email). Idempotente: con un'email fuori da
+        // ADMIN_EMAILS non tocca nulla, e chi ha gia' ruolo admin non produce
+        // nessuna scrittura. Mai bloccante per la navigazione.
+        await ensureAdminRole(
+          user.id,
+          user.email,
+          (profile as { role?: string | null } | null)?.role,
+        );
 
         if (profile && profile.auth_method_completed === false) {
           const url = request.nextUrl.clone();
@@ -154,7 +184,7 @@ export async function proxy(request: NextRequest) {
       );
     }
     const url = request.nextUrl.clone();
-    url.pathname = hasWaitlistSession ? "/login" : "/waitlist";
+    url.pathname = hasWaitlistSession || launched ? "/login" : "/waitlist";
     url.search = "";
     url.hash = "";
     const redirectRes = NextResponse.redirect(url);

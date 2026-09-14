@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
+import { accountIdentityFromUser } from "@/lib/account-identity";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TENANT_SHOPIFY_ID, listShopifyConnections } from "@/lib/shopify/connections";
 import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/connections";
@@ -48,7 +49,7 @@ export default async function DashboardIntegrationsPage({
   const email = false ? "admin@agentcloud.agency" : (user?.email ?? "");
 
   return (
-    <DashboardShell email={email}>
+    <DashboardShell email={email} account={accountIdentityFromUser(user)}>
       <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-6">

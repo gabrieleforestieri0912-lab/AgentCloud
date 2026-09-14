@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin-access";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { getLocale } from "@/lib/i18n/locale";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -24,7 +24,7 @@ export default async function AccountPage() {
       ? user.user_metadata.full_name
       : "";
   const firstName = fullName.split(" ")[0] || email.split("@")[0] || "Utente";
-  const isAdmin = isAdminEmail(user.email);
+  const isAdmin = await resolveIsAdmin(user);
   const createdAt =
     (user as unknown as { created_at?: string })?.created_at ?? null;
 

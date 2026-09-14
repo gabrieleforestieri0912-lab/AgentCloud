@@ -12,6 +12,18 @@ export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@agentcloud.ag
 export const FEEDBACK_EMAIL =
   process.env.FEEDBACK_EMAIL || "feedback@agentcloud.agency";
 
+/**
+ * Mittenti specifici dei tool che inviano documenti ai clienti finali
+ * (preventivi, solleciti di pagamento). Il dominio di default è
+ * `agentcloud.agency`, l'unico verificato sul provider email: usare un domino
+ * diverso farebbe fallire l'invio.
+ */
+export const QUOTE_FROM_EMAIL =
+  process.env.QUOTE_FROM_EMAIL || "preventivi@agentcloud.agency";
+
+export const FINANCE_FROM_EMAIL =
+  process.env.FINANCE_FROM_EMAIL || "finance@agentcloud.agency";
+
 /** Mittente con brand usato per tutte le email transazionali / di notifica. */
 export const FROM_EMAIL = `AgentCloud <${SUPPORT_EMAIL}>`;
 

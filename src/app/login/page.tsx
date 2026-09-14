@@ -394,7 +394,7 @@ export default function LoginPage() {
                   disabled={resetting}
                   className="text-xs font-semibold text-neutral-500 transition-colors hover:text-brand-400 disabled:opacity-50"
                 >
-                  {resetting ? "…" : a.login.forgot}
+                  {resetting ? "..." : a.login.forgot}
                 </button>
               </div>
             </form>

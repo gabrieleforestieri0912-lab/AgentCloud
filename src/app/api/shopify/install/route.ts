@@ -17,7 +17,7 @@ import {
  * GET /api/shopify/install?shop=<store>.myshopify.com[&returnTo=<path>]
  *   1. Richiede una sessione AgentCloud autenticata (il token è salvato per
  *      utente). Il login fa parte del flusso: gli utenti non loggati vengono
- *      mandati a /login?intent=shopify&next=… e qui riprendono da soli dopo
+ *      mandati a /login?intent=shopify&next=... e qui riprendono da soli dopo
  *      il login — mai un vicolo cieco.
  *   2. Valida il dominio del negozio (deve essere *.myshopify.com) per evitare
  *      open redirect.

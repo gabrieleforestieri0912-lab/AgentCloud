@@ -10,6 +10,7 @@
 import Stripe from "stripe";
 import { getResend } from "@/lib/resend";
 import { logAudit } from "@/lib/audit";
+import { FINANCE_FROM_EMAIL } from "@/lib/email-config";
 
 export type CashFlowEntry = {
   date: string;
@@ -357,7 +358,7 @@ export async function sendPaymentReminder(params: {
 
   try {
     const resend = getResend();
-    const fromAddress = process.env.QUOTE_FROM_EMAIL || "finance@agentcloud.io";
+    const fromAddress = FINANCE_FROM_EMAIL;
     const res = await resend.emails.send({
       from: `AgentCloud Finance <${fromAddress}>`,
       to: email,

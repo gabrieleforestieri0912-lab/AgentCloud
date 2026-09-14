@@ -61,11 +61,11 @@ export async function getLocale(): Promise<Locale> {
     const store = await cookies();
     const value = store.get(LOCALE_COOKIE)?.value;
     if (isLocale(value)) return value;
-    // Nessuna scelta esplicita → auto-rilevamento dagli header (paese + lingua)
+    // Nessuna scelta esplicita -> auto-rilevamento dagli header (paese + lingua)
     const { country, acceptLanguage } = await getGeoAndAcceptLanguage();
     return detectLocale({ country, acceptLanguage });
   } catch {
-    // cookies()/headers() non disponibili in alcuni contesti edge — mai far fallire il rendering.
+    // cookies()/headers() non disponibili in alcuni contesti edge - mai far fallire il rendering.
     return DEFAULT_LOCALE;
   }
 }

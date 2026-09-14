@@ -61,12 +61,32 @@ http://localhost:3000/auth/callback   (per lo sviluppo)
   canonico evita redirect superflui nei link delle email)
 - Per le email transazionali di Supabase (conferma account) personalizza il mittente con un dominio verificato (Auth → SMTP o Branding)
 
+## Verifica OAuth Google (search console)
+
+Google blocca la pubblicazione dell'app finché l'home page non è **verificata**,
+la privacy policy non è **sufficientemente dettagliata** e l'home page non è
+raggiungibile **senza login**. I tre requisiti e come sono coperti dal codice:
+
+| Requisito Google | Cosa fare |
+|------------------|-----------|
+| "The website of your home page URL is not registered to you" | In **Search Console** aggiungi la proprietà del dominio (proprietà **Dominio** con record **DNS TXT** su `agentcloud.agency`: copre insieme apex e `www`). In alternativa proprietà **Prefisso URL** con il tag HTML: imposta `GOOGLE_SITE_VERIFICATION` e rideploy — `src/app/layout.tsx` emette il `<meta name="google-site-verification">` su tutte le pagine. |
+| "Privacy policy does not have sufficient content" | L'informativa completa (titolare, dati raccolti, finalità e basi giuridiche, trattamento AI, cookie, responsabili, trasferimenti extra SEE, tempi di conservazione, sicurezza, diritti GDPR, minori, modifiche, contatti) è in `dict.legal.privacy` per tutte le lingue ed è pubblica su `/privacy`, senza redirect. |
+| "Home page is behind a login page" | `/` e le altre pagine di `PUBLIC_PATHS` (marketing, legali, marketplace) rispondono **senza sessione** (`src/proxy.ts`): la whitelist è applicata prima del controllo di autenticazione. |
+
+**Consenso OAuth — URL da usare** (devono puntare all'origine canonica `www`,
+l'unica verificata e l'unica che serve la privacy policy):
+
+- Home page: `https://www.agentcloud.agency` (non l'apex: `agentcloud.agency` fa 308 → `www`)
+- Privacy policy: `https://www.agentcloud.agency/privacy`
+- Termini: `https://www.agentcloud.agency/terms`
+
 ## Variabili d'ambiente
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...   # server-side (billing, usage, rate limits)
+GOOGLE_SITE_VERIFICATION=...              # opzionale: tag HTML di Search Console
 ```
 
 Non serve alcuna chiave OAuth nel frontend: il flusso Google è gestito interamente da Supabase.
@@ -76,6 +96,7 @@ Non serve alcuna chiave OAuth nel frontend: il flusso Google è gestito interame
 | Route | Comportamento |
 |-------|---------------|
 | `/dashboard`, `/chat`, `/agent/[id]` | redirect a `/login` se non autenticati |
+| `/`, `/about`, `/agents`, `/integrations`, `/bundles`, `/demo`, `/contact`, `/privacy`, `/terms`, `/refunds` | **pubbliche**: nessuna sessione richiesta (`PUBLIC_PATHS`) |
 | `/api/billing/portal` | **401 JSON** se non autenticati (API) |
 | `/auth/callback` | pubblica — scambia il codice PKCE e redirige |
 | `/api/agent/run` | anonimo = preview; autenticato = limiti abbonamento |
@@ -85,7 +106,55 @@ Non serve alcuna chiave OAuth nel frontend: il flusso Google è gestito interame
 
 `supabase/schema.sql` (rieseguibile) include:
 - `profiles` (id → `auth.users`, email, full_name, stripe_customer_id) + **trigger `handle_new_user`**
-- RLS: gli utenti vedono/aggiornano solo il proprio profilo; il service role gestisce tutto
+- RLS: gli utenti vedono il proprio profilo e ne aggiornano solo alcune colonne (vedi "Ruolo admin"); il service role gestisce tutto
+
+## Ruolo admin (dopo il lancio)
+
+Dopo il lancio l'accesso admin **non passa piu' dal codice**: un utente e' admin se vale
+**almeno una** delle due condizioni, entrambe risolte **solo lato server** sulla sessione
+verificata da Supabase (`getSessionUser()`), mai dal body o dalla query string:
+
+1. la sua email sta in `ADMIN_EMAILS` (variabile d'ambiente server, non `NEXT_PUBLIC_*`,
+   quindi non finisce mai nel bundle del browser);
+2. il suo `profiles.role` vale `'admin'`.
+
+Codice di riferimento: `src/lib/admin-access.ts`.
+
+### Chi e' admin adesso
+
+Prima del lancio l'unico modo per entrare era il codice di accesso, quindi gli account
+che avevano davvero completato un accesso sono promossi a `'admin'` una volta per tutte
+dalla migrazione `supabase/schema-admin-role.sql` (seed limitato agli account creati
+prima di `LAUNCH_AT`). Da quel momento restano admin anche senza codice.
+
+### Promozione automatica e nessun downgrade
+
+`ensureAdminRole()` viene chiamata da `src/proxy.ts` su ogni richiesta di pagina
+autenticata e assegna `'admin'` a chi ha l'email in `ADMIN_EMAILS` ma non ha ancora il
+ruolo. E' idempotente (nessuna scrittura se il ruolo c'e' gia') e **non declassa mai**
+nessuno: togliere un'email da `ADMIN_EMAILS` non rimuove il ruolo, che va revocato a mano
+via SQL.
+
+### Migrazione `supabase/schema-admin-role.sql`
+
+Da eseguire una volta nel SQL editor di Supabase. Fa tre cose:
+- ammette `'admin'` nel check di `profiles.role` (prima accettava solo `member`,
+  `beta_tester`, `internal_qa`, quindi scrivere `'admin'` falliva);
+- promuove gli account creati prima del lancio;
+- **revoca** l'UPDATE su `profiles` per `anon`/`authenticated` e lo ri-concede solo sulle
+  colonne scritte dall'app (`auth_method_completed`, `has_seen_chat_onboarding`,
+  `has_seen_dashboard_onboarding`, `full_name`). Senza questo passaggio, nel momento in
+  cui `'admin'` diventa un valore ammesso, qualunque utente loggato potrebbe
+  autopromuoversi via PostgREST.
+
+### Variabile d'ambiente
+
+```env
+ADMIN_EMAILS=owner@example.com,secondo@example.com
+```
+
+Va impostata **anche su Vercel** (Production e Preview), non solo in locale. Se manca,
+nessuna email viene promossa: restano admin solo gli account con `profiles.role = 'admin'`.
 
 ## Waitlist → utenti già registrati
 
