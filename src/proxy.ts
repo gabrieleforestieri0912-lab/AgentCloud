@@ -9,7 +9,7 @@ import {
 } from "@/lib/i18n/constants";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { hasLaunched } from "@/lib/waitlist-constants";
-import { ensureAdminRole } from "@/lib/admin-access";
+import { ensureAdminRole, isAdminEmail } from "@/lib/admin-access";
 
 function getLocaleForRequest(request: NextRequest) {
   const cookieVal = request.cookies.get(LOCALE_COOKIE)?.value;
@@ -109,8 +109,59 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // 4. Qualsiasi altra route (/, /login, /signup, /dashboard, /about, /agents, /pricing, ecc.)
-    // reindirizza categoricamente a /waitlist
+    // 3b. Auth routes devono restare raggiungibili pre-lancio per permettere
+    // all'admin di autenticarsi (altrimenti /login verrebbe rimbalzato a /waitlist
+    // e l'admin non avrebbe modo di entrare). Lascia passare con gestione cookie.
+    if (isAuthRoute) {
+      let res: NextResponse = NextResponse.next();
+      try {
+        const resolved = await resolveSession(request);
+        res = resolved.response;
+      } catch {
+        res = NextResponse.next();
+      }
+      return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
+    }
+
+    // 3c. Bypass admin pre-lancio: un utente autenticato che è admin
+    // (via ADMIN_EMAILS o profiles.role = 'admin') può navigare ovunque anche
+    // prima del lancio. Questo preserva la logica di src/lib/admin-access.ts
+    // e permette all'admin di lavorare su dashboard/agents/integrations.
+    try {
+      const { user, response } = await resolveSession(request);
+      if (user) {
+        if (isAdminEmail(user.email)) {
+          // Promozione best-effort anche pre-lancio (idempotente)
+          try {
+            const { createClient } = await import("@/lib/supabase/server");
+            const supabase = await createClient();
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", user.id)
+              .maybeSingle();
+            await ensureAdminRole(user.id, user.email, (profile as { role?: string | null } | null)?.role);
+          } catch {}
+          return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
+        }
+        // Fallback: admin già promosso in DB ma non più in ADMIN_EMAILS (role = 'admin')
+        try {
+          const { createClient } = await import("@/lib/supabase/server");
+          const supabase = await createClient();
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (profile && (profile as { role?: string | null }).role === "admin") {
+            return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
+          }
+        } catch {}
+      }
+    } catch {}
+
+    // 4. Qualsiasi altra route (/, /dashboard, /about, /agents, /pricing, ecc.)
+    // per utenti non-admin reindirizza categoricamente a /waitlist
     const url = request.nextUrl.clone();
     url.pathname = "/waitlist";
     url.search = "";
