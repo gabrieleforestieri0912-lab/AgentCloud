@@ -64,9 +64,14 @@ export const PUBLIC_PATHS = [
 // o inizia con "prefisso/" (così "/contact" non fa passare mai "/contacts-admin").
 // "/" corrisponde solo a se stesso.
 export function isPublicPath(pathname: string): boolean {
+  // File di verifica proprietà del dominio per Google Search Console / OAuth
+  if (/^\/google[a-z0-9]+\.html$/.test(pathname)) {
+    return true;
+  }
   return PUBLIC_PATHS.some((prefix) =>
     prefix === "/"
       ? pathname === "/"
       : pathname === prefix || pathname.startsWith(prefix + "/"),
   );
 }
+
