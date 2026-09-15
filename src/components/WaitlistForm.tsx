@@ -19,6 +19,10 @@ import {
   Loader2,
   X,
   LogIn,
+  LayoutDashboard,
+  MessageSquare,
+  Store,
+  Plug,
 } from "lucide-react";
 import Image from "next/image";
 import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
@@ -614,15 +618,54 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               title: w.step3Title as string,
               desc: w.step3Desc as string,
               mock: (
-                <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs font-semibold text-neutral-400">Task completati</span>
-                    <span className="text-sm font-bold text-white">1.847</span>
-                  </div>
-                  <div className="mt-3 grid grid-cols-4 items-end gap-1.5 h-16">
-                    {[40, 65, 45, 80, 60, 90, 75].map((h, i) => (
-                      <motion.div key={i} initial={{ height: 0 }} whileInView={{ height: `${h}%` }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-t bg-gradient-to-t from-brand-500 to-pink-400" />
-                    ))}
+                // Dashboard preview compatta — altezza ridotta e sidebar fedele a DashboardShell
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-neutral-950">
+                  <div className="flex h-[112px]">
+                    {/* Sidebar fedele allo stile reale: bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] */}
+                    <div className="flex w-[96px] shrink-0 flex-col gap-1 border-r border-white/[0.06] bg-neutral-950/80 p-2 backdrop-blur-2xl">
+                      <div className="mb-1 flex items-center gap-1.5 border-b border-white/[0.06] pb-1.5">
+                        <div className="relative h-4 w-4 overflow-hidden rounded-md">
+                          <Image src="/agentcloud.png" alt="" fill className="object-cover" sizes="16px" />
+                        </div>
+                        <span className="text-[7px] font-bold tracking-tight text-white">AgentCloud</span>
+                      </div>
+                      {[
+                        { label: "Dashboard", icon: LayoutDashboard, active: true },
+                        { label: "Chat", icon: MessageSquare, active: false },
+                        { label: "Agenti", icon: Store, active: false },
+                        { label: "Integrazioni", icon: Plug, active: false },
+                      ].map(({ label, icon: Icon, active }) => (
+                        <div
+                          key={label}
+                          className={`flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[8px] font-semibold ${active ? "bg-white/[0.06] text-white border border-white/[0.08]" : "text-neutral-500"}`}
+                        >
+                          <span className={`flex h-4 w-4 items-center justify-center rounded-md ${active ? "bg-brand-500/15 text-brand-400" : "bg-white/5"}`}>
+                            <Icon size={8} />
+                          </span>
+                          {label}
+                        </div>
+                      ))}
+                      <div className="mt-auto flex items-center gap-1 rounded-lg bg-white/[0.03] p-1">
+                        <div className="h-4 w-4 rounded-full bg-brand-500/20" />
+                        <span className="text-[7px] font-semibold text-neutral-400">Admin</span>
+                      </div>
+                    </div>
+                    {/* Main — compatto */}
+                    <div className="flex min-w-0 flex-1 flex-col bg-neutral-950 p-2.5">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[9px] font-semibold uppercase tracking-widest text-neutral-500">Task completati</span>
+                        <span className="text-xs font-bold text-white">1.847</span>
+                      </div>
+                      <div className="mt-2 grid h-10 flex-1 grid-cols-7 items-end gap-1">
+                        {[40, 65, 45, 80, 60, 90, 75].map((h, i) => (
+                          <motion.div key={i} initial={{ height: 0 }} whileInView={{ height: `${h}%` }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-t-sm bg-gradient-to-t from-brand-500 to-pink-400" />
+                        ))}
+                      </div>
+                      <div className="mt-1.5 flex gap-1">
+                        <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[7px] font-bold text-emerald-300">● Attivo</span>
+                        <span className="text-[7px] text-neutral-500">7 giorni</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ),
