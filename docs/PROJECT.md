@@ -140,7 +140,7 @@ Regola: una stringa in `es`/`de`/`fr` è **solo** nella sua lingua. Ammessi unic
 
 ## Autenticazione
 
-- **Supabase Auth** (email + password e Google OAuth) — guida completa in `SUPABASE_AUTH.md`.
+- **Supabase Auth** (email + password e Google OAuth).
 - Sessioni SSR con `@supabase/ssr`: `src/lib/supabase/server.ts` (server), `client.ts` (browser), proxy in `src/proxy.ts`.
 - `profiles` popolati automaticamente dal trigger `handle_new_user` (vedi `schema.sql`).
 - ID utente = UUID `auth.users.id` (niente più `user_2…` di Clerk).
@@ -266,7 +266,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `AGENTCLOUD_VERTICAL` | `shopify` | `shopify` \| `services` \| `full` — filtra marketplace e tool |
 | `AGENTCLOUD_FEATURE_FLAGS` | – | JSON: `enabledAgents`, `enabledTools`, `agentToolOverrides`, `enableOptionalToolsByDefault` |
 
-> **Checklist produzione** (dettagli in `SUPABASE_AUTH.md`, `STRIPE_SETUP.md`, `FEATURE_FLAGS.md`, `PRICING.md`):
+> **Checklist produzione** (dettagli in `FEATURE_FLAGS.md`, `PRICING.md`):
 > Google OAuth configurato in Supabase, webhook Stripe con i 4 eventi (`checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`), metered price per l'overage, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, riesecuzione di `supabase/schema.sql` (incluso il trigger `handle_new_user`).
 
 ---

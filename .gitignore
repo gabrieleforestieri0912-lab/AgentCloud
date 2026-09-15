@@ -68,3 +68,13 @@ data/tenants.json
 .env.local.example 
 
 brand/
+
+# ecosystem - mobile (flutter)
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+
+# ecosystem - cli
+cli/node_modules/
+cli/dist/

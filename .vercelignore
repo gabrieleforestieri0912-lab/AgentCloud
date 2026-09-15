@@ -12,3 +12,8 @@ brand/
 .env
 .env.*
 !.env.example
+
+# Sottoprogetti dell'ecosistema esclusi dal deploy web di Vercel
+mobile/
+cli/
+

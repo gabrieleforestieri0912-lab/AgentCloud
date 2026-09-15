@@ -42,7 +42,7 @@ npm run dev
 L'elenco completo e aggiornato è in **[docs/PROJECT.md → Environment Variables](docs/PROJECT.md#environment-variables-produzione)**. In sintesi per la produzione:
 
 ```env
-# Supabase (Auth + DB) — vedi docs/SUPABASE_AUTH.md per Google OAuth
+# Supabase (Auth + DB)
 NEXT_PUBLIC_SUPABASE_URL=…
 NEXT_PUBLIC_SUPABASE_ANON_KEY=…
 SUPABASE_SERVICE_ROLE_KEY=…
@@ -54,7 +54,7 @@ NEXT_PUBLIC_SITE_URL=https://tuodominio.com
 ANTHROPIC_API_KEY=sk-ant-…
 RESEND_API_KEY=re_…
 
-# Stripe (live!) — vedi docs/STRIPE_SETUP.md per payment links, webhook e metered price
+# Stripe (live!) — payment links, webhook e metered price
 STRIPE_SECRET_KEY=sk_live_…
 STRIPE_WEBHOOK_SECRET=whsec_…
 STRIPE_OVERAGE_PRICE_ID=price_…
@@ -83,16 +83,15 @@ Esegui lo schema scelto (Supabase SQL Editor o `supabase db push`) — **riesegu
 
 ## Documentazione
 
-Tutta la documentazione è raccolta in **`docs/`**:
+Tutta la documentazione del progetto è raccolta in **`docs/`**:
 
-- **[docs/PROJECT.md](docs/PROJECT.md)** — architettura, routes, i18n, billing, rate limiting, env vars complete
-- **[docs/AGENT_CATALOG.md](docs/AGENT_CATALOG.md)** — catalogo agenti e contenuti
-- **[docs/SUPABASE_AUTH.md](docs/SUPABASE_AUTH.md)** — setup autenticazione (email/password + Google OAuth)
-- **[docs/STRIPE_SETUP.md](docs/STRIPE_SETUP.md)** — payment links, webhook, overage meter, customer portal
-- **[docs/FEATURE_FLAGS.md](docs/FEATURE_FLAGS.md)** — verticali e configurazione agenti/tool
-- **[docs/PAYMENT_IMPLEMENTATION.md](docs/PAYMENT_IMPLEMENTATION.md)** — dettagli implementativi del billing
-- **[docs/PRICING.md](docs/PRICING.md)** — piani e token allowance
+- **[docs/PROJECT.md](docs/PROJECT.md)** — architettura complessiva, routes, stack tecnologico, billing, rate limiting, env vars
+- **[docs/ECOSYSTEM.md](docs/ECOSYSTEM.md)** — architettura dell'ecosistema multi-piattaforma (Web, Mobile Flutter, Chrome Extension, CLI)
+- **[docs/AGENT_CATALOG.md](docs/AGENT_CATALOG.md)** — catalogo completo degli agenti AI e relative capacità
+- **[docs/FEATURE_FLAGS.md](docs/FEATURE_FLAGS.md)** — verticali, configurazioni e feature flags di AgentCloud
+- **[docs/PRICING.md](docs/PRICING.md)** — modelli di prezzo, piani di abbonamento e token allowance
 
 ## Deploy
 
-Consigliato su Vercel (o qualsiasi host Node). Prima del lancio: Google OAuth configurato in Supabase (vedi `docs/SUPABASE_AUTH.md`), chiavi **live** Stripe, webhook Stripe configurato (4 eventi), `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, `supabase/schema.sql` eseguito.
+Consigliato su Vercel (o qualsiasi host Node). Prima del lancio: Google OAuth abilitato in Supabase con brand verificato, chiavi **live** Stripe, webhook Stripe configurati, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, `supabase/schema.sql` eseguito.
+
