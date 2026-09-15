@@ -78,3 +78,7 @@ mobile/.flutter-plugins-dependencies
 # ecosystem - cli
 cli/node_modules/
 cli/dist/
+
+# extension build artifacts (unica sorgente = /extension)
+agentcloud-extension/
+extension/dist/
