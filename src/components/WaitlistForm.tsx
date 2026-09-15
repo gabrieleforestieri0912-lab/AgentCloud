@@ -29,6 +29,7 @@ import FloatingBrandBubbles, { type FloatingBubble } from "@/components/Floating
 import CountdownTimer from "@/components/CountdownTimer";
 import LanguageToggle from "@/components/LanguageToggle";
 import BrandLogo from "@/components/BrandLogo";
+import Footer from "@/components/Footer";
 import { AVAILABLE_AGENTS } from "@/lib/agents";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -839,15 +840,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             <button onClick={openForm} className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-8 py-3 text-sm font-bold text-black">
               {isSuccess ? (w.heroJoined as string) : (w.heroCta as string)} <ArrowRight className="h-4 w-4" />
             </button>
-            <div className="mt-6 flex items-center justify-center gap-4 text-xs font-bold text-neutral-500">
-              <a href="https://www.instagram.com/_agentcloud/" target="_blank" rel="noopener noreferrer" className="hover:text-white">Instagram</a>
-              <a href="https://www.linkedin.com/in/agent-cloud-323218431/" target="_blank" rel="noopener noreferrer" className="hover:text-white">LinkedIn</a>
-              <a href="https://x.com/AgentCloud2k" target="_blank" rel="noopener noreferrer" className="hover:text-white">X</a>
-            </div>
           </div>
         </div>
-        <p className="mt-6 text-center text-xs text-neutral-600">© 2026 AgentCloud. Tutti i diritti riservati. • info@agentcloud.agency</p>
       </section>
+
+      {/* Footer contatto + social */}
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </div>
   );
 }
