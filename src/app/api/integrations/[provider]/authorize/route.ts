@@ -29,30 +29,29 @@ export async function GET(
   const returnTo = returnParam && isSafeRedirectPath(returnParam) ? returnParam : "/dashboard/integrations";
 
   const user = await getSessionUser();
-  if (!user && !true) {
+  if (!user) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("next", `/api/integrations/${provider}/authorize${returnTo !== "/dashboard/integrations" ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`);
     return NextResponse.redirect(loginUrl);
   }
-  const tenantId = user?.id ?? null;
-  if (!tenantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const tenantId = user.id;
 
   const adapter = getProvider(provider);
-  if (!adapter) return NextResponse.json({ error: "Provider not configured" }, { status: 500 });
+  if (!adapter) {
+    const sep = returnTo.includes("?") ? "&" : "?";
+    return NextResponse.redirect(new URL(`${returnTo}${sep}integration=${provider}&status=error&reason=provider_not_configured`, req.url));
+  }
 
   const { state, cookieValue } = buildState(tenantId, provider);
-  // Ogni provider usa il proprio callback /api/integrations/<provider>/callback: lo
-  // state firmato viene salvato nel cookie ac_integrations_state e verificato dal
-  // callback dello stesso provider. Per google_sheets questo significa che in Google
-  // Cloud Console va whitelistata https://<host>/api/integrations/google_sheets/callback
-  // (vedi docs/integrations-setup.md §5).
   const redirectUri = getRedirectUri(req.url, provider as never);
 
   let authUrl: string;
   try {
     authUrl = adapter.getAuthUrl({ state, redirectUri });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Failed to build auth URL" }, { status: 500 });
+    const errorMsg = e instanceof Error ? e.message : "Failed to build auth URL";
+    const sep = returnTo.includes("?") ? "&" : "?";
+    return NextResponse.redirect(new URL(`${returnTo}${sep}integration=${provider}&status=error&reason=${encodeURIComponent(errorMsg)}`, req.url));
   }
 
   const res = NextResponse.redirect(authUrl);

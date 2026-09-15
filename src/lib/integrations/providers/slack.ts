@@ -12,6 +12,9 @@ export const slackProvider: IntegrationProvider = {
   provider: "slack",
   getAuthUrl({ state, redirectUri }) {
     const clientId = process.env.SLACK_CLIENT_ID || "";
+    if (!clientId) {
+      throw new Error("Slack non configurato (SLACK_CLIENT_ID mancante nel file .env — crea un'app su api.slack.com/apps)");
+    }
     const scopes = process.env.SLACK_BOT_SCOPES || DEFAULT_BOT_SCOPES.join(",");
     const params = new URLSearchParams({
       client_id: clientId,

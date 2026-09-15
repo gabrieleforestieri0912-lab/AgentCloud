@@ -9,6 +9,9 @@ export const stripeProvider: IntegrationProvider = {
   provider: "stripe",
   getAuthUrl({ state, redirectUri }) {
     const clientId = process.env.STRIPE_CONNECT_CLIENT_ID || "";
+    if (!clientId) {
+      throw new Error("Stripe Connect non configurato (STRIPE_CONNECT_CLIENT_ID mancante nel file .env)");
+    }
     const params = new URLSearchParams({
       response_type: "code",
       client_id: clientId,

@@ -20,9 +20,8 @@ export async function POST(
   }
 
   const user = await getSessionUser();
-  if (!user && !true) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const tenantId = user?.id ?? null;
-  if (!tenantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const tenantId = user.id;
 
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "db_unavailable" }, { status: 500 });

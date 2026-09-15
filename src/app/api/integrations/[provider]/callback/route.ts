@@ -27,17 +27,19 @@ export async function GET(
   }
 
   const user = await getSessionUser();
-  if (!user && !true) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-  const tenantId = user?.id ?? null;
-  if (!tenantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
   const paramsUrl = req.nextUrl.searchParams;
   const code = paramsUrl.get("code");
   const state = paramsUrl.get("state");
   const error = paramsUrl.get("error");
   const errorDesc = paramsUrl.get("error_description");
+
+  const cookieState = readStateCookie(req);
+  const payload = state ? verifyState(state, cookieState) : null;
+  const tenantId = user?.id || payload?.t;
+
+  if (!tenantId) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
   const returnBase = () => {
     const c = req.cookies.get(INTEGRATIONS_RETURN_COOKIE)?.value;
@@ -62,9 +64,6 @@ export async function GET(
   }
 
   if (!code || !state) return fail("missing_params");
-
-  const cookieState = readStateCookie(req);
-  const payload = verifyState(state, cookieState);
   if (!payload) return fail("state_mismatch");
   if (payload.p !== provider) return fail("state_provider_mismatch");
   if (payload.t !== tenantId) return fail("state_tenant_mismatch");

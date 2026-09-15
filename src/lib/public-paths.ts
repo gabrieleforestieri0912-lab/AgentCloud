@@ -58,6 +58,12 @@ export const PUBLIC_PATHS = [
   "/api/waitlist",
   "/api/contact",
   "/api/sitemap",
+  // Integrazioni OAuth callbacks & Webhooks (accessibili senza sessione affinché terze parti possano completare l'handshake o inviare eventi)
+  "/api/integrations",
+  "/api/shopify/callback",
+  "/api/shopify/webhooks",
+  "/api/shopify/install",
+  "/api/shopify/status",
 ];
 
 // Match con prefisso stretto: un path è pubblico quando è uguale a un prefisso

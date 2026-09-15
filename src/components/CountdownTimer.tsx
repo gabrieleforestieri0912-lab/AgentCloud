@@ -15,7 +15,7 @@
 import { useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 import { PartyPopper } from "lucide-react";
-import { LAUNCH_AT } from "@/lib/waitlist-constants";
+import { LAUNCH_AT, hasLaunched } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
 
 const LAUNCH_DATE = new Date(LAUNCH_AT);
@@ -67,16 +67,15 @@ function getSnapshot(): TimeUnit[] {
   return snapshot;
 }
 
-// Stabile sul server così HTML server e client combaciano (nessun mismatch di
-// hydration).
+// Server snapshot calcola il tempo reale mancante sul server, evitando il flash di 00:00:00:00
 function getServerSnapshot(): TimeUnit[] {
-  return ZERO;
+  return getTimeLeft();
 }
 
 export default function CountdownTimer() {
   const { dict } = useLanguage();
   const units = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const isLaunched = units.every((u) => u.value === 0);
+  const isLaunched = hasLaunched();
 
   return (
     <motion.div

@@ -10,9 +10,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function GET(req: NextRequest) {
   const user = await getSessionUser();
-  if (!user && !true) return NextResponse.json({ providers: [] }, { status: 200 });
-  const tenantId = user?.id ?? null;
-  if (!tenantId) return NextResponse.json({ providers: [] }, { status: 200 });
+  if (!user) return NextResponse.json({ providers: [] }, { status: 200 });
+  const tenantId = user.id;
 
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ providers: [] }, { status: 200 });

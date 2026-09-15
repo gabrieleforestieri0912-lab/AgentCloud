@@ -77,22 +77,49 @@ export async function proxy(request: NextRequest) {
   const isAsset = pathname.startsWith("/_next/") || pathname.includes(".");
   const isApiPublic = pathname.startsWith("/api/") && isPublicPath(pathname);
 
-  // Rotte esenti: waitlist, auth, asset, API pubbliche, pagine pubbliche.
-  // Le pagine in `PUBLIC_PATHS` (home, marketing, legali) devono restare
-  // raggiungibili **senza sessione**: sono la vetrina pubblica dell'app e la
-  // verifica OAuth di Google le controlla da un browser non autenticato
-  // ("home page is behind a login page"). Prima di questa correzione la
-  // whitelist veniva calcolata ma non applicata: chi non era loggato finiva
-  // sempre su /waitlist (pre-lancio) o /login (post-lancio).
-  const hasWaitlistSession = request.cookies.get("waitlist_session")?.value;
-  const isPublicPage = isPublicPath(pathname) && !pathname.startsWith("/api/");
 
-  // ─── Lancio avvenuto: la waitlist è chiusa ───
-  // Al termine del conto alla rovescia /waitlist non è più raggiungibile: si
-  // viene rimandati alla home (anche per i flussi di post-logout che oggi
-  // atterrano qui). La home resta pubblica: sono le sole pagine protette a
-  // mandare i visitatori anonimi su /login.
-  if (isWaitlistRoute && launched) {
+  // ─── Lancio avvenuto vs Pre-lancio ───
+  // Se non siamo ancora al 1 Ottobre 2026: TUTTE le route a cui l'utente tenta di navigare
+  // vengono reindirizzate a /waitlist, eccetto la pagina /waitlist stessa, gli asset statici
+  // e le API di iscrizione/webhooks machine-to-machine.
+  if (!launched) {
+    // 1. La pagina /waitlist è consentita
+    if (isWaitlistRoute) {
+      const res = NextResponse.next();
+      return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
+    }
+
+    // 2. Asset statici necessari per script, fogli di stile e immagini della pagina
+    if (isAsset) {
+      return NextResponse.next();
+    }
+
+    // 3. API necessarie per la waitlist (POST/GET /api/waitlist) e webhook/callback esterni
+    const isWaitlistApi = pathname === "/api/waitlist";
+    const isWebhookOrCallback =
+      pathname.startsWith("/api/shopify/") ||
+      pathname.startsWith("/api/billing/webhook") ||
+      pathname.startsWith("/api/whatsapp/webhook") ||
+      pathname.startsWith("/api/email/webhook") ||
+      pathname.startsWith("/api/integrations/") ||
+      pathname.startsWith("/api/auth/google/callback");
+
+    if (isWaitlistApi || isWebhookOrCallback) {
+      return NextResponse.next();
+    }
+
+    // 4. Qualsiasi altra route (/, /login, /signup, /dashboard, /about, /agents, /pricing, ecc.)
+    // reindirizza categoricamente a /waitlist
+    const url = request.nextUrl.clone();
+    url.pathname = "/waitlist";
+    url.search = "";
+    url.hash = "";
+    const redirectRes = NextResponse.redirect(url);
+    return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
+  }
+
+  // ─── Lancio avvenuto (1 Ottobre 2026 e successivi): la waitlist è chiusa ───
+  if (isWaitlistRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";
@@ -101,8 +128,9 @@ export async function proxy(request: NextRequest) {
     return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
   }
 
-  if (isWaitlistRoute || isAuthRoute || isApiPublic || isAsset || isPublicPage) {
-    if (isWaitlistRoute && !needsCookie) return NextResponse.next();
+  const isPublicPage = isPublicPath(pathname) && !pathname.startsWith("/api/");
+
+  if (isAuthRoute || isApiPublic || isAsset || isPublicPage) {
     let res: NextResponse = NextResponse.next();
     try {
       const resolved = await resolveSession(request);
@@ -113,23 +141,19 @@ export async function proxy(request: NextRequest) {
     return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
   }
 
-  // ─── Rotte protette: richiedono sessione ─
+  // ─── Post-lancio: Rotte protette che richiedono sessione ─
   try {
     const { response, user } = await resolveSession(request);
     if (!user) {
-      // API protette → 401 JSON; pagine → redirect a /login (o /waitlist se no waitlist_session)
       if (pathname.startsWith("/api/")) {
         const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
         return NextResponse.json(
           { error: getDictionary(locale).apiErrors.unauthorized },
           { status: 401 },
         );
-      }        // Utente con waitlist_session ma non loggato → redirect a /login
-        // Utente senza nulla → redirect a /waitlist (prima del lancio) o a /login
-        // (dopo: la waitlist è chiusa e non deve diventare un anello di redirect)
-        // Le pagine pubbliche non arrivano qui: escono prima dalla whitelist.
+      }
       const url = request.nextUrl.clone();
-      url.pathname = hasWaitlistSession || launched ? "/login" : "/waitlist";
+      url.pathname = "/login";
       url.search = "";
       url.hash = "";
       const redirectRes = NextResponse.redirect(url);
@@ -184,7 +208,7 @@ export async function proxy(request: NextRequest) {
       );
     }
     const url = request.nextUrl.clone();
-    url.pathname = hasWaitlistSession || launched ? "/login" : "/waitlist";
+    url.pathname = "/login";
     url.search = "";
     url.hash = "";
     const redirectRes = NextResponse.redirect(url);
