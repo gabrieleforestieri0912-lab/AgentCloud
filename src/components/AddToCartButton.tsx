@@ -18,8 +18,7 @@ export default function AddToCartButton({
 }) {
   const { add, isInCart } = useCart();
   const { isOwned } = useOwned();
-  const { locale } = useLanguage();
-  const isIt = locale === "it";
+  const { dict } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const owned = isOwned(slug);
@@ -32,7 +31,7 @@ export default function AddToCartButton({
         className={`inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 ${className} ${compact ? "!px-3 !py-1.5 !text-xs" : ""}`}
       >
         <MessageSquare size={15} />
-        {isIt ? "Apri in chat" : "Open in chat"}
+        {dict.agentDetail.openInChat}
       </Link>
     );
   }
@@ -54,7 +53,7 @@ export default function AddToCartButton({
         className={`inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 ${className} ${compact ? "!px-3 !py-1.5 !text-xs" : ""}`}
       >
         <Check size={15} className="text-emerald-400" />
-        {isIt ? "Nel carrello" : "In cart"}
+        {dict.cartPage.inCart}
       </span>
     );
   }
@@ -72,13 +71,7 @@ export default function AddToCartButton({
       ) : (
         <ShoppingCart size={15} className="transition-transform group-hover:scale-110" />
       )}
-      {done
-        ? isIt
-          ? "Aggiunto!"
-          : "Added!"
-        : isIt
-          ? "Aggiungi al carrello"
-          : "Add to cart"}
+      {done ? dict.agentDetail.added : dict.agentDetail.addToCart}
     </button>
   );
 }

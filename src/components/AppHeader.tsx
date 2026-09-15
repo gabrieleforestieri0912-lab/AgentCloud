@@ -30,11 +30,10 @@ export default function AppHeader({
   onToggleSidebar,
   agentLabel,
 }: AppHeaderProps) {
-  const { dict, locale } = useLanguage();
-  const isIt = locale === "it";
-  const homeLabel = isIt ? "Torna alla home" : "Back to home";
-  const dashboardLabel = isIt ? "Dashboard" : "Dashboard";
-  const chatLabel = "Chat";
+  const { dict } = useLanguage();
+  const homeLabel = dict.appHeader.backHome;
+  const dashboardLabel = dict.appHeader.dashboard;
+  const chatLabel = dict.appHeader.chat;
 
   const defaultTitle =
     variant === "dashboard"

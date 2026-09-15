@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
 import { resolveIsAdmin } from "@/lib/admin-access";
 import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AccountClient from "./account-client";
@@ -13,7 +14,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function AccountPage() {
   const locale = await getLocale();
-  const isIt = locale === "it";
 
   const user = await getSessionUser();
   if (!user) redirect("/login");
@@ -47,6 +47,8 @@ export default async function AccountPage() {
   const g = await getGoogleConnectionSummary(user.id).catch(() => null);
   googleEmail = g?.googleEmail ?? null;
 
+  const dict = getDictionary(locale);
+
   return (
     <main className="min-h-screen bg-neutral-950">
       <Navbar />
@@ -54,12 +56,10 @@ export default async function AccountPage() {
         <div className="mx-auto max-w-5xl space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-white">
-              {isIt ? "Account" : "Account"}
+              {dict.accountPage.title}
             </h1>
             <p className="mt-2 text-neutral-400">
-              {isIt
-                ? "Gestisci il tuo profilo, piano e connessioni."
-                : "Manage your profile, plan and connections."}
+              {dict.accountPage.subtitle}
             </p>
           </div>
 
@@ -78,7 +78,7 @@ export default async function AccountPage() {
 
           <div className="mt-8 border-t border-white/5 pt-8">
             <h2 className="text-2xl font-bold text-white mb-6">
-              {isIt ? "Impostazioni" : "Settings"}
+              {dict.accountPage.settingsTitle}
             </h2>
             <SettingsClient isMock={false} email={email} />
           </div>

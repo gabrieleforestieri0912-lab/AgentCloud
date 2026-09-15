@@ -21,47 +21,37 @@ export default function ChatOnboarding({ onComplete }: ChatOnboardingProps) {
   const [visible, setVisible] = useState(true);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const { locale } = useLanguage();
+  const { dict } = useLanguage();
 
   const steps: StepConfig[] = [
     {
       target: "[data-onboard='nav']",
-      title: locale === "it" ? "Navigazione rapida" : "Quick navigation",
-      desc: locale === "it"
-        ? "Usa queste tab per passare tra Chat, Strumenti e Agenti senza lasciare la sidebar."
-        : "Use these tabs to switch between Chat, Tools and Agents without leaving the sidebar.",
+      title: dict.chatOnboarding.navigation,
+      desc: dict.chatOnboarding.navigationDesc,
       position: "right",
     },
     {
       target: "[data-onboard='new-chat']",
-      title: locale === "it" ? "Nuova conversazione" : "New conversation",
-      desc: locale === "it"
-        ? "Clicca qui per iniziare una nuova chat da zero."
-        : "Click here to start a new chat from scratch.",
+      title: dict.chatOnboarding.newConversation,
+      desc: dict.chatOnboarding.newConversationDesc,
       position: "right",
     },
     {
       target: "[data-onboard='conversations']",
-      title: locale === "it" ? "Cronologia chat" : "Chat history",
-      desc: locale === "it"
-        ? "Tutte le tue conversazioni appaiono qui. Rinomina, archivia o eliminale con un click."
-        : "All your conversations appear here. Rename, archive or delete them with one click.",
+      title: dict.chatOnboarding.history,
+      desc: dict.chatOnboarding.historyDesc,
       position: "right",
     },
     {
       target: "[data-onboard='chat-input']",
-      title: locale === "it" ? "Scrivi il tuo messaggio" : "Type your message",
-      desc: locale === "it"
-        ? "Parla con l'assistente AI qui. Puoi anche allegare file trascinandoli."
-        : "Talk to the AI assistant here. You can also attach files by dragging them.",
+      title: dict.chatOnboarding.message,
+      desc: dict.chatOnboarding.messageDesc,
       position: "top",
     },
     {
       target: "[data-onboard='account']",
-      title: locale === "it" ? "Il tuo account" : "Your account",
-      desc: locale === "it"
-        ? "Gestisci il tuo profillo, carrello e impostazioni da qui."
-        : "Manage your profile, cart and settings from here.",
+      title: dict.chatOnboarding.account,
+      desc: dict.chatOnboarding.accountDesc,
       position: "right",
     },
   ];
@@ -235,7 +225,7 @@ export default function ChatOnboarding({ onComplete }: ChatOnboardingProps) {
               className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft size={12} />
-              {locale === "it" ? "Indietro" : "Back"}
+              {dict.onboarding.back}
             </button>
             <span className="text-[10px] text-neutral-500">
               {step + 1} / {steps.length}
@@ -244,9 +234,7 @@ export default function ChatOnboarding({ onComplete }: ChatOnboardingProps) {
               onClick={handleNext}
               className="flex items-center gap-1 rounded-lg bg-brand-500 px-4 py-1.5 text-xs font-bold text-white hover:bg-brand-400 transition-all"
             >
-              {isLast
-                ? locale === "it" ? "Inizia!" : "Start!"
-                : locale === "it" ? "Avanti" : "Next"}
+              {isLast ? dict.onboarding.start : dict.onboarding.next}
               {!isLast && <ChevronRight size={12} />}
             </button>
           </div>

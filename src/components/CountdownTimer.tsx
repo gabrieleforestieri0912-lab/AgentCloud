@@ -16,22 +16,19 @@ import { useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 import { PartyPopper } from "lucide-react";
 import { LAUNCH_AT } from "@/lib/waitlist-constants";
+import { useLanguage } from "./LanguageProvider";
 
 const LAUNCH_DATE = new Date(LAUNCH_AT);
 
 interface TimeUnit {
   value: number;
-  label: string;
-  labelIt: string;
 }
 
+/** Etichette per unità, nell'ordine in cui `getTimeUnits` le restituisce. */
+const UNIT_LABELS = ["days", "hours", "minutes", "seconds"] as const;
+
 function getTimeUnits(days: number, hours: number, minutes: number, seconds: number): TimeUnit[] {
-  return [
-    { value: days, label: "Days", labelIt: "Giorni" },
-    { value: hours, label: "Hours", labelIt: "Ore" },
-    { value: minutes, label: "Minutes", labelIt: "Minuti" },
-    { value: seconds, label: "Seconds", labelIt: "Secondi" },
-  ];
+  return [{ value: days }, { value: hours }, { value: minutes }, { value: seconds }];
 }
 
 function getTimeLeft(): TimeUnit[] {
@@ -76,7 +73,8 @@ function getServerSnapshot(): TimeUnit[] {
   return ZERO;
 }
 
-export default function CountdownTimer({ locale = "en" }: { locale?: string }) {
+export default function CountdownTimer() {
+  const { dict } = useLanguage();
   const units = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const isLaunched = units.every((u) => u.value === 0);
 
@@ -94,14 +92,14 @@ export default function CountdownTimer({ locale = "en" }: { locale?: string }) {
           <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-400" />
         </span>
         <span className="text-[11px] font-bold uppercase tracking-widest text-brand-400">
-          {locale === "it" ? "Lancio il 15 Settembre 2026" : "Launching September 15, 2026"}
+          {dict.countdownTimer.launchDate}
         </span>
       </div>
 
       {/* Blocchi del timer */}
       <div className="flex items-center justify-center gap-2">
         {units.map((unit, i) => (
-          <div key={unit.label} className="flex items-center gap-2">
+          <div key={UNIT_LABELS[i]} className="flex items-center gap-2">
             <div className="flex flex-col items-center">
               <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-lg bg-neutral-900 border border-white/10 shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
                 <motion.span
@@ -115,7 +113,7 @@ export default function CountdownTimer({ locale = "en" }: { locale?: string }) {
                 </motion.span>
               </div>
               <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
-                {locale === "it" ? unit.labelIt : unit.label}
+                {dict.countdownTimer[UNIT_LABELS[i]]}
               </span>
             </div>
             {i < units.length - 1 && (
@@ -132,7 +130,7 @@ export default function CountdownTimer({ locale = "en" }: { locale?: string }) {
           className="text-center mt-3 text-sm font-bold text-emerald-400"
         >
           <PartyPopper size={16} className="inline mr-1" />
-          {locale === "it" ? "La piattaforma è live!" : "The platform is live!"}
+          {dict.countdownTimer.platformLive}
         </motion.p>
       )}
     </motion.div>

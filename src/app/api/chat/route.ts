@@ -1,6 +1,11 @@
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { buildPlatformSystemPrompt } from "@/lib/agents/platform-context";
 import { getLocale } from "@/lib/i18n/locale";
+import {
+  lastUserText,
+  replyLanguage,
+  withLanguageDirective,
+} from "@/lib/agents/language";
 import { getLLMProvider } from "@/lib/llm";
 import type { LLMMessage } from "@/lib/llm";
 import { createWordEmitter } from "@/lib/stream";
@@ -61,6 +66,13 @@ export async function POST(req: Request) {
       },
     );
 
+    // Lingua della risposta: quella dell'ultimo messaggio, con la lingua della
+    // piattaforma come default quando il messaggio non ne indica una.
+    const replyLocale = replyLanguage(
+      locale,
+      lastUserText(conversationMessages),
+    );
+
     const provider = getLLMProvider();
     const encoder = new TextEncoder();
     const streamErrorMessage = await apiErrorMessage("aiStreamError");
@@ -84,12 +96,23 @@ export async function POST(req: Request) {
         // Viene costruito in modo lazy così gli header arrivano subito al
         // client e cold start / query DB lente non bloccano lo stream prima
         // del primo byte. Un errore degrada al prompt generico, mai a un errore.
-        let systemPrompt = "You are a helpful AI assistant.";
+        // La direttiva di lingua è accodata a ogni variante del prompt
+        // (anche a quella generica di ripiego).
+        let systemPrompt = withLanguageDirective(
+          "You are a helpful AI assistant.",
+          replyLocale,
+        );
         try {
           systemPrompt =
             agentId && AGENT_RUNTIME[agentId]
-              ? AGENT_RUNTIME[agentId].systemPrompt
-              : await buildPlatformSystemPrompt(locale);
+              ? withLanguageDirective(
+                  AGENT_RUNTIME[agentId].systemPrompt,
+                  replyLocale,
+                )
+              : // Il prompt di piattaforma è scritto nella lingua della
+                // risposta (contiene elenchi, prezzi e regole) e chiude già
+                // con la direttiva.
+                await buildPlatformSystemPrompt(replyLocale);
         } catch {
           // Mantieni il prompt generico — non far mai fallire la chat perché
           // il prompt di piattaforma non si è potuto costruire.

@@ -6,7 +6,7 @@
  * verso /api/auth/google/connect. Rilegge lo stato da /api/google/status.
  */
 import { useEffect, useState } from "react";
-import type { Locale } from "@/lib/i18n/constants";
+import { DATE_LOCALES, type Locale } from "@/lib/i18n/constants";
 import { CheckCircle2, Link2, Mail, Unlink } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { t } from "@/lib/i18n/dictionaries";
@@ -35,7 +35,7 @@ function formatDate(iso: string | null, locale: Locale): string {
   if (!iso) return "—";
   try {
     return new Date(iso).toLocaleDateString(
-      locale === "it" ? "it-IT" : "en-US",
+      DATE_LOCALES[locale],
       { day: "numeric", month: "long", year: "numeric" },
     );
   } catch {
@@ -47,7 +47,7 @@ function formatDate(iso: string | null, locale: Locale): string {
  * Dashboard card (Phase 6) that lets a logged-in user connect (OAuth) or
  * disconnect their Google account. Surfaces the outcome of the OAuth callback
  * (?google=connected | ?google=error&reason=...) without a full reload, then
- * strips the query params from the URL — same pattern as ShopifyConnect.
+ * strips the query params from the URL.
  */
 export default function GoogleConnect({
   connected,

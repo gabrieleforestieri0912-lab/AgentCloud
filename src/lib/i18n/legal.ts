@@ -1,19 +1,16 @@
 /**
- * Traduzioni dei documenti legali per ES/DE/FR.
- *
- * Perché esiste: in `dictionaries.ts` i contenuti legali di `en` e `it` sono
- * scritti per esteso, mentre es/de/fr erano rimasti al testo inglese (un
- * placeholder che nessun mercato leggeva volentieri: privacy, termini e
- * rimborsi sono documenti che l'utente — e i revisori di Google/Shopify —
- * leggono davvero). Qui vivono le traduzioni complete.
+ * Documenti legali (privacy, termini di servizio, politica di rimborso) e
+ * relative traduzioni.
  *
  * Perché un modulo separato e non il dizionario: `dictionaries.ts` finisce nel
- * bundle client (lo importa `LanguageProvider`), mentre questi testi servono
- * solo alle tre pagine server-rendered `/privacy`, `/terms`, `/refunds`.
- * Tenendoli qui il bundle client non cresce.
+ * bundle client (lo importa `LanguageProvider`), mentre questi testi servono solo
+ * alle pagine server-rendered `/privacy`, `/terms` e `/refunds`. Qui vivono i
+ * documenti per esteso (IT ed EN) e le traduzioni complete ES/DE/FR; il dizionario
+ * conserva soltanto i link incrociati e `backHome`.
  *
- * `backHome` non viene tradotto di nuovo: resta quello già localizzato nel
- * dizionario (`Volver al inicio`, `Zur Startseite`, `Retour à l'accueil`).
+ * `LegalTranslation` non è `Partial`: una traduzione incompleta è un errore di
+ * compilazione, non una frase italiana o inglese che compare sotto un'altra
+ * lingua.
  */
 import { getDictionary } from "./dictionaries";
 import type { Locale } from "./constants";
@@ -27,9 +24,671 @@ export type LegalDocument = {
   sections: { heading: string; paragraphs: string[] }[];
 };
 
-type LegalOverlay = Partial<Omit<LegalDocument, "backHome">>;
+type LegalTranslation = Omit<LegalDocument, "backHome">;
 
-const ES: Record<LegalDocumentKey, LegalOverlay> = {
+const IT: Record<LegalDocumentKey, LegalTranslation> = {
+  privacy: {
+    title: "Informativa Privacy",
+    lastUpdated: "Ultimo aggiornamento: settembre 2026",
+    sections: [
+      {
+        heading: "1. Chi siamo e titolare del trattamento",
+        paragraphs: [
+          "AgentCloud (\"AgentCloud\", \"noi\") gestisce il sito e la piattaforma disponibili su agentcloud.agency e nei relativi sottodomini (il \"Servizio\"). AgentCloud è il titolare del trattamento dei dati personali descritti in questa informativa.",
+          "Per qualsiasi questione relativa alla privacy, compreso l'esercizio dei tuoi diritti, puoi scriverci a privacy@agentcloud.agency; per richieste di assistenza l'indirizzo è support@agentcloud.agency. Rispondiamo alle richieste privacy entro 30 giorni.",
+          "Questa informativa riguarda il nostro sito, la piattaforma AgentCloud e gli agenti AI a cui ti abboni. Non riguarda i siti e i servizi di terze parti che scegli di collegare ad AgentCloud: per quelli valgono le rispettive informative.",
+        ],
+      },
+      {
+        heading: "2. Che cosa fa AgentCloud",
+        paragraphs: [
+          "AgentCloud è una piattaforma no-code che permette alle aziende di attivare e gestire agenti AI. Crei un account, scegli gli agenti dal marketplace, colleghi gli strumenti che già usi (per esempio Shopify, Gmail, Google Calendar, Google Sheets, Slack, Notion o HubSpot) e conversi con gli agenti dall'interfaccia web.",
+          "Per erogare il servizio trattiamo i dati dell'account, i dati di fatturazione, i messaggi che scambi con gli agenti, i dati che gli strumenti collegati trasmettono agli agenti e i dati tecnici necessari a mantenere la piattaforma sicura e a misurare il consumo.",
+        ],
+      },
+      {
+        heading: "3. Informazioni che raccogliamo",
+        paragraphs: [
+          "Dati dell'account e del profilo: nome, indirizzo email, immagine del profilo (se accedi con Google), metodo di autenticazione, lingua e preferenze dell'interfaccia, data di creazione e stato dell'account.",
+          "Dati di autenticazione: la registrazione e l'accesso sono gestiti da Supabase Auth. Se ti registri con email e password, la password è conservata dal fornitore di autenticazione solo come hash con salt: non la vediamo e non la memorizziamo mai in chiaro. Se accedi con Google riceviamo da Google nome, indirizzo email e immagine del profilo.",
+          "Dati di fatturazione: piano e agenti sottoscritti, importi, valuta, fatture, stato del pagamento, paese di fatturazione e tipo di metodo di pagamento (per esempio carta, Klarna o Amazon Pay). I numeri di carta e le credenziali di pagamento complete sono raccolti e conservati direttamente dai nostri processori di pagamento (Stripe e PayPal): non transitano mai sui server di AgentCloud, che ricevono solo un token, il circuito della carta e le ultime cifre.",
+          "Dati delle conversazioni e di utilizzo: i messaggi che invii agli agenti, le risposte generate, gli strumenti o le integrazioni che l'agente usa per tuo conto, il numero di token consumati e le relative date. Questi dati servono a generare le risposte, applicare i limiti del piano e fatturare il consumo extra.",
+          "Dati delle integrazioni collegate: quando colleghi uno strumento di terze parti conserviamo i token OAuth di accesso e rinnovo che autorizzi (cifrati a riposo) e i pochi metadati necessari a identificare la connessione (per esempio il dominio dello shop per Shopify). Le azioni dell'agente vengono eseguite con quei token solo quando le avvii.",
+          "Dati dei form e delle comunicazioni: nome, cognome, indirizzo email e contenuto del messaggio quando usi il modulo di contatto, richiedi una demo o ti iscrivi alla lista d'attesa.",
+          "Dati tecnici e di sicurezza: indirizzo IP, user agent e metadati delle richieste, usati per il rate limiting, la prevenzione degli abusi, la diagnostica degli errori e i log di sicurezza.",
+        ],
+      },
+      {
+        heading: "4. Come raccogliamo le informazioni",
+        paragraphs: [
+          "Direttamente da te, quando crei un account, sottoscrivi un abbonamento, conversi con un agente, colleghi un'integrazione o compili uno dei nostri moduli.",
+          "Dal provider di identità che scegli, per esempio Google, oppure dai servizi di terze parti che colleghi, che ci trasmettono i dati necessari all'agente per eseguire l'operazione che hai richiesto.",
+          "Automaticamente, dal tuo browser o dispositivo, tramite i cookie e le tecnologie simili descritti nella sezione 8.",
+        ],
+      },
+      {
+        heading: "5. Perché usiamo i tuoi dati e con quale base giuridica",
+        paragraphs: [
+          "Per fornire il Servizio che hai richiesto (esecuzione del contratto): creare e gestire l'account, eseguire gli agenti sottoscritti, conservare la cronologia delle conversazioni, applicare i limiti di piano e di token e offrire assistenza.",
+          "Per gestire i pagamenti e rispettare gli obblighi fiscali e contabili (contratto e obbligo di legge): emettere fatture, gestire rimborsi, prevenire frodi nei pagamenti e conservare la documentazione contabile.",
+          "Per mantenere la piattaforma sicura e affidabile (interesse legittimo): rate limiting, prevenzione di abusi e frodi, log di sicurezza, diagnostica degli errori e protezione dell'infrastruttura.",
+          "Per inviare email transazionali e comunicazioni sull'account (contratto): messaggi di benvenuto, ricevute, avvisi di abbonamento e di consumo, allerte di sicurezza. Non inviamo email di marketing senza il tuo consenso e puoi disiscriverti dalle comunicazioni non essenziali in qualsiasi momento.",
+          "Per migliorare il Servizio (interesse legittimo): statistiche aggregate su utilizzo ed errori, per correggere i problemi e dare priorità alle funzionalità. Non usiamo i contenuti delle chat per addestrare modelli.",
+          "Per rispettare la legge (obbligo di legge): rispondere a richieste legittime delle autorità e conservare i documenti che siamo tenuti a mantenere.",
+        ],
+      },
+      {
+        heading: "6. Trattamento AI delle conversazioni",
+        paragraphs: [
+          "Le risposte degli agenti sono generate da un modello linguistico di terze parti (Anthropic Claude). Il contenuto dei tuoi messaggi, il contesto pertinente della conversazione e i risultati degli strumenti collegati vengono trasmessi al fornitore del modello esclusivamente per generare la risposta che hai richiesto.",
+          "Né noi né il nostro fornitore del modello usiamo i contenuti delle conversazioni per addestrare modelli di intelligenza artificiale. Le conversazioni non vengono vendute e non sono usate per finalità pubblicitarie.",
+          "Non inviare agli agenti categorie particolari di dati (per esempio dati sulla salute) né dati che non sei autorizzato a condividere: gli agenti sono strumenti di automazione generalisti e non sono progettati per contenuti di questo tipo.",
+        ],
+      },
+      {
+        heading: "7. Condivisione dei dati",
+        paragraphs: [
+          "Non vendiamo i tuoi dati personali e non li condividiamo con terze parti per finalità di marketing proprio di queste ultime.",
+          "Condividiamo i dati con i fornitori di servizi (responsabili del trattamento) che gestiscono il Servizio per nostro conto: Supabase (database e autenticazione); Stripe e PayPal (pagamenti, fatturazione e rimborsi); Resend (invio delle email transazionali); Anthropic (inferenza del modello AI); Google (accesso con account Google e, se li colleghi, Gmail, Google Calendar e Google Sheets); il fornitore dell'integrazione che scegli di collegare (per esempio Shopify, Slack, Notion, HubSpot); Vercel (hosting e statistiche web aggregate).",
+          "Questi fornitori possono accedere ai dati personali solo per erogare il servizio per nostro conto, in base a un contratto, e sono tenuti a proteggerli. L'elenco aggiornato dei responsabili è disponibile su richiesta a privacy@agentcloud.agency.",
+          "Possiamo inoltre comunicare i dati quando è richiesto dalla legge, per adempiere a un obbligo legale o per tutelare i diritti, la sicurezza e l'incolumità di AgentCloud, dei nostri utenti o del pubblico.",
+          "In caso di fusione, acquisizione o cessione di azienda o ramo d'azienda, i dati potrebbero essere trasferiti al soggetto subentrante; in quel caso te lo comunicheremo e questa informativa continuerà ad applicarsi ai tuoi dati fino al suo aggiornamento.",
+        ],
+      },
+      {
+        heading: "8. Cookie e tecnologie simili",
+        paragraphs: [
+          "Usiamo un numero limitato di cookie, tutti necessari al funzionamento del Servizio. I cookie di autenticazione di Supabase mantengono la sessione attiva. Un cookie di preferenza memorizza la lingua e uno il tema chiaro/scuro, così il sito si apre con la lingua e l'aspetto corretti. Un cookie di breve durata viene impostato durante i flussi di lista d'attesa e di autorizzazione OAuth, per proteggerli da falsificazioni.",
+          "Alcune informazioni sono salvate localmente nel browser anziché in un cookie, per esempio il contenuto del carrello. Puoi cancellarle svuotando il carrello o eliminando i dati del browser.",
+          "Usiamo Vercel Analytics e Speed Insights per capire il traffico aggregato e le prestazioni. Sono strumenti rispettosi della privacy e non usano cookie per profilarti su più siti; non utilizziamo cookie pubblicitari o di tracciamento cross-site. Poiché utilizziamo solo tecnologie tecnicamente necessarie e misurazioni aggregate, non è richiesto un banner di consenso; puoi comunque bloccare i cookie dalle impostazioni del browser, tenendo presente che alcune parti del Servizio (per esempio la sessione di accesso) smetteranno di funzionare.",
+        ],
+      },
+      {
+        heading: "9. Trasferimenti internazionali di dati",
+        paragraphs: [
+          "Alcuni dei nostri fornitori si trovano fuori dallo Spazio Economico Europeo, in particolare negli Stati Uniti (per esempio Vercel, Supabase, Anthropic e Stripe). Quando i dati personali sono trasferiti fuori dal SEE ci basiamo sulle Clausole Contrattuali Standard della Commissione europea e, ove applicabile, sulla certificazione del fornitore rispetto all'EU-US Data Privacy Framework, insieme a misure tecniche come la cifratura in transito e a riposo.",
+        ],
+      },
+      {
+        heading: "10. Per quanto tempo conserviamo i dati",
+        paragraphs: [
+          "Dati dell'account e del profilo: finché l'account è attivo e fino a 30 giorni dopo la sua cancellazione, per completare l'eliminazione anche dalle copie di backup.",
+          "Cronologia delle conversazioni e registrazioni di utilizzo: fino a 12 mesi, oppure fino alla cancellazione della conversazione o dell'account, se anteriore.",
+          "Documenti di fatturazione, contabili e fiscali: per 10 anni, come richiesto dalla normativa fiscale italiana, anche dopo la chiusura dell'account.",
+          "Token delle integrazioni: fino alla disconnessione dell'integrazione o alla cancellazione dell'account e comunque rimossi dal lato del fornitore quando revochi l'autorizzazione. I token sono cifrati a riposo.",
+          "Richieste di lista d'attesa, contatto e demo: fino a 24 mesi dall'ultimo contatto.",
+          "Log di sicurezza e contatori di rate limiting: per un massimo di 12 mesi (i contatori sono in genere conservati da poche ore a pochi giorni).",
+        ],
+      },
+      {
+        heading: "11. Sicurezza",
+        paragraphs: [
+          "Proteggiamo i tuoi dati con misure tecniche e organizzative: cifratura TLS in transito, cifratura AES-256-GCM dei token OAuth di terze parti a riposo, regole di accesso al database (row level security) che limitano i dati all'account proprietario, segreti cifrati gestiti solo lato server, accesso ai sistemi secondo il principio del minimo privilegio e rate limiting contro gli abusi.",
+          "Nessun metodo di trasmissione o conservazione è sicuro al 100%. Se veniamo a conoscenza di una violazione dei dati personali che comporta un rischio per i tuoi diritti, ti informeremo e notificheremo l'autorità di controllo competente senza ingiustificato ritardo.",
+        ],
+      },
+      {
+        heading: "12. I tuoi diritti",
+        paragraphs: [
+          "Se ti trovi nello Spazio Economico Europeo (o in un'altra giurisdizione con regole equivalenti) hai il diritto di: accedere ai tuoi dati personali e riceverne copia; ottenere la rettifica dei dati inesatti; ottenere la cancellazione dei dati quando non esiste un obbligo legale prevalente di conservarli; limitare od opporti al trattamento, compreso quello basato sull'interesse legittimo; ricevere in un formato strutturato e leggibile da dispositivo automatico i dati che hai fornito (portabilità); revocare il consenso in qualsiasi momento, senza pregiudicare la liceità del trattamento precedente.",
+          "Per esercitare questi diritti scrivi a privacy@agentcloud.agency dall'indirizzo email del tuo account: rispondiamo entro 30 giorni e non applichiamo alcun costo per una richiesta ragionevole. Puoi anche cancellare l'account direttamente dalle impostazioni del tuo profilo.",
+          "Se ritieni che il trattamento dei tuoi dati violi la normativa, puoi proporre reclamo all'autorità di controllo competente — in Italia il Garante per la protezione dei dati personali (www.garanteprivacy.it) — oppure all'autorità del tuo luogo di residenza abituale, di lavoro o del presunto illecito.",
+        ],
+      },
+      {
+        heading: "13. Decisioni automatizzate e minori",
+        paragraphs: [
+          "Non adottiamo decisioni che producono effetti giuridici o analogamente significativi sulla tua persona tramite trattamenti automatizzati senza intervento umano e non ti profilamo per finalità pubblicitarie.",
+          "Il Servizio è uno strumento professionale e non è destinato ai minori. Per creare un account devi avere almeno 16 anni (o 14 anni, l'età minima prevista dalla legge italiana per il consenso ai servizi della società dell'informazione). Non raccogliamo consapevolmente dati di minori al di sotto di tale età: se ritieni che un minore ci abbia fornito dati personali, contattaci e li elimineremo.",
+        ],
+      },
+      {
+        heading: "14. Modifiche a questa informativa",
+        paragraphs: [
+          "Possiamo aggiornare questa informativa per riflettere cambiamenti del Servizio, dei nostri fornitori o della legge. In caso di modifiche sostanziali aggiorneremo la data in cima alla pagina e, se la modifica è significativa, ti avviseremo via email o nell'app prima che diventi efficace. Continuare a usare il Servizio dopo l'aggiornamento significa accettare l'informativa aggiornata.",
+        ],
+      },
+      {
+        heading: "15. Contatti",
+        paragraphs: [
+          "Richieste privacy, esercizio dei diritti e segnalazioni di sicurezza: privacy@agentcloud.agency",
+          "Assistenza sull'account e sul servizio: support@agentcloud.agency",
+        ],
+      },
+    ],
+  },
+  terms: {
+    title: "Termini di Servizio",
+    lastUpdated: "Ultimo aggiornamento: settembre 2026",
+    sections: [
+      {
+        heading: "1. Accettazione dei Termini",
+        paragraphs: [
+          "Questi Termini di Servizio regolano l'accesso e l'uso di AgentCloud, il sito e la piattaforma disponibili su agentcloud.agency e nei relativi sottodomini (il Servizio), gestiti da AgentCloud (noi). Creando un account, sottoscrivendo un agente o utilizzando il Servizio accetti questi termini.",
+          "I termini sono completati dall'Informativa Privacy (come trattiamo i dati personali) e dalla Politica di Rimborso (fatturazione e rimborsi): se non li accetti, non utilizzare il Servizio.",
+          "Se accetti per conto di un'azienda o di un'altra organizzazione, dichiari di avere il potere di vincolarla e l'organizzazione è responsabile del rispetto di questi termini.",
+        ],
+      },
+      {
+        heading: "2. Descrizione del Servizio",
+        paragraphs: [
+          "AgentCloud è una piattaforma no-code che permette di attivare e gestire agenti AI. Scegli gli agenti dal marketplace, colleghi gli strumenti che già usi (per esempio Shopify, Gmail, Google Calendar, Google Sheets, Slack, Notion o HubSpot) e interagisci con gli agenti dall'interfaccia web. Ogni agente è descritto nella sua pagina prodotto, con le funzioni che usa e il prezzo.",
+          "Il Servizio è uno strumento di automazione aziendale e si evolve nel tempo: possiamo aggiungere, modificare o dismettere singoli agenti o funzionalità, senza ridurre in modo sostanziale, durante un periodo già pagato, le funzioni che hai acquistato.",
+          "AgentCloud non è uno studio legale, contabile, medico o finanziario e il Servizio non fornisce consulenza professionale.",
+        ],
+      },
+      {
+        heading: "3. Registrazione dell'account e sicurezza",
+        paragraphs: [
+          "Per creare un account serve un indirizzo email valido. L'autenticazione è gestita da Supabase Auth: puoi registrarti con email e password oppure con il tuo account Google.",
+          "Devi avere almeno 16 anni (o 14, l'età minima prevista dalla legge italiana per il consenso ai servizi della società dell'informazione) e fornire informazioni corrette. Un account per persona o azienda: sei responsabile di tutto ciò che avviene tramite il tuo account e devi mantenere riservate le credenziali.",
+          "Segnalaci subito a support@agentcloud.agency qualsiasi sospetto accesso non autorizzato o incidente di sicurezza che coinvolga il Servizio.",
+        ],
+      },
+      {
+        heading: "4. Abbonamenti, fatturazione e tasse",
+        paragraphs: [
+          "Ogni agente è venduto come abbonamento mensile separato, al prezzo indicato nella pagina dell'agente. Tutti i prezzi sono in EUR e IVA esclusa; l'IVA viene applicata ove richiesta dalla legge. I pagamenti sono gestiti dai nostri fornitori Stripe e PayPal e possono essere effettuati con carta, Klarna, Amazon Pay o altri metodi da loro supportati. Il canone viene addebitato in anticipo ogni mese e l'abbonamento si rinnova automaticamente finché non viene annullato.",
+          "Puoi annullare in qualsiasi momento dalla dashboard o dal portale di fatturazione: la cancellazione ha effetto alla fine del periodo corrente, continui ad accedere all'agente fino a quella data e non vieni più addebitato.",
+          "Ogni piano include un'allowance mensile di token. Il consumo oltre l'allowance viene addebitato a consumo al costo di €0,30 per 1.000 token aggiuntivi, fino a un tetto di sicurezza pari a 2 volte l'allowance del piano, oltre il quale le esecuzioni vengono sospese.",
+          "Se un pagamento viene rifiutato o non va a buon fine, possiamo riprovare l'addebito sul metodo di pagamento in archivio. In caso di mancato pagamento possiamo sospendere l'accesso e, previa comunicazione, terminare l'abbonamento.",
+          "Possiamo modificare prezzi e condizioni dei piani: le variazioni vengono comunicate in anticipo e si applicano dal rinnovo successivo. Prezzi, fatture e documenti fiscali sono conservati come descritto nell'Informativa Privacy.",
+        ],
+      },
+      {
+        heading: "5. Output degli agenti AI",
+        paragraphs: [
+          "Gli agenti generano le risposte con un modello linguistico di terze parti (Anthropic Claude). L'output dell'AI può essere inesatto, incompleto o non aggiornato: sei tu a doverlo verificare prima di usarlo e non può essere considerato consulenza legale, fiscale, medica o finanziaria.",
+          "Sei responsabile dei messaggi e dei dati che invii agli agenti e delle decisioni che prendi sulla base del loro output. Non inviare categorie particolari di dati personali (per esempio dati sulla salute) né dati che non sei autorizzato a condividere: come vengono trattate le conversazioni — e il fatto che non vengano usate per addestrare modelli — è descritto nell'Informativa Privacy (sezioni 6 e 13).",
+          "Le istruzioni che dai a un agente vengono eseguite con le credenziali che hai collegato: mantieni un controllo umano sulle azioni con effetti esterni (email, ordini, fatture, pubblicazioni).",
+        ],
+      },
+      {
+        heading: "6. Integrazioni e servizi di terze parti",
+        paragraphs: [
+          "Per usare un agente può essere necessario collegare servizi di terze parti. Collegando un'integrazione ci autorizzi ad agire su quell'account nei limiti dei permessi che approvi: i token OAuth sono cifrati a riposo e usati solo per eseguire le azioni che avvii.",
+          "Dichiari di avere il diritto di collegare quegli account e accetti i termini del fornitore interessato (per esempio Shopify, Google, Slack, Notion, HubSpot, Meta/WhatsApp). I servizi di terze parti non dipendono da noi: disponibilità, prezzi e condizioni possono cambiare e la loro dismissione può limitare il Servizio.",
+          "Puoi disconnettere un'integrazione in qualsiasi momento dalla dashboard, interrompendo l'accesso dell'agente.",
+        ],
+      },
+      {
+        heading: "7. Uso consentito",
+        paragraphs: [
+          "Accetti di non: utilizzare il Servizio per scopi illegali o lesivi di diritti di terzi; tentare di aggirare autenticazione, controlli di accesso, limiti di piano o di token; effettuare reverse engineering, decompilazione o estrazione del codice sorgente degli agenti; usare il Servizio per generare spam, molestie, malware, contenuti fuorvianti o comunicazioni illecite; inviare messaggi che imitano in modo ingannevole una persona o un'organizzazione; rivendere o sublicenziare il Servizio senza il nostro consenso scritto; sovraccaricare l'infrastruttura, anche con richieste automatizzate sproporzionate.",
+          "Possiamo sospendere gli account che violano queste regole, come descritto nella sezione su sospensione e cessazione.",
+        ],
+      },
+      {
+        heading: "8. Proprietà intellettuale",
+        paragraphs: [
+          "La piattaforma, gli agenti, il marchio e i contenuti che forniamo sono di AgentCloud o dei suoi licenzianti e sono protetti dalla legge: ti concediamo un diritto d'uso limitato, non esclusivo e non trasferibile per la durata dell'abbonamento.",
+          "I dati e i contenuti che carichi o generi con gli agenti (dati dei tuoi clienti, preventivi, documenti) restano tuoi. Ci concedi una licenza per trattarli solo nella misura necessaria a erogare il Servizio, come descritto nell'Informativa Privacy.",
+          "I suggerimenti che ci invii non sono confidenziali e possono essere usati per migliorare il Servizio.",
+        ],
+      },
+      {
+        heading: "9. Disponibilità e assistenza",
+        paragraphs: [
+          "Lavoriamo per mantenere la piattaforma disponibile e sicura, ma non garantiamo un servizio ininterrotto: manutenzioni, aggiornamenti o problemi dei nostri fornitori possono causare interruzioni temporanee. Salvo accordi scritti per piani enterprise non offriamo un livello di servizio garantito: i rimedi per un'indisponibilità prolungata sono quelli della Politica di Rimborso.",
+          "Assistenza: support@agentcloud.agency, in genere entro 24 ore nei giorni lavorativi.",
+        ],
+      },
+      {
+        heading: "10. Rimborsi e diritto di recesso",
+        paragraphs: [
+          "AgentCloud fornisce servizi digitali: ai sensi della normativa europea sui diritti dei consumatori hai 14 giorni di diritto di recesso dall'acquisto, che però decade non appena il servizio inizia con il tuo consenso. Sottoscrivendo acconsenti all'avvio immediato del servizio: gli abbonamenti attivati non sono quindi rimborsabili, salvo i casi indicati nella Politica di Rimborso, che forma parte integrante di questi termini.",
+          "In sintesi: addebiti errati o duplicati vengono rimborsati integralmente; un'indisponibilità prolungata imputabile ad AgentCloud viene rimborsata in proporzione al periodo non usufruito; le allowance di token non utilizzate non vengono riportate né rimborsate e i consumi a eccedenza già addebitati non sono rimborsabili.",
+          "Come richiederlo e tempi di lavorazione: vedi la Politica di Rimborso (scrivi a legal@agentcloud.agency).",
+        ],
+      },
+      {
+        heading: "11. Sospensione e cessazione",
+        paragraphs: [
+          "Puoi interrompere quando vuoi: annulla l'abbonamento dalla dashboard o dal portale di fatturazione e, se vuoi, elimina l'account dalle impostazioni del profilo. L'annullamento blocca i rinnovi futuri; l'eliminazione dell'account rimuove i tuoi dati come descritto nell'Informativa Privacy (sezione 10), fatti salvi i documenti che dobbiamo conservare per legge.",
+          "Possiamo sospendere o terminare il Servizio, con preavviso quando possibile, se: violi questi termini (in particolare l'uso consentito); un pagamento non va a buon fine e non viene regolarizzato; siamo obbligati dalla legge; o continuare a erogare il Servizio creerebbe un rischio legale o di sicurezza. In caso di violazioni gravi possiamo sospendere l'accesso immediatamente.",
+          "Alla cessazione il tuo diritto d'uso termina, gli agenti smettono di funzionare e quanto già pagato per il periodo corrente resta dovuto; le clausole che per loro natura sopravvivono (responsabilità, proprietà intellettuale, legge applicabile) continuano ad applicarsi.",
+        ],
+      },
+      {
+        heading: "12. Dati personali e privacy",
+        paragraphs: [
+          "AgentCloud è il titolare del trattamento dei dati personali trattati tramite il Servizio. Quali dati raccogliamo, perché, per quanto tempo li conserviamo, con chi li condividiamo e quali sono i tuoi diritti (accesso, rettifica, cancellazione, limitazione, opposizione, portabilità, revoca del consenso) è descritto nell'Informativa Privacy, che forma parte integrante di questi termini.",
+          "Se con gli agenti tratti dati personali dei tuoi clienti, il titolare di quei dati sei tu e noi agiamo come responsabile del trattamento: scrivi a privacy@agentcloud.agency per ricevere il nostro accordo sul trattamento dei dati (DPA).",
+          "Per richieste e reclami in materia di privacy puoi rivolgerti anche all'autorità di controllo italiana, il Garante per la protezione dei dati personali.",
+        ],
+      },
+      {
+        heading: "13. Limitazione di responsabilità",
+        paragraphs: [
+          "Il Servizio è fornito così com'è, senza garanzie di alcun tipo nei limiti consentiti dalla legge. Non siamo responsabili di danni indiretti o consequenziali, perdita di profitto, perdita di dati o interruzione dell'attività derivanti dall'uso degli agenti AI, inclusi errori nell'output automatizzato.",
+          "Nei limiti consentiti dalla legge, la nostra responsabilità complessiva per pretese legate al Servizio è limitata ai corrispettivi che hai pagato nei 12 mesi precedenti l'evento da cui nasce la pretesa. Nessuna clausola di questi termini esclude o limita i diritti che la normativa a tutela dei consumatori ti riconosce in quanto consumatore, né la nostra responsabilità per dolo o colpa grave.",
+        ],
+      },
+      {
+        heading: "14. Modifiche ai Termini",
+        paragraphs: [
+          "Possiamo aggiornare questi termini per riflettere cambiamenti del Servizio, dei nostri fornitori o della legge. Pubblichiamo la data dell'ultimo aggiornamento in cima a questa pagina e, per modifiche sostanziali, ti avvisiamo via email o nell'app prima che diventino efficaci. Continuare a usare il Servizio dopo l'aggiornamento significa accettare i termini aggiornati.",
+        ],
+      },
+      {
+        heading: "15. Legge applicabile e foro competente",
+        paragraphs: [
+          "Questi termini sono regolati dalla legge italiana, senza pregiudizio delle tutele inderogabili previste nel tuo paese di residenza. Se sei un consumatore puoi agire davanti al giudice del tuo luogo di residenza, di lavoro o di domicilio; negli altri casi è competente il foro italiano.",
+          "Se sei un consumatore nell'Unione Europea puoi rivolgerti anche alla rete dei Centri Europei dei Consumatori per informazioni sulla risoluzione extragiudiziale delle controversie.",
+        ],
+      },
+      {
+        heading: "16. Contatti",
+        paragraphs: [
+          "Contratti, fatturazione e rimborsi: legal@agentcloud.agency",
+          "Assistenza e account: support@agentcloud.agency",
+          "Dati personali e GDPR: privacy@agentcloud.agency",
+        ],
+      },
+    ],
+  },
+  refunds: {
+    title: "Politica di Rimborso",
+    lastUpdated: "Ultimo aggiornamento: settembre 2026",
+    sections: [
+      {
+        heading: "1. Servizi digitali e diritto di recesso",
+        paragraphs: [
+          "AgentCloud fornisce servizi digitali erogati immediatamente. Ai sensi della normativa europea sui diritti dei consumatori hai un diritto di recesso di 14 giorni dall'acquisto, che però decade non appena il servizio inizia con il tuo consenso espresso.",
+          "Sottoscrivendo un abbonamento richiedi l'avvio immediato del servizio e prendi atto che gli abbonamenti attivati non sono quindi rimborsabili, salvo i casi descritti in questa politica, che forma parte integrante dei Termini di Servizio.",
+        ],
+      },
+      {
+        heading: "2. Casi in cui spetta il rimborso",
+        paragraphs: [
+          "Rimborsiamo nei seguenti casi:",
+          "Addebiti errati o duplicati: l'importo contestato viene rimborsato integralmente, comprese le imposte applicate.",
+          "Indisponibilità prolungata imputabile ad AgentCloud: se l'agente sottoscritto non è utilizzabile per cause che dipendono da noi, il rimborso è proporzionale al periodo non usufruito (per esempio 15 giorni di indisponibilità su un abbonamento mensile corrispondono al 50% del canone).",
+          "Difetto non risolto: se un agente a pagamento non svolge la funzione descritta nella sua pagina prodotto e non riusciamo a correggere il problema entro 15 giorni dalla segnalazione, rimborsiamo la parte non usufruita del periodo.",
+        ],
+      },
+      {
+        heading: "3. Casi in cui il rimborso non spetta",
+        paragraphs: [
+          "Le allowance di token non utilizzate non vengono riportate al mese successivo né rimborsate.",
+          "I consumi a eccedenza già addebitati non sono rimborsabili: corrispondono a elaborazioni che hai effettivamente usato, a €0,30 per 1.000 token aggiuntivi entro il tetto di sicurezza del piano.",
+          "Gli abbonamenti attivati e utilizzati non sono rimborsabili al di fuori dei casi precedenti, nemmeno se smetti semplicemente di usare l'agente o dimentichi di annullare prima del rinnovo.",
+          "Gli account sospesi per violazione dei Termini di Servizio (per esempio uso illecito o abuso dell'infrastruttura) non danno diritto a rimborso.",
+          "Non rimborsiamo i corrispettivi per disservizi causati da servizi di terze parti che hai collegato o dai tuoi sistemi e credenziali.",
+        ],
+      },
+      {
+        heading: "4. Come richiedere un rimborso",
+        paragraphs: [
+          "Scrivi a legal@agentcloud.agency dall'indirizzo email del tuo account indicando: email dell'account, agente o abbonamento interessato, data e importo dell'addebito e motivo della richiesta (con eventuali prove, per esempio messaggi di errore o screenshot).",
+          "Valutiamo le richieste entro 5 giorni lavorativi dalla ricezione e rispondiamo con l'esito; se ci servono informazioni aggiuntive il termine decorre dalla tua risposta. Le richieste inviate oltre 60 giorni dall'addebito possono essere respinte, fatti salvi i diritti inderogabili di legge.",
+        ],
+      },
+      {
+        heading: "5. Tempi e modalità di erogazione",
+        paragraphs: [
+          "I rimborsi approvati vengono erogati tramite il metodo di pagamento originale (Stripe o PayPal), in genere entro 5-10 giorni lavorativi a seconda del circuito della carta, di PayPal e della tua banca; i tempi di accredito dipendono dal tuo fornitore.",
+          "I rimborsi sono erogati nella stessa valuta dell'addebito (EUR). Non possiamo rimborsare su una carta o un account diversi da quelli usati per il pagamento.",
+        ],
+      },
+      {
+        heading: "6. Storni e contestazioni con il gestore del pagamento",
+        paragraphs: [
+          "Se ritieni che un addebito sia errato, contattaci a legal@agentcloud.agency prima di aprire una contestazione con la tua banca, il circuito della carta o PayPal: quasi sempre riusciamo a risolvere più rapidamente.",
+          "Se apri una contestazione, possiamo sospendere l'abbonamento e l'accesso all'agente durante la verifica e fornire al fornitore di pagamento i registri degli addebiti e dei consumi. Se la contestazione viene accolta, il rimborso segue l'iter del fornitore di pagamento.",
+        ],
+      },
+      {
+        heading: "7. Legge applicabile e diritti inderogabili",
+        paragraphs: [
+          "Questa politica è regolata dalla legge italiana. Nessuna sua clausola limita o sostituisce le tutele inderogabili che la normativa a tutela dei consumatori ti riconosce; in caso di contrasto prevale la regola più favorevole al consumatore.",
+          "Come consumatore puoi rivolgerti alla tua autorità nazionale per i consumatori, alla rete dei Centri Europei dei Consumatori o, per quanto riguarda i dati personali, al Garante per la protezione dei dati personali. Il foro competente è quello indicato nei Termini di Servizio.",
+          "I rapporti di fatturazione tra aziende (B2B) sono regolati dai Termini di Servizio e dall'eventuale ordine sottoscritto.",
+        ],
+      },
+      {
+        heading: "8. Contatti",
+        paragraphs: [
+          "Rimborsi e fatturazione: legal@agentcloud.agency",
+          "Assistenza sull'account: support@agentcloud.agency",
+        ],
+      },
+    ],
+  },
+};
+
+const EN: Record<LegalDocumentKey, LegalTranslation> = {
+  privacy: {
+    title: "Privacy Policy",
+    lastUpdated: "Last updated: September 2026",
+    sections: [
+      {
+        heading: "1. Who We Are and Data Controller",
+        paragraphs: [
+          "AgentCloud (\u201cAgentCloud\u201d, \u201cwe\u201d, \u201cus\u201d) operates the website and platform available at agentcloud.agency and its subdomains (the \u201cService\u201d). AgentCloud is the data controller for the personal data described in this policy.",
+          "You can contact us for any privacy matter, including exercising your rights, at privacy@agentcloud.agency; for account and product support the address is support@agentcloud.agency. We answer privacy requests within 30 days.",
+          "This policy covers our website, the AgentCloud platform and the AI agents you subscribe to. It does not cover third-party websites and services you choose to connect to AgentCloud, which are governed by their own privacy policies.",
+        ],
+      },
+      {
+        heading: "2. What AgentCloud Does",
+        paragraphs: [
+          "AgentCloud is a no-code platform that lets businesses deploy and manage AI agents. You create an account, choose agents from our marketplace, connect the tools you already use (for example Shopify, Gmail, Google Calendar, Google Sheets, Slack, Notion or HubSpot), and chat with the agents from our web interface.",
+          "To provide this service we process account data, billing data, the messages you exchange with agents, the data your connected tools send to the agents, and the technical data needed to keep the platform secure and to measure usage.",
+        ],
+      },
+      {
+        heading: "3. Information We Collect",
+        paragraphs: [
+          "Account and profile data: name, email address, profile picture (when you sign in with Google), authentication method, language and interface preferences, account creation date and account status.",
+          "Authentication data: sign-up and sign-in are handled by Supabase Auth. If you register with email and password, your password is stored by our authentication provider only as a salted hash \u2014 we never see it or store it in plain text. If you sign in with Google, we receive your name, email address and profile picture from Google.",
+          "Billing data: the plan and agents you subscribe to, amounts, currency, invoices, payment status, billing country and the type of payment method used (for example card, Klarna or Amazon Pay). Card numbers and full payment credentials are collected and stored directly by our payment processors (Stripe and PayPal); they never pass through or are stored on AgentCloud servers, which only receive a token, the card brand and the last digits.",
+          "Conversation and usage data: the messages you send to agents, the responses generated, the tools or integrations the agent uses on your behalf, the number of tokens consumed, and timestamps. This data is needed to deliver responses, enforce plan limits and bill metered overage.",
+          "Connected integration data: when you connect a third-party tool we store the OAuth access and refresh tokens you authorise (encrypted at rest) and the small amount of metadata needed to identify the connection (for example the shop domain for Shopify). Agent actions run with those tokens only when you trigger them.",
+          "Form and communication data: name, surname, email address and the content of your message when you use our contact form, request a demo, or join the waitlist.",
+          "Technical and security data: IP address, user agent and request metadata used for rate limiting, abuse prevention, error diagnostics and security logging.",
+        ],
+      },
+      {
+        heading: "4. How We Collect Information",
+        paragraphs: [
+          "Directly from you, when you create an account, subscribe, chat with an agent, connect an integration, or fill in one of our forms.",
+          "From the identity provider you choose, such as Google, or from the third-party services you connect, which send us the data the agent needs to perform the task you asked for.",
+          "Automatically, from your browser or device, through the cookies and similar technologies described in section 8.",
+        ],
+      },
+      {
+        heading: "5. Why We Use Your Data and Our Legal Bases",
+        paragraphs: [
+          "To provide the Service you requested (performance of a contract): creating and managing your account, running the agents you subscribed to, storing your conversation history, enforcing plan and token limits, and providing support.",
+          "To process payments and comply with tax and accounting obligations (contract and legal obligation): issuing invoices, handling refunds, preventing payment fraud and keeping accounting records.",
+          "To keep the platform secure and reliable (legitimate interest): rate limiting, abuse and fraud prevention, security logging, debugging and protecting our infrastructure.",
+          "To send transactional and account emails (contract): welcome messages, receipts, subscription and usage notices, security alerts. We do not send marketing emails without your consent, and you can opt out of non-essential communications at any time.",
+          "To improve the Service (legitimate interest): aggregate statistics about usage and errors, so that we can fix issues and prioritise features. We do not use your conversation content to train models.",
+          "To comply with the law (legal obligation): responding to lawful requests from authorities and retaining records we are required to keep.",
+        ],
+      },
+      {
+        heading: "6. AI Processing of Your Conversations",
+        paragraphs: [
+          "Agent responses are generated by a third-party large language model (Anthropic Claude). The content of your messages, the relevant conversation context and the results of connected tools are transmitted to the model provider solely to generate the response you requested.",
+          "Neither we nor our model provider use your conversation content to train AI models. Your conversations are never sold and are not used for advertising.",
+          "Do not send agents special categories of data (for example health data) or data you are not allowed to share: the agents are general-purpose automation tools and are not designed for such content.",
+        ],
+      },
+      {
+        heading: "7. Sharing and Disclosure",
+        paragraphs: [
+          "We do not sell your personal data, and we do not share it with third parties for their own marketing purposes.",
+          "We share data with the service providers (processors) that operate the Service on our behalf: Supabase (database and authentication); Stripe and PayPal (payments, billing and refunds); Resend (transactional email delivery); Anthropic (AI model inference); Google (sign-in with Google and, when you connect them, Gmail, Google Calendar and Google Sheets); the integration provider you choose to connect (for example Shopify, Slack, Notion or HubSpot); and Vercel (hosting and aggregate web analytics).",
+          "These providers may access personal data only to deliver the service for us, under contract, and are required to protect it. A current list of our processors is available on request at privacy@agentcloud.agency.",
+          "We may also disclose data where required by law, to comply with a legal obligation, or to protect the rights, safety and security of AgentCloud, our users or the public.",
+          "If AgentCloud is involved in a merger, acquisition or sale of assets, data may be transferred to the successor entity; we will notify you and this policy will continue to apply to your data until it is updated.",
+        ],
+      },
+      {
+        heading: "8. Cookies and Similar Technologies",
+        paragraphs: [
+          "We use a small number of cookies, all of them necessary to operate the Service. Supabase authentication cookies keep you signed in. A preference cookie stores your language and another stores your light or dark theme, so the site opens with the right language and appearance. A short-lived cookie is set while you complete a waitlist or OAuth authorisation flow, to protect it against forgery.",
+          "Some information is stored locally in your browser rather than in a cookie \u2014 for example the contents of your shopping cart. You can clear it by emptying the cart or clearing your browser storage.",
+          "We use Vercel Analytics and Speed Insights to understand aggregate traffic and performance. They are privacy-friendly and do not use cookies to profile you across sites; we do not run advertising or cross-site tracking cookies. Because we only use technically necessary technologies and aggregate measurement, no consent banner is required for them; you can still block cookies in your browser settings, although parts of the Service (such as the login session) will then stop working.",
+        ],
+      },
+      {
+        heading: "9. International Data Transfers",
+        paragraphs: [
+          "Some of our providers are located outside the European Economic Area, in particular in the United States (for example Vercel, Supabase, Anthropic and Stripe). When personal data is transferred outside the EEA we rely on the European Commission's Standard Contractual Clauses and, where applicable, on the provider's EU-US Data Privacy Framework certification, together with technical measures such as encryption in transit and at rest.",
+        ],
+      },
+      {
+        heading: "10. How Long We Keep Data",
+        paragraphs: [
+          "Account and profile data: while your account is active, and up to 30 days after you delete it so that we can complete the deletion across backups.",
+          "Conversation history and usage records: for up to 12 months, or until you delete the conversation or your account, whichever comes first.",
+          "Invoice, billing and tax records: for 10 years, as required by Italian tax law, even after the subscription is cancelled.",
+          "Integration tokens: until you disconnect the integration or delete your account, and in any case removed on the provider side when you revoke access. Tokens are encrypted at rest.",
+          "Waitlist, contact and demo requests: for up to 24 months from our last contact.",
+          "Security logs and rate-limiting counters: for a maximum of 12 months (counters are typically kept for hours to days).",
+        ],
+      },
+      {
+        heading: "11. Security",
+        paragraphs: [
+          "We protect your data with technical and organisational measures: TLS encryption in transit, AES-256-GCM encryption of third-party OAuth tokens at rest, database access rules (row level security) that scope data to the owning account, encrypted secrets managed only on the server, least-privilege access for our systems, and rate limiting against abuse.",
+          "No method of transmission or storage is 100% secure. If we become aware of a personal data breach that is likely to result in a risk to your rights, we will notify you and the competent supervisory authority without undue delay.",
+        ],
+      },
+      {
+        heading: "12. Your Rights",
+        paragraphs: [
+          "If you are in the European Economic Area (or another jurisdiction with equivalent rules) you have the right to: access your personal data and receive a copy; rectify inaccurate data; erase data when there is no overriding legal obligation to keep it; restrict or object to processing, including processing based on legitimate interest; receive the data you provided in a structured, machine-readable format (portability); withdraw consent at any time, without affecting the lawfulness of processing carried out before the withdrawal.",
+          "To exercise any of these rights, write to privacy@agentcloud.agency from the email address of your account. We reply within 30 days and never charge a fee for a reasonable request. You can also delete your account directly from your account settings.",
+          "If you believe your data is being processed unlawfully, you can lodge a complaint with the competent supervisory authority \u2014 in Italy the Garante per la protezione dei dati personali (www.garanteprivacy.it) \u2014 or with the authority of your habitual residence, place of work or place of the alleged infringement.",
+        ],
+      },
+      {
+        heading: "13. Automated Decisions and Children",
+        paragraphs: [
+          "We do not make decisions that produce legal or similarly significant effects on you through automated processing without human involvement, and we do not profile you for advertising purposes.",
+          "The Service is a business tool and is not directed at children. You must be at least 16 years old (or 14, the minimum age set by Italian law for consenting to information society services) to create an account. We do not knowingly collect data from children below that age; if you believe a child has provided us with personal data, contact us and we will delete it.",
+        ],
+      },
+      {
+        heading: "14. Changes to This Policy",
+        paragraphs: [
+          "We may update this policy to reflect changes to the Service, our providers, or the law. When we make material changes we will update the date at the top of this page and, where the change is significant, notify you by email or in the app before it takes effect. Continuing to use the Service after the update means you accept the revised policy.",
+        ],
+      },
+      {
+        heading: "15. Contact",
+        paragraphs: [
+          "Privacy requests, data subject rights and security reports: privacy@agentcloud.agency",
+          "Account and service support: support@agentcloud.agency",
+        ],
+      },
+    ],
+  },
+  terms: {
+    title: "Terms of Service",
+    lastUpdated: "Last updated: September 2026",
+    sections: [
+      {
+        heading: "1. Acceptance of Terms",
+        paragraphs: [
+          "These Terms of Service govern your access to and use of AgentCloud, the website and platform available at agentcloud.agency and its subdomains (the Service), operated by AgentCloud (we, us). By creating an account, subscribing to an agent or using the Service you accept these terms.",
+          "These terms are completed by our Privacy Policy (how we process personal data) and Refund Policy (billing and refunds): if you do not accept them, do not use the Service.",
+          "If you accept on behalf of a company or another organisation, you confirm you are authorised to bind it, and that organisation is responsible for complying with these terms.",
+        ],
+      },
+      {
+        heading: "2. Description of the Service",
+        paragraphs: [
+          "AgentCloud is a no-code platform that lets you activate and manage AI agents. You choose agents from the marketplace, connect the tools you already use (for example Shopify, Gmail, Google Calendar, Google Sheets, Slack, Notion or HubSpot) and interact with the agents through our web interface. Each agent is described on its product page, with the features it uses and its price.",
+          "The Service is a business automation tool and evolves over time: we may add, change or discontinue individual agents or features, without materially reducing, during a period you have already paid for, the functionality you purchased.",
+          "AgentCloud is not a law firm, accounting firm, medical or financial adviser, and the Service does not provide professional advice.",
+        ],
+      },
+      {
+        heading: "3. Account Registration and Security",
+        paragraphs: [
+          "You need a valid email address to create an account. Authentication is managed by Supabase Auth: you can sign up with email and password or with your Google account.",
+          "You must be at least 16 years old (or 14, the minimum age set by Italian law for consenting to information society services) and provide accurate information. One account per person or company: you are responsible for everything that happens through your account and must keep your credentials confidential.",
+          "Tell us immediately at support@agentcloud.agency if you suspect unauthorised access to your account or any security incident involving the Service.",
+        ],
+      },
+      {
+        heading: "4. Subscriptions, Billing and Taxes",
+        paragraphs: [
+          "Each agent is sold as a separate monthly subscription at the price shown on the agent page. All prices are in EUR and exclusive of applicable taxes; VAT is applied where required by law. Payments are processed by our providers Stripe and PayPal and can be made by card, Klarna, Amazon Pay or other methods they support. Fees are billed in advance each month and subscriptions renew automatically until cancelled.",
+          "You may cancel at any time from the dashboard or the billing portal: cancellation takes effect at the end of the current period, you keep access to the agent until that date and are not charged again.",
+          "Each plan includes a monthly token allowance. Usage beyond the allowance is billed on a metered basis at €0.30 per 1,000 extra tokens, up to a safety cap of 2x the plan allowance, beyond which executions are suspended.",
+          "If a payment is declined or fails, we may retry the charge on the payment method on file. In case of non-payment we may suspend access and, with prior notice, terminate the subscription.",
+          "We may change prices and plan conditions: changes are communicated in advance and apply from the next renewal. Prices, invoices and tax records are retained as described in the Privacy Policy.",
+        ],
+      },
+      {
+        heading: "5. AI Agent Output",
+        paragraphs: [
+          "Agents generate their responses with a third-party large language model (Anthropic Claude). AI output can be inaccurate, incomplete or out of date: you are responsible for reviewing it before relying on it, and it cannot be considered legal, tax, medical or financial advice.",
+          "You are responsible for the messages and data you send to the agents and for the decisions you take based on their output. Do not send special categories of personal data (for example health data) or data you are not allowed to share: how conversations are processed - and the fact that they are not used to train models - is described in the Privacy Policy (sections 6 and 13).",
+          "The instructions you give an agent run with the credentials you have connected: keep human oversight over actions with external effects (emails, orders, invoices, publications).",
+        ],
+      },
+      {
+        heading: "6. Integrations and Third-Party Services",
+        paragraphs: [
+          "Using an agent may require connecting third-party services. When you connect an integration you authorise us to act on that account within the permissions you approve: OAuth tokens are encrypted at rest and used only to run the actions you trigger.",
+          "You confirm you are entitled to connect those accounts and you accept the terms of the relevant provider (for example Shopify, Google, Slack, Notion, HubSpot, Meta/WhatsApp). Third-party services are not controlled by us: their availability, prices and terms can change, and discontinuing an integration on their side may limit the Service.",
+          "You can disconnect an integration at any time from the dashboard, which stops the agent from accessing it.",
+        ],
+      },
+      {
+        heading: "7. Acceptable Use",
+        paragraphs: [
+          "You agree not to: use the Service for illegal purposes or to infringe third-party rights; attempt to bypass authentication, access controls, plan or token limits; reverse-engineer, decompile or extract the source code of the agents; use the Service to generate spam, harassment, malware, misleading content or unlawful communications; send messages that deceptively impersonate a person or organisation; resell or sublicense the Service without our written consent; overload the infrastructure, including through disproportionate automated requests.",
+          "We may suspend accounts that breach these rules, as described in the section on suspension and termination.",
+        ],
+      },
+      {
+        heading: "8. Intellectual Property",
+        paragraphs: [
+          "The platform, the agents, the brand and the content we provide are owned by AgentCloud or its licensors and protected by law: we grant you a limited, non-exclusive and non-transferable right to use the Service for the duration of your subscription.",
+          "The data and content you upload or generate with the agents (your client data, quotes, documents) remain yours. You grant us a licence to process them only to the extent necessary to deliver the Service, as described in the Privacy Policy.",
+          "Feedback and suggestions you send us are non-confidential and may be used to improve the Service.",
+        ],
+      },
+      {
+        heading: "9. Availability and Support",
+        paragraphs: [
+          "We work to keep the platform available and secure, but we do not guarantee uninterrupted service: maintenance, updates or problems at our providers can cause temporary interruptions. Unless agreed in writing for enterprise plans we do not offer a guaranteed service level: remedies for prolonged unavailability are those set out in the Refund Policy.",
+          "Support: support@agentcloud.agency, generally within 24 hours on business days.",
+        ],
+      },
+      {
+        heading: "10. Refunds and Withdrawal Right",
+        paragraphs: [
+          "AgentCloud provides digital services: under EU consumer law you have a 14-day withdrawal right from purchase, which lapses as soon as the service begins with your consent. By subscribing you consent to the immediate start of the service: activated subscriptions are therefore non-refundable, except in the cases listed in the Refund Policy, which forms an integral part of these terms.",
+          "In short: incorrect or duplicate charges are refunded in full; prolonged unavailability attributable to AgentCloud is refunded pro rata for the unused period; unused token allowances do not carry over and metered overage already billed is not refundable.",
+          "How to request a refund and processing times: see the Refund Policy (write to legal@agentcloud.agency).",
+        ],
+      },
+      {
+        heading: "11. Suspension and Termination",
+        paragraphs: [
+          "You can stop at any time: cancel the subscription from the dashboard or the billing portal and, if you wish, delete your account from your account settings. Cancellation stops future renewals; deleting the account removes your data as described in the Privacy Policy (section 10), subject to the records we must keep by law.",
+          "We may suspend or terminate the Service, with notice where possible, if: you breach these terms (in particular acceptable use); a payment fails and is not settled; we are required to do so by law; or continuing to provide the Service would create a legal or security risk. In case of serious breaches we may suspend access immediately.",
+          "On termination your right to use the Service ends, the agents stop working and any fee already paid for the current period remains due; provisions that by their nature survive (liability, intellectual property, applicable law) continue to apply.",
+        ],
+      },
+      {
+        heading: "12. Personal Data and Privacy",
+        paragraphs: [
+          "AgentCloud is the data controller for the personal data processed through the Service. Which data we collect, why, for how long we keep it, who we share it with and your rights (access, rectification, erasure, restriction, objection, portability, withdrawal of consent) are described in the Privacy Policy, which forms an integral part of these terms.",
+          "If you process your customers' personal data with the agents, you are the controller of that data and we act as your processor: write to privacy@agentcloud.agency to receive our data processing agreement (DPA).",
+          "For privacy requests and complaints you can also contact the Italian supervisory authority, the Garante per la protezione dei dati personali.",
+        ],
+      },
+      {
+        heading: "13. Limitation of Liability",
+        paragraphs: [
+          "The Service is provided as is, without warranties of any kind to the extent permitted by law. We are not liable for indirect or consequential damage, loss of profit, loss of data or business interruption arising from the use of AI agents, including errors in automated output.",
+          "To the extent permitted by law, our total liability for claims relating to the Service is limited to the fees you paid in the 12 months before the event giving rise to the claim. Nothing in these terms excludes or limits the rights consumer law grants you as a consumer, or our liability for wilful misconduct or gross negligence.",
+        ],
+      },
+      {
+        heading: "14. Changes to the Terms",
+        paragraphs: [
+          "We may update these terms to reflect changes to the Service, our providers or the law. We publish the date of the last update at the top of this page and, for material changes, we notify you by email or in the app before they take effect. Continuing to use the Service after the update means you accept the revised terms.",
+        ],
+      },
+      {
+        heading: "15. Governing Law and Dispute Resolution",
+        paragraphs: [
+          "These terms are governed by Italian law, without prejudice to the mandatory consumer protections of your country of residence. If you are a consumer you may bring proceedings before the court of your place of residence, work or domicile; otherwise the courts of Italy have jurisdiction.",
+          "If you are a consumer in the EU you can also contact the European Consumer Centre network for information on settling a dispute out of court.",
+        ],
+      },
+      {
+        heading: "16. Contact",
+        paragraphs: [
+          "Contracts, billing and refunds: legal@agentcloud.agency",
+          "Support and account: support@agentcloud.agency",
+          "Personal data and GDPR: privacy@agentcloud.agency",
+        ],
+      },
+    ],
+  },
+  refunds: {
+    title: "Refund Policy",
+    lastUpdated: "Last updated: September 2026",
+    sections: [
+      {
+        heading: "1. Digital Services and Withdrawal Right",
+        paragraphs: [
+          "AgentCloud provides digital services delivered immediately. Under EU consumer law you have a right of withdrawal within 14 days of purchase, which lapses as soon as the service begins with your express consent.",
+          "By subscribing you request the immediate start of the service and acknowledge that activated subscriptions are therefore non-refundable, except in the cases described in this policy, which forms an integral part of the Terms of Service.",
+        ],
+      },
+      {
+        heading: "2. Cases Where a Refund Is Due",
+        paragraphs: [
+          "We refund in the following cases:",
+          "Incorrect or duplicate charges: the disputed amount is refunded in full, including any tax applied.",
+          "Prolonged unavailability attributable to AgentCloud: if the agent you subscribed to cannot be used for reasons depending on us, the refund is prorated for the unused period (for example 15 days of downtime on a monthly subscription correspond to 50% of the fee).",
+          "Defect not resolved: if a paid agent does not perform the function described on its product page and we cannot fix it within 15 days of your report, we refund the unused part of the period.",
+        ],
+      },
+      {
+        heading: "3. Cases Where a Refund Is Not Due",
+        paragraphs: [
+          "Unused token allowances do not carry over to the following month and are not refunded.",
+          "Metered overage already billed is not refundable: it corresponds to processing you actually used, at €0.30 per 1,000 extra tokens within the plan safety cap.",
+          "Activated and used subscriptions are not refundable other than in the cases above, including if you simply stop using the agent or forget to cancel before renewal.",
+          "Accounts suspended for breach of the Terms of Service (for example unlawful use or abuse of the infrastructure) are not entitled to a refund.",
+          "We do not refund fees for problems caused by third-party services you connected, or by your own systems and credentials.",
+        ],
+      },
+      {
+        heading: "4. How to Request a Refund",
+        paragraphs: [
+          "Write to legal@agentcloud.agency from the email address of your account, including: the account email, the agent or subscription concerned, the charge date and amount, and the reason for your request (with any evidence, for example error messages or screenshots).",
+          "We review requests within 5 business days of receipt and reply with the outcome; if we need more information the deadline restarts from your reply. Requests sent more than 60 days after the charge may be declined, subject to mandatory legal rights.",
+        ],
+      },
+      {
+        heading: "5. Timing and Method of Refund",
+        paragraphs: [
+          "Approved refunds are issued through the original payment method (Stripe or PayPal), typically within 5-10 business days depending on the card network, PayPal and your bank; the timing of the credit depends on your provider.",
+          "Refunds are issued in the same currency as the charge (EUR). We cannot refund to a card or account different from the one used for payment.",
+        ],
+      },
+      {
+        heading: "6. Chargebacks and Payment Disputes",
+        paragraphs: [
+          "If you believe a charge is wrong, contact us at legal@agentcloud.agency before opening a dispute with your bank, card network or PayPal: we can almost always resolve it faster.",
+          "If you open a chargeback, we may suspend the subscription and access to the agent while the dispute is pending, and provide the payment provider with the records of the charges and usage. If the dispute is resolved in your favour, the refund follows the provider's process.",
+        ],
+      },
+      {
+        heading: "7. Governing Law and Mandatory Rights",
+        paragraphs: [
+          "This policy is governed by Italian law. Nothing in it limits or replaces the mandatory protections that consumer law grants you; in case of conflict, the rule most favourable to the consumer prevails.",
+          "As a consumer you may turn to your national consumer authority, the European Consumer Centre network, or the Italian Garante per la protezione dei dati personali for matters concerning personal data. The competent courts are those indicated in the Terms of Service.",
+          "Billing relationships between companies (B2B) are governed by the Terms of Service and any signed order.",
+        ],
+      },
+      {
+        heading: "8. Contact",
+        paragraphs: [
+          "Refunds and billing: legal@agentcloud.agency",
+          "Account support: support@agentcloud.agency",
+        ],
+      },
+    ],
+  },
+};
+
+const ES: Record<LegalDocumentKey, LegalTranslation> = {
   privacy: {
     title: "Política de privacidad",
     lastUpdated: "Última actualización: septiembre de 2026",
@@ -360,7 +1019,7 @@ const ES: Record<LegalDocumentKey, LegalOverlay> = {
   },
 };
 
-const DE: Record<LegalDocumentKey, LegalOverlay> = {
+const DE: Record<LegalDocumentKey, LegalTranslation> = {
   privacy: {
     title: "Datenschutzerklärung",
     lastUpdated: "Letzte Aktualisierung: September 2026",
@@ -691,7 +1350,7 @@ const DE: Record<LegalDocumentKey, LegalOverlay> = {
   },
 };
 
-const FR: Record<LegalDocumentKey, LegalOverlay> = {
+const FR: Record<LegalDocumentKey, LegalTranslation> = {
   privacy: {
     title: "Politique de confidentialité",
     lastUpdated: "Dernière mise à jour : septembre 2026",
@@ -1022,21 +1681,24 @@ const FR: Record<LegalDocumentKey, LegalOverlay> = {
   },
 };
 
-const OVERLAYS: Partial<Record<Locale, Record<LegalDocumentKey, LegalOverlay>>> = {
+const BASE: Record<"it" | "en", Record<LegalDocumentKey, LegalTranslation>> = { it: IT, en: EN };
+
+const TRANSLATIONS: Record<"es" | "de" | "fr", Record<LegalDocumentKey, LegalTranslation>> = {
   es: ES,
   de: DE,
   fr: FR,
 };
 
-/**
- * Documento legale localizzato: parte dal documento del dizionario (scritto per
- * esteso in `it` e `en`) e applica la traduzione ES/DE/FR se disponibile.
- */
+/** Documento legale completo nella lingua richiesta. */
 export function getLegalDocument(
   locale: Locale,
   key: LegalDocumentKey,
 ): LegalDocument {
-  const base = getDictionary(locale).legal[key] as LegalDocument;
-  const overlay = OVERLAYS[locale]?.[key];
-  return overlay ? { ...base, ...overlay } : base;
+  // `backHome` è l'unica stringa che resta nel dizionario, già localizzata.
+  const { backHome } = getDictionary(locale).legal[key];
+  const document =
+    locale === "es" || locale === "de" || locale === "fr"
+      ? TRANSLATIONS[locale][key]
+      : BASE[locale][key];
+  return { backHome, ...document };
 }

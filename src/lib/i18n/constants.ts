@@ -15,6 +15,20 @@ export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "en";
 
 /** Etichette leggibili per il toggle lingua / locale OpenGraph */
+/**
+ * Locale BCP-47 per formattare date e numeri con la lingua attiva.
+ *
+ * Perché esiste: `locale === "it" ? "it-IT" : "en-US"` crea un ramo a due sole
+ * lingue, e un utente tedesco si ritrovava date in formato americano.
+ */
+export const DATE_LOCALES: Record<Locale, string> = {
+  it: "it-IT",
+  en: "en-GB",
+  es: "es-ES",
+  de: "de-DE",
+  fr: "fr-FR",
+};
+
 export const LOCALE_LABELS: Record<Locale, { short: string; long: string; og: string }> = {
   it: { short: "IT", long: "Italiano", og: "it_IT" },
   en: { short: "EN", long: "English", og: "en_US" },

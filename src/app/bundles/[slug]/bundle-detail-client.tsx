@@ -20,8 +20,7 @@ const PERIODS: BundlePeriod[] = ["monthly", "quarterly", "yearly"];
 type Props = { bundle: Bundle };
 
 export default function BundleDetailClient({ bundle }: Props) {
-  const { locale, dict } = useLanguage();
-  const isIt = locale === "it";
+  const { dict } = useLanguage();
   const [period, setPeriod] = useState<BundlePeriod>("yearly");
   const agents = getBundleAgents(bundle);
   const pricing = bundle.pricing;
@@ -209,7 +208,7 @@ export default function BundleDetailClient({ bundle }: Props) {
                     </AnimatePresence>
                     {/* Animated savings counter */}
                     <div className="mt-2">
-                      <AnimatedSavingsCounter savingsCents={savingsCents} percent={savingsPercent} locale={locale} />
+                      <AnimatedSavingsCounter savingsCents={savingsCents} percent={savingsPercent} />
                     </div>
                     <AnimatePresence>
                       {period === "monthly" && (
@@ -233,9 +232,9 @@ export default function BundleDetailClient({ bundle }: Props) {
               {/* Trust signals */}
               <div className="mt-5 space-y-2">
                 {[
-                  { icon: Clock, text: isIt ? "Setup in 24h" : "Setup in 24h" },
-                  { icon: Shield, text: isIt ? "Cancelli quando vuoi" : "Cancel anytime" },
-                  { icon: Sparkles, text: isIt ? "Aggiornamenti gratuiti" : "Free updates" },
+                  { icon: Clock, text: dict.bundleDetail.setupFast },
+                  { icon: Shield, text: dict.bundleDetail.cancelAnytime },
+                  { icon: Sparkles, text: dict.bundleDetail.freeUpdates },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-2 text-xs font-semibold text-neutral-500">
                     <Icon size={12} className="text-neutral-600" />

@@ -14,14 +14,12 @@ import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const isIt = locale === "it";
+  const dict = getDictionary(locale);
   // Il titolo del documento: il template del layout aggiunge " | AgentCloud".
   const { title } = getLegalDocument(locale, "privacy");
   return {
     title,
-    description: isIt
-      ? "Come AgentCloud raccoglie, usa, condivide e conserva i dati personali: titolare del trattamento, basi giuridiche, cookie, trasferimenti internazionali, conservazione e diritti GDPR."
-      : "How AgentCloud collects, uses, shares and retains personal data: data controller, legal bases, cookies, international transfers, retention periods and your GDPR rights.",
+    description: dict.legal.privacyMetaDescription,
     alternates: {
       canonical: `${getSiteUrl()}/privacy`,
     },

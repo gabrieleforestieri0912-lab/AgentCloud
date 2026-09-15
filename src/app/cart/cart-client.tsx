@@ -10,7 +10,6 @@ import AgentIcon from "@/components/AgentIcon";
 export default function CartPageClient() {
   const { items, totalDisplay, totalCents, remove, clear } = useCart();
   const { locale, dict } = useLanguage();
-  const isIt = locale === "it";
   const [checkingOut, setCheckingOut] = useState(false);
 
   async function handleCheckout() {
@@ -97,7 +96,7 @@ export default function CartPageClient() {
                     <p className="text-sm font-bold text-white">{item.price}</p>
                     <button
                       onClick={() => remove(item.agent_slug)}
-                      aria-label="Rimuovi"
+                      aria-label={dict.cartPage.removeAria}
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-neutral-400 hover:bg-red-500/15 hover:text-red-300"
                     >
                       <Trash2 size={14} />

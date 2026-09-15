@@ -10,6 +10,7 @@
  * - Stat cards: riepilogo numerico
  */
 import { useMemo } from "react";
+import { DATE_LOCALES, type Locale } from "@/lib/i18n/constants";
 import {
   BarChart,
   Bar,
@@ -55,7 +56,7 @@ type DashboardChartsProps = {
   totalRuns: number;
   estimatedCostCents: number;
   overageCents: number;
-  locale: string;
+  locale: Locale;
   agentUsage?: AgentUsage[];
 };
 
@@ -72,18 +73,18 @@ const PIE_COLORS = [
   "#3b82f6", // blue
 ];
 
-function formatCurrency(cents: number, locale: string) {
-  return (cents / 100).toLocaleString(locale === "it" ? "it-IT" : "en-US", {
+function formatCurrency(cents: number, locale: Locale) {
+  return (cents / 100).toLocaleString(DATE_LOCALES[locale], {
     style: "currency",
     currency: "EUR",
   });
 }
 
-function formatCompact(n: number, locale: string) {
+function formatCompact(n: number, locale: Locale) {
   if (n >= 1_000_000)
     return (n / 1_000_000).toFixed(1) + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-  return n.toLocaleString(locale === "it" ? "it-IT" : "en-US");
+  return n.toLocaleString(DATE_LOCALES[locale]);
 }
 
 function CustomTooltip({ active, payload, label, locale }: any) {
@@ -96,7 +97,7 @@ function CustomTooltip({ active, payload, label, locale }: any) {
           <span style={{ color: entry.color }} className="font-bold">
             {entry.name}:{" "}
           </span>
-          {entry.value.toLocaleString(locale === "it" ? "it-IT" : "en-US")}
+          {entry.value.toLocaleString(DATE_LOCALES[(locale ?? "en") as Locale])}
         </p>
       ))}
     </div>

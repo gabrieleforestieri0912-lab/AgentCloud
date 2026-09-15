@@ -8,6 +8,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
+import { DATE_LOCALES, type Locale } from "@/lib/i18n/constants";
 import { User, Mail, Shield, CreditCard, Plug, Trash2, LogOut, CheckCircle2, AlertCircle, Save } from "lucide-react";
 
 export default function AccountClient({
@@ -31,7 +32,7 @@ export default function AccountClient({
   plan: string | null;
   shopifyShops: string[];
   googleEmail: string | null;
-  locale: string;
+  locale: Locale;
 }) {
   const { dict } = useLanguage();
   const [name, setName] = useState(initialName);
@@ -103,7 +104,7 @@ export default function AccountClient({
               {isAdmin && <span className="rounded-full bg-brand-500/15 px-2 py-0.5 text-xs font-bold text-brand-300">Admin</span>}
             </h2>
             <p className="text-sm text-neutral-500">{firstName} · {initialEmail}</p>
-            {createdAt && <p className="text-xs text-neutral-600">{dict.chat.createdOn} {new Date(createdAt).toLocaleDateString(locale === "it" ? "it-IT" : "en-US")}</p>}
+            {createdAt && <p className="text-xs text-neutral-600">{dict.chat.createdOn} {new Date(createdAt).toLocaleDateString(DATE_LOCALES[locale])}</p>}
           </div>
           <button onClick={handleSignOut} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-300 hover:bg-white/5">
             <LogOut size={14} /> {dict.navbar.logOut}

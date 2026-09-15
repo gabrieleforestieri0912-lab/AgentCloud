@@ -182,6 +182,7 @@ const it = {
       "Operazioni",
       "Creator di corsi",
     ],
+      askAboutChip: "Vorrei sapere di più su: {chip}",
   },
 
   features: {
@@ -375,6 +376,9 @@ const it = {
     setup: "Setup",
     view: "Vedi",
     buy: "Acquista",
+      whatYouGet: "Cosa ottieni",
+      noCommitment: "senza vincoli",
+      tagline: "Ideale per {industry} — attivazione {setup}",
   },
 
   chat: {
@@ -504,6 +508,27 @@ const it = {
     accountNameUpdated: "Nome aggiornato.",
     accountDeleteConfirm: "Eliminare definitivamente l'account? Azione irreversibile.",
     accountDeleteError: "Errore cancellazione",
+      metaTitle: "Chatta con l'AI",
+      metaDescription: "Chiedi alla nostra AI di automatizzare email, ticket di supporto, generazione lead, social media e altro. Descrivi cosa ti serve e lo costruiremo.",
+      archived: "Archiviate",
+      activeTab: "Attive",
+      noArchivedConversations: "Nessuna conversazione archiviata",
+      rename: "Rinomina",
+      restore: "Ripristina",
+      archiveAction: "Archivia",
+      changeAgent: "Cambia agente",
+      close: "Chiudi",
+      agentsInChat: "Agenti nella chat",
+      noAgentsAvailable: "Nessun agente disponibile: aggiungili dal marketplace.",
+      toolsDescription: "Collega AgentCloud ai tuoi strumenti. Ogni integrazione viene gestita dall'agente corrispondente.",
+      agentsDescription: "Sfoglia il catalogo agenti e acquista quelli di cui hai bisogno.",
+      orBrowsePrefix: "Oppure ",
+      browseMarketplace: "sfoglia il marketplace",
+      discoverAgentsSuffix: " per scoprire gli agenti disponibili.",
+      integrationSoon: "Prossimamente",
+      integrationArriving: "In arrivo",
+      themeLight: "chiaro",
+      themeDark: "scuro",
   },
 
   agentChat: {
@@ -537,6 +562,8 @@ const it = {
     availableNow: "Disponibili ora",
     comingSoon: "In arrivo",
     agentsCount: "{count} agenti",
+      metaTitle: "Marketplace Agenti AI",
+      metaDescription: "Sfoglia agenti AI preconfigurati per marketing, operations, supporto, finanza e altro. Attiva agenti pronti all'uso che automatizzano i workflow aziendali.",
   },
 
   agentDetail: {
@@ -568,6 +595,10 @@ const it = {
     openChat: "Apri chat",
     guidedSetupDesc: "Configurazione guidata senza codice con supporto dedicato.",
     askOurAi: "Chiedi alla nostra AI",
+      addToCart: "Aggiungi al carrello",
+      added: "Aggiunto!",
+      addBundleToCart: "Aggiungi bundle al carrello",
+      guidedSetupNote: "Configurazione guidata senza codice: colleghi i tuoi strumenti e attivi l'agente in pochi minuti.",
   },
 
   deploy: {
@@ -730,6 +761,7 @@ const it = {
       needSigninToConnect:
         "Per collegare {app} devi prima accedere con il tuo account.",
       completeAccount: "Per accedere alla piattaforma, effettua il login con Google o imposta una password.",
+          googleAppsLabel: "Gmail e Google Calendar",
     },
     signup: {
       title: "Crea il tuo account",
@@ -791,6 +823,8 @@ const it = {
     alreadyOnList: "Questa email è già in waitlist",
     somethingWrong: "Qualcosa è andato storto",
     networkError: "Errore di rete. Riprova.",
+      emailSubject: "Richiesta AgentCloud",
+      followUpdates: "Seguici per gli aggiornamenti:",
   },
 
   demo: {
@@ -1249,6 +1283,7 @@ const it = {
         },
       ],
     },
+      privacyMetaDescription: "Come AgentCloud raccoglie, usa, condivide e conserva i dati personali: titolare del trattamento, basi giuridiche, cookie, trasferimenti internazionali, conservazione e diritti GDPR.",
   },
 
   notifications: {
@@ -1356,6 +1391,9 @@ const it = {
       "Scopri i nostri agenti cloud o parlane direttamente con il team: siamo qui per aiutarti.",
     ctaDemo: "Prenota una demo",
     ctaContact: "Contattaci",
+      metaTitle: "Chi siamo | AgentCloud — il team che porta gli agenti cloud a lavoro e studio",
+      metaDescription: "Siamo un team di giovani intraprendenti che aiuta le persone a risparmiare tempo su lavoro e studio grazie agli agenti cloud.",
+      jsonLdName: "Chi siamo | AgentCloud",
   },
 
   bundleDetail: {
@@ -1379,6 +1417,9 @@ const it = {
     priceWithoutBundle: "Prezzo senza bundle",
     cancelAnytime: "Cancelli quando vuoi",
     freeUpdates: "Aggiornamenti gratuiti",
+      setupFast: "Setup in 24h",
+      savingsNote: "Risparmia fino al 30% con piani trimestrali e annuali.",
+      youSave: "Risparmi",
   },
   marketplaceGrid: {
     searchPlaceholder: "Cerca agenti per nome, categoria o funzionalità...",
@@ -1438,6 +1479,7 @@ const it = {
     desc: "Scarica i dati in PDF o per Looker Studio",
     exportPdf: "Esporta PDF",
     exportLooker: "Looker Studio",
+      exportLookerTitle: "Esporta per Looker Studio",
   },
   accountPage: {
     title: "Account",
@@ -1457,6 +1499,7 @@ const it = {
     manage: "Gestisci",
     connect: "Connetti",
     configNote: "Configura sia da qui (pagina agente) sia da /dashboard/integrations - è lo stesso collegamento. Se ti abboni, l'agente risulta già connesso.",
+      configureNote: "Configura sia da qui (pagina agente) sia da /dashboard/integrations — è lo stesso collegamento. Se ti abboni, l'agente risulta già connesso.",
   },
   integrationsGrid: {
     comingSoon: "Prossimamente",
@@ -1477,6 +1520,7 @@ const it = {
     exploreDemo: "vedi la demo",
     messagesLeft: "messaggi rimasti",
     redirectNote: "Dopo l'accesso verrai reindirizzato a /chat con la conversazione salvata.",
+      usedFreeMessages: "Hai usato i 10 messaggi gratuiti della chat demo. Accedi con il tuo account per continuare la conversazione nella chat completa — la ritroverai già salvata.",
   },
   countdownTimer: {
     launchDate: "Lancio il 15 Settembre 2026",
@@ -1512,6 +1556,8 @@ const it = {
     askOurAI: "Chiedi alla nostra AI",
     custom: "Su misura",
     seeSingleAgents: "Vedi agenti singoli",
+      metaTitle: "Bundle Agenti AI — Risparmia fino al 30%",
+      metaDescription: "Bundle di agenti AI con offerte trimestrali e annuali. Risparmia fino al 30% rispetto al prezzo singolo. E-commerce, Marketing, Operations e All-in-One.",
   },
   subscriptionsPage: {
     mySubscriptions: "I miei abbonamenti",
@@ -1549,6 +1595,7 @@ const it = {
     goToAgent: "Vai all'agente",
     browseAgents: "Vedi agenti",
     requestDemo: "Agente personalizzato",
+      metaDescription: "Collega AgentCloud ai tuoi strumenti: Shopify, Gmail, Slack, HubSpot e molti altri. Vedi tutte le app disponibili e quelle in arrivo.",
   },
   cartPage: {
     backToHome: "Torna alla home",
@@ -1572,8 +1619,41 @@ const it = {
     perMonthNote: "{count} x abbonamento mensile",
     removeAria: "Rimuovi",
     pricePerMonth: "{price} / mese",
+      inCart: "Nel carrello",
   },
 
+  sidebarAccount: {
+      account: "Account",
+      cart: "Carrello",
+      signOut: "Esci",
+  },
+  onboarding: {
+      back: "Indietro",
+      next: "Avanti",
+      start: "Inizia!",
+  },
+  chatOnboarding: {
+      navigation: "Navigazione rapida",
+      navigationDesc: "Usa queste tab per passare tra Chat, Strumenti e Agenti senza lasciare la sidebar.",
+      newConversation: "Nuova conversazione",
+      newConversationDesc: "Clicca qui per iniziare una nuova chat da zero.",
+      history: "Cronologia chat",
+      historyDesc: "Tutte le tue conversazioni appaiono qui. Rinomina, archivia o eliminale con un click.",
+      message: "Scrivi il tuo messaggio",
+      messageDesc: "Parla con l'assistente AI qui. Puoi anche allegare file trascinandoli.",
+      account: "Il tuo account",
+      accountDesc: "Gestisci il tuo profilo, carrello e impostazioni da qui.",
+  },
+  dashboardOnboarding: {
+      stats: "Le tue statistiche",
+      statsDesc: "Qui vedi le metriche principali: agenti installati, run totali e token utilizzati.",
+      navigation: "Navigazione rapida",
+      navigationDesc: "Usa la sidebar per accedere a Dashboard, Chat, Marketplace, Integrazioni e Account.",
+      agents: "Agenti installati",
+      agentsDesc: "Qui vedi tutti gli agenti che hai attivato con le loro statistiche di utilizzo.",
+      account: "Il tuo account",
+      accountDesc: "Gestisci abbonamenti, carrello e impostazioni del tuo profilo.",
+  },
 };
 
 export type Dictionary = typeof it;
@@ -1733,6 +1813,7 @@ export const en: Dictionary = {
       "Operations",
       "Course Creator",
     ],
+      askAboutChip: "I'd like to know more about: {chip}",
   },
 
   features: {
@@ -2042,6 +2123,27 @@ export const en: Dictionary = {
     accountNameUpdated: "Name updated.",
     accountDeleteConfirm: "Permanently delete account? Irreversible.",
     accountDeleteError: "Delete failed",
+      metaTitle: "Chat with AI",
+      metaDescription: "Ask our AI to automate emails, support tickets, lead generation, social media, and more. Describe what you need and we'll build it.",
+      archived: "Archived",
+      activeTab: "Active",
+      noArchivedConversations: "No archived conversations",
+      rename: "Rename",
+      restore: "Restore",
+      archiveAction: "Archive",
+      changeAgent: "Change agent",
+      close: "Close",
+      agentsInChat: "Agents in this chat",
+      noAgentsAvailable: "No agents available: add them from the marketplace.",
+      toolsDescription: "Connect AgentCloud to your tools. Each integration is managed by its corresponding agent.",
+      agentsDescription: "Browse the agent catalog and purchase the ones you need.",
+      orBrowsePrefix: "Or ",
+      browseMarketplace: "browse the marketplace",
+      discoverAgentsSuffix: " to discover available agents.",
+      integrationSoon: "Coming soon",
+      integrationArriving: "Soon",
+      themeLight: "light",
+      themeDark: "dark",
   },
 
   agentChat: {
@@ -2075,6 +2177,8 @@ export const en: Dictionary = {
     availableNow: "Available now",
     comingSoon: "Coming soon",
     agentsCount: "{count} agents",
+      metaTitle: "AI Agent Marketplace",
+      metaDescription: "Browse pre-built AI agents for marketing, operations, support, finance and more. Deploy ready-to-use agents that automate your business workflows.",
   },
 
   agentDetail: {
@@ -2105,6 +2209,10 @@ export const en: Dictionary = {
     openChat: "Open chat",
     guidedSetupDesc: "Code-free guided setup with dedicated support.",
     askOurAi: "Ask our AI",
+      addToCart: "Add to cart",
+      added: "Added!",
+      addBundleToCart: "Add bundle to cart",
+      guidedSetupNote: "Code-free guided setup: connect your tools and deploy the agent in minutes.",
   },
 
   deploy: {
@@ -2183,6 +2291,9 @@ export const en: Dictionary = {
     setup: "Setup",
     view: "View",
     buy: "Buy",
+      whatYouGet: "What you get",
+      noCommitment: "no commitment",
+      tagline: "Perfect for {industry} — setup {setup}",
   },
 
   dashboard: {
@@ -2274,6 +2385,7 @@ export const en: Dictionary = {
       needSigninToConnect:
         "To connect {app}, sign in with your account first.",
       completeAccount: "To access the platform, sign in with Google or set a password.",
+          googleAppsLabel: "Gmail and Google Calendar",
     },
     signup: {
       title: "Create your account",
@@ -2334,6 +2446,8 @@ export const en: Dictionary = {
     alreadyOnList: "This email is already on the waitlist",
     somethingWrong: "Something went wrong",
     networkError: "Network error. Please try again.",
+      emailSubject: "AgentCloud inquiry",
+      followUpdates: "Follow us for updates:",
   },
 
   demo: {
@@ -2786,6 +2900,7 @@ export const en: Dictionary = {
         },
       ],
     },
+      privacyMetaDescription: "How AgentCloud collects, uses, shares and retains personal data: data controller, legal bases, cookies, international transfers, retention periods and your GDPR rights.",
   },
 
   notifications: {
@@ -2894,6 +3009,9 @@ export const en: Dictionary = {
       "Explore our cloud agents or talk to the team directly - we're here to help.",
     ctaDemo: "Book a demo",
     ctaContact: "Contact us",
+      metaTitle: "About | AgentCloud — the team bringing cloud agents to work and study",
+      metaDescription: "We are a team of enterprising young people helping others save time on work and study through cloud agents.",
+      jsonLdName: "About | AgentCloud",
   },
 
   bundleDetail: {
@@ -2917,6 +3035,9 @@ export const en: Dictionary = {
     priceWithoutBundle: "Price without bundle",
     cancelAnytime: "Cancel anytime",
     freeUpdates: "Free updates",
+      setupFast: "Setup in 24h",
+      savingsNote: "Save up to 30% with quarterly and annual plans.",
+      youSave: "You save",
   },
   marketplaceGrid: {
     searchPlaceholder: "Search agents by name, category or feature...",
@@ -2976,6 +3097,7 @@ export const en: Dictionary = {
     desc: "Download data as PDF or for Looker Studio",
     exportPdf: "Export PDF",
     exportLooker: "Looker Studio",
+      exportLookerTitle: "Export for Looker Studio",
   },
   accountPage: {
     title: "Account",
@@ -2995,6 +3117,7 @@ export const en: Dictionary = {
     manage: "Manage",
     connect: "Connect",
     configNote: "Configure either here (agent page) or from /dashboard/integrations - same link. If you subscribe, the agent shows already connected.",
+      configureNote: "Configure either here (agent page) or from /dashboard/integrations — same link. If you subscribe, the agent shows already connected.",
   },
   integrationsGrid: {
     comingSoon: "Coming soon",
@@ -3015,6 +3138,7 @@ export const en: Dictionary = {
     exploreDemo: "explore demo",
     messagesLeft: "messages left",
     redirectNote: "After signing in you'll be redirected to /chat with your conversation saved.",
+      usedFreeMessages: "You've used the 10 free messages of the demo chat. Sign in to continue in the full chat — your conversation will be waiting there.",
   },
   countdownTimer: {
     launchDate: "Launching September 15, 2026",
@@ -3050,6 +3174,8 @@ export const en: Dictionary = {
     askOurAI: "Ask our AI",
     custom: "Custom",
     seeSingleAgents: "See single agents",
+      metaTitle: "AI Agent Bundles — Save up to 30%",
+      metaDescription: "AI agent bundles with quarterly and annual offers. Save up to 30% vs single agent pricing. E-commerce, Marketing, Operations and All-in-One.",
   },
   subscriptionsPage: {
     mySubscriptions: "My subscriptions",
@@ -3087,6 +3213,7 @@ export const en: Dictionary = {
     goToAgent: "Go to agent",
     browseAgents: "Browse agents",
     requestDemo: "Custom agent",
+      metaDescription: "Connect AgentCloud to your tools: Shopify, Gmail, Slack, HubSpot and more. See all available and upcoming apps.",
   },
   cartPage: {
     backToHome: "Back to home",
@@ -3110,11 +3237,44 @@ export const en: Dictionary = {
     perMonthNote: "{count} x monthly subscription",
     removeAria: "Remove",
     pricePerMonth: "{price} / month",
+      inCart: "In cart",
   },
 
+  sidebarAccount: {
+      account: "Account",
+      cart: "Cart",
+      signOut: "Sign out",
+  },
+  onboarding: {
+      back: "Back",
+      next: "Next",
+      start: "Start!",
+  },
+  chatOnboarding: {
+      navigation: "Quick navigation",
+      navigationDesc: "Use these tabs to switch between Chat, Tools and Agents without leaving the sidebar.",
+      newConversation: "New conversation",
+      newConversationDesc: "Click here to start a new chat from scratch.",
+      history: "Chat history",
+      historyDesc: "All your conversations appear here. Rename, archive or delete them with one click.",
+      message: "Type your message",
+      messageDesc: "Talk to the AI assistant here. You can also attach files by dragging them.",
+      account: "Your account",
+      accountDesc: "Manage your profile, cart and settings from here.",
+  },
+  dashboardOnboarding: {
+      stats: "Your stats",
+      statsDesc: "Here you see key metrics: installed agents, total runs and tokens used.",
+      navigation: "Quick navigation",
+      navigationDesc: "Use the sidebar to access Dashboard, Chat, Marketplace, Integrations and Account.",
+      agents: "Installed agents",
+      agentsDesc: "Here you see all activated agents with their usage stats.",
+      account: "Your account",
+      accountDesc: "Manage your subscriptions, cart and profile settings.",
+  },
 };
 
-export const es = {
+export const es: Dictionary = {
   common: {
     comingSoon: "Próximamente",
     comingSoonShort: "Próximamente",
@@ -3269,6 +3429,7 @@ export const es = {
       "Operaciones",
       "Course Creator",
     ],
+      askAboutChip: "Me gustaría saber más sobre: {chip}",
   },
 
   features: {
@@ -3576,6 +3737,27 @@ export const es = {
     accountNameUpdated: "Nombre actualizado.",
     accountDeleteConfirm: "¿Eliminar cuenta permanentemente? Irreversible.",
     accountDeleteError: "Error al eliminar",
+      metaTitle: "Chatea con la IA",
+      metaDescription: "Pide a nuestra IA que automatice correos, tickets de soporte, generación de leads, redes sociales y mucho más. Describe lo que necesitas y lo crearemos.",
+      archived: "Archivadas",
+      activeTab: "Activas",
+      noArchivedConversations: "No hay conversaciones archivadas",
+      rename: "Renombrar",
+      restore: "Restaurar",
+      archiveAction: "Archivar",
+      changeAgent: "Cambiar de agente",
+      close: "Cerrar",
+      agentsInChat: "Agentes en este chat",
+      noAgentsAvailable: "No hay agentes disponibles: añádelos desde el marketplace.",
+      toolsDescription: "Conecta AgentCloud con tus herramientas. Cada integración la gestiona el agente correspondiente.",
+      agentsDescription: "Explora el catálogo de agentes y compra los que necesites.",
+      orBrowsePrefix: "O ",
+      browseMarketplace: "explora el marketplace",
+      discoverAgentsSuffix: " para descubrir los agentes disponibles.",
+      integrationSoon: "Próximamente",
+      integrationArriving: "En camino",
+      themeLight: "claro",
+      themeDark: "oscuro",
   },
 
   agentChat: {
@@ -3609,6 +3791,8 @@ export const es = {
     availableNow: "Available now",
     comingSoon: "Próximamente",
     agentsCount: "{count} agents",
+      metaTitle: "Marketplace de agentes de IA",
+      metaDescription: "Explora agentes de IA preconfigurados para marketing, operaciones, soporte, finanzas y mucho más. Activa agentes listos para usar que automatizan los flujos de trabajo de tu empresa.",
   },
 
   agentDetail: {
@@ -3639,6 +3823,10 @@ export const es = {
     openChat: "Abrir chat",
     guidedSetupDesc: "Configuración guiada sin código con soporte dedicado.",
     askOurAi: "Pregunta a nuestra IA",
+      addToCart: "Añadir al carrito",
+      added: "¡Añadido!",
+      addBundleToCart: "Añadir el bundle al carrito",
+      guidedSetupNote: "Configuración guiada sin código: conecta tus herramientas y activa el agente en pocos minutos.",
   },
 
   deploy: {
@@ -3717,6 +3905,9 @@ export const es = {
     setup: "Configuración",
     view: "Ver",
     buy: "Comprar",
+      whatYouGet: "Qué obtienes",
+      noCommitment: "sin compromiso",
+      tagline: "Ideal para {industry} — activación {setup}",
   },
 
   dashboard: {
@@ -3808,6 +3999,7 @@ export const es = {
       needSigninToConnect:
         "Para conectar {app}, primero inicia sesión con tu cuenta.",
       completeAccount: "Para acceder a la plataforma, inicia sesión con Google o establece una contraseña.",
+          googleAppsLabel: "Gmail y Google Calendar",
     },
     signup: {
       title: "Create your account",
@@ -3868,6 +4060,8 @@ export const es = {
     alreadyOnList: "Este email ya está en la lista de espera",
     somethingWrong: "Algo salió mal",
     networkError: "Error de red. Inténtalo de nuevo.",
+      emailSubject: "Solicitud sobre AgentCloud",
+      followUpdates: "Síguenos para recibir novedades:",
   },
 
   demo: {
@@ -4320,6 +4514,7 @@ export const es = {
         },
       ],
     },
+      privacyMetaDescription: "Cómo AgentCloud recopila, usa, comparte y conserva los datos personales: responsable del tratamiento, bases jurídicas, cookies, transferencias internacionales, conservación y derechos del RGPD.",
   },
 
   notifications: {
@@ -4428,6 +4623,9 @@ export const es = {
       "Explore our cloud agents or talk to the team directly - we're here to help.",
     ctaDemo: "Book a demo",
     ctaContact: "Contact us",
+      metaTitle: "Quiénes somos | AgentCloud — el equipo que lleva los agentes cloud al trabajo y al estudio",
+      metaDescription: "Somos un equipo de jóvenes emprendedores que ayuda a las personas a ahorrar tiempo en el trabajo y el estudio gracias a los agentes cloud.",
+      jsonLdName: "Quiénes somos | AgentCloud",
   },
 
   bundleDetail: {
@@ -4451,6 +4649,9 @@ export const es = {
     priceWithoutBundle: "Precio sin paquete",
     cancelAnytime: "Cancela cuando quieras",
     freeUpdates: "Actualizaciones gratuitas",
+      setupFast: "Configuración en 24 h",
+      savingsNote: "Ahorra hasta un 30 % con planes trimestrales y anuales.",
+      youSave: "Ahorras",
   },
   marketplaceGrid: {
     searchPlaceholder: "Buscar agentes por nombre, categoría o función...",
@@ -4510,6 +4711,7 @@ export const es = {
     desc: "Descarga los datos en PDF o para Looker Studio",
     exportPdf: "Exportar PDF",
     exportLooker: "Looker Studio",
+      exportLookerTitle: "Exportar para Looker Studio",
   },
   accountPage: {
     title: "Cuenta",
@@ -4529,6 +4731,7 @@ export const es = {
     manage: "Gestionar",
     connect: "Conectar",
     configNote: "Configura tanto desde aquí (página del agente) como desde /dashboard/integrations - es el mismo enlace. Si te suscribes, el agente aparece ya conectado.",
+      configureNote: "Configúralo aquí (página del agente) o desde /dashboard/integrations — es el mismo enlace. Si te suscribes, el agente ya aparece conectado.",
   },
   integrationsGrid: {
     comingSoon: "Próximamente",
@@ -4549,6 +4752,7 @@ export const es = {
     exploreDemo: "ver la demo",
     messagesLeft: "mensajes restantes",
     redirectNote: "Después de iniciar sesión serás redirigido a /chat con la conversación guardada.",
+      usedFreeMessages: "Has usado los 10 mensajes gratuitos del chat de demostración. Inicia sesión con tu cuenta para continuar en el chat completo: tu conversación estará esperando allí.",
   },
   countdownTimer: {
     launchDate: "Lanzamiento el 15 de Septiembre de 2026",
@@ -4584,6 +4788,8 @@ export const es = {
     askOurAI: "Pregunta a nuestra IA",
     custom: "Personalizado",
     seeSingleAgents: "Ver agentes individuales",
+      metaTitle: "Bundles de agentes de IA — Ahorra hasta un 30 %",
+      metaDescription: "Bundles de agentes de IA con ofertas trimestrales y anuales. Ahorra hasta un 30 % frente al precio individual. E-commerce, Marketing, Operaciones y Todo en uno.",
   },
   subscriptionsPage: {
     mySubscriptions: "Mis suscripciones",
@@ -4621,6 +4827,7 @@ export const es = {
     goToAgent: "Ir al agente",
     browseAgents: "Ver agentes",
     requestDemo: "Agente personalizado",
+      metaDescription: "Conecta AgentCloud con tus herramientas: Shopify, Gmail, Slack, HubSpot y muchas más. Consulta todas las apps disponibles y las que llegarán.",
   },
   cartPage: {
     backToHome: "Volver al inicio",
@@ -4644,11 +4851,44 @@ export const es = {
     perMonthNote: "{count} x suscripción mensual",
     removeAria: "Quitar",
     pricePerMonth: "{price} / mes",
+      inCart: "En el carrito",
   },
 
+  sidebarAccount: {
+      account: "Cuenta",
+      cart: "Carrito",
+      signOut: "Cerrar sesión",
+  },
+  onboarding: {
+      back: "Atrás",
+      next: "Siguiente",
+      start: "¡Empezar!",
+  },
+  chatOnboarding: {
+      navigation: "Navegación rápida",
+      navigationDesc: "Usa estas pestañas para cambiar entre Chat, Herramientas y Agentes sin salir de la barra lateral.",
+      newConversation: "Nueva conversación",
+      newConversationDesc: "Haz clic aquí para empezar un chat nuevo desde cero.",
+      history: "Historial de chats",
+      historyDesc: "Todas tus conversaciones aparecen aquí. Renómbralas, archívalas o elimínalas con un clic.",
+      message: "Escribe tu mensaje",
+      messageDesc: "Habla aquí con el asistente de IA. También puedes adjuntar archivos arrastrándolos.",
+      account: "Tu cuenta",
+      accountDesc: "Gestiona tu perfil, carrito y ajustes desde aquí.",
+  },
+  dashboardOnboarding: {
+      stats: "Tus estadísticas",
+      statsDesc: "Aquí ves las métricas principales: agentes instalados, ejecuciones totales y tokens usados.",
+      navigation: "Navegación rápida",
+      navigationDesc: "Usa la barra lateral para acceder a Dashboard, Chat, Marketplace, Integraciones y Cuenta.",
+      agents: "Agentes instalados",
+      agentsDesc: "Aquí ves todos los agentes que has activado con sus estadísticas de uso.",
+      account: "Tu cuenta",
+      accountDesc: "Gestiona tus suscripciones, el carrito y los ajustes de tu perfil.",
+  },
 };
 
-export const de = {
+export const de: Dictionary = {
   common: {
     comingSoon: "Demnächst",
     comingSoonShort: "Demnächst",
@@ -4803,6 +5043,7 @@ export const de = {
       "Operations",
       "Course Creator",
     ],
+      askAboutChip: "Ich möchte mehr wissen über: {chip}",
   },
 
   features: {
@@ -5110,6 +5351,27 @@ export const de = {
     accountNameUpdated: "Name aktualisiert.",
     accountDeleteConfirm: "Konto dauerhaft löschen? Unwiderruflich.",
     accountDeleteError: "Löschung fehlgeschlagen",
+      metaTitle: "Mit KI chatten",
+      metaDescription: "Lass unsere KI E-Mails, Support-Tickets, Lead-Generierung, Social Media und mehr automatisieren. Beschreibe, was du brauchst, und wir bauen es.",
+      archived: "Archiviert",
+      activeTab: "Aktiv",
+      noArchivedConversations: "Keine archivierten Unterhaltungen",
+      rename: "Umbenennen",
+      restore: "Wiederherstellen",
+      archiveAction: "Archivieren",
+      changeAgent: "Agent wechseln",
+      close: "Schließen",
+      agentsInChat: "Agenten in diesem Chat",
+      noAgentsAvailable: "Keine Agenten verfügbar: Füge sie aus dem Marketplace hinzu.",
+      toolsDescription: "Verbinde AgentCloud mit deinen Tools. Jede Integration wird vom zugehörigen Agenten verwaltet.",
+      agentsDescription: "Durchsuche den Agentenkatalog und kaufe die, die du brauchst.",
+      orBrowsePrefix: "Oder ",
+      browseMarketplace: "durchsuche den Marketplace",
+      discoverAgentsSuffix: ", um die verfügbaren Agenten zu entdecken.",
+      integrationSoon: "Demnächst",
+      integrationArriving: "Bald",
+      themeLight: "hell",
+      themeDark: "dunkel",
   },
 
   agentChat: {
@@ -5143,6 +5405,8 @@ export const de = {
     availableNow: "Available now",
     comingSoon: "Demnächst",
     agentsCount: "{count} agents",
+      metaTitle: "KI-Agenten-Marktplatz",
+      metaDescription: "Entdecke vorkonfigurierte KI-Agenten für Marketing, Operations, Support, Finanzen und mehr. Aktiviere sofort einsatzbereite Agenten, die deine Geschäftsprozesse automatisieren.",
   },
 
   agentDetail: {
@@ -5173,6 +5437,10 @@ export const de = {
     openChat: "Chat öffnen",
     guidedSetupDesc: "Codefreie geführte Einrichtung mit dediziertem Support.",
     askOurAi: "Frag unsere KI",
+      addToCart: "In den Warenkorb",
+      added: "Hinzugefügt!",
+      addBundleToCart: "Bundle in den Warenkorb",
+      guidedSetupNote: "Geführte Einrichtung ohne Code: Verbinde deine Tools und aktiviere den Agenten in wenigen Minuten.",
   },
 
   deploy: {
@@ -5251,6 +5519,9 @@ export const de = {
     setup: "Setup",
     view: "Ansehen",
     buy: "Kaufen",
+      whatYouGet: "Das bekommst du",
+      noCommitment: "ohne Bindung",
+      tagline: "Ideal für {industry} — Aktivierung {setup}",
   },
 
   dashboard: {
@@ -5342,6 +5613,7 @@ export const de = {
       needSigninToConnect:
         "Um {app} zu verbinden, melde dich zuerst mit deinem Konto an.",
       completeAccount: "Um auf die Plattform zuzugreifen, melde dich mit Google an oder lege ein Passwort fest.",
+          googleAppsLabel: "Gmail und Google Calendar",
     },
     signup: {
       title: "Create your account",
@@ -5402,6 +5674,8 @@ export const de = {
     alreadyOnList: "Diese Email ist bereits auf der Warteliste",
     somethingWrong: "Etwas ist schiefgelaufen",
     networkError: "Netzwerkfehler. Bitte versuche es erneut.",
+      emailSubject: "Anfrage zu AgentCloud",
+      followUpdates: "Folge uns für Updates:",
   },
 
   demo: {
@@ -5854,6 +6128,7 @@ export const de = {
         },
       ],
     },
+      privacyMetaDescription: "Wie AgentCloud personenbezogene Daten erhebt, nutzt, weitergibt und speichert: Verantwortlicher, Rechtsgrundlagen, Cookies, internationale Übermittlungen, Speicherfristen und deine DSGVO-Rechte.",
   },
 
   notifications: {
@@ -5962,6 +6237,9 @@ export const de = {
       "Explore our cloud agents or talk to the team directly - we're here to help.",
     ctaDemo: "Book a demo",
     ctaContact: "Contact us",
+      metaTitle: "Über uns | AgentCloud — das Team, das Cloud-Agenten in Arbeit und Studium bringt",
+      metaDescription: "Wir sind ein Team junger Unternehmer, das anderen mit Cloud-Agenten Zeit bei Arbeit und Studium spart.",
+      jsonLdName: "Über uns | AgentCloud",
   },
 
   bundleDetail: {
@@ -5985,6 +6263,9 @@ export const de = {
     priceWithoutBundle: "Preis ohne Paket",
     cancelAnytime: "Jederzeit kündbar",
     freeUpdates: "Kostenlose Updates",
+      setupFast: "Einrichtung in 24 Std.",
+      savingsNote: "Spare bis zu 30 % mit vierteljährlichen und jährlichen Plänen.",
+      youSave: "Du sparst",
   },
   marketplaceGrid: {
     searchPlaceholder: "Agenten nach Name, Kategorie oder Funktion suchen...",
@@ -6044,6 +6325,7 @@ export const de = {
     desc: "Daten als PDF oder für Looker Studio herunterladen",
     exportPdf: "PDF exportieren",
     exportLooker: "Looker Studio",
+      exportLookerTitle: "Für Looker Studio exportieren",
   },
   accountPage: {
     title: "Konto",
@@ -6063,6 +6345,7 @@ export const de = {
     manage: "Verwalten",
     connect: "Verbinden",
     configNote: "Konfiguriere entweder hier (Agenten-Seite) oder von /dashboard/integrations - derselbe Link. Wenn du abonnierst, zeigt der Agent bereits verbunden.",
+      configureNote: "Konfiguriere entweder hier (Agentenseite) oder unter /dashboard/integrations — dieselbe Verbindung. Wenn du abonnierst, gilt der Agent als verbunden.",
   },
   integrationsGrid: {
     comingSoon: "Bald verfügbar",
@@ -6083,6 +6366,7 @@ export const de = {
     exploreDemo: "Demo ansehen",
     messagesLeft: "Nachrichten übrig",
     redirectNote: "Nach der Anmeldung wirst du zu /chat mit deinem gespeicherten Gespräch weitergeleitet.",
+      usedFreeMessages: "Du hast die 10 kostenlosen Nachrichten des Demo-Chats genutzt. Melde dich mit deinem Konto an, um im vollständigen Chat weiterzumachen — dein Gespräch wartet dort bereits.",
   },
   countdownTimer: {
     launchDate: "Start am 15. September 2026",
@@ -6118,6 +6402,8 @@ export const de = {
     askOurAI: "Frag unsere KI",
     custom: "Individuell",
     seeSingleAgents: "Einzelne Agenten ansehen",
+      metaTitle: "KI-Agenten-Bundles — Spare bis zu 30 %",
+      metaDescription: "KI-Agenten-Bundles mit vierteljährlichen und jährlichen Angeboten. Spare bis zu 30 % gegenüber dem Einzelpreis. E-Commerce, Marketing, Operations und All-in-One.",
   },
   subscriptionsPage: {
     mySubscriptions: "Meine Abonnements",
@@ -6155,6 +6441,7 @@ export const de = {
     goToAgent: "Zum Agenten",
     browseAgents: "Agenten ansehen",
     requestDemo: "Demo anfordern",
+      metaDescription: "Verbinde AgentCloud mit deinen Tools: Shopify, Gmail, Slack, HubSpot und viele mehr. Sieh dir alle verfügbaren und kommenden Apps an.",
   },
   cartPage: {
     backToHome: "Zurück zur Startseite",
@@ -6178,11 +6465,44 @@ export const de = {
     perMonthNote: "{count} x monatliches Abonnement",
     removeAria: "Entfernen",
     pricePerMonth: "{price} / Monat",
+      inCart: "Im Warenkorb",
   },
 
+  sidebarAccount: {
+      account: "Konto",
+      cart: "Warenkorb",
+      signOut: "Abmelden",
+  },
+  onboarding: {
+      back: "Zurück",
+      next: "Weiter",
+      start: "Los geht's!",
+  },
+  chatOnboarding: {
+      navigation: "Schnelle Navigation",
+      navigationDesc: "Nutze diese Tabs, um zwischen Chat, Tools und Agenten zu wechseln, ohne die Seitenleiste zu verlassen.",
+      newConversation: "Neue Unterhaltung",
+      newConversationDesc: "Klicke hier, um einen neuen Chat von Grund auf zu starten.",
+      history: "Chat-Verlauf",
+      historyDesc: "Alle deine Unterhaltungen erscheinen hier. Benenne sie um, archiviere oder lösche sie mit einem Klick.",
+      message: "Schreibe deine Nachricht",
+      messageDesc: "Sprich hier mit dem KI-Assistenten. Du kannst Dateien auch per Drag and Drop anhängen.",
+      account: "Dein Konto",
+      accountDesc: "Verwalte dein Profil, deinen Warenkorb und deine Einstellungen von hier aus.",
+  },
+  dashboardOnboarding: {
+      stats: "Deine Statistiken",
+      statsDesc: "Hier siehst du die wichtigsten Kennzahlen: installierte Agenten, Gesamtläufe und genutzte Tokens.",
+      navigation: "Schnelle Navigation",
+      navigationDesc: "Nutze die Seitenleiste für Dashboard, Chat, Marketplace, Integrationen und Konto.",
+      agents: "Installierte Agenten",
+      agentsDesc: "Hier siehst du alle aktivierten Agenten mit ihren Nutzungsstatistiken.",
+      account: "Dein Konto",
+      accountDesc: "Verwalte Abos, Warenkorb und Profileinstellungen.",
+  },
 };
 
-export const fr = {
+export const fr: Dictionary = {
   common: {
     comingSoon: "Bientôt disponible",
     comingSoonShort: "Bientôt disponible",
@@ -6337,6 +6657,7 @@ export const fr = {
       "Operations",
       "Course Creator",
     ],
+      askAboutChip: "J'aimerais en savoir plus sur : {chip}",
   },
 
   features: {
@@ -6644,6 +6965,27 @@ export const fr = {
     accountNameUpdated: "Nom mis à jour.",
     accountDeleteConfirm: "Supprimer définitivement le compte ? Irréversible.",
     accountDeleteError: "Échec de la suppression",
+      metaTitle: "Discuter avec l'IA",
+      metaDescription: "Demandez à notre IA d'automatiser les e-mails, les tickets de support, la génération de leads, les réseaux sociaux et plus encore. Décrivez votre besoin et nous le construirons.",
+      archived: "Archivées",
+      activeTab: "Actives",
+      noArchivedConversations: "Aucune conversation archivée",
+      rename: "Renommer",
+      restore: "Restaurer",
+      archiveAction: "Archiver",
+      changeAgent: "Changer d'agent",
+      close: "Fermer",
+      agentsInChat: "Agents dans ce chat",
+      noAgentsAvailable: "Aucun agent disponible : ajoutez-les depuis le marketplace.",
+      toolsDescription: "Connectez AgentCloud à vos outils. Chaque intégration est gérée par l'agent correspondant.",
+      agentsDescription: "Parcourez le catalogue d'agents et achetez ceux dont vous avez besoin.",
+      orBrowsePrefix: "Ou ",
+      browseMarketplace: "parcourez le marketplace",
+      discoverAgentsSuffix: " pour découvrir les agents disponibles.",
+      integrationSoon: "Bientôt",
+      integrationArriving: "Bientôt disponible",
+      themeLight: "clair",
+      themeDark: "sombre",
   },
 
   agentChat: {
@@ -6677,6 +7019,8 @@ export const fr = {
     availableNow: "Available now",
     comingSoon: "Bientôt disponible",
     agentsCount: "{count} agents",
+      metaTitle: "Marketplace d'agents IA",
+      metaDescription: "Parcourez des agents IA prêts à l'emploi pour le marketing, les opérations, le support, la finance et plus encore. Activez des agents qui automatisent vos processus métier.",
   },
 
   agentDetail: {
@@ -6707,6 +7051,10 @@ export const fr = {
     openChat: "Ouvrir le chat",
     guidedSetupDesc: "Configuration guidée sans code avec support dédié.",
     askOurAi: "Demandez à notre IA",
+      addToCart: "Ajouter au panier",
+      added: "Ajouté !",
+      addBundleToCart: "Ajouter le bundle au panier",
+      guidedSetupNote: "Configuration guidée sans code : connectez vos outils et activez l'agent en quelques minutes.",
   },
 
   deploy: {
@@ -6785,6 +7133,9 @@ export const fr = {
     setup: "Configuration",
     view: "Voir",
     buy: "Acheter",
+      whatYouGet: "Ce que vous obtenez",
+      noCommitment: "sans engagement",
+      tagline: "Idéal pour {industry} — activation {setup}",
   },
 
   dashboard: {
@@ -6876,6 +7227,7 @@ export const fr = {
       needSigninToConnect:
         "Pour connecter {app}, connectez-vous d'abord avec votre compte.",
       completeAccount: "Pour accéder à la plateforme, connectez-vous avec Google ou définissez un mot de passe.",
+          googleAppsLabel: "Gmail et Google Calendar",
     },
     signup: {
       title: "Create your account",
@@ -6936,6 +7288,8 @@ export const fr = {
     alreadyOnList: "Cet email est déjà sur la liste d'attente",
     somethingWrong: "Quelque chose a mal tourné",
     networkError: "Erreur réseau. Réessaie.",
+      emailSubject: "Demande concernant AgentCloud",
+      followUpdates: "Suivez-nous pour les mises à jour :",
   },
 
   demo: {
@@ -7388,6 +7742,7 @@ export const fr = {
         },
       ],
     },
+      privacyMetaDescription: "Comment AgentCloud collecte, utilise, partage et conserve les données personnelles : responsable du traitement, bases légales, cookies, transferts internationaux, durées de conservation et vos droits RGPD.",
   },
 
   notifications: {
@@ -7496,6 +7851,9 @@ export const fr = {
       "Explore our cloud agents or talk to the team directly - we're here to help.",
     ctaDemo: "Book a demo",
     ctaContact: "Contact us",
+      metaTitle: "À propos | AgentCloud — l'équipe qui amène les agents cloud au travail et aux études",
+      metaDescription: "Nous sommes une équipe de jeunes entrepreneurs qui aide à gagner du temps au travail et dans les études grâce aux agents cloud.",
+      jsonLdName: "À propos | AgentCloud",
   },
 
   bundleDetail: {
@@ -7519,6 +7877,9 @@ export const fr = {
     priceWithoutBundle: "Prix sans bundle",
     cancelAnytime: "Annulez quand vous voulez",
     freeUpdates: "Mises à jour gratuites",
+      setupFast: "Configuration en 24 h",
+      savingsNote: "Économisez jusqu'à 30 % avec des formules trimestrielles et annuelles.",
+      youSave: "Vous économisez",
   },
   marketplaceGrid: {
     searchPlaceholder: "Rechercher des agents par nom, catégorie ou fonctionnalité...",
@@ -7578,6 +7939,7 @@ export const fr = {
     desc: "Téléchargez les données en PDF ou pour Looker Studio",
     exportPdf: "Exporter PDF",
     exportLooker: "Looker Studio",
+      exportLookerTitle: "Exporter pour Looker Studio",
   },
   accountPage: {
     title: "Compte",
@@ -7597,6 +7959,7 @@ export const fr = {
     manage: "Gérer",
     connect: "Connecter",
     configNote: "Configurez soit ici (page agent) soit depuis /dashboard/integrations - même lien. Si vous vous abonnez, l'agent apparaît déjà connecté.",
+      configureNote: "Configurez ici (page de l'agent) ou depuis /dashboard/integrations — le même lien. Si vous vous abonnez, l'agent apparaît comme connecté.",
   },
   integrationsGrid: {
     comingSoon: "Bientôt disponible",
@@ -7617,6 +7980,7 @@ export const fr = {
     exploreDemo: "voir la démo",
     messagesLeft: "messages restants",
     redirectNote: "Après la connexion, vous serez redirigé vers /chat avec votre conversation sauvegardée.",
+      usedFreeMessages: "Vous avez utilisé les 10 messages gratuits du chat de démonstration. Connectez-vous avec votre compte pour continuer dans le chat complet — votre conversation vous y attendra.",
   },
   countdownTimer: {
     launchDate: "Lancement le 15 Septembre 2026",
@@ -7652,6 +8016,8 @@ export const fr = {
     askOurAI: "Demandez à notre IA",
     custom: "Sur mesure",
     seeSingleAgents: "Voir les agents individuels",
+      metaTitle: "Bundles d'agents IA — Économisez jusqu'à 30 %",
+      metaDescription: "Bundles d'agents IA avec des offres trimestrielles et annuelles. Économisez jusqu'à 30 % par rapport au prix à l'unité. E-commerce, Marketing, Opérations et Tout-en-un.",
   },
   subscriptionsPage: {
     mySubscriptions: "Mes abonnements",
@@ -7689,6 +8055,7 @@ export const fr = {
     goToAgent: "Aller à l'agent",
     browseAgents: "Voir les agents",
     requestDemo: "Agent personnalisé",
+      metaDescription: "Connectez AgentCloud à vos outils : Shopify, Gmail, Slack, HubSpot et bien d'autres. Découvrez toutes les apps disponibles et à venir.",
   },
   cartPage: {
     backToHome: "Retour à l'accueil",
@@ -7712,17 +8079,50 @@ export const fr = {
     perMonthNote: "{count} x abonnement mensuel",
     removeAria: "Supprimer",
     pricePerMonth: "{price} / mois",
+      inCart: "Dans le panier",
   },
 
+  sidebarAccount: {
+      account: "Compte",
+      cart: "Panier",
+      signOut: "Déconnexion",
+  },
+  onboarding: {
+      back: "Retour",
+      next: "Suivant",
+      start: "Commencer !",
+  },
+  chatOnboarding: {
+      navigation: "Navigation rapide",
+      navigationDesc: "Utilisez ces onglets pour passer entre Chat, Outils et Agents sans quitter la barre latérale.",
+      newConversation: "Nouvelle conversation",
+      newConversationDesc: "Cliquez ici pour démarrer une nouvelle conversation de zéro.",
+      history: "Historique des chats",
+      historyDesc: "Toutes vos conversations apparaissent ici. Renommez, archivez ou supprimez-les en un clic.",
+      message: "Écrivez votre message",
+      messageDesc: "Parlez à l'assistant IA ici. Vous pouvez aussi joindre des fichiers en les glissant.",
+      account: "Votre compte",
+      accountDesc: "Gérez votre profil, votre panier et vos paramètres d'ici.",
+  },
+  dashboardOnboarding: {
+      stats: "Vos statistiques",
+      statsDesc: "Vous voyez ici les indicateurs clés : agents installés, exécutions totales et tokens utilizzati.",
+      navigation: "Navigation rapide",
+      navigationDesc: "Utilisez la barre latérale pour accéder au Dashboard, Chat, Marketplace, Intégrations et Compte.",
+      agents: "Agents installés",
+      agentsDesc: "Vous voyez ici tous les agents activés avec leurs statistiques d'usage.",
+      account: "Votre compte",
+      accountDesc: "Gérez vos abonnements, votre panier et les paramètres de votre profil.",
+  },
 };
 
 export function getDictionary(locale: Locale): Dictionary {
   switch (locale) {
     case "it": return it;
     case "en": return en;
-    case "es": return es as unknown as Dictionary;
-    case "de": return de as unknown as Dictionary;
-    case "fr": return fr as unknown as Dictionary;
+    case "es": return es;
+    case "de": return de;
+    case "fr": return fr;
     default: return en;
   }
 }

@@ -6,11 +6,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import DashboardShell from "@/components/DashboardShell";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { DATE_LOCALES } from "@/lib/i18n/constants";
 import { CreditCard, Calendar, CheckCircle2, XCircle, Clock, Receipt, ExternalLink } from "lucide-react";
 
 export default async function SubscriptionsPage() {
   const locale = await getLocale();
-  const isIt = locale === "it";
   const dict = getDictionary(locale);
   const user = await getSessionUser();
 
@@ -36,7 +36,7 @@ export default async function SubscriptionsPage() {
   const formatDate = (iso: string | null) => {
     if (!iso) return "—";
     try {
-      return new Date(iso).toLocaleDateString(isIt ? "it-IT" : "en-US", { day: "numeric", month: "short", year: "numeric" });
+      return new Date(iso).toLocaleDateString(DATE_LOCALES[locale], { day: "numeric", month: "short", year: "numeric" });
     } catch {
       return iso;
     }
@@ -103,7 +103,7 @@ export default async function SubscriptionsPage() {
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="text-xs uppercase tracking-widest text-neutral-500">
-                    <tr><th className="py-2">{isIt ? "Agente" : "Agent"}</th><th className="py-2">{isIt ? "Stato" : "Status"}</th><th className="py-2">{isIt ? "Attivato" : "Activated"}</th><th className="py-2">{isIt ? "Scadenza" : "Expires"}</th></tr>
+                    <tr><th className="py-2">{dict.subscriptionsPage.tableAgent}</th><th className="py-2">{dict.subscriptionsPage.tableStatus}</th><th className="py-2">{dict.subscriptionsPage.tableActivated}</th><th className="py-2">{dict.subscriptionsPage.tableExpires}</th></tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {history.map((h) => (
@@ -120,7 +120,7 @@ export default async function SubscriptionsPage() {
             )}
             {allSubs.length > 0 && (
               <div className="mt-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">{isIt ? "Transazioni" : "Transactions"}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.subscriptionsPage.tableTransactions}</p>
                 <ul className="mt-2 space-y-1 text-xs text-neutral-500">
                   {allSubs.map((s) => (
                     <li key={s.stripe_subscription_id ?? `${s.agent_id}-${s.created_at}`} className="flex justify-between">

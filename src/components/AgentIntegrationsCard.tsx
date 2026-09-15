@@ -27,7 +27,7 @@ function providerForIntegration(label: string): string | null {
 }
 
 export default function AgentIntegrationsCard({ integrations, agentSlug, genericConnected, shopifyConnected, googleConnected }: Props) {
-  const { locale, dict } = useLanguage();
+  const { dict } = useLanguage();
   return (
     <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
       <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
@@ -66,7 +66,7 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
                   {connected ? <CheckCircle2 size={16} /> : <Plug size={16} />}
                 </span>
                 <span className="text-sm font-bold text-white">{label}</span>
-                {connected && <span className="text-xs font-bold text-emerald-400">· {locale === "it" ? dict.agentIntegrations.connected : dict.agentIntegrations.connected}</span>}
+                {connected && <span className="text-xs font-bold text-emerald-400">· {dict.agentIntegrations.connected}</span>}
               </span>
               {connected ? (
                 <Link href="/dashboard/integrations" className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20">
@@ -82,9 +82,7 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
         })}
       </div>
       <p className="mt-3 text-xs leading-5 text-neutral-500">
-        {locale === "it"
-          ? "Configura sia da qui (pagina agente) sia da /dashboard/integrations — è lo stesso collegamento. Se ti abboni, l'agente risulta già connesso."
-          : "Configure either here (agent page) or from /dashboard/integrations — same link. If you subscribe, the agent shows already connected."}
+        {dict.agentIntegrations.configureNote}
       </p>
     </div>
   );

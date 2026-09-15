@@ -16,7 +16,7 @@ export default async function Home() {
     // Un unico sfondo per tutta la landing: il gradiente (prima solo dell'hero)
     // ora attraversa ogni sezione. Le sezioni restano trasparenti; le
     // costellazioni fluttuanti sono un overlay decorativo sopra questo livello.
-    <div className="relative flex min-h-screen flex-col overflow-x-clip dark-gradient-main">
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden dark-gradient-main">
 {/* Bagliore ambientale incluso nello sfondo condiviso */}
       <div
         aria-hidden="true"
@@ -30,7 +30,6 @@ export default async function Home() {
       <main
         id="main-content"
         className="relative z-10"
-        style={{ clipPath: "inset(0 round 0 0 2rem 2rem)" }}
       >
         <Navbar />
         <HeroSection />

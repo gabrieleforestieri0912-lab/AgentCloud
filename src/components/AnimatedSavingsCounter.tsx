@@ -7,6 +7,7 @@
 import { useEffect, useRef } from "react";
 import { motion, useSpring, useTransform, useMotionValue } from "framer-motion";
 import { TrendingDown } from "lucide-react";
+import { useLanguage } from "./LanguageProvider";
 
 function AnimatedDigit({ value }: { value: number }) {
   const motionVal = useMotionValue(0);
@@ -33,11 +34,10 @@ type Props = {
   savingsCents: number;
   /** Percentuale risparmio */
   percent: number;
-  locale?: string;
 };
 
-export default function AnimatedSavingsCounter({ savingsCents, percent, locale = "it" }: Props) {
-  const isIt = locale === "it";
+export default function AnimatedSavingsCounter({ savingsCents, percent }: Props) {
+  const { dict } = useLanguage();
   const euros = Math.round(savingsCents / 100);
 
   if (percent === 0 || euros <= 0) return null;
@@ -55,11 +55,11 @@ export default function AnimatedSavingsCounter({ savingsCents, percent, locale =
           <TrendingDown size={12} className="text-emerald-400" />
         </span>
         <span className="text-xs font-bold text-emerald-400">
-          {isIt ? "Risparmi" : "You save"}{" "}
+          {dict.bundleDetail.youSave}{" "}
           <span className="text-sm font-extrabold">
             €<AnimatedDigit value={euros} />
           </span>
-          {isIt ? "/mese" : "/mo"}{" "}
+          {dict.bundleDetail.pricePerMonth}{" "}
           <span className="text-neutral-500">
             ({percent}%)
           </span>

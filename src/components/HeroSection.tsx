@@ -13,6 +13,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
 import DemoLimitModal from "./DemoLimitModal";
@@ -127,11 +128,7 @@ export default function HeroSection() {
     const idx = chips.indexOf(chip);
     if (idx >= 0 && prompts[idx]) return prompts[idx];
     // Fallback: restituisci il chip con la formula estesa
-    return isItFallback(locale) ? `Vorrei sapere di più su: ${chip}` : `Tell me more about: ${chip}`;
-  }
-
-  function isItFallback(l: string) {
-    return l === "it";
+    return t(dict.hero.askAboutChip, { chip });
   }
 
   // Tiene traccia dello stato di autenticazione per applicare il limite di 10
@@ -398,7 +395,7 @@ export default function HeroSection() {
   // scorre internamente sugli schermi bassi invece di allungare la sezione.
   return (
     <section
-      className={`relative overflow-hidden px-4 flex items-center justify-center ${
+      className={`relative overflow-hidden px-4 sm:px-6 flex items-center justify-center ${
         hasMessages
           ? "h-dvh py-6 sm:py-10 lg:py-12"
           : "h-dvh pt-36 sm:pt-48 lg:pt-64 pb-12 sm:pb-20 lg:pb-28"
@@ -449,7 +446,7 @@ export default function HeroSection() {
           }}
         >
           <motion.h1
-            className="text-[2.25rem] font-extrabold leading-[1.08] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[76px]"
+            className="text-[1.75rem] xs:text-[2rem] sm:text-5xl md:text-6xl lg:text-[76px] font-extrabold leading-[1.08] tracking-tight text-white"
             variants={{
               hidden: { opacity: 0, y: 24 },
               visible: {

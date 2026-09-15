@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Locale } from "@/lib/i18n/constants";
+import { DATE_LOCALES, type Locale } from "@/lib/i18n/constants";
 import BrandLogo from "./BrandLogo";
 import { INTEGRATIONS } from "@/lib/integrations";
 import { CheckCircle2, Plug, Unplug, Clock3, AlertCircle, Loader2, ArrowRight } from "lucide-react";
@@ -31,7 +31,7 @@ const BRAND_TO_PROVIDER: Record<string, string> = {
 
 function formatDate(iso: string, locale: Locale) {
   try {
-    return new Date(iso).toLocaleString(locale === "it" ? "it-IT" : "en-GB", {
+    return new Date(iso).toLocaleString(DATE_LOCALES[locale], {
       day: "numeric",
       month: "short",
       year: "numeric",

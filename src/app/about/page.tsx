@@ -13,15 +13,10 @@ import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
+  const { about } = getDictionary(locale);
   return {
-    title:
-      locale === "it"
-        ? "Chi siamo | AgentCloud — il team che porta gli agenti cloud a lavoro e studio"
-        : "About | AgentCloud — the team bringing cloud agents to work and study",
-    description:
-      locale === "it"
-        ? "Siamo un team di giovani intraprendenti che aiuta le persone a risparmiare tempo su lavoro e studio grazie agli agenti cloud."
-        : "We are a team of enterprising young people helping others save time on work and study through cloud agents.",
+    title: about.metaTitle,
+    description: about.metaDescription,
     alternates: {
       canonical: `${getSiteUrl()}/about`,
     },
@@ -37,10 +32,7 @@ export default async function AboutPage() {
   const aboutJsonLd = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
-    name:
-      locale === "it"
-        ? "Chi siamo | AgentCloud"
-        : "About | AgentCloud",
+    name: about.jsonLdName,
     description: about.subtitle,
     url: `${BASE_URL}/about`,
     mainEntity: { "@id": `${BASE_URL}/#organization` },

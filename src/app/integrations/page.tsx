@@ -13,18 +13,14 @@ import { ArrowRight, Sparkles, Plug, Clock3, CheckCircle2, Link2, Unlink } from 
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const isIt = locale === "it";
   const dict = getDictionary(locale);
   const title = dict.integrationsPage.integrationsLabel;
-  const description = isIt
-    ? "Collega AgentCloud ai tuoi strumenti: Shopify, Gmail, Slack, HubSpot e molti altri. Vedi tutte le app disponibili e quelle in arrivo."
-    : "Connect AgentCloud to your tools: Shopify, Gmail, Slack, HubSpot and more. See all available and upcoming apps.";
+  const description = dict.integrationsPage.metaDescription;
   return pageSeo({ title, description, path: "/integrations", locale });
 }
 
 export default async function IntegrationsPage() {
   const locale = await getLocale();
-  const isIt = locale === "it";
   const dict = getDictionary(locale);
 
   // Check real connection status
@@ -87,9 +83,7 @@ export default async function IntegrationsPage() {
               {dict.integrationsPage.connectYourTools}
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-lg leading-8 text-neutral-400">
-              {isIt
-                ? "Tutte le app con cui AgentCloud si collega — quelle già disponibili portano all'agente che le usa, quelle in arrivo sono contrassegnate come Prossimamente."
-                : "All apps AgentCloud connects to — available ones link to the agent that uses them, upcoming ones are marked as Coming soon."}
+              {dict.integrationsPage.integrationsDesc}
             </p>
             <div className="mt-6 flex justify-center gap-3">
               <Link
@@ -125,12 +119,12 @@ export default async function IntegrationsPage() {
                       {isConnected ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
                           <Link2 size={10} />
-                          {isIt ? "Connesso" : "Connected"}
+                          {dict.integrationsGrid.connectedStatus}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full bg-neutral-500/15 px-2 py-0.5 text-[10px] font-bold text-neutral-500">
                           <Unlink size={10} />
-                          {isIt ? "Non connesso" : "Not connected"}
+                          {dict.integrationsGrid.notConnected}
                         </span>
                       )}
                     </div>

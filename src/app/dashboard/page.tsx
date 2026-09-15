@@ -21,6 +21,7 @@ import { getAgentRuntimeConfig } from "@/lib/agents/registry";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
+import { DATE_LOCALES } from "@/lib/i18n/constants";
 
 type InstalledAgent = {
   slug: string;
@@ -211,9 +212,14 @@ export default async function DashboardPage({
     chartRuns = (data ?? []) as typeof chartRuns;
   }
 
-  const dayLabels = locale === "it"
-    ? ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"]
-    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  // 2024-01-07 è una domenica: si formattano i 7 giorni in ordine Dom→Sab nella
+  // lingua attiva, invece di tenere due sole liste (italiano/inglese).
+  const dayLabels = Array.from({ length: 7 }, (_, i) =>
+    new Date(Date.UTC(2024, 0, 7 + i)).toLocaleDateString(DATE_LOCALES[locale], {
+      weekday: "short",
+      timeZone: "UTC",
+    }),
+  );
 
   // Costruisce la mappa YYYY-MM-DD -> {runs, tokens}
   const byDay = new Map<string, { runs: number; tokens: number }>();

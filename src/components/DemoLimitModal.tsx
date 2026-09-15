@@ -19,15 +19,12 @@ export default function DemoLimitModal({
   onClose: () => void;
   remainingMessages?: number;
 }) {
-  const { locale, dict } = useLanguage();
-  const isIt = locale === "it";
+  const { dict } = useLanguage();
 
   if (!open) return null;
 
   const title = dict.demoLimitModal.signInToContinue;
-  const desc = isIt
-    ? "Hai usato i 10 messaggi gratuiti della chat demo. Accedi con il tuo account per continuare la conversazione nella chat completa — la ritroverai già salvata."
-    : "You've used the 10 free messages of the demo chat. Sign in to continue in the full chat — your conversation will be waiting there.";
+  const desc = dict.demoLimitModal.usedFreeMessages;
 
   const loginLabel = dict.demoLimitModal.signIn;
   const signupLabel = dict.demoLimitModal.createAccount;
@@ -39,7 +36,7 @@ export default function DemoLimitModal({
       <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl">
         <button
           onClick={onClose}
-          aria-label="Close"
+          aria-label={dict.common.close}
           className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white"
         >
           <X size={14} />

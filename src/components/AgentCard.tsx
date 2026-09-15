@@ -14,6 +14,7 @@ import type { Agent } from "@/lib/agents";
 import { isAvailable } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import AddToCartButton from "./AddToCartButton";
 import { useOwned } from "@/hooks/useOwned";
 
@@ -34,14 +35,12 @@ export default function AgentCard({
   const { isOwned } = useOwned();
   const owned = isOwned(agent.slug);
   const isAgentAvailable = available ?? isAvailable(agent.slug);
-  const isIt = locale === "it";
+  const persuasiveTagline = t(dict.agentCard.tagline, {
+    industry: agent.industry,
+    setup: agent.setupTime,
+  });
 
-  const persuasiveTagline =
-    locale === "it"
-      ? `Ideale per ${agent.industry} — attivazione ${agent.setupTime.toLowerCase()}`
-      : `Perfect for ${agent.industry} — setup ${agent.setupTime.toLowerCase()}`;
-
-  const benefitsTitle = isIt ? "Cosa ottieni" : "What you get";
+  const benefitsTitle = dict.agentCard.whatYouGet;
   const setupLabel = dict.agentCard.setup;
 
   return (
@@ -61,7 +60,7 @@ export default function AgentCard({
       {owned && isAgentAvailable ? (
         <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-300">
           <CheckCircle2 size={12} />
-          {isIt ? "Già acquistato" : "Owned"}
+          {dict.agentDetail.alreadyPurchased}
         </div>
       ) : (!isAgentAvailable || comingSoonTag) && (
         <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-400">
@@ -91,7 +90,7 @@ export default function AgentCard({
                     : "bg-brand-500/10 text-brand-300 border border-brand-500/20"
               }`}
             >
-              {agent.badge}
+              {agent.badgeLabel ?? agent.badge}
             </span>
           </div>
           <h3 className="truncate text-[17px] font-bold leading-tight text-white">{agent.name}</h3>
@@ -138,7 +137,7 @@ export default function AgentCard({
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">{setupLabel}</p>
             <p className="text-xl font-bold text-white leading-none mt-0.5">{agent.price}</p>
-            <p className="mt-1 text-xs font-semibold text-neutral-500">{agent.setupTime} · {isIt ? "senza vincoli" : "no commitment"}</p>
+            <p className="mt-1 text-xs font-semibold text-neutral-500">{agent.setupTime} · {dict.agentCard.noCommitment}</p>
           </div>
           {!isAgentAvailable && (
             <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-neutral-800 px-4 py-2 text-xs font-semibold text-neutral-500 cursor-not-allowed">

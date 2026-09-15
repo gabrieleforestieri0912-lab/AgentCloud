@@ -16,11 +16,9 @@ import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
 // query/agente iniziali alla ChatInterface client.
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const isIt = locale === "it";
-  const title = isIt ? "Chatta con l'AI" : "Chat with AI";
-  const description = isIt
-    ? "Chiedi alla nostra AI di automatizzare email, ticket di supporto, generazione lead, social media e altro. Descrivi cosa ti serve e lo costruiremo."
-    : "Ask our AI to automate emails, support tickets, lead generation, social media, and more. Describe what you need and we'll build it.";
+  const { chat } = getDictionary(locale);
+  const title = chat.metaTitle;
+  const description = chat.metaDescription;
   return pageSeo({ title, description, path: "/chat", locale });
 }
 

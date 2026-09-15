@@ -144,7 +144,7 @@ export default function DashboardSection() {
         </motion.div>
 
         <motion.div
-          className="mx-auto w-fit max-w-full overflow-x-auto rounded-2xl border border-white/5 bg-neutral-900 p-4 shadow-2xl shadow-brand-500/10"
+          className="mx-auto w-full max-w-5xl 3xl:max-w-7xl overflow-x-auto rounded-2xl border border-white/5 bg-neutral-900 p-4 shadow-2xl shadow-brand-500/10"
           initial={{ opacity: 0, x: 50 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -160,7 +160,7 @@ export default function DashboardSection() {
             </span>
           </div>
 
-          <div className="grid gap-4 p-2 pt-5 lg:grid-cols-[220px_minmax(0,1fr)_300px] 3xl:grid-cols-[240px_minmax(0,1fr)_340px]">
+          <div className="grid gap-4 p-2 pt-5 lg:grid-cols-[200px_minmax(0,1fr)_260px] xl:grid-cols-[220px_minmax(0,1fr)_300px] 3xl:grid-cols-[240px_minmax(0,1fr)_340px]">
             {/* ── Sidebar ── */}
             <aside className="hidden rounded-xl border border-white/5 bg-neutral-800 p-4 lg:flex lg:flex-col">
               <div className="mb-7 flex items-center gap-2 px-1">

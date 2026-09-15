@@ -14,7 +14,6 @@ import { useTheme, type Theme } from "@/components/ThemeProvider";
 export default function SettingsClient({ isMock, email }: { isMock: boolean; email: string }) {
   const { dict, locale, setLocale } = useLanguage();
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const isIt = locale === "it";
   const [emailNotif, setEmailNotif] = useState(true);
   const [productUpdates, setProductUpdates] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -193,7 +192,7 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
             [
               { value: "light" as Theme, label: dict.chat.settingsLight, icon: Sun, desc: dict.chat.settingsLightDesc },
               { value: "dark" as Theme, label: dict.chat.settingsDark, icon: Moon, desc: dict.chat.settingsDarkDesc },
-              { value: "system" as Theme, label: dict.chat.settingsSystem, icon: Monitor, desc: t(dict.chat.settingsSystemDesc, { theme: resolvedTheme === "light" ? (locale === "it" ? "chiaro" : "light") : locale === "it" ? "scuro" : "dark" }) },
+              { value: "system" as Theme, label: dict.chat.settingsSystem, icon: Monitor, desc: t(dict.chat.settingsSystemDesc, { theme: resolvedTheme === "light" ? dict.chat.themeLight : dict.chat.themeDark }) },
             ] as const
           ).map(({ value, label, icon: Icon, desc }) => {
             const active = theme === value;

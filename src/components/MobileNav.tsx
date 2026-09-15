@@ -136,7 +136,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
       <button
         onClick={() => setIsOpen(true)}
         className="flex h-11 w-11 items-center justify-center text-neutral-400 lg:hidden"
-        aria-label="Open navigation"
+        aria-label={dict.navbar.openMenu}
       >
         <Menu size={20} />
       </button>
@@ -193,7 +193,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                 <button
                   onClick={() => setIsOpen(false)}
                   className="flex h-11 w-11 items-center justify-center text-neutral-400 hover:text-white"
-                  aria-label="Close navigation"
+                  aria-label={dict.navbar.closeMenu}
                 >
                   <X size={20} />
                 </button>
@@ -335,7 +335,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                     className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-neutral-900 hover:bg-neutral-100"
                   >
                     <LogOut size={16} className="rotate-180" />
-                    {locale === "it" ? "Inizia Ora" : "Start Now"}
+                    {dict.navbar.startNow}
                   </Link>
                 )}
                 <p className="text-center text-xs text-neutral-500">{dict.chat.everythingOnMobile}</p>

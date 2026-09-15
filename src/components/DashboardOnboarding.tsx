@@ -21,39 +21,31 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
   const [visible, setVisible] = useState(true);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const { locale } = useLanguage();
+  const { dict } = useLanguage();
 
   const steps: StepConfig[] = [
     {
       target: "[data-onboard='dashboard-stats']",
-      title: locale === "it" ? "Le tue statistiche" : "Your stats",
-      desc: locale === "it"
-        ? "Qui vedi le metriche principali: agenti installati, run totali e token utilizzati."
-        : "Here you see key metrics: installed agents, total runs and tokens used.",
+      title: dict.dashboardOnboarding.stats,
+      desc: dict.dashboardOnboarding.statsDesc,
       position: "bottom",
     },
     {
       target: "[data-onboard='dashboard-nav']",
-      title: locale === "it" ? "Navigazione rapida" : "Quick navigation",
-      desc: locale === "it"
-        ? "Usa la sidebar per accedere a Dashboard, Chat, Marketplace, Integrazioni e Account."
-        : "Use the sidebar to access Dashboard, Chat, Marketplace, Integrations and Account.",
+      title: dict.dashboardOnboarding.navigation,
+      desc: dict.dashboardOnboarding.navigationDesc,
       position: "right",
     },
     {
       target: "[data-onboard='dashboard-agents']",
-      title: locale === "it" ? "Agenti installati" : "Installed agents",
-      desc: locale === "it"
-        ? "Qui vedi tutti gli agenti che hai attivato con le loro statistiche di utilizzo."
-        : "Here you see all activated agents with their usage stats.",
+      title: dict.dashboardOnboarding.agents,
+      desc: dict.dashboardOnboarding.agentsDesc,
       position: "bottom",
     },
     {
       target: "[data-onboard='dashboard-account']",
-      title: locale === "it" ? "Il tuo account" : "Your account",
-      desc: locale === "it"
-        ? "Gestisci abbonamenti, carrello e impostazioni del tuo profillo."
-        : "Manage your subscriptions, cart and profile settings.",
+      title: dict.dashboardOnboarding.account,
+      desc: dict.dashboardOnboarding.accountDesc,
       position: "right",
     },
   ];
@@ -227,7 +219,7 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
               className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft size={12} />
-              {locale === "it" ? "Indietro" : "Back"}
+              {dict.onboarding.back}
             </button>
             <span className="text-[10px] text-neutral-500">
               {step + 1} / {steps.length}
@@ -236,9 +228,7 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
               onClick={handleNext}
               className="flex items-center gap-1 rounded-lg bg-brand-500 px-4 py-1.5 text-xs font-bold text-white hover:bg-brand-400 transition-all"
             >
-              {isLast
-                ? locale === "it" ? "Inizia!" : "Start!"
-                : locale === "it" ? "Avanti" : "Next"}
+              {isLast ? dict.onboarding.start : dict.onboarding.next}
               {!isLast && <ChevronRight size={12} />}
             </button>
           </div>

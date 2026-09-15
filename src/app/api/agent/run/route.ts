@@ -8,6 +8,11 @@ import {
 import { apiErrorMessageForLocale } from "@/lib/i18n/api-errors";
 import { getLocale } from "@/lib/i18n/locale";
 import { getLLMProvider } from "@/lib/llm";
+import {
+  lastUserText,
+  replyLanguage,
+  withLanguageDirective,
+} from "@/lib/agents/language";
 import type { LLMMessage, LLMToolResult } from "@/lib/llm";
 import { createWordEmitter } from "@/lib/stream";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
@@ -177,6 +182,11 @@ export async function POST(req: Request) {
     };
   });
 
+  // Lingua della risposta: quella dell'ultimo messaggio dell'utente, con la
+  // lingua della piattaforma come default (vedi `language.ts`). Decisa qui e
+  // non dal modello, che ha negli strumenti e nel prompt esempi in italiano.
+  const replyLocale = replyLanguage(locale, lastUserText(initialMessages));
+
   const encoder = new TextEncoder();
   const conversationId = crypto.randomUUID();
   const executionErrorMessage = apiErrorMessageForLocale(
@@ -215,7 +225,10 @@ export async function POST(req: Request) {
           const response = await provider.chat(
             {
               model: config.model,
-              system: config.systemPrompt,
+              // Il system prompt dell'agente è in inglese e non parla di lingua:
+              // la direttiva (lingua del messaggio, altrimenti lingua della
+              // piattaforma) è quella condivisa, uguale per tutti gli agenti.
+              system: withLanguageDirective(config.systemPrompt, replyLocale),
               messages: conversationMessages,
               tools: enabledTools,
               maxTokens: MAX_TOKENS,

@@ -129,7 +129,7 @@ export default function ShopifyConnectionPrompt() {
             onKeyDown={(e) => {
               if (e.key === "Enter") connectExisting();
             }}
-            placeholder="tuo-store.myshopify.com"
+            placeholder={dict.deploy.shopifyPlaceholder}
             className="flex-1 rounded-full border border-white/10 bg-neutral-800 px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-brand-500"
           />
           <button

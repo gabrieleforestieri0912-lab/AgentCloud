@@ -34,6 +34,7 @@ import {
 } from "@/lib/agents";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
+import { getFAQs, getUseCases } from "@/lib/i18n/agentDetail";
 import { pageSeo } from "@/lib/seo";
 
 type AgentDetailPageProps = {
@@ -63,72 +64,6 @@ export async function generateMetadata({ params }: AgentDetailPageProps) {
     path: `/agents/${slug}`,
     locale,
   });
-}
-
-const USE_CASE_EXAMPLES: Record<string, string[]> = {
-  "email-manager": [
-    "Triage a week of unread email into priorities, folders, and drafts",
-    "Extract every commitment and deadline hidden in my inbox threads",
-    "Send a morning digest with what needs my decision today",
-  ],
-};
-
-const USE_CASE_EXAMPLES_IT: Record<string, string[]> = {
-  "email-manager": [
-    "Smista una settimana di email non lette in priorità, cartelle e bozze",
-    "Estrai ogni impegno e scadenza nascosti nelle conversazioni della casella",
-    "Invia un digest mattutino con ciò che richiede oggi la tua decisione",
-  ],
-};
-
-function getUseCases(
-  slug: string,
-  tasks: string[],
-  locale: Locale,
-): string[] {
-  const examples = locale === "it" ? USE_CASE_EXAMPLES_IT : USE_CASE_EXAMPLES;
-  if (examples[slug]) return examples[slug];
-  if (locale === "it") {
-    return tasks.map(
-      (task) =>
-        `Automatizza "${task.toLowerCase()}" dall'inizio alla fine con ${slug.includes("-") ? "i tuoi strumenti connessi" : "workflow basati sull'AI"}`,
-    );
-  }
-  return tasks.map(
-    (task) =>
-      `Automate "${task.toLowerCase()}" end-to-end with ${slug.includes("-") ? "your connected tools" : "AI-powered workflows"}`,
-  );
-}
-
-const AGENT_FAQS: Record<string, [string, string][]> = {
-  "default": [
-    ["What data does this agent access?", "The agent only accesses the tools and data sources you connect. No data is stored longer than needed to complete your task, and all processing happens in a GDPR-compliant environment."],
-    ["Can I customize the workflow?", "Yes. Every agent lets you adjust triggers, actions, and outputs to match your specific business process."],
-    ["How long does setup take?", "Setup typically takes 1-2 days, including connecting your tools and configuring the first workflow."],
-    ["Can I cancel anytime?", "Absolutely. You can pause or cancel your subscription at any time with no penalties."],
-  ],
-};
-
-function getFAQs(
-  slug: string,
-  name: string,
-  locale: Locale,
-): [string, string][] {
-  if (locale === "it") {
-    return [
-      [`Come si collega ${name} ai miei strumenti?`, `${name} si collega tramite integrazioni API sicure con OAuth 2.0. Approvi ogni connessione una sola volta e l'agente gestisce il resto.`],
-      [`Posso personalizzare cosa automatizza ${name}?`, `Sì. Puoi configurare trigger, azioni e output per adattarli al tuo workflow esatto. L'agente impara dalle tue regolazioni nel tempo.`],
-      [`Quanto tempo serve perché ${name} sia pienamente operativo?`, `Il setup richiede in genere ${name.includes("Assistente") ? "lo stesso giorno" : "1-2 giorni lavorativi"}, inclusa la configurazione delle integrazioni e il primo test del workflow.`],
-      [`I miei dati sono al sicuro con ${name}?`, `Tutti i dati sono crittografati in transito e a riposo. L'agente opera in un ambiente conforme al GDPR con controlli SOC 2.`],
-    ];
-  }
-  if (AGENT_FAQS[slug]) return AGENT_FAQS[slug];
-  return [
-    [`How does ${name} connect to my tools?`, `${name} connects via secure API integrations with OAuth 2.0. You approve each connection once and the agent handles the rest.`],
-    [`Can I customize what ${name} automates?`, `Yes. You can configure triggers, actions, and outputs to match your exact workflow. The agent learns from your adjustments over time.`],
-    [`How long until ${name} is fully operational?`, `Setup typically takes ${name.includes("Assistant") ? "same day" : "1-2 business days"}, including integration configuration and first workflow test.`],
-    [`Is my data secure with ${name}?`, `All data is encrypted in transit and at rest. The agent operates in a GDPR-compliant environment with SOC 2 controls.`],
-  ];
 }
 
 export default async function AgentDetailPage({ params }: AgentDetailPageProps) {
@@ -224,7 +159,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     {agent.category}
                   </span>
                   <span className="rounded-full border border-white/10 bg-neutral-900/70 px-3 py-1 text-xs font-bold text-neutral-400">
-                    {agent.badge}
+                    {agent.badgeLabel ?? agent.badge}
                   </span>
                 </div>
               </div>
@@ -245,7 +180,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 {available ? (
                   isOwned ? (
                     <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3.5 text-sm font-bold text-emerald-300">
-                      ✓ {locale === "it" ? "Già acquistato" : "Already purchased"}
+                      ✓ {dict.agentDetail.alreadyPurchased}
                     </span>
                   ) : (
                     <AddToCartButton slug={agent.slug} />
@@ -325,12 +260,12 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     {available ? (
                       isOwned ? (
                         <>
-                          {locale === "it" ? "Apri in chat" : "Open in chat"}
+                          {dict.agentDetail.openInChat}
                           <ArrowRight size={16} />
                         </>
                       ) : true ? (
                         <>
-                          {locale === "it" ? "Apri chat" : "Open chat"}
+                          {dict.agentDetail.openChat}
                           <ArrowRight size={16} />
                         </>
                       ) : (
@@ -350,7 +285,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     </div>
                   )}
                   {isOwned && (
-                    <p className="mt-3 text-center text-xs font-bold text-emerald-400">✓ {locale === "it" ? "Già acquistato" : "Already purchased"}</p>
+                    <p className="mt-3 text-center text-xs font-bold text-emerald-400">✓ {dict.agentDetail.alreadyPurchased}</p>
                   )}
                 </div>
 
@@ -373,9 +308,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                         {dict.agentDetail.gdprNote}
                       </p>
                       <p className="mt-1 text-xs font-semibold leading-5 text-neutral-500">
-                        {locale === "it"
-                          ? "Configurazione guidata senza codice: colleghi i tuoi strumenti e attivi l'agente in pochi minuti."
-                          : "Code-free guided setup: connect your tools and deploy the agent in minutes."}
+                        {dict.agentDetail.guidedSetupNote}
                       </p>
                     </div>
                   </div>
@@ -541,11 +474,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 href={true ? `/chat?agent=${agent.slug}` : `/agents/${agent.slug}/deploy`}
                 className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400"
               >
-                {true
-                  ? locale === "it"
-                    ? "Apri chat"
-                    : "Open chat"
-                  : dict.agentDetail.configureAndDeploy}
+                {true ? dict.agentDetail.openChat : dict.agentDetail.configureAndDeploy}
                 <ArrowRight size={18} />
               </Link>
             )}

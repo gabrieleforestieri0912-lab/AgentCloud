@@ -63,6 +63,12 @@ export type Brand = {
    * same way those brands present their marks on dark backgrounds.
    */
   light?: true;
+  /**
+   * True for marks whose official color is too light for a white surface
+   * (MailChimp yellow). Nel tema chiaro il glifo usa l'inchiostro del tema:
+   * dipinto col colore ufficiale sparirebbe sul fondo bianco.
+   */
+  inkOnLight?: true;
 };
 
 const withHash = (hex: string) => `#${hex}`;
@@ -78,6 +84,21 @@ const isNearBlack = (hex: string) => {
 };
 
 /**
+ * True when the official color is too light to be read on a white surface
+ * (MailChimp #FFE01B). Luminanza relativa WCAG: sopra ~0,55 il marchio si
+ * perde sul bianco anche se è il colore ufficiale.
+ */
+const isTooLightForWhite = (hex: string) => {
+  const value = hex.startsWith("#") ? hex.slice(1) : hex;
+  if (value.length !== 6) return false;
+  const channel = (start: number) => {
+    const s = parseInt(value.slice(start, start + 2), 16) / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4) > 0.55;
+};
+
+/**
  * Every mark below comes straight from the `simple-icons` package: official
  * path data AND the official brand color. Nothing is hand-drawn or hand-colored.
  */
@@ -88,6 +109,7 @@ const official = (icon: { title: string; path: string; hex: string }): Brand => 
     path: icon.path,
     hex,
     light: isNearBlack(icon.hex) ? true : undefined,
+    inkOnLight: isTooLightForWhite(icon.hex) ? true : undefined,
   };
 };
 

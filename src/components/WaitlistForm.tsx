@@ -115,15 +115,14 @@ export default function WaitlistForm({
   // Derivato — la waitlist è piena quando non restano posti (nessun setter
   // separato).
   const isFull = remainingSpots <= 0;
-  // Il contatore mostra i posti OCCUPATI (su MAX_SPOTS), quindi legge "4/20" e
+  // Il contatore mostra i posti OCCUPATI (su MAX_SPOTS), quindi legge "4/50" e
   // cresce con le iscrizioni — la barra sotto si riempie con lo stesso rapporto.
   const takenSpots = Math.min(MAX_SPOTS, Math.max(0, MAX_SPOTS - remainingSpots));
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleEmailSend = () => {
-    const subject =
-      locale === "it" ? "Richiesta AgentCloud" : "AgentCloud inquiry";
+    const subject = dict.waitlist.emailSubject;
     window.location.href = `mailto:${PUBLIC_SUPPORT_EMAIL}?subject=${encodeURIComponent(
       subject,
     )}&body=${encodeURIComponent(message)}`;
@@ -252,7 +251,7 @@ export default function WaitlistForm({
             </p>
 
             {/* Conto alla rovescia */}
-            <CountdownTimer locale={locale} />
+            <CountdownTimer />
 
             {/* Posti — compatto inline */}
             <div className="flex items-center justify-center gap-2 mb-5">
@@ -302,9 +301,7 @@ export default function WaitlistForm({
                   {dict.waitlist.successText}
                 </p>
                 <p className="text-xs font-semibold text-neutral-500 mb-3">
-                  {locale === "it"
-                    ? "Seguici per gli aggiornamenti:"
-                    : "Follow us for updates:"}
+                  {dict.waitlist.followUpdates}
                 </p>
                 <div className="flex items-center justify-center gap-4">
                   <a

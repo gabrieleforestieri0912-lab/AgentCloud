@@ -21,6 +21,11 @@ export default function BrandIcon({
   color,
   className = "",
 }: BrandIconProps) {
+  // A color prop wins: chi la passa sa su quale superficie sta disegnando.
+  // Senza prop il colore dipende dal tema per i marchi il cui ufficiale è
+  // quasi nero (che in scuro diventano bianchi) o troppo chiaro per il bianco
+  // (MailChimp): il fill lo decide `globals.css` tramite questa classe.
+  const themeDependent = !color && (brand.light === true || brand.inkOnLight === true);
   return (
     <svg
       viewBox="0 0 24 24"
@@ -29,7 +34,7 @@ export default function BrandIcon({
       width={size}
       height={size}
       fill={color ?? (brand.light ? "#ffffff" : brand.hex)}
-      className={className}
+      className={themeDependent ? `brand-mark-themed ${className}`.trim() : className}
     >
       <path d={brand.path} />
     </svg>

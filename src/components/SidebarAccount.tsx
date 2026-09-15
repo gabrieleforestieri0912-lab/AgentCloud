@@ -28,7 +28,7 @@ export default function SidebarAccount({
   account?: AccountIdentity | null;
 }) {
   const [session, setSession] = useState<Session | null>(null);
-  const { locale } = useLanguage();
+  const { dict } = useLanguage();
 
   useEffect(() => {
     let mounted = true;
@@ -100,15 +100,15 @@ export default function SidebarAccount({
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-white">{email || "..."}</p>
-          <p className="text-[10px] text-neutral-500 font-medium">{locale === "it" ? "Account" : "Account"}</p>
+          <p className="text-[10px] text-neutral-500 font-medium">{dict.sidebarAccount.account}</p>
         </div>
       </div>
       <div className="px-3 pb-3 grid grid-cols-3 gap-1.5">
         <Link href="/account" className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all">
-          <User size={12} /> Account
+          <User size={12} /> {dict.sidebarAccount.account}
         </Link>
         <Link href="/cart" className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all">
-          <ShoppingCart size={12} /> {locale === "it" ? "Carrello" : "Cart"}
+          <ShoppingCart size={12} /> {dict.sidebarAccount.cart}
         </Link>
         <Link href="/dashboard" className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-white hover:bg-white/10 transition-all">
           <Home size={12} /> Dashboard
@@ -122,7 +122,7 @@ export default function SidebarAccount({
           }}
           className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
         >
-          <LogOut size={12} /> {locale === "it" ? "Esci" : "Sign out"}
+          <LogOut size={12} /> {dict.sidebarAccount.signOut}
         </button>
       </div>
     </div>

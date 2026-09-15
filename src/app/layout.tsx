@@ -220,7 +220,13 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
   return (
-    <html lang={locale} data-scroll-behavior="smooth">
+    // `suppressHydrationWarning` è necessario: `themeInitScript` scrive la
+    // classe del tema su <html> prima dell'idratazione, quindi il DOM non
+    // coincide con il markup del server. Senza il flag React recupera
+    // ri-renderizzando l'albero dal boundary, causando un lampo di tema
+    // sbagliato e la perdita dello stato client. Vedi
+    // node_modules/next/dist/docs/01-app/02-guides/preventing-flash-before-hydration.md
+    <html lang={locale} data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -238,7 +244,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased bg-black text-neutral-900">
+      <body className="antialiased bg-black text-neutral-900 overflow-x-hidden">
         {/* Niente `key={locale}`: rimontare il provider a ogni cambio lingua
             azzererebbe lo stato client (conversazioni chat, scroll, menu) e
             ri-renderizzerebbe l'intero albero. Il provider cambia sul posto e

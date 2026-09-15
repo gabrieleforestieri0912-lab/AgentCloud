@@ -12,11 +12,9 @@ import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const isIt = locale === "it";
-  const title = isIt ? "Bundle Agenti AI — Risparmia fino al 30%" : "AI Agent Bundles — Save up to 30%";
-  const description = isIt
-    ? "Bundle di agenti AI con offerte trimestrali e annuali. Risparmia fino al 30% rispetto al prezzo singolo. E-commerce, Marketing, Operations e All-in-One."
-    : "AI agent bundles with quarterly and annual offers. Save up to 30% vs single agent pricing. E-commerce, Marketing, Operations and All-in-One.";
+  const { bundlePage } = getDictionary(locale);
+  const title = bundlePage.metaTitle;
+  const description = bundlePage.metaDescription;
   return {
     ...pageSeo({ title, description, path: "/bundles", locale }),
     robots: { index: true, follow: true },
@@ -27,7 +25,6 @@ export const dynamic = "force-dynamic";
 
 export default async function BundlesPage() {
   const locale = await getLocale();
-  const isIt = locale === "it";
   const dict = getDictionary(locale);
   const navAgents = AVAILABLE_AGENTS.map((a) => localizeAgent(a, locale));
 
@@ -35,10 +32,8 @@ export default async function BundlesPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: isIt ? "Bundle Agenti AI" : "AI Agent Bundles",
-    description: isIt
-      ? "Bundle di agenti AI con offerte trimestrali e annuali. Risparmia fino al 30%."
-      : "AI agent bundles with quarterly and annual offers. Save up to 30%.",
+    name: dict.bundlePage.aiAgentBundles,
+    description: dict.bundlePage.bundlesDescriptionMeta,
     url: `${BASE_URL}/bundles`,
     isPartOf: { "@type": "WebSite", url: BASE_URL, name: "AgentCloud" },
     mainEntity: {
@@ -73,9 +68,7 @@ export default async function BundlesPage() {
               {dict.bundlePage.aiAgentBundles}
             </h1>
             <p className="mt-6 text-lg leading-8 text-neutral-400">
-              {isIt
-                ? "Raggruppa gli agenti che ti servono e risparmia fino al 30%. Scegli il piano trimestrale o annuale e automatizza la tua azienda."
-                : "Group the agents you need and save up to 30%. Choose quarterly or annual plans and automate your business."}
+              {dict.bundlePage.groupAndSave}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link

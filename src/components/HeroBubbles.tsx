@@ -61,7 +61,7 @@ export default function HeroBubbles() {
     <>
       {/* COSTELLAZIONE FLUTTUANTE SINISTRA (app) */}
       <motion.div
-        className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-80 xl:w-96 h-150 pointer-events-none select-none z-0"
+        className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-56 xl:w-72 2xl:w-80 h-150 pointer-events-none select-none z-0 overflow-hidden"
         initial="hidden"
         animate="visible"
         variants={{
@@ -107,7 +107,7 @@ export default function HeroBubbles() {
 
       {/* COSTELLAZIONE FLUTTUANTE DESTRA (agenti) */}
       <motion.div
-        className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-80 xl:w-96 h-150 pointer-events-none select-none z-0"
+        className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-56 xl:w-72 2xl:w-80 h-150 pointer-events-none select-none z-0 overflow-hidden"
         initial="hidden"
         animate="visible"
         variants={{

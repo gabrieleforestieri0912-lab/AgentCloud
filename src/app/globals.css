@@ -76,6 +76,8 @@
   --color-indigo-900: #311c72;
   --color-indigo-950: #1a0d48;
 
+  /* Extra-small screens: ~480px. Fills the gap between mobile (320) and sm (640). */
+  --breakpoint-xs: 30rem;
   /* Ultra-wide screens: content opens up from ~1920px up. */
   --breakpoint-3xl: 120rem;
 }
@@ -284,234 +286,618 @@
    Goal: as polished and rich as the dark theme, not a flat white clone.
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Body ── */
-html.light body {
-  background: #f0f1f5 !important;
-  color: #1a1a2e;
+/* ── Token del tema chiaro ──
+   Un unico posto per inchiostro, superfici e azzurro: le regole sotto li
+   usano invece di ripetere valori sparsi, così la palette resta coerente. */
+html.light {
+  color-scheme: light;            /* controlli nativi (input, select, scrollbar) chiari */
+  --ac-ink: #0d0e1c;             /* testo principale: nero pieno */
+  --ac-ink-2: #23243a;
+  --ac-ink-3: #3a3b53;
+  --ac-muted: #4d4e66;           /* testo secondario (6.9:1 su bianco) */
+  --ac-muted-2: #5b5c75;         /* testo terziario (6.0:1) */
+  --ac-muted-3: #6b6c85;         /* etichette piccole (5.1:1) */
+  --ac-surface: #ffffff;
+  --ac-surface-2: #f5f7fc;
+  --ac-surface-3: #eceff8;
+  --ac-page: #f3f5fa;
+  --ac-line: rgba(13, 14, 28, 0.08);
+  --ac-line-2: rgba(13, 14, 28, 0.14);
+  --ac-azure: #038bfe;
+  --ac-azure-ink: #0259b0;       /* azzurro per testo/link su chiaro (6.9:1) */
+  --ac-azure-fill: #0468d4;      /* riempimenti pieni con testo bianco sopra */
+  --ac-azure-fill-hover: #0357b0;
+  --ac-azure-soft: rgba(3, 139, 254, 0.10);
+  --ac-azure-line: rgba(3, 139, 254, 0.32);
+  --ac-card-shadow: 0 1px 2px rgba(13, 14, 28, 0.04), 0 10px 26px -14px rgba(13, 14, 28, 0.14);
+  --ac-card-shadow-hover: 0 2px 4px rgba(13, 14, 28, 0.05), 0 18px 40px -18px rgba(3, 139, 254, 0.35);
+}
+html.dark {
+  color-scheme: dark;
 }
 
-/* ── Page-level gradient backgrounds ── */
+/* ── Body ── */
+html.light body {
+  background: var(--ac-page) !important;
+  color: var(--ac-ink);
+}
+
+/* ── Page-level gradient backgrounds — chiaro con riflesso azzurro ── */
 html.light .dark-gradient-main {
-  background: linear-gradient(170deg, #f0f1f5 0%, #e8eaf0 30%, #f5f3f8 60%, #eef0f4 100%) !important;
+  background: linear-gradient(170deg, #f8fafe 0%, #eef3fc 34%, #f6f8fd 66%, #edf2fb 100%) !important;
 }
 html.light .dark-gradient-subtle {
-  background: linear-gradient(170deg, #eceef3 0%, #f0f1f5 100%) !important;
+  background: linear-gradient(170deg, #f3f6fc 0%, #f8fafe 100%) !important;
 }
 html.light .dark-gradient-cta {
-  background: linear-gradient(135deg, #eceef3 0%, #e8eaf0 50%, #f0edf5 100%) !important;
+  background: linear-gradient(135deg, #eef3fc 0%, #f8fafe 52%, #eaf0fb 100%) !important;
 }
 html.light .bg-black {
-  background: #f0f1f5 !important;
+  background: var(--ac-page) !important;
 }
 
 /* ── Section / page containers ── */
 html.light .bg-neutral-950,
 html.light .bg-neutral-950\/90 {
-  background-color: rgba(255,255,255,0.75) !important;
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  background-color: rgba(255,255,255,0.78) !important;
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+}
+html.light .bg-neutral-950\/80,
+html.light .bg-neutral-950\/70,
+html.light .bg-neutral-950\/60 {
+  background-color: rgba(255,255,255,0.88) !important;
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+}
+html.light .bg-neutral-950\/50,
+html.light .bg-neutral-950\/40,
+html.light .bg-neutral-950\/30,
+html.light .bg-neutral-950\/20,
+html.light .bg-neutral-950\/10 {
+  background-color: rgba(255,255,255,0.65) !important;
 }
 
-/* ── Cards & panels — white with soft shadow + subtle border ── */
+/* ── Cards & panels — bianco, ombra azzurrata, bordo tenue ── */
 html.light .bg-neutral-900 {
-  background: linear-gradient(135deg, #ffffff 0%, #fafbfd 100%) !important;
-  border-color: rgba(0,0,0,0.06) !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px -4px rgba(0,0,0,0.06) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fbfcfe 100%) !important;
+  border-color: var(--ac-line) !important;
+  box-shadow: var(--ac-card-shadow) !important;
 }
-html.light .bg-neutral-900\/95 {
-  background: rgba(255,255,255,0.92) !important;
-  backdrop-filter: blur(16px) saturate(1.6);
-  -webkit-backdrop-filter: blur(16px) saturate(1.6);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px -2px rgba(0,0,0,0.06) !important;
-}
+html.light .bg-neutral-900\/95,
+html.light .bg-neutral-900\/90,
 html.light .bg-neutral-900\/80 {
-  background: rgba(255,255,255,0.82) !important;
-  backdrop-filter: blur(16px) saturate(1.6);
-  -webkit-backdrop-filter: blur(16px) saturate(1.6);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px -2px rgba(0,0,0,0.06) !important;
+  background: rgba(255,255,255,0.92) !important;
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow: var(--ac-card-shadow) !important;
 }
 html.light .bg-neutral-900\/70,
 html.light .bg-neutral-900\/60,
-html.light .bg-neutral-900\/50 {
-  background: rgba(255,255,255,0.80) !important;
+html.light .bg-neutral-900\/50,
+html.light .bg-neutral-900\/40,
+html.light .bg-neutral-900\/30 {
+  background: rgba(255,255,255,0.82) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* ── Input / select backgrounds ── */
+/* ── Input / select / pannelli incassati ── */
 html.light .bg-neutral-800 {
-  background: linear-gradient(135deg, #f4f5f9 0%, #eceef3 100%) !important;
-  border-color: rgba(0,0,0,0.08) !important;
+  background: linear-gradient(135deg, var(--ac-surface-2) 0%, var(--ac-surface-3) 100%) !important;
+  border-color: var(--ac-line) !important;
 }
 html.light .bg-neutral-800\/80,
+html.light .bg-neutral-800\/70,
 html.light .bg-neutral-800\/60,
-html.light .bg-neutral-800\/40 {
-  background: #f0f1f5 !important;
+html.light .bg-neutral-800\/50,
+html.light .bg-neutral-800\/40,
+html.light .bg-neutral-800\/30 {
+  background: var(--ac-surface-2) !important;
 }
 html.light .bg-neutral-700 {
-  background: #e4e6ed !important;
+  background: #e3e7f1 !important;
+}
+/* Pallini / indicatori neutri: restano grigi ma leggibili sul chiaro */
+html.light .bg-neutral-500,
+html.light .bg-neutral-600 {
+  background-color: #9aa2b6 !important;
+}
+html.light .bg-neutral-100,
+html.light .bg-neutral-50 {
+  background-color: #eef1f8 !important;
 }
 
-/* ── Subtle accent backgrounds ── */
+/* ── Overlay chiari su fondo scuro → velature scure su chiaro ── */
 html.light .bg-white\/5 {
-  background-color: rgba(0,0,0,0.03) !important;
+  background-color: rgba(13, 14, 28, 0.035) !important;
 }
 html.light .bg-white\/10 {
-  background-color: rgba(0,0,0,0.04) !important;
+  background-color: rgba(13, 14, 28, 0.05) !important;
+}
+html.light .bg-white\/15,
+html.light .bg-white\/20 {
+  background-color: rgba(13, 14, 28, 0.07) !important;
+}
+/* Stesse velature ma con opacità arbitraria (`bg-white/[0.02]`): chat e
+   dashboard ne fanno largo uso e senza mappatura il pannello resterebbe
+   bianco su bianco, senza superficie riconoscibile. */
+html.light .bg-white\/\[0\.02\] { background-color: rgba(13, 14, 28, 0.025) !important; }
+html.light .bg-white\/\[0\.03\] { background-color: rgba(13, 14, 28, 0.035) !important; }
+html.light .bg-white\/\[0\.04\] { background-color: rgba(13, 14, 28, 0.045) !important; }
+html.light .bg-white\/\[0\.06\] { background-color: rgba(13, 14, 28, 0.06) !important; }
+
+/* ── Tinte di accento: su chiaro restano soffuse ma più presenti ── */
+html.light .bg-brand-500\/5,  html.light .bg-brand-500\/10 { background-color: rgba(3, 139, 254, 0.09) !important; }
+html.light .bg-brand-500\/15, html.light .bg-brand-500\/20 { background-color: rgba(3, 139, 254, 0.13) !important; }
+html.light .bg-brand-500\/25, html.light .bg-brand-500\/30 { background-color: rgba(3, 139, 254, 0.17) !important; }
+html.light .bg-brand-500\/\[0\.04\] { background-color: rgba(3, 139, 254, 0.05) !important; }
+html.light .bg-brand-500\/\[0\.08\] { background-color: rgba(3, 139, 254, 0.08) !important; }
+html.light .bg-emerald-500\/5,  html.light .bg-emerald-500\/10 { background-color: rgba(5, 150, 105, 0.10) !important; }
+html.light .bg-emerald-500\/15, html.light .bg-emerald-500\/20 { background-color: rgba(5, 150, 105, 0.14) !important; }
+html.light .bg-red-500\/5,  html.light .bg-red-500\/10    { background-color: rgba(220, 38, 38, 0.09) !important; }
+html.light .bg-red-500\/15, html.light .bg-red-500\/20    { background-color: rgba(220, 38, 38, 0.13) !important; }
+html.light .bg-amber-500\/10, html.light .bg-amber-500\/15, html.light .bg-amber-500\/20 { background-color: rgba(180, 83, 9, 0.12) !important; }
+html.light .bg-purple-500\/15, html.light .bg-purple-500\/20 { background-color: rgba(109, 40, 217, 0.12) !important; }
+html.light .bg-violet-500\/15 { background-color: rgba(109, 40, 217, 0.12) !important; }
+html.light .bg-pink-500\/15   { background-color: rgba(190, 24, 93, 0.10) !important; }
+html.light .bg-blue-500\/15   { background-color: rgba(2, 101, 200, 0.12) !important; }
+html.light .bg-green-500\/10, html.light .bg-green-500\/20 { background-color: rgba(21, 128, 61, 0.12) !important; }
+html.light .bg-sky-500\/15, html.light .bg-cyan-500\/20, html.light .bg-teal-500\/20 { background-color: rgba(3, 139, 254, 0.12) !important; }
+html.light .bg-orange-500\/15, html.light .bg-orange-500\/20 { background-color: rgba(194, 65, 12, 0.12) !important; }
+html.light .bg-neutral-500\/10, html.light .bg-neutral-500\/15 { background-color: rgba(13, 14, 28, 0.06) !important; }
+
+/* ── Riempimenti pieni: azzurro più profondo, testo sempre bianco ── */
+html.light .bg-brand-400,
+html.light .bg-brand-500,
+html.light .bg-brand-600 {
+  background: var(--ac-azure-fill) !important;
+  color: #ffffff;
+}
+html.light .bg-emerald-500,
+html.light .bg-emerald-600 { background-color: #047857 !important; color: #ffffff; }
+html.light .bg-green-500  { background-color: #15803d !important; color: #ffffff; }
+html.light .bg-red-500    { background-color: #dc2626 !important; color: #ffffff; }
+html.light .bg-amber-500,
+html.light .bg-amber-600  { background-color: #b45309 !important; color: #ffffff; }
+html.light .bg-orange-500 { background-color: #c2410c !important; color: #ffffff; }
+html.light .bg-purple-500 { background-color: #6d28d9 !important; color: #ffffff; }
+html.light .bg-violet-500 { background-color: #6d28d9 !important; color: #ffffff; }
+html.light .bg-pink-500   { background-color: #be185d !important; color: #ffffff; }
+html.light .bg-indigo-500 { background-color: #4f46e5 !important; color: #ffffff; }
+html.light .bg-blue-500,
+html.light .bg-blue-600   { background-color: #0265c8 !important; color: #ffffff; }
+html.light .bg-cyan-500,
+html.light .bg-teal-500   { background-color: #0e7490 !important; color: #ffffff; }
+html.light .bg-rose-500   { background-color: #be123c !important; color: #ffffff; }
+html.light .bg-emerald-400 { background-color: #047857 !important; color: #ffffff; }
+html.light .bg-red-400     { background-color: #dc2626 !important; color: #ffffff; }
+html.light .bg-purple-400  { background-color: #6d28d9 !important; color: #ffffff; }
+html.light .bg-yellow-400  { background-color: #b45309 !important; color: #ffffff; }
+
+/* Il testo dentro un riempimento colorato resta bianco: vale sia quando la
+   classe è sullo stesso elemento (bottone azzurro) sia sui suoi figli. */
+html.light :is(.bg-brand-400, .bg-brand-500, .bg-brand-600, .bg-emerald-500, .bg-emerald-600,
+  .bg-green-500, .bg-red-500, .bg-amber-500, .bg-amber-600, .bg-orange-500, .bg-purple-500,
+  .bg-violet-500, .bg-pink-500, .bg-indigo-500, .bg-blue-500, .bg-blue-600, .bg-cyan-500,
+  .bg-teal-500, .bg-rose-500, .bg-emerald-400, .bg-red-400, .bg-purple-400):is(.text-white,
+  .text-white\/90, .text-white\/80, .text-white\/70),
+html.light :is(.bg-brand-400, .bg-brand-500, .bg-brand-600, .bg-emerald-500, .bg-emerald-600,
+  .bg-green-500, .bg-red-500, .bg-amber-500, .bg-amber-600, .bg-orange-500, .bg-purple-500,
+  .bg-violet-500, .bg-pink-500, .bg-indigo-500, .bg-blue-500, .bg-blue-600, .bg-cyan-500,
+  .bg-teal-500, .bg-rose-500, .bg-emerald-400, .bg-red-400, .bg-purple-400)
+  :is(.text-white, .text-white\/90, .text-white\/80, .text-white\/70) {
+  color: #ffffff !important;
+}
+/* Bottoni/badge con gradiente saturo: il testo resta bianco anche in chiaro
+   (i gradienti con partenza neutra, es. from-neutral-900, sono esclusi: lì
+   il testo deve seguire l'inchiostro scuro). */
+html.light :is(.bg-linear-to-r, .bg-linear-to-b, .bg-linear-to-br, .bg-linear-to-tl,
+  .bg-gradient-to-r, .bg-gradient-to-b, .bg-gradient-to-br, .bg-gradient-to-tl):is(
+  .from-brand-400, .from-brand-500, .from-brand-600, .from-purple-400, .from-purple-500,
+  .from-fuchsia-500, .from-pink-500, .from-violet-500, .from-indigo-500, .from-blue-500,
+  .from-emerald-500, .from-green-500, .from-orange-500, .from-amber-500, .from-cyan-500,
+  .from-teal-500, .from-rose-500, .from-red-500):is(.text-white, .text-white\/90,
+  .text-white\/80, .text-white\/70),
+html.light :is(.bg-linear-to-r, .bg-linear-to-b, .bg-linear-to-br, .bg-linear-to-tl,
+  .bg-gradient-to-r, .bg-gradient-to-b, .bg-gradient-to-br, .bg-gradient-to-tl):is(
+  .from-brand-400, .from-brand-500, .from-brand-600, .from-purple-400, .from-purple-500,
+  .from-fuchsia-500, .from-pink-500, .from-violet-500, .from-indigo-500, .from-blue-500,
+  .from-emerald-500, .from-green-500, .from-orange-500, .from-amber-500, .from-cyan-500,
+  .from-teal-500, .from-rose-500, .from-red-500)
+  :is(.text-white, .text-white\/90, .text-white\/80, .text-white\/70) {
+  color: #ffffff !important;
+}
+html.light :is(.bg-linear-to-r, .bg-linear-to-br, .bg-gradient-to-r, .bg-gradient-to-br):is(
+  .from-brand-400, .from-brand-500, .from-brand-600, .from-purple-500, .from-fuchsia-500,
+  .from-pink-500, .from-violet-500) svg {
+  color: #ffffff;
 }
 
-/* ── Text hierarchy ── */
-html.light .text-white {
-  color: #1a1a2e !important;
+/* Le icone con testo nascosto (aria-label) non contano, ma gli SVG interni sì */
+html.light :is(.bg-brand-400, .bg-brand-500, .bg-brand-600, .bg-emerald-500, .bg-red-500,
+  .bg-amber-500, .bg-amber-600, .bg-orange-500, .bg-purple-500, .bg-pink-500, .bg-blue-500,
+  .bg-blue-600, .bg-cyan-500, .bg-teal-500, .bg-indigo-500, .bg-violet-500, .bg-green-500,
+  .bg-rose-500) svg {
+  color: #ffffff;
 }
+
+/* ── Gerarchia del testo: inchiostro scuro e contrasto verificato ── */
+html.light .text-white {
+  color: var(--ac-ink) !important;
+}
+html.light .text-black {
+  color: #0b0c18 !important;
+}
+html.light .text-white\/90 { color: rgba(13, 14, 28, 0.92) !important; }
+html.light .text-white\/80 { color: rgba(13, 14, 28, 0.82) !important; }
+html.light .text-white\/70 { color: rgba(13, 14, 28, 0.72) !important; }
+html.light .text-white\/40 { color: rgba(13, 14, 28, 0.48) !important; }
+html.light .text-white\/15 { color: rgba(13, 14, 28, 0.22) !important; }
+html.light .text-neutral-50,
 html.light .text-neutral-100,
 html.light .text-neutral-200 {
-  color: #2d2e42 !important;
+  color: var(--ac-ink-2) !important;
 }
 html.light .text-neutral-300 {
-  color: #3d3e55 !important;
+  color: var(--ac-ink-3) !important;
 }
 html.light .text-neutral-400 {
-  color: #5a5b74 !important;
+  color: var(--ac-muted) !important;
 }
 html.light .text-neutral-500 {
-  color: #787992 !important;
+  color: var(--ac-muted-2) !important;
 }
 html.light .text-neutral-600 {
-  color: #9a9bb0 !important;
+  color: var(--ac-muted-3) !important;
+}
+html.light .text-neutral-700,
+html.light .text-neutral-800 {
+  color: #6c6d88 !important;
+}
+/* Su un fondo scuro (chips, bottoni pieni) il testo neutro resta chiaro */
+html.light .text-neutral-900 {
+  color: #10111f !important;
 }
 
-/* ── Borders — refined, not harsh ── */
+/* ── Accenti: le tinte 300/400 su chiaro diventano il 600/700 equivalente ── */
+html.light .text-brand-200,
+html.light .text-brand-300,
+html.light .text-brand-400,
+html.light .text-brand-500,
+html.light .text-brand-600 { color: var(--ac-azure-ink) !important; }
+html.light .text-brand-400\/40 { color: rgba(2, 101, 200, 0.45) !important; }
+html.light .text-emerald-300,
+html.light .text-emerald-400,
+html.light .text-emerald-500,
+html.light .text-emerald-600 { color: #047857 !important; }
+html.light .text-green-300,
+html.light .text-green-400 { color: #15803d !important; }
+html.light .text-amber-200,
+html.light .text-amber-300,
+html.light .text-amber-400 { color: #92400e !important; }
+html.light .text-red-200\/70 { color: rgba(185, 28, 28, 0.85) !important; }
+html.light .text-red-300,
+html.light .text-red-400 { color: #b91c1c !important; }
+html.light .text-purple-300,
+html.light .text-purple-400,
+html.light .text-violet-300 { color: #6d28d9 !important; }
+html.light .text-pink-400 { color: #be185d !important; }
+html.light .text-pink-700 { color: #9d174d !important; }
+html.light .text-blue-300,
+html.light .text-blue-400 { color: #0265c8 !important; }
+html.light .text-sky-300,
+html.light .text-sky-400,
+html.light .text-cyan-400 { color: #0e7490 !important; }
+html.light .text-indigo-400 { color: #4f46e5 !important; }
+html.light .text-orange-400 { color: #c2410c !important; }
+html.light .text-yellow-400 { color: #a16207 !important; }
+
+/* ── Placeholder dei campi ── */
+html.light .placeholder-neutral-500::placeholder,
+html.light .placeholder-neutral-400::placeholder,
+html.light .placeholder-neutral-600::placeholder,
+html.light .placeholder-white\/50::placeholder { color: #82839a !important; }
+
+/* ── Bordi: niente bianco puro su chiaro, azzurro per gli accenti ── */
+html.light .border-white {
+  border-color: var(--ac-line-2) !important;
+}
 html.light .border-white\/5 {
-  border-color: rgba(0,0,0,0.06) !important;
+  border-color: var(--ac-line) !important;
 }
 html.light .border-white\/10,
 html.light .border-white\/15 {
-  border-color: rgba(0,0,0,0.08) !important;
+  border-color: rgba(13, 14, 28, 0.10) !important;
 }
-html.light .border-white\/20 {
-  border-color: rgba(0,0,0,0.12) !important;
+html.light .border-white\/20,
+html.light .border-white\/25,
+html.light .border-white\/30 {
+  border-color: rgba(13, 14, 28, 0.15) !important;
 }
-html.light .border-neutral-800 {
-  border-color: rgba(0,0,0,0.08) !important;
-}
-html.light .border-neutral-700\/60 {
-  border-color: rgba(0,0,0,0.10) !important;
-}
+/* Bordi a opacità arbitraria: un capello chiaro al 6-8% sparisce su fondo
+   bianco, quindi in chiaro diventa il capello scuro equivalente. */
+html.light .border-white\/\[0\.06\] { border-color: var(--ac-line) !important; }
+html.light .border-white\/\[0\.08\] { border-color: rgba(13, 14, 28, 0.10) !important; }
+html.light .border-neutral-900,
+html.light .border-neutral-800,
+html.light .border-neutral-700,
+html.light .border-neutral-700\/60 { border-color: var(--ac-line) !important; }
+html.light .border-neutral-500 { border-color: rgba(13, 14, 28, 0.18) !important; }
+/* Azzurro: bordo più pieno, è la firma del tema chiaro */
+html.light .border-brand-400,
+html.light .border-brand-500,
+html.light .border-brand-500\/60,
+html.light .border-brand-500\/50 { border-color: var(--ac-azure-line) !important; }
+html.light .border-brand-500\/40,
+html.light .border-brand-500\/30,
+html.light .border-brand-500\/20,
+html.light .border-brand-500\/10 { border-color: rgba(3, 139, 254, 0.28) !important; }
+html.light .border-emerald-500\/10,
+html.light .border-emerald-500\/20 { border-color: rgba(5, 150, 105, 0.25) !important; }
+html.light .border-emerald-500\/30,
+html.light .border-emerald-500\/40,
+html.light .border-emerald-500\/50 { border-color: rgba(4, 120, 87, 0.38) !important; }
+html.light .border-red-500\/20 { border-color: rgba(220, 38, 38, 0.25) !important; }
+html.light .border-red-500\/30,
+html.light .border-red-500\/40 { border-color: rgba(185, 28, 28, 0.35) !important; }
+html.light .border-amber-500\/20,
+html.light .border-amber-500\/30 { border-color: rgba(180, 83, 9, 0.30) !important; }
+html.light .border-green-500\/30 { border-color: rgba(21, 128, 61, 0.32) !important; }
+html.light .border-purple-500\/20 { border-color: rgba(109, 40, 217, 0.28) !important; }
+/* Divisori e anelli */
+html.light .divide-white\/5 > :not([hidden]) ~ :not([hidden]) { border-color: var(--ac-line) !important; }
+html.light .divide-white\/10 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(13, 14, 28, 0.10) !important; }
+html.light .ring-white { --tw-ring-color: rgba(13, 14, 28, 0.12) !important; }
+html.light .ring-white\/\[0\.06\] { --tw-ring-color: rgba(13, 14, 28, 0.09) !important; }
+html.light .ring-neutral-900 { --tw-ring-color: rgba(13, 14, 28, 0.10) !important; }
+html.light .ring-brand-500,
+html.light .ring-brand-500\/50 { --tw-ring-color: rgba(3, 139, 254, 0.45) !important; }
+html.light .ring-brand-500\/30,
+html.light .ring-brand-500\/20 { --tw-ring-color: rgba(3, 139, 254, 0.28) !important; }
 
-/* ── Hover states — smooth, visible ── */
-html.light .hover\:bg-white\/5:hover {
-  background-color: rgba(0,0,0,0.04) !important;
-}
-html.light .hover\:bg-white\/10:hover {
-  background-color: rgba(0,0,0,0.06) !important;
-}
-html.light .hover\:bg-neutral-800:hover {
-  background: linear-gradient(135deg, #eceef3 0%, #e4e6ed 100%) !important;
-}
-html.light .hover\:bg-neutral-800\/60:hover {
-  background-color: #e8eaf0 !important;
-}
+/* ── Hover / focus: azzurro di rinforzo, mai "spento" ── */
+html.light .hover\:bg-white\/5:hover { background-color: rgba(13, 14, 28, 0.045) !important; }
+html.light .hover\:bg-white\/10:hover { background-color: rgba(13, 14, 28, 0.06) !important; }
+html.light .hover\:bg-white\/15:hover,
+html.light .hover\:bg-white\/20:hover { background-color: rgba(13, 14, 28, 0.08) !important; }
+html.light .hover\:bg-white\/\[0\.02\]:hover { background-color: rgba(13, 14, 28, 0.03) !important; }
+html.light .hover\:bg-white\/\[0\.03\]:hover { background-color: rgba(13, 14, 28, 0.04) !important; }
+html.light .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(13, 14, 28, 0.05) !important; }
+html.light .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(13, 14, 28, 0.07) !important; }
+html.light .hover\:border-white\/\[0\.12\]:hover { border-color: rgba(13, 14, 28, 0.16) !important; }
+html.light .hover\:bg-neutral-800:hover { background: linear-gradient(135deg, #eef2fa 0%, #e5eaf6 100%) !important; }
+html.light .hover\:bg-neutral-800\/60:hover,
+html.light .hover\:bg-neutral-800\/50:hover { background-color: #eaeef8 !important; }
 html.light .hover\:bg-neutral-700:hover,
-html.light .hover\:bg-neutral-700\/60:hover {
-  background-color: #dcdee6 !important;
-}
-html.light .hover\:text-white:hover {
-  color: #0d0d1a !important;
-}
-html.light .hover\:border-white\/20:hover {
-  border-color: rgba(0,0,0,0.14) !important;
-}
-html.light .hover\:border-white\/25:hover {
-  border-color: rgba(0,0,0,0.16) !important;
-}
+html.light .hover\:bg-neutral-700\/60:hover,
+html.light .hover\:bg-neutral-700\/50:hover { background-color: #e0e5f2 !important; }
+html.light .hover\:bg-neutral-900:hover { background: #ffffff !important; }
+html.light .hover\:text-white:hover { color: #05060f !important; }
+html.light .hover\:text-neutral-200:hover { color: var(--ac-ink-2) !important; }
+html.light .hover\:text-neutral-300:hover { color: var(--ac-ink-3) !important; }
+html.light .hover\:border-white\/20:hover { border-color: rgba(13, 14, 28, 0.16) !important; }
+html.light .hover\:border-white\/25:hover { border-color: rgba(13, 14, 28, 0.18) !important; }
+html.light .hover\:border-white\/10:hover { border-color: rgba(13, 14, 28, 0.12) !important; }
+/* Bottoni azzurri: hover più profondo, non più chiaro */
+html.light .hover\:bg-brand-400:hover,
+html.light .hover\:bg-brand-500:hover,
+html.light .hover\:bg-brand-600:hover { background: var(--ac-azure-fill-hover) !important; }
+html.light .hover\:bg-brand-500\/10:hover { background-color: rgba(3, 139, 254, 0.14) !important; }
+html.light .hover\:border-brand-500\/30:hover,
+html.light .hover\:border-brand-500\/40:hover { border-color: var(--ac-azure-line) !important; }
+html.light .focus\:border-brand-500:focus { border-color: var(--ac-azure) !important; }
+html.light .hover\:bg-emerald-500\/10:hover { background-color: rgba(5, 150, 105, 0.14) !important; }
+html.light .hover\:bg-red-500\/10:hover { background-color: rgba(220, 38, 38, 0.14) !important; }
 
-/* ── Shadows — layered depth, not flat ── */
-html.light .shadow-black\/20 {
-  --tw-shadow-color: rgba(0,0,0,0.05) !important;
-}
-html.light .shadow-black\/30 {
-  --tw-shadow-color: rgba(0,0,0,0.07) !important;
-}
-html.light .shadow-black\/40 {
-  --tw-shadow-color: rgba(0,0,0,0.09) !important;
-}
+/* ── Ombre: profondità morbida, alone azzurro sugli elementi interattivi ── */
+html.light .shadow-black\/20 { --tw-shadow-color: rgba(13, 14, 28, 0.06) !important; }
+html.light .shadow-black\/30 { --tw-shadow-color: rgba(13, 14, 28, 0.08) !important; }
+html.light .shadow-black\/40 { --tw-shadow-color: rgba(13, 14, 28, 0.10) !important; }
 html.light .shadow-2xl {
-  --tw-shadow: 0 25px 50px -12px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.02) !important;
+  --tw-shadow: 0 32px 64px -24px rgba(13, 14, 28, 0.16), 0 0 0 1px rgba(13, 14, 28, 0.03) !important;
 }
 html.light .shadow-xl {
-  --tw-shadow: 0 10px 25px -5px rgba(0,0,0,0.06), 0 8px 10px -6px rgba(0,0,0,0.03) !important;
+  --tw-shadow: 0 24px 48px -20px rgba(13, 14, 28, 0.14), 0 0 0 1px rgba(13, 14, 28, 0.03) !important;
 }
 html.light .shadow-lg {
-  --tw-shadow: 0 4px 12px -2px rgba(0,0,0,0.05), 0 2px 6px -2px rgba(0,0,0,0.03) !important;
-}
-html.light .shadow-sm {
-  --tw-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03) !important;
+  --tw-shadow: 0 16px 32px -18px rgba(13, 14, 28, 0.14) !important;
 }
 html.light .shadow-md {
-  --tw-shadow: 0 4px 8px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.03) !important;
+  --tw-shadow: 0 8px 20px -12px rgba(13, 14, 28, 0.12) !important;
 }
+html.light .shadow-sm {
+  --tw-shadow: 0 1px 3px rgba(13, 14, 28, 0.06) !important;
+}
+/* Aloni colorati: presenti ma discreti */
+html.light .shadow-brand-500\/5  { --tw-shadow-color: rgba(3, 139, 254, 0.10) !important; }
+html.light .shadow-brand-500\/10 { --tw-shadow-color: rgba(3, 139, 254, 0.14) !important; }
+html.light .shadow-brand-500\/20,
+html.light .shadow-brand-500\/25 { --tw-shadow-color: rgba(3, 139, 254, 0.20) !important; }
+html.light .shadow-brand-500\/30 { --tw-shadow-color: rgba(3, 139, 254, 0.26) !important; }
+html.light .shadow-emerald-500\/20 { --tw-shadow-color: rgba(5, 150, 105, 0.18) !important; }
+html.light .shadow-orange-500\/25 { --tw-shadow-color: rgba(194, 65, 12, 0.18) !important; }
+html.light .shadow-white\/5 { --tw-shadow-color: rgba(13, 14, 28, 0.05) !important; }
 
-/* ── Inline radial gradient overlays — subtle tinted glows ── */
+/* ── Vignette radiali inline (glow decorativi) — alone azzurro tenue ── */
 html.light [style*="radial-gradient"] {
-  opacity: 0.12 !important;
-  filter: hue-rotate(10deg) saturate(0.5) brightness(1.4) !important;
+  opacity: 0.55 !important;
+  filter: saturate(0.9) !important;
 }
 
-/* ── Brand accent colors — slightly richer in light ── */
-html.light .text-brand-400 { color: #038bfe !important; }
-html.light .text-brand-300 { color: #038bfe !important; }
+/* ── Testo con gradiente (titoli hero) — stop più profondi su chiaro ── */
+html.light .from-brand-400,
+html.light .from-brand-500 { --tw-gradient-from: #0265c8 !important; }
+html.light .from-brand-500\/\[0\.04\] { --tw-gradient-from: rgba(3, 139, 254, 0.06) !important; }
+html.light .to-purple-500\/\[0\.04\] { --tw-gradient-to: rgba(109, 40, 217, 0.06) !important; }
+html.light .via-brand-500 { --tw-gradient-via: #038bfe !important; }
+html.light .to-fuchsia-400,
+html.light .to-fuchsia-500 { --tw-gradient-to: #a21caf !important; }
+html.light .to-pink-500 { --tw-gradient-to: #be185d !important; }
+html.light .to-purple-400,
+html.light .to-purple-500,
+html.light .to-purple-600 { --tw-gradient-to: #6d28d9 !important; }
+html.light .to-amber-500\/20 { --tw-gradient-to: rgba(180, 83, 9, 0.16) !important; }
+html.light .from-emerald-500,
+html.light .to-emerald-600 { --tw-gradient-from: #047857 !important; --tw-gradient-to: #065f46 !important; }
+html.light .from-green-500 { --tw-gradient-from: #15803d !important; }
+html.light .from-orange-500 { --tw-gradient-from: #c2410c !important; }
+html.light .from-cyan-500 { --tw-gradient-from: #0e7490 !important; }
+html.light .to-blue-500 { --tw-gradient-to: #0265c8 !important; }
+/* Pannelli gradiente che in scuro sono quasi neri: in chiaro diventano superficie */
+html.light .from-neutral-900,
+html.light .via-neutral-900,
+html.light .to-neutral-950 { --tw-gradient-from: #ffffff !important; --tw-gradient-via: #fbfcfe !important; --tw-gradient-to: #f5f7fc !important; }
+html.light .from-brand-950\/50 { --tw-gradient-from: rgba(3, 139, 254, 0.08) !important; }
+html.light .to-purple-950\/30 { --tw-gradient-to: rgba(109, 40, 217, 0.07) !important; }
+/* Sottilissime venature bianche → venature scure */
+html.light .via-white\/5 { --tw-gradient-via: rgba(13, 14, 28, 0.05) !important; }
+html.light .via-white\/10 { --tw-gradient-via: rgba(13, 14, 28, 0.08) !important; }
+html.light .underline,
+html.light .decoration-brand-400\/40 { text-decoration-color: rgba(2, 101, 200, 0.45) !important; }
 
-/* ── Brand buttons — keep white text on brand bg ── */
-html.light .bg-brand-500.text-white,
-html.light .bg-brand-500 .text-white,
-html.light .bg-brand-600.text-white {
-  color: #ffffff !important;
+/* ── Marchi (loghi dei brand) ──
+   Alcuni loghi ufficiali sono quasi neri (Apple, GitHub, Notion) e in scuro
+   vengono dipinti di bianco; altri sono troppo chiari per il bianco
+   (MailChimp). `BrandIcon` marca quei glifi con `.brand-mark-themed` quando
+   nessuno ha forzato un colore: qui il tema chiaro li riporta all'inchiostro,
+   altrimenti sparirebbero sul fondo chiaro. */
+html.light .brand-mark-themed {
+  fill: var(--ac-ink) !important;
 }
-html.light .from-brand-500 { --tw-gradient-from: #038bfe !important; }
 
-/* ── Active states — brand ring ── */
-html.light .ring-brand-500\/20 {
-  --tw-ring-color: rgba(3,139,254,0.25) !important;
+/* ── Grafici (Recharts) ──
+   Griglia e etichette degli assi non sono classi Tailwind: sono attributi SVG
+   passati come prop dal componente. La griglia è bianca al 4% (invisibile su
+   fondo chiaro) e le etichette usano un grigio pensato per il tema scuro. Le
+   regole CSS vincono sugli attributi di presentazione, quindi il tema chiaro
+   li ridipinge da qui, senza toccare i grafici. */
+html.light .recharts-cartesian-grid line {
+  stroke: rgba(13, 14, 28, 0.07) !important;
+}
+html.light .recharts-cartesian-axis-tick-value {
+  fill: var(--ac-muted-2) !important;
 }
 
-/* ── Floating brand bubbles — adapt to light ── */
-html.light .bg-neutral-900.border-white\/10.rounded-full,
+/* ── Veli e modali: scuriscono senza diventare nero pece ── */
+html.light .bg-black\/70,
+html.light .bg-black\/60 { background-color: rgba(13, 14, 28, 0.34) !important; }
+html.light .bg-black\/40 { background-color: rgba(13, 14, 28, 0.22) !important; }
+html.light .bg-black\/25,
+html.light .bg-black\/20 { background-color: rgba(13, 14, 28, 0.14) !important; }
+
+/* ── Bolle brand fluttuanti (hero) ── */
 html.light [class*="rounded-full"][class*="bg-neutral-900"] {
-  background: linear-gradient(135deg, #ffffff 0%, #f4f5f9 100%) !important;
-  border-color: rgba(0,0,0,0.06) !important;
-  box-shadow: 0 4px 16px -4px rgba(0,0,0,0.08) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f4f6fc 100%) !important;
+  border-color: var(--ac-line) !important;
+  box-shadow: 0 6px 20px -8px rgba(3, 139, 254, 0.25), 0 2px 6px -2px rgba(13, 14, 28, 0.06) !important;
 }
-/* Override inline shadow-[...] on bubbles */
-html.light [class*="rounded-full"][class*="shadow-\[0"] {
-  box-shadow: 0 4px 16px -4px rgba(0,0,0,0.08) !important;
+html.light [class*="rounded-full"][class*="shadow-[0"] {
+  box-shadow: 0 6px 20px -8px rgba(3, 139, 254, 0.25) !important;
 }
-/* Role labels on right-side hero bubbles */
+/* Etichette di ruolo sulle bolle */
 html.light .bg-black\/40.backdrop-blur-sm {
-  background: rgba(255,255,255,0.85) !important;
-  color: #3d3e55 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: var(--ac-ink-3) !important;
 }
-html.light .text-white\/70 {
-  color: #5a5b74 !important;
-}
-/* Avatar inner borders */
-html.light .border-white\/20 {
-  border-color: rgba(0,0,0,0.06) !important;
-}
-/* Footer: adapt dark footer to light */
+
+/* ── Footer chiaro ── */
 html.light footer.bg-black,
 html.light footer.text-white {
-  background: #ffffff !important;
-  color: #1a1a2e !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fd 100%) !important;
+  color: var(--ac-ink) !important;
 }
-html.light footer.border-white\/5 {
-  border-color: rgba(0,0,0,0.06) !important;
+html.light footer.border-white\/5 { border-color: var(--ac-line) !important; }
+html.light footer.border-white\/10 { border-color: rgba(13, 14, 28, 0.10) !important; }
+
+/* ── Focus visibile: anello azzurro su ogni controllo ── */
+html.light :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ac-azure) !important;
+  outline-offset: 2px;
 }
-html.light footer.border-white\/10 {
-  border-color: rgba(0,0,0,0.08) !important;
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  border-color: var(--ac-azure-line) !important;
+  box-shadow: 0 0 0 3px var(--ac-azure-soft) !important;
 }
+html.light ::selection {
+  background: rgba(3, 139, 254, 0.20);
+  color: var(--ac-ink);
+}
+/* Campi con accento: l'azzurro resta leggibile anche da soli */
+html.light .accent-brand-500 { accent-color: var(--ac-azure); }
 
 /* ── Scrollbar ── */
-html.light ::-webkit-scrollbar-thumb { background: #c6c7d2; border-radius: 8px; }
-html.light ::-webkit-scrollbar-thumb:hover { background: #aaa; }
-html.light * { scrollbar-color: #c6c7d2 transparent; }
+html.light ::-webkit-scrollbar-thumb { background: #c3c8d8; border-radius: 8px; }
+html.light ::-webkit-scrollbar-thumb:hover { background: #a6adc4; }
+html.light * { scrollbar-color: #c3c8d8 transparent; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE OVERRIDES
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Global: prevent any child from causing horizontal overflow ── */
+@layer base {
+  html,
+  body {
+    max-width: 100%;
+  }
+  img,
+  video,
+  svg {
+    max-width: 100%;
+  }
+}
+
+/* ── Ultra-wide (3xl ≥ 1920px): extra breathing room ── */
+@media (min-width: 120rem) {
+  /* Section vertical padding — more air on giant displays */
+  .section-xl-pad {
+    padding-top: 8rem;
+    padding-bottom: 8rem;
+  }
+
+  /* Slightly larger base type for readability on 27–32 inch screens */
+  body {
+    font-size: 17px;
+  }
+
+  /* Marketplace / integrations grids open an extra column */
+  .grid-cols-2.md\:grid-cols-3.lg\:grid-cols-4 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* ── Small (< 640px): ensure chat input area doesn't overflow ── */
+@media (max-width: 639px) {
+  /* Textarea inside hero chat doesn't grow beyond safe area */
+  textarea {
+    max-width: 100%;
+  }
+
+  /* Prevent any fixed-width card from forcing horizontal scroll */
+  .rounded-2xl,
+  .rounded-xl {
+    max-width: 100%;
+  }
+
+  /* Footer bottom bar: stack instead of wrap when very tight */
+  footer .flex-wrap {
+    gap: 0.5rem;
+  }
+}
+
+/* ── Extra-small (< 480px): additional safety net ── */
+@media (max-width: 29.9375rem) {
+  /* Reduce section padding slightly to avoid crowding */
+  section {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Navbar logo text: hide on the smallest phones if needed */
+  .navbar-brand-text {
+    display: none;
+  }
+}

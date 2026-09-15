@@ -99,6 +99,14 @@ src/
 - **Ultra-wide (≥1920px)**: breakpoint custom `3xl` (`--breakpoint-3xl` in `globals.css`) — contenitori principali fino a `3xl:max-w-[1720px]`, griglie marketplace/features a 4 colonne; sotto i 1920px i layout restano invariati
 - Landing e pagine interne su **dark** (`bg-neutral-950`); deploy su light
 
+### Tema chiaro / scuro
+- Il tema è una classe su `<html>` (`light` | `dark`) scritta da `themeInitScript()` prima dell'idratazione: per questo `<html>` ha `suppressHydrationWarning` (senza, React ri-renderizza l'albero e il tema lampeggia).
+- Il tema **scuro è quello di progetto**: le classi Tailwind nelle pagine non cambiano. Il chiaro è un **layer di override** in `globals.css` sotto `html.light`, con i token `--ac-*` (inchiostro, superfici, azzurro).
+- Tre casi da ricordare quando si aggiunge stile:
+  1. classi normali (`bg-neutral-900`, `text-white`) → coperte dal layer;
+  2. **valori arbitrari** (`bg-white/[0.02]`, `border-white/[0.06]`) → vanno mappati a mano nel layer, altrimenti restano bianchi su bianco;
+  3. **colori passati come prop/attributo SVG** (grafici Recharts, loghi dei marchi) → non sono classi Tailwind: si gestiscono con CSS mirato (vince sugli attributi di presentazione) o con una classe marker, come `.brand-mark-themed` in `BrandIcon`.
+
 ### Font
 - Primary: **Manrope** (400–900) · Fallback: **Inter**
 
@@ -110,10 +118,25 @@ src/
 
 ## i18n
 
-- **Default inglese**, switch EN/IT nella navbar (cookie `agentcloud_locale`, URL invariati).
-- Dizionari `it`+`en` in `src/lib/i18n/dictionaries.ts` (`Dictionary = typeof it`, test di allineamento delle shape).
+- **Cinque lingue**: `it`, `en` (default), `es`, `de`, `fr` — switch nella navbar e in `WaitlistForm` (cookie `agentcloud_locale`, URL invariati; senza cookie si usa paese/Accept-Language, mappa in `constants.ts`).
+- Dizionari completi in `src/lib/i18n/dictionaries.ts` (`Dictionary = typeof it`).
 - Overlay italiani per tutto il catalogo agenti in `agentCatalog.ts` + `localizeAgent`.
 - Errori delle API localizzati via `src/lib/i18n/api-errors.ts` (legge la stessa cookie).
+- Testi legali (privacy, termini, rimborsi) **tutti** in `src/lib/i18n/legal.ts` (`getLegalDocument`): i documenti per esteso in `it`/`en` e le traduzioni complete `es`/`de`/`fr`, usati **solo** dalle pagine server `/privacy`, `/terms`, `/refunds`, così non entrano nel bundle client. Nel dizionario restano unicamente i link incrociati (`legal.see*`) e le tre `legal.<documento>.backHome`: nessun corpo di documento, nessuna lettura di `.sections` dall'interfaccia (il test lo impedisce).
+  - `LegalTranslation` non è `Partial`: se a una lingua manca un campo il typecheck fallisce, invece di far ricadere l'italiano o l'inglese sotto un'altra lingua.
+
+### Non mischiare le lingue
+
+Regola: una stringa in `es`/`de`/`fr` è **solo** nella sua lingua. Ammessi unicamente prestiti e nomi propri che nelle altre lingue si scrivono davvero così (`Dashboard`, `Marketplace`, `Starter`, `Gmail`, i nomi degli agenti demo) e i segnaposto (`{n} min`).
+
+`src/lib/i18n/dictionaries.test.ts` lo verifica da solo, e fallisce in quattro modi: chiavi mancanti/in più, stringhe lunghe copiate da `it` o `en`, **parole inglesi isolate** rimaste tali (`Password`, `Tools`, `Custom`), e frasi quasi identiche alla fonte (l'inglese con una parola cambiata, come era `es.dashboard.googleConnectDesc` al 86% di parole in comune). Aggiungendo una stringa tradotta non serve toccare il test; se invece è un prestito legittimo, va aggiunto a `LOANWORDS`.
+
+### Lingua delle risposte degli agenti
+
+- L'agente risponde nella lingua **dell'ultimo messaggio dell'utente** e, quando quel messaggio non ne indica una (una parola sola, un nome proprio, un numero, un'emoji), nella lingua della **piattaforma** (cookie `agentcloud_locale`).
+- La lingua la decide il codice in `src/lib/agents/language.ts` (`replyLanguage` → `detectLanguage`) e viene scritta in chiaro nel system prompt (`withLanguageDirective`), **non** lasciata al modello: i prompt degli agenti e i risultati dei tool contengono molto testo in italiano, e senza un ordine esplicito la risposta seguiva quel materiale (piattaforma tedesca + messaggio in inglese ⇒ risposta in italiano).
+- Vale per tutte le chiamate al modello: `/api/chat` (agenti e chat di piattaforma, quest'ultima costruita già nella lingua della risposta) e `/api/agent/run`.
+- `src/lib/agents/language.test.ts` copre rilevamento, default e direttive.
 
 ## Autenticazione
 

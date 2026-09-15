@@ -6,6 +6,8 @@ import Footer from "@/components/Footer";
 import BundleDetailClient from "./bundle-detail-client";
 import { BUNDLES, getBundleBySlug, getBundleAgents, formatPrice } from "@/lib/bundles";
 import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { LOCALE_LABELS } from "@/lib/i18n/constants";
 import { pageSeo } from "@/lib/seo";
 import { AVAILABLE_AGENTS, localizeAgent } from "@/lib/agents";
 import { getSiteUrl } from "@/lib/site-url";
@@ -21,12 +23,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const bundle = getBundleBySlug(slug);
   if (!bundle) return {};
   const locale = await getLocale();
-  const isIt = locale === "it";
+  const dict = getDictionary(locale);
   const agents = getBundleAgents(bundle);
   return {
     ...pageSeo({
-      title: `${bundle.name} — ${isIt ? "Bundle Agenti AI" : "AI Agent Bundle"}`,
-      description: `${bundle.description} ${isIt ? "Risparmia fino al 30% con piani trimestrali e annuali." : "Save up to 30% with quarterly and annual plans."}`,
+      title: `${bundle.name} — ${dict.bundlePage.aiAgentBundles}`,
+      description: `${bundle.description} ${dict.bundleDetail.savingsNote}`,
       path: `/bundles/${slug}`,
       locale,
     }),
@@ -36,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "AgentCloud",
       title: `${bundle.name} — AgentCloud`,
       description: bundle.description,
-      locale: locale === "it" ? "it_IT" : "en_US",
+      locale: LOCALE_LABELS[locale].og,
       images: [{ url: `${getSiteUrl()}/bundles/${slug}/opengraph-image`, width: 1200, height: 630 }],
     },
     twitter: {

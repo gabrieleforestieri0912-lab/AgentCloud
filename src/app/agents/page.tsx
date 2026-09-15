@@ -25,11 +25,9 @@ import { OwnedProvider } from "@/components/OwnedProvider";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const isIt = locale === "it";
-  const title = isIt ? "Marketplace Agenti AI" : "AI Agent Marketplace";
-  const description = isIt
-    ? "Sfoglia agenti AI preconfigurati per marketing, operations, supporto, finanza e altro. Attiva agenti pronti all'uso che automatizzano i workflow aziendali."
-    : "Browse pre-built AI agents for marketing, operations, support, finance and more. Deploy ready-to-use agents that automate your business workflows.";
+  const { agentsPage } = getDictionary(locale);
+  const title = agentsPage.metaTitle;
+  const description = agentsPage.metaDescription;
   return pageSeo({ title, description, path: "/agents", locale });
 }
 
@@ -60,7 +58,6 @@ export default async function AgentsPage() {
   const navAgents = (true ? AGENTS : AVAILABLE_AGENTS).map((a) =>
     localizeAgent(a, locale),
   );
-  const isIt = locale === "it";
 
   return (
     <main className="relative min-h-screen bg-neutral-950 overflow-hidden">
@@ -168,14 +165,10 @@ export default async function AgentsPage() {
                 {dict.marketplacePage.customTitle}
               </p>
               <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                {isIt
-                  ? "Non trovi l'agente che cerchi?"
-                  : "Can't find the agent you need?"}
+                {dict.marketplacePage.cantFindAgent}
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-neutral-400">
-                {isIt
-                  ? "Contattaci e lo progettiamo su misura per il tuo business. Colleghiamo i tuoi strumenti e consegniamo l'automazione pronta all'uso."
-                  : "Contact us and we'll design it custom for your business. We connect your tools and deliver the automation ready to use."}
+                {dict.marketplacePage.customDesc}
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <Link

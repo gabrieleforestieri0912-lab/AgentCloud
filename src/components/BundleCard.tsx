@@ -14,6 +14,7 @@ import type { Bundle, BundlePeriod } from "@/lib/bundles";
 import { formatPrice, formatMonthlyPrice, getBundleAgents } from "@/lib/bundles";
 import AgentIcon from "./AgentIcon";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import AddBundleToCartButton from "./AddBundleToCartButton";
 import AnimatedSavingsCounter from "./AnimatedSavingsCounter";
 
@@ -25,7 +26,6 @@ const PERIODS: BundlePeriod[] = ["monthly", "quarterly", "yearly"];
 
 export default function BundleCard({ bundle }: BundleCardProps) {
   const { locale, dict } = useLanguage();
-  const isIt = locale === "it";
   const [period, setPeriod] = useState<BundlePeriod>("monthly");
   const agents = getBundleAgents(bundle);
 
@@ -84,7 +84,7 @@ export default function BundleCard({ bundle }: BundleCardProps) {
           {bundle.badge}
         </motion.span>
         <span className="text-xs font-bold text-neutral-500">
-          {agents.length} {isIt ? "agenti" : "agents"}
+          {t(dict.agentsPage.agentsCount, { count: agents.length })}
         </span>
       </div>
 
@@ -163,7 +163,7 @@ export default function BundleCard({ bundle }: BundleCardProps) {
             </AnimatePresence>
 
             {/* Animated savings counter in euros */}
-            <AnimatedSavingsCounter savingsCents={savingsCents} percent={savingsPercent} locale={locale} />
+            <AnimatedSavingsCounter savingsCents={savingsCents} percent={savingsPercent} />
 
             {/* Monthly hint */}
             <AnimatePresence>

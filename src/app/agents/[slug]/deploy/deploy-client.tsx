@@ -481,7 +481,7 @@ export default function DeployAgentClient({
                                   if (e.key === "Enter")
                                     connectShopify(shopDomain);
                                 }}
-                                placeholder="tuo-store.myshopify.com"
+                                placeholder={dict.deploy.shopifyPlaceholder}
                                 autoFocus
                                 className="h-10 flex-1 rounded-xl border border-white/10 bg-neutral-800 px-4 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
                               />

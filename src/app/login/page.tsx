@@ -62,12 +62,7 @@ function ConnectIntentNotice() {
   const searchParams = useSearchParams();
   const intent = searchParams.get("intent");
   if (intent !== "shopify" && intent !== "google") return null;
-  const app =
-    intent === "shopify"
-      ? "Shopify"
-      : locale === "it"
-        ? "Gmail e Google Calendar"
-        : "Gmail and Google Calendar";
+  const app = intent === "shopify" ? "Shopify" : dict.auth.login.googleAppsLabel;
   return (
     <p className="flex items-start gap-2 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-sm leading-5 text-brand-200">
       <AlertCircle size={16} className="mt-0.5 shrink-0" />

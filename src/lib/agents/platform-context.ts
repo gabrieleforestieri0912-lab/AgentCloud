@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SHOPIFY_PRICING } from "@/lib/billing/pricing";
 import { AGENT_RUNTIME } from "./registry";
 import { getFeatureFlags } from "./feature-flags";
+import { languageDirective } from "./language";
 
 /**
  * Conoscenza piattaforma server-only per la chat generica.
@@ -61,7 +62,6 @@ const LABELS: Record<Locale, PromptLabels> = {
       "I dati su agenti, disponibilità e prezzi vengono letti dal database a ogni richiesta, quindi sono sempre aggiornati.",
     rules: [
       "Regole:",
-      "- Rispondi nella lingua dell'utente (di norma in italiano).",
       "- Usa il markdown: **grassetto** per nomi e punti chiave, elenchi con • — la UI lo renderizza.",
       "- Sii conciso e concreto: dai subito il nome dell'agente giusto e cosa fa.",
       "- Non inventare agenti, prezzi o funzionalità oltre a queste informazioni: se non c'è in elenco, dillo chiaramente.",
@@ -85,7 +85,6 @@ const LABELS: Record<Locale, PromptLabels> = {
       "Agent, availability and pricing data is read from the database on every request, so it is always up to date.",
     rules: [
       "Rules:",
-      "- Answer in the user's language.",
       "- Use markdown: **bold** for names and key points, • bullet lists — the UI renders it.",
       "- Be concise and concrete: name the right agent for the job and what it does.",
       "- Never invent agents, prices or features beyond this information: if it's not listed, say so clearly.",
@@ -109,7 +108,6 @@ const LABELS: Record<Locale, PromptLabels> = {
       "Los datos de agentes, disponibilidad y precios se leen de la base de datos en cada solicitud, por lo que siempre están actualizados.",
     rules: [
       "Reglas:",
-      "- Responde en el idioma del usuario.",
       "- Usa markdown: **negrita** para nombres y puntos clave, listas con •.",
       "- Sé conciso y concreto: nombra el agente adecuado y qué hace.",
       "- Nunca inventes agentes, precios o funciones más allá de esta información.",
@@ -133,7 +131,6 @@ const LABELS: Record<Locale, PromptLabels> = {
       "Agent-, Verfügbarkeits- und Preisdaten werden bei jeder Anfrage aus der Datenbank gelesen und sind daher immer aktuell.",
     rules: [
       "Regeln:",
-      "- Antworte in der Sprache des Nutzers.",
       "- Verwende Markdown: **fett** für Namen und Kernpunkte, Aufzählungen mit •.",
       "- Sei präzise und konkret: nenne den passenden Agenten und seine Aufgabe.",
       "- Erfinde niemals Agenten, Preise oder Funktionen über diese Informationen hinaus.",
@@ -157,7 +154,6 @@ const LABELS: Record<Locale, PromptLabels> = {
       "Les données d'agents, de disponibilité et de tarifs sont lues depuis la base de données à chaque requête, donc toujours à jour.",
     rules: [
       "Règles :",
-      "- Répondez dans la langue de l'utilisateur.",
       "- Utilisez le markdown : **gras** pour les noms et points clés, listes à puces avec •.",
       "- Soyez concis et concret : nommez le bon agent et ce qu'il fait.",
       "- N'inventez jamais d'agents, tarifs ou fonctionnalités au-delà de ces informations.",
@@ -311,6 +307,10 @@ export async function buildPlatformSystemPrompt(
     "",
     verticalLine,
     labels.liveNote,
+    // Lingua delle risposte: la politica condivisa con gli agenti
+    // (lingua del messaggio, altrimenti lingua della piattaforma).
+    "",
+    languageDirective(locale),
   ];
 
   return sections.join("\n");

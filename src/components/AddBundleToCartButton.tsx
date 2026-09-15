@@ -16,8 +16,8 @@ export default function AddBundleToCartButton({
   className?: string;
 }) {
   const { addBundle, isBundleInCart } = useCart();
-  const { locale } = useLanguage();
-  const isIt = locale === "it";
+  const { dict } = useLanguage();
+
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const inCart = isBundleInCart(bundleSlug);
@@ -39,7 +39,7 @@ export default function AddBundleToCartButton({
         className={`inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 ${className}`}
       >
         <Check size={15} className="text-emerald-400" />
-        {isIt ? "Nel carrello" : "In cart"}
+        {dict.cartPage.inCart}
       </span>
     );
   }
@@ -57,13 +57,7 @@ export default function AddBundleToCartButton({
       ) : (
         <ShoppingCart size={15} className="transition-transform group-hover:scale-110" />
       )}
-      {done
-        ? isIt
-          ? "Aggiunto!"
-          : "Added!"
-        : isIt
-          ? "Aggiungi bundle al carrello"
-          : "Add bundle to cart"}
+      {done ? dict.agentDetail.added : dict.agentDetail.addBundleToCart}
     </button>
   );
 }

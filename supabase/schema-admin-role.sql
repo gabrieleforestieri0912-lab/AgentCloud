@@ -12,7 +12,7 @@
 --      schema-waitlist-beta-access.sql only allowed member/beta_tester/
 --      internal_qa, so writing 'admin' used to fail on the check constraint;
 --   2. seeds 'admin' for the accounts that got in before the launch instant
---      (2026-09-15T14:00:00Z, i.e. LAUNCH_AT in src/lib/waitlist-constants.ts);
+--      (2026-10-01T14:00:00Z, i.e. LAUNCH_AT in src/lib/waitlist-constants.ts);
 --   3. stops self-promotion: profiles are written by the app with the user's own
 --      token, and Supabase grants UPDATE on every column by default, so `role`
 --      has to be excluded explicitly, otherwise any logged-in user could set
@@ -56,7 +56,7 @@ update public.profiles
 set role = 'admin'
 where role <> 'admin'
   and auth_method_completed = true
-  and created_at < '2026-09-15T14:00:00Z';
+  and created_at < '2026-10-01T14:00:00Z';
 
 -- -----------------------------------------------------------------------------
 -- 3. Stop self-promotion via PostgREST

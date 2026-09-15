@@ -115,7 +115,7 @@ export default function ExportReportButton({
         onClick={handlePdfExport}
         disabled={exporting === "pdf"}
         className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
-        title="Esporta PDF"
+        title={dict.dashboardExportBar.exportPdf}
       >
         {exporting === "pdf" ? (
           <Loader2 size={12} className="animate-spin" />
@@ -132,7 +132,7 @@ export default function ExportReportButton({
         onClick={handleCsvExport}
         disabled={exporting === "csv"}
         className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
-        title="Esporta per Looker Studio"
+        title={dict.dashboardExportBar.exportLookerTitle}
       >
         {exporting === "csv" ? (
           <Loader2 size={12} className="animate-spin" />

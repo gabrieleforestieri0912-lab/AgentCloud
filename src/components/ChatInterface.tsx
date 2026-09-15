@@ -1093,28 +1093,18 @@ export default function ChatInterface({
         <div data-onboard="conversations" className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
           <div className="flex items-center justify-between px-3 py-2">
             <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-              {showArchived ? (locale === "it" ? "Archiviate" : "Archived") : dict.chat.conversations}
+              {showArchived ? dict.chat.archived : dict.chat.conversations}
             </p>
             <button
               onClick={() => setShowArchived((v) => !v)}
               className="text-[10px] font-bold text-neutral-500 hover:text-white transition-all"
             >
-              {showArchived
-                ? locale === "it"
-                  ? "Attive"
-                  : "Active"
-                : locale === "it"
-                ? "Archiviate"
-                : "Archived"}
+              {showArchived ? dict.chat.activeTab : dict.chat.archived}
             </button>
           </div>
           {conversations.filter((c) => showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at).length === 0 ? (
             <p className="text-xs text-neutral-600 px-3 py-6 text-center">
-              {showArchived
-                ? locale === "it"
-                  ? "Nessuna conversazione archiviata"
-                  : "No archived conversations"
-                : dict.chat.noConversations}
+              {showArchived ? dict.chat.noArchivedConversations : dict.chat.noConversations}
             </p>
           ) : (
             conversations
@@ -1166,14 +1156,14 @@ export default function ChatInterface({
                     <button
                       onClick={(e) => { e.stopPropagation(); startRename(conv.id, conv.title); }}
                       className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
-                      title={locale === "it" ? "Rinomina" : "Rename"}
+                      title={dict.chat.rename}
                     >
                       <Pencil size={12} />
                     </button>
                     <button
                       onClick={(e) => handleArchive(e, conv.id)}
                       className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
-                      title={conv.archived_at ? (locale === "it" ? "Ripristina" : "Restore") : (locale === "it" ? "Archivia" : "Archive")}
+                      title={conv.archived_at ? dict.chat.restore : dict.chat.archiveAction}
                     >
                       {conv.archived_at ? <RotateCcw size={12} /> : <Archive size={12} />}
                     </button>
@@ -1262,14 +1252,14 @@ export default function ChatInterface({
                     className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <Settings size={12} />
-                    {locale === "it" ? "Impostazioni" : "Settings"}
+                    {dict.navbar.settings}
                   </Link>
                   <Link
                     href="/cart"
                     className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <ShoppingCart size={12} />
-                    {locale === "it" ? "Carrello" : "Cart"}
+                    {dict.sidebarAccount.cart}
                   </Link>
                   <Link
                     href="/dashboard"
@@ -1287,7 +1277,7 @@ export default function ChatInterface({
                   className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2.5 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
                 >
                   <LogOut size={12} />
-                  {locale === "it" ? "Esci" : "Sign out"}
+                  {dict.sidebarAccount.signOut}
                 </button>
               </div>
             )}
@@ -1308,7 +1298,7 @@ export default function ChatInterface({
           <button
             onClick={() => setMobileSidebarOpen(true)}
             className="lg:hidden fixed bottom-6 left-4 z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
-            title="Open sidebar"
+            title={dict.chat.openSidebar}
           >
             <MessageSquare size={18} className="text-white" />
           </button>
@@ -1338,7 +1328,7 @@ export default function ChatInterface({
                   onClick={() => setShowAgentPicker((v) => !v)}
                   aria-expanded={showAgentPicker}
                   aria-haspopup="listbox"
-                  title={locale === "it" ? "Cambia agente" : "Change agent"}
+                  title={dict.chat.changeAgent}
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 transition-all hover:bg-white/10"
                 >
                   {selectedAgents.length > 1 ? (
@@ -1383,19 +1373,17 @@ export default function ChatInterface({
                 <>
                   <button
                     type="button"
-                    aria-label={locale === "it" ? "Chiudi" : "Close"}
+                    aria-label={dict.chat.close}
                     className="fixed inset-0 z-40 cursor-default"
                     onClick={() => setShowAgentPicker(false)}
                   />
                   <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl">
                     <p className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                      {locale === "it" ? "Agenti nella chat" : "Agents in this chat"}
+                      {dict.chat.agentsInChat}
                     </p>
                     {selectableAgents.length === 0 ? (
                       <p className="px-2 py-2 text-xs text-neutral-500">
-                        {locale === "it"
-                          ? "Nessun agente disponibile: aggiungili dal marketplace."
-                          : "No agents available: add them from the marketplace."}
+                        {dict.chat.noAgentsAvailable}
                       </p>
                     ) : (
                       <div className="max-h-72 overflow-y-auto">
@@ -1445,9 +1433,7 @@ export default function ChatInterface({
               <div>
                 <h2 className="text-lg font-bold text-white mb-1">{dict.chat.tools}</h2>
                 <p className="text-sm text-neutral-400">
-                  {locale === "it"
-                    ? "Collega AgentCloud ai tuoi strumenti. Ogni integrazione viene gestita dall'agente corrispondente."
-                    : "Connect AgentCloud to your tools. Each integration is managed by its corresponding agent."}
+                  {dict.chat.toolsDescription}
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1462,7 +1448,7 @@ export default function ChatInterface({
                     </div>
                     <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
                       <CheckCircle2 size={10} />
-                      {locale === "it" ? "Attivo" : "Active"}
+                      {dict.common.active}
                     </span>
                   </div>
                 ))}
@@ -1470,7 +1456,7 @@ export default function ChatInterface({
               {INTEGRATIONS.filter((i) => !i.available).length > 0 && (
                 <>
                   <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider">
-                    {locale === "it" ? "Prossimamente" : "Coming soon"}
+                    {dict.chat.integrationSoon}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {INTEGRATIONS.filter((i) => !i.available).map((integ) => (
@@ -1484,7 +1470,7 @@ export default function ChatInterface({
                         </div>
                         <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-500/10 px-2 py-0.5 text-[10px] font-bold text-neutral-500">
                           <Clock3 size={10} />
-                          {locale === "it" ? "In arrivo" : "Soon"}
+                          {dict.chat.integrationArriving}
                         </span>
                       </div>
                     ))}
@@ -1502,9 +1488,7 @@ export default function ChatInterface({
               <div>
                 <h2 className="text-lg font-bold text-white mb-1">{dict.chat.agents}</h2>
                 <p className="text-sm text-neutral-400">
-                  {locale === "it"
-                    ? "Sfoglia il catalogo agenti e acquista quelli di cui hai bisogno."
-                    : "Browse the agent catalog and purchase the ones you need."}
+                  {dict.chat.agentsDescription}
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1625,11 +1609,11 @@ export default function ChatInterface({
               {/* Prompt marketplace per utenti senza agenti */}
               {availableAgents.filter((a) => a.slug !== "").length === 0 && (
                 <p className="mt-4 text-xs text-neutral-500 text-center">
-                  {locale === "it" ? "Oppure " : "Or "}
+                  {dict.chat.orBrowsePrefix}
                   <Link href="/agents" className="text-brand-400 hover:text-brand-300 underline underline-offset-2 transition-colors">
-                    {locale === "it" ? "sfoglia il marketplace" : "browse the marketplace"}
+                    {dict.chat.browseMarketplace}
                   </Link>
-                  {locale === "it" ? " per scoprire gli agenti disponibili." : " to discover available agents."}
+                  {dict.chat.discoverAgentsSuffix}
                 </p>
               )}
             </motion.div>
@@ -1783,7 +1767,7 @@ export default function ChatInterface({
                       <span className="h-2 w-2 rounded-full bg-brand-400 animate-pulse" />
                     </span>
                     <span className="flex items-center gap-1.5 flex-wrap">
-                      {locale === "it" ? "Sta lavorando su" : "Working on"}
+                      {dict.chat.workingOn}
                       <span className="flex items-center gap-1 flex-wrap">
                         {activeWorkingApps.map((a) => (
                           <span key={a.name} className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs">
@@ -1809,7 +1793,7 @@ export default function ChatInterface({
                 </div>
                 {activeWorkingApps.length > 0 && (
                   <p className="mt-1.5 text-xs font-medium text-neutral-500">
-                    {locale === "it" ? "L'agente sta operando sull'app collegata" : "Agent is working on the connected app"}
+                    {dict.chat.workingOnConnectedApp}
                   </p>
                 )}
               </div>

@@ -188,33 +188,3 @@ export function generateEmbedSnippet(baseUrl: string, config: WidgetConfig): str
   return `<!-- Inizio Widget AgentCloud -->\n<script src="${scriptUrl}" async defer></script>\n<!-- Fine Widget AgentCloud -->`;
 }
 
-/**
- * Genera il codice componente React/Next.js per integrare direttamente l'agente
- * all'interno di un'applicazione web moderna.
- *
- * @param config Configurazione del widget
- * @returns Codice sorgente TypeScript/JSX per l'integrazione Next.js
- */
-export function generateNextJsSnippet(config: WidgetConfig): string {
-  const props: string[] = [`slug="${config.slug}"`];
-
-  if (config.tenantId && config.tenantId !== "default") {
-    props.push(`tenantId="${config.tenantId}"`);
-  }
-  if (config.title) {
-    props.push(`title="${config.title}"`);
-  }
-  if (config.primaryColor && config.primaryColor !== "#038bfe") {
-    props.push(`primaryColor="${config.primaryColor}"`);
-  }
-  if (config.position && config.position !== "bottom-right") {
-    props.push(`position="${config.position}"`);
-  }
-  if (config.initialMessage) {
-    props.push(`initialMessage="${config.initialMessage.replace(/"/g, '\\"')}"`);
-  }
-
-  const propsString = props.length > 2 ? `\n  ${props.join("\n  ")}\n` : ` ${props.join(" ")} `;
-
-  return `import { AgentChatWidget } from "@/components/AgentChatWidget";\n\nexport default function ChatSupport() {\n  return (\n    <AgentChatWidget${propsString}/>\n  );\n}`;
-}
