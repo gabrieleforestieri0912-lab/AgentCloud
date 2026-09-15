@@ -85,44 +85,34 @@ export default async function IntegrationsPage() {
             <p className="mx-auto mt-3 max-w-2xl text-lg leading-8 text-neutral-400">
               {dict.integrationsPage.integrationsDesc}
             </p>
-            <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-brand-500/20 bg-brand-500/5 p-4 text-left">
-              <p className="text-center text-sm font-bold text-white">Configurazione semplice — 3 passi, 1-2 minuti per app.</p>
-              <ol className="mt-3 grid gap-3 text-sm leading-6 text-neutral-300 sm:grid-cols-3">
-                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">1</span><span><b className="text-white">Scegli</b> l’app (es. Shopify)</span></li>
-                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">2</span><span><b className="text-white">Connetti</b> con un click e autorizza</span></li>
-                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">3</span><span><b className="text-white">Usa</b> l’agente — è già pronto</span></li>
-              </ol>
-              <p className="mt-2 text-center text-xs text-neutral-400">Dal login vai su Dashboard → Integrazioni per gestire tutto. Token cifrati, disconnessione in un click.</p>
-            </div>
             <div className="mt-6 flex justify-center gap-3">
               <Link
-                href="/dashboard/integrations"
+                href="/agents"
                 className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-400"
               >
-                Vai a Dashboard Integrazioni <ArrowRight size={14} />
+                {dict.integrationsPage.browseAgents} <ArrowRight size={14} />
               </Link>
               <Link                 href="/contact"
                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10"
                >
                  <Sparkles size={14} /> {dict.integrationsPage.requestDemo}
-              </Link>
+               </Link>
             </div>
+            <p className="mx-auto mt-3 max-w-2xl text-xs text-neutral-500">Scorri sotto: ogni card ti guida in 3 passi — scegli, clicca Connetti, usa l’agente. Nessun bottone guida a parte.</p>
           </div>
 
           <div className="mb-8 flex items-center gap-2 text-sm font-bold text-white">
             <CheckCircle2 size={16} className="text-emerald-400" />
             {`${dict.integrationsPage.availableNow} · ${available.length}`}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {available.map((app) => {
               const isConnected = connectedProviders[app.brand.toLowerCase()] || false;
               return (
-                <Link
+                <div
                   key={app.brand}
-                  href={app.agentSlug ? `/agents/${app.agentSlug}` : "/agents"}
-                  className="group relative rounded-xl border border-white/5 bg-neutral-900 p-5 hover:border-brand-500/30 hover:bg-neutral-900/80 transition-colors"
+                  className="relative rounded-xl border border-white/5 bg-neutral-900 p-5 flex flex-col"
                 >
-                  {/* Connection status badge */}
                   {user && (
                     <div className="absolute right-3 top-3">
                       {isConnected ? (
@@ -138,16 +128,25 @@ export default async function IntegrationsPage() {
                       )}
                     </div>
                   )}
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5">
                     <BrandLogo slug={app.brand} size={22} />
                   </div>
-                  <h3 className="font-bold text-white group-hover:text-brand-300">{app.name}</h3>
+                  <h3 className="mt-3 font-bold text-white">{app.name}</h3>
                   <p className="text-xs font-semibold text-neutral-500">{app.category}</p>
                   <p className="mt-2 text-sm leading-6 text-neutral-400">{app.description}</p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand-400">
-                    {dict.integrationsPage.goToAgent} <ArrowRight size={12} />
-                  </span>
-                </Link>
+                  {/* Guida integrata nel flusso — 3 passi sempre visibili, non un bottone a parte */}
+                  <ol className="mt-3 space-y-1.5 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                    <li className="flex gap-2 text-xs leading-5 text-neutral-300"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-bold text-neutral-900">1</span><span>Scegli {app.name}</span></li>
+                    <li className="flex gap-2 text-xs leading-5 text-neutral-300"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-500 text-[10px] font-bold text-white">2</span><span>Clicca sotto e autorizza (2 min)</span></li>
+                    <li className="flex gap-2 text-xs leading-5 text-neutral-400"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 bg-neutral-800 text-[10px] font-bold">3</span><span>Torna qui: usa l’agente</span></li>
+                  </ol>
+                  <Link
+                    href={user ? "/dashboard/integrations" : (app.agentSlug ? `/agents/${app.agentSlug}` : "/agents")}
+                    className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400"
+                  >
+                    {isConnected ? "Gestisci" : "Connetti in 2 minuti"} <ArrowRight size={14} />
+                  </Link>
+                </div>
               );
             })}
           </div>

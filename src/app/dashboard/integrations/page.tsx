@@ -59,16 +59,23 @@ export default async function DashboardIntegrationsPage({
             <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-400">
               {dict.dashboardIntegrations.desc}
             </p>
-            {/* Guida rapida 3 passi */}
-            <div className="mt-4 rounded-2xl border border-brand-500/20 bg-brand-500/5 p-4">
-              <p className="text-sm font-bold text-white">Come si collega? 3 passi, 1-2 minuti — senza codice.</p>
-              <ol className="mt-2 grid gap-2 text-sm leading-6 text-neutral-300 sm:grid-cols-3">
-                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">1</span> <span><b className="text-white">Scegli</b> lo strumento che usi (Shopify, Gmail, Slack...)</span></li>
-                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">2</span> <span><b className="text-white">Clicca Connetti</b> e autorizza nella pagina ufficiale (Google, Slack, ecc.)</span></li>
-                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">3</span> <span><b className="text-white">Torna qui</b>: vedrai “Connesso”. Prova subito l’agente in chat.</span></li>
-              </ol>
-              <p className="mt-2 text-xs text-neutral-400">I token sono cifrati e mai visibili nel browser. Puoi scollegare quando vuoi con un click.</p>
-            </div>
+            {/* Progress integrato — non un bottone guida a parte, ma il flusso stesso ti guida */}
+            {(() => {
+              const connectedCount = rows.filter((r) => r.status === "connected").length + (shopifyConnections.some((c) => c.connected) ? 1 : 0) + (googleConnection?.connected ? 1 : 0);
+              const total = 8; // Shopify, Gmail, Calendar, Stripe, HubSpot, Notion, Sheets, Slack
+              const pct = Math.round((connectedCount / total) * 100);
+              return (
+                <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
+                  <div className="hidden h-2 flex-1 overflow-hidden rounded-full bg-white/10 sm:block">
+                    <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                  <p className="text-sm font-semibold text-white">
+                    {connectedCount === 0 ? "Inizia dal primo: scegli un'app qui sotto e clicca Connetti — 2 minuti, senza codice." : connectedCount < total ? `${connectedCount} di ${total} connesse · prossimo: clicca Connetti sulla prossima card` : "Tutte connesse — prova gli agenti in chat."}
+                  </p>
+                  <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-white">{connectedCount}/{total}</span>
+                </div>
+              );
+            })()}
           </div>
 
           {(sp.status || sp.integration) && (
