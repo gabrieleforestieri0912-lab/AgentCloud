@@ -235,18 +235,19 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
   const closeForm = () => setShowForm(false);
 
   return (
-    <div className="relative overflow-x-hidden bg-neutral-950">
-      {/* Global background */}
+    <div className="relative overflow-x-hidden bg-[#1e1e24]">
+      {/* Global background — schiarito: base meno nera, radiali più visibili */}
       <div className="pointer-events-none fixed inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-neutral-950 to-black" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#25252d] via-[#1e1e24] to-[#121214]" />
         <div
-          className="absolute inset-0 opacity-[0.35]"
+          className="absolute inset-0 opacity-[0.55]"
           style={{
             backgroundImage:
-              "radial-gradient(circle at 15% 10%, rgba(3,139,254,.18), transparent 32%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.14), transparent 28%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.12), transparent 36%)",
+              "radial-gradient(circle at 15% 10%, rgba(3,139,254,.22), transparent 34%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.16), transparent 30%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.14), transparent 38%)",
           }}
         />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/[0.03]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/25 to-transparent" />
       </div>
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
