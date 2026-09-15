@@ -24,6 +24,7 @@ import Image from "next/image";
 import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
 import CountdownTimer from "@/components/CountdownTimer";
 import LanguageToggle from "@/components/LanguageToggle";
+import BrandLogo from "@/components/BrandLogo";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createClient } from "@/lib/supabase/client";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -337,6 +338,91 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             </div>
           </div>
         </motion.div>
+      </section>
+
+      {/* PIATTAFORMA — cos'è in 3 pillastri */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-widest text-neutral-400">La piattaforma</span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Automatizza senza scrivere codice</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-neutral-400">AgentCloud è un marketplace di agenti AI autonomi: scegli, colleghi i tuoi strumenti e lasci che lavorino per te — 24/7, su WhatsApp, Email, Shopify e oltre.</p>
+        </div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          {[
+            { icon: Zap, title: "Agenti autonomi", desc: "Ogni agente ha un obiettivo chiaro: vendere, rispondere, prenotare, fatturare. Decidono e agiscono da soli." },
+            { icon: Users, title: "Integrato ai tuoi tool", desc: "Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot — colleghi in 2 minuti." },
+            { icon: ShieldCheck, title: "Senza codice, sicuro", desc: "Setup guidato, token cifrati, GDPR-ready. Nessun dato per training." },
+          ].map((f) => (
+            <div key={f.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-pink-500 text-white"><f.icon className="h-5 w-5" /></div>
+              <h3 className="mt-3 text-sm font-bold text-white">{f.title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-neutral-400">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* AGENTI — cosa fanno */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-widest text-neutral-400">Agenti in azione</span>
+            <h2 className="mt-3 text-xl font-extrabold text-white sm:text-2xl">Scegli l’agente, lui fa il resto</h2>
+          </div>
+          <button onClick={openForm} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Vedi marketplace <ArrowRight className="h-4 w-4" /></button>
+        </div>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            { name: "Shopify Agent", role: "E-commerce", desc: "Cerca prodotti, crea carrelli, verifica ordini e spedizioni.", points: ["Ricerca catalogo", "Link carrello", "Stato ordine"] },
+            { name: "Email Manager", role: "Inbox", desc: "Smista, priorizza e prepara bozze. Tu approvi con un click.", points: ["Classifica email", "Bozze pronte", "Follow-up"] },
+            { name: "Lead Capture", role: "Marketing", desc: "Cattura lead dal sito, arricchisce e avvisa Slack/HubSpot.", points: ["Form → CRM", "Arricchimento", "Notifica vendite"] },
+            { name: "Support Agent", role: "Assistenza", desc: "Risponde a domande su prodotti e ordini 24/7.", points: ["FAQ auto", "Ordini", "Resi"] },
+            { name: "Calendar Booking", role: "Agenda", desc: "Propone slot, prenota e invia inviti con reminder.", points: ["Disponibilità", "Prenota", "Reminder"] },
+            { name: "Finance Manager", role: "Pagamenti", desc: "Fatture, cashflow da CSV/Stripe, solleciti gentili.", points: ["Fatture", "Incassi", "Solleciti"] },
+          ].map((a) => (
+            <div key={a.name} className="rounded-2xl border border-white/10 bg-neutral-900/60 p-5">
+              <div className="text-xs font-bold tracking-widest text-brand-400">{a.role}</div>
+              <h3 className="mt-1 text-sm font-bold text-white">{a.name}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-neutral-400">{a.desc}</p>
+              <ul className="mt-3 space-y-1">
+                {a.points.map((p) => (<li key={p} className="flex items-center gap-1.5 text-xs font-medium text-emerald-300"><Check className="h-3.5 w-3.5" />{p}</li>))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* INTEGRAZIONI — dove vivi già */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <div className="rounded-3xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-semibold tracking-widest text-brand-400">Integrazioni</div>
+              <h3 className="mt-1 text-lg font-bold text-white">Collegato a ciò che usi già</h3>
+              <p className="mt-1 text-sm text-neutral-400">Colleghi in 2 minuti, token cifrati, disconnessione 1 click.</p>
+            </div>
+            <button onClick={openForm} className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black">Collega il primo →</button>
+          </div>
+          <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {[
+              { name: "Shopify", brand: "shopify" },
+              { name: "Gmail", brand: "gmail" },
+              { name: "Slack", brand: "slack" },
+              { name: "Notion", brand: "notion" },
+              { name: "HubSpot", brand: "hubspot" },
+              { name: "Sheets", brand: "googlesheets" },
+            ].map((it) => (
+              <div key={it.name} className="flex flex-col items-center gap-2 rounded-2xl border border-white/5 bg-white/[0.03] px-2 py-4 text-center">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5">
+                  <BrandLogo slug={it.brand} size={20} />
+                </div>
+                <span className="text-xs font-semibold text-white">{it.name}</span>
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">1 click</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-center text-xs text-neutral-500">E altri in arrivo: WhatsApp, WooCommerce, PayPal, Stripe, TikTok, Analytics…</p>
+        </div>
       </section>
 
       {/* MODAL FORM — appare su click bottoni */}
