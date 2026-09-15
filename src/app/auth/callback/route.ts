@@ -1,26 +1,35 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
+import { ensureWaitlistEntry } from "@/lib/waitlist";
+import { hasLaunched } from "@/lib/waitlist-constants";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const BYPASS_ENABLED = process.env.ENABLE_WAITLIST_BETA_BYPASS === "true";
+
+const COOKIE_OPTIONS = {
+  path: "/",
+  maxAge: 60 * 60 * 24 * 365,
+  sameSite: "lax" as const,
+};
 
 /**
  * GET /auth/callback?code=...&next=/dashboard
  *
  * Qui arrivano i link OAuth (Google) e di conferma email di Supabase con un
  * `code` monouso e a breve scadenza (flusso PKCE). Il codice va scambiato con
- * una sessione prima che l'utente possa accedere alle pagine protette — senza
- * questa route la sessione non viene mai creata e l'utente rimbalza su /login.
+ * una sessione prima che l'utente possa accedere alle pagine protette.
  *
- * Beta access flow: after session is created, check for waitlist_session cookie.
- * If present, call complete-waitlist-redemption to assign beta role.
+ * Se l'accesso proviene dalla waitlist (o se la piattaforma è in fase pre-lancio),
+ * l'utente viene iscritto automaticamente alla waitlist e reindirizzato a /waitlist
+ * con i cookie di stato coda valorizzati.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
+  const refFromParam = searchParams.get("ref");
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=auth_callback`);
@@ -36,11 +45,13 @@ export async function GET(request: Request) {
   // --- Set auth_method_completed = true for this user ---
   // Google OAuth = full auth method, so mark as completed.
   let userId: string | null = null;
+  let userEmail: string | null = null;
   let hasAgents = false;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       userId = user.id;
+      userEmail = user.email ?? null;
       await supabase
         .from("profiles")
         .update({ auth_method_completed: true })
@@ -58,6 +69,33 @@ export async function GET(request: Request) {
     // Non-blocking: auth gate will catch on next request if needed
   }
 
+  // --- Waitlist flow: se l'utente proviene dalla waitlist o il lancio non è ancora avvenuto ---
+  const isWaitlistTarget = next === "/waitlist" || next.startsWith("/waitlist");
+  const isPreLaunch = !hasLaunched();
+
+  if (userEmail && (isWaitlistTarget || isPreLaunch)) {
+    const cookieHeader = request.headers.get("cookie") || "";
+    const refMatch = cookieHeader.match(/ac_wl_ref=([^;]+)/);
+    const refFromCookie = refMatch ? decodeURIComponent(refMatch[1]) : null;
+    const effectiveRef = refFromParam || refFromCookie;
+
+    try {
+      await ensureWaitlistEntry(userEmail, effectiveRef);
+    } catch (e) {
+      console.error("[auth/callback] Errore salvataggio waitlist da Google:", e);
+    }
+
+    const response = NextResponse.redirect(`${origin}/waitlist`);
+    response.cookies.set("ac_wl_joined", "1", COOKIE_OPTIONS);
+    response.cookies.set("ac_wl_email", userEmail.toLowerCase(), COOKIE_OPTIONS);
+
+    // Pulisci eventuale cookie referral temporaneo
+    if (cookieHeader.includes("ac_wl_ref=")) {
+      response.cookies.set("ac_wl_ref", "", { maxAge: 0, path: "/", sameSite: "lax" });
+    }
+    return response;
+  }
+
   // --- Beta access: complete waitlist redemption if pending session cookie exists ---
   if (BYPASS_ENABLED) {
     const cookieHeader = request.headers.get("cookie") || "";
@@ -66,7 +104,6 @@ export async function GET(request: Request) {
 
     if (sessionToken) {
       try {
-        // Get the access token for auth header
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
           await fetch(`${SUPABASE_URL}/functions/v1/complete-waitlist-redemption`, {
@@ -80,7 +117,6 @@ export async function GET(request: Request) {
           });
         }
       } catch (e) {
-        // Non-blocking: if redemption fails, user still has normal account
         console.error("Waitlist redemption failed (non-blocking):", e);
       }
     }
@@ -110,3 +146,4 @@ export async function GET(request: Request) {
 
   return response;
 }
+

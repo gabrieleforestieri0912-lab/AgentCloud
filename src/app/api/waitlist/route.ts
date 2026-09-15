@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
-import { MAX_SPOTS, getRemainingSpots, provisionAuthUser } from "@/lib/waitlist";
+import { MAX_SPOTS, generateReferralCode, getQueueInfo, getTotalCount, provisionAuthUser } from "@/lib/waitlist";
 import { hasLaunched } from "@/lib/waitlist-constants";
 import { logAudit } from "@/lib/audit";
 import {
@@ -17,13 +17,9 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const BYPASS_ENABLED = process.env.ENABLE_WAITLIST_BETA_BYPASS === "true";
 
-// Massimo 3 registrazioni per IP per ora (le email sono ulteriormente deduplicate a livello DB).
 const WAITLIST_LIMIT = 3;
-
-// Dimensione massima consentita per il corpo della richiesta JSON (2 KB = 2048 byte)
 const MAX_PAYLOAD_BYTES = 2048;
 
-// Cookie di stato per ricordare l'avvenuta iscrizione alla waitlist
 const JOINED_COOKIE = "ac_wl_joined";
 const JOINED_EMAIL_COOKIE = "ac_wl_email";
 
@@ -35,25 +31,47 @@ const COOKIE_OPTIONS = {
 
 export async function GET() {
   try {
-    const remaining = await getRemainingSpots();
-
+    const total = await getTotalCount().catch(() => 0);
     let joined = false;
     let verified = false;
-    const joinedEmail = (await cookies()).get(JOINED_EMAIL_COOKIE)?.value;
-    if (joinedEmail) {
-      const supabase = createAdminClient() ?? (await createClient());
-      const { data, error } = await supabase
-        .from("waitlist")
-        .select("id")
-        .eq("email", joinedEmail)
-        .maybeSingle();
-      if (!error) {
-        verified = true;
-        joined = Boolean(data);
+    let queue: Awaited<ReturnType<typeof getQueueInfo>> = null;
+    let joinedEmail = (await cookies()).get(JOINED_EMAIL_COOKIE)?.value;
+    if (!joinedEmail) {
+      try {
+        const client = await createClient();
+        const { data: { user } } = await client.auth.getUser();
+        if (user?.email) {
+          joinedEmail = user.email;
+        }
+      } catch {
+        // non-blocking
       }
     }
 
-    return NextResponse.json({ maxSpots: MAX_SPOTS, remaining, joined, verified });
+    if (joinedEmail) {
+      const supabase = createAdminClient() ?? (await createClient());
+      const { data } = await supabase
+        .from("waitlist")
+        .select("id")
+        .eq("email", joinedEmail.toLowerCase())
+        .maybeSingle();
+      verified = true;
+      joined = Boolean(data);
+      if (joined) {
+        queue = await getQueueInfo(joinedEmail).catch(() => null);
+      }
+    }
+
+    return NextResponse.json({
+      maxSpots: MAX_SPOTS,
+      remaining: Math.max(MAX_SPOTS - total, 0), // legacy compat
+      total,
+      joined,
+      verified,
+      position: queue?.position ?? null,
+      referralCode: queue?.referralCode ?? null,
+      referralCount: queue?.referralCount ?? 0,
+    });
   } catch (err) {
     console.error("Failed to read waitlist state:", err);
     return NextResponse.json(
@@ -63,24 +81,10 @@ export async function GET() {
   }
 }
 
-/**
- * Handler POST per l'iscrizione alla Waitlist o riscatto del codice di accesso.
- *
- * Difese di sicurezza implementate:
- * 1. Rate Limiting distribuito per IP contro attacchi DoS o spam.
- * 2. Controllo dimensione massima del payload (< 2 KB) per evitare buffer overflow.
- * 3. Trappola Honeypot (`website_hp`): neutralizza istantaneamente i bot senza toccare il DB.
- * 4. Sanitizzazione e validazione RFC 5321 (blocco byte nulli, newline CRLF, caratteri XSS).
- * 5. Prompt Injection detector: scarta payload progettati per confondere modelli LLM o log interni.
- * 6. Audit logging degli eventi di sicurezza.
- */
 export async function POST(request: Request) {
   const clientIp = getClientIp(request);
 
   try {
-    // -------------------------------------------------------------------------
-    // 1. Controllo dimensione del corpo della richiesta (Anti-DoS)
-    // -------------------------------------------------------------------------
     const contentLength = Number(request.headers.get("content-length") || 0);
     if (contentLength > MAX_PAYLOAD_BYTES) {
       logAudit("waitlist_payload_too_large", { ip: clientIp, size: contentLength });
@@ -100,10 +104,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // -------------------------------------------------------------------------
-    // 2. Trappola Honeypot (Anti-Bot)
-    // Se un bot ha popolato il campo nascosto `website_hp`, blocchiamo la richiesta
-    // -------------------------------------------------------------------------
     if (isHoneypotTriggered(body)) {
       logAudit("waitlist_bot_blocked", { ip: clientIp });
       return NextResponse.json(
@@ -113,10 +113,9 @@ export async function POST(request: Request) {
     }
 
     const rawEmail = body.email;
+    const rawRef = typeof body.ref === "string" ? body.ref.trim().toLowerCase().slice(0, 32) : null;
+    const rawReferredBy = typeof body.referred_by === "string" ? body.referred_by.trim().toLowerCase().slice(0, 32) : rawRef;
 
-    // -------------------------------------------------------------------------
-    // 3. Validazione e sanitizzazione rigorosa di email / codice di accesso
-    // -------------------------------------------------------------------------
     const validation = validateAndSanitizeEmail(rawEmail, true);
     if (!validation.valid || !validation.email) {
       logAudit("waitlist_invalid_input", { ip: clientIp, reason: validation.error });
@@ -126,9 +125,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Caso A: L'utente ha inserito un codice di accesso — valida via Edge Function,
-    // crea pending session, imposta cookie e reindirizza al login/registrazione.
-    // Il rate limiting NON si applica ai codici accesso (beta bypass).
     if (validation.isAccessCode) {
       if (!BYPASS_ENABLED) {
         logAudit("waitlist_access_code_disabled", { ip: clientIp });
@@ -137,21 +133,17 @@ export async function POST(request: Request) {
           { status: 403 },
         );
       }
-
       logAudit("waitlist_access_code_validating", { ip: clientIp });
-
       try {
         const validateRes = await fetch(`${SUPABASE_URL}/functions/v1/validate-waitlist-code`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "apikey": SUPABASE_ANON_KEY,
+            apikey: SUPABASE_ANON_KEY,
           },
           body: JSON.stringify({ code: validation.email }),
         });
-
         const validateData = await validateRes.json();
-
         if (!validateRes.ok) {
           logAudit("waitlist_access_code_invalid", { ip: clientIp, error: validateData.error });
           return NextResponse.json(
@@ -159,14 +151,12 @@ export async function POST(request: Request) {
             { status: validateRes.status },
           );
         }
-
         logAudit("waitlist_access_code_valid", { ip: clientIp, role: validateData.role });
-
-        // Set pending session cookie (30 min) and redirect to login
+        const total = await getTotalCount().catch(() => null);
         const res = NextResponse.json({
           success: true,
           accessGranted: true,
-          remaining: await getRemainingSpots().catch(() => null),
+          total,
         });
         res.cookies.set("waitlist_session", validateData.session_token, {
           path: "/",
@@ -184,13 +174,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // -------------------------------------------------------------------------
-    // 3-bis. Lancio avvenuto: la waitlist è chiusa
-    // Le iscrizioni via email non vengono più accettate (410 Gone) e nessun
-    // utente Auth viene creato. Il ramo con il codice di accesso sopra resta
-    // attivo per admin/beta; la pagina /waitlist è già rediretta dal proxy,
-    // quindi questa guardia protegge solo le chiamate dirette all'API.
-    // -------------------------------------------------------------------------
     if (hasLaunched()) {
       logAudit("waitlist_closed", { ip: clientIp });
       return NextResponse.json(
@@ -203,11 +186,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const email = validation.email;
+    const email = validation.email.toLowerCase();
 
-    // -------------------------------------------------------------------------
-    // 4. Rate Limiting per IP (solo per iscrizioni email, NON per codici accesso)
-    // -------------------------------------------------------------------------
     const rl = await rateLimit("waitlist", clientIp, {
       limit: WAITLIST_LIMIT,
       windowMs: RATE_LIMIT_WINDOWS.HOUR_MS,
@@ -220,26 +200,61 @@ export async function POST(request: Request) {
       );
     }
 
-    // -------------------------------------------------------------------------
-    // 5. Inserimento nel Database Supabase con Service Role
-    // -------------------------------------------------------------------------
     const supabase = createAdminClient() ?? (await createClient());
-    const { error: dbError } = await supabase
-      .from("waitlist")
-      .insert({ email });
+
+    // Verifica referral valido (se passato)
+    let referredBy: string | null = null;
+    if (rawReferredBy) {
+      const { data: refRow } = await supabase
+        .from("waitlist")
+        .select("referral_code")
+        .eq("referral_code", rawReferredBy)
+        .maybeSingle();
+      if (refRow) referredBy = rawReferredBy;
+    }
+
+    // Genera referral_code per nuovo iscritto
+    const referralCode = generateReferralCode();
+
+    const insertPayload: Record<string, unknown> = {
+      email,
+      referral_code: referralCode,
+    };
+    if (referredBy) insertPayload.referred_by = referredBy;
+
+    const { error: dbError } = await supabase.from("waitlist").insert(insertPayload);
 
     if (dbError) {
       if (dbError.code === "23505") {
-        // Utente già registrato: self-healing
         await provisionAuthUser(email);
-        const remaining = await getRemainingSpots();
+        const queue = await getQueueInfo(email).catch(() => null);
+        const total = await getTotalCount().catch(() => null);
         const res = NextResponse.json(
-          { error: await apiErrorMessage("alreadyOnWaitlist"), remaining },
+          { error: await apiErrorMessage("alreadyOnWaitlist"), total, position: queue?.position ?? null, referralCode: queue?.referralCode ?? null, referralCount: queue?.referralCount ?? 0 },
           { status: 409 },
         );
         res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
         res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
         return res;
+      }
+      // Fallback se colonne referral non esistono ancora (pre-migrazione): ritenta senza
+      if (/referral_code|referred_by/i.test(dbError.message)) {
+        const { error: retryErr } = await supabase.from("waitlist").insert({ email });
+        if (!retryErr) {
+          await provisionAuthUser(email);
+          const queue = await getQueueInfo(email).catch(() => null);
+          const total = await getTotalCount().catch(() => null);
+          const res = NextResponse.json({
+            success: true,
+            total,
+            position: queue?.position ?? total,
+            referralCode: queue?.referralCode ?? null,
+            referralCount: 0,
+          });
+          res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
+          res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
+          return res;
+        }
       }
       console.error("Failed to store waitlist entry:", dbError);
       return NextResponse.json(
@@ -248,11 +263,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Provisioning dell'utente in Auth
     await provisionAuthUser(email);
+    const queue = await getQueueInfo(email).catch(() => null);
+    const total = await getTotalCount().catch(() => null);
     const res = NextResponse.json({
       success: true,
-      remaining: await getRemainingSpots(),
+      total,
+      position: queue?.position ?? total,
+      referralCode: queue?.referralCode ?? referralCode,
+      referralCount: queue?.referralCount ?? 0,
     });
     res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
     res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);

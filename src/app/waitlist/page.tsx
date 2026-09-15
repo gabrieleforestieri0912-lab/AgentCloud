@@ -1,15 +1,15 @@
 import WaitlistForm from "@/components/WaitlistForm";
-import { MAX_SPOTS, getRemainingSpots } from "@/lib/waitlist";
+import { getTotalCount } from "@/lib/waitlist";
 
-async function getInitialRemaining(): Promise<number> {
+async function getInitialTotal(): Promise<number> {
   try {
-    return await getRemainingSpots();
+    return await getTotalCount();
   } catch {
-    return MAX_SPOTS;
+    return 0;
   }
 }
 
 export default async function WaitlistPage() {
-  const initialRemaining = await getInitialRemaining();
-  return <WaitlistForm initialRemaining={initialRemaining} />;
+  const initialTotal = await getInitialTotal();
+  return <WaitlistForm initialTotal={initialTotal} />;
 }

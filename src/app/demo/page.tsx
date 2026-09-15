@@ -7,14 +7,14 @@ import {
   AlertCircle,
   Loader2,
   Sparkles,
-  ShieldCheck,
-  Zap,
-  BarChart3,
-  Send,
-  CreditCard,
-  LayoutDashboard,
+  PenTool,
   Plug,
+  Clock,
   MessageSquareText,
+  FileText,
+  Wrench,
+  Package,
+  Rocket,
 } from "lucide-react";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
@@ -22,6 +22,8 @@ import Footer from "@/components/Footer";
 import FloatingBrandBubbles, {
   type FloatingBubble,
 } from "@/components/FloatingBrandBubbles";
+import BrandLogo from "@/components/BrandLogo";
+import AgentIcon from "@/components/AgentIcon";
 import { useLanguage } from "@/components/LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 
@@ -41,8 +43,17 @@ const FLOATING_BUBBLES: FloatingBubble[] = [
   { top: "72%", left: "84%", size: "w-10 h-10", brand: "google", delay: "0.5s", anim: "animate-float-reverse" },
 ];
 
-const BENEFIT_ICONS = [Zap, ShieldCheck, BarChart3];
-const STEP_ICONS = [Send, CreditCard, LayoutDashboard, Plug, MessageSquareText];
+const BENEFIT_ICONS = [PenTool, Plug, Clock] as const;
+const STEP_ICONS = [MessageSquareText, FileText, Wrench, Package, Rocket] as const;
+
+// App suggerite per il campo integrazioni — icone ufficiali via BrandLogo
+const SUGGESTED_APPS = ["shopify", "gmail", "slack", "stripe", "notion", "hubspot"] as const;
+const SUGGESTED_AGENTS: { slug: string; icon: "shopping-cart" | "mail" | "headphones" | "bar-chart"; brand?: "shopify" }[] = [
+  { slug: "shopify-agent", icon: "shopping-cart", brand: "shopify" },
+  { slug: "email-manager", icon: "mail" },
+  { slug: "support-agent", icon: "headphones" },
+  { slug: "business-manager", icon: "bar-chart" },
+];
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -57,7 +68,7 @@ export default function DemoPage() {
   const { dict } = useLanguage();
   const benefits = dict.demo.benefits.map((b, i) => ({
     ...b,
-    icon: BENEFIT_ICONS[i] ?? Zap,
+    icon: BENEFIT_ICONS[i] ?? PenTool,
   }));
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
@@ -192,9 +203,16 @@ export default function DemoPage() {
                     alt="AgentCloud"
                     width={18}
                     height={18}
-                    className="text-brand-400"
                   />
                   {dict.demo.whatToExpect}
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  {SUGGESTED_AGENTS.map((a) => (
+                    <span key={a.slug} className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 border border-white/10">
+                      <AgentIcon icon={a.icon} brand={a.brand} size={16} className="text-brand-400" />
+                    </span>
+                  ))}
+                  <span className="text-xs text-neutral-500">+ altri 12 agenti</span>
                 </div>
                 <div className="mt-4 space-y-3">
                   {dict.demo.expectations.map((item) => (
@@ -204,7 +222,7 @@ export default function DemoPage() {
                     >
                       <Check
                         size={16}
-                        className="mt-0.5 text-purple-400 shrink-0"
+                        className="mt-0.5 text-emerald-400 shrink-0"
                       />
                       {item}
                     </div>
@@ -325,6 +343,25 @@ export default function DemoPage() {
                     disabled={success}
                     className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50"
                   />
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs text-neutral-500">Esempi:</span>
+                    {SUGGESTED_APPS.map((slug) => (
+                      <button
+                        key={slug}
+                        type="button"
+                        onClick={() =>
+                          setIntegrations((prev) =>
+                            prev ? `${prev}, ${slug}` : slug
+                          )
+                        }
+                        disabled={success}
+                        className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-neutral-300 transition hover:bg-white/10 disabled:opacity-50"
+                      >
+                        <BrandLogo slug={slug} size={14} />
+                        {slug}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>

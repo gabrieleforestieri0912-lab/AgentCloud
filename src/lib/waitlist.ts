@@ -2,84 +2,28 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_SPOTS } from "@/lib/waitlist-constants";
 
-// Posti totali disponibili in waitlist (rispecchia il tetto gestito via DB ovunque).
+// Posti totali legacy (non più limitante: la waitlist è ora illimitata con posizione in coda).
 export { MAX_SPOTS };
 
+export type QueueInfo = {
+  position: number; // 1-based
+  total: number;
+  referralCode: string | null;
+  referralCount: number;
+};
+
 /**
- * Conta gli utenti che occupano un posto.
- *
- * Perché la fonte autorevole è Supabase Auth (Authentication → Users): ogni
- * utente è una persona che occupa un posto, e cancellare un utente dalla
- * dashboard libera subito il suo posto. La tabella `waitlist` è un log di
- * iscrizione (lista email + rilevamento duplicati), NON la fonte di verità
- * per il contatore.
- *
- * Passando da qui, vengono eliminate anche le righe waitlist la cui email non
- * ha più un utente Auth (il proprietario ha cancellato l'utente dalla
- * dashboard): il log resta allineato ad Auth e quell'email potrà re-iscriversi
- * in futuro invece di restare bloccata su 409.
+ * Genera un referral code breve (8 hex chars).
  */
-async function countTakenSpots(): Promise<number> {
-  const admin = createAdminClient();
-  if (admin) {
-    try {
-      let taken = 0;
-      let page = 1;
-      let total: number | undefined;
-      const emails = new Set<string>();
-      do {
-        const { data, error } = await admin.auth.admin.listUsers({ page });
-        if (error) throw error;
-        const users = data?.users ?? [];
-        // Conta solo gli utenti della waitlist (source="waitlist").
-        // Gli utenti che accedono via Google/email login dopo aver usato il
-        // codice non devono occupare posti della lista d'attesa.
-        for (const u of users) {
-          const source = (u.user_metadata as Record<string, unknown> | undefined)?.source;
-          if (source === "waitlist") {
-            taken += 1;
-          }
-          if (u.email) emails.add(u.email.toLowerCase());
-        }
-        total = data?.total;
-        page += 1;
-      } while (total !== undefined && page <= Math.max(1, Math.ceil(total / 50)));
+export function generateReferralCode(): string {
+  const uuid = crypto.randomUUID().replace(/-/g, "");
+  return uuid.slice(0, 8).toLowerCase();
+}
 
-      // Reconcile the signup log with Auth (idempotent, only when mismatched).
-      const { data: rows, error: rowsErr } = await admin
-        .from("waitlist")
-        .select("email");
-      if (!rowsErr && rows) {
-        const orphans = rows
-          .map((r) => r.email)
-          .filter((email) => email && !emails.has(email.toLowerCase()));
-        if (orphans.length) {
-          const { error: delErr } = await admin
-            .from("waitlist")
-            .delete()
-            .in("email", orphans);
-          if (delErr) {
-            console.error(
-              "[waitlist] pulizia righe orfane fallita:",
-              delErr.message,
-            );
-          } else {
-            console.log(
-              "[waitlist] rimosse",
-              orphans.length,
-              "riga/e orfana/e:",
-              orphans.join(", "),
-            );
-          }
-        }
-      }
-      return taken;
-    } catch (err) {
-      console.error("[waitlist] conteggio utenti Auth fallito:", err);
-    }
-  }
-
-  // Dev / fallback: conta le righe waitlist come proxy dei posti occupati.
+/**
+ * Totale iscritti in waitlist (conteggio righe).
+ */
+export async function getTotalCount(): Promise<number> {
   const supabase = createAdminClient() ?? (await createClient());
   const { count, error } = await supabase
     .from("waitlist")
@@ -89,8 +33,70 @@ async function countTakenSpots(): Promise<number> {
 }
 
 /**
- * Posti rimanenti autorevoli: MAX_SPOTS meno il numero di utenti Auth.
- * Cancellare un utente in Authentication → Users libera subito il suo posto.
+ * Posizione in coda per email + info referral.
+ * Se referral_code/referred_by non esistono ancora (pre-migrazione) fallback a sola posizione.
+ */
+export async function getQueueInfo(email: string): Promise<QueueInfo | null> {
+  const admin = createAdminClient();
+  const supabase = admin ?? (await createClient());
+  try {
+    // Prova RPC se disponibile (post-migrazione)
+    const { data: rpcData } = await (supabase as unknown as {
+      rpc: (name: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+    }).rpc("waitlist_position", { p_email: email });
+    if (rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
+      const row = rpcData[0] as {
+        position: number;
+        total: number;
+        referral_code: string | null;
+        referral_count: number;
+      };
+      return {
+        position: row.position,
+        total: row.total,
+        referralCode: row.referral_code,
+        referralCount: row.referral_count ?? 0,
+      };
+    }
+  } catch {
+    // fallback manuale
+  }
+
+  const { data: me, error: meErr } = await supabase
+    .from("waitlist")
+    .select("id, created_at, referral_code, referral_count")
+    .eq("email", email.toLowerCase())
+    .maybeSingle();
+  if (meErr || !me) return null;
+
+  const createdAt = (me as { created_at: string }).created_at;
+  const referralCode = (me as { referral_code?: string | null }).referral_code ?? null;
+  const referralCount = (me as { referral_count?: number | null }).referral_count ?? 0;
+
+  const { count: total } = await supabase.from("waitlist").select("id", { count: "exact", head: true });
+  const { count: before } = await supabase
+    .from("waitlist")
+    .select("id", { count: "exact", head: true })
+    .lte("created_at", createdAt);
+
+  const position = (before ?? 1) as number;
+  return {
+    position: Math.max(1, position),
+    total: total ?? position,
+    referralCode,
+    referralCount,
+  };
+}
+
+/**
+ * Conta gli utenti che occupano un posto (legacy, per compatibilità).
+ */
+async function countTakenSpots(): Promise<number> {
+  return getTotalCount();
+}
+
+/**
+ * Posti rimanenti legacy (non più usato per bloccare, ma mantenuto per compatibilità).
  */
 export async function getRemainingSpots(): Promise<number> {
   const taken = await countTakenSpots();
@@ -102,23 +108,10 @@ export async function getRemainingSpots(): Promise<number> {
  * best-effort). È il "backfill" automatico SOLO per le nuove iscrizioni:
  * viene eseguito al momento della firma in POST /api/waitlist, così l'email
  * compare subito in Auth → Users. Le righe storiche non vengono mai backfillate.
- *
- * L'account viene creato con una password casuale mai rivelata ed email
- * confermata: la persona accederà poi con Google (stessa email → Supabase
- * collega l'account) o tramite il flusso "password dimenticata". Il trigger
- * `handle_new_user` crea anche la riga `profiles`.
- *
- * Restituisce true quando l'account è stato creato o esiste già; false quando
- * non è stato possibile verificarlo (es. manca la chiave service-role, o c'è
- * un errore non-duplicato). Non lancia mai: un'email duplicata (già registrata)
- * è un caso atteso e innocuo.
  */
 export async function provisionAuthUser(email: string): Promise<boolean> {
   const admin = createAdminClient();
-  if (!admin) return false; // niente chiave service-role — salta in silenzio (fallback dev)
-  // Un retry per i guasti transitori: il proprietario si aspetta che ogni
-  // iscrizione compaia in Authentication → Users, quindi un problema di rete
-  // non deve farla sparire.
+  if (!admin) return false;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       await admin.auth.admin.createUser({
@@ -130,8 +123,6 @@ export async function provisionAuthUser(email: string): Promise<boolean> {
       return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      // Un account preesistente è il caso più comune (re-iscrizione, o utente
-      // già registrato): log a livello info e si va avanti.
       if (/already registered|already been registered|duplicate/i.test(msg)) {
         console.log("[waitlist] auth user already exists:", email);
         return true;
@@ -147,3 +138,70 @@ export async function provisionAuthUser(email: string): Promise<boolean> {
   }
   return false;
 }
+
+/**
+ * Assicura che un'email sia presente nella tabella waitlist (idempotente).
+ * Utilizzato nel flusso OAuth Google per inserire l'utente e preservare l'eventuale referral.
+ */
+export async function ensureWaitlistEntry(
+  email: string,
+  referredBy?: string | null
+): Promise<{ success: boolean; alreadyJoined: boolean; referralCode?: string | null }> {
+  const supabase = createAdminClient() ?? (await createClient());
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Verifica se è già iscritto
+  const { data: existing } = await supabase
+    .from("waitlist")
+    .select("id, referral_code")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+
+  if (existing) {
+    return {
+      success: true,
+      alreadyJoined: true,
+      referralCode: (existing as { referral_code?: string | null }).referral_code ?? null,
+    };
+  }
+
+  // Verifica se il referred_by indicato esiste
+  let validReferredBy: string | null = null;
+  if (referredBy) {
+    const cleanRef = referredBy.trim().toLowerCase().slice(0, 32);
+    const { data: refRow } = await supabase
+      .from("waitlist")
+      .select("referral_code")
+      .eq("referral_code", cleanRef)
+      .maybeSingle();
+    if (refRow) validReferredBy = cleanRef;
+  }
+
+  const referralCode = generateReferralCode();
+  const insertPayload: Record<string, unknown> = {
+    email: normalizedEmail,
+    referral_code: referralCode,
+  };
+  if (validReferredBy) insertPayload.referred_by = validReferredBy;
+
+  const { error } = await supabase.from("waitlist").insert(insertPayload);
+  if (error) {
+    // Gestione duplicato concorrente
+    if (error.code === "23505") {
+      const q = await getQueueInfo(normalizedEmail).catch(() => null);
+      return { success: true, alreadyJoined: true, referralCode: q?.referralCode ?? null };
+    }
+    // Fallback se le colonne referral non sono ancora presenti nel DB
+    if (/referral_code|referred_by/i.test(error.message)) {
+      const { error: retryErr } = await supabase.from("waitlist").insert({ email: normalizedEmail });
+      if (!retryErr || retryErr.code === "23505") {
+        return { success: true, alreadyJoined: Boolean(retryErr), referralCode: null };
+      }
+    }
+    console.error("[waitlist] Errore inserimento waitlist da OAuth:", error);
+    return { success: false, alreadyJoined: false };
+  }
+
+  return { success: true, alreadyJoined: false, referralCode };
+}
+

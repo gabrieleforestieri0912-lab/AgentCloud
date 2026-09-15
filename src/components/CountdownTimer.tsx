@@ -1,20 +1,18 @@
 "use client";
 
 /**
- * Conto alla rovescia verso la data di lancio.
+ * Conto alla rovescia verso la data di lancio ufficiale.
  *
- * Come funziona: l'ora corrente viene letta con `useSyncExternalStore` (si
- * aggiorna col timer senza ri-render continui dello stato) e viene mostrato il
- * tempo mancante per unità (giorni/ore/minuti/secondi). A lancio avvenuto
- * mostra il messaggio celebrativo.
+ * Design: Split-card glassmorphism con scanalatura centrale, transizioni
+ * fluide verticali per le cifre tramite Framer Motion, separatori ritmici pulsanti
+ * al neon e barra temporale sottile.
  *
- * La data arriva da `LAUNCH_AT` (lib/waitlist-constants): è la stessa costante
- * che il proxy usa per chiudere /waitlist al lancio, così countdown e chiusura
- * della route non possono divergere.
+ * Mantiene useSyncExternalStore con getServerSnapshot per evitare hydration mismatch
+ * e preservare prestazioni impeccabili a 60fps.
  */
 import { useSyncExternalStore } from "react";
-import { motion } from "framer-motion";
-import { PartyPopper } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { PartyPopper, Sparkles, Clock } from "lucide-react";
 import { LAUNCH_AT, hasLaunched } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
 
@@ -24,8 +22,7 @@ interface TimeUnit {
   value: number;
 }
 
-/** Etichette per unità, nell'ordine in cui `getTimeUnits` le restituisce. */
-const UNIT_LABELS = ["days", "hours", "minutes", "seconds"] as const;
+const UNIT_KEYS = ["days", "hours", "minutes", "seconds"] as const;
 
 function getTimeUnits(days: number, hours: number, minutes: number, seconds: number): TimeUnit[] {
   return [{ value: days }, { value: hours }, { value: minutes }, { value: seconds }];
@@ -44,9 +41,6 @@ function getTimeLeft(): TimeUnit[] {
 }
 
 const ZERO = getTimeUnits(0, 0, 0, 0);
-
-// Snapshot in cache: `getSnapshot` restituisce un riferimento stabile tra un
-// tick e l'altro (richiesto da useSyncExternalStore per evitare loop di render).
 let snapshot: TimeUnit[] = ZERO;
 
 function subscribe(callback: () => void): () => void {
@@ -67,70 +61,152 @@ function getSnapshot(): TimeUnit[] {
   return snapshot;
 }
 
-// Server snapshot calcola il tempo reale mancante sul server, evitando il flash di 00:00:00:00
 function getServerSnapshot(): TimeUnit[] {
   return getTimeLeft();
 }
 
-export default function CountdownTimer() {
+/**
+ * Singolo blocco digitale a scanalatura centrale (Split-Flap Glassmorphic Card)
+ */
+function TimerCard({
+  value,
+  label,
+  isAccent = false,
+}: {
+  value: number;
+  label: string;
+  isAccent?: boolean;
+}) {
+  const formatted = String(value).padStart(2, "0");
+
+  return (
+    <div className="flex flex-col items-center">
+      {/* Scheda numerica tridimensionale */}
+      <div
+        className={`group relative flex h-14 w-13 sm:h-16 sm:w-16 items-center justify-center overflow-hidden rounded-xl border backdrop-blur-md transition-all duration-300 ${
+          isAccent
+            ? "border-brand-500/40 bg-gradient-to-b from-neutral-900/90 via-neutral-900/95 to-neutral-950 shadow-[0_0_20px_rgba(3,139,254,0.18)]"
+            : "border-white/10 bg-gradient-to-b from-neutral-900/80 via-neutral-900/90 to-neutral-950 shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+        }`}
+      >
+        {/* Riflesso superiore in vetro */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[48%] bg-gradient-to-b from-white/[0.08] to-transparent" />
+
+        {/* Fessura orizzontale centrale realistica */}
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 h-[1px] -translate-y-1/2 bg-black/75 shadow-[0_1px_1px_rgba(255,255,255,0.06)]" />
+
+        {/* Tacche laterali di bloccaggio meccanico */}
+        <div className="pointer-events-none absolute left-0 top-1/2 z-20 h-1.5 w-[2px] -translate-y-1/2 rounded-r-sm bg-black/80" />
+        <div className="pointer-events-none absolute right-0 top-1/2 z-20 h-1.5 w-[2px] -translate-y-1/2 rounded-l-sm bg-black/80" />
+
+        {/* Cifra con animazione fluida verticale */}
+        <div className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={formatted}
+              initial={{ y: -18, opacity: 0, scale: 0.94, filter: "blur(2px)" }}
+              animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
+              exit={{ y: 18, opacity: 0, scale: 0.94, filter: "blur(2px)" }}
+              transition={{ type: "spring", stiffness: 420, damping: 28 }}
+              className={`font-mono text-2xl sm:text-3xl font-black tabular-nums tracking-tight leading-none select-none ${
+                isAccent
+                  ? "bg-gradient-to-b from-white via-neutral-100 to-brand-300 bg-clip-text text-transparent"
+                  : "bg-gradient-to-b from-white via-neutral-100 to-neutral-300 bg-clip-text text-transparent"
+              }`}
+            >
+              {formatted}
+            </motion.span>
+          </AnimatePresence>
+        </div>
+
+        {/* Alone di accento per i secondi */}
+        {isAccent && (
+          <div className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-tr from-brand-500/10 via-transparent to-pink-500/10 opacity-70" />
+        )}
+      </div>
+
+      {/* Etichetta dell'unità */}
+      <span className="mt-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-neutral-400 select-none">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Separatore a due punti con pulsazione ritmica continua
+ */
+function PulsingColon() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-1.5 px-0.5 pb-5 select-none" aria-hidden="true">
+      <motion.span
+        animate={{ opacity: [1, 0.25, 1], scale: [1, 0.85, 1] }}
+        transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+        className="h-1.5 w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]"
+      />
+      <motion.span
+        animate={{ opacity: [1, 0.25, 1], scale: [1, 0.85, 1] }}
+        transition={{ duration: 1, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
+        className="h-1.5 w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]"
+      />
+    </div>
+  );
+}
+
+export default function CountdownTimer({ className = "" }: { className?: string }) {
   const { dict } = useLanguage();
   const units = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const isLaunched = hasLaunched();
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.4 }}
-      className="bg-neutral-800/50 border border-white/5 rounded-2xl p-4 mb-5"
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className={`relative overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/60 p-3.5 sm:p-4 backdrop-blur-xl shadow-[0_12px_32px_rgba(0,0,0,0.5)] ${className}`}
     >
-      {/* Header */}
-      <div className="flex items-center justify-center gap-2 mb-3">
-        <span className="relative flex h-2 w-2 shrink-0">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-400" />
+      {/* Bagliore radiale d'atmosfera sullo sfondo */}
+      <div className="pointer-events-none absolute -top-10 left-1/2 h-24 w-48 -translate-x-1/2 rounded-full bg-brand-500/15 blur-2xl" />
+
+      {/* Intestazione del timer con radar pulse */}
+      <div className="relative z-10 mb-3 flex items-center justify-center gap-2">
+        <span className="relative flex h-2.5 w-2.5 shrink-0">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-gradient-to-r from-brand-400 to-pink-400" />
         </span>
-        <span className="text-[11px] font-bold uppercase tracking-widest text-brand-400">
-          {dict.countdownTimer.launchDate}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <Clock className="h-3 w-3 text-brand-400" />
+          <span className="text-[11px] font-extrabold uppercase tracking-widest text-brand-300">
+            {dict.countdownTimer.launchDate}
+          </span>
+        </div>
       </div>
 
-      {/* Blocchi del timer */}
-      <div className="flex items-center justify-center gap-2">
+      {/* Blocchi numerici */}
+      <div className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2.5">
         {units.map((unit, i) => (
-          <div key={UNIT_LABELS[i]} className="flex items-center gap-2">
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-lg bg-neutral-900 border border-white/10 shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
-                <motion.span
-                  key={unit.value}
-                  initial={{ y: -4, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-xl sm:text-2xl font-extrabold text-white tabular-nums leading-none"
-                >
-                  {String(unit.value).padStart(2, "0")}
-                </motion.span>
-              </div>
-              <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
-                {dict.countdownTimer[UNIT_LABELS[i]]}
-              </span>
-            </div>
-            {i < units.length - 1 && (
-              <span className="text-lg font-bold text-brand-400/40 self-start mt-3">:</span>
-            )}
+          <div key={UNIT_KEYS[i]} className="flex items-center gap-1.5 sm:gap-2.5">
+            <TimerCard
+              value={unit.value}
+              label={dict.countdownTimer[UNIT_KEYS[i]]}
+              isAccent={UNIT_KEYS[i] === "seconds"}
+            />
+            {i < units.length - 1 && <PulsingColon />}
           </div>
         ))}
       </div>
 
+      {/* Messaggio festivo al raggiungimento del lancio */}
       {isLaunched && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center mt-3 text-sm font-bold text-emerald-400"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative z-10 mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300"
         >
-          <PartyPopper size={16} className="inline mr-1" />
-          {dict.countdownTimer.platformLive}
-        </motion.p>
+          <PartyPopper className="h-4 w-4 text-emerald-400" />
+          <span>{dict.countdownTimer.platformLive}</span>
+          <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+        </motion.div>
       )}
     </motion.div>
   );

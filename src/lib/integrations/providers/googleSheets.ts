@@ -15,6 +15,9 @@ export const googleSheetsProvider: IntegrationProvider = {
   provider: "google_sheets",
   getAuthUrl({ state, redirectUri }) {
     const clientId = process.env.GOOGLE_CLIENT_ID || "";
+    if (!clientId) {
+      throw new Error("Google Sheets non configurato (GOOGLE_CLIENT_ID mancante nel file .env)");
+    }
     // Allow override via GOOGLE_SHEETS_SCOPES, else single sheets scope (reuse still needs consent)
     const scopes = (process.env.GOOGLE_SHEETS_SCOPES || SHEETS_SCOPE).split(/[,\s]+/).filter(Boolean).join(" ");
     const params = new URLSearchParams({

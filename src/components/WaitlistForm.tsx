@@ -1,155 +1,143 @@
 "use client";
 
-/**
- * Form waitlist: iscrizione via email OPPURE riscatto del codice d'accesso.
- *
- * Come funziona: un unico campo accetta un'email (iscrizione, con tetto posti
- * MAX_SPOTS mostrato in tempo reale) o un codice di accesso (ingresso diretto
- * alla piattaforma). Il controllo vero del codice avviene sul server in
- * POST /api/waitlist (ACCESS_CODE è un segreto); il client fa solo una
- * validazione di forma. Include honeypot anti-bot, conteggio posti sincronizzato
- * col DB e modale email quando la waitlist è piena.
- */
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail } from "lucide-react";
+import {
+  Mail,
+  Copy,
+  Check,
+  Sparkles,
+  MessageCircle,
+  ShoppingBag,
+  BarChart3,
+  Users,
+  Zap,
+  Clock,
+  ShieldCheck,
+  ArrowRight,
+  ChevronDown,
+  Loader2,
+} from "lucide-react";
 import Image from "next/image";
-import FloatingBrandBubbles, {
-  type FloatingBubble,
-} from "@/components/FloatingBrandBubbles";
+import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
 import CountdownTimer from "@/components/CountdownTimer";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageProvider";
+import { createClient } from "@/lib/supabase/client";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
-import { MAX_SPOTS } from "@/lib/waitlist-constants";
-import {
-  validateAndSanitizeEmail,
-  HONEYPOT_FIELD_NAME,
-} from "@/lib/forms-security";
+import { validateAndSanitizeEmail, HONEYPOT_FIELD_NAME } from "@/lib/forms-security";
 
-// Flag dei cookie (rispecchiano le costanti lato server in /api/waitlist).
 const JOINED_COOKIE = "ac_wl_joined";
 const JOINED_EMAIL_COOKIE = "ac_wl_email";
+const REF_COOKIE = "ac_wl_ref";
 
-// Marchi fluttuanti che riprendono la costellazione dell'hero: agganciano la
-// waitlist al linguaggio visivo della landing. Una ricca distribuzione di
-// aziende (la densità è voluta: sulla landing la waitlist deve comunicare
-// "tutto il mercato la sta aspettando").
 const FLOATING_BUBBLES: FloatingBubble[] = [
-  { top: "5%", left: "27%", size: "w-12 h-12", brand: "google", delay: "0.6s", anim: "animate-float-gentle" },
-  { top: "8%", left: "7%", size: "w-12 h-12", brand: "shopify", delay: "0s", anim: "animate-float-gentle" },
-  { top: "10%", left: "57%", size: "w-11 h-11", brand: "discord", delay: "1.4s", anim: "animate-float-gentle" },
-  { top: "14%", left: "85%", size: "w-11 h-11", brand: "stripe", delay: "1.2s", anim: "animate-float-reverse" },
-  { top: "22%", left: "3%", size: "w-10 h-10", brand: "calendly", delay: "1.1s", anim: "animate-float-reverse" },
-  { top: "20%", left: "88%", size: "w-11 h-11", brand: "mailchimp", delay: "0.3s", anim: "animate-float-gentle" },
-  { top: "32%", left: "91%", size: "w-12 h-12", brand: "gmail", delay: "1.9s", anim: "animate-float-reverse" },
-  { top: "36%", left: "4%", size: "w-10 h-10", brand: "instagram", delay: "0.7s", anim: "animate-float-gentle" },
-  { top: "44%", left: "7%", size: "w-12 h-12", brand: "trello", delay: "1.8s", anim: "animate-float-reverse" },
-  { top: "46%", left: "84%", size: "w-10 h-10", brand: "paypal", delay: "0.5s", anim: "animate-float-gentle" },
-  { top: "56%", left: "87%", size: "w-10 h-10", brand: "notion", delay: "2.2s", anim: "animate-float-gentle" },
-  { top: "60%", left: "9%", size: "w-11 h-11", brand: "whatsapp", delay: "0.4s", anim: "animate-float-reverse" },
-  { top: "64%", left: "22%", size: "w-11 h-11", brand: "github", delay: "1.0s", anim: "animate-float-reverse" },
-  { top: "66%", left: "70%", size: "w-12 h-12", brand: "dropbox", delay: "1.7s", anim: "animate-float-gentle" },
-  { top: "80%", left: "16%", size: "w-10 h-10", brand: "hubspot", delay: "1.5s", anim: "animate-float-gentle" },
-  { top: "82%", left: "78%", size: "w-12 h-12", brand: "facebook", delay: "0.9s", anim: "animate-float-reverse" },
-  { top: "89%", left: "42%", size: "w-10 h-10", brand: "woocommerce", delay: "2.4s", anim: "animate-float-gentle" },
-  { top: "92%", left: "5%", size: "w-11 h-11", brand: "meta", delay: "1.3s", anim: "animate-float-reverse" },
+  { top: "4%", left: "18%", size: "w-11 h-11", brand: "google", delay: "0.6s", anim: "animate-float-gentle" },
+  { top: "7%", left: "72%", size: "w-10 h-10", brand: "shopify", delay: "0s", anim: "animate-float-gentle" },
+  { top: "12%", left: "4%", size: "w-10 h-10", brand: "discord", delay: "1.4s", anim: "animate-float-gentle" },
+  { top: "15%", left: "88%", size: "w-10 h-10", brand: "stripe", delay: "1.2s", anim: "animate-float-reverse" },
+  { top: "28%", left: "2%", size: "w-9 h-9", brand: "calendly", delay: "1.1s", anim: "animate-float-reverse" },
+  { top: "32%", left: "92%", size: "w-10 h-10", brand: "mailchimp", delay: "0.3s", anim: "animate-float-gentle" },
+  { top: "55%", left: "3%", size: "w-9 h-9", brand: "whatsapp", delay: "0.4s", anim: "animate-float-reverse" },
+  { top: "60%", left: "90%", size: "w-10 h-10", brand: "notion", delay: "2.2s", anim: "animate-float-gentle" },
+  { top: "78%", left: "6%", size: "w-10 h-10", brand: "github", delay: "1.0s", anim: "animate-float-reverse" },
+  { top: "82%", left: "85%", size: "w-10 h-10", brand: "facebook", delay: "0.9s", anim: "animate-float-reverse" },
 ];
 
-export default function WaitlistForm({
-  initialRemaining,
-}: {
-  // Conteggio autoritativo dei posti rimasti, letto lato server dal DB, così
-  // il numero è corretto già al primo render (niente finto flash "10/10").
-  initialRemaining: number;
-}) {
-  const { dict, locale } = useLanguage();
-  // Il campo accetta un'email (iscrizione alla waitlist) OPPURE un codice di accesso (accesso diretto).
+type QueueState = {
+  position: number | null;
+  total: number | null;
+  referralCode: string | null;
+  referralCount: number;
+};
+
+export default function WaitlistForm({ initialTotal }: { initialTotal: number }) {
+  const { dict } = useLanguage();
+  const w = dict.waitlist as unknown as Record<string, unknown> & {
+    heroEyebrow: string; heroTitleA: string; heroTitleB: string; heroSub: string; heroTrust: string;
+    heroCta: string; heroJoined: string; demoLiveBadge: string; demoUserMsg: string; demoAgentMsg: string;
+    demoResolved: string; demoInputPlaceholder: string; howItWorksBadge: string; howItWorksTitle: string;
+    step1Title: string; step1Desc: string; step1MockTitle: string; step1MockDesc: string;
+    step2Title: string; step2Desc: string; step2Check1: string; step2Check2: string; step2Check3: string;
+    step3Title: string; step3Desc: string; socialBadge: string; socialTitle: string;
+    statAgents: string; statTasks: string; statTime: string; statUsers: string; inList: string;
+    queueTitle: string; queueSubtitle: string; queuePosition: string; queueOf: string; queueInvited: string; queueFriends: string;
+    queueLinkLabel: string; queueCopy: string; queueCopied: string; queueShare: string; queueRule: string;
+    shareWhatsapp: string; shareX: string; shareEmail: string; shareSms: string; shareText: string;
+    faqBadge: string; faqTitle: string; faqItems: { q: string; a: string }[]; footerCtaTitle: string; footerCtaSubtitle: string; noSpam: string;
+    placeholder: string; joining: string; joinWaitlist: string; agreeNote: string; alreadyOnList: string; somethingWrong: string; networkError: string;
+    continueWithGoogle: string; orWithEmail: string; redirectingToGoogle: string;
+  };
+
   const [email, setEmail] = useState("");
-  // Campo trappola Honeypot (Anti-Bot): se valorizzato, la richiesta viene bloccata all'istante
   const [honeypotValue, setHoneypotValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      document.cookie.includes("ac_wl_joined=1"),
-  );
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState("");
-  // Parte dal valore fornito dal server (nessun fallback solo-client), così
-  // un refresh mantiene il conteggio reale. Aggiornato di nuovo al mount e
-  // dopo il submit per restare allineato al database.
-  const [remainingSpots, setRemainingSpots] = useState(initialRemaining);
+  const [copied, setCopied] = useState(false);
+  const [showFaq, setShowFaq] = useState<number | null>(null);
+  const [queue, setQueue] = useState<QueueState>({ position: null, total: initialTotal, referralCode: null, referralCount: 0 });
+  const [isSuccess, setIsSuccess] = useState(() => typeof document !== "undefined" && document.cookie.includes("ac_wl_joined=1"));
+  const [total, setTotal] = useState<number>(initialTotal);
 
-  // Risincronizza col DB al mount: conteggio posti autoritativo e, quando è
-  // ricordata un'iscrizione precedente, verifica che esista ancora. Se il
-  // proprietario ha cancellato la voce, pulisce i cookie così il form ricompare
-  // invece di un messaggio di successo stantio.
+  // referral from URL ?ref=
+  const [refFromUrl, setRefFromUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref") || params.get("r");
+    if (ref) {
+      const cleanRef = ref.toLowerCase().slice(0, 32);
+      setRefFromUrl(cleanRef);
+      // Salva in cookie temporaneo per sopravvivere al redirect OAuth
+      document.cookie = `${REF_COOKIE}=${encodeURIComponent(cleanRef)}; max-age=3600; path=/; SameSite=Lax`;
+    }
+  }, []);
+
   useEffect(() => {
     fetch("/api/waitlist")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data) return;
-        if (typeof data.remaining === "number") {
-          setRemainingSpots(data.remaining);
-        }
+        if (typeof data.total === "number") setTotal(data.total);
         if (data.verified === true && data.joined === false) {
           document.cookie = `${JOINED_COOKIE}=; max-age=0; path=/`;
           document.cookie = `${JOINED_EMAIL_COOKIE}=; max-age=0; path=/`;
           setIsSuccess(false);
         } else if (data.joined === true) {
           setIsSuccess(true);
+          setQueue({
+            position: data.position ?? null,
+            total: data.total ?? total,
+            referralCode: data.referralCode ?? null,
+            referralCount: data.referralCount ?? 0,
+          });
+        } else if (typeof data.total === "number") {
+          setQueue((q) => ({ ...q, total: data.total }));
         }
       })
-      .catch(() => {
-        // mantiene lo stato client in caso di errori di rete
-      });
+      .catch(() => {});
   }, []);
 
-  // Gli errori sono avvisi transitori: si auto-cancellano dopo pochi secondi
-  // così avvisano brevemente l'utente senza bloccare il form.
   useEffect(() => {
     if (!error) return;
     const t = setTimeout(() => setError(""), 4000);
     return () => clearTimeout(t);
   }, [error]);
-  // Derivato — la waitlist è piena quando non restano posti (nessun setter
-  // separato).
-  const isFull = remainingSpots <= 0;
-  // Il contatore mostra i posti OCCUPATI (su MAX_SPOTS), quindi legge "4/50" e
-  // cresce con le iscrizioni — la barra sotto si riempie con lo stesso rapporto.
-  const takenSpots = Math.min(MAX_SPOTS, Math.max(0, MAX_SPOTS - remainingSpots));
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const handleEmailSend = () => {
-    const subject = dict.waitlist.emailSubject;
-    window.location.href = `mailto:${PUBLIC_SUPPORT_EMAIL}?subject=${encodeURIComponent(
-      subject,
-    )}&body=${encodeURIComponent(message)}`;
-    setShowEmailModal(false);
-    setMessage("");
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-
-    // 1. Controllo Honeypot: se un bot ha compilato il campo nascosto, blocca senza inviare nulla
     if (honeypotValue.trim().length > 0) {
       setError("Richiesta non valida.");
       return;
     }
-
-    // 2. Validazione e sanitizzazione preventiva lato client
     const validation = validateAndSanitizeEmail(email, true);
     if (!validation.valid || !validation.email) {
-      setError(validation.error || dict.waitlist.somethingWrong);
+      setError((validation.error as string) || (w.somethingWrong as string));
       return;
     }
-
     setError("");
     setIsSubmitting(true);
-
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
@@ -157,322 +145,492 @@ export default function WaitlistForm({
         body: JSON.stringify({
           email: validation.email,
           [HONEYPOT_FIELD_NAME]: honeypotValue,
+          ref: refFromUrl,
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
-        if (typeof data.remaining === "number") {
-          setRemainingSpots(data.remaining);
-        }
+        if (typeof data.total === "number") setTotal(data.total);
         if (res.status === 409) {
-          setError(dict.waitlist.alreadyOnList);
+          // già in lista: mostra comunque posizione
+          setIsSuccess(true);
+          if (typeof data.position === "number") {
+            setQueue({ position: data.position, total: data.total ?? total, referralCode: data.referralCode ?? null, referralCount: data.referralCount ?? 0 });
+          }
+          setError(w.alreadyOnList as string);
         } else {
-          setError(data.error || dict.waitlist.somethingWrong);
+          setError(data.error || (w.somethingWrong as string));
         }
         setIsSubmitting(false);
         return;
       }
-
-      if (typeof data.remaining === "number") {
-        setRemainingSpots(data.remaining);
-      }
-      // Codice valido: redirect alla landing page con bottone "Inizia Ora"
-      // nella navbar. Il cookie waitlist_session è impostato; al login il
-      // codice beta viene completato e il ruolo beta_tester assegnato.
+      if (typeof data.total === "number") setTotal(data.total);
       if (data.accessGranted) {
         window.location.href = "/";
         return;
       }
       setIsSuccess(true);
+      setQueue({
+        position: data.position ?? data.total ?? total + 1,
+        total: data.total ?? total + 1,
+        referralCode: data.referralCode ?? null,
+        referralCount: data.referralCount ?? 0,
+      });
       setEmail("");
+      // scroll to queue card
+      setTimeout(() => document.getElementById("queue-card")?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
     } catch {
-      setError(dict.waitlist.networkError);
+      setError(w.networkError as string);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <section className="relative flex min-h-dvh overflow-x-hidden dark-gradient-main px-4 py-6 sm:py-10">
-      {/* Sfondo decorativo — stesso linguaggio della sezione hero */}
-      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/30 to-transparent" />
-      <div
-        className="absolute inset-0 opacity-40 pointer-events-none select-none"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 15% 20%, rgba(3,139,254,.18), transparent 32%), radial-gradient(circle at 85% 15%, rgba(234,67,53,.14), transparent 28%), radial-gradient(circle at 50% 92%, rgba(168,85,247,.14), transparent 36%)",
-        }}
-      />
+  const handleGoogle = async () => {
+    if (isGoogleLoading) return;
+    setError("");
+    setIsGoogleLoading(true);
+    try {
+      const supabase = createClient();
+      const params = new URLSearchParams(window.location.search);
+      const refParam = params.get("ref") || params.get("r") || refFromUrl;
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      callbackUrl.searchParams.set("next", "/waitlist");
+      if (refParam) callbackUrl.searchParams.set("ref", refParam);
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl.toString(),
+          scopes: "email profile",
+          queryParams: { access_type: "offline", prompt: "select_account" },
+        },
+      });
+      if (oauthError) setError(w.somethingWrong as string);
+    } catch {
+      setError(w.networkError as string);
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
-      {/* Costellazione di marchi fluttuanti */}
+  const referralLink = queue.referralCode
+    ? `https://agentcloud.agency/waitlist?ref=${queue.referralCode}`
+    : "";
+
+  const shareTextEncoded = encodeURIComponent(`${w.shareText} ${referralLink}`);
+  const shareUrlEncoded = encodeURIComponent(referralLink);
+
+  const copyLink = async () => {
+    if (!referralLink) return;
+    await navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const scrollToForm = () => document.getElementById("waitlist-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  return (
+    <div className="relative overflow-x-hidden bg-neutral-950">
+      {/* Global background */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-neutral-950 to-black" />
+        <div
+          className="absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 15% 10%, rgba(3,139,254,.18), transparent 32%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.14), transparent 28%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.12), transparent 36%)",
+          }}
+        />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/20 to-transparent" />
+      </div>
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
-      {/* Toggle lingua — in alto a destra della pagina */}
-      <div className="absolute top-4 right-4 z-20">
-        <LanguageToggle />
-      </div>
-
-      <motion.div
-        className="relative z-10 m-auto w-full max-w-md"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 justify-center mb-8">
-          <div className="relative h-10 w-10">
-            <Image
-              src="/agentcloud.png"
-              alt="AgentCloud"
-              fill
-              className="object-cover"
-              sizes="40px"
-            />
+      {/* Sticky header */}
+      <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-neutral-950/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-2.5">
+            <div className="relative h-8 w-8">
+              <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="32px" />
+            </div>
+            <span className="text-base font-bold tracking-tight text-white">AgentCloud</span>
+            <span className="hidden rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-neutral-400 sm:inline">
+              {(w.heroEyebrow as string).toUpperCase()}
+            </span>
           </div>
-          <span className="text-2xl font-bold tracking-tight text-white">
-            AgentCloud
-          </span>
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            {!isSuccess && (
+              <button
+                onClick={scrollToForm}
+                className="hidden rounded-full bg-white px-4 py-2 text-xs font-semibold text-black transition hover:bg-neutral-100 sm:inline-flex"
+              >
+                {w.heroCta as string} <ArrowRight className="ml-1 h-3 w-3" />
+              </button>
+            )}
+          </div>
         </div>
+      </header>
 
-        {/* Card */}
-        <div className="bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-8 shadow-[0_12px_36px_rgba(0,0,0,0.4)]">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <h1 className="text-3xl font-extrabold text-white mb-2 text-center">
-              {dict.waitlist.title} <span className="text-brand-400">{dict.waitlist.titleAccent}</span>
+      {/* HERO 2-col */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 pb-8 pt-8 sm:px-6 sm:pt-12">
+        <div className="grid items-center gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+          {/* Copy */}
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1 text-xs font-semibold text-brand-300">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-brand-400" />
+              {w.heroEyebrow as string}
+            </div>
+            <h1 className="text-[32px] font-extrabold leading-[0.95] tracking-tight text-white sm:text-5xl">
+              {w.heroTitleA as string} <span className="bg-gradient-to-r from-brand-400 to-pink-400 bg-clip-text text-transparent">{w.heroTitleB as string}</span>
             </h1>
-            <p className="text-neutral-400 text-center mb-6">
-              {dict.waitlist.subtitle}
-            </p>
+            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-neutral-300 sm:text-base">{w.heroSub as string}</p>
 
-            {/* Conto alla rovescia */}
-            <CountdownTimer />
-
-            {/* Posti — compatto inline */}
-            <div className="flex items-center justify-center gap-2 mb-5">
-              <span className="text-xs font-semibold text-neutral-500">
-                {dict.waitlist.takenSpots}:
+            {/* Social proof inline + countdown */}
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <CountdownTimer />
+              <span className="hidden text-neutral-600 sm:inline">•</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-300">
+                <Users className="h-3.5 w-3.5 text-brand-400" /> {total.toLocaleString("it-IT")} {w.inList as string}
               </span>
-              <span className="text-sm font-bold text-brand-400">
-                {takenSpots}/{MAX_SPOTS}
-              </span>
-              <div className="w-20 bg-neutral-700 rounded-full h-1.5">
-                {/* Barra dei posti OCCUPATI: si riempie con le iscrizioni, quindi
-                    quando la waitlist è piena (0 rimanenti) la barra è piena. */}
-                <motion.div
-                  className="bg-linear-to-r from-brand-500 to-pink-500 h-1.5 rounded-full"
-                  initial={{ width: `${((MAX_SPOTS - remainingSpots) / MAX_SPOTS) * 100}%` }}
-                  animate={{ width: `${((MAX_SPOTS - remainingSpots) / MAX_SPOTS) * 100}%` }}
-                  transition={{ duration: 0.5 }}
-                />
-              </div>
             </div>
 
-            {isSuccess ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center"
-              >
-                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2">
-                  {dict.waitlist.successTitle}
-                </h3>
-                <p className="text-neutral-400 text-sm mb-4">
-                  {dict.waitlist.successText}
-                </p>
-                <p className="text-xs font-semibold text-neutral-500 mb-3">
-                  {dict.waitlist.followUpdates}
-                </p>
-                <div className="flex items-center justify-center gap-4">
-                  <a
-                    href="https://www.instagram.com/_agentcloud/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold text-neutral-400 hover:text-white transition-colors"
-                  >
-                    Instagram
-                  </a>
-                  <a
-                    href="https://www.linkedin.com/in/agent-cloud-323218431/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold text-neutral-400 hover:text-white transition-colors"
-                  >
-                    LinkedIn
-                  </a>
-                  <a
-                    href="https://x.com/AgentCloud2k"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold text-neutral-400 hover:text-white transition-colors"
-                  >
-                    X
-                  </a>
-                </div>
-              </motion.div>
-            ) : (
-              <>
-                {/* Avviso waitlist piena: blocca solo le nuove iscrizioni via
-                    email — il codice di accesso qui sotto funziona ancora. */}
-                {isFull && (
-                  <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-center">
-                    <h3 className="text-sm font-bold text-white">
-                      {dict.waitlist.fullTitle}
-                    </h3>
-                    <p className="mt-1 text-sm text-neutral-400">
-                      {dict.waitlist.fullText}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowEmailModal(true)}
-                      className="mt-3 inline-flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:opacity-90"
-                    >
-                      <Mail size={14} />
-                      {dict.waitlist.emailButton}
-                    </button>
-                  </div>
-                )}
-
-                {/* Campo unico: un'email iscrive alla waitlist, il codice di
-                    accesso sblocca direttamente la piattaforma (controllo lato
-                    server). */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Trappola Honeypot Anti-Bot: invisibile ai visitatori umani, compilata solo da scraper e bot */}
+            {/* Form */}
+            <div id="waitlist-form" className="mt-6 rounded-3xl border border-white/10 bg-neutral-900/70 p-4 backdrop-blur sm:p-5">
+              {!isSuccess ? (
+                <div className="space-y-3">
+                  {/* Honeypot */}
                   <div
-                    style={{
-                      position: "absolute",
-                      left: "-9999px",
-                      opacity: 0,
-                      height: 0,
-                      width: 0,
-                      overflow: "hidden",
-                    }}
+                    style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0, width: 0, overflow: "hidden" }}
                     aria-hidden="true"
                   >
-                    <input
-                      type="text"
-                      name={HONEYPOT_FIELD_NAME}
-                      value={honeypotValue}
-                      onChange={(e) => setHoneypotValue(e.target.value)}
-                      tabIndex={-1}
-                      autoComplete="off"
-                    />
+                    <input type="text" name={HONEYPOT_FIELD_NAME} value={honeypotValue} onChange={(e) => setHoneypotValue(e.target.value)} tabIndex={-1} autoComplete="off" />
                   </div>
 
-                  <div>
-                    <input
-                      type="text"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (error) setError("");
-                      }}
-                      placeholder={dict.waitlist.placeholder}
-                      autoComplete="off"
-                      className="w-full bg-neutral-800 border border-white/10 rounded-full px-5 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
-                      disabled={isSubmitting}
-                    />
-                    {error && (
-                      <p className="text-red-400 text-sm mt-2">{error}</p>
+                  {/* Pulsante Google */}
+                  <button
+                    type="button"
+                    onClick={handleGoogle}
+                    disabled={isGoogleLoading || isSubmitting}
+                    className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-full border border-white/12 bg-neutral-800/60 px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:border-white/25 hover:bg-neutral-700/60 disabled:opacity-50"
+                  >
+                    {isGoogleLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-brand-400" />
+                    ) : (
+                      <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                      </svg>
                     )}
+                    <span>
+                      {isGoogleLoading ? (w.redirectingToGoogle as string) : (w.continueWithGoogle as string)}
+                    </span>
+                  </button>
+
+                  {/* Divisore */}
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-white/10" />
+                    <span className="text-xs font-medium text-neutral-500">{w.orWithEmail as string}</span>
+                    <div className="h-px flex-1 bg-white/10" />
                   </div>
-                  <button
-                    type="submit"
-                    disabled={
-                      isSubmitting ||
-                      // La waitlist piena blocca solo le nuove iscrizioni via email.
-                      (isFull && email.trim() !== "" && !email.includes("@"))
-                    }
-                    className="w-full bg-linear-to-r from-brand-500 to-pink-500 text-white font-semibold py-3 px-6 rounded-full hover:opacity-90 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30"
-                  >
-                    {isSubmitting
-                      ? dict.waitlist.joining
-                      : dict.waitlist.joinWaitlist}
-                  </button>
-                </form>
-              </>
-            )}
 
-            <p className="text-neutral-500 text-xs text-center mt-6">
-              {dict.waitlist.agreeNote}
-            </p>
+                  {/* Form email */}
+                  <form onSubmit={handleSubmit} className="space-y-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        value={email}
+                        onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
+                        placeholder={w.placeholder as string}
+                        autoComplete="off"
+                        className="flex-1 rounded-full border border-white/10 bg-neutral-800 px-5 py-3 text-sm text-white placeholder-neutral-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        disabled={isSubmitting || isGoogleLoading}
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || isGoogleLoading}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500 to-pink-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:opacity-90 disabled:opacity-50"
+                      >
+                        {isSubmitting ? (w.joining as string) : (w.heroCta as string)} <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {error && <p className="text-sm text-red-400">{error}</p>}
+                  </form>
+
+                  <p className="flex items-center justify-center gap-1.5 text-xs text-neutral-500">
+                    <ShieldCheck className="h-3.5 w-3.5" /> {w.heroTrust as string}
+                  </p>
+                </div>
+              ) : (
+                <div id="queue-card" className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                  <div className="flex items-center gap-2 text-emerald-400">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-white">
+                      <Check className="h-4 w-4" />
+                    </div>
+                    <span className="text-sm font-bold text-white">{w.heroJoined as string}</span>
+                  </div>
+                  {queue.position && (
+                    <div className="mt-3">
+                      <div className="text-sm font-semibold text-white">
+                        {w.queuePosition as string} <span className="text-brand-400">#{queue.position}</span> {w.queueOf as string} {queue.total ?? total}
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-800">
+                        <motion.div
+                          className="h-full rounded-full bg-gradient-to-r from-brand-500 to-pink-500"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${queue.position && queue.total ? Math.max(5, ((queue.total - queue.position + 1) / queue.total) * 100) : 30}%` }}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs text-neutral-400">
+                        {w.queueInvited as string} <span className="font-bold text-white">{queue.referralCount}</span> {w.queueFriends as string} — {w.queueSubtitle as string}
+                      </p>
+                    </div>
+                  )}
+                  {referralLink && (
+                    <div className="mt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-neutral-300">{w.queueLinkLabel as string}</span>
+                        <span className="text-xs text-neutral-500">{w.queueInvited as string} {queue.referralCount}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <code className="flex-1 truncate rounded-full border border-white/10 bg-neutral-900 px-3 py-2 text-xs text-neutral-200">{referralLink}</code>
+                        <button onClick={copyLink} className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black">
+                          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? (w.queueCopied as string) : (w.queueCopy as string)}
+                        </button>
+                      </div>
+                      <p className="text-center text-xs font-medium text-brand-300">{w.queueShare as string}</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        <a href={`https://wa.me/?text=${shareTextEncoded}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#25D366] px-3 py-2.5 text-center text-xs font-bold text-white">{w.shareWhatsapp as string}</a>
+                        <a href={`https://twitter.com/intent/tweet?text=${shareTextEncoded}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-black border border-white/10 px-3 py-2.5 text-center text-xs font-bold text-white">{w.shareX as string}</a>
+                        <a href={`mailto:?subject=${encodeURIComponent("AgentCloud Waitlist")}&body=${shareTextEncoded}`} className="rounded-full bg-neutral-800 border border-white/10 px-3 py-2.5 text-center text-xs font-bold text-white">{w.shareEmail as string}</a>
+                        <a href={`sms:?&body=${shareTextEncoded}`} className="rounded-full bg-brand-500 px-3 py-2.5 text-center text-xs font-bold text-white">{w.shareSms as string}</a>
+                      </div>
+                      <p className="rounded-xl bg-white/5 px-3 py-2 text-center text-xs leading-relaxed text-neutral-400">{w.queueRule as string}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="mt-3 text-center text-xs text-neutral-500">{w.agreeNote as string}</p>
+            </div>
+
+            {/* Checklist anim */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["✓ Task completato", "✓ Workflow eseguito", "✓ 24/7 attivo"].map((t, i) => (
+                <motion.span
+                  key={t}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 + i * 0.15 }}
+                  className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300"
+                >
+                  {t}
+                </motion.span>
+              ))}
+            </div>
           </motion.div>
-        </div>
-      </motion.div>
 
-      {/* Popup email — mostrato quando la waitlist è piena */}
-      <AnimatePresence>
-        {showEmailModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowEmailModal(false)}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            >
-              <div className="w-full max-w-md rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl">
-                <h3 className="mb-1 text-lg font-bold text-white">
-                  {dict.waitlist.emailModalTitle}
-                </h3>
-                <p className="mb-4 text-sm text-neutral-400">
-                  {PUBLIC_SUPPORT_EMAIL}
-                </p>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder={dict.waitlist.emailModalPlaceholder}
-                  rows={5}
-                  className="w-full resize-none rounded-xl border border-white/10 bg-neutral-800 px-4 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                />
-                <div className="mt-4 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowEmailModal(false)}
-                    className="flex-1 rounded-full border border-white/10 px-4 py-2.5 text-sm font-semibold text-neutral-300 transition-colors hover:bg-white/5"
-                  >
-                    {dict.waitlist.emailModalCancel}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleEmailSend}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:opacity-90"
-                  >
-                    <Mail size={16} />
-                    {dict.waitlist.emailModalSend}
-                  </button>
+          {/* Demo live */}
+          <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.7, delay: 0.15 }} className="relative">
+            <div className="rounded-[28px] border border-white/10 bg-neutral-900/80 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur">
+              <div className="rounded-2xl border border-white/5 bg-neutral-950 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-semibold text-brand-300">
+                    <Sparkles className="h-3 w-3" /> {w.demoLiveBadge as string}
+                  </span>
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-end">
+                    <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-white px-4 py-3 text-sm text-neutral-900">{w.demoUserMsg as string}</div>
+                  </div>
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-brand-500/20 bg-gradient-to-br from-brand-500/15 to-pink-500/15 px-4 py-3 text-sm leading-relaxed text-white">
+                      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300">
+                        <span className="h-5 w-5 rounded-full bg-gradient-to-r from-brand-500 to-pink-500" /> AgentCloud
+                      </div>
+                      {w.demoAgentMsg as string}
+                    </div>
+                  </div>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className="inline-flex rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
+                    {w.demoResolved as string}
+                  </motion.div>
+                </div>
+                <div className="mt-4 flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-3 py-2">
+                  <input disabled placeholder={w.demoInputPlaceholder as string} className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 outline-none" />
+                  <span className="rounded-full bg-gradient-to-r from-brand-500 to-pink-500 px-4 py-1.5 text-xs font-bold text-white">Invia</span>
                 </div>
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </section>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                {[
+                  { icon: MessageCircle, label: "WhatsApp", sub: "connesso" },
+                  { icon: ShoppingBag, label: "Shopify", sub: "sincronizzato" },
+                  { icon: Mail, label: "Gmail", sub: "automatizzato" },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-2xl border border-white/5 bg-white/[0.04] px-2 py-3">
+                    <s.icon className="mx-auto h-4 w-4 text-brand-400" />
+                    <div className="mt-1 text-xs font-semibold text-white">{s.label}</div>
+                    <div className="text-[10px] text-neutral-500">{s.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 3 ATTI */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <div className="text-center">
+          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-widest text-neutral-400">{w.howItWorksBadge as string}</span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">{w.howItWorksTitle as string}</h2>
+        </div>
+
+        <div className="relative mt-8 grid gap-6 md:grid-cols-3">
+          <div className="hidden md:block absolute left-[16%] right-[16%] top-[52px] h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          {[
+            {
+              n: "01",
+              icon: Sparkles,
+              title: w.step1Title as string,
+              desc: w.step1Desc as string,
+              mock: (
+                <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
+                  <div className="text-xs font-bold text-white">{w.step1MockTitle as string}</div>
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {["Shopify", "Support", "Lead"].map((k) => (
+                      <div key={k} className="rounded-xl bg-white/5 px-2 py-3 text-center text-xs font-semibold text-neutral-200">{k}</div>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-xs text-neutral-500">{w.step1MockDesc as string}</div>
+                </div>
+              ),
+            },
+            {
+              n: "02",
+              icon: Zap,
+              title: w.step2Title as string,
+              desc: w.step2Desc as string,
+              mock: (
+                <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4 space-y-2">
+                  {[w.step2Check1, w.step2Check2, w.step2Check3].map((c, i) => (
+                    <motion.div key={String(c)} initial={{ opacity: 0, x: -8 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.2 }} className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-300">
+                      <Check className="h-4 w-4" /> {c as string}
+                    </motion.div>
+                  ))}
+                </div>
+              ),
+            },
+            {
+              n: "03",
+              icon: BarChart3,
+              title: w.step3Title as string,
+              desc: w.step3Desc as string,
+              mock: (
+                <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs font-semibold text-neutral-400">Task completati</span>
+                    <span className="text-sm font-bold text-white">1.847</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-4 items-end gap-1.5 h-16">
+                    {[40, 65, 45, 80, 60, 90, 75].map((h, i) => (
+                      <motion.div key={i} initial={{ height: 0 }} whileInView={{ height: `${h}%` }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-t bg-gradient-to-t from-brand-500 to-pink-400" />
+                    ))}
+                  </div>
+                </div>
+              ),
+            },
+          ].map((s) => (
+            <div key={s.n} className="relative rounded-3xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-pink-500 text-white">
+                <s.icon className="h-5 w-5" />
+              </div>
+              <div className="text-xs font-bold tracking-widest text-brand-400">{s.n}</div>
+              <h3 className="mt-1 text-base font-bold text-white">{s.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{s.desc}</p>
+              <div className="mt-4">{s.mock}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <button onClick={scrollToForm} className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black">
+            {w.heroCta as string} <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </section>
+
+      {/* Social proof */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <div className="rounded-3xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-semibold tracking-widest text-brand-400">{w.socialBadge as string}</div>
+              <h3 className="mt-1 text-lg font-bold text-white">{w.socialTitle as string}</h3>
+            </div>
+            <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-neutral-400">{total.toLocaleString("it-IT")} {w.inList as string} • countdown attivo</span>
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {[
+              { v: "1.200+", l: w.statAgents as string, icon: Users },
+              { v: "87k", l: w.statTasks as string, icon: Zap },
+              { v: "32h", l: w.statTime as string, icon: Clock },
+              { v: total.toLocaleString("it-IT"), l: w.statUsers as string, icon: BarChart3 },
+            ].map((s) => (
+              <div key={s.l} className="rounded-2xl border border-white/5 bg-white/[0.03] p-4 text-center">
+                <s.icon className="mx-auto h-5 w-5 text-brand-400" />
+                <div className="mt-2 text-xl font-extrabold text-white">{s.v}</div>
+                <div className="text-xs text-neutral-500">{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="relative z-10 mx-auto max-w-3xl px-4 py-8 sm:px-6">
+        <div className="text-center">
+          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-widest text-neutral-400">{w.faqBadge as string}</span>
+          <h2 className="mt-3 text-2xl font-bold text-white">{w.faqTitle as string}</h2>
+        </div>
+        <div className="mt-6 space-y-3">
+          {(w.faqItems as { q: string; a: string }[]).map((item, i) => (
+            <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+              <button onClick={() => setShowFaq(showFaq === i ? null : i)} className="flex w-full items-center justify-between px-5 py-4 text-left">
+                <span className="text-sm font-semibold text-white">{item.q}</span>
+                <ChevronDown className={`h-4 w-4 text-neutral-400 transition ${showFaq === i ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {showFaq === i && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <p className="px-5 pb-4 text-sm leading-relaxed text-neutral-400">{item.a}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-center text-xs text-neutral-500">{w.noSpam as string}</p>
+      </section>
+
+      {/* Footer CTA */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 pb-10 sm:px-6">
+        <div className="rounded-[28px] border border-brand-500/20 bg-gradient-to-r from-brand-600 via-brand-500 to-pink-500 p-[1px]">
+          <div className="rounded-[27px] bg-neutral-950 px-6 py-8 text-center sm:px-10 sm:py-10">
+            <h2 className="text-2xl font-extrabold text-white sm:text-3xl">{w.footerCtaTitle as string}</h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-neutral-400">{w.footerCtaSubtitle as string}</p>
+            <button onClick={scrollToForm} className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-8 py-3 text-sm font-bold text-black">
+              {isSuccess ? (w.heroJoined as string) : (w.heroCta as string)} <ArrowRight className="h-4 w-4" />
+            </button>
+            <div className="mt-6 flex items-center justify-center gap-4 text-xs font-bold text-neutral-500">
+              <a href="https://www.instagram.com/_agentcloud/" target="_blank" rel="noopener noreferrer" className="hover:text-white">Instagram</a>
+              <a href="https://www.linkedin.com/in/agent-cloud-323218431/" target="_blank" rel="noopener noreferrer" className="hover:text-white">LinkedIn</a>
+              <a href="https://x.com/AgentCloud2k" target="_blank" rel="noopener noreferrer" className="hover:text-white">X</a>
+            </div>
+          </div>
+        </div>
+        <p className="mt-6 text-center text-xs text-neutral-600">© 2026 AgentCloud. Tutti i diritti riservati. • info@agentcloud.agency</p>
+      </section>
+    </div>
   );
 }

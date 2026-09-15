@@ -10,6 +10,9 @@ export const notionProvider: IntegrationProvider = {
   provider: "notion",
   getAuthUrl({ state, redirectUri }) {
     const clientId = process.env.NOTION_OAUTH_CLIENT_ID || "";
+    if (!clientId) {
+      throw new Error("Notion non configurato (NOTION_OAUTH_CLIENT_ID mancante nel file .env — crea un'integrazione su notion.so/my-integrations)");
+    }
     const params = new URLSearchParams({
       client_id: clientId,
       response_type: "code",

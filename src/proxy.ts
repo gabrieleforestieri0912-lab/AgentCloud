@@ -102,7 +102,8 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/api/whatsapp/webhook") ||
       pathname.startsWith("/api/email/webhook") ||
       pathname.startsWith("/api/integrations/") ||
-      pathname.startsWith("/api/auth/google/callback");
+      pathname.startsWith("/api/auth/google/callback") ||
+      pathname.startsWith("/auth/callback");
 
     if (isWaitlistApi || isWebhookOrCallback) {
       return NextResponse.next();

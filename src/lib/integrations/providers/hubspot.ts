@@ -11,6 +11,9 @@ export const hubspotProvider: IntegrationProvider = {
   provider: "hubspot",
   getAuthUrl({ state, redirectUri }) {
     const clientId = process.env.HUBSPOT_CLIENT_ID || "";
+    if (!clientId) {
+      throw new Error("HubSpot non configurato (HUBSPOT_CLIENT_ID mancante nel file .env)");
+    }
     const scopes = process.env.HUBSPOT_SCOPES || DEFAULT_SCOPES.join(" ");
     const params = new URLSearchParams({
       client_id: clientId,
