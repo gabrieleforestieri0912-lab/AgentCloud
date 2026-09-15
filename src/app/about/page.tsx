@@ -94,12 +94,14 @@ export default async function AboutPage() {
                   role: "Developer",
                   img: "/founders/gabriele_forestieri.jpg",
                   bio: "Sviluppa la piattaforma, gli agenti e le integrazioni. Full-stack, ossessionato da velocità, dettagli e DX.",
+                  instagram: "#",
                 },
                 {
                   name: "Alle Cerchiari",
                   role: "Social & Marketing",
                   img: "/founders/alle_cerchiari.jpeg",
                   bio: "Racconta AgentCloud sui social e nel marketing. Traduce la complessità in storie semplici e campagne che funzionano.",
+                  instagram: "#",
                 },
                 {
                   name: "Matteo Parubi",
@@ -107,6 +109,7 @@ export default async function AboutPage() {
                   sub: "Paru",
                   img: "/founders/matteo_parubi.jpeg",
                   bio: "Gestisce pagamenti, piani e prezzi via Stripe. Tiene i conti in ordine e l'esperienza di acquisto fluida.",
+                  instagram: "#",
                 },
               ].map((member) => (
                 <div
@@ -117,12 +120,15 @@ export default async function AboutPage() {
                     <Image src={member.img} alt={member.name} fill sizes="80px" className="object-cover" />
                   </div>
                   <h3 className="mt-4 text-base font-bold text-white">
-                    {member.name} {("sub" in member && member.sub) ? <span className="font-normal text-neutral-400">· {member.sub as string}</span> : null}
+                    {member.name} {("sub" in member && (member as { sub?: string }).sub) ? <span className="font-normal text-neutral-400">· {(member as { sub?: string }).sub}</span> : null}
                   </h3>
                   <p className="mt-1 text-sm font-semibold text-brand-300">
                     {member.role}
                   </p>
                   <p className="mt-3 text-sm text-neutral-400">{member.bio}</p>
+                  <a href={(member as { instagram?: string }).instagram ?? "#"} target={(member as { instagram?: string }).instagram === "#" ? undefined : "_blank"} rel={(member as { instagram?: string }).instagram === "#" ? undefined : "noopener noreferrer"} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-[8px] font-bold text-white">IG</span> Instagram {(member as { instagram?: string }).instagram === "#" ? "· placeholder" : ""}
+                  </a>
                 </div>
               ))}
             </div>

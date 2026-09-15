@@ -503,12 +503,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               role: "Developer",
               img: "/founders/gabriele_forestieri.jpg",
               bio: "Sviluppa la piattaforma, gli agenti e le integrazioni. Full-stack, ossessionato da velocità, dettagli e DX.",
+              instagram: "#",
             },
             {
               name: "Alle Cerchiari",
               role: "Social & Marketing",
               img: "/founders/alle_cerchiari.jpeg",
               bio: "Racconta AgentCloud sui social e nel marketing. Traduce la complessità in storie semplici e campagne che funzionano.",
+              instagram: "#",
             },
             {
               name: "Matteo Parubi",
@@ -516,6 +518,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               sub: "Paru",
               img: "/founders/matteo_parubi.jpeg",
               bio: "Gestisce pagamenti, piani e prezzi via Stripe. Tiene i conti in ordine e l'esperienza di acquisto fluida.",
+              instagram: "#",
             },
           ].map((m) => (
             <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur">
@@ -525,6 +528,9 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               <h3 className="mt-4 text-base font-bold text-white">{m.name} {m.sub ? <span className="font-normal text-neutral-400">· {m.sub}</span> : null}</h3>
               <p className="mt-1 text-xs font-bold uppercase tracking-widest text-brand-300">{m.role}</p>
               <p className="mt-3 text-sm leading-relaxed text-neutral-400">{m.bio}</p>
+              <a href={m.instagram} target={m.instagram === "#" ? undefined : "_blank"} rel={m.instagram === "#" ? undefined : "noopener noreferrer"} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-[8px] font-bold text-white">IG</span> Instagram {m.instagram === "#" ? "· placeholder" : ""}
+              </a>
             </div>
           ))}
         </div>
