@@ -69,6 +69,17 @@ function normalizeMessages(messages: LLMMessage[]): MessageParam[] {
     if (typeof message.content === "string") {
       return { role: message.role, content: message.content };
     }
+    // Vision: user message con blocchi text + image
+    if (Array.isArray(message.content) && message.content.length > 0 && typeof (message.content[0] as Record<string, unknown>).type === "string" && ((message.content[0] as { type: string }).type === "text" || (message.content[0] as { type: string }).type === "image")) {
+      const blocks = message.content as unknown as { type: string; text?: string; source?: { type: string; media_type: string; data: string } }[];
+      const content: ContentBlockParam[] = blocks.map((b) => {
+        if (b.type === "image" && b.source) {
+          return { type: "image", source: { type: "base64", media_type: b.source.media_type as "image/jpeg" | "image/png" | "image/gif" | "image/webp", data: b.source.data } } as unknown as ContentBlockParam;
+        }
+        return { type: "text", text: (b as { text?: string }).text ?? "" } as ContentBlockParam;
+      });
+      return { role: message.role, content };
+    }
 
     if (message.role === "assistant") {
       const toolUses = message.content as unknown as {

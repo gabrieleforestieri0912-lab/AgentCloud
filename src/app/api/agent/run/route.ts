@@ -169,10 +169,16 @@ export async function POST(req: Request) {
   // Risolve il backend del modello una volta per richiesta (Anthropic).
   const provider = getLLMProvider();
 
-  // Normalizza i messaggi in ingresso nella forma condivisa LLMMessage. Il
-  // client invia sempre semplici stringhe { role, content }.
+  // Normalizza i messaggi in ingresso nella forma condivisa LLMMessage.
+  // Il client invia stringhe oppure blocchi vision [{type:"text"...},{type:"image"...}] per l'ultimo messaggio.
   const initialMessages: LLMMessage[] = (messages as unknown[]).map((m) => {
     const msg = m as { role?: string; content?: unknown };
+    if (Array.isArray(msg.content)) {
+      return {
+        role: msg.role === "assistant" ? "assistant" : "user",
+        content: msg.content as unknown as LLMMessage["content"],
+      };
+    }
     return {
       role: msg.role === "assistant" ? "assistant" : "user",
       content:

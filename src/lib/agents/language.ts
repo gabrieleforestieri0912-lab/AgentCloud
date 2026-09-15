@@ -123,8 +123,12 @@ export function lastUserText(
 ): string | undefined {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
-    if (message?.role === "user" && typeof message.content === "string") {
-      return message.content;
+    if (message?.role !== "user") continue;
+    if (typeof message.content === "string") return message.content;
+    if (Array.isArray(message.content)) {
+      const arr = message.content as { type?: string; text?: string }[];
+      const text = arr.filter((b) => b.type === "text").map((b) => b.text ?? "").join("\n");
+      if (text) return text;
     }
   }
   return undefined;

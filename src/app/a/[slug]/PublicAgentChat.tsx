@@ -24,7 +24,7 @@ import {
   chatAttachLabels,
   useChatAttachments,
 } from "@/components/ChatAttachments";
-import { composeUserContent, toFilesMap } from "@/lib/chat-attachments";
+import { composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 
 type Message = {
@@ -93,13 +93,15 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
     const pending = attach.attachments;
     if ((!input.trim() && pending.length === 0) || isRunning) return;
 
-    // Il corpo completo (contenuti file inclusi) va all'API così l'agente può
-    // leggere gli allegati; la bolla visibile conserva solo il testo più i chip
-    // di anteprima compatti, non i dump grezzi dei file.
-    const userContent = composeUserContent(input, pending);
-    const filesMap = toFilesMap(pending);
+    const apiText = composeUserContent(input, pending);
+    const visionBlocks = toVisionBlocks(pending);
+    const userContent: unknown = visionBlocks.length > 0
+      ? ([{ type: "text" as const, text: apiText || "Analizza l'immagine allegata e descrivi cosa vedi, poi rispondi alla richiesta dell'utente." }, ...visionBlocks] as unknown)
+      : apiText;
+    // Non mostrare mai il filename nel fumetto (richiesta utente) — usa placeholder generico
     const displayContent =
-      input.trim() || pending.map((a) => a.name).join(", ");
+      input.trim() || (pending.length > 0 ? (pending.some((a) => a.kind === "image") ? "Immagine allegata" : "File allegato") : "");
+    const filesMap = toFilesMap(pending.filter((a) => a.kind !== "image"));
     setInput("");
     attach.clear();
     setIsRunning(true);

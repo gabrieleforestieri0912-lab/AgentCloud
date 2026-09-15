@@ -52,7 +52,7 @@ import {
   chatAttachLabels,
   useChatAttachments,
 } from "@/components/ChatAttachments";
-import { composeUserContent, toFilesMap } from "@/lib/chat-attachments";
+import { composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import { getEnabledTools, AGENT_RUNTIME } from "@/lib/agents/registry";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
@@ -730,16 +730,25 @@ export default function ChatInterface({
     convId: string,
     pending: ChatAttachment[] = [],
   ) {
-    const apiContent = composeUserContent(text, pending);
-    if (!apiContent || !convId) return;
+    const apiText = composeUserContent(text, pending);
+    const visionBlocks = toVisionBlocks(pending);
+    // apiContent può essere stringa (solo testo) o array blocchi vision (testo + immagini) — mai mostra filename
+    const apiContent: unknown = visionBlocks.length > 0
+      ? ([{ type: "text" as const, text: apiText || "Analizza l'immagine allegata e descrivi cosa vedi, poi rispondi alla richiesta dell'utente." }, ...visionBlocks] as unknown)
+      : apiText;
+    // Evita invio vuoto: serve testo o almeno un'immagine
+    if ((!apiText || !apiText.trim()) && visionBlocks.length === 0) return;
+    if (!convId) return;
     if (isTyping) return;
     setIsAtBottom(true);
     stickToBottom.current = true;
 
+    // Nel fumetto utente non mostrare mai il filename: usa testo digitato o placeholder generico
+    const displayText = text.trim() || (pending.length > 0 ? (pending.some((a) => a.kind === "image") ? "Immagine allegata" : "File allegato") : "");
     const userMsg: LocalMessage = {
       id: generateId(),
       role: "user",
-      content: text.trim() || pending.map((a) => a.name).join(", "),
+      content: displayText,
       created_at: new Date().toISOString(),
       attachments: pending.map((a) => ({
         id: a.id,
@@ -824,7 +833,7 @@ export default function ChatInterface({
         ...history.map((m) => ({ role: m.role, content: m.content })),
         { role: "user" as const, content: apiContent },
       ];
-      const filesMap = toFilesMap(pending);
+      const filesMap = toFilesMap(pending.filter((a) => a.kind !== "image"));
 
       // L'utente può inserire quanti agenti vuole nella conversazione (selectedAgentSlugs).
       // Se nessun agente è selezionato → chat generica. Se uno o più → loop su /api/agent/run.

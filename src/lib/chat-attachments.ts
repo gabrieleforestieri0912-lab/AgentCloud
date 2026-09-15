@@ -141,16 +141,15 @@ export function toFilesMap(items: ChatAttachment[]): Record<string, string> {
 /**
  * Compone il contenuto del messaggio utente che viene inviato all'API.
  *
- * Perché esiste: le API di chat accettano testo semplice, quindi il testo
- * digitato + gli allegati vengono impacchettati in un unico corpo ben
- * strutturato (markdown con sezioni `### nomefile`) che il modello può
- * leggere senza ambiguità. Per le immagini si dà al modello una descrizione e
- * l'istruzione di usare `read_file` col nome del file, dato che il contenuto
- * viaggia separatamente nella mappa `files`.
+ * Le immagini NON vengono incluse come testo con nome file: sono inviate a
+ * parte come blocchi vision (base64) così Claude le vede davvero. Il nome
+ * file non compare mai nel messaggio AI (richiesta: non mostrare filename).
+ * Per i file di testo il contenuto viene incluso senza header col filename.
  */
 export function composeUserContent(text: string, items: ChatAttachment[]): string {
   const trimmed = text.trim();
-  if (items.length === 0) return trimmed;
+  const nonImage = items.filter((i) => i.kind !== "image");
+  if (nonImage.length === 0) return trimmed;
 
   const lines = [
     trimmed,
@@ -159,21 +158,37 @@ export function composeUserContent(text: string, items: ChatAttachment[]): strin
     "Allegati dell'utente:",
   ];
 
-  for (const item of items) {
+  for (const item of nonImage) {
     if (item.kind === "text") {
-      lines.push("", `### ${item.name}`, item.content);
-    } else if (item.kind === "image") {
-      lines.push(
-        "",
-        `### ${item.name}`,
-        `Immagine allegata (${item.mime}, ${item.size} byte). Usa read_file con filename "${item.name}" se ti serve il contenuto.`,
-      );
+      lines.push("", item.content);
     } else {
-      lines.push("", `### ${item.name}`, item.content);
+      // file binario: segnaposto già senza nome file visibile? lo manteniamo generico
+      lines.push("", item.content);
     }
   }
 
   return lines.filter((l, i) => !(i === 0 && l === "")).join("\n").trim();
+}
+
+/**
+ * Estrae i blocchi vision per le immagini allegate (Anthropic image blocks).
+ * Ritorna array pronto per LLMMessage content. Il nome file non è mai esposto.
+ */
+export function toVisionBlocks(items: ChatAttachment[]): Array<{ type: "image"; source: { type: "base64"; media_type: string; data: string } }> {
+  const blocks: Array<{ type: "image"; source: { type: "base64"; media_type: string; data: string } }> = [];
+  for (const item of items) {
+    if (item.kind !== "image") continue;
+    const url = item.content; // data URL
+    const m = url.match(/^data:([^;]+);base64,(.*)$/);
+    if (!m) continue;
+    const mediaType = m[1] || item.mime || "image/png";
+    const data = m[2];
+    // Anthropic supporta: image/jpeg, image/png, image/gif, image/webp
+    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    const normalized = allowed.includes(mediaType) ? mediaType : "image/png";
+    blocks.push({ type: "image", source: { type: "base64", media_type: normalized, data } });
+  }
+  return blocks;
 }
 
 // Libera l'URL blob dell'anteprima quando l'allegato viene rimosso: senza

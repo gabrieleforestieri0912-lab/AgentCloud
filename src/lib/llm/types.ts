@@ -36,13 +36,18 @@ export type LLMToolResult = {
   content: string;
 };
 
+export type LLMContentBlock =
+  | { type: "text"; text: string }
+  | { type: "image"; source: { type: "base64"; media_type: string; data: string } };
+
 /** One message in the conversation (provider-agnostic shape). */
 export type LLMMessage = {
   role: "user" | "assistant";
   content:
     | string
     | LLMToolUse[] // assistant message containing tool calls
-    | LLMToolResult[]; // user message containing tool results
+    | LLMToolResult[] // user message containing tool results
+    | LLMContentBlock[]; // user message with vision (text + images)
 };
 
 /** Normalized response returned by every provider. */
