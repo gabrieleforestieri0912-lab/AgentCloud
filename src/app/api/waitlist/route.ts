@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
-import { MAX_SPOTS, generateReferralCode, getQueueInfo, getTotalCount, provisionAuthUser } from "@/lib/waitlist";
+import { MAX_SPOTS, generateReferralCode, getQueueInfo, getTotalCount, getAhead, provisionAuthUser } from "@/lib/waitlist";
 import { hasLaunched } from "@/lib/waitlist-constants";
 import { logAudit } from "@/lib/audit";
 import {
@@ -62,6 +62,11 @@ export async function GET() {
       }
     }
 
+    let ahead: Awaited<ReturnType<typeof getAhead>> = [];
+    if (joined && joinedEmail) {
+      ahead = await getAhead(joinedEmail).catch(() => []);
+    }
+
     return NextResponse.json({
       maxSpots: MAX_SPOTS,
       remaining: Math.max(MAX_SPOTS - total, 0), // legacy compat
@@ -71,6 +76,7 @@ export async function GET() {
       position: queue?.position ?? null,
       referralCode: queue?.referralCode ?? null,
       referralCount: queue?.referralCount ?? 0,
+      ahead,
     });
   } catch (err) {
     console.error("Failed to read waitlist state:", err);
@@ -229,8 +235,9 @@ export async function POST(request: Request) {
         await provisionAuthUser(email);
         const queue = await getQueueInfo(email).catch(() => null);
         const total = await getTotalCount().catch(() => null);
+        const ahead = await getAhead(email).catch(() => []);
         const res = NextResponse.json(
-          { error: await apiErrorMessage("alreadyOnWaitlist"), total, position: queue?.position ?? null, referralCode: queue?.referralCode ?? null, referralCount: queue?.referralCount ?? 0 },
+          { error: await apiErrorMessage("alreadyOnWaitlist"), total, position: queue?.position ?? null, referralCode: queue?.referralCode ?? null, referralCount: queue?.referralCount ?? 0, ahead },
           { status: 409 },
         );
         res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
@@ -244,12 +251,14 @@ export async function POST(request: Request) {
           await provisionAuthUser(email);
           const queue = await getQueueInfo(email).catch(() => null);
           const total = await getTotalCount().catch(() => null);
+          const ahead = await getAhead(email).catch(() => []);
           const res = NextResponse.json({
             success: true,
             total,
             position: queue?.position ?? total,
             referralCode: queue?.referralCode ?? null,
             referralCount: 0,
+            ahead,
           });
           res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
           res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);
@@ -266,12 +275,14 @@ export async function POST(request: Request) {
     await provisionAuthUser(email);
     const queue = await getQueueInfo(email).catch(() => null);
     const total = await getTotalCount().catch(() => null);
+    const ahead = await getAhead(email).catch(() => []);
     const res = NextResponse.json({
       success: true,
       total,
       position: queue?.position ?? total,
       referralCode: queue?.referralCode ?? referralCode,
       referralCount: queue?.referralCount ?? 0,
+      ahead,
     });
     res.cookies.set(JOINED_COOKIE, "1", COOKIE_OPTIONS);
     res.cookies.set(JOINED_EMAIL_COOKIE, email, COOKIE_OPTIONS);

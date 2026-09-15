@@ -78,3 +78,29 @@ as $$
 $$;
 
 grant execute on function public.waitlist_position(text) to anon, authenticated, service_role;
+
+-- 6. RPC: i 5 davanti a te + posizione (classifica) — maschera email per privacy
+create or replace function public.waitlist_ahead(p_email text)
+returns table(rank integer, email_masked text, created_at timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  with me as (
+    select w.created_at as me_at
+    from public.waitlist w
+    where lower(w.email) = lower(p_email)
+    limit 1
+  )
+  select
+    (select count(*)::int from public.waitlist w2 where w2.created_at <= w.created_at) as rank,
+    -- maschera: a***@domain
+    substring(w.email from 1 for 1) || '***@' || split_part(w.email, '@', 2) as email_masked,
+    w.created_at
+  from public.waitlist w, me
+  where w.created_at < me.me_at
+  order by w.created_at desc
+  limit 5;
+$$;
+
+grant execute on function public.waitlist_ahead(text) to anon, authenticated, service_role;

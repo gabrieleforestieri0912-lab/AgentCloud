@@ -84,6 +84,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
   const [copied, setCopied] = useState(false);
   const [showFaq, setShowFaq] = useState<number | null>(null);
   const [queue, setQueue] = useState<QueueState>({ position: null, total: initialTotal, referralCode: null, referralCount: 0 });
+  const [ahead, setAhead] = useState<Array<{ rank: number; emailMasked: string }>>([]);
   const [isSuccess, setIsSuccess] = useState(() => typeof document !== "undefined" && document.cookie.includes("ac_wl_joined=1"));
   const [total, setTotal] = useState<number>(initialTotal);
   const [showForm, setShowForm] = useState(false);
@@ -105,6 +106,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       .then((data) => {
         if (!data) return;
         if (typeof data.total === "number") setTotal(data.total);
+        if (Array.isArray(data.ahead)) setAhead(data.ahead);
         if (data.verified === true && data.joined === false) {
           document.cookie = `${JOINED_COOKIE}=; max-age=0; path=/`;
           document.cookie = `${JOINED_EMAIL_COOKIE}=; max-age=0; path=/`;
@@ -117,6 +119,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             referralCode: data.referralCode ?? null,
             referralCount: data.referralCount ?? 0,
           });
+          if (Array.isArray(data.ahead)) setAhead(data.ahead);
         } else if (typeof data.total === "number") {
           setQueue((q) => ({ ...q, total: data.total }));
         }
@@ -164,11 +167,13 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       const data = await res.json();
       if (!res.ok) {
         if (typeof data.total === "number") setTotal(data.total);
+        if (Array.isArray(data.ahead)) setAhead(data.ahead);
         if (res.status === 409) {
           setIsSuccess(true);
           if (typeof data.position === "number") {
             setQueue({ position: data.position, total: data.total ?? total, referralCode: data.referralCode ?? null, referralCount: data.referralCount ?? 0 });
           }
+          if (Array.isArray(data.ahead)) setAhead(data.ahead);
           setError(w.alreadyOnList as string);
         } else {
           setError(data.error || (w.somethingWrong as string));
@@ -177,6 +182,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         return;
       }
       if (typeof data.total === "number") setTotal(data.total);
+      if (Array.isArray(data.ahead)) setAhead(data.ahead);
       if (data.accessGranted) {
         window.location.href = "/";
         return;
@@ -188,6 +194,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         referralCode: data.referralCode ?? null,
         referralCount: data.referralCount ?? 0,
       });
+      if (Array.isArray(data.ahead)) setAhead(data.ahead);
       setEmail("");
     } catch {
       setError(w.networkError as string);
@@ -312,6 +319,58 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-500">
             <ShieldCheck className="h-3.5 w-3.5" /> {w.heroTrust as string}
           </p>
+
+          {/* Classifica: dopo iscrizione, sotto il bottone — tuo numero + 5 davanti */}
+          <AnimatePresence>
+            {isSuccess && queue.position && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-8 w-full max-w-xl rounded-3xl border border-white/10 bg-neutral-900/80 p-5 text-left backdrop-blur"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-white">
+                    <BarChart3 className="h-4 w-4 text-brand-400" /> La tua posizione in classifica
+                  </h3>
+                  <span className="rounded-full bg-brand-500/15 px-2.5 py-1 text-xs font-bold text-brand-300">
+                    #{queue.position} su {queue.total ?? total}
+                  </span>
+                </div>
+                <div className="mt-3 rounded-2xl border border-brand-500/20 bg-brand-500/10 px-4 py-3 text-center">
+                  <p className="text-sm font-bold text-white">
+                    Sei <span className="text-brand-400">#{queue.position}</span> su {queue.total ?? total} in coda
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-400">Condividi il tuo link per scalare — ogni amico ti fa salire.</p>
+                </div>
+
+                {ahead.length > 0 ? (
+                  <div className="mt-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">I 5 davanti a te</p>
+                    <ol className="mt-2 space-y-1.5">
+                      {ahead.map((a) => (
+                        <li key={a.rank} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2">
+                          <span className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white">#{a.rank}</span>
+                            <span className="text-sm font-medium text-neutral-300">{a.emailMasked}</span>
+                          </span>
+                          <span className="text-xs text-neutral-500">davanti a te</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ) : (
+                  <p className="mt-3 rounded-xl bg-emerald-500/10 px-3 py-2 text-center text-xs font-bold text-emerald-300">
+                    Sei tra i primi! Nessuno davanti a te — invita amici per restare in testa.
+                  </p>
+                )}
+
+                <button onClick={openForm} className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
+                  <Copy className="h-4 w-4" /> Vedi link referral e condividi
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Demo live compatta sotto al CTA (opzionale, resta centrata) */}

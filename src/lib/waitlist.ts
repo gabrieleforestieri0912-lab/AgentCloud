@@ -12,6 +12,12 @@ export type QueueInfo = {
   referralCount: number;
 };
 
+export type AheadEntry = {
+  rank: number;
+  emailMasked: string;
+  createdAt: string;
+};
+
 /**
  * Genera un referral code breve (8 hex chars).
  */
@@ -86,6 +92,51 @@ export async function getQueueInfo(email: string): Promise<QueueInfo | null> {
     referralCode,
     referralCount,
   };
+}
+
+/**
+ * I 5 davanti a te in classifica (mascherati). Ritorna [] se sei primo o non in lista.
+ */
+export async function getAhead(email: string): Promise<AheadEntry[]> {
+  const admin = createAdminClient();
+  const supabase = admin ?? (await createClient());
+  try {
+    const { data } = await (supabase as unknown as {
+      rpc: (name: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+    }).rpc("waitlist_ahead", { p_email: email });
+    if (Array.isArray(data)) {
+      return (data as Array<{ rank: number; email_masked: string; created_at: string }>).map((r) => ({
+        rank: r.rank,
+        emailMasked: r.email_masked,
+        createdAt: r.created_at,
+      }));
+    }
+  } catch {}
+  // Fallback manuale: 5 precedenti per created_at
+  try {
+    const { data: me } = await supabase.from("waitlist").select("created_at").eq("email", email.toLowerCase()).maybeSingle();
+    const meAt = (me as { created_at?: string } | null)?.created_at;
+    if (!meAt) return [];
+    const { data: ahead } = await supabase
+      .from("waitlist")
+      .select("email, created_at")
+      .lt("created_at", meAt)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (!ahead) return [];
+    // calcola rank per ciascuno (count <= created_at)
+    const entries: AheadEntry[] = [];
+    for (const row of ahead as Array<{ email: string; created_at: string }>) {
+      const { count } = await supabase.from("waitlist").select("id", { count: "exact", head: true }).lte("created_at", row.created_at);
+      const rank = (count ?? 1) as number;
+      const parts = row.email.split("@");
+      const masked = parts.length === 2 ? `${parts[0].charAt(0)}***@${parts[1]}` : "****";
+      entries.push({ rank, emailMasked: masked, createdAt: row.created_at });
+    }
+    return entries;
+  } catch {
+    return [];
+  }
 }
 
 /**
