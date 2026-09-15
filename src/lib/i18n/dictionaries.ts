@@ -898,7 +898,7 @@ const it = {
       },
       {
         q: "Quanto costa?",
-        a: "Gratis in fase waitlist. Al lancio piani da €29/mese (un agente) e bundle. Nessun vincolo, disdici quando vuoi.",
+        a: "Gratis in fase waitlist. Al lancio piani da €9,99/mese (un agente) e bundle. Nessun vincolo, disdici quando vuoi.",
       },
       {
         q: "Quando arrivano gli inviti?",
@@ -2604,7 +2604,7 @@ export const en: Dictionary = {
       },
       {
         q: "How much does it cost?",
-        a: "Free during waitlist. At launch plans from €29/mo (one agent) and bundles. No commitment, cancel anytime.",
+        a: "Free during waitlist. At launch plans from €9,99/mo (one agent) and bundles. No commitment, cancel anytime.",
       },
       {
         q: "When do invites arrive?",
@@ -4301,7 +4301,7 @@ export const es: Dictionary = {
       },
       {
         q: "¿Cuánto cuesta?",
-        a: "Gratis en waitlist. En el lanzamiento desde €29/mes (un agente) y bundles. Sin permanencia.",
+        a: "Gratis en waitlist. En el lanzamiento desde €9,99/mes (un agente) y bundles. Sin permanencia.",
       },
       {
         q: "¿Cuándo llegan las invitaciones?",
@@ -5997,7 +5997,7 @@ export const de: Dictionary = {
       },
       {
         q: "Wie viel kostet es?",
-        a: "Kostenlos in der Warteliste. Zum Launch ab €29/Monat (ein Agent) und Bundles. Keine Bindung.",
+        a: "Kostenlos in der Warteliste. Zum Launch ab €9,99/Monat (ein Agent) und Bundles. Keine Bindung.",
       },
       {
         q: "Wann kommen die Einladungen?",
@@ -7693,7 +7693,7 @@ export const fr: Dictionary = {
       },
       {
         q: "Combien ça coûte ?",
-        a: "Gratuit en waitlist. Au lancement dès €29/mois (un agent) et bundles. Sans engagement.",
+        a: "Gratuit en waitlist. Au lancement dès €9,99/mois (un agent) et bundles. Sans engagement.",
       },
       {
         q: "Quand arrivent les invitations ?",

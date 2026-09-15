@@ -187,7 +187,8 @@ export const BRANDS: Record<string, Brand> = {
     path: LINKEDIN_PATH,
     hex: "#0A66C2",
   },
-  // Microsoft suite — custom (simple-icons version in repo lacks these, use 4-squares Microsoft mark)
+  // Microsoft suite — placeholder 4-squares (simple-icons 16.28 non ha Teams/Outlook/OneDrive/SharePoint/Excel ufficiali)
+  // TODO pre-launch: sostituire con SVG ufficiali quando si aggiorna simple-icons a >=17 o con asset brand manuali.
   microsoftteams: { title: "Microsoft Teams", path: MICROSOFT_PATH, hex: "#6264A7" },
   microsoftoutlook: { title: "Microsoft Outlook", path: MICROSOFT_PATH, hex: "#0078D4" },
   microsoftonedrive: { title: "Microsoft OneDrive", path: MICROSOFT_PATH, hex: "#0078D4" },

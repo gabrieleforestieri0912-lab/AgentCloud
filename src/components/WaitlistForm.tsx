@@ -29,6 +29,7 @@ import FloatingBrandBubbles, { type FloatingBubble } from "@/components/Floating
 import CountdownTimer from "@/components/CountdownTimer";
 import LanguageToggle from "@/components/LanguageToggle";
 import BrandLogo from "@/components/BrandLogo";
+import { AVAILABLE_AGENTS } from "@/lib/agents";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createClient } from "@/lib/supabase/client";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -755,15 +756,15 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                     <div className="flex min-w-0 flex-1 flex-col bg-neutral-950 p-2.5">
                       <div className="flex items-baseline justify-between">
                         <span className="text-[9px] font-semibold uppercase tracking-widest text-neutral-500">Task completati</span>
-                        <span className="text-xs font-bold text-white">1.847</span>
+                        <span className="flex items-center gap-1 text-xs font-bold text-white">— <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[7px] font-bold text-amber-300">Esempio</span></span>
                       </div>
-                      <div className="mt-2 grid h-10 flex-1 grid-cols-7 items-end gap-1">
+                      <div className="mt-2 grid h-10 flex-1 grid-cols-7 items-end gap-1 opacity-60">
                         {[40, 65, 45, 80, 60, 90, 75].map((h, i) => (
-                          <motion.div key={i} initial={{ height: 0 }} whileInView={{ height: `${h}%` }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-t-sm bg-gradient-to-t from-brand-500 to-pink-400" />
+                          <motion.div key={i} initial={{ height: 0 }} whileInView={{ height: `${h}%` }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-t-sm bg-gradient-to-t from-brand-500/60 to-pink-400/60" />
                         ))}
                       </div>
                       <div className="mt-1.5 flex gap-1">
-                        <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[7px] font-bold text-emerald-300">● Attivo</span>
+                        <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[7px] font-bold text-amber-300">Dati di esempio</span>
                         <span className="text-[7px] text-neutral-500">7 giorni</span>
                       </div>
                     </div>
@@ -803,15 +804,16 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { v: "1.200+", l: w.statAgents as string, icon: Users },
-              { v: "87k", l: w.statTasks as string, icon: Zap },
-              { v: "32h", l: w.statTime as string, icon: Clock },
-              { v: total.toLocaleString("it-IT"), l: w.statUsers as string, icon: BarChart3 },
+              { v: `${AVAILABLE_AGENTS.length}`, l: w.statAgents as string, icon: Users, example: false },
+              { v: "—", l: w.statTasks as string, icon: Zap, example: true },
+              { v: "—", l: w.statTime as string, icon: Clock, example: true },
+              { v: total.toLocaleString("it-IT"), l: w.statUsers as string, icon: BarChart3, example: false },
             ].map((s) => (
               <div key={s.l} className="rounded-2xl border border-white/5 bg-white/[0.03] p-4 text-center">
                 <s.icon className="mx-auto h-5 w-5 text-brand-400" />
-                <div className="mt-2 text-xl font-extrabold text-white">{s.v}</div>
+                <div className="mt-2 flex items-center justify-center gap-1.5 text-xl font-extrabold text-white">{s.v} {s.example && <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[8px] font-bold text-amber-300">Esempio</span>}</div>
                 <div className="text-xs text-neutral-500">{s.l}</div>
+                {s.example && <div className="mt-1 text-[9px] font-semibold text-amber-300/70">Dati reali dal lancio</div>}
               </div>
             ))}
           </div>

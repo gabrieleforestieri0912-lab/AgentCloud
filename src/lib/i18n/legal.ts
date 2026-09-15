@@ -29,7 +29,7 @@ type LegalTranslation = Omit<LegalDocument, "backHome">;
 const IT: Record<LegalDocumentKey, LegalTranslation> = {
   privacy: {
     title: "Informativa Privacy",
-    lastUpdated: "Ultimo aggiornamento: settembre 2026",
+    lastUpdated: "Ultimo aggiornamento: 15 settembre 2026",
     sections: [
       {
         heading: "1. Chi siamo e titolare del trattamento",
@@ -159,7 +159,7 @@ const IT: Record<LegalDocumentKey, LegalTranslation> = {
   },
   terms: {
     title: "Termini di Servizio",
-    lastUpdated: "Ultimo aggiornamento: settembre 2026",
+    lastUpdated: "Ultimo aggiornamento: 15 settembre 2026",
     sections: [
       {
         heading: "1. Accettazione dei Termini",
@@ -289,7 +289,7 @@ const IT: Record<LegalDocumentKey, LegalTranslation> = {
   },
   refunds: {
     title: "Politica di Rimborso",
-    lastUpdated: "Ultimo aggiornamento: settembre 2026",
+    lastUpdated: "Ultimo aggiornamento: 15 settembre 2026",
     sections: [
       {
         heading: "1. Servizi digitali e diritto di recesso",
@@ -360,7 +360,7 @@ const IT: Record<LegalDocumentKey, LegalTranslation> = {
 const EN: Record<LegalDocumentKey, LegalTranslation> = {
   privacy: {
     title: "Privacy Policy",
-    lastUpdated: "Last updated: September 2026",
+    lastUpdated: "Last updated: September 15, 2026",
     sections: [
       {
         heading: "1. Who We Are and Data Controller",
@@ -490,7 +490,7 @@ const EN: Record<LegalDocumentKey, LegalTranslation> = {
   },
   terms: {
     title: "Terms of Service",
-    lastUpdated: "Last updated: September 2026",
+    lastUpdated: "Last updated: September 15, 2026",
     sections: [
       {
         heading: "1. Acceptance of Terms",
@@ -620,7 +620,7 @@ const EN: Record<LegalDocumentKey, LegalTranslation> = {
   },
   refunds: {
     title: "Refund Policy",
-    lastUpdated: "Last updated: September 2026",
+    lastUpdated: "Last updated: September 15, 2026",
     sections: [
       {
         heading: "1. Digital Services and Withdrawal Right",
@@ -691,7 +691,7 @@ const EN: Record<LegalDocumentKey, LegalTranslation> = {
 const ES: Record<LegalDocumentKey, LegalTranslation> = {
   privacy: {
     title: "Política de privacidad",
-    lastUpdated: "Última actualización: septiembre de 2026",
+    lastUpdated: "Última actualización: 15 de septiembre de 2026",
     sections: [
       {
         heading: "1. Quiénes somos y responsable del tratamiento",
@@ -821,7 +821,7 @@ const ES: Record<LegalDocumentKey, LegalTranslation> = {
   },
   terms: {
     title: "Términos de servicio",
-    lastUpdated: "Última actualización: septiembre de 2026",
+    lastUpdated: "Última actualización: 15 de septiembre de 2026",
     sections: [
       {
         heading: "1. Aceptación de los Términos",
@@ -951,7 +951,7 @@ const ES: Record<LegalDocumentKey, LegalTranslation> = {
   },
   refunds: {
     title: "Política de reembolsos",
-    lastUpdated: "Última actualización: septiembre de 2026",
+    lastUpdated: "Última actualización: 15 de septiembre de 2026",
     sections: [
       {
         heading: "1. Servicios digitales y derecho de desistimiento",
@@ -1022,7 +1022,7 @@ const ES: Record<LegalDocumentKey, LegalTranslation> = {
 const DE: Record<LegalDocumentKey, LegalTranslation> = {
   privacy: {
     title: "Datenschutzerklärung",
-    lastUpdated: "Letzte Aktualisierung: September 2026",
+    lastUpdated: "Letzte Aktualisierung: 15. September 2026",
     sections: [
       {
         heading: "1. Wer wir sind und Verantwortlicher",
@@ -1152,7 +1152,7 @@ const DE: Record<LegalDocumentKey, LegalTranslation> = {
   },
   terms: {
     title: "Nutzungsbedingungen",
-    lastUpdated: "Letzte Aktualisierung: September 2026",
+    lastUpdated: "Letzte Aktualisierung: 15. September 2026",
     sections: [
       {
         heading: "1. Annahme der Bedingungen",
@@ -1282,7 +1282,7 @@ const DE: Record<LegalDocumentKey, LegalTranslation> = {
   },
   refunds: {
     title: "Rückerstattungsrichtlinie",
-    lastUpdated: "Letzte Aktualisierung: September 2026",
+    lastUpdated: "Letzte Aktualisierung: 15. September 2026",
     sections: [
       {
         heading: "1. Digitale Dienste und Widerrufsrecht",
@@ -1353,7 +1353,7 @@ const DE: Record<LegalDocumentKey, LegalTranslation> = {
 const FR: Record<LegalDocumentKey, LegalTranslation> = {
   privacy: {
     title: "Politique de confidentialité",
-    lastUpdated: "Dernière mise à jour : septembre 2026",
+    lastUpdated: "Dernière mise à jour : 15 septembre 2026",
     sections: [
       {
         heading: "1. Qui nous sommes et responsable du traitement",
@@ -1483,7 +1483,7 @@ const FR: Record<LegalDocumentKey, LegalTranslation> = {
   },
   terms: {
     title: "Conditions d'utilisation",
-    lastUpdated: "Dernière mise à jour : septembre 2026",
+    lastUpdated: "Dernière mise à jour : 15 septembre 2026",
     sections: [
       {
         heading: "1. Acceptation des conditions",
@@ -1613,7 +1613,7 @@ const FR: Record<LegalDocumentKey, LegalTranslation> = {
   },
   refunds: {
     title: "Politique de remboursement",
-    lastUpdated: "Dernière mise à jour : septembre 2026",
+    lastUpdated: "Dernière mise à jour : 15 septembre 2026",
     sections: [
       {
         heading: "1. Services numériques et droit de rétractation",
