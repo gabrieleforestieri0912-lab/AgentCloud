@@ -489,6 +489,48 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         </div>
       </section>
 
+      {/* CHI SIAMO — founders */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-widest text-neutral-400">Chi siamo</span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Tre persone, una piattaforma</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-neutral-400">Costruiamo AgentCloud con ruoli chiari e zero fronzoli: prodotto solido, comunicazione chiara, conti in ordine.</p>
+        </div>
+        <div className="mt-8 grid gap-6 sm:grid-cols-3">
+          {[
+            {
+              name: "Gabriele Forestieri",
+              role: "Developer",
+              img: "/founders/gabriele_forestieri.jpg",
+              bio: "Sviluppa la piattaforma, gli agenti e le integrazioni. Full-stack, ossessionato da velocità, dettagli e DX.",
+            },
+            {
+              name: "Alle Cerchiari",
+              role: "Social & Marketing",
+              img: "/founders/alle_cerchiari.jpeg",
+              bio: "Racconta AgentCloud sui social e nel marketing. Traduce la complessità in storie semplici e campagne che funzionano.",
+            },
+            {
+              name: "Matteo Parubi",
+              role: "Stripe & Pricing",
+              sub: "Paru",
+              img: "/founders/matteo_parubi.jpeg",
+              bio: "Gestisce pagamenti, piani e prezzi via Stripe. Tiene i conti in ordine e l'esperienza di acquisto fluida.",
+            },
+          ].map((m) => (
+            <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur">
+              <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border border-white/10 bg-neutral-800">
+                <Image src={m.img} alt={m.name} fill sizes="96px" className="object-cover" />
+              </div>
+              <h3 className="mt-4 text-base font-bold text-white">{m.name} {m.sub ? <span className="font-normal text-neutral-400">· {m.sub}</span> : null}</h3>
+              <p className="mt-1 text-xs font-bold uppercase tracking-widest text-brand-300">{m.role}</p>
+              <p className="mt-3 text-sm leading-relaxed text-neutral-400">{m.bio}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-center text-xs text-neutral-500">Foto reali del team — non placeholder. Contattaci su <a href="/about" className="font-semibold text-brand-400 hover:text-brand-300">Chi siamo</a>.</p>
+      </section>
+
       {/* MODAL FORM — appare su click bottoni */}
       <AnimatePresence>
         {showForm && (

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import Navbar from "@/components/Navbar";
 
 // Pagina "Chi siamo": Server Component che genera metadati localizzati e
@@ -83,24 +84,40 @@ export default async function AboutPage() {
             <p className="mt-3 text-neutral-400">{about.missionText}</p>
           </div>
 
-          {/* Team */}
+          {/* Team — founders reali con foto */}
           <div className="mt-16">
             <p className="text-neutral-400">{about.teamIntro}</p>
             <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
-              {about.members.map((member) => (
+              {[
+                {
+                  name: "Gabriele Forestieri",
+                  role: "Developer",
+                  img: "/founders/gabriele_forestieri.jpg",
+                  bio: "Sviluppa la piattaforma, gli agenti e le integrazioni. Full-stack, ossessionato da velocità, dettagli e DX.",
+                },
+                {
+                  name: "Alle Cerchiari",
+                  role: "Social & Marketing",
+                  img: "/founders/alle_cerchiari.jpeg",
+                  bio: "Racconta AgentCloud sui social e nel marketing. Traduce la complessità in storie semplici e campagne che funzionano.",
+                },
+                {
+                  name: "Matteo Parubi",
+                  role: "Stripe & Pricing",
+                  sub: "Paru",
+                  img: "/founders/matteo_parubi.jpeg",
+                  bio: "Gestisce pagamenti, piani e prezzi via Stripe. Tiene i conti in ordine e l'esperienza di acquisto fluida.",
+                },
+              ].map((member) => (
                 <div
-                  key={member.name + member.role}
+                  key={member.name}
                   className="rounded-2xl border border-white/5 bg-white/[0.02] p-6 text-center"
                 >
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-brand-500 to-fuchsia-500 text-2xl font-bold text-white">
-                    {member.name
-                      .split(" ")
-                      .map((w) => w[0])
-                      .slice(0, 2)
-                      .join("")}
+                  <div className="relative mx-auto h-20 w-20 overflow-hidden rounded-full border border-white/10 bg-neutral-800">
+                    <Image src={member.img} alt={member.name} fill sizes="80px" className="object-cover" />
                   </div>
                   <h3 className="mt-4 text-base font-bold text-white">
-                    {member.name}
+                    {member.name} {("sub" in member && member.sub) ? <span className="font-normal text-neutral-400">· {member.sub as string}</span> : null}
                   </h3>
                   <p className="mt-1 text-sm font-semibold text-brand-300">
                     {member.role}
