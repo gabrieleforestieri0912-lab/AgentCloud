@@ -85,12 +85,21 @@ export default async function IntegrationsPage() {
             <p className="mx-auto mt-3 max-w-2xl text-lg leading-8 text-neutral-400">
               {dict.integrationsPage.integrationsDesc}
             </p>
+            <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-brand-500/20 bg-brand-500/5 p-4 text-left">
+              <p className="text-center text-sm font-bold text-white">Configurazione semplice — 3 passi, 1-2 minuti per app.</p>
+              <ol className="mt-3 grid gap-3 text-sm leading-6 text-neutral-300 sm:grid-cols-3">
+                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">1</span><span><b className="text-white">Scegli</b> l’app (es. Shopify)</span></li>
+                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">2</span><span><b className="text-white">Connetti</b> con un click e autorizza</span></li>
+                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">3</span><span><b className="text-white">Usa</b> l’agente — è già pronto</span></li>
+              </ol>
+              <p className="mt-2 text-center text-xs text-neutral-400">Dal login vai su Dashboard → Integrazioni per gestire tutto. Token cifrati, disconnessione in un click.</p>
+            </div>
             <div className="mt-6 flex justify-center gap-3">
               <Link
-                href="/agents"
+                href="/dashboard/integrations"
                 className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-400"
               >
-                {dict.integrationsPage.browseAgents} <ArrowRight size={14} />
+                Vai a Dashboard Integrazioni <ArrowRight size={14} />
               </Link>
               <Link                 href="/contact"
                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10"

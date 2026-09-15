@@ -59,6 +59,16 @@ export default async function DashboardIntegrationsPage({
             <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-400">
               {dict.dashboardIntegrations.desc}
             </p>
+            {/* Guida rapida 3 passi */}
+            <div className="mt-4 rounded-2xl border border-brand-500/20 bg-brand-500/5 p-4">
+              <p className="text-sm font-bold text-white">Come si collega? 3 passi, 1-2 minuti — senza codice.</p>
+              <ol className="mt-2 grid gap-2 text-sm leading-6 text-neutral-300 sm:grid-cols-3">
+                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">1</span> <span><b className="text-white">Scegli</b> lo strumento che usi (Shopify, Gmail, Slack...)</span></li>
+                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">2</span> <span><b className="text-white">Clicca Connetti</b> e autorizza nella pagina ufficiale (Google, Slack, ecc.)</span></li>
+                <li className="flex gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">3</span> <span><b className="text-white">Torna qui</b>: vedrai “Connesso”. Prova subito l’agente in chat.</span></li>
+              </ol>
+              <p className="mt-2 text-xs text-neutral-400">I token sono cifrati e mai visibili nel browser. Puoi scollegare quando vuoi con un click.</p>
+            </div>
           </div>
 
           {(sp.status || sp.integration) && (
