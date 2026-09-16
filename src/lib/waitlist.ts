@@ -338,6 +338,63 @@ export async function ensureWaitlistEntry(
   return { success: true, alreadyJoined: false, referralCode };
 }
 
+export type RankingInfo = {
+  position: number;
+  total: number;
+  points: number;
+  referralsCompleted: number;
+  instagramFollow: number;
+  referralCode: string | null;
+  breakdown: { referrals: number; instagram: number };
+};
+
+/**
+ * Ranking live per Open Decision #6: RANK() OVER (points DESC, joined ASC)
+ * Ritorna position, total, points breakdown. Fallback a waitlist_position se la nuova RPC non è ancora migrata.
+ */
+export async function getRanking(email: string): Promise<RankingInfo | null> {
+  const admin = createAdminClient();
+  const supabase = admin ?? (await createClient());
+  try {
+    const { data } = await (supabase as unknown as {
+      rpc: (name: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+    }).rpc("waitlist_ranking", { p_email: email });
+    if (Array.isArray(data) && data.length > 0) {
+      const row = data[0] as {
+        position: number;
+        total: number;
+        points: number;
+        referrals_completed: number;
+        instagram_follow: number;
+        referral_code: string | null;
+      };
+      if (row.position !== null) {
+        return {
+          position: row.position,
+          total: row.total,
+          points: row.points ?? 0,
+          referralsCompleted: row.referrals_completed ?? 0,
+          instagramFollow: row.instagram_follow ?? 0,
+          referralCode: row.referral_code,
+          breakdown: { referrals: (row.referrals_completed ?? 0) * 3, instagram: (row.instagram_follow ?? 0) * 1 },
+        };
+      }
+    }
+  } catch {}
+  // Fallback legacy
+  const q = await getQueueInfo(email).catch(() => null);
+  if (!q) return null;
+  return {
+    position: q.position,
+    total: q.total,
+    points: 0,
+    referralsCompleted: 0,
+    instagramFollow: 0,
+    referralCode: q.referralCode,
+    breakdown: { referrals: 0, instagram: 0 },
+  };
+}
+
 /**
  * Completa i referral pending per un email che ha appena raggiunto
  * auth_method_completed = true (Open Decision #7). Aggiorna
