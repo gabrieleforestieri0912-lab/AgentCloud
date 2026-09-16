@@ -7,7 +7,7 @@ import BrandLogo from "./BrandLogo";
 
 const IG_URL = "https://www.instagram.com/_agentcloud/";
 
-export default function InstagramFollowCard() {
+export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () => void }) {
   const [linkClicked, setLinkClicked] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,6 +41,7 @@ export default function InstagramFollowCard() {
       if (res.ok) {
         setCompleted(true);
         setMessage(data?.alreadyCompleted ? "Già completato — +1 punto già assegnato." : "Fatto! +1 punto per il ranking.");
+        if (onCompleted) onCompleted();
       } else {
         setMessage(data?.error || "Errore, riprova.");
       }

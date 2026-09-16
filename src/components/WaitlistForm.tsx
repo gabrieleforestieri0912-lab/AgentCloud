@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Mail,
   Copy,
@@ -88,10 +88,12 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
   const [showFaq, setShowFaq] = useState<number | null>(null);
   const [queue, setQueue] = useState<QueueState>({ position: null, total: initialTotal, referralCode: null, referralCount: 0 });
   const [ahead, setAhead] = useState<Array<{ rank: number; emailMasked: string }>>([]);
+  const [ranking, setRanking] = useState<{ position: number | null; total: number | null; points: number; referralsCompleted: number; instagramFollow: number; referralCode: string | null; breakdown: { referrals: number; instagram: number } } | null>(null);
   const [isSuccess, setIsSuccess] = useState(() => typeof document !== "undefined" && document.cookie.includes("ac_wl_joined=1"));
   const [total, setTotal] = useState<number>(initialTotal);
   const [showForm, setShowForm] = useState(false);
   const [refFromUrl, setRefFromUrl] = useState<string | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -123,6 +125,17 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             referralCount: data.referralCount ?? 0,
           });
           if (Array.isArray(data.ahead)) setAhead(data.ahead);
+          // Phase 5: fetch points-aware ranking
+          fetch("/api/waitlist/ranking")
+            .then((r) => (r.ok ? r.json() : null))
+            .then((rankData) => {
+              if (rankData && typeof rankData.position === "number") {
+                setRanking(rankData);
+                // Prefer ranking position over legacy queue position
+                setQueue((q) => ({ ...q, position: rankData.position, total: rankData.total ?? q.total }));
+              }
+            })
+            .catch(() => {});
         } else if (typeof data.total === "number") {
           setQueue((q) => ({ ...q, total: data.total }));
         }
@@ -142,6 +155,29 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
   }, [showForm]);
+
+  // Phase 5: carica Space Grotesk + IBM Plex Sans per dashboard (palette spec)
+  useEffect(() => {
+    const id = "waitlist-dashboard-fonts";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
+    document.head.appendChild(link);
+  }, []);
+
+  const refreshRanking = () => {
+    fetch("/api/waitlist/ranking")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && typeof d.position === "number") {
+          setRanking(d);
+          setQueue((q) => ({ ...q, position: d.position, total: d.total ?? q.total }));
+        }
+      })
+      .catch(() => {});
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,6 +213,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             setQueue({ position: data.position, total: data.total ?? total, referralCode: data.referralCode ?? null, referralCount: data.referralCount ?? 0 });
           }
           if (Array.isArray(data.ahead)) setAhead(data.ahead);
+          fetch("/api/waitlist/ranking").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && typeof d.position === "number") setRanking(d); }).catch(() => {});
           setError(w.alreadyOnList as string);
         } else {
           setError(data.error || (w.somethingWrong as string));
@@ -198,6 +235,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         referralCount: data.referralCount ?? 0,
       });
       if (Array.isArray(data.ahead)) setAhead(data.ahead);
+      fetch("/api/waitlist/ranking").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && typeof d.position === "number") setRanking(d); }).catch(() => {});
       setEmail("");
     } catch {
       setError(w.networkError as string);
@@ -233,9 +271,13 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     }
   };
 
-  const referralLink = queue.referralCode
-    ? `https://agentcloud.agency/waitlist?ref=${queue.referralCode}`
-    : "";
+  // Phase 5: use points-aware ranking code if available, and spec-compliant /waitlist/join URL
+  const activeReferralCode = ranking?.referralCode ?? queue.referralCode;
+  const referralLink = activeReferralCode
+    ? `https://agentcloud.agency/waitlist/join?ref=${activeReferralCode}`
+    : queue.referralCode
+      ? `https://agentcloud.agency/waitlist?ref=${queue.referralCode}`
+      : "";
 
   const shareTextEncoded = encodeURIComponent(`${w.shareText} ${referralLink}`);
   const copyLink = async () => {
@@ -322,58 +364,105 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             <ShieldCheck className="h-3.5 w-3.5" /> {w.heroTrust as string}
           </p>
 
-          {/* Classifica: dopo iscrizione, sotto il bottone — tuo numero + 5 davanti */}
+          {/* Classifica: dopo iscrizione, sotto il bottone — dashboard con points breakdown (Phase 5) */}
           <AnimatePresence>
-            {isSuccess && queue.position && (
+            {isSuccess && (queue.position || ranking?.position) && (
               <motion.div
-                initial={{ opacity: 0, y: 12 }}
+                initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="mt-8 w-full max-w-xl rounded-3xl border border-white/10 bg-neutral-900/80 p-5 text-left backdrop-blur"
+                transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3 }}
+                className="mt-8 w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-neutral-900/80 text-left backdrop-blur"
+                style={{ willChange: "transform, opacity" }}
               >
-                <div className="flex items-center justify-between">
-                  <h3 className="flex items-center gap-2 text-sm font-bold text-white">
-                    <BarChart3 className="h-4 w-4 text-brand-400" /> La tua posizione in classifica
+                {/* Header dark */}
+                <div className="flex items-center justify-between bg-neutral-900 px-5 py-4">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <BarChart3 className="h-4 w-4 text-[#E2A33D]" /> La tua posizione in classifica
                   </h3>
-                  <span className="rounded-full bg-brand-500/15 px-2.5 py-1 text-xs font-bold text-brand-300">
-                    #{queue.position} su {queue.total ?? total}
+                  <span className="rounded-full bg-[#E2A33D]/15 px-2.5 py-1 text-xs font-bold text-[#E2A33D]" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                    #{ranking?.position ?? queue.position} su {ranking?.total ?? queue.total ?? total}
                   </span>
                 </div>
-                <div className="mt-3 rounded-2xl border border-brand-500/20 bg-brand-500/10 px-4 py-3 text-center">
-                  <p className="text-sm font-bold text-white">
-                    Sei <span className="text-brand-400">#{queue.position}</span> su {queue.total ?? total} in coda
-                  </p>
-                  <p className="mt-1 text-xs text-neutral-400">Condividi il tuo link per scalare — ogni amico ti fa salire.</p>
+
+                {/* Dashboard Paper — Ink/Paper/Amber/Moss */}
+                <div className="bg-[#F7F5F0] p-5" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                  <div className="text-center">
+                    <p className="text-sm font-bold" style={{ color: "#15231F", fontFamily: "'Space Grotesk', sans-serif" }}>
+                      Sei <span style={{ color: "#E2A33D" }}>#{ranking?.position ?? queue.position}</span> in coda su {ranking?.total ?? queue.total ?? total}
+                    </p>
+                    <p className="mt-1 text-xs" style={{ color: "#4B6357" }}>
+                      {ranking ? `${ranking.points} punti totali — ${ranking.breakdown.referrals} da referral (3×${ranking.referralsCompleted}) + ${ranking.breakdown.instagram} da Instagram` : "Condividi il tuo link per scalare — ogni amico ti fa salire."}
+                    </p>
+                  </div>
+
+                  {/* Points breakdown */}
+                  {ranking && (
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      <div className="rounded-xl border p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#E2A33D", color: "#15231F" }}>
+                        <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.points}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>Punti totali</p>
+                      </div>
+                      <div className="rounded-xl border p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#4B6357", color: "#15231F" }}>
+                        <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.referralsCompleted}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>Referral ×3</p>
+                      </div>
+                      <div className="rounded-xl border p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#4B6357", color: "#15231F" }}>
+                        <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.instagramFollow}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>Instagram ×1</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Referral link */}
+                  <div className="mt-4 rounded-xl border bg-white p-3" style={{ borderColor: "#4B6357" }}>
+                    <p className="text-xs font-bold" style={{ color: "#15231F", fontFamily: "'Space Grotesk', sans-serif" }}>Il tuo link referral</p>
+                    <div className="mt-2 flex gap-2">
+                      <code className="flex-1 truncate rounded-full border px-3 py-2 text-xs" style={{ backgroundColor: "#F7F5F0", borderColor: "#4B6357", color: "#15231F" }}>{referralLink || "Generazione in corso..."}</code>
+                      <button onClick={copyLink} className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white" style={{ backgroundColor: "#15231F" }}>
+                        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? "Copiato!" : "Copia"}
+                      </button>
+                    </div>
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                      <a href={`https://wa.me/?text=${shareTextEncoded}`} target="_blank" rel="noopener noreferrer" className="rounded-full px-2 py-2.5 text-center text-xs font-bold text-white" style={{ backgroundColor: "#4B6357" }}>WA</a>
+                      <a href={`https://twitter.com/intent/tweet?text=${shareTextEncoded}`} target="_blank" rel="noopener noreferrer" className="rounded-full border bg-white px-2 py-2.5 text-center text-xs font-bold" style={{ borderColor: "#15231F", color: "#15231F" }}>X</a>
+                      <a href={`mailto:?subject=${encodeURIComponent("AgentCloud Waitlist")}&body=${shareTextEncoded}`} className="rounded-full px-2 py-2.5 text-center text-xs font-bold text-white" style={{ backgroundColor: "#15231F" }}>Email</a>
+                      <a href={`sms:?&body=${shareTextEncoded}`} className="rounded-full px-2 py-2.5 text-center text-xs font-bold text-white" style={{ backgroundColor: "#E2A33D", color: "#15231F" }}>SMS</a>
+                    </div>
+                  </div>
+
+                  {/* 5 davanti */}
+                  {ahead.length > 0 ? (
+                    <div className="mt-4">
+                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#4B6357", fontFamily: "'Space Grotesk', sans-serif" }}>I 5 davanti a te</p>
+                      <ol className="mt-2 space-y-1.5">
+                        {ahead.map((a) => (
+                          <li key={a.rank} className="flex items-center justify-between rounded-xl border bg-white px-3 py-2" style={{ borderColor: "#4B6357" }}>
+                            <span className="flex items-center gap-2">
+                              <span className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: "#4B6357" }}>#{a.rank}</span>
+                              <span className="text-sm font-medium" style={{ color: "#15231F" }}>{a.emailMasked}</span>
+                            </span>
+                            <span className="text-xs" style={{ color: "#4B6357" }}>davanti a te</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  ) : (
+                    <p className="mt-3 rounded-xl px-3 py-2 text-center text-xs font-bold" style={{ backgroundColor: "#E2A33D", color: "#15231F" }}>
+                      Sei tra i primi! Nessuno davanti a te — invita amici per restare in testa.
+                    </p>
+                  )}
                 </div>
 
-                {ahead.length > 0 ? (
-                  <div className="mt-4">
-                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">I 5 davanti a te</p>
-                    <ol className="mt-2 space-y-1.5">
-                      {ahead.map((a) => (
-                        <li key={a.rank} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2">
-                          <span className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white">#{a.rank}</span>
-                            <span className="text-sm font-medium text-neutral-300">{a.emailMasked}</span>
-                          </span>
-                          <span className="text-xs text-neutral-500">davanti a te</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                ) : (
-                  <p className="mt-3 rounded-xl bg-emerald-500/10 px-3 py-2 text-center text-xs font-bold text-emerald-300">
-                    Sei tra i primi! Nessuno davanti a te — invita amici per restare in testa.
-                  </p>
-                )}
+                {/* Instagram card — still inside dashboard, but with Paper styling */}
+                <div className="bg-[#F7F5F0] px-5 pb-5" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                  <InstagramFollowCard onCompleted={refreshRanking} />
+                </div>
 
-                <button onClick={openForm} className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
-                  <Copy className="h-4 w-4" /> Vedi link referral e condividi
-                </button>
-
-                {/* Phase 3: Instagram follow self-report — honor system, +1 punto una tantum */}
-                <div className="mt-4">
-                  <InstagramFollowCard />
+                <div className="bg-neutral-900 px-5 py-3">
+                  <button onClick={openForm} className="flex w-full items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
+                    <Copy className="h-4 w-4" /> Vedi dettagli referral
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -654,7 +743,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                         <p className="rounded-xl bg-white/5 px-3 py-2 text-center text-xs leading-relaxed text-neutral-400">{w.queueRule as string}</p>
                       </div>
                     )}
-                    <InstagramFollowCard />
+                    <InstagramFollowCard onCompleted={refreshRanking} />
                     <button onClick={closeForm} className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">Chiudi</button>
                   </div>
                 )}
