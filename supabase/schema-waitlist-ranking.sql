@@ -53,13 +53,12 @@ create table if not exists public.waitlist_referrals (
   created_at timestamptz not null default now(),
   completed_at timestamptz,
   referrer_ip text, -- for same-IP flagging (Open Decision #5), not a hard block
-  constraint waitlist_referrals_no_self_email check (lower(referred_email) <> lower((select email from public.waitlist where id = referrer_user_id limit 1))),
   unique (referrer_user_id, referred_email) -- prevent duplicate referral rows per email
 );
 
--- Note: self-email check via subquery is not enforceable as CHECK with subquery in all PG versions;
--- server-side validation in Edge Function is authoritative (see Open Decision #5).
--- Keep the unique constraint above as the hard dedupe.
+-- Self-email check cannot be a CHECK with subquery (ERROR 0A000 on Postgres).
+-- Enforced via trigger instead (see below). Server-side validation in the Edge
+-- Function is also authoritative (Open Decision #5).
 
 alter table public.waitlist_referrals enable row level security;
 
@@ -77,6 +76,41 @@ create index if not exists idx_waitlist_referrals_referrer on public.waitlist_re
 create index if not exists idx_waitlist_referrals_referred on public.waitlist_referrals(referred_user_id);
 create index if not exists idx_waitlist_referrals_status on public.waitlist_referrals(status);
 create index if not exists idx_waitlist_referrals_email on public.waitlist_referrals(lower(referred_email));
+
+-- Drop legacy CHECK with subquery if it exists (from earlier broken migration)
+do $$
+begin
+  if exists (
+    select 1 from pg_constraint
+    where conname = 'waitlist_referrals_no_self_email'
+      and conrelid = 'public.waitlist_referrals'::regclass
+  ) then
+    alter table public.waitlist_referrals drop constraint waitlist_referrals_no_self_email;
+  end if;
+end $$;
+
+-- Trigger-based self-referral guard (replaces disallowed subquery CHECK)
+create or replace function public.waitlist_referrals_no_self_email_trg()
+returns trigger
+language plpgsql
+as $$
+begin
+  if exists (
+    select 1 from public.waitlist w
+    where w.id = new.referrer_user_id
+      and lower(w.email) = lower(new.referred_email)
+  ) then
+    raise exception 'Self-referral not allowed: referrer email matches referred_email (%)', new.referred_email
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_waitlist_referrals_no_self_email on public.waitlist_referrals;
+create trigger trg_waitlist_referrals_no_self_email
+  before insert or update of referrer_user_id, referred_email on public.waitlist_referrals
+  for each row execute function public.waitlist_referrals_no_self_email_trg();
 
 -- -----------------------------------------------------------------------------
 -- 3. waitlist_social_actions — one-time instagram_follow per user

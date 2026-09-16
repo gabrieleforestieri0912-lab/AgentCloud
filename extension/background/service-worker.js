@@ -1,4 +1,9 @@
-// AgentCloud Background Service Worker (Manifest V3)
+// AgentCloud Background Service Worker (Manifest V3) — cross-browser (Chrome/Edge/Brave/Opera/Firefox)
+// Firefox MV3 espone `browser`, Chromium `chrome`. Il polyfill garantisce compatibilità senza dipendenze.
+if (typeof chrome === "undefined" && typeof browser !== "undefined") {
+  // eslint-disable-next-line no-global-assign
+  var chrome = browser;
+}
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log("AgentCloud Copilot extension installed.");

@@ -1,11 +1,11 @@
 name: agentcloud_mobile
-description: "AgentCloud Mobile App - AI autonomous agents on iOS and Android"
+description: "AgentCloud Mobile - AI autonomous agents on iOS and Android. Marketplace, chat, waitlist, dashboard, billing."
 publish_to: "none"
-version: 0.1.0+1
+version: 1.0.0+7
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.10.0"
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
@@ -15,6 +15,14 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   shared_preferences: ^2.2.2
   google_fonts: ^6.1.0
+  provider: ^6.1.2
+  supabase_flutter: ^2.5.6
+  intl: ^0.19.0
+  url_launcher: ^6.2.5
+  cached_network_image: ^3.3.1
+  flutter_svg: ^2.0.10+1
+  lottie: ^3.1.2
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -25,3 +33,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/lottie/

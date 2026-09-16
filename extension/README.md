@@ -1,16 +1,45 @@
-# AgentCloud Copilot (Chrome Extension)
+# AgentCloud Copilot — Estensione Browser
 
-Estensione browser ufficiale di **AgentCloud** per portare gli agenti autonomi su qualsiasi pagina web.
+Estensione ufficiale di **AgentCloud** per portare gli agenti AI autonomi su qualsiasi pagina web. **Compatibile con Chrome, Edge, Brave, Opera e Firefox** (Manifesto V3 + gecko id).
 
 ## Funzionalità
 - **Copilota universale**: esegui prompt veloci con qualsiasi agente della piattaforma.
-- **Context injection**: acquisisce il testo della pagina web attiva o della selezione di testo per fornirlo all'agente come contesto.
-- **Manifest V3**: architettura moderna conforme agli standard di sicurezza di Google Chrome.
+- **Context injection**: acquisisce testo pagina/selezione e lo invia come contesto all'agente.
+- **Manifest V3** con `browser_specific_settings` per Firefox (109+). Stesso codebase Chromium → Firefox.
 
-## Come installarla in locale (Modalità Sviluppatore)
+## Compatibilità browser
+| Browser | Versione minima | Metodo |
+|---------|-----------------|--------|
+| **Chrome** | 88+ | `chrome://extensions` → Load unpacked |
+| **Edge** | 88+ | `edge://extensions` → Load unpacked |
+| **Brave** | 1.19+ | `brave://extensions` → Load unpacked |
+| **Opera** | 76+ | `opera://extensions` → Developer mode |
+| **Firefox** | 109+ | `about:debugging#/runtime/this-firefox` → Load Temporary Add-on |
+| **Safari** | 14+ | Conversione: `xcrun safari-web-extension-converter extension/` poi Xcode |
 
-1. Apri Google Chrome e naviga su `chrome://extensions/`.
-2. In alto a destra, attiva la levetta **"Modalità sviluppatore"** (Developer mode).
-3. Clicca sul pulsante **"Carica estensione non pacchettizzata"** (Load unpacked).
-4. Seleziona la cartella `extension/` di questo progetto.
-5. L'icona di **AgentCloud Copilot** apparirà nella barra delle estensioni del browser!
+Tutti i browser Chromium condividono lo stesso `manifest.json` (MV3). Firefox usa lo stesso file grazie a `browser_specific_settings.gecko.id = copilot@agentcloud.agency` (strict_min_version 109). Safari richiede conversione Xcode.
+
+## Installazione locale (sviluppo)
+
+**Chromium (Chrome / Edge / Brave / Opera):**
+1. Apri `chrome://extensions/` (o `edge://extensions`, `brave://extensions`).
+2. Attiva **Modalità sviluppatore**.
+3. **Carica estensione non pacchettizzata** → seleziona `extension/`.
+
+**Firefox:**
+1. Apri `about:debugging#/runtime/this-firefox`.
+2. **Carica componente aggiuntivo temporaneo…** → seleziona `extension/manifest.json`.
+3. Per distribuzione permanente: firma su `addons.mozilla.org` (AMO).
+
+**Safari:**
+```bash
+xcrun safari-web-extension-converter extension/ --project-location ./SafariExtension
+open SafariExtension/*.xcodeproj # build in Xcode
+```
+
+## Build per store
+```bash
+# Chrome Web Store / Edge Add-ons: zip della cartella extension/
+cd extension && zip -r ../agentcloud-copilot-chrome.zip . -x "*.git*" "*.DS_Store"
+# Firefox AMO: stesso zip (con gecko id, MV3 109+)
+```

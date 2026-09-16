@@ -86,14 +86,14 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => setLinkClicked(true)}
-          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10"
         >
           Apri Instagram <ExternalLink size={14} />
         </a>
         <button
           onClick={handleConfirm}
           disabled={completed || loading || (!linkClicked && !alreadyCompleted)}
-          className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold transition ${
+          className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold transition ${
             completed
               ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20"
               : linkClicked || alreadyCompleted

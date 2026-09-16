@@ -909,6 +909,16 @@ const it = {
     footerCtaSubtitle:
       "Unisciti a chi sta già automatizzando supporto, vendite e operations.",
     noSpam: "Niente spam. Cancellazione in 1 click.",
+    welcomeTitle: "Benvenuto in AgentCloud! 🎉",
+    welcomeSubtitle:
+      "Sei ufficialmente in lista. Come ti chiami? Così possiamo darti il benvenuto come si deve.",
+    welcomePlaceholder: "Il tuo nome",
+    welcomeSave: "Salva e continua",
+    welcomeSkip: "Salta per ora",
+    welcomeSaving: "Salvataggio...",
+    welcomeSaved: "Perfetto! A presto — ti avviseremo al lancio.",
+    welcomeError: "Impossibile salvare il nome. Riprova.",
+    welcomeNameRequired: "Inserisci il tuo nome.",
    },
 
   demo: {
@@ -2615,6 +2625,16 @@ export const en: Dictionary = {
     footerCtaSubtitle:
       "Join those already automating support, sales and operations.",
     noSpam: "No spam. 1-click unsubscribe.",
+    welcomeTitle: "Welcome to AgentCloud! 🎉",
+    welcomeSubtitle:
+      "You're officially on the list. What's your name? So we can welcome you properly.",
+    welcomePlaceholder: "Your name",
+    welcomeSave: "Save and continue",
+    welcomeSkip: "Skip for now",
+    welcomeSaving: "Saving...",
+    welcomeSaved: "Perfect! See you soon — we'll notify you at launch.",
+    welcomeError: "Could not save name. Try again.",
+    welcomeNameRequired: "Please enter your name.",
    },
 
   demo: {
@@ -4311,6 +4331,16 @@ export const es: Dictionary = {
     footerCtaTitle: "¿Listo para crear tu primer agente?",
     footerCtaSubtitle: "Únete a quienes ya automatizan soporte, ventas y operaciones.",
     noSpam: "Sin spam. Baja en 1 click.",
+    welcomeTitle: "¡Bienvenido a AgentCloud! 🎉",
+    welcomeSubtitle:
+      "Ya estás en la lista. ¿Cómo te llamas? Así podemos darte la bienvenida como mereces.",
+    welcomePlaceholder: "Tu nombre",
+    welcomeSave: "Guardar y continuar",
+    welcomeSkip: "Saltar por ahora",
+    welcomeSaving: "Guardando...",
+    welcomeSaved: "¡Perfecto! Hasta pronto — te avisaremos en el lanzamiento.",
+    welcomeError: "No se pudo guardar el nombre. Inténtalo de nuevo.",
+    welcomeNameRequired: "Introduce tu nombre.",
    },
 
   demo: {
@@ -6007,6 +6037,16 @@ export const de: Dictionary = {
     footerCtaTitle: "Bereit, deinen ersten Agenten zu erstellen?",
     footerCtaSubtitle: "Schließe dich denen an, die Support, Sales und Ops bereits automatisieren.",
     noSpam: "Kein Spam. 1-Klick Abmeldung.",
+    welcomeTitle: "Willkommen bei AgentCloud! 🎉",
+    welcomeSubtitle:
+      "Du bist offiziell auf der Liste. Wie heißt du? Damit wir dich richtig begrüßen können.",
+    welcomePlaceholder: "Dein Name",
+    welcomeSave: "Speichern und weiter",
+    welcomeSkip: "Vorerst überspringen",
+    welcomeSaving: "Speichern...",
+    welcomeSaved: "Perfekt! Bis bald — wir benachrichtigen dich zum Launch.",
+    welcomeError: "Name konnte nicht gespeichert werden. Versuch es erneut.",
+    welcomeNameRequired: "Bitte gib deinen Namen ein.",
    },
 
   demo: {
@@ -7703,6 +7743,16 @@ export const fr: Dictionary = {
     footerCtaTitle: "Prêt à créer ton premier agent ?",
     footerCtaSubtitle: "Rejoins ceux qui automatisent déjà support, ventes et opérations.",
     noSpam: "Pas de spam. Désabonnement en 1 clic.",
+    welcomeTitle: "Bienvenue sur AgentCloud ! 🎉",
+    welcomeSubtitle:
+      "Tu es officiellement sur liste. Comment t'appelles-tu ? Pour qu'on puisse te souhaiter la bienvenue comme il se doit.",
+    welcomePlaceholder: "Ton nom",
+    welcomeSave: "Enregistrer et continuer",
+    welcomeSkip: "Passer pour l'instant",
+    welcomeSaving: "Enregistrement...",
+    welcomeSaved: "Parfait ! À bientôt — on te prévient au lancement.",
+    welcomeError: "Impossible d'enregistrer le nom. Réessaie.",
+    welcomeNameRequired: "Entre ton nom.",
    },
 
   demo: {

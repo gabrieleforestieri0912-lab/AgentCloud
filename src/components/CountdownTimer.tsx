@@ -81,9 +81,9 @@ function TimerCard({
 
   return (
     <div className="flex flex-col items-center">
-      {/* Scheda numerica tridimensionale */}
+      {/* Scheda numerica tridimensionale — responsive: compatta su 320px, premium su 3xl */}
       <div
-        className={`group relative flex h-14 w-13 sm:h-16 sm:w-16 items-center justify-center overflow-hidden rounded-xl border backdrop-blur-md transition-all duration-300 ${
+        className={`group relative flex h-12 w-[44px] xs:h-14 xs:w-[52px] sm:h-16 sm:w-16 3xl:h-20 3xl:w-20 items-center justify-center overflow-hidden rounded-xl border backdrop-blur-md transition-all duration-300 ${
           isAccent
             ? "border-brand-500/40 bg-gradient-to-b from-neutral-900/90 via-neutral-900/95 to-neutral-950 shadow-[0_0_20px_rgba(3,139,254,0.18)]"
             : "border-white/10 bg-gradient-to-b from-neutral-900/80 via-neutral-900/90 to-neutral-950 shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
@@ -108,7 +108,7 @@ function TimerCard({
               animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
               exit={{ y: 18, opacity: 0, scale: 0.94, filter: "blur(2px)" }}
               transition={{ type: "spring", stiffness: 420, damping: 28 }}
-              className={`font-mono text-2xl sm:text-3xl font-black tabular-nums tracking-tight leading-none select-none ${
+              className={`font-mono text-xl xs:text-2xl sm:text-3xl 3xl:text-4xl font-black tabular-nums tracking-tight leading-none select-none ${
                 isAccent
                   ? "bg-gradient-to-b from-white via-neutral-100 to-brand-300 bg-clip-text text-transparent"
                   : "bg-gradient-to-b from-white via-neutral-100 to-neutral-300 bg-clip-text text-transparent"
@@ -138,16 +138,16 @@ function TimerCard({
  */
 function PulsingColon() {
   return (
-    <div className="flex flex-col items-center justify-center gap-1.5 px-0.5 pb-5 select-none" aria-hidden="true">
+    <div className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-0 xs:px-0.5 pb-5 select-none" aria-hidden="true">
       <motion.span
         animate={{ opacity: [1, 0.25, 1], scale: [1, 0.85, 1] }}
         transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-        className="h-1.5 w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]"
+        className="h-1 w-1 xs:h-1.5 xs:w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]"
       />
       <motion.span
         animate={{ opacity: [1, 0.25, 1], scale: [1, 0.85, 1] }}
         transition={{ duration: 1, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
-        className="h-1.5 w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]"
+        className="h-1 w-1 xs:h-1.5 xs:w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]"
       />
     </div>
   );
@@ -163,7 +163,7 @@ export default function CountdownTimer({ className = "" }: { className?: string 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className={`relative overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/60 p-3.5 sm:p-4 backdrop-blur-xl shadow-[0_12px_32px_rgba(0,0,0,0.5)] ${className}`}
+      className={`relative w-full max-w-[340px] xs:max-w-none 3xl:max-w-[520px] overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/60 p-2.5 xs:p-3.5 sm:p-4 3xl:p-6 backdrop-blur-xl shadow-[0_12px_32px_rgba(0,0,0,0.5)] ${className}`}
     >
       {/* Bagliore radiale d'atmosfera sullo sfondo */}
       <div className="pointer-events-none absolute -top-10 left-1/2 h-24 w-48 -translate-x-1/2 rounded-full bg-brand-500/15 blur-2xl" />
@@ -182,10 +182,10 @@ export default function CountdownTimer({ className = "" }: { className?: string 
         </div>
       </div>
 
-      {/* Blocchi numerici */}
-      <div className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2.5">
+      {/* Blocchi numerici — gap ridotto su mobile per evitare overflow orizzontale */}
+      <div className="relative z-10 flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2.5">
         {units.map((unit, i) => (
-          <div key={UNIT_KEYS[i]} className="flex items-center gap-1.5 sm:gap-2.5">
+          <div key={UNIT_KEYS[i]} className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5">
             <TimerCard
               value={unit.value}
               label={dict.countdownTimer[UNIT_KEYS[i]]}
