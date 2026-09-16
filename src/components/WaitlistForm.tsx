@@ -30,6 +30,7 @@ import CountdownTimer from "@/components/CountdownTimer";
 import LanguageToggle from "@/components/LanguageToggle";
 import BrandLogo from "@/components/BrandLogo";
 import Footer from "@/components/Footer";
+import InstagramFollowCard from "@/components/InstagramFollowCard";
 import { AVAILABLE_AGENTS } from "@/lib/agents";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -369,6 +370,11 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 <button onClick={openForm} className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
                   <Copy className="h-4 w-4" /> Vedi link referral e condividi
                 </button>
+
+                {/* Phase 3: Instagram follow self-report — honor system, +1 punto una tantum */}
+                <div className="mt-4">
+                  <InstagramFollowCard />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -648,6 +654,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                         <p className="rounded-xl bg-white/5 px-3 py-2 text-center text-xs leading-relaxed text-neutral-400">{w.queueRule as string}</p>
                       </div>
                     )}
+                    <InstagramFollowCard />
                     <button onClick={closeForm} className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">Chiudi</button>
                   </div>
                 )}
