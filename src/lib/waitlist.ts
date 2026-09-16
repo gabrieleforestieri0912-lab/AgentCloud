@@ -19,11 +19,69 @@ export type AheadEntry = {
 };
 
 /**
- * Genera un referral code breve (8 hex chars).
+ * Genera un referral code breve (8 hex chars) — legacy (pre-Phase1).
+ * Mantenuto per compatibilità con waitlist.referral_code esistenti.
  */
 export function generateReferralCode(): string {
   const uuid = crypto.randomUUID().replace(/-/g, "");
   return uuid.slice(0, 8).toLowerCase();
+}
+
+const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+/**
+ * Genera un referral code base62 8 chars (Open Decision #8) per
+ * waitlist_referral_codes. Non usa user ID.
+ */
+export function generateReferralCodeBase62(): string {
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (let i = 0; i < 8; i++) {
+    out += BASE62[bytes[i] % 62];
+  }
+  return out;
+}
+
+/**
+ * Recupera o crea il referral code per un utente waitlist (user_id = waitlist.id).
+ * Sincronizza anche waitlist.referral_code per compatibilità.
+ */
+export async function getOrCreateReferralCode(waitlistId: string): Promise<string | null> {
+  const admin = createAdminClient();
+  if (!admin) return null;
+  // Prova esistente in nuova tabella
+  const { data: existing } = await admin
+    .from("waitlist_referral_codes")
+    .select("code")
+    .eq("user_id", waitlistId)
+    .maybeSingle();
+  if (existing) return (existing as { code: string }).code;
+
+  // Prova da waitlist.referral_code legacy
+  const { data: waitlistRow } = await admin
+    .from("waitlist")
+    .select("referral_code")
+    .eq("id", waitlistId)
+    .maybeSingle();
+  const legacy = (waitlistRow as { referral_code?: string | null } | null)?.referral_code;
+  if (legacy) {
+    // Backfill nella nuova tabella
+    await admin.from("waitlist_referral_codes").insert({ user_id: waitlistId, code: legacy }).then(() => {});
+    return legacy;
+  }
+
+  // Genera nuovo base62, retry su collisione
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateReferralCodeBase62();
+    const { error } = await admin.from("waitlist_referral_codes").insert({ user_id: waitlistId, code });
+    if (!error) {
+      await admin.from("waitlist").update({ referral_code: code }).eq("id", waitlistId).then(() => {});
+      return code;
+    }
+    if (error.code !== "23505") break;
+  }
+  return null;
 }
 
 /**
@@ -235,7 +293,7 @@ export async function ensureWaitlistEntry(
   };
   if (validReferredBy) insertPayload.referred_by = validReferredBy;
 
-  const { error } = await supabase.from("waitlist").insert(insertPayload);
+  const { data: inserted, error } = await supabase.from("waitlist").insert(insertPayload).select("id").maybeSingle();
   if (error) {
     // Gestione duplicato concorrente
     if (error.code === "23505") {
@@ -253,6 +311,62 @@ export async function ensureWaitlistEntry(
     return { success: false, alreadyJoined: false };
   }
 
+  const newId = (inserted as { id?: string } | null)?.id;
+  if (newId) {
+    // Registry referral code per nuova tabella
+    void supabase.from("waitlist_referral_codes").insert({ user_id: newId, code: referralCode }).then(() => {}, () => {});
+    if (validReferredBy) {
+      // Trova referrer id per creare pending
+      let referrerId: string | null = null;
+      const { data: codeRow } = await supabase.from("waitlist_referral_codes").select("user_id").eq("code", validReferredBy).maybeSingle();
+      if (codeRow) referrerId = (codeRow as { user_id: string }).user_id;
+      if (!referrerId) {
+        const { data: legacyRow } = await supabase.from("waitlist").select("id").eq("referral_code", validReferredBy).maybeSingle();
+        if (legacyRow) referrerId = (legacyRow as { id: string }).id;
+      }
+      if (referrerId && referrerId !== newId) {
+        void supabase.from("waitlist_referrals").insert({
+          referrer_user_id: referrerId,
+          referred_user_id: newId,
+          referred_email: normalizedEmail,
+          status: "pending",
+        }).then(() => {}, () => {});
+      }
+    }
+  }
+
   return { success: true, alreadyJoined: false, referralCode };
+}
+
+/**
+ * Completa i referral pending per un email che ha appena raggiunto
+ * auth_method_completed = true (Open Decision #7). Aggiorna
+ * waitlist_referrals status pending -> completed e setta referred_user_id.
+ * Chiamata da /auth/callback e potenzialmente da trigger profiles.
+ */
+export async function completePendingReferrals(email: string, authUserId?: string | null): Promise<void> {
+  const admin = createAdminClient();
+  if (!admin) return;
+  const normalized = email.toLowerCase().trim();
+  try {
+    // Trova tutti i pending per questa email
+    const { data: pendings } = await admin
+      .from("waitlist_referrals")
+      .select("id, referrer_user_id")
+      .eq("status", "pending")
+      .ilike("referred_email", normalized);
+    if (!pendings || pendings.length === 0) return;
+    for (const row of pendings as Array<{ id: string }>) {
+      await admin
+        .from("waitlist_referrals")
+        .update({
+          status: "completed",
+          completed_at: new Date().toISOString(),
+          ...(authUserId ? { referred_user_id: authUserId } : {}),
+        })
+        .eq("id", row.id)
+        .eq("status", "pending");
+    }
+  } catch {}
 }
 

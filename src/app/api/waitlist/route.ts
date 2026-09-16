@@ -208,18 +208,55 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient() ?? (await createClient());
 
-    // Verifica referral valido (se passato)
+    // Verifica referral valido (se passato) — supporta sia waitlist_referral_codes (base62) che legacy waitlist.referral_code
     let referredBy: string | null = null;
+    let referrerWaitlistId: string | null = null;
+    let referrerEmail: string | null = null;
     if (rawReferredBy) {
-      const { data: refRow } = await supabase
-        .from("waitlist")
-        .select("referral_code")
-        .eq("referral_code", rawReferredBy)
+      // Cerca in nuova tabella
+      const { data: codeRow } = await supabase
+        .from("waitlist_referral_codes")
+        .select("user_id, code")
+        .eq("code", rawReferredBy)
         .maybeSingle();
-      if (refRow) referredBy = rawReferredBy;
+      if (codeRow) {
+        const ownerId = (codeRow as { user_id: string }).user_id;
+        const { data: ownerWaitlist } = await supabase.from("waitlist").select("id, email").eq("id", ownerId).maybeSingle();
+        if (ownerWaitlist) {
+          referrerWaitlistId = (ownerWaitlist as { id: string }).id;
+          referrerEmail = (ownerWaitlist as { email: string }).email;
+        } else {
+          // user_id potrebbe essere auth id, prova a cercare per code legacy fallback
+          referredBy = rawReferredBy;
+        }
+      }
+      // Fallback legacy waitlist.referral_code
+      if (!referrerWaitlistId) {
+        const { data: refRow } = await supabase
+          .from("waitlist")
+          .select("id, email, referral_code")
+          .eq("referral_code", rawReferredBy)
+          .maybeSingle();
+        if (refRow) {
+          referrerWaitlistId = (refRow as { id: string }).id;
+          referrerEmail = (refRow as { email: string }).email;
+        }
+      }
+      if (referrerWaitlistId) {
+        // Open Decision #5: blocca same-email (case-insensitive) server-side
+        if (referrerEmail && referrerEmail.toLowerCase() === email.toLowerCase()) {
+          logAudit("waitlist_referral_self_email_blocked", { ip: clientIp, referrer: referrerEmail, referred: email });
+          referrerWaitlistId = null;
+          referrerEmail = null;
+        } else {
+          referredBy = rawReferredBy;
+          // Same-IP flagged ma still awarded (non hard block) — logga
+          // Verrà salvato in waitlist_referrals.referrer_ip per audit
+        }
+      }
     }
 
-    // Genera referral_code per nuovo iscritto
+    // Genera referral_code per nuovo iscritto (legacy hex per compatibilità; nuovo base62 via /api/waitlist/referral-code per futuri)
     const referralCode = generateReferralCode();
 
     const insertPayload: Record<string, unknown> = {
@@ -228,7 +265,7 @@ export async function POST(request: Request) {
     };
     if (referredBy) insertPayload.referred_by = referredBy;
 
-    const { error: dbError } = await supabase.from("waitlist").insert(insertPayload);
+    const { data: inserted, error: dbError } = await supabase.from("waitlist").insert(insertPayload).select("id").maybeSingle();
 
     if (dbError) {
       if (dbError.code === "23505") {
@@ -270,6 +307,28 @@ export async function POST(request: Request) {
         { error: await apiErrorMessage("failedToJoinWaitlist") },
         { status: 500 },
       );
+    }
+
+    // Inserisci anche in waitlist_referral_codes (base62 registry) e waitlist_referrals pending
+    const newWaitlistId = (inserted as { id?: string } | null)?.id ?? null;
+    if (newWaitlistId) {
+      // Registry code (per Phase 2: genera base62-like ma riusa quello già creato per compatibilità)
+      void supabase.from("waitlist_referral_codes").insert({ user_id: newWaitlistId, code: referralCode }).then(() => {}, () => {});
+      if (referrerWaitlistId) {
+        // Check same-IP flagged (log only, non blocca)
+        const sameIpFlag = false; // placeholder: si potrebbe confrontare con ultimo IP del referrer se loggato
+        if (sameIpFlag) logAudit("waitlist_referral_same_ip_flagged", { ip: clientIp, referrer: referrerWaitlistId, referred: email });
+        void supabase.from("waitlist_referrals").insert({
+          referrer_user_id: referrerWaitlistId,
+          referred_user_id: newWaitlistId,
+          referred_email: email,
+          status: "pending",
+          referrer_ip: clientIp,
+        }).then(() => {}, (e: unknown) => {
+          if ((e as { code?: string })?.code !== "23505") console.warn("[waitlist] referral insert failed", e);
+        });
+        logAudit("waitlist_referral_pending", { ip: clientIp, referrer: referrerWaitlistId, referred: email, code: referredBy });
+      }
     }
 
     await provisionAuthUser(email);

@@ -135,6 +135,7 @@ export default function SignupPage() {
             },
             body: JSON.stringify({ auth_method_completed: true }),
           });
+          try { await fetch("/api/waitlist/complete-referral", { method: "POST" }); } catch {}
         } catch {
           // Non-blocking
         }
