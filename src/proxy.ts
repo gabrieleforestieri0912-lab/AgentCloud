@@ -55,9 +55,31 @@ async function resolveSession(request: NextRequest) {
       },
     },
   );
-  const {
+  let {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Fallback Bearer: CLI (`agentcloud login` → /cli/auth) e mobile condividono lo stesso DB.
+  // Se non c'è sessione cookie ma c'è Authorization: Bearer <supabase_access_token>, validalo.
+  if (!user) {
+    const auth = request.headers.get("authorization") ?? request.headers.get("Authorization");
+    if (auth?.startsWith("Bearer ")) {
+      const token = auth.slice(7).trim();
+      if (token.length > 20) {
+        try {
+          const { createClient } = await import("@supabase/supabase-js");
+          const supa = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { global: { headers: { Authorization: `Bearer ${token}` } } },
+          );
+          const { data: { user: bearerUser } } = await supa.auth.getUser(token);
+          if (bearerUser) user = bearerUser as any;
+        } catch {}
+      }
+    }
+  }
+
   return { user, response: supabaseResponse };
 }
 
@@ -94,8 +116,8 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // 3. API necessarie per la waitlist (POST/GET /api/waitlist) e webhook/callback esterni
-    const isWaitlistApi = pathname === "/api/waitlist";
+    // 3. API necessarie per la waitlist (POST/GET /api/waitlist + subroutes) e webhook/callback esterni
+    const isWaitlistApi = pathname === "/api/waitlist" || pathname.startsWith("/api/waitlist/");
     const isWebhookOrCallback =
       pathname.startsWith("/api/shopify/") ||
       pathname.startsWith("/api/billing/webhook") ||
@@ -104,8 +126,10 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/api/integrations/") ||
       pathname.startsWith("/api/auth/google/callback") ||
       pathname.startsWith("/auth/callback");
+    // CLI auth: deve essere raggiungibile anche pre-lancio senza waitlist gate (usa stesso DB Supabase)
+    const isCliAuth = pathname === "/cli/auth" || pathname.startsWith("/cli/") || pathname.startsWith("/api/cli");
 
-    if (isWaitlistApi || isWebhookOrCallback) {
+    if (isWaitlistApi || isWebhookOrCallback || isCliAuth) {
       return NextResponse.next();
     }
 

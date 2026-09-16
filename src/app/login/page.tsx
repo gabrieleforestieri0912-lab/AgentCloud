@@ -181,6 +181,8 @@ export default function LoginPage() {
             },
             body: JSON.stringify({ auth_method_completed: true }),
           });
+          // Phase 2: completa referral pending -> 3 punti al referrer (Open Decision #7)
+          try { await fetch("/api/waitlist/complete-referral", { method: "POST" }); } catch {}
         }
       } catch {
         // Non-blocking

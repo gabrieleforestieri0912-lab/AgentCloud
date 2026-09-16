@@ -1,4 +1,7 @@
-// AgentCloud Popup Logic
+// AgentCloud Popup Logic — cross-browser
+if (typeof chrome === "undefined" && typeof browser !== "undefined") {
+  var chrome = browser;
+}
 
 let pageContext = null;
 

@@ -80,6 +80,8 @@
   --breakpoint-xs: 30rem;
   /* Ultra-wide screens: content opens up from ~1920px up. */
   --breakpoint-3xl: 120rem;
+  /* 4K / super ultra-wide: ~2560px+ (e.g. 2560x1440, 3440 ultrawide, 3840 4K). */
+  --breakpoint-4xl: 160rem;
 }
 
 @layer base {
@@ -866,6 +868,37 @@ html.light * { scrollbar-color: #c3c8d8 transparent; }
   /* Marketplace / integrations grids open an extra column */
   .grid-cols-2.md\:grid-cols-3.lg\:grid-cols-4 {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  /* Waitlist ultra-wide: fluid typography scale */
+  /* Hero title gains hierarchy without breaking line length */
+  /* Containers with max-w-6xl are visually narrow at 1920+; classes 3xl:max-w-[1680px] in components handle it,
+     but keep a safety net for any forgotten container. */
+  .max-w-6xl {
+    max-width: 1600px;
+  }
+  .max-w-3xl {
+    max-width: 60rem;
+  }
+
+  /* Waitlist hero + dashboard: evita che il pannello classifica resti stretto */
+  .max-w-xl {
+    max-width: 38rem;
+  }
+
+  /* Floating bubbles: su 27" la costellazione appare rada, ingrandisci leggermente */
+  [class*="animate-float"] {
+    transform-origin: center;
+  }
+}
+
+/* ── Super ultra-wide (4xl ≥ 2560px): 4K / ultrawide curvo ── */
+@media (min-width: 160rem) {
+  body {
+    font-size: 18px;
+  }
+  .max-w-6xl {
+    max-width: 1800px;
   }
 }
 

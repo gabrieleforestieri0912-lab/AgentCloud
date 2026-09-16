@@ -1,21 +1,39 @@
 {
   "name": "@agentcloud/cli",
-  "version": "0.1.0",
-  "description": "AgentCloud Command Line Interface - Interact with AI autonomous agents from your terminal",
+  "version": "0.2.0",
+  "description": "AgentCloud CLI — gestisci agenti AI autonomi dal terminale (login via browser, stesso DB web/mobile)",
   "main": "dist/index.js",
   "bin": {
-    "agentcloud": "dist/index.js"
+    "agentcloud": "dist/index.js",
+    "ac": "dist/index.js"
   },
+  "files": ["dist/**/*", "README.md"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "preferGlobal": true,
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"try{require('fs').chmodSync('dist/index.js',0o755)}catch(e){}\"",
     "dev": "tsc -w",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build",
+    "test": "node dist/index.js --help"
   },
-  "keywords": ["agentcloud", "ai", "agents", "cli", "automation"],
-  "author": "AgentCloud Team",
+  "keywords": ["agentcloud", "ai", "agents", "cli", "automation", "supabase"],
+  "author": "AgentCloud Team <support@agentcloud.agency>",
   "license": "MIT",
+  "homepage": "https://agentcloud.agency",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agentcloud/cli.git"
+  },
   "dependencies": {
-    "commander": "^12.0.0"
+    "commander": "^12.0.0",
+    "open": "^10.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

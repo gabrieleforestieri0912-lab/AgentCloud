@@ -1,4 +1,7 @@
-// AgentCloud Content Script - Estrazione del contesto della pagina attiva
+// AgentCloud Content Script — cross-browser
+if (typeof chrome === "undefined" && typeof browser !== "undefined") {
+  var chrome = browser;
+}
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "EXTRACT_PAGE_TEXT") {

@@ -320,6 +320,7 @@ create policy "Only authenticated users can view demo requests"
 create table if not exists public.waitlist (
   id uuid default gen_random_uuid() primary key,
   email text not null unique,
+  full_name text,
   created_at timestamptz default now(),
   notified boolean default false
 );

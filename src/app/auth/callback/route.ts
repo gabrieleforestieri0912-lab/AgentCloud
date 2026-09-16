@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
-import { ensureWaitlistEntry } from "@/lib/waitlist";
+import { completePendingReferrals, ensureWaitlistEntry } from "@/lib/waitlist";
 import { hasLaunched } from "@/lib/waitlist-constants";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -44,15 +44,22 @@ export async function GET(request: Request) {
 
   // --- Set auth_method_completed = true for this user ---
   // Google OAuth = full auth method, so mark as completed.
+  // Open Decision #7: referral points awarded only when referred user reaches auth_method_completed=true
   let userEmail: string | null = null;
+  let userIdForReferral: string | null = null;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       userEmail = user.email ?? null;
+      userIdForReferral = user.id;
       await supabase
         .from("profiles")
         .update({ auth_method_completed: true })
         .eq("id", user.id);
+      // Phase 2: se questo utente era stato invitato (pending), completa il referral -> +3 punti al referrer
+      if (userEmail) {
+        try { await completePendingReferrals(userEmail, user.id); } catch {}
+      }
     }
   } catch {
     // Non-blocking: auth gate will catch on next request if needed
