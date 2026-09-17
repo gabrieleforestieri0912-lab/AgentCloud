@@ -47,7 +47,7 @@ NEXT_PUBLIC_SUPABASE_URL=…
 NEXT_PUBLIC_SUPABASE_ANON_KEY=…
 SUPABASE_SERVICE_ROLE_KEY=…
 
-# Site URL (canonical, sitemap, embed, WhatsApp, portal)
+# Site URL (canonical, sitemap, embed, portal)
 NEXT_PUBLIC_SITE_URL=https://tuodominio.com
 
 # AI + Email
@@ -68,7 +68,7 @@ ADMIN_API_TOKEN=…
 # (default generato in src/lib/access-code.ts)
 ACCESS_CODE=…
 
-# Facoltativi: AGENTCLOUD_VERTICAL, AGENTCLOUD_FEATURE_FLAGS, tool Shopify/Calendar/Lead/WhatsApp, SHOPIFY_API_KEY/SECRET/SCOPES, TENANT_STORE_KEY
+# Facoltativi: AGENTCLOUD_VERTICAL, tool Shopify/Calendar/Lead, SHOPIFY_API_KEY/SECRET/SCOPES, TENANT_STORE_KEY
 ```
 
 ## Database

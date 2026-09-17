@@ -209,7 +209,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 |-----------|:---:|------|
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ | |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | |
-| `NEXT_PUBLIC_SITE_URL` | ✅ (prod) | canonical/sitemap/robots/embed/WhatsApp/portal. Fallback: `NEXT_PUBLIC_URL` → `http://localhost:3000` |
+| `NEXT_PUBLIC_SITE_URL` | ✅ (prod) | canonical/sitemap/robots/embed/portal. Fallback: `NEXT_PUBLIC_URL` → `http://localhost:3000` |
 | `NEXT_PUBLIC_URL` | legacy | fallback di `NEXT_PUBLIC_SITE_URL` (mantenuto per compatibilità) |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | – | documentata ma non ancora usata nel codice |
 
@@ -221,7 +221,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `ANTHROPIC_API_KEY` | ✅ | Claude |
 | `RESEND_API_KEY` | ✅ | email |
 | `QUOTE_FROM_EMAIL` | – | mittente dei preventivi degli agenti (default `preventivi@agentcloud.agency`) |
-| `FINANCE_FROM_EMAIL` | – | mittente dei solleciti di pagamento (default `finance@agentcloud.agency`) |
+
 | `STRIPE_SECRET_KEY` | ✅ | `sk_live_…` |
 | `STRIPE_WEBHOOK_SECRET` | ✅ | `whsec_…` |
 | `STRIPE_OVERAGE_PRICE_ID` | ⚠️ | senza → overage disabilitato |
@@ -251,7 +251,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `STRIPE_CONNECT_CLIENT_ID` (`ca_...`), `NOTION_OAUTH_CLIENT_ID/SECRET` (`3d5d87...`), `SLACK_CLIENT_ID/SECRET` + `SLACK_SIGNING_SECRET`, `HUBSPOT_CLIENT_ID/SECRET` (`575f16...`), `GOOGLE_SHEETS` riusa Google client | Generic 5 provider (`tenant_integrations`, Edge Functions proxy) — vedi `docs/integrations-setup.md` |
 | `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | JS SDK PayPal (client, non secret) |
 | `LEAD_CAPTURE_ENDPOINT`, `SLACK_WEBHOOK_URL` | Lead capture (opzionale) |
-| `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` | WhatsApp (opzionale) |
+
 | `TENANT_STORE_KEY` + `INTEGRATIONS_TOKEN_ENCRYPTION_KEY` / `GOOGLE_TOKEN_ENCRYPTION_KEY` | Cifratura AES-256-GCM app-level per `shopify_connections`, `google_connections`, `tenant_integrations` — mai `dev-tenant-key` in prod |
 
 ### Runtime / feature flags
@@ -264,7 +264,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata LLM (Claude) |
 | `AGENT_ANON_RATE_LIMIT` | `30` | richieste/min per IP per i preview anonimi |
 | `AGENTCLOUD_VERTICAL` | `shopify` | `shopify` \| `services` \| `full` — filtra marketplace e tool |
-| `AGENTCLOUD_FEATURE_FLAGS` | – | JSON: `enabledAgents`, `enabledTools`, `agentToolOverrides`, `enableOptionalToolsByDefault` |
+
 
 > **Checklist produzione** (dettagli in `FEATURE_FLAGS.md`, `PRICING.md`):
 > Google OAuth configurato in Supabase, webhook Stripe con i 4 eventi (`checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`), metered price per l'overage, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, riesecuzione di `supabase/schema.sql` (incluso il trigger `handle_new_user`).
