@@ -87,12 +87,13 @@ function formatCompact(n: number, locale: Locale) {
   return n.toLocaleString(DATE_LOCALES[locale]);
 }
 
-function CustomTooltip({ active, payload, label, locale }: any) {
+type TooltipPayloadEntry = { color?: string; name?: string; value: number };
+function CustomTooltip({ active, payload, label, locale }: { active?: boolean; payload?: TooltipPayloadEntry[]; label?: string; locale?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-white/[0.08] bg-neutral-900/95 backdrop-blur-xl px-4 py-3 shadow-xl">
       <p className="text-xs font-bold text-white mb-1">{label}</p>
-      {payload.map((entry: any, i: number) => (
+      {payload.map((entry: TooltipPayloadEntry, i: number) => (
         <p key={i} className="text-xs text-neutral-400">
           <span style={{ color: entry.color }} className="font-bold">
             {entry.name}:{" "}

@@ -219,6 +219,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     const supabase = createClient();
     const { data: sub } = supabase.auth.onAuthStateChange(() => refresh());

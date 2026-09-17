@@ -32,6 +32,7 @@ export default function VoiceInput({
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsSupported(!!SpeechRecognition);
   }, []);
 

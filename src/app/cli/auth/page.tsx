@@ -44,12 +44,14 @@ function CliAuthInner() {
 
   useEffect(() => {
     if (!port || !state) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("error");
       setErrorMsg("Parametri mancanti: la CLI deve aprire /cli/auth?port=...&state=... — ripeti `agentcloud login`.");
       return;
     }
     // Verifica port numerica per sicurezza (evita open redirect)
     if (!/^\d{2,5}$/.test(port) || Number(port) < 1024 || Number(port) > 65535) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("error");
       setErrorMsg(`Porta non valida: ${port}`);
       return;

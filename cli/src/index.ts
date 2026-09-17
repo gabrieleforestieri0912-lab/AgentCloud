@@ -3,6 +3,9 @@
 import { Command } from "commander";
 import * as http from "http";
 import * as crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import os from "os";
 import { loadConfig, saveConfig } from "./config.js";
 import { executeAgent } from "./api.js";
 
@@ -16,9 +19,9 @@ program
 // Helper: apri browser in modo cross-platform senza dipendere da `open` ESM dinamico
 async function openBrowser(url: string) {
   try {
-    const mod: any = await import("open");
-    const fn = mod.default ?? mod.open ?? mod;
-    await fn(url);
+    const mod: unknown = await import("open");
+    const fn = (mod as { default?: unknown; open?: unknown }).default ?? (mod as { open?: unknown }).open ?? mod;
+    await (fn as (u: string) => Promise<void>)(url);
   } catch {
     console.log(`Apri manualmente questo URL nel browser:\n  ${url}`);
   }
@@ -119,8 +122,8 @@ program
       saveConfig({ token: token.trim() });
       console.log("✓ Autenticazione completata! Token salvato in ~/.agentcloud/config.json");
       console.log("  Prova: agentcloud list  |  agentcloud run support-agent \"ciao\"\n");
-    } catch (e: any) {
-      console.error(`\n❌ ${e.message}\n`);
+    } catch (e: unknown) {
+      console.error(`\n❌ ${(e as Error).message}\n`);
       process.exit(1);
     }
   });
@@ -129,14 +132,11 @@ program
   .command("logout")
   .description("Rimuove il token salvato")
   .action(() => {
-    saveConfig({ token: undefined } as any);
+    saveConfig({ token: undefined } as unknown as { token: string });
     // rimuove fisicamente la chiave
     const cfg = loadConfig();
-    if ((cfg as any).token) {
+    if ((cfg as { token?: string }).token) {
       // se saveConfig non ha rimosso, forziamo
-      const fs = require("fs");
-      const path = require("path");
-      const os = require("os");
       const file = path.join(os.homedir(), ".agentcloud", "config.json");
       try {
         const raw = JSON.parse(fs.readFileSync(file, "utf-8"));
@@ -163,8 +163,8 @@ program
       console.log(`Token: ****${cfg.token.slice(-4)}`);
       console.log(`Status /api/user/owned: ${res.status}`);
       console.log(JSON.stringify(data, null, 2));
-    } catch (e: any) {
-      console.error(`Errore: ${e.message}`);
+    } catch (e: unknown) {
+      console.error(`Errore: ${(e as Error).message}`);
     }
   });
 
@@ -210,9 +210,9 @@ program
       const output = result.output || result.response || JSON.stringify(result, null, 2);
       console.log(output);
       console.log("");
-    } catch (err: any) {
-      console.error(`\n❌ Errore durante l'esecuzione: ${err.message}\n`);
-      if (String(err.message).includes("401") || String(err.message).includes("Non autenticato")) {
+    } catch (err: unknown) {
+      console.error(`\n❌ Errore durante l'esecuzione: ${(err as Error).message}\n`);
+      if (String((err as Error).message).includes("401") || String((err as Error).message).includes("Non autenticato")) {
         console.error("Suggerimento: esegui `agentcloud login` per autenticarti via browser.\n");
       }
       process.exit(1);

@@ -95,22 +95,24 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     safeQuery(() => supabase.from("carts").select("*").eq("user_id", userIdText).order("created_at", { ascending: false }) as any, [] as unknown as unknown[]),
     // shopify/google potrebbero non esistere in installazioni vecchie -> fallback []
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     safeQuery(
       () =>
         supabase
           .from("shopify_connections")
           .select("id, shop_domain, scope, installed_at, uninstalled_at, created_at, updated_at")
-          .eq("user_id", userIdText) as any,
+          .eq("user_id", userIdText) as unknown as PromiseLike<{ data: unknown[] | null; error: unknown }>,
       [] as unknown as unknown[]
     ),
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     safeQuery(
       () =>
         supabase
           .from("google_connections")
           .select("id, google_email, scopes, expires_at, connected_at, updated_at")
-          .eq("user_id", userId) as any,
+          .eq("user_id", userId) as unknown as PromiseLike<{ data: unknown[] | null; error: unknown }>,
       [] as unknown as unknown[]
     ),
   ]);

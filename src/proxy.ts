@@ -74,7 +74,7 @@ async function resolveSession(request: NextRequest) {
             { global: { headers: { Authorization: `Bearer ${token}` } } },
           );
           const { data: { user: bearerUser } } = await supa.auth.getUser(token);
-          if (bearerUser) user = bearerUser as any;
+          if (bearerUser) user = bearerUser as unknown as typeof user;
         } catch {}
       }
     }

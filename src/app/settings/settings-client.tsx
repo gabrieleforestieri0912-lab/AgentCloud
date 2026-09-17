@@ -27,8 +27,14 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
       const raw = localStorage.getItem("agentcloud_settings");
       if (raw) {
         const parsed = JSON.parse(raw) as { emailNotif?: boolean; productUpdates?: boolean };
-        if (typeof parsed.emailNotif === "boolean") setEmailNotif(parsed.emailNotif);
-        if (typeof parsed.productUpdates === "boolean") setProductUpdates(parsed.productUpdates);
+        if (typeof parsed.emailNotif === "boolean") {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setEmailNotif(parsed.emailNotif);
+        }
+        if (typeof parsed.productUpdates === "boolean") {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setProductUpdates(parsed.productUpdates);
+        }
       }
     } catch {}
   }, []);

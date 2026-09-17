@@ -25,7 +25,7 @@ export default async function AdminCartsPage() {
     .limit(100);
 
   const cartIds = (carts ?? []).map((c: { id: string }) => c.id);
-  let itemsByCart = new Map<string, Array<{ agent_slug: string; quantity: number; added_at: string }>>();
+  const itemsByCart = new Map<string, Array<{ agent_slug: string; quantity: number; added_at: string }>>();
   if (cartIds.length > 0) {
     const { data: items } = await db.from("cart_items").select("*").in("cart_id", cartIds);
     for (const it of (items ?? []) as Array<{ cart_id: string; agent_slug: string; quantity: number; added_at: string }>) {
@@ -36,7 +36,7 @@ export default async function AdminCartsPage() {
   }
 
   const userIds = [...new Set((carts ?? []).map((c: { user_id: string }) => c.user_id))];
-  let emailById = new Map<string, string>();
+  const emailById = new Map<string, string>();
   if (userIds.length > 0) {
     const { data: profiles } = await db.from("profiles").select("id, email").in("id", userIds);
     for (const p of (profiles ?? []) as Array<{ id: string; email: string }>) {

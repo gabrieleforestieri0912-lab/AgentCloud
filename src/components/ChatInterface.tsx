@@ -951,8 +951,9 @@ export default function ChatInterface({
       }
     } catch {
       // Niente risposte preimpostate: mostra l'errore reale con un link di contatto.
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
       const message =
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore — streamErrorMessage è string | null ma TS lo inferisce never per control flow
         (streamErrorMessage as unknown as string | null)?.trim()
           ? (streamErrorMessage as unknown as string)

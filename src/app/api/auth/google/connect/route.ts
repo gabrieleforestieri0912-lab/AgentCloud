@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   const returnTo = returnParam && isSafeRedirectPath(returnParam) ? returnParam : null;
 
   const sessionUser = await getSessionUser();
-  let userId: string | null = sessionUser?.id ?? null;
+  const userId: string | null = sessionUser?.id ?? null;
   // I possessori del codice (admin) senza account Supabase usano il tenant condiviso
 
   if (!userId) {

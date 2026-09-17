@@ -90,7 +90,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   // Stato integrazioni per mostrare già connesso se fatto da /dashboard/integrations
   // + owned check per far diventare il bottone "Attiva ora" → "Apri in chat" e card marketplace "Già acquistato"
   const sessionUser = await getSessionUser();
-  let genericConnected: Record<string, boolean> = {};
+  const genericConnected: Record<string, boolean> = {};
   let shopifyConnected = false;
   let googleConnected = false;
   let isOwned = false;

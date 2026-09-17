@@ -50,7 +50,7 @@ export async function GET(req: Request) {
 
   // Get agent counts for each conversation
   const convIds = (convs ?? []).map((c) => c.id);
-  let agentMap: Record<string, { agent_slug: string; is_active_responder: boolean }[]> = {};
+  const agentMap: Record<string, { agent_slug: string; is_active_responder: boolean }[]> = {};
 
   if (convIds.length > 0) {
     const { data: agents } = await supabase

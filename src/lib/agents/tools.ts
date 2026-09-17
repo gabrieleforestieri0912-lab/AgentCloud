@@ -1271,7 +1271,7 @@ export async function executeTool(
             const child = spawn(cmd, ["-c", rawCode], { timeout: 9000, windowsHide: true });
             let out = "";
             let err = "";
-            let timer = setTimeout(() => { if (!settled) { settled = true; try { child.kill("SIGKILL"); } catch {} resolve(null); } }, 8500);
+            const timer = setTimeout(() => { if (!settled) { settled = true; try { child.kill("SIGKILL"); } catch {} resolve(null); } }, 8500);
             child.stdout?.on("data", (d) => { out += d.toString(); if (out.length > 12000) out = out.slice(0, 12000); });
             child.stderr?.on("data", (d) => { err += d.toString(); if (err.length > 4000) err = err.slice(0, 4000); });
             child.on("error", () => { if (!settled) { settled = true; if (timer) clearTimeout(timer); resolve(null); } });

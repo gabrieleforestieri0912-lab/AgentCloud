@@ -130,7 +130,7 @@ export default function MarkdownText({
         setSel(null);
       }
     }, 30);
-  }, [onReply]);
+  }, [onReply, setSel]);
 
   const clearSel = useCallback(() => {
     // Chiude il tag se si clicca fuori dalla selezione (defer per non chiudere prima del click su Rispondi)
@@ -138,7 +138,7 @@ export default function MarkdownText({
       const s = window.getSelection();
       if (!s || s.isCollapsed) setSel(null);
     }, 150);
-  }, []);
+  }, [setSel]);
 
   if (blocks.length === 0) return null;
   return (

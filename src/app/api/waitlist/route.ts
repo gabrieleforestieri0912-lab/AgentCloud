@@ -206,7 +206,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createAdminClient() ?? (await createClient());
+    const adminSupabase = createAdminClient();
+    if (!adminSupabase) {
+      console.error("[waitlist] SUPABASE_SERVICE_ROLE_KEY mancante — iscrizione impossibile");
+      return NextResponse.json(
+        { error: await apiErrorMessage("failedToJoinWaitlist") },
+        { status: 500 },
+      );
+    }
+    const supabase = adminSupabase;
 
     // Verifica referral valido (se passato) — supporta sia waitlist_referral_codes (base62) che legacy waitlist.referral_code
     let referredBy: string | null = null;

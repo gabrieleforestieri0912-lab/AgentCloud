@@ -49,8 +49,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "dark";
     const valid: Theme = stored === "light" || stored === "dark" || stored === "system" ? stored : "dark";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setThemeState(valid);
     const r = valid === "system" ? getSystemTheme() : valid;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResolved(r);
     applyTheme(valid);
     // Listen system changes when in system mode
@@ -77,6 +79,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Re-apply on theme state change (for system toggling)
   useEffect(() => {
     applyTheme(theme);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResolved(theme === "system" ? getSystemTheme() : theme);
   }, [theme]);
 

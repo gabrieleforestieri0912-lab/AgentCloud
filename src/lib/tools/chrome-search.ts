@@ -17,6 +17,7 @@
  */
 
 import puppeteer, { type Browser } from "puppeteer-core";
+import fs from "fs";
 
 /**
  * Percorso Chrome su diversi sistemi operativi.
@@ -49,8 +50,6 @@ function findChromePath(): string | null {
     // Gestisce i wildcard (es. C:/Users/*/...)
     if (p.includes("*")) {
       try {
-        const fs = require("fs");
-        const glob = p.replace("*", "*");
         const baseDir = p.split("*")[0];
         if (fs.existsSync(baseDir)) {
           const dirs = fs.readdirSync(baseDir);
@@ -64,7 +63,6 @@ function findChromePath(): string | null {
       }
     } else {
       try {
-        const fs = require("fs");
         if (fs.existsSync(p)) return p;
       } catch {
         // ignora

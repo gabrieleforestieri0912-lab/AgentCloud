@@ -86,9 +86,12 @@ export async function getOrCreateReferralCode(waitlistId: string): Promise<strin
 
 /**
  * Totale iscritti in waitlist (conteggio righe).
+ * Richiede service_role per superare RLS su count; se manca, fallback a client anon ma logga warning (conteggio sarà 0 per RLS).
  */
 export async function getTotalCount(): Promise<number> {
-  const supabase = createAdminClient() ?? (await createClient());
+  const admin = createAdminClient();
+  const supabase = admin ?? (await createClient());
+  if (!admin) console.warn("[waitlist] SUPABASE_SERVICE_ROLE_KEY mancante — getTotalCount userà anon (RLS → 0)");
   const { count, error } = await supabase
     .from("waitlist")
     .select("id", { count: "exact", head: true });

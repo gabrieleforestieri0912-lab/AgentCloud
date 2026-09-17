@@ -69,6 +69,7 @@ export default function ChatOnboarding({ onComplete }: ChatOnboardingProps) {
   }, [current.target]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     updateTargetRect();
     window.addEventListener("resize", updateTargetRect);
     return () => window.removeEventListener("resize", updateTargetRect);

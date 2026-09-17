@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "cli/dist/**",
     // Script usa-e-getta gitignorati (.tmp-g è in .gitignore).
     ".tmp-g/**",
   ]),

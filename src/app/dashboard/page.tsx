@@ -192,7 +192,7 @@ export default async function DashboardPage({
   // (se il DB è disponibile), con una leggera aggregazione in memoria; se non
   // ci sono run il grafico mostra lo stato vuoto.
   let dailyBuckets: Array<{ label: string; date: string; runs: number; tokens: number }> = [];
-  let overageCentsTotal = 0;
+  const overageCentsTotal = 0;
   if (dbAvailable) {
     // Verrà popolato dopo il fetch delle run qui sopra; segnaposto così
     // TypeScript conosce la forma. I dailyBuckets reali sono calcolati sotto

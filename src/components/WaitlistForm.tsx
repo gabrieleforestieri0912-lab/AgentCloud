@@ -108,6 +108,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     const ref = params.get("ref") || params.get("r");
     if (ref) {
       const cleanRef = ref.toLowerCase().slice(0, 32);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRefFromUrl(cleanRef);
       document.cookie = `${REF_COOKIE}=${encodeURIComponent(cleanRef)}; max-age=3600; path=/; SameSite=Lax`;
     }
