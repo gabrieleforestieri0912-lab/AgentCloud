@@ -118,6 +118,30 @@ export async function proxy(request: NextRequest) {
 
     // 3. API necessarie per la waitlist (POST/GET /api/waitlist + subroutes) e webhook/callback esterni
     const isWaitlistApi = pathname === "/api/waitlist" || pathname.startsWith("/api/waitlist/");
+    // Copilot browser (estensione): la verifica della sessione deve rispondere
+    // JSON anche pre-lancio (l'estensione interpreta 401 come "non autenticato"),
+    // mentre l'esecuzione degli agenti resta riservata agli utenti autenticati
+    // con i cookie del sito: nessun bypass di abbonamento, quota o rate limit.
+    const isExtensionSessionApi = pathname.startsWith("/api/extension/");
+    const isExtensionRuntimeApi = pathname === "/api/agent/run";
+    if (isExtensionSessionApi || isExtensionRuntimeApi) {
+      const runtimeUnauthorized = () => {
+        const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
+        return NextResponse.json(
+          { error: getDictionary(locale).apiErrors.unauthorized },
+          { status: 401 },
+        );
+      };
+      try {
+        const { user, response } = await resolveSession(request);
+        if (isExtensionRuntimeApi && !user) return runtimeUnauthorized();
+        return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
+      } catch {
+        if (isExtensionRuntimeApi) return runtimeUnauthorized();
+        const res = NextResponse.next();
+        return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
+      }
+    }
     const isWebhookOrCallback =
       pathname.startsWith("/api/shopify/") ||
       pathname.startsWith("/api/billing/webhook") ||

@@ -49,11 +49,14 @@ export const PUBLIC_PATHS = [
   // Admin API — autenticata con `Authorization: Bearer <ADMIN_API_TOKEN>`
   // dentro l'handler (nessuna sessione richiesta: il chiamante è uno script/server).
   "/api/admin/tenants",
+  "/api/admin/integrations",
   // Endpoint API pubblici
   "/api/billing/payment-link",
   "/api/embed",
   "/api/chat",
   "/api/agent/run",
+  "/api/extension/session",
+  "/api/user/usage",
   "/api/demo/request",
   "/api/waitlist",
   "/api/contact",

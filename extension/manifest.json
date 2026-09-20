@@ -1,35 +1,30 @@
 {
   "manifest_version": 3,
   "name": "AgentCloud Copilot",
-  "version": "0.2.0",
-  "description": "Porta gli agenti AI autonomi di AgentCloud su Chrome, Edge, Brave, Opera e Firefox.",
+  "version": "0.4.0",
+  "description": "Usa i tuoi agenti AgentCloud sulla pagina attiva, con la stessa sessione del marketplace web.",
   "author": "support@agentcloud.agency",
-  "homepage_url": "https://agentcloud.agency",
+  "homepage_url": "https://www.agentcloud.agency",
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "sidePanel"
   ],
   "host_permissions": [
-    "https://agentcloud.agency/*",
     "https://www.agentcloud.agency/*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*"
   ],
   "action": {
-    "default_popup": "popup/popup.html",
-    "default_title": "AgentCloud Copilot"
+    "default_title": "Apri AgentCloud Copilot (pannello laterale)"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
   },
   "background": {
     "service_worker": "background/service-worker.js"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content/content.js"],
-      "run_at": "document_idle"
-    }
-  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -40,11 +35,5 @@
       "id": "copilot@agentcloud.agency",
       "strict_min_version": "109.0"
     }
-  },
-  "web_accessible_resources": [
-    {
-      "resources": ["icons/*.png"],
-      "matches": ["<all_urls>"]
-    }
-  ]
+  }
 }

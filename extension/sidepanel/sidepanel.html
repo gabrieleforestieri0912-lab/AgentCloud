@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentCloud Copilot</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-main">
+      <span class="eyebrow">AgentCloud Copilot</span>
+      <strong id="agentName">Caricamento…</strong>
+    </div>
+    <div class="topbar-actions">
+      <span id="statusBadge" class="status-badge">Controllo</span>
+      <button id="changeAgentBtn" class="ghost-btn hidden">Cambia</button>
+    </div>
+  </header>
+
+  <main class="panel">
+    <section id="loadingView" class="state-view">
+      <div class="spinner"></div>
+      <p>Controllo della sessione…</p>
+    </section>
+
+    <section id="loggedOutView" class="state-view hidden">
+      <div class="hero-icon">✦</div>
+      <h1>Il tuo copilota AI</h1>
+      <p>Accedi con lo stesso account AgentCloud che usi sul web: l’estensione riusa quella sessione e non salva password, token o credenziali.</p>
+      <button id="loginBtn" class="btn-primary">Accedi ad AgentCloud</button>
+      <button id="refreshLoggedOutBtn" class="btn-link">Ho già effettuato l’accesso</button>
+    </section>
+
+    <section id="errorView" class="state-view hidden">
+      <div class="error-icon">!</div>
+      <h1>Connessione non disponibile</h1>
+      <p id="errorMessage">Riprova tra poco.</p>
+      <button id="retryBtn" class="btn-primary">Riprova</button>
+      <button id="openSiteBtn" class="btn-link">Apri agentcloud.agency</button>
+    </section>
+
+    <section id="agentsView" class="hidden">
+      <div class="account-row">
+        <div><span class="eyebrow">Account</span><strong id="accountName">AgentCloud</strong></div>
+        <button id="refreshBtn" class="icon-btn" title="Aggiorna sessione">↻</button>
+      </div>
+
+      <div id="ownedBlock" class="hidden">
+        <div class="section-heading"><span class="eyebrow">I tuoi agenti</span><h1>Pronti all’azione</h1></div>
+        <div id="ownedAgents" class="agent-list"></div>
+      </div>
+
+      <div id="emptyBlock" class="hidden">
+        <div class="section-heading"><span class="eyebrow">Marketplace</span><h1>Scegli il tuo primo agente</h1></div>
+        <p class="muted">Il checkout resta sempre sul marketplace web: qui puoi esplorare il catalogo e attivare gli agenti in sicurezza.</p>
+        <div id="catalog" class="catalog-grid"></div>
+      </div>
+
+      <button id="openMarketplaceBtn" class="btn-secondary full">Vedi tutto il marketplace</button>
+
+      <nav class="quick-links" aria-label="Pagine AgentCloud">
+        <a href="https://www.agentcloud.agency/dashboard" target="_blank" rel="noreferrer">Dashboard</a>
+        <a href="https://www.agentcloud.agency/chat" target="_blank" rel="noreferrer">Chat web</a>
+        <a href="https://www.agentcloud.agency/integrations" target="_blank" rel="noreferrer">Integrazioni</a>
+        <a href="https://www.agentcloud.agency/settings" target="_blank" rel="noreferrer">Impostazioni</a>
+      </nav>
+    </section>
+
+    <section id="chatView" class="chat hidden">
+      <div id="sessionNotice" class="notice hidden"></div>
+      <div id="messages" class="messages"></div>
+      <div id="typing" class="typing hidden">L’agente sta lavorando…</div>
+      <div id="contextCard" class="context-card hidden"></div>
+      <form id="composer" class="composer">
+        <textarea id="prompt" rows="3" placeholder="Chiedi al tuo agente…"></textarea>
+        <div class="composer-actions">
+          <button type="button" id="selectionBtn" class="secondary-btn">Usa selezione</button>
+          <button type="submit" id="sendBtn" class="send-btn">Invia</button>
+        </div>
+      </form>
+      <p class="privacy-note">Viene inviato solo il testo che selezioni, insieme a titolo e URL della pagina.</p>
+    </section>
+  </main>
+
+  <script src="../shared/catalog.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
