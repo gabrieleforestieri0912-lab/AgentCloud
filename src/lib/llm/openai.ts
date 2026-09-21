@@ -93,15 +93,20 @@ function llmMessagesToOpenAI(system: string, messages: LLMMessage[]): unknown[] 
 }
 
 export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: string; model?: string }): LLMProvider {
-  const apiKey = options?.apiKey || getApiKey();
-  const baseUrl = getBaseUrl(options?.baseUrl);
   const defaultModel = options?.model || DEFAULT_OPENAI_MODEL;
 
+  function getRuntimeApiKey(): string | undefined {
+    return options?.apiKey || process.env.XT_API_KEY || process.env.OPENAI_API_KEY || process.env.LLM_API_KEY || (process.env.ANTHROPIC_API_KEY?.startsWith("sk-xt-") ? process.env.ANTHROPIC_API_KEY : undefined);
+  }
   function ensureKey(): string {
-    if (!apiKey) {
+    const k = getRuntimeApiKey();
+    if (!k) {
       throw new Error("OpenAI/XT provider requires XT_API_KEY (sk-xt-...) or OPENAI_API_KEY environment variable.");
     }
-    return apiKey;
+    return k;
+  }
+  function getRuntimeBaseUrl(): string {
+    return getBaseUrl(options?.baseUrl);
   }
 
   return {
@@ -109,7 +114,8 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
 
     async chat(params: LLMChatParams, onText?: (delta: string) => void): Promise<LLMResponse> {
       const key = ensureKey();
-      console.log(`[xKiro] baseUrl=${baseUrl} model=${params.model}->${resolveModel(params.model || defaultModel)} keyPrefix=${key.slice(0,8)} len=${key.length} hasXT=${!!process.env.XT_API_KEY}`);
+      const baseUrl = getRuntimeBaseUrl();
+      console.log(`[xKiro] baseUrl=${baseUrl} model=${params.model}->${resolveModel(params.model || defaultModel)} keyPrefix=${key.slice(0,8)} len=${key.length} hasXT=${!!process.env.XT_API_KEY} xtLen=${process.env.XT_API_KEY?.length}`);
       const model = resolveModel(params.model || defaultModel);
       const messages = llmMessagesToOpenAI(params.system, params.messages);
       const tools = params.tools.length > 0 ? normalizeTools(params.tools) : undefined;
