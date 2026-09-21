@@ -324,7 +324,7 @@ const it = {
       },
       {
         q: "Con quali strumenti si integra AgentCloud?",
-        a: "AgentCloud si integra con Shopify, Stripe, Slack, Gmail, HubSpot, Salesforce, Zapier e WhatsApp, con molte altre integrazioni in arrivo.",
+        a: "AgentCloud si integra con Shopify, Stripe, Slack, Gmail, HubSpot, Notion, Google Sheets e Google Calendar — 8 live, altre 32 in arrivo con badge \u201cIn arrivo\u201d.",
       },
       {
         q: "Servono competenze tecniche per usarlo?",
@@ -2062,7 +2062,7 @@ export const en: Dictionary = {
       },
       {
         q: "What tools does AgentCloud integrate with?",
-        a: "AgentCloud integrates with Shopify, Stripe, Slack, Gmail, HubSpot, Salesforce, Zapier, and WhatsApp, with many more integrations on the way.",
+        a: "AgentCloud integrates with Shopify, Stripe, Slack, Gmail, HubSpot, Notion, Google Sheets and Google Calendar — 8 live, 32 more coming soon with \u201cComing soon\u201d badge.",
       },
       {
         q: "Do I need technical skills to use it?",
@@ -3784,7 +3784,7 @@ export const es: Dictionary = {
       },
       {
         q: "What tools does AgentCloud integrate with?",
-        a: "AgentCloud integrates with Shopify, Stripe, Slack, Gmail, HubSpot, Salesforce, Zapier, and WhatsApp, with many more integrations on the way.",
+        a: "AgentCloud integrates with Shopify, Stripe, Slack, Gmail, HubSpot, Notion, Google Sheets and Google Calendar — 8 live, 32 more coming soon with \u201cComing soon\u201d badge.",
       },
       {
         q: "Do I need technical skills to use it?",
@@ -5503,7 +5503,7 @@ export const de: Dictionary = {
       },
       {
         q: "What tools does AgentCloud integrate with?",
-        a: "AgentCloud integrates with Shopify, Stripe, Slack, Gmail, HubSpot, Salesforce, Zapier, and WhatsApp, with many more integrations on the way.",
+        a: "AgentCloud integrates with Shopify, Stripe, Slack, Gmail, HubSpot, Notion, Google Sheets and Google Calendar — 8 live, 32 more coming soon with \u201cComing soon\u201d badge.",
       },
       {
         q: "Do I need technical skills to use it?",
@@ -7222,7 +7222,7 @@ export const fr: Dictionary = {
       },
       {
         q: "What tools does AgentCloud integrate with?",
-        a: "AgentCloud integrates with Shopify, Stripe, Slack, Gmail, HubSpot, Salesforce, Zapier, and WhatsApp, with many more integrations on the way.",
+        a: "AgentCloud integrates with Shopify, Stripe, Slack, Gmail, HubSpot, Notion, Google Sheets and Google Calendar — 8 live, 32 more coming soon with \u201cComing soon\u201d badge.",
       },
       {
         q: "Do I need technical skills to use it?",

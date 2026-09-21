@@ -19,7 +19,7 @@ export default function IntegrationsSection() {
   const featuredLive = live.slice(0, 8);
   const featuredComing = coming.slice(0, 8);
   return (
-    <section className="py-16 sm:py-20">
+    <section id="integrazioni" className="py-16 sm:py-20">
       <div className="max-w-7xl 3xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center mb-10"

@@ -157,13 +157,13 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     try { await createClient().auth.signOut(); } catch {}
     cachedSession = null;
     cachedAuthLoaded = true;
-    window.location.replace("/waitlist");
+    window.location.replace("/login");
   }
 
   const menuItems = [
-    { key: "marketplace" as MenuKey, label: dict.navbar.marketplace, href: "/agents" },
-    { key: "solutions" as MenuKey, label: dict.navbar.solutions, href: "/#solutions" },
-    { key: "integrations" as MenuKey, label: dict.navbar.integrations, href: "/integrations" },
+    { key: "marketplace" as MenuKey, label: dict.navbar.marketplace, href: "/#marketplace" },
+    { key: "solutions" as MenuKey, label: dict.navbar.solutions, href: "/#soluzioni" },
+    { key: "integrations" as MenuKey, label: dict.navbar.integrations, href: "/#integrazioni" },
   ];
   // Le soluzioni puntano al proprio agente quando la piattaforma lo offre già;
   // le altre non sono ancora disponibili e rimandano alla richiesta agente personalizzato.

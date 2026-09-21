@@ -3,7 +3,6 @@ import HeroSection from "@/components/HeroSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
 import MarketplaceSection from "@/components/MarketplaceSection";
 import ProblemSolutionSection from "@/components/ProblemSolutionSection";
-import FeaturesSection from "@/components/FeaturesSection";
 import DashboardSection from "@/components/DashboardSection";
 import IntegrationsSection from "@/components/IntegrationsSection";
 import UseCasesSection from "@/components/UseCasesSection";
@@ -27,12 +26,11 @@ const LANDING_BUBBLES: FloatingBubble[] = [
   { top: "82%", left: "85%", size: "w-10 h-10", brand: "facebook", delay: "0.9s", anim: "animate-float-reverse" },
 ];
 
-// Homepage: pagina di destinazione — stesso sfondo della waitlist per coerenza premium.
-// Usa identico layer fixed con gradienti + radiali + hairline, così la transizione / ↔ /waitlist è impercettibile.
+// Homepage: landing — layer fixed con gradienti + radiali + hairline, coerente con palette Ink/Paper.
 export default async function Home() {
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#1e1e24]">
-      {/* Sfondo waitlist identico — fixed */}
+      {/* Sfondo landing — fixed */}
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute inset-0 bg-gradient-to-b from-[#25252d] via-[#1e1e24] to-[#121214]" />
         <div
@@ -56,7 +54,6 @@ export default async function Home() {
         <HowItWorksSection />
         <MarketplaceSection />
         <ProblemSolutionSection />
-        <FeaturesSection />
         <DashboardSection />
         <IntegrationsSection />
         <UseCasesSection />
