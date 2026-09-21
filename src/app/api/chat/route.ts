@@ -138,10 +138,9 @@ export async function POST(req: Request) {
 
           await emitter.flush();
           send({ type: "done" });
-        } catch (err) {
-          console.error("Chat provider error:", err);
+        } catch {
           emitter.stop();
-          send({ type: "error", message: streamErrorMessage, detail: err instanceof Error ? err.message : String(err) } as unknown as object);
+          send({ type: "error", message: streamErrorMessage });
         } finally {
           try {
             controller.close();

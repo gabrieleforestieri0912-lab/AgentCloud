@@ -115,7 +115,6 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
     async chat(params: LLMChatParams, onText?: (delta: string) => void): Promise<LLMResponse> {
       const key = ensureKey();
       const baseUrl = getRuntimeBaseUrl();
-      console.log(`[xKiro] baseUrl=${baseUrl} model=${params.model}->${resolveModel(params.model || defaultModel)} keyPrefix=${key.slice(0,8)} len=${key.length} hasXT=${!!process.env.XT_API_KEY} xtLen=${process.env.XT_API_KEY?.length}`);
       const model = resolveModel(params.model || defaultModel);
       const messages = llmMessagesToOpenAI(params.system, params.messages);
       const tools = params.tools.length > 0 ? normalizeTools(params.tools) : undefined;
