@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Mail,
@@ -12,7 +14,6 @@ import {
   BarChart3,
   Users,
   Zap,
-  Clock,
   ShieldCheck,
   ArrowRight,
   ChevronDown,
@@ -29,6 +30,8 @@ import FloatingBrandBubbles, { type FloatingBubble } from "@/components/Floating
 import CountdownTimer from "@/components/CountdownTimer";
 import LanguageToggle from "@/components/LanguageToggle";
 import BrandLogo from "@/components/BrandLogo";
+import BrandIcon from "@/components/BrandIcon";
+import { BRANDS } from "@/lib/brands";
 import Footer from "@/components/Footer";
 import InstagramFollowCard from "@/components/InstagramFollowCard";
 import { AVAILABLE_AGENTS } from "@/lib/agents";
@@ -40,6 +43,12 @@ import { validateAndSanitizeEmail, HONEYPOT_FIELD_NAME } from "@/lib/forms-secur
 const JOINED_COOKIE = "ac_wl_joined";
 const JOINED_EMAIL_COOKIE = "ac_wl_email";
 const REF_COOKIE = "ac_wl_ref";
+
+// La waitlist non espone dati live del marketplace: mostriamo solo una
+// piccola anteprima degli agenti già disponibili.
+const WAITLIST_FEATURED_AGENTS = AVAILABLE_AGENTS.slice(0, 3);
+
+type DemoMessage = { role: "user" | "assistant"; content: string };
 
 const FLOATING_BUBBLES: FloatingBubble[] = [
   { top: "4%", left: "18%", size: "w-11 h-11", brand: "google", delay: "0.6s", anim: "animate-float-gentle" },
@@ -102,6 +111,13 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
   const [welcomeDone, setWelcomeDone] = useState(false);
   const [joinedEmail, setJoinedEmail] = useState<string | null>(null);
   const shouldReduceMotion = useReducedMotion();
+  const [demoInput, setDemoInput] = useState("");
+  const [demoSending, setDemoSending] = useState(false);
+  const [demoMessages, setDemoMessages] = useState<DemoMessage[]>(() => [
+    { role: "user", content: w.demoUserMsg as string },
+    { role: "assistant", content: w.demoAgentMsg as string },
+  ]);
+  const demoBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -324,6 +340,68 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDemoSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const text = demoInput.trim();
+    if (!text || demoSending) return;
+
+    setDemoInput("");
+    setDemoMessages((current) => [...current, { role: "user", content: text }]);
+    setDemoSending(true);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: "support-agent",
+          messages: [...demoMessages, { role: "user", content: text }],
+        }),
+      });
+      if (!response.ok || !response.body) throw new Error("Demo unavailable");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let answer = "";
+      const appendAnswer = (content: string) => {
+        answer += content;
+        setDemoMessages((current) => {
+          const last = current[current.length - 1];
+          if (last?.role === "assistant" && last.content === answer.slice(0, last.content.length)) {
+            return [...current.slice(0, -1), { role: "assistant", content: answer }];
+          }
+          return [...current, { role: "assistant", content: answer }];
+        });
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const data = JSON.parse(line.slice(6)) as { type?: string; content?: string };
+            if (data.type === "text" && data.content) appendAnswer(data.content);
+          } catch {
+            // Ignora righe SSE incomplete.
+          }
+        }
+      }
+      if (!answer) throw new Error("Empty demo response");
+    } catch {
+      setDemoMessages((current) => [...current, { role: "assistant", content: w.networkError as string }]);
+    } finally {
+      setDemoSending(false);
+    }
+  };
+
+  useEffect(() => {
+    demoBodyRef.current?.scrollTo({ top: demoBodyRef.current.scrollHeight, behavior: "smooth" });
+  }, [demoMessages, demoSending]);
+
   const openForm = () => setShowForm(true);
   const closeForm = () => setShowForm(false);
 
@@ -370,7 +448,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     <div className="relative overflow-x-hidden bg-[#1e1e24]">
       {/* Global background — schiarito: base meno nera, radiali più visibili */}
       <div className="pointer-events-none fixed inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#25252d] via-[#1e1e24] to-[#121214]" />
+        <div className="absolute inset-0 bg-linear-to-b from-[#25252d] via-[#1e1e24] to-[#121214]" />
         <div
           className="absolute inset-0 opacity-[0.55]"
           style={{
@@ -378,14 +456,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               "radial-gradient(circle at 15% 10%, rgba(3,139,254,.22), transparent 34%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.16), transparent 30%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.14), transparent 38%)",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/[0.03]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/25 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-transparent via-transparent to-white/3" />
+        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/25 to-transparent" />
       </div>
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
       {/* NAVBAR trasparente — 3xl allarga container per ultra-wide */}
       <header className="absolute left-0 right-0 top-0 z-30 bg-transparent">
-        <div className="mx-auto flex max-w-6xl 3xl:max-w-[1680px] 4xl:max-w-[1840px] items-center justify-between px-4 py-4 sm:px-6 3xl:px-8 3xl:py-6">
+        <div className="mx-auto flex max-w-6xl 3xl:max-w-420 4xl:max-w-460 items-center justify-between px-4 py-4 sm:px-6 3xl:px-8 3xl:py-6">
           <div className="flex items-center gap-2.5">
             <div className="relative h-8 w-8">
               <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="32px" />
@@ -415,12 +493,12 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           {/* Titolo 2 righe — responsive fluido: evita overflow su 320px, scala su 3xl */}
           <h1 className="text-[28px] xs:text-[34px] font-extrabold leading-[0.95] tracking-tight text-white sm:text-6xl 3xl:text-[76px]">
             <span className="block">{w.heroTitleA as string}</span>
-            <span className="block bg-gradient-to-r from-brand-400 to-pink-400 bg-clip-text text-transparent">{w.heroTitleB as string}</span>
+            <span className="block bg-linear-to-r from-brand-400 to-pink-400 bg-clip-text text-transparent">{w.heroTitleB as string}</span>
           </h1>
           <p className="mt-4 max-w-xl 3xl:max-w-2xl text-[14px] xs:text-[15px] leading-relaxed text-neutral-300 sm:text-lg 3xl:text-xl">{w.heroSub as string}</p>
 
           {/* Countdown sotto al titolo al centro — full width su mobile per non tagliare */}
-          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none 3xl:max-w-[520px] flex-col items-center gap-3 3xl:gap-4 px-2 xs:px-0">
+          <div className="mt-7 flex w-full max-w-90 xs:max-w-none 3xl:max-w-130 flex-col items-center gap-3 3xl:gap-4 px-2 xs:px-0">
             <CountdownTimer className="w-full xs:w-auto 3xl:w-full" />
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs 3xl:text-sm font-medium text-neutral-300">
               <Users className="h-3.5 w-3.5 text-brand-400" /> {total.toLocaleString("it-IT")} {w.inList as string}
@@ -432,7 +510,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             onClick={openForm}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="mt-8 inline-flex min-h-[46px] 3xl:min-h-[56px] items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-pink-500 px-8 3xl:px-10 py-3.5 xs:py-4 3xl:py-4 text-[15px] xs:text-base 3xl:text-lg font-bold text-white shadow-xl shadow-brand-500/25 transition"
+            className="mt-8 inline-flex min-h-11.5 3xl:min-h-14 items-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-8 3xl:px-10 py-3.5 xs:py-4 3xl:py-4 text-[15px] xs:text-base 3xl:text-lg font-bold text-white shadow-xl shadow-brand-500/25 transition"
           >
             {isSuccess ? (w.heroJoined as string) : (w.heroCta as string)} <ArrowRight className="h-5 w-5" />
           </motion.button>
@@ -545,39 +623,39 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           </AnimatePresence>
         </motion.div>
 
-        {/* Demo live compatta sotto al CTA (opzionale, resta centrata) — scala su 3xl */}
+        {/* Demo live: messaggi iniziali di esempio + input collegato al backend AI reale. */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.25 }} className="mt-10 w-full max-w-xl 3xl:max-w-2xl">
-          <div className="rounded-[24px] 3xl:rounded-[28px] border border-white/10 bg-neutral-900/70 p-3 3xl:p-4 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur">
+          <div className="rounded-3xl 3xl:rounded-[28px] border border-white/10 bg-neutral-900/70 p-3 3xl:p-4 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur">
             <div className="rounded-2xl border border-white/5 bg-neutral-950 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-semibold text-brand-300">
                   <Sparkles className="h-3 w-3" /> {w.demoLiveBadge as string}
                 </span>
-                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                <span className={`h-2 w-2 rounded-full ${demoSending ? "animate-pulse bg-amber-400" : "animate-pulse bg-emerald-400"}`} />
               </div>
-              <div className="space-y-3">
-                <div className="flex justify-end">
-                  <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-white px-4 py-3 text-sm text-neutral-900">{w.demoUserMsg as string}</div>
-                </div>
-                <div className="flex justify-start">
-                  <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-brand-500/20 bg-gradient-to-br from-brand-500/15 to-pink-500/15 px-4 py-3 text-sm leading-relaxed text-white">
-                    <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300">
-                      <span className="h-5 w-5 rounded-full bg-gradient-to-r from-brand-500 to-pink-500" /> AgentCloud
+              <div ref={demoBodyRef} className="max-h-64 space-y-3 overflow-y-auto pr-1">
+                {demoMessages.map((message, index) => (
+                  <div key={`${index}-${message.role}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-sm bg-white text-neutral-900" : "rounded-bl-sm border border-brand-500/20 bg-linear-to-br from-brand-500/15 to-pink-500/15 text-white"}`}>
+                      {message.role === "assistant" && <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300"><span className="h-5 w-5 rounded-full bg-linear-to-r from-brand-500 to-pink-500" /> AgentCloud</div>}
+                      {message.content}
                     </div>
-                    {w.demoAgentMsg as string}
                   </div>
-                </div>
-                <div className="inline-flex rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
-                  {w.demoResolved as string}
-                </div>
+                ))}
+                {demoSending && <div className="text-xs text-brand-300">AgentCloud sta scrivendo…</div>}
               </div>
+              <form onSubmit={handleDemoSubmit} className="mt-4 flex gap-2 border-t border-white/10 pt-3">
+                <input value={demoInput} onChange={(event) => setDemoInput(event.target.value)} placeholder={w.demoInputPlaceholder as string} disabled={demoSending} className="min-w-0 flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500" />
+                <button type="submit" disabled={demoSending || !demoInput.trim()} className="rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-40" aria-label={w.demoInputPlaceholder as string}><ArrowRight className="h-4 w-4" /></button>
+              </form>
+              <div className="mt-3 inline-flex rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">{w.demoResolved as string}</div>
             </div>
           </div>
         </motion.div>
       </section>
 
       {/* PIATTAFORMA — cos'è in 3 pillastri — 3xl: container largo + padding + typo */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-[1680px] 4xl:max-w-[1840px] px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
+      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
         <div className="mx-auto max-w-3xl 3xl:max-w-4xl text-center">
           <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-widest text-neutral-400 3xl:text-sm">La piattaforma</span>
           <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">Automatizza senza scrivere codice</h2>
@@ -589,8 +667,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             { icon: Users, title: "Integrato ai tuoi tool", desc: "Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot — colleghi in 2 minuti." },
             { icon: ShieldCheck, title: "Senza codice, sicuro", desc: "Setup guidato, token cifrati, GDPR-ready. Nessun dato per training." },
           ].map((f) => (
-            <div key={f.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 3xl:p-7">
-              <div className="flex h-9 w-9 3xl:h-11 3xl:w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-pink-500 text-white"><f.icon className="h-5 w-5 3xl:h-6 3xl:w-6" /></div>
+            <div key={f.title} className="rounded-2xl border border-white/10 bg-white/3 p-5 3xl:p-7">
+              <div className="flex h-9 w-9 3xl:h-11 3xl:w-11 items-center justify-center rounded-xl bg-linear-to-br from-brand-500 to-pink-500 text-white"><f.icon className="h-5 w-5 3xl:h-6 3xl:w-6" /></div>
               <h3 className="mt-3 text-sm 3xl:text-base font-bold text-white">{f.title}</h3>
               <p className="mt-1 text-sm 3xl:text-[15px] leading-relaxed text-neutral-400">{f.desc}</p>
             </div>
@@ -599,7 +677,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </section>
 
       {/* AGENTI — cosa fanno — 3xl: griglia più ariosa */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-[1680px] 4xl:max-w-[1840px] px-4 py-8 sm:px-6 3xl:px-8 3xl:py-12">
+      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-8 sm:px-6 3xl:px-8 3xl:py-12">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">Agenti in azione</span>
@@ -608,20 +686,13 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           <button onClick={openForm} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm 3xl:text-base font-semibold text-white hover:bg-white/10">Vedi marketplace <ArrowRight className="h-4 w-4" /></button>
         </div>
         <div className="mt-6 3xl:mt-8 grid gap-4 3xl:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { name: "Shopify Agent", role: "E-commerce", desc: "Cerca prodotti, crea carrelli, verifica ordini e spedizioni.", points: ["Ricerca catalogo", "Link carrello", "Stato ordine"] },
-            { name: "Email Manager", role: "Inbox", desc: "Smista, priorizza e prepara bozze. Tu approvi con un click.", points: ["Classifica email", "Bozze pronte", "Follow-up"] },
-            { name: "Lead Capture", role: "Marketing", desc: "Cattura lead dal sito, arricchisce e avvisa Slack/HubSpot.", points: ["Form → CRM", "Arricchimento", "Notifica vendite"] },
-            { name: "Support Agent", role: "Assistenza", desc: "Risponde a domande su prodotti e ordini 24/7.", points: ["FAQ auto", "Ordini", "Resi"] },
-            { name: "Calendar Booking", role: "Agenda", desc: "Propone slot, prenota e invia inviti con reminder.", points: ["Disponibilità", "Prenota", "Reminder"] },
-            { name: "Finance Manager", role: "Pagamenti", desc: "Fatture, cashflow da CSV/Stripe, solleciti gentili.", points: ["Fatture", "Incassi", "Solleciti"] },
-          ].map((a) => (
-            <div key={a.name} className="rounded-2xl border border-white/10 bg-neutral-900/60 p-5 3xl:p-7">
-              <div className="text-xs 3xl:text-sm font-bold tracking-widest text-brand-400">{a.role}</div>
-              <h3 className="mt-1 text-sm 3xl:text-base font-bold text-white">{a.name}</h3>
-              <p className="mt-1 text-sm 3xl:text-[15px] leading-relaxed text-neutral-400">{a.desc}</p>
+          {WAITLIST_FEATURED_AGENTS.map((agent) => (
+            <div key={agent.slug} className="rounded-2xl border border-white/10 bg-neutral-900/60 p-5 3xl:p-7">
+              <div className="text-xs 3xl:text-sm font-bold tracking-widest text-brand-400">{agent.category}</div>
+              <h3 className="mt-1 text-sm 3xl:text-base font-bold text-white">{agent.name}</h3>
+              <p className="mt-1 text-sm 3xl:text-[15px] leading-relaxed text-neutral-400">{agent.description}</p>
               <ul className="mt-3 3xl:mt-4 space-y-1">
-                {a.points.map((p) => (<li key={p} className="flex items-center gap-1.5 text-xs 3xl:text-sm font-medium text-emerald-300"><Check className="h-3.5 w-3.5" />{p}</li>))}
+                {agent.tasks.slice(0, 3).map((task) => (<li key={task} className="flex items-center gap-1.5 text-xs 3xl:text-sm font-medium text-emerald-300"><Check className="h-3.5 w-3.5" />{task}</li>))}
               </ul>
             </div>
           ))}
@@ -629,7 +700,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </section>
 
       {/* INTEGRAZIONI — dove vivi già — 3xl: container + padding */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-[1680px] 4xl:max-w-[1840px] px-4 py-8 sm:px-6 3xl:px-8 3xl:py-12">
+      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-8 sm:px-6 3xl:px-8 3xl:py-12">
         <div className="rounded-3xl border border-white/10 bg-neutral-900/60 p-6 3xl:p-10 backdrop-blur">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -648,7 +719,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               { name: "HubSpot", brand: "hubspot" },
               { name: "Sheets", brand: "googlesheets" },
             ].map((it) => (
-              <div key={it.name} className="flex flex-col items-center gap-1.5 xs:gap-2 rounded-2xl border border-white/5 bg-white/[0.03] px-1.5 xs:px-2 py-3 xs:py-4 text-center">
+              <div key={it.name} className="flex flex-col items-center gap-1.5 xs:gap-2 rounded-2xl border border-white/5 bg-white/3 px-1.5 xs:px-2 py-3 xs:py-4 text-center">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5">
                   <BrandLogo slug={it.brand} size={20} />
                 </div>
@@ -662,7 +733,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </section>
 
       {/* CHI SIAMO — founders — 3xl: container largo, card più spaziose */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-[1680px] 4xl:max-w-[1840px] px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
+      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
         <div className="mx-auto max-w-3xl 3xl:max-w-4xl text-center">
           <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">Chi siamo</span>
           <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">Tre persone, una piattaforma</h2>
@@ -675,14 +746,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               role: "Developer",
               img: "/founders/gabriele_forestieri.jpg",
               bio: "Sviluppa la piattaforma, gli agenti e le integrazioni. Full-stack, ossessionato da velocità, dettagli e DX.",
-              instagram: "#",
+              instagram: "https://www.instagram.com/gabrieleforestieri_/",
             },
             {
               name: "Alle Cerchiari",
               role: "Social & Marketing",
               img: "/founders/alle_cerchiari.jpeg",
               bio: "Racconta AgentCloud sui social e nel marketing. Traduce la complessità in storie semplici e campagne che funzionano.",
-              instagram: "#",
+              instagram: "https://www.instagram.com/_allespy_/",
             },
             {
               name: "Matteo Parubi",
@@ -690,18 +761,18 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               sub: "Paru",
               img: "/founders/matteo_parubi.jpeg",
               bio: "Gestisce pagamenti, piani e prezzi via Stripe. Tiene i conti in ordine e l'esperienza di acquisto fluida.",
-              instagram: "#",
+              instagram: "https://www.instagram.com/matteo.parubi/",
             },
           ].map((m) => (
-            <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur">
+            <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/3 p-6 text-center backdrop-blur">
               <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border border-white/10 bg-neutral-800">
                 <Image src={m.img} alt={m.name} fill sizes="96px" className="object-cover" />
               </div>
               <h3 className="mt-4 text-base font-bold text-white">{m.name} {m.sub ? <span className="font-normal text-neutral-400">· {m.sub}</span> : null}</h3>
               <p className="mt-1 text-xs font-bold uppercase tracking-widest text-brand-300">{m.role}</p>
               <p className="mt-3 text-sm leading-relaxed text-neutral-400">{m.bio}</p>
-              <a href={m.instagram} target={m.instagram === "#" ? undefined : "_blank"} rel={m.instagram === "#" ? undefined : "noopener noreferrer"} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-[8px] font-bold text-white">IG</span> Instagram {m.instagram === "#" ? "· placeholder" : ""}
+              <a href={m.instagram} target="_blank" rel="noopener noreferrer" aria-label={`Instagram di ${m.name}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
+                <BrandIcon brand={BRANDS.instagram} size={16} color="currentColor" /> Instagram
               </a>
             </div>
           ))}
@@ -762,7 +833,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                       <button
                         type="submit"
                         disabled={isSubmitting || isGoogleLoading}
-                        className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500 to-pink-500 px-6 py-3.5 sm:py-3 text-[15px] sm:text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:opacity-90 disabled:opacity-50"
+                        className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-6 py-3.5 sm:py-3 text-[15px] sm:text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:opacity-90 disabled:opacity-50"
                       >
                         {isSubmitting ? (w.joining as string) : (w.heroCta as string)} <ArrowRight className="h-4 w-4" />
                       </button>
@@ -789,7 +860,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                         </div>
                         <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-800">
                           <motion.div
-                            className="h-full rounded-full bg-gradient-to-r from-brand-500 to-pink-500"
+                            className="h-full rounded-full bg-linear-to-r from-brand-500 to-pink-500"
                             initial={{ width: 0 }}
                             animate={{ width: `${queue.position && queue.total ? Math.max(5, ((queue.total - queue.position + 1) / queue.total) * 100) : 30}%` }}
                           />
@@ -839,14 +910,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeWelcome}
-              className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm"
+              className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 16 }}
               transition={{ type: "spring", damping: 24, stiffness: 260 }}
-              className="fixed inset-0 z-[61] flex items-center justify-center p-3 xs:p-4"
+              className="fixed inset-0 z-61 flex items-center justify-center p-3 xs:p-4"
             >
               <div className="relative w-full max-w-md max-h-[90dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain rounded-3xl border border-white/10 bg-neutral-900 shadow-2xl">
                 <button
@@ -860,7 +931,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 <div className="p-5 xs:p-6 sm:p-7">
                   {!welcomeDone ? (
                     <>
-                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-pink-500 text-white shadow-lg shadow-brand-500/20">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-brand-500 to-pink-500 text-white shadow-lg shadow-brand-500/20">
                         <Sparkles className="h-6 w-6" />
                       </div>
                       <h3 className="mt-4 text-center text-lg xs:text-xl font-extrabold tracking-tight text-white">
@@ -893,7 +964,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                         <button
                           type="submit"
                           disabled={welcomeSaving}
-                          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-pink-500 px-6 py-3.5 sm:py-3 text-[15px] sm:text-sm font-bold text-white shadow-lg shadow-brand-500/25 hover:opacity-90 disabled:opacity-50"
+                          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-6 py-3.5 sm:py-3 text-[15px] sm:text-sm font-bold text-white shadow-lg shadow-brand-500/25 hover:opacity-90 disabled:opacity-50"
                         >
                           {welcomeSaving ? (
                             <>
@@ -909,7 +980,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                           type="button"
                           onClick={closeWelcome}
                           disabled={welcomeSaving}
-                          className="min-h-[44px] w-full rounded-full border border-white/10 bg-white/5 py-3 text-sm font-semibold text-neutral-300 hover:bg-white/10 hover:text-white disabled:opacity-50"
+                          className="min-h-11 w-full rounded-full border border-white/10 bg-white/5 py-3 text-sm font-semibold text-neutral-300 hover:bg-white/10 hover:text-white disabled:opacity-50"
                         >
                           {w.welcomeSkip as string}
                         </button>
@@ -933,14 +1004,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </AnimatePresence>
 
       {/* 3 ATTI — 3xl: container + typo */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-[1680px] 4xl:max-w-[1840px] px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
+      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
         <div className="text-center">
           <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">{w.howItWorksBadge as string}</span>
           <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">{w.howItWorksTitle as string}</h2>
         </div>
 
         <div className="relative mt-8 grid gap-6 md:grid-cols-3">
-          <div className="hidden md:block absolute left-[16%] right-[16%] top-[52px] h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <div className="hidden md:block absolute left-[16%] right-[16%] top-13 h-px bg-linear-to-r from-transparent via-white/10 to-transparent" />
           {[
             {
               n: "01",
@@ -982,10 +1053,10 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               mock: (
                 // Dashboard preview compatta — altezza ridotta e sidebar fedele a DashboardShell
                 <div className="overflow-hidden rounded-2xl border border-white/10 bg-neutral-950">
-                  <div className="flex h-[112px]">
+                  <div className="flex h-28">
                     {/* Sidebar fedele allo stile reale: bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] */}
-                    <div className="flex w-[96px] shrink-0 flex-col gap-1 border-r border-white/[0.06] bg-neutral-950/80 p-2 backdrop-blur-2xl">
-                      <div className="mb-1 flex items-center gap-1.5 border-b border-white/[0.06] pb-1.5">
+                    <div className="flex w-24 shrink-0 flex-col gap-1 border-r border-white/6 bg-neutral-950/80 p-2 backdrop-blur-2xl">
+                      <div className="mb-1 flex items-center gap-1.5 border-b border-white/6 pb-1.5">
                         <div className="relative h-4 w-4 overflow-hidden rounded-md">
                           <Image src="/agentcloud.png" alt="" fill className="object-cover" sizes="16px" />
                         </div>
@@ -999,7 +1070,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                       ].map(({ label, icon: Icon, active }) => (
                         <div
                           key={label}
-                          className={`flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[8px] font-semibold ${active ? "bg-white/[0.06] text-white border border-white/[0.08]" : "text-neutral-500"}`}
+                          className={`flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[8px] font-semibold ${active ? "bg-white/6 text-white border border-white/8" : "text-neutral-500"}`}
                         >
                           <span className={`flex h-4 w-4 items-center justify-center rounded-md ${active ? "bg-brand-500/15 text-brand-400" : "bg-white/5"}`}>
                             <Icon size={8} />
@@ -1007,7 +1078,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                           {label}
                         </div>
                       ))}
-                      <div className="mt-auto flex items-center gap-1 rounded-lg bg-white/[0.03] p-1">
+                      <div className="mt-auto flex items-center gap-1 rounded-lg bg-white/3 p-1">
                         <div className="h-4 w-4 rounded-full bg-brand-500/20" />
                         <span className="text-[7px] font-semibold text-neutral-400">Admin</span>
                       </div>
@@ -1020,11 +1091,10 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                       </div>
                       <div className="mt-2 grid h-10 flex-1 grid-cols-7 items-end gap-1 opacity-60">
                         {[40, 65, 45, 80, 60, 90, 75].map((h, i) => (
-                          <motion.div key={i} initial={{ height: 0 }} whileInView={{ height: `${h}%` }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-t-sm bg-gradient-to-t from-brand-500/60 to-pink-400/60" />
+                          <motion.div key={i} initial={{ height: 0 }} whileInView={{ height: `${h}%` }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-t-sm bg-linear-to-t from-brand-500/60 to-pink-400/60" />
                         ))}
                       </div>
                       <div className="mt-1.5 flex gap-1">
-                        <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[7px] font-bold text-amber-300">Dati di esempio</span>
                         <span className="text-[7px] text-neutral-500">7 giorni</span>
                       </div>
                     </div>
@@ -1033,8 +1103,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               ),
             },
           ].map((s) => (
-            <div key={s.n} className="relative rounded-3xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-pink-500 text-white">
+            <div key={s.n} className="relative rounded-3xl border border-white/10 bg-white/3 p-5 backdrop-blur">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-brand-500 to-pink-500 text-white">
                 <s.icon className="h-5 w-5" />
               </div>
               <div className="text-xs font-bold tracking-widest text-brand-400">{s.n}</div>
@@ -1053,27 +1123,21 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </section>
 
       {/* Social proof — 3xl: container + stats più ariose */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-[1680px] 4xl:max-w-[1840px] px-4 py-8 sm:px-6 3xl:px-8 3xl:py-12">
+      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-8 sm:px-6 3xl:px-8 3xl:py-12">
         <div className="rounded-3xl border border-white/10 bg-neutral-900/60 p-6 3xl:p-10 backdrop-blur">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="text-xs 3xl:text-sm font-semibold tracking-widest text-brand-400">{w.socialBadge as string}</div>
               <h3 className="mt-1 text-lg 3xl:text-xl font-bold text-white">{w.socialTitle as string}</h3>
             </div>
-            <span className="rounded-full bg-white/5 px-3 py-1 text-xs 3xl:text-sm text-neutral-400">{total.toLocaleString("it-IT")} {w.inList as string} • countdown attivo</span>
+            <span className="rounded-full bg-white/5 px-3 py-1 text-xs 3xl:text-sm text-neutral-400">Anteprima agenti disponibili • countdown attivo</span>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-4 3xl:gap-6 sm:grid-cols-4">
-            {[
-              { v: `${AVAILABLE_AGENTS.length}`, l: w.statAgents as string, icon: Users, example: false },
-              { v: "—", l: w.statTasks as string, icon: Zap, example: true },
-              { v: "—", l: w.statTime as string, icon: Clock, example: true },
-              { v: total.toLocaleString("it-IT"), l: w.statUsers as string, icon: BarChart3, example: false },
-            ].map((s) => (
-              <div key={s.l} className="rounded-2xl border border-white/5 bg-white/[0.03] p-4 3xl:p-6 text-center">
-                <s.icon className="mx-auto h-5 w-5 3xl:h-6 3xl:w-6 text-brand-400" />
-                <div className="mt-2 flex items-center justify-center gap-1.5 text-xl 3xl:text-2xl font-extrabold text-white">{s.v} {s.example && <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[8px] font-bold text-amber-300">Esempio</span>}</div>
-                <div className="text-xs 3xl:text-sm text-neutral-500">{s.l}</div>
-                {s.example && <div className="mt-1 text-[9px] 3xl:text-xs font-semibold text-amber-300/70">Dati reali dal lancio</div>}
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            {WAITLIST_FEATURED_AGENTS.map((agent) => (
+              <div key={agent.slug} className="rounded-2xl border border-white/5 bg-white/3 p-4 text-center">
+                <Users className="mx-auto h-5 w-5 text-brand-400" />
+                <div className="mt-2 text-sm font-extrabold text-white">{agent.name}</div>
+                <div className="mt-1 text-xs text-neutral-500">Disponibile in anteprima</div>
               </div>
             ))}
           </div>
@@ -1088,7 +1152,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         </div>
         <div className="mt-6 3xl:mt-8 space-y-3 3xl:space-y-4">
           {(w.faqItems as { q: string; a: string }[]).map((item, i) => (
-            <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+            <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/3">
               <button onClick={() => setShowFaq(showFaq === i ? null : i)} className="flex w-full items-center justify-between px-5 3xl:px-6 py-4 3xl:py-5 text-left">
                 <span className="text-sm 3xl:text-base font-semibold text-white">{item.q}</span>
                 <ChevronDown className={`h-4 w-4 3xl:h-5 3xl:w-5 text-neutral-400 transition ${showFaq === i ? "rotate-180" : ""}`} />
@@ -1107,8 +1171,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </section>
 
       {/* Footer CTA — 3xl allargata */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-[1680px] 4xl:max-w-[1840px] px-4 pb-10 sm:px-6 3xl:px-8 3xl:pb-16">
-        <div className="rounded-[28px] 3xl:rounded-[32px] border border-brand-500/20 bg-gradient-to-r from-brand-600 via-brand-500 to-pink-500 p-[1px]">
+      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 pb-10 sm:px-6 3xl:px-8 3xl:pb-16">
+        <div className="rounded-[28px] 3xl:rounded-4xl border border-brand-500/20 bg-linear-to-r from-brand-600 via-brand-500 to-pink-500 p-px">
           <div className="rounded-[27px] 3xl:rounded-[31px] bg-neutral-950 px-6 py-8 text-center sm:px-10 sm:py-10 3xl:px-14 3xl:py-14">
             <h2 className="text-2xl font-extrabold text-white sm:text-3xl 3xl:text-4xl">{w.footerCtaTitle as string}</h2>
             <p className="mx-auto mt-2 max-w-xl 3xl:max-w-2xl text-sm 3xl:text-base text-neutral-400">{w.footerCtaSubtitle as string}</p>

@@ -1,222 +1,192 @@
 #!/usr/bin/env node
-
 import { Command } from "commander";
-import * as http from "http";
-import * as crypto from "crypto";
-import fs from "fs";
-import path from "path";
-import os from "os";
-import { loadConfig, saveConfig } from "./config.js";
-import { executeAgent } from "./api.js";
+import readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
+import { clearCredentials, loadConfig, loadCredentials, saveConfig } from "./config.js";
+import { adminRequest, ApiError, loginUser, streamAgent, userRequest, userWhoAmI } from "./api.js";
+import { CATALOG } from "./catalog.js";
 
+const SITE = "https://www.agentcloud.agency";
 const program = new Command();
+const agents = program.command("agents").description("Gestisci agenti posseduti e catalogo");
+const admin = program.command("admin").description("Operazioni amministrative (richiede AGENTCLOUD_ADMIN_TOKEN)");
 
-program
-  .name("agentcloud")
-  .description("CLI ufficiale di AgentCloud - Esegui e gestisci agenti AI dal terminale")
-  .version("0.1.0");
+program.name("agentcloud").description("CLI AgentCloud per utenti e amministratori").version("0.1.0");
 
-// Helper: apri browser in modo cross-platform senza dipendere da `open` ESM dinamico
-async function openBrowser(url: string) {
-  try {
-    const mod: unknown = await import("open");
-    const fn = (mod as { default?: unknown; open?: unknown }).default ?? (mod as { open?: unknown }).open ?? mod;
-    await (fn as (u: string) => Promise<void>)(url);
-  } catch {
-    console.log(`Apri manualmente questo URL nel browser:\n  ${url}`);
-  }
+function printError(error: unknown): never {
+  if (error instanceof ApiError) {
+    console.error(`Errore ${error.status}: ${error.message}`);
+    if (error.status === 401) console.error("Suggerimento: esegui `agentcloud login`.");
+    if (error.status === 402 || error.status === 429) console.error(`Gestisci il piano: ${SITE}/dashboard/subscriptions`);
+  } else console.error(`Errore: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
 }
 
-program
-  .command("login")
-  .description("Autenticazione via browser (apre la pagina di login web) o con token diretto")
-  .argument("[token]", "Il tuo API token di AgentCloud (se già in possesso, altrimenti avvia il flusso browser)")
-  .option("--api-url <url>", "Override URL base API (default https://agentcloud.agency)")
-  .action(async (tokenArg: string | undefined, opts: { apiUrl?: string }) => {
-    // Caso legacy: token passato direttamente
-    if (tokenArg && tokenArg.trim().length > 8 && !tokenArg.startsWith("http")) {
-      saveConfig({ token: tokenArg.trim(), ...(opts.apiUrl ? { apiUrl: opts.apiUrl } : {}) });
-      console.log("✓ Token di autenticazione salvato con successo!");
-      return;
-    }
-
-    const config = loadConfig();
-    const apiUrl = opts.apiUrl ?? config.apiUrl ?? "https://agentcloud.agency";
-    if (opts.apiUrl) saveConfig({ apiUrl });
-
-    const state = crypto.randomBytes(16).toString("hex");
-    const chosenPort = 0; // 0 = porta libera
-
-    // Avvia server locale per callback
-    const server = http.createServer();
-    let resolved = false;
-
-    const tokenPromise = new Promise<string>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          try { server.close(); } catch {}
-          reject(new Error("Timeout: nessun callback ricevuto entro 5 minuti. Riprova con `agentcloud login`."));
-        }
-      }, 5 * 60 * 1000);
-
-      server.on("request", (req, res) => {
-        const url = new URL(req.url ?? "/", `http://127.0.0.1`);
-        if (url.pathname === "/callback") {
-          const token = url.searchParams.get("token");
-          const returnedState = url.searchParams.get("state");
-          const error = url.searchParams.get("error");
-          if (error) {
-            res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-            res.end(`<html><body style="font-family:sans-serif;padding:40px"><h2>Autenticazione fallita</h2><p>${error}</p><p>Chiudi questa finestra e riprova.</p></body></html>`);
-            clearTimeout(timeout);
-            if (!resolved) { resolved = true; reject(new Error(error)); }
-            try { server.close(); } catch {}
-            return;
-          }
-          if (!token) {
-            res.writeHead(400, { "Content-Type": "text/plain" });
-            res.end("Missing token");
-            return;
-          }
-          if (returnedState !== state) {
-            res.writeHead(400, { "Content-Type": "text/plain" });
-            res.end("State mismatch");
-            clearTimeout(timeout);
-            if (!resolved) { resolved = true; reject(new Error("State mismatch - possibile attacco CSRF")); }
-            try { server.close(); } catch {}
-            return;
-          }
-          // Successo
-          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-          res.end(`<html><head><meta charset=\"utf-8\"/><title>AgentCloud CLI</title></head><body style=\"font-family:Manrope, sans-serif;background:#0A0A0F;color:#F9FAFB;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0\"><div style=\"background:#13131A;border:1px solid #262635;border-radius:16px;padding:32px;max-width:420px;text-align:center\"><div style=\"font-size:32px\">✅</div><h1 style=\"margin:12px 0 8px\">Autenticato!</h1><p style=\"color:#9CA3AF;font-size:14px\">Token salvato nella CLI. Puoi chiudere questa finestra e tornare al terminale.</p><p style=\"color:#6366F1;font-size:12px;margin-top:16px\">agentcloud list — per vedere gli agenti</p></div></body></html>`);
-          clearTimeout(timeout);
-          if (!resolved) { resolved = true; resolve(token); }
-          setTimeout(() => { try { server.close(); } catch {} }, 500);
-        } else {
-          res.writeHead(404, { "Content-Type": "text/plain" });
-          res.end("Not found");
-        }
-      });
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      server.listen(chosenPort, "127.0.0.1", () => resolve());
-      server.on("error", reject);
-    });
-    const addr = server.address() as { port: number };
-    const port = addr.port;
-
-    const cliAuthUrl = `${apiUrl.replace(/\/$/, "")}/cli/auth?port=${port}&state=${state}`;
-
-    console.log("\n🔐 AgentCloud CLI — Autenticazione via browser\n");
-    console.log(`  Avvio server locale su http://127.0.0.1:${port}/callback`);
-    console.log(`  Apertura browser su:\n  ${cliAuthUrl}\n`);
-    console.log("  Se il browser non si apre, copia l'URL sopra manualmente.");
-    console.log("  In attesa di completare il login sul web...\n");
-
-    await openBrowser(cliAuthUrl);
-
-    try {
-      const token = await tokenPromise;
-      saveConfig({ token: token.trim() });
-      console.log("✓ Autenticazione completata! Token salvato in ~/.agentcloud/config.json");
-      console.log("  Prova: agentcloud list  |  agentcloud run support-agent \"ciao\"\n");
-    } catch (e: unknown) {
-      console.error(`\n❌ ${(e as Error).message}\n`);
-      process.exit(1);
-    }
-  });
-
-program
-  .command("logout")
-  .description("Rimuove il token salvato")
-  .action(() => {
-    saveConfig({ token: undefined } as unknown as { token: string });
-    // rimuove fisicamente la chiave
-    const cfg = loadConfig();
-    if ((cfg as { token?: string }).token) {
-      // se saveConfig non ha rimosso, forziamo
-      const file = path.join(os.homedir(), ".agentcloud", "config.json");
-      try {
-        const raw = JSON.parse(fs.readFileSync(file, "utf-8"));
-        delete raw.token;
-        fs.writeFileSync(file, JSON.stringify(raw, null, 2));
-      } catch {}
-    }
-    console.log("✓ Logout effettuato. Token rimosso.");
-  });
-
-program
-  .command("whoami")
-  .description("Mostra l'utente autenticato (richiede token valido)")
-  .action(async () => {
-    const cfg = loadConfig();
-    if (!cfg.token) {
-      console.log("Non autenticato. Esegui: agentcloud login");
-      return;
-    }
-    try {
-      const res = await fetch(`${cfg.apiUrl}/api/user/owned`, { headers: { Authorization: `Bearer ${cfg.token}` } });
-      const data = await res.json().catch(() => ({}));
-      console.log(`API: ${cfg.apiUrl}`);
-      console.log(`Token: ****${cfg.token.slice(-4)}`);
-      console.log(`Status /api/user/owned: ${res.status}`);
-      console.log(JSON.stringify(data, null, 2));
-    } catch (e: unknown) {
-      console.error(`Errore: ${(e as Error).message}`);
-    }
-  });
-
-program
-  .command("config")
-  .description("Mostra o aggiorna la configurazione corrente")
-  .option("--url <url>", "Imposta l'URL base dell'API AgentCloud")
-  .action((options: { url?: string }) => {
-    if (options.url) {
-      saveConfig({ apiUrl: options.url });
-      console.log(`✓ API URL aggiornato a: ${options.url}`);
-    }
-    const current = loadConfig();
-    console.log("\nConfigurazione attuale:");
-    console.log(`- API URL: ${current.apiUrl}`);
-    console.log(`- Token: ${current.token ? "********" + current.token.slice(-4) : "(non impostato)"}`);
-    console.log(`- Agente predefinito: ${current.defaultAgent}\n`);
-  });
-
-program
-  .command("list")
-  .description("Elenca gli agenti disponibili")
-  .action(() => {
-    console.log("\nAgenti principali di AgentCloud:");
-    console.log("  • support-agent   - Assistenza clienti 24/7 con risoluzione ticket");
-    console.log("  • email-assistant - Automazione inbox, categorizzazione e draft email");
-    console.log("  • lead-qualifier  - Qualifica lead e scoring contatti per CRM\n");
-  });
-
-program
-  .command("run")
-  .description("Esegui un prompt con un agente specifico")
-  .argument("<agent>", "Slug dell'agente (es. support-agent, email-assistant)")
-  .argument("<prompt>", "Istruzione da eseguire")
-  .action(async (agent: string, prompt: string) => {
-    try {
-      console.log(`\n⏳ Esecuzione in corso con [${agent}]...`);
-      const startTime = Date.now();
-      const result = await executeAgent(agent, prompt);
-      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-
-      console.log(`✓ Risposta completata in ${duration}s:\n`);
-      const output = result.output || result.response || JSON.stringify(result, null, 2);
-      console.log(output);
-      console.log("");
-    } catch (err: unknown) {
-      console.error(`\n❌ Errore durante l'esecuzione: ${(err as Error).message}\n`);
-      if (String((err as Error).message).includes("401") || String((err as Error).message).includes("Non autenticato")) {
-        console.error("Suggerimento: esegui `agentcloud login` per autenticarti via browser.\n");
+async function askSecret(prompt: string): Promise<string> {
+  output.write(prompt);
+  const stdin = input as NodeJS.ReadStream & { isTTY?: boolean; setRawMode?: (mode: boolean) => void };
+  if (!stdin.isTTY || !stdin.setRawMode) {
+    output.write("\nNota: il terminale non supporta l'input nascosto.\n");
+    const rl = readline.createInterface({ input, output });
+    const value = await rl.question("");
+    rl.close();
+    return value;
+  }
+  return await new Promise((resolve) => {
+    let value = "";
+    const onData = (chunk: Buffer) => {
+      const char = chunk.toString("utf8");
+      if (char === "\\n" || char === "\\r" || char === "\\u0004") {
+        stdin.setRawMode?.(false);
+        stdin.pause();
+        stdin.off("data", onData);
+        output.write("\\n");
+        resolve(value);
+      } else if (char === "\\u0003") {
+        stdin.setRawMode?.(false);
+        stdin.pause();
+        stdin.off("data", onData);
+        output.write("\\n");
+        resolve("");
+      } else if (char === "\\u007f") {
+        value = value.slice(0, -1);
+      } else {
+        value += char;
       }
-      process.exit(1);
-    }
+    };
+    stdin.setRawMode?.(true);
+    stdin.resume();
+    stdin.on("data", onData);
   });
+}
 
-program.parse(process.argv);
+async function askCredentials() {
+  const rl = readline.createInterface({ input, output });
+  const email = (await rl.question("Email: ")).trim();
+  rl.close();
+  const password = await askSecret("Password: ");
+  return { email, password };
+}
+
+function printTable(rows: string[][]) {
+  const widths = rows[0].map((_, i) => Math.max(...rows.map((row) => row[i]?.length || 0)));
+  for (const row of rows) console.log(row.map((cell, i) => cell.padEnd(widths[i])).join("  "));
+}
+
+program.command("login").description("Accedi con email e password; non salva mai la password").action(async () => {
+  try {
+    const { email, password } = await askCredentials();
+    await loginUser(email, password);
+    console.log("✓ Login completato. Credenziali salvate in ~/.agentcloud/credentials.json");
+  } catch (error) { printError(error); }
+});
+
+program.command("logout").description("Rimuove le credenziali utente locali").action(() => {
+  clearCredentials();
+  console.log("✓ Logout completato.");
+});
+
+program.command("whoami").description("Mostra l'utente autenticato").action(async () => {
+  const credentials = loadCredentials();
+  if (!credentials) { console.log("Non autenticato. Esegui `agentcloud login`."); return; }
+  try {
+    const data = await userWhoAmI();
+    console.log(`Email: ${data.email || credentials.email || "non disponibile"}`);
+    console.log(`Agenti attivi: ${data.owned.length}`);
+  } catch (error) { printError(error); }
+});
+
+agents.command("list").description("Elenca gli agenti posseduti").action(async () => {
+  try {
+    const data = await userWhoAmI();
+    if (!data.owned.length) { console.log("Nessun agente attivo. Vedi il catalogo con `agentcloud agents catalog`."); return; }
+    printTable([["NOME", "SLUG", "STATO"], ...data.owned.map((slug) => [slug, slug, "attivo"])]);
+  } catch (error) { printError(error); }
+});
+
+agents.command("catalog").description("Mostra il catalogo e i prezzi; il checkout avviene sul web").action(() => {
+  printTable([["NOME", "CATEGORIA", "PREZZO", "MARKETPLACE"], ...CATALOG.map((agent) => [agent.name, agent.category, agent.price, `${SITE}/agents/${agent.slug}`])]);
+});
+
+async function runOnce(agent: string, prompt: string) {
+  let answer = "";
+  await streamAgent(agent, [{ role: "user", content: prompt }], (event) => {
+    if (event.type === "text" && typeof event.content === "string") { process.stdout.write(event.content); answer += event.content; }
+    if (event.type === "tool_start") process.stderr.write(`\n[tool: ${String(event.toolName)}] `);
+    if (event.type === "error") throw new Error(String(event.message || "Errore agente"));
+  });
+  if (!answer) console.log("Nessuna risposta ricevuta."); else console.log("\n");
+}
+
+program.command("run").description("Esegui un prompt con un agente posseduto").argument("<agent-slug>").argument("<messaggio>").action(async (agent: string, message: string) => {
+  try { await runOnce(agent, message); } catch (error) { printError(error); }
+});
+
+program.command("chat").description("Avvia una chat interattiva con un agente posseduto").argument("<agent-slug>").action(async (agent: string) => {
+  const rl = readline.createInterface({ input, output });
+  const history: Array<{ role: "user" | "assistant"; content: string }> = [];
+  console.log(`Chat con ${agent}. Digita "exit" per uscire.`);
+  try {
+    while (true) {
+      const message = (await rl.question("> ")).trim();
+      if (!message || message.toLowerCase() === "exit") break;
+      history.push({ role: "user", content: message });
+      let answer = "";
+      await streamAgent(agent, history, (event) => {
+        if (event.type === "text" && typeof event.content === "string") { process.stdout.write(event.content); answer += event.content; }
+      });
+      console.log("\n");
+      if (answer) history.push({ role: "assistant", content: answer });
+    }
+  } catch (error) { printError(error); } finally { rl.close(); }
+});
+
+program.command("usage").description("Mostra uso e piano corrente").action(async () => {
+  try {
+    const data = await userRequest<{ plan?: string; tokensUsed?: number; tokenLimit?: number; runs?: number }>("/api/user/usage");
+    printTable([["PIANO", "TOKEN USATI", "LIMITE", "RUN"], [String(data.plan || "—"), String(data.tokensUsed ?? "—"), String(data.tokenLimit ?? "—"), String(data.runs ?? "—")]]);
+  } catch (error) { printError(error); }
+});
+
+const adminTenants = admin.command("tenants").description("Gestisci tenants");
+adminTenants.command("list").description("Elenca i tenants registrati").action(async () => {
+  try { const data = await adminRequest<{ tenants?: unknown[] }>("/api/admin/tenants"); console.log(JSON.stringify(data.tenants ?? data, null, 2)); } catch (error) { printError(error); }
+});
+
+const adminEmail = admin.command("email").description("Email transazionali");
+adminEmail.command("send").requiredOption("--to <email>").requiredOption("--subject <subject>").option("--body <text>").option("--html <html>").option("--yes", "Salta conferma").action(async (options: { to: string; subject: string; body?: string; html?: string; yes?: boolean }) => {
+  if (!options.body && !options.html) { console.error("Specifica --body oppure --html."); process.exit(1); }
+  if (!options.yes) {
+    const rl = readline.createInterface({ input, output });
+    const answer = await rl.question(`Inviare email a ${options.to} con oggetto "${options.subject}"? [y/N] `);
+    rl.close();
+    if (answer.toLowerCase() !== "y") { console.log("Invio annullato."); return; }
+  }
+  try { await adminRequest("/api/email/send", { method: "POST", body: JSON.stringify({ to: options.to, subject: options.subject, text: options.body, html: options.html }) }); console.log("✓ Email inviata."); } catch (error) { printError(error); }
+});
+
+const adminIntegrations = admin.command("integrations").description("Stato integrazioni");
+adminIntegrations.command("status").option("--tenant <id>", "Tenant da verificare").action(async (options: { tenant?: string }) => {
+  try {
+    const query = options.tenant ? `?tenant=${encodeURIComponent(options.tenant)}` : "";
+    const data = await adminRequest(`/api/admin/integrations/status${query}`);
+    console.log(JSON.stringify(data, null, 2));
+  } catch (error) { printError(error); }
+});
+
+admin.command("flags").description("Feature flags (sola lettura)").command("show").action(() => {
+  console.log("Feature flags CLI: sola lettura.");
+  console.log(`AGENTCLOUD_VERTICAL=${process.env.AGENTCLOUD_VERTICAL || "(non disponibile nella CLI; verifica Vercel)"}`);
+  console.log(`AGENTCLOUD_FEATURE_FLAGS=${process.env.AGENTCLOUD_FEATURE_FLAGS ? "(configurato; valore omesso)" : "(non disponibile nella CLI)"}`);
+});
+
+program.command("config").description("Mostra o aggiorna configurazione non sensibile").option("--url <url>").action((options: { url?: string }) => {
+  if (options.url) saveConfig({ apiUrl: options.url });
+  const config = loadConfig();
+  console.log(`API URL: ${config.apiUrl}`);
+  console.log(`Agente predefinito: ${config.defaultAgent}`);
+  console.log(`Credenziali utente: ${loadCredentials() ? "presenti" : "assenti"}`);
+  console.log("Token admin: solo AGENTCLOUD_ADMIN_TOKEN, mai salvato dalla CLI.");
+});
+
+program.parseAsync(process.argv).catch(printError);

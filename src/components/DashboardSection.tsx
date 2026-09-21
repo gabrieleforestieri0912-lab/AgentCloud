@@ -43,10 +43,6 @@ const ACCENTS = [
   { icon: Mail, chip: "bg-sky-500/15 text-sky-300" },
 ];
 
-// Preview landing: grafico dimostrativo + tabelle con dati placeholder (solo per la
-// preview marketing; la dashboard vera in /dashboard usa i dati reali da Supabase).
-// Mostra sempre badge "Dati di esempio" così non sembra produzione.
-
 function RunsChart({
   title,
   weekLabel,
@@ -61,9 +57,6 @@ function RunsChart({
   const max = Math.max(...values);
   return (
     <div className="rounded-xl border border-white/5 bg-neutral-900/70 p-4">
-      <div className="mb-2 flex justify-end">
-        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-300">Dati di esempio</span>
-      </div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <p className="text-sm font-bold text-white">{title}</p>
@@ -144,9 +137,6 @@ export default function DashboardSection() {
             <Sparkles size={16} />
             {ds.openDashboard}
           </Link>
-          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-300">
-            Dati di esempio — anteprima marketing. I tuoi dati reali sono in /dashboard.
-          </p>
         </motion.div>
 
         <motion.div

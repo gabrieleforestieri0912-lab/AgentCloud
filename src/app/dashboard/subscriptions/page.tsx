@@ -1,18 +1,21 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/supabase/server";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { accountIdentityFromUser } from "@/lib/account-identity";
 import { createAdminClient } from "@/lib/supabase/admin";
 import DashboardShell from "@/components/DashboardShell";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { DATE_LOCALES } from "@/lib/i18n/constants";
-import { CreditCard, Calendar, CheckCircle2, XCircle, Clock, Receipt, ExternalLink } from "lucide-react";
+import { CreditCard, Calendar, CheckCircle2, XCircle, Clock, Receipt, ExternalLink, ShieldCheck } from "lucide-react";
 
 export default async function SubscriptionsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const user = await getSessionUser();
+  // Admin: accesso a tutti gli agenti, nessun billing Stripe/PayPal.
+  const isAdmin = await resolveIsAdmin(user);
 
   const effectiveId = user?.id ?? null;
   const email = false ? "admin@agentcloud.agency" : (user?.email ?? "");
@@ -53,7 +56,8 @@ export default async function SubscriptionsPage() {
             </p>
           </div>
 
-          {/* Billing actions */}
+          {/* Billing actions — nascoste agli admin: nessun checkout Stripe/PayPal. */}
+          {!isAdmin && (
           <div className="mb-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
               <h2 className="flex items-center gap-2 text-lg font-bold text-white"><CreditCard size={18} className="text-brand-400" /> {dict.subscriptionsPage.billing}</h2>
@@ -74,6 +78,15 @@ export default async function SubscriptionsPage() {
               <p className="mt-3 text-xs text-neutral-500">{dict.subscriptionsPage.localHistory}</p>
             </div>
           </div>
+          )}
+          {isAdmin && (
+            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+              <ShieldCheck size={20} className="shrink-0 text-emerald-400" />
+              <p className="text-sm font-semibold text-emerald-200">
+                {dict.subscriptionsPage.adminNoBilling}
+              </p>
+            </div>
+          )}
 
           {/* Attivi */}
           <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getAgentBySlug, isAvailable } from "@/lib/agents";
 import { getSessionUser } from "@/lib/supabase/server";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { getSiteUrl } from "@/lib/site-url";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
@@ -41,10 +42,20 @@ export async function POST(req: Request) {
       );
     }
 
+    // ADMIN: accesso a tutti gli agenti, nessun checkout — rimanda alla chat.
+    // La UI nasconde già il bottone; questa è la guardia server.
+    const checkoutUser = await getSessionUser();
+    if (await resolveIsAdmin(checkoutUser)) {
+      return NextResponse.json({
+        url: `/chat?agent=${agentId}`,
+        admin_bypass: true,
+      });
+    }
+
     // BETA BYPASS: beta_tester/internal_qa skip checkout entirely
     // Remove/disable via ENABLE_WAITLIST_BETA_BYPASS=false before Stripe goes live.
     if (process.env.ENABLE_WAITLIST_BETA_BYPASS === "true") {
-      const user = await getSessionUser();
+      const user = checkoutUser;
       if (user) {
         const { createAdminClient } = await import("@/lib/supabase/admin");
         const admin = createAdminClient();

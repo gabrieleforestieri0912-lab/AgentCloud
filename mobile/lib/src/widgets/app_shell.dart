@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/cart_service.dart';
@@ -35,17 +37,34 @@ class _AppShellState extends State<AppShell> {
         selectedIndex: _idx,
         onDestinationSelected: (i) => setState(() => _idx = i),
         destinations: [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(Icons.store_outlined), selectedIcon: Icon(Icons.store), label: 'Marketplace'),
+          NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard),
+              label: 'Dashboard'),
+          NavigationDestination(
+              icon: Icon(Icons.store_outlined),
+              selectedIcon: Icon(Icons.store),
+              label: 'Marketplace'),
           NavigationDestination(
             icon: Icon(Icons.chat_bubble_outline),
             selectedIcon: Icon(Icons.chat_bubble),
             label: 'Chat',
           ),
-          NavigationDestination(icon: Icon(Icons.hub_outlined), selectedIcon: Icon(Icons.hub), label: 'Integrazioni'),
           NavigationDestination(
-            icon: Consumer<CartService>(builder: (_, cart, __) => Badge(label: Text('${cart.count}'), isLabelVisible: cart.count > 0, child: const Icon(Icons.person_outline))),
-            selectedIcon: Consumer<CartService>(builder: (_, cart, __) => Badge(label: Text('${cart.count}'), isLabelVisible: cart.count > 0, child: const Icon(Icons.person))),
+              icon: Icon(Icons.hub_outlined),
+              selectedIcon: Icon(Icons.hub),
+              label: 'Integrazioni'),
+          NavigationDestination(
+            icon: Consumer<CartService>(
+                builder: (_, cart, __) => Badge(
+                    label: Text('${cart.count}'),
+                    isLabelVisible: cart.count > 0,
+                    child: const Icon(Icons.person_outline))),
+            selectedIcon: Consumer<CartService>(
+                builder: (_, cart, __) => Badge(
+                    label: Text('${cart.count}'),
+                    isLabelVisible: cart.count > 0,
+                    child: const Icon(Icons.person))),
             label: 'Account',
           ),
         ],
@@ -57,7 +76,10 @@ class _AppShellState extends State<AppShell> {
                   : FloatingActionButton.extended(
                       backgroundColor: AgentCloudTheme.primary,
                       foregroundColor: Colors.white,
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const CartScreen())),
                       icon: const Icon(Icons.shopping_cart),
                       label: Text('${cart.count} • ${cart.totalDisplay}'),
                     ),

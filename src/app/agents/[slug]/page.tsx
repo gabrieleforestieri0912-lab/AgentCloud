@@ -24,6 +24,7 @@ import AgentIntegrationsCard from "@/components/AgentIntegrationsCard";
 import { OwnedProvider } from "@/components/OwnedProvider";
 import { getSessionUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
 import {
   AGENTS,
@@ -94,7 +95,13 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   let shopifyConnected = false;
   let googleConnected = false;
   let isOwned = false;
-  if (sessionUser?.id) {
+  const isAdmin = await resolveIsAdmin(sessionUser);
+  if (isAdmin) {
+    // Admin: accesso a tutti gli agenti, nessun checkout — la pagina mostra
+    // sempre "Apri in chat".
+    isOwned = true;
+  }
+  if (sessionUser?.id && !isOwned) {
     const admin = createAdminClient();
     if (admin) {
       const [{ data: gRows }, { data: sRows }, { data: gShop }, { data: ownedRow }] = await Promise.all([
@@ -110,9 +117,9 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
     }
   }
 
-  // Stessa fonte di /api/user/owned (include il bypass beta di admin e beta
-  // tester) seminata nelle card client: nessuna CTA di acquisto che lampeggia.
-  const ownedSlugs = sessionUser?.id ? await getOwnedAgentSlugs(sessionUser.id) : [];
+  // Stessa fonte di /api/user/owned (gli admin possiedono l'intero catalogo)
+  // seminata nelle card client: nessuna CTA di acquisto che lampeggia.
+  const ownedSlugs = sessionUser?.id ? await getOwnedAgentSlugs(sessionUser.id, sessionUser) : [];
 
   const useCases = getUseCases(slug, agent.tasks, locale);
   const faqs = getFAQs(slug, agent.shortName, locale);

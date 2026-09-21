@@ -53,15 +53,16 @@ const RIGHT_BUBBLES = [
  * deve essere `relative`; nascoste sotto `lg`. I keyframe di float vivono in
  * globals.css.
  */
-export default function HeroBubbles() {
+export default function HeroBubbles({ variant = "hero" }: { variant?: "hero" | "full" }) {
   const { dict } = useLanguage();
   const roles = dict.hero.roles;
+  const isFull = variant === "full";
 
   return (
     <>
       {/* COSTELLAZIONE FLUTTUANTE SINISTRA (app) */}
       <motion.div
-        className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-56 xl:w-72 2xl:w-80 h-150 pointer-events-none select-none z-0 overflow-hidden"
+        className={`hidden lg:block absolute left-0 pointer-events-none select-none z-0 overflow-hidden ${isFull ? "top-0 h-full w-56 xl:w-72 2xl:w-80" : "top-1/2 -translate-y-1/2 w-56 xl:w-72 2xl:w-80 h-150"}`}
         initial="hidden"
         animate="visible"
         variants={{
@@ -107,7 +108,7 @@ export default function HeroBubbles() {
 
       {/* COSTELLAZIONE FLUTTUANTE DESTRA (agenti) */}
       <motion.div
-        className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-56 xl:w-72 2xl:w-80 h-150 pointer-events-none select-none z-0 overflow-hidden"
+        className={`hidden lg:block absolute right-0 pointer-events-none select-none z-0 overflow-hidden ${isFull ? "top-0 h-full w-56 xl:w-72 2xl:w-80" : "top-1/2 -translate-y-1/2 w-56 xl:w-72 2xl:w-80 h-150"}`}
         initial="hidden"
         animate="visible"
         variants={{

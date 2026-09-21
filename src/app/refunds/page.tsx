@@ -36,8 +36,8 @@ export default async function RefundsPage() {
         }}
       />
 
-      {/* Costellazioni fluttuanti di app e agenti ai lati */}
-      <HeroBubbles />
+      {/* Costellazioni fluttuanti di app e agenti ai lati — spalmate su tutta l'altezza */}
+      <HeroBubbles variant="full" />
 
       <Navbar />
       <section className="relative z-10 px-4 pb-20 pt-28 sm:px-6 lg:px-8">

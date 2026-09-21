@@ -109,6 +109,14 @@ export function registerTenant(creds: TenantCredentials) {
   writeStore(store);
 }
 
+export function listTenants(): Array<{ id: string; google: boolean; shopify: boolean }> {
+  return Object.values(readStore()).map((tenant) => ({
+    id: tenant.id,
+    google: Boolean(tenant.google),
+    shopify: Boolean(tenant.shopify),
+  }));
+}
+
 export function getTenantCredentials(
   tenantId: string,
 ): TenantCredentials | undefined {

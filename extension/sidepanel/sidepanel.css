@@ -32,6 +32,8 @@ body { display:flex; flex-direction:column; margin:0; min-width:260px; height:10
 .btn-secondary { background:#202633; border:1px solid #384152; color:#dce5f5; }
 .btn-secondary:hover { background:#2a3342; }
 .btn-link { width:auto; background:transparent; color:#72bcff; font-size:12px; }
+.auth-actions { display:flex; flex-direction:column; gap:8px; width:100%; max-width:320px; margin-top:4px; }
+.muted.small { font-size:11px; color:#758198; max-width:320px; }
 .full { margin-top:16px; }
 .icon-btn { border:0; background:transparent; color:#93a1b7; font-size:21px; cursor:pointer; }
 

@@ -4,6 +4,7 @@ import {
   parseCheckoutMetadata,
   resolveCheckoutAgents,
 } from "@/lib/stripe/webhook-helpers";
+import { getOrCreateMeterItem, isOverageBillingEnabled } from "@/lib/stripe/overage";
 import { isExpiringSoon } from "@/lib/billing/subscription-notifications";
 
 /**
@@ -85,6 +86,12 @@ async function activateSubscription(
     vertical: resolution.vertical,
     activatedVia: resolution.planId ? "plan" : "agent",
   };
+
+  // Aggancia subito il Price metered overage all'abbonamento così l'overage può essere fatturato dalla prima run.
+  if (subscriptionId && isOverageBillingEnabled()) {
+    const meterItemId = await getOrCreateMeterItem(subscriptionId);
+    if (meterItemId) config.stripeSubscriptionItemId = meterItemId;
+  }
 
   // Se il checkout proviene da carrello, segna il carrello come convertito
   if (metadata.cartId && userId) {

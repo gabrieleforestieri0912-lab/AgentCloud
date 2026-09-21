@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAgentBySlug, isAvailable } from "@/lib/agents";
 import { getSessionUser } from "@/lib/supabase/server";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { getSiteUrl } from "@/lib/site-url";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { isPayPalConfigured, createPayPalProduct, createPayPalBillingPlan, createPayPalSubscription } from "@/lib/paypal/client";
@@ -20,10 +21,19 @@ export async function POST(req: Request) {
     const agent = getAgentBySlug(agentId);
     if (!agent) return NextResponse.json({ error: await apiErrorMessage("agentNotFound") }, { status: 404 });
 
+    // ADMIN: accesso a tutti gli agenti, nessun checkout PayPal — rimanda alla chat.
+    const paypalUser = await getSessionUser();
+    if (await resolveIsAdmin(paypalUser)) {
+      return NextResponse.json({
+        url: `/chat?agent=${agentId}`,
+        admin_bypass: true,
+      });
+    }
+
     // BETA BYPASS: beta_tester/internal_qa skip PayPal checkout
     // Remove/disable via ENABLE_WAITLIST_BETA_BYPASS=false before Stripe goes live.
     if (process.env.ENABLE_WAITLIST_BETA_BYPASS === "true") {
-      const betaUser = await getSessionUser();
+      const betaUser = paypalUser;
       if (betaUser) {
         const { createAdminClient } = await import("@/lib/supabase/admin");
         const admin = createAdminClient();

@@ -11,9 +11,11 @@ const API_BASE = "https://www.agentcloud.agency";
 const SESSION_ENDPOINT = "/api/extension/session";
 const RUN_ENDPOINT = "/api/agent/run";
 const SESSION_KEY = "ac_session_state";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- tenuto per coerenza con sidepanel (chiave selezione agente)
 const SELECTED_AGENT_KEY = "ac_selected_agent";
 const SESSION_TTL_MS = 2 * 60 * 1000;
 const LOGIN_TAB_KEY = "ac_login_tab_id";
+const AUTH_TAB_KEY = "ac_auth_tab_id";
 const PANEL_PAGE = "sidepanel/sidepanel.html";
 
 api.runtime.onInstalled.addListener(() => {
@@ -90,10 +92,11 @@ api.action.onClicked.addListener((tab) => {
 // ─── Sessione AgentCloud (cookie del sito, nessun token salvato) ────────────
 
 function request(url, options = {}) {
+  const accept = options.headers?.Accept || (url === RUN_ENDPOINT ? "text/event-stream, application/json" : "application/json");
   return fetch(`${API_BASE}${url}`, {
     ...options,
     credentials: "include",
-    headers: { Accept: "application/json", ...(options.headers || {}) },
+    headers: { Accept: accept, ...(options.headers || {}) },
   });
 }
 
@@ -183,7 +186,16 @@ async function checkSession(force = false) {
 
 async function openLogin() {
   const tab = await api.tabs.create({ url: `${API_BASE}/login?next=/dashboard` });
-  if (tab?.id != null) await api.storage.local.set({ [LOGIN_TAB_KEY]: tab.id });
+  if (tab?.id != null) {
+    await api.storage.local.set({ [LOGIN_TAB_KEY]: tab.id, [AUTH_TAB_KEY]: tab.id });
+  }
+}
+
+async function openSignup() {
+  const tab = await api.tabs.create({ url: `${API_BASE}/signup?next=/dashboard` });
+  if (tab?.id != null) {
+    await api.storage.local.set({ [LOGIN_TAB_KEY]: tab.id, [AUTH_TAB_KEY]: tab.id });
+  }
 }
 
 // ─── Contesto pagina (solo su richiesta esplicita dell'utente) ──────────────
@@ -295,11 +307,17 @@ async function runAgent({ agentId, messages, context, requestId }) {
         if (data.type === "text" && typeof data.content === "string") {
           answer += data.content;
           emit({ type: "text", content: data.content });
+        } else if (data.type === "tool_start") emit({ type: "tool_start", toolName: data.toolName });
+        else if (data.type === "tool_done") emit({ type: "tool_done", toolName: data.toolName });
+        else if (data.type === "file") emit({ type: "file", filename: data.filename });
+        else if (data.type === "error") throw new Error(data.message || data.error || "Errore dell'agente");
+        else if (data.type === "done") {
+          // continuerà fino a done del reader
         }
-        if (data.type === "tool_start") emit({ type: "tool_start", toolName: data.toolName });
-        if (data.type === "error") throw new Error(data.message || "Errore dell'agente");
       } catch (error) {
         if (error instanceof SyntaxError) continue;
+        // inoltra anche al pannello prima di propagare
+        emit({ type: "error", message: error?.message || String(error) });
         throw error;
       }
     }
@@ -320,6 +338,11 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       if (message.action === "OPEN_LOGIN") {
         await openLogin();
+        sendResponse({ success: true });
+        return;
+      }
+      if (message.action === "OPEN_SIGNUP") {
+        await openSignup();
         sendResponse({ success: true });
         return;
       }
@@ -355,8 +378,6 @@ function broadcastSessionUpdated() {
 
 api.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   if (changeInfo.status !== "complete") return;
-  const stored = await api.storage.local.get(LOGIN_TAB_KEY);
-  if (stored[LOGIN_TAB_KEY] !== tabId) return;
 
   const tab = await api.tabs.get(tabId).catch(() => null);
   if (!tab?.url) return;
@@ -368,14 +389,39 @@ api.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
     return;
   }
   if (!/(^|\.)agentcloud\.agency$/.test(url.hostname)) return;
-  // Qualsiasi pagina AgentCloud che non sia di autenticazione significa che il
-  // login è concluso (anche se il gate pre-lancio porta su /waitlist).
-  if (url.pathname.startsWith("/auth/") || ["/login", "/signup", "/reset-password"].includes(url.pathname)) return;
+  // Pagine di autenticazione: non è ancora concluso
+  if (url.pathname.startsWith("/auth/") || ["/login", "/signup", "/reset-password", "/reset"].includes(url.pathname)) return;
 
-  await checkSession(true);
-  await api.storage.local.remove(LOGIN_TAB_KEY);
-  await api.tabs.remove(tabId).catch(() => {});
-  broadcastSessionUpdated();
+  const stored = await api.storage.local.get([LOGIN_TAB_KEY, AUTH_TAB_KEY, SESSION_KEY]);
+  const isTrackedAuthTab = stored[LOGIN_TAB_KEY] === tabId || stored[AUTH_TAB_KEY] === tabId;
+
+  // Caso 1: tab aperto dall'estensione (Accedi o Registrati) → verifica forzata e chiudi
+  if (isTrackedAuthTab) {
+    await checkSession(true);
+    await api.storage.local.remove([LOGIN_TAB_KEY, AUTH_TAB_KEY]);
+    // Chiudi solo se l'utente è atterrato su pagina post-auth (dashboard, /, agents...)
+    // evita di chiudere se è ancora su /waitlist pre-lancio senza sessione
+    const cached = (await api.storage.local.get(SESSION_KEY))[SESSION_KEY];
+    if (cached && cached.status !== "loggedOut" && cached.status !== "error") {
+      await api.tabs.remove(tabId).catch(() => {});
+    }
+    broadcastSessionUpdated();
+    return;
+  }
+
+  // Caso 2: login/signup manuale fuori dall'estensione — se eravamo loggedOut/error
+  // e l'utente atterra su una pagina app (dashboard, /, agents) → aggiorna automatico
+  // Questo copre "verifica se l'utente è già entrato o è nuovo" anche senza click su "Accedi"
+  const cached = stored[SESSION_KEY];
+  const isStale = !cached || Date.now() - (cached.checkedAt || 0) > 30_000;
+  const wasLoggedOut = !cached || cached.status === "loggedOut" || cached.status === "error";
+  const isAppPage = ["/", "/dashboard", "/agents", "/chat", "/settings", "/integrations"].some(
+    (p) => url.pathname === p || url.pathname.startsWith(p + "/"),
+  );
+  if (wasLoggedOut && isStale && isAppPage) {
+    await checkSession(true);
+    broadcastSessionUpdated();
+  }
 });
 
 

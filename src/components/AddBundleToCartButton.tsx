@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, Check, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { ShoppingCart, Check, Loader2, MessageSquare } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useLanguage } from "./LanguageProvider";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import type { BundlePeriod } from "@/lib/bundles";
 
 export default function AddBundleToCartButton({
@@ -17,10 +19,25 @@ export default function AddBundleToCartButton({
 }) {
   const { addBundle, isBundleInCart } = useCart();
   const { dict } = useLanguage();
+  const { isAdmin } = useIsAdmin();
 
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const inCart = isBundleInCart(bundleSlug);
+
+  // Admin: accesso a tutti gli agenti — nessun carrello/checkout per i bundle,
+  // rimanda diretto alla chat (Stripe/PayPal solo per utenti normali).
+  if (isAdmin) {
+    return (
+      <Link
+        href="/chat"
+        className={`inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 ${className}`}
+      >
+        <MessageSquare size={15} />
+        {dict.agentDetail.openInChat}
+      </Link>
+    );
+  }
 
   async function handle() {
     if (inCart) return;

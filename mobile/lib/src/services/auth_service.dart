@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,7 +12,8 @@ class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   Future<void> init() async {
-    await Supabase.initialize(url: AppConfig.supabaseUrl, anonKey: AppConfig.supabaseAnonKey);
+    await Supabase.initialize(
+        url: AppConfig.supabaseUrl, anonKey: AppConfig.supabaseAnonKey);
   }
 
   Session? get session => _supabase.auth.currentSession;
@@ -19,8 +22,10 @@ class AuthService {
 
   Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
 
-  Future<AuthResponse> signIn({required String email, required String password}) async {
-    final res = await _supabase.auth.signInWithPassword(email: email, password: password);
+  Future<AuthResponse> signIn(
+      {required String email, required String password}) async {
+    final res = await _supabase.auth
+        .signInWithPassword(email: email, password: password);
     if (res.session != null) {
       await _storage.write(key: _tokenKey, value: res.session!.accessToken);
       await _storage.write(key: _emailKey, value: email);
@@ -28,7 +33,10 @@ class AuthService {
     return res;
   }
 
-  Future<AuthResponse> signUp({required String email, required String password, String? fullName}) async {
+  Future<AuthResponse> signUp(
+      {required String email,
+      required String password,
+      String? fullName}) async {
     final res = await _supabase.auth.signUp(
       email: email,
       password: password,
@@ -42,7 +50,8 @@ class AuthService {
   }
 
   Future<void> signInWithGoogle() async {
-    await _supabase.auth.signInWithOAuth(OAuthProvider.google, redirectTo: '${AppConfig.siteUrl}/auth/callback');
+    await _supabase.auth.signInWithOAuth(OAuthProvider.google,
+        redirectTo: '${AppConfig.siteUrl}/auth/callback');
   }
 
   Future<void> signOut() async {

@@ -2,17 +2,22 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Trash2, ShoppingCart, ArrowRight, Loader2, Package, Users } from "lucide-react";
+import { Trash2, ShoppingCart, ArrowRight, Loader2, Package, Users, ShieldCheck } from "lucide-react";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import AgentIcon from "@/components/AgentIcon";
 
 export default function CartPageClient() {
   const { items, totalDisplay, totalCents, remove, clear } = useCart();
   const { locale, dict } = useLanguage();
+  const { isAdmin } = useIsAdmin();
   const [checkingOut, setCheckingOut] = useState(false);
 
   async function handleCheckout() {
+    // Doppia guardia client: l'admin non deve mai avviare uno checkout
+    // (il server rifiuta comunque con 403 — vedi /api/cart/checkout).
+    if (isAdmin) return;
     setCheckingOut(true);
     try {
       // Se carrello contiene agenti, usa checkout multiplo; altrimenti errore
@@ -22,6 +27,8 @@ export default function CartPageClient() {
         window.location.href = data.url;
       } else if (data.error === "unauthorized") {
         window.location.href = "/login";
+      } else if (data.error === "admin_no_checkout") {
+        window.location.href = "/chat";
       } else {
         alert(data.error || dict.cartPage.checkoutError);
       }
@@ -126,14 +133,29 @@ export default function CartPageClient() {
                     <p className="text-xl font-bold text-white">{totalDisplay}</p>
                     <p className="text-xs text-neutral-600">{dict.cartPage.vatIncluded} — {totalCents > 0 ? `${items.length} × abbonamento mensile` : ""}</p>
                   </div>
-                  <button
-                    onClick={handleCheckout}
-                    disabled={checkingOut}
-                    className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 hover:bg-brand-400 disabled:opacity-60"
-                  >
-                    {checkingOut ? <Loader2 size={16} className="animate-spin" /> : null}
-                    {dict.cartPage.checkout} <ArrowRight size={16} />
-                  </button>
+                  {isAdmin ? (
+                    <div className="flex flex-col items-end gap-2">
+                      <p className="flex max-w-[260px] items-center gap-1.5 text-right text-xs font-semibold text-emerald-300">
+                        <ShieldCheck size={14} className="shrink-0" />
+                        {dict.cartPage.adminNoCheckout}
+                      </p>
+                      <Link
+                        href="/chat"
+                        className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400"
+                      >
+                        {dict.cartPage.adminOpenChat} <ArrowRight size={16} />
+                      </Link>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleCheckout}
+                      disabled={checkingOut}
+                      className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 hover:bg-brand-400 disabled:opacity-60"
+                    >
+                      {checkingOut ? <Loader2 size={16} className="animate-spin" /> : null}
+                      {dict.cartPage.checkout} <ArrowRight size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             </>

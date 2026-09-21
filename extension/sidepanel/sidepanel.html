@@ -27,9 +27,13 @@
     <section id="loggedOutView" class="state-view hidden">
       <div class="hero-icon">✦</div>
       <h1>Il tuo copilota AI</h1>
-      <p>Accedi con lo stesso account AgentCloud che usi sul web: l’estensione riusa quella sessione e non salva password, token o credenziali.</p>
-      <button id="loginBtn" class="btn-primary">Accedi ad AgentCloud</button>
-      <button id="refreshLoggedOutBtn" class="btn-link">Ho già effettuato l’accesso</button>
+      <p id="loggedOutSub">Accedi con lo stesso account AgentCloud che usi sul web: l’estensione riusa quella sessione e non salva password, token o credenziali.</p>
+      <div class="auth-actions">
+        <button id="loginBtn" class="btn-primary">Accedi — ho già un account</button>
+        <button id="signupBtn" class="btn-secondary">Crea account nuovo</button>
+      </div>
+      <p class="muted small">L’estensione verifica automaticamente se sei già entrato o sei nuovo: se hai già effettuato l’accesso il pannello si sblocca da solo.</p>
+      <button id="refreshLoggedOutBtn" class="btn-link">Ho già effettuato l’accesso — aggiorna</button>
     </section>
 
     <section id="errorView" class="state-view hidden">

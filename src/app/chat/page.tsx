@@ -46,7 +46,7 @@ export default async function ChatPage(props: {
   // aggiunge agenti man mano che li acquista dal marketplace.
   let availableAgents: { slug: string; name: string }[] = [];
   if (user) {
-    const ownedSlugs = await getOwnedAgentSlugs(user.id);
+    const ownedSlugs = await getOwnedAgentSlugs(user.id, user);
     availableAgents = ownedSlugs.map((slug) => ({
       slug,
       name: AGENT_RUNTIME[slug]?.name ?? slug,

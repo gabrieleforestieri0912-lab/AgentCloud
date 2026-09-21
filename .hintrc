@@ -5,6 +5,7 @@
   "hints": {
     "no-inline-styles": "off",
     "axe/aria": "off",
-    "axe/name-role-value": "off"
+    "axe/name-role-value": "off",
+    "disown-opener": "off"
   }
 }

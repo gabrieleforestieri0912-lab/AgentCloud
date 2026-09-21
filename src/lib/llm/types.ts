@@ -76,7 +76,7 @@ export type LLMChatParams = {
   maxTokens: number;
 };
 
-export type LLMProviderName = "anthropic";
+export type LLMProviderName = "anthropic" | "openai" | "xt";
 
 export interface LLMProvider {
   name: LLMProviderName;

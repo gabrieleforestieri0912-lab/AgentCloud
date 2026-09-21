@@ -38,11 +38,11 @@ export const dynamic = "force-dynamic";
 export default async function AgentsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  // Ownership risolta qui (stessa fonte di /api/user/owned, incluso il bypass
-  // beta di admin/beta tester) e passata alle card: così il primo paint mostra
+  // Ownership risolta qui (stessa fonte di /api/user/owned, incluso l'accesso
+  // totale degli admin) e passata alle card: così il primo paint mostra
   // già "Apri in chat" invece di far lampeggiare la CTA di acquisto.
   const sessionUser = await getSessionUser();
-  const initialOwned = sessionUser?.id ? await getOwnedAgentSlugs(sessionUser.id) : [];
+  const initialOwned = sessionUser?.id ? await getOwnedAgentSlugs(sessionUser.id, sessionUser) : [];
   // Tutti — inclusi i possessori del codice — vedono il marketplace diviso
   // come lo vede un cliente reale: una griglia "Disponibili ora" più una
   // sezione "In arrivo", così gli admin capiscono a colpo d'occhio quali

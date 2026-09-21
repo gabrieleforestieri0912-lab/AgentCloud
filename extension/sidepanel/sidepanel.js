@@ -36,7 +36,25 @@ let requestId = null;
 let loading = false;
 
 function send(message) {
-  return new Promise((resolve) => api.runtime.sendMessage(message, resolve));
+  // Compatibile sia con chrome (callback) che con browser (Promise)
+  try {
+    const maybePromise = api.runtime.sendMessage(message);
+    if (maybePromise && typeof maybePromise.then === "function") {
+      return maybePromise;
+    }
+  } catch {}
+  return new Promise((resolve) => {
+    try {
+      api.runtime.sendMessage(message, resolve);
+    } catch (e) {
+      resolve({ success: false, error: e?.message || String(e) });
+    }
+  });
+}
+
+function safeOn(id, event, handler) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(event, handler);
 }
 
 function escapeHtml(value) {
@@ -62,6 +80,7 @@ function getAgentName() {
 }
 
 function addMessage(role, content, extra = "") {
+  if (!messagesEl) return { textContent: content };
   const node = document.createElement("div");
   node.className = `message ${role} ${extra}`.trim();
   node.textContent = content;
@@ -82,6 +101,7 @@ function resetContext() {
 }
 
 function renderWelcome() {
+  if (!messagesEl) return;
   messagesEl.innerHTML = "";
   addMessage("assistant", `Ciao! Sono ${getAgentName()}. Posso lavorare sulla pagina che stai visualizzando: seleziona del testo oppure scrivimi cosa vuoi fare.`);
 }
@@ -202,26 +222,38 @@ function setBusy(busy) {
 
 // ─── Eventi UI ─────────────────────────────────────────────────────────────
 
-document.getElementById("loginBtn").addEventListener("click", () => send({ action: "OPEN_LOGIN" }));
-document.getElementById("refreshLoggedOutBtn").addEventListener("click", () => loadSession(true));
-document.getElementById("retryBtn").addEventListener("click", () => loadSession(true));
-document.getElementById("refreshBtn").addEventListener("click", () => loadSession(true));
-changeAgentBtn.addEventListener("click", () => showAgents());
-document.getElementById("openMarketplaceBtn").addEventListener("click", () => api.tabs.create({ url: `${SITE}/agents` }));
-document.getElementById("openSiteBtn").addEventListener("click", () => api.tabs.create({ url: SITE }));
-
-selectionBtn.addEventListener("click", async () => {
-  const tabs = await api.tabs.query({ active: true, currentWindow: true });
-  const response = await send({ action: "GET_PAGE_CONTEXT", tabId: tabs[0]?.id });
-  if (!response?.success) {
-    setNotice(response?.error || "Impossibile leggere la selezione della pagina attiva.");
-    return;
-  }
-  renderContext(response.data);
-  setNotice(response.data.selection ? "" : "Nessun testo selezionato: verranno inviati titolo e URL della pagina.");
+safeOn("loginBtn", "click", () => send({ action: "OPEN_LOGIN" }));
+safeOn("signupBtn", "click", () => send({ action: "OPEN_SIGNUP" }));
+safeOn("refreshLoggedOutBtn", "click", () => loadSession(true));
+safeOn("retryBtn", "click", () => loadSession(true));
+safeOn("refreshBtn", "click", () => loadSession(true));
+if (changeAgentBtn) changeAgentBtn.addEventListener("click", () => showAgents());
+safeOn("openMarketplaceBtn", "click", () => {
+  const fn = api.tabs?.create ? api.tabs.create.bind(api.tabs) : (u) => window.open(u.url, "_blank");
+  fn({ url: `${SITE}/agents` });
+});
+safeOn("openSiteBtn", "click", () => {
+  const fn = api.tabs?.create ? api.tabs.create.bind(api.tabs) : (u) => window.open(u.url, "_blank");
+  fn({ url: SITE });
 });
 
-document.getElementById("composer").addEventListener("submit", async (event) => {
+if (selectionBtn) selectionBtn.addEventListener("click", async () => {
+  try {
+    const tabs = await (api.tabs?.query ? api.tabs.query({ active: true, currentWindow: true }) : Promise.resolve([]));
+    const response = await send({ action: "GET_PAGE_CONTEXT", tabId: tabs[0]?.id });
+    if (!response?.success) {
+      setNotice(response?.error || "Impossibile leggere la selezione della pagina attiva.");
+      return;
+    }
+    renderContext(response.data);
+    setNotice(response.data.selection ? "" : "Nessun testo selezionato: verranno inviati titolo e URL della pagina.");
+  } catch (e) {
+    setNotice(e?.message || "Impossibile leggere la selezione.");
+  }
+});
+
+const composerEl = document.getElementById("composer");
+if (composerEl) composerEl.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = promptEl.value.trim();
   if (!text || !agentId || requestId) return;
@@ -268,14 +300,20 @@ api.runtime.onMessage.addListener((message) => {
   if (message.action !== "AGENT_STREAM" || message.requestId !== requestId) return;
 
   if (message.type === "text") {
+    if (!messagesEl) return;
     const assistants = messagesEl.querySelectorAll(".message.assistant");
     const current = assistants[assistants.length - 1];
     if (current) current.textContent += message.content;
     messagesEl.scrollTop = messagesEl.scrollHeight;
   } else if (message.type === "tool_start") {
     addMessage("tool", `Uso ${message.toolName || "uno strumento"}…`);
+  } else if (message.type === "tool_done") {
+    addMessage("tool", `Completato ${message.toolName || "strumento"}.`);
+  } else if (message.type === "error") {
+    addMessage("assistant", message.message || message.error || "Errore dell'agente.");
+    if (typingEl) typingEl.classList.add("hidden");
   } else if (message.type === "done") {
-    typingEl.classList.add("hidden");
+    if (typingEl) typingEl.classList.add("hidden");
   }
 });
 

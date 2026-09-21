@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getSessionUser } from "@/lib/supabase/server";
+import { resolveIsAdmin } from "@/lib/admin-access";
 import { getSiteUrl } from "@/lib/site-url";
 import { getEnrichedCart } from "@/lib/cart";
 
@@ -14,12 +15,20 @@ function getStripe(): Stripe | null {
  * POST /api/cart/checkout — crea Stripe Checkout Session per TUTTI gli agenti nel carrello.
  * Se il carrello è vuoto → 400. Dopo il pagamento, il webhook checkout.session.completed
  * attiva gli abbonamenti e il carrello viene svuotato (gestito dal webhook o al ritorno).
+ *
+ * ADMIN: gli admin hanno accesso a tutti gli agenti e non devono pagare —
+ * la route rifiuta con 403 `admin_no_checkout` (la UI nasconde già il bottone).
  */
 export async function POST() {
   const user = await getSessionUser();
   const effectiveUserId = user?.id ?? null;
   const effectiveEmail = user?.email ?? null;
   if (!effectiveUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // ADMIN: nessun checkout Stripe — accesso già incluso.
+  if (await resolveIsAdmin(user)) {
+    return NextResponse.json({ error: "admin_no_checkout" }, { status: 403 });
+  }
 
   // BETA BYPASS: beta_tester/internal_qa skip cart checkout entirely
   // Remove/disable via ENABLE_WAITLIST_BETA_BYPASS=false before Stripe goes live.

@@ -21,6 +21,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AgentIcon from "@/components/AgentIcon";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { getAgentBySlug, localizeAgent, type Agent } from "@/lib/agents";
 import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
@@ -86,6 +87,7 @@ export default function DeployAgentClient({
   connections?: DeployConnections;
 }) {
   const { dict, locale } = useLanguage();
+  const { isAdmin } = useIsAdmin();
   const router = useRouter();
   const rawAgent = getAgentBySlug(slug);
   const agent = rawAgent ? localizeAgent(rawAgent, locale) : undefined;
@@ -633,12 +635,12 @@ export default function DeployAgentClient({
                   </span>
                 </label>
 
-                {/* Acquisto diretto Stripe: admin/detentori del codice vanno
-                    direttamente in chat con l'agente */}
-                {false ? (
+                {/* Admin: nessun checkout Stripe/PayPal — accesso già incluso,
+                    va diretto in chat. Utenti normali: acquisto Stripe. */}
+                {isAdmin ? (
                   <Link
                     href={`/chat?agent=${agent?.slug}`}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400"
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400"
                   >
                     <Rocket size={16} />
                     {dict.deploy.openChat}
@@ -673,9 +675,12 @@ export default function DeployAgentClient({
                       : dict.deploy.buyNow}
                   </button>
                 )}
-                <p className="mt-2 text-center text-xs font-semibold text-neutral-500">
-                  {dict.deploy.stripeSecureDesc}
-                </p>
+                {/* Nota pagamento solo per utenti normali: l'admin non paga. */}
+                {!isAdmin && (
+                  <p className="mt-2 text-center text-xs font-semibold text-neutral-500">
+                    {dict.deploy.stripeSecureDesc}
+                  </p>
+                )}
                 <p className="mt-2 text-center text-xs text-neutral-600">
                   <>
                     {dict.deploy.customAgentPrompt}{" "}                     <Link href="/contact" className="font-bold text-brand-400 hover:underline">

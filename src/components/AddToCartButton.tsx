@@ -6,6 +6,7 @@ import { ShoppingCart, Check, Loader2, MessageSquare } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useLanguage } from "./LanguageProvider";
 import { useOwned } from "@/hooks/useOwned";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 export default function AddToCartButton({
   slug,
@@ -18,10 +19,13 @@ export default function AddToCartButton({
 }) {
   const { add, isInCart } = useCart();
   const { isOwned } = useOwned();
+  const { isAdmin } = useIsAdmin();
   const { dict } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const owned = isOwned(slug);
+  // Admin: accesso a tutti gli agenti — mostra sempre "Apri in chat",
+  // mai il carrello/checkout (Stripe/PayPal solo per utenti normali).
+  const owned = isOwned(slug) || isAdmin;
   const inCart = isInCart(slug);
 
   if (owned) {

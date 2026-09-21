@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
+import BrandIcon from "@/components/BrandIcon";
+import { BRANDS } from "@/lib/brands";
 
 // Pagina "Chi siamo": Server Component che genera metadati localizzati e
 // dati strutturati JSON-LD (AboutPage) e compone i contenuti di marketing
@@ -94,14 +96,14 @@ export default async function AboutPage() {
                   role: "Developer",
                   img: "/founders/gabriele_forestieri.jpg",
                   bio: "Sviluppa la piattaforma, gli agenti e le integrazioni. Full-stack, ossessionato da velocità, dettagli e DX.",
-                  instagram: "#",
+                  instagram: "https://www.instagram.com/gabrieleforestieri_/",
                 },
                 {
                   name: "Alle Cerchiari",
                   role: "Social & Marketing",
                   img: "/founders/alle_cerchiari.jpeg",
                   bio: "Racconta AgentCloud sui social e nel marketing. Traduce la complessità in storie semplici e campagne che funzionano.",
-                  instagram: "#",
+                  instagram: "https://www.instagram.com/_allespy_/",
                 },
                 {
                   name: "Matteo Parubi",
@@ -109,7 +111,7 @@ export default async function AboutPage() {
                   sub: "Paru",
                   img: "/founders/matteo_parubi.jpeg",
                   bio: "Gestisce pagamenti, piani e prezzi via Stripe. Tiene i conti in ordine e l'esperienza di acquisto fluida.",
-                  instagram: "#",
+                  instagram: "https://www.instagram.com/matteo.parubi/",
                 },
               ].map((member) => (
                 <div
@@ -126,8 +128,8 @@ export default async function AboutPage() {
                     {member.role}
                   </p>
                   <p className="mt-3 text-sm text-neutral-400">{member.bio}</p>
-                  <a href={(member as { instagram?: string }).instagram ?? "#"} target={(member as { instagram?: string }).instagram === "#" ? undefined : "_blank"} rel={(member as { instagram?: string }).instagram === "#" ? undefined : "noopener noreferrer"} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-[8px] font-bold text-white">IG</span> Instagram {(member as { instagram?: string }).instagram === "#" ? "· placeholder" : ""}
+                  <a href={member.instagram} target="_blank" rel="noopener noreferrer" aria-label={`Instagram di ${member.name}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
+                    <BrandIcon brand={BRANDS.instagram} size={16} color="currentColor" /> Instagram
                   </a>
                 </div>
               ))}

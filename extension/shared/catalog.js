@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- AGENT_CATALOG e getAgent sono usati da sidepanel.js come globali */
 // SYNC WITH src/lib/agents.ts and docs/PRICING.md.
 // Il catalogo serve solo alla vetrina dell'estensione: il checkout resta sempre sul sito.
 // Usato dal pannello laterale (sidepanel/sidepanel.html) per l'account senza agenti attivi.

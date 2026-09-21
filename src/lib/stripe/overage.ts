@@ -32,17 +32,14 @@ function getStripe(): Stripe | null {
 }
 
 /**
- * Rimosso: sistema token eliminato — gli agenti durano fino a scadenza abbonamento, nessun limite risposte.
- * Mantenuto per compatibilità import, sempre disabilitato.
+ * True quando overage può fatturare: STRIPE_SECRET_KEY + STRIPE_OVERAGE_PRICE_ID configurati.
  */
 export function isOverageBillingEnabled(): boolean {
-  return false;
+  return Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_OVERAGE_PRICE_ID);
 }
 
 /**
- * Converte un conteggio di token in overage in unità intere da meter (1.000
- * token l'una), arrotondando per eccesso così il cliente paga almeno i token
- * che ha usato.
+ * Converte token in overage in unità meter (1.000 token l'una), arrotondando per eccesso.
  */
 export function calculateMeterUnits(overageTokens: number): number {
   if (overageTokens <= 0) return 0;
@@ -50,9 +47,7 @@ export function calculateMeterUnits(overageTokens: number): number {
 }
 
 /**
- * Addebito stimato (in centesimi) per un conteggio di token in overage:
- * unità intere da meter × la tariffa per 1.000 token. Rispecchia il Price
- * metered di Stripe e serve per i testi UI (es. nota overage della dashboard).
+ * Addebito stimato (centesimi) per token in overage.
  */
 export function calculateOverageAmountCents(overageTokens: number): number {
   return calculateMeterUnits(overageTokens) * OVERAGE_RATE_PER_1000_TOKENS;
@@ -60,20 +55,30 @@ export function calculateOverageAmountCents(overageTokens: number): number {
 
 /**
  * Trova o crea l'item metered dell'overage su un abbonamento.
- *
- * Idempotente tra processi: elenca prima le subscription item e riusa quella
- * esistente quando il Price overage è già agganciato (succede quando più
- * agenti dello stesso piano condividono un abbonamento — devono tutti
- * riferirsi allo stesso meter item, mai creare duplicati).
- *
- * Restituisce l'id `si_...` della subscription item, oppure null quando la
- * fatturazione overage non è configurata o Stripe non è raggiungibile (il
- * chiamante logga e salta).
+ * Idempotente: riusa item esistente se Price già agganciato.
  */
-export async function getOrCreateMeterItem(
-  _stripeSubscriptionId: string,
-): Promise<string | null> {
-  return null;
+export async function getOrCreateMeterItem(stripeSubscriptionId: string): Promise<string | null> {
+  const stripe = getStripe();
+  const priceId = process.env.STRIPE_OVERAGE_PRICE_ID;
+  if (!stripe || !priceId) return null;
+
+  try {
+    const { data: items } = await stripe.subscriptionItems.list({
+      subscription: stripeSubscriptionId,
+      limit: 100,
+    });
+    const existing = items.find((item) => item.price?.id === priceId);
+    if (existing) return existing.id;
+
+    const created = await stripe.subscriptionItems.create({
+      subscription: stripeSubscriptionId,
+      price: priceId,
+    });
+    return created.id;
+  } catch (error) {
+    console.error(`Failed to attach overage meter to subscription ${stripeSubscriptionId}:`, error);
+    return null;
+  }
 }
 
 export type OverageReport = {
@@ -83,18 +88,28 @@ export type OverageReport = {
 };
 
 /**
- * Segnala i token in overage come evento Billing Meter, in modo incrementale.
- *
- * L'evento è attribuito al cliente tramite `payload.stripe_customer_id` e
- * trasporta l'overage come unità intere da 1.000 token. L'aggregazione del
- * meter (somma) accumula queste unità nel periodo di fatturazione.
- *
- * `idempotencyKey` deve essere univoco per run (es. l'id conversazione della
- * run): viene inviato come `identifier` dell'evento, quindi un retry non può
- * mai segnalare due volte la stessa run.
+ * Segnala token in overage come evento Billing Meter.
+ * `payload.stripe_customer_id` + `value` unità da 1.000. Idempotente via `identifier`.
  */
-export async function reportOverageUsage(
-  _report: OverageReport,
-): Promise<boolean> {
-  return false;
+export async function reportOverageUsage(report: OverageReport): Promise<boolean> {
+  const stripe = getStripe();
+  const units = calculateMeterUnits(report.overageTokens);
+  if (!stripe || units <= 0) return false;
+
+  const eventName = process.env.STRIPE_OVERAGE_METER_EVENT || "agentcloud_token_overage";
+
+  try {
+    await stripe.billing.meterEvents.create({
+      event_name: eventName,
+      payload: {
+        stripe_customer_id: report.stripeCustomerId,
+        value: String(units),
+      },
+      identifier: `overage-${report.idempotencyKey}`,
+    });
+    return true;
+  } catch (error) {
+    console.error(`Failed to report overage usage for customer ${report.stripeCustomerId}:`, error);
+    return false;
+  }
 }
