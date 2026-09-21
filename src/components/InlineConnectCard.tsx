@@ -147,7 +147,7 @@ export default function InlineConnectCard({ provider, onConnected }: { provider:
       )}
 
       <p className="mt-2 text-[11px] text-neutral-600">
-        L'agente può già rispondere senza connessione. Collega quando vuoi sbloccare azioni reali su {meta.name}.
+        L&apos;agente può già rispondere senza connessione. Collega quando vuoi sbloccare azioni reali su {meta.name}.
       </p>
     </div>
   );

@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
+import Link from "next/link";
 import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
 import DemoLimitModal from "./DemoLimitModal";
@@ -846,9 +847,9 @@ export default function HeroSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <a href="/agents" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10 transition-colors">
+              <Link href="/agents" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10 transition-colors">
                 Sfoglia i 15 agenti <span aria-hidden>→</span>
-              </a>
+              </Link>
             </motion.div>
           )}
         </motion.div>
