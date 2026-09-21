@@ -490,6 +490,20 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             <span className="h-2 w-2 animate-pulse rounded-full bg-brand-400" />
             {w.heroEyebrow as string}
           </div>
+          {/* Data di scadenza ben visibile — 1 OTTOBRE 2026 */}
+          <div className="mb-5 w-full max-w-md 3xl:max-w-lg rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-pink-500/10 px-5 py-4 3xl:px-7 3xl:py-5 shadow-lg shadow-amber-500/10 backdrop-blur">
+            <div className="flex items-center justify-center gap-3">
+              <div className="flex h-10 w-10 3xl:h-12 3xl:w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-md">
+                <span className="text-sm 3xl:text-base font-black">1</span>
+              </div>
+              <div className="text-left">
+                <p className="text-xs 3xl:text-sm font-bold uppercase tracking-widest text-amber-300">Scadenza • Lancio ufficiale</p>
+                <p className="text-xl 3xl:text-2xl font-black tracking-tight text-white">1 OTTOBRE 2026</p>
+                <p className="text-xs 3xl:text-sm font-semibold text-neutral-300">ore 16:00 • 50 posti founding</p>
+              </div>
+            </div>
+            <p className="mt-2 text-center text-xs 3xl:text-sm font-semibold leading-4 text-neutral-400">Stessa data del proxy <code className="rounded bg-white/10 px-1 py-0.5 text-white">LAUNCH_AT</code> e del countdown qui sotto — nessuna data diversa.</p>
+          </div>
           {/* Titolo 2 righe — responsive fluido: evita overflow su 320px, scala su 3xl */}
           <h1 className="text-[28px] xs:text-[34px] font-extrabold leading-[0.95] tracking-tight text-white sm:text-6xl 3xl:text-[76px]">
             <span className="block">{w.heroTitleA as string}</span>
