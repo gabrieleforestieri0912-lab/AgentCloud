@@ -142,6 +142,7 @@ export async function proxy(request: NextRequest) {
         return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
       }
     }
+    const isChatApi = pathname === "/api/chat";
     const isWebhookOrCallback =
       pathname.startsWith("/api/shopify/") ||
       pathname.startsWith("/api/billing/webhook") ||
@@ -153,7 +154,7 @@ export async function proxy(request: NextRequest) {
     // CLI auth: deve essere raggiungibile anche pre-lancio senza waitlist gate (usa stesso DB Supabase)
     const isCliAuth = pathname === "/cli/auth" || pathname.startsWith("/cli/") || pathname.startsWith("/api/cli");
 
-    if (isWaitlistApi || isWebhookOrCallback || isCliAuth) {
+    if (isWaitlistApi || isChatApi || isWebhookOrCallback || isCliAuth) {
       return NextResponse.next();
     }
 
