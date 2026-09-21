@@ -130,6 +130,7 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
           method: "POST",
           headers: {
             Authorization: `Bearer ${key}`,
+            "x-api-key": key,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(body),
@@ -232,6 +233,7 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
         method: "POST",
         headers: {
           Authorization: `Bearer ${key}`,
+          "x-api-key": key,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ ...body, stream: false }),
