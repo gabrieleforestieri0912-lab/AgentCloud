@@ -12,7 +12,7 @@
 - **TypeScript ^5** — type safety
 - **Supabase Auth** — autenticazione (email + password, Google OAuth, sessioni `@supabase/ssr`)
 - **Supabase** — database (billing, usage, rate limits, `tenant_integrations`) + form storage
-- **Stripe + PayPal** — payment links, abbonamenti, customer portal, **overage billing** (Billing Meter), **Klarna** e **Amazon Pay** abilitati su Stripe Checkout
+- **Stripe + PayPal** — checkout dinamico, abbonamenti, customer portal, **overage billing** (Billing Meter), **Klarna** e **Amazon Pay** abilitati su Stripe Checkout
 - **Anthropic Claude** — backend LLM unico (agenti `/api/agent/run`, chat `/api/chat`), risposte in **streaming parola per parola** + indicatore *Sta lavorando su* app collegata
 - **Resend** — email transazionali
 - **Simple Icons** — icone brand originali (42 integrazioni/hero) · **Lucide** — icone UI
@@ -233,14 +233,12 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `ACCESS_CODE` | – | waitlist (sblocca tutti gli agenti) |
 | `DEMO_EMAIL_TO` | – | default `support@agentcloud.agency` |
 
-### Stripe Payment Links & Billing
+### Billing
 
 | Variabile | Note |
 |-----------|------|
-| `STRIPE_PAYMENT_LINK_<AGENTE_UPPER>` | una per agente (es. `STRIPE_PAYMENT_LINK_SHOPIFY_AGENT`) — se assente, checkout dinamico `priceCents` |
-| `STRIPE_PAYMENT_LINK_<VERTICAL>_<TIER>` | piani verticali |
 | `PAYPAL_PLAN_<AGENTE_UPPER>` | opzionale: `P-...` PayPal Billing Plan già creato, altrimenti creato al volo via `lib/paypal/client` |
-| Checkout | `payment_method_types: card,klarna,amazon_pay` su `checkout` e `cart/checkout` (Klarna/Amazon Pay abilitati via Dashboard + codice) |
+| Checkout | `payment_method_types: card,klarna,amazon_pay` su `checkout` e `cart/checkout` (Klarna/Amazon Pay abilitati via Dashboard + codice) — checkout Stripe dinamico via `price_data` (`priceCents`), nessun `STRIPE_PAYMENT_LINK` necessario |
 
 ### Tools / integrazioni (solo se attivi)
 

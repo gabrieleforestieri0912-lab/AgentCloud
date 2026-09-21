@@ -223,8 +223,7 @@ bloccato**: i token extra vengono addebitati automaticamente via Stripe.
 
 ### Come funziona
 
-1. Il customer paga un piano con un **Payment Link** → Stripe crea una
-   subscription ricorrente mensile.
+1. Il customer paga via **Checkout Session dinamica** (`/api/checkout` o `/api/cart/checkout`) → Stripe crea una subscription ricorrente mensile.
 2. Al checkout il webhook **allega un Price metered** (`STRIPE_OVERAGE_PRICE_ID`)
    alla subscription e salva l'id del subscription item in
    `user_agents.config.stripeSubscriptionItemId`.
@@ -267,50 +266,7 @@ await recordUsageAndReportOverage({
 
 ## Stripe Configuration
 
-### Products
-
-Crea due prodotti per verticale:
-
-**Shopify:**
-
-- Product: "AgentCloud Shopify - Starter" (€29/mese)
-- Product: "AgentCloud Shopify - Growth" (€39/mese)
-
-**Services:**
-
-- Product: "AgentCloud Services - Starter" (€29/mese)
-- Product: "AgentCloud Services - Growth" (€39/mese)
-
-### Prices
-
-Per ogni prodotto, crea un prezzo ricorrente mensile:
-
-```
-Product: AgentCloud Shopify - Starter
-Price: €29/mese (recurring)
-Billing: Monthly
-```
-
-### Payment Links
-
-Crea payment link per ogni combinazione:
-
-```
-STRIPE_PAYMENT_LINK_SHOPIFY_STARTER=https://buy.stripe.com/...
-STRIPE_PAYMENT_LINK_SHOPIFY_GROWTH=https://buy.stripe.com/...
-STRIPE_PAYMENT_LINK_SERVICES_STARTER=https://buy.stripe.com/...
-STRIPE_PAYMENT_LINK_SERVICES_GROWTH=https://buy.stripe.com/...
-```
-
-### Metadata
-
-Aggiungi metadata ai payment link per tracciare il piano:
-
-```
-metadata[plan_id]=shopify-starter
-metadata[vertical]=shopify
-metadata[tokens]=300000
-```
+Checkout Stripe è **dinamico** (`price_data` con `unit_amount = priceCents` e `product_data.name` generato al volo in `src/app/api/checkout/route.ts` e `src/app/api/cart/checkout/route.ts`): **non serve creare prodotti/prezzi né Payment Link su Stripe**. L'unico prezzo da creare manualmente è il **Price metered per l'overage** `STRIPE_OVERAGE_PRICE_ID` (vedi sotto); se manca l'overage resta disabilitato.
 
 ## Environment Variables
 
