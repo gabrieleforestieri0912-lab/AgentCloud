@@ -44,6 +44,7 @@ import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import GoogleConnectionPrompt from "@/components/GoogleConnectionPrompt";
+import InlineConnectCard from "@/components/InlineConnectCard";
 import ChatOnboarding from "./ChatOnboarding";
 import {
   AttachPlusButton,
@@ -99,6 +100,28 @@ function formatTime(dateStr: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function extractConnectProviders(text: string): string[] {
+  const providers: string[] = [];
+  const markerRe = /\[\[CONNECT:([a-zA-Z0-9_\-]+)\]\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = markerRe.exec(text)) !== null) {
+    if (m[1] && !providers.includes(m[1].toLowerCase())) providers.push(m[1].toLowerCase());
+  }
+  // also handle JSON marker from tool: {"type":"connection_required","provider":"shopify"}
+  const jsonRe = /"type"\s*:\s*"connection_required"[^}]*"provider"\s*:\s*"([^"]+)"/g;
+  while ((m = jsonRe.exec(text)) !== null) {
+    if (m[1] && !providers.includes(m[1].toLowerCase())) providers.push(m[1].toLowerCase());
+  }
+  return providers;
+}
+
+function stripConnectMarkers(text: string): string {
+  return text
+    .replace(/\[\[CONNECT:[a-zA-Z0-9_\-]+\]\]/g, "")
+    .replace(/\{"type":"connection_required"[^}]+\}/g, "")
+    .trim();
 }
 
 function getConvTitle(messages: LocalMessage[], fallback: string): string {
@@ -907,6 +930,20 @@ export default function ChatInterface({
               }
               patchAssistant(assistantId, prefix + localText, false, agent);
             }
+            if ((json as unknown as { type?: string; provider?: string }).type === "connection" && typeof (json as unknown as { provider?: string }).provider === "string") {
+              const prov = (json as unknown as { provider: string }).provider;
+              const marker = `[[CONNECT:${prov}]]`;
+              // evita duplicati
+              if (!localText.includes(marker)) {
+                localText += (localText ? "\n\n" : "") + marker;
+                responseText += marker;
+                if (!assistantId) {
+                  assistantId = generateId();
+                  setHasPartialReply(true);
+                }
+                patchAssistant(assistantId, prefix + localText, false, agent);
+              }
+            }
             if (json.type === "error") {
               streamErrorMessage =
                 typeof json.message === "string" && json.message.trim() ? json.message : null;
@@ -1682,17 +1719,26 @@ export default function ChatInterface({
                     }`}
                   >
                     {msg.role === "assistant" ? (
-                      <>
-                        <MarkdownText text={msg.content} onReply={handleReplyToPhrase} />
-                        {msg.error && (
-                          <a
-                            href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
-                            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 underline decoration-brand-400/40 underline-offset-2 hover:text-brand-300 transition-colors"
-                          >
-                            ✉️ {dict.common.contactSupport}
-                          </a>
-                        )}
-                      </>
+                      (() => {
+                        const providers = extractConnectProviders(msg.content);
+                        const cleanText = stripConnectMarkers(msg.content);
+                        return (
+                          <>
+                            {cleanText && <MarkdownText text={cleanText} onReply={handleReplyToPhrase} />}
+                            {providers.map((p) => (
+                              <InlineConnectCard key={p} provider={p} />
+                            ))}
+                            {msg.error && (
+                              <a
+                                href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
+                                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 underline decoration-brand-400/40 underline-offset-2 hover:text-brand-300 transition-colors"
+                              >
+                                ✉️ {dict.common.contactSupport}
+                              </a>
+                            )}
+                          </>
+                        );
+                      })()
                     ) : (
                       <>
                         {msg.content}

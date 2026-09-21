@@ -98,21 +98,23 @@ export async function POST(req: Request) {
         // del primo byte. Un errore degrada al prompt generico, mai a un errore.
         // La direttiva di lingua è accodata a ogni variante del prompt
         // (anche a quella generica di ripiego).
+        const connectGuidanceChat =
+          "\n\nYou can help WITHOUT any integration connected. If the task would benefit from an app (shopify, gmail, calendar, sheets, slack, notion, hubspot, stripe, whatsapp), provide immediate value first (draft, template, analysis) AND include an inline marker [[CONNECT:provider]] (e.g. [[CONNECT:gmail]]) so the UI renders a card with app logo + Connetti button. Never block due to missing connection.";
         let systemPrompt = withLanguageDirective(
-          "You are a helpful AI assistant.",
+          "You are a helpful AI assistant." + connectGuidanceChat,
           replyLocale,
         );
         try {
           systemPrompt =
             agentId && AGENT_RUNTIME[agentId]
               ? withLanguageDirective(
-                  AGENT_RUNTIME[agentId].systemPrompt,
+                  AGENT_RUNTIME[agentId].systemPrompt + connectGuidanceChat,
                   replyLocale,
                 )
               : // Il prompt di piattaforma è scritto nella lingua della
                 // risposta (contiene elenchi, prezzi e regole) e chiude già
                 // con la direttiva.
-                await buildPlatformSystemPrompt(replyLocale);
+                (await buildPlatformSystemPrompt(replyLocale)) + connectGuidanceChat;
         } catch {
           // Mantieni il prompt generico — non far mai fallire la chat perché
           // il prompt di piattaforma non si è potuto costruire.

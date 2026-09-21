@@ -940,6 +940,26 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
       required: ["caption"],
     },
   },
+
+  request_integration_connect: {
+    name: "request_integration_connect",
+    description:
+      "Request the user to connect an integration directly inside the chat. Use when the task requires an app that is not yet connected (e.g. Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot, Stripe). This renders an inline card with the app logo and a Connect button (Claude-style). The agent can still talk without the connection — use this only when the user would benefit from connecting now. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, stripe, whatsapp.",
+    input_schema: {
+      type: "object",
+      properties: {
+        provider: {
+          type: "string",
+          description: "App to connect: shopify, gmail, calendar, sheets, slack, notion, hubspot, stripe, whatsapp",
+        },
+        reason: {
+          type: "string",
+          description: "Short reason why the connection is needed (1 sentence, shown in chat)",
+        },
+      },
+      required: ["provider"],
+    },
+  },
 };
 
 export type ToolContext = {
@@ -2875,6 +2895,24 @@ export async function executeTool(
         hashtags: input.hashtags,
       });
       return filePayload;
+    }
+
+    case "request_integration_connect": {
+      const provider = sanitizeText(input.provider || "", 40).toLowerCase();
+      const allowed = ["shopify", "gmail", "calendar", "sheets", "slack", "notion", "hubspot", "stripe", "whatsapp", "google_sheets", "google_calendar"];
+      const normalized = provider.replace(/[^a-z0-9_]/g, "");
+      const isAllowed = allowed.some((a) => normalized.includes(a.replace(/[^a-z0-9_]/g, "")) || a.includes(normalized));
+      const finalProvider = isAllowed ? (normalized.includes("gmail") ? "gmail" : normalized.includes("calendar") ? "calendar" : normalized.includes("sheets") ? "sheets" : normalized) : provider;
+      const reason = sanitizeText(input.reason || "", 200);
+      // Return a structured marker that the frontend will render as an inline connect card
+      // The LLM will see this result and should explain that the user can connect now.
+      return JSON.stringify({
+        type: "connection_required",
+        provider: finalProvider,
+        reason: reason || `Connect ${finalProvider} to enable real actions`,
+        // Marker for frontend markdown parser as fallback
+        marker: `[[CONNECT:${finalProvider}]]`,
+      });
     }
 
     default:

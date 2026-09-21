@@ -97,6 +97,7 @@ export const ALL_TOOLS_LIST = [
   "hr_score_candidate",
   "social_generate_calendar",
   "social_schedule_post",
+  "request_integration_connect",
 ];
 
 /**
@@ -204,11 +205,15 @@ export function getEnabledToolsForAgent(agentId: string): string[] {
     config.optionalTools.forEach((tool: string) => enabledTools.add(tool));
   }
 
+  // Connection card tool is always available (Claude-style inline connect)
+  enabledTools.add("request_integration_connect");
+
   // Infine si filtra con l'elenco globale dei tool abilitati (se presente),
   // così un tool bandito globalmente non può essere riattivato da un agente.
+  // request_integration_connect bypasses the global filter.
   if (flags.enabledTools.length > 0) {
-    return Array.from(enabledTools).filter((tool: string) =>
-      flags.enabledTools.includes(tool),
+    return Array.from(enabledTools).filter(
+      (tool: string) => tool === "request_integration_connect" || flags.enabledTools.includes(tool),
     );
   }
 

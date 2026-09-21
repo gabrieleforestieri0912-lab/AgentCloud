@@ -228,13 +228,15 @@ export async function POST(req: Request) {
         while (iterations < MAX_ITERATIONS) {
           iterations++;
 
+          const connectGuidance =
+            "\n\nYou can fully help WITHOUT any integration connected. If the task would benefit from a real app connection (shopify, gmail, calendar, sheets, slack, notion, hubspot, stripe, whatsapp), do BOTH: 1) provide immediate value without it (draft, template, analysis, mock data) and 2) offer to connect now by calling the tool request_integration_connect with provider (e.g. shopify, gmail, calendar, sheets) AND include the inline marker [[CONNECT:provider]] in your answer so the UI renders a card with app logo + Connetti button (Claude-style). Never block or say you cannot help due to missing connection.";
           const response = await provider.chat(
             {
               model: config.model,
               // Il system prompt dell'agente è in inglese e non parla di lingua:
               // la direttiva (lingua del messaggio, altrimenti lingua della
               // piattaforma) è quella condivisa, uguale per tutti gli agenti.
-              system: withLanguageDirective(config.systemPrompt, replyLocale),
+              system: withLanguageDirective(config.systemPrompt + connectGuidance, replyLocale),
               messages: conversationMessages,
               tools: enabledTools,
               maxTokens: MAX_TOKENS,
@@ -263,6 +265,12 @@ export async function POST(req: Request) {
                 toolName: use.name,
                 toolInput: use.input,
               });
+
+              // Inline connect card: emit immediately so UI can render without waiting for next LLM turn
+              if (use.name === "request_integration_connect") {
+                const prov = String((use.input as Record<string, unknown>)?.provider || "unknown");
+                send({ type: "connection", provider: prov });
+              }
 
               const result = await executeTool(
                 use.name,
