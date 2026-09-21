@@ -1,9 +1,13 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
+import HowItWorksSection from "@/components/HowItWorksSection";
 import MarketplaceSection from "@/components/MarketplaceSection";
+import ProblemSolutionSection from "@/components/ProblemSolutionSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import DashboardSection from "@/components/DashboardSection";
 import IntegrationsSection from "@/components/IntegrationsSection";
+import UseCasesSection from "@/components/UseCasesSection";
+import SecuritySection from "@/components/SecuritySection";
 import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
@@ -49,10 +53,14 @@ export default async function Home() {
       >
         <Navbar />
         <HeroSection />
+        <HowItWorksSection />
         <MarketplaceSection />
+        <ProblemSolutionSection />
         <FeaturesSection />
         <DashboardSection />
         <IntegrationsSection />
+        <UseCasesSection />
+        <SecuritySection />
         <FAQSection />
         <CTASection />
       </main>
