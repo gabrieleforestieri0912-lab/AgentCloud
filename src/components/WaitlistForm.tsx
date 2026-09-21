@@ -74,8 +74,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
   const { dict } = useLanguage();
   const w = dict.waitlist as unknown as Record<string, unknown> & {
     heroEyebrow: string; heroTitleA: string; heroTitleB: string; heroSub: string; heroTrust: string;
-    heroCta: string; heroJoined: string; demoLiveBadge: string; demoUserMsg: string; demoAgentMsg: string;
-    demoResolved: string; demoInputPlaceholder: string; howItWorksBadge: string; howItWorksTitle: string;
+    heroCta: string; heroJoined: string; demoLiveBadge: string;
+    demoInputPlaceholder: string; howItWorksBadge: string; howItWorksTitle: string;
     step1Title: string; step1Desc: string; step1MockTitle: string; step1MockDesc: string;
     step2Title: string; step2Desc: string; step2Check1: string; step2Check2: string; step2Check3: string;
     step3Title: string; step3Desc: string; socialBadge: string; socialTitle: string;
@@ -113,10 +113,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
   const shouldReduceMotion = useReducedMotion();
   const [demoInput, setDemoInput] = useState("");
   const [demoSending, setDemoSending] = useState(false);
-  const [demoMessages, setDemoMessages] = useState<DemoMessage[]>(() => [
-    { role: "user", content: w.demoUserMsg as string },
-    { role: "assistant", content: w.demoAgentMsg as string },
-  ]);
+  // Demo chat vuota all'avvio: l'utente parte da zero e scrive lui il primo messaggio.
+  const [demoMessages, setDemoMessages] = useState<DemoMessage[]>([]);
   const demoBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -461,9 +459,9 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </div>
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
-      {/* NAVBAR trasparente — 3xl allarga container per ultra-wide */}
+      {/* NAVBAR trasparente a tutta larghezza — logo a sinistra, bottoni all'estremo destro */}
       <header className="absolute left-0 right-0 top-0 z-30 bg-transparent">
-        <div className="mx-auto flex max-w-6xl 3xl:max-w-420 4xl:max-w-460 items-center justify-between px-4 py-4 sm:px-6 3xl:px-8 3xl:py-6">
+        <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-10 3xl:px-14 3xl:py-6">
           <div className="flex items-center gap-2.5">
             <div className="relative h-8 w-8">
               <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="32px" />
@@ -662,7 +660,6 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 <input value={demoInput} onChange={(event) => setDemoInput(event.target.value)} placeholder={w.demoInputPlaceholder as string} disabled={demoSending} className="min-w-0 flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500" />
                 <button type="submit" disabled={demoSending || !demoInput.trim()} className="rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-40" aria-label={w.demoInputPlaceholder as string}><ArrowRight className="h-4 w-4" /></button>
               </form>
-              <div className="mt-3 inline-flex rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">{w.demoResolved as string}</div>
             </div>
           </div>
         </motion.div>
