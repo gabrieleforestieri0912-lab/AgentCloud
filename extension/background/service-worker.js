@@ -198,6 +198,90 @@ async function openSignup() {
   }
 }
 
+// ─── Cursore AgentCloud reattivo sulla pagina affianco ───────────────────────
+
+async function getActiveTab() {
+  try {
+    const tabs = await api.tabs.query({ active: true, currentWindow: true });
+    return tabs[0] || null;
+  } catch { return null; }
+}
+
+async function ensureAgentPage() {
+  let tab = await getActiveTab();
+  const isUsable = tab && tab.url && /^https?:/.test(tab.url) && !tab.url.startsWith(API_BASE);
+  if (isUsable) return tab;
+  // Se la pagina affianco non è apribile (chrome://, vuota, o assente), aprine una nuova
+  try {
+    const created = await api.tabs.create({ url: "about:blank", active: true });
+    return created;
+  } catch {
+    return tab;
+  }
+}
+
+async function injectCursor(tabId) {
+  if (tabId == null) return false;
+  try {
+    await api.scripting.executeScript({ target: { tabId }, files: ["content/agent-cursor.js"] });
+    return true;
+  } catch {
+    // fallback: prova inject inline
+    try {
+      await api.scripting.executeScript({
+        target: { tabId },
+        func: () => { window.__acCursorInjected = false; },
+      });
+      await api.scripting.executeScript({ target: { tabId }, files: ["content/agent-cursor.js"] });
+      return true;
+    } catch { return false; }
+  }
+}
+
+async function sendCursor(tabId, action, payload = {}) {
+  if (tabId == null) return;
+  try {
+    await api.tabs.sendMessage(tabId, { action, ...payload });
+    return;
+  } catch {}
+  // Se il content script non è ancora in ascolto, inietta e ritenta via executeScript
+  try {
+    await injectCursor(tabId);
+    await api.tabs.sendMessage(tabId, { action, ...payload });
+  } catch {
+    try {
+      await api.scripting.executeScript({
+        target: { tabId },
+        func: (act, pl) => {
+          if (window.__acCursor) {
+            const c = window.__acCursor;
+            if (act === "AC_CURSOR_SHOW") c.show(pl.label);
+            else if (act === "AC_CURSOR_HIDE") c.hide();
+            else if (act === "AC_CURSOR_MOVE") c.moveTo(pl.x, pl.y, pl.label);
+            else if (act === "AC_CURSOR_CLICK") { if (pl.x) c.moveTo(pl.x, pl.y, pl.label); c.clickEffect(); }
+            else if (act === "AC_CURSOR_LABEL") c.show(pl.label);
+          }
+        },
+        args: [action, payload],
+      });
+    } catch {}
+  }
+}
+
+function cursorMoveForTool(toolName) {
+  const labels = {
+    web_search: "Ricerca in corso…",
+    scrape_page: "Lettura pagina…",
+    read_file: "Lettura file…",
+    write_file: "Scrittura file…",
+    shopify_create_product: "Creazione prodotto…",
+    shopify_search_products: "Ricerca prodotti…",
+    calendar_book_event: "Prenotazione…",
+    gmail_send: "Invio email…",
+  };
+  return labels[toolName] || `Uso ${toolName}…`;
+}
+
 // ─── Contesto pagina (solo su richiesta esplicita dell'utente) ──────────────
 
 async function getPageContext(tabId) {
@@ -225,7 +309,7 @@ async function getPageContext(tabId) {
 
 // ─── Esecuzione agente in streaming (SSE) ──────────────────────────────────
 
-async function runAgent({ agentId, messages, context, requestId }) {
+async function runAgent({ agentId, messages, context, requestId, tabId: requestedTabId }) {
   if (!agentId || typeof agentId !== "string") {
     throw new Error("Nessun agente selezionato: scegli un agente dal pannello laterale e riprova.");
   }
@@ -233,6 +317,48 @@ async function runAgent({ agentId, messages, context, requestId }) {
     throw new Error("Messaggio mancante: scrivi qualcosa nel pannello prima di inviare.");
   }
 
+  // ——— Cursore AgentCloud sulla pagina affianco (apre se non è aperta) ———
+  let cursorTabId = requestedTabId ?? null;
+  if (!cursorTabId) {
+    const active = await getActiveTab();
+    if (active && active.id != null) cursorTabId = active.id;
+    else {
+      const ensured = await ensureAgentPage();
+      if (ensured && ensured.id != null) cursorTabId = ensured.id;
+    }
+  } else {
+    // verifica che la tab esista e sia http, altrimenti apri
+    try {
+      const t = await api.tabs.get(cursorTabId);
+      if (!t || !t.url || !/^https?:/.test(t.url)) {
+        const ensured = await ensureAgentPage();
+        if (ensured && ensured.id != null) cursorTabId = ensured.id;
+      }
+    } catch {
+      const ensured = await ensureAgentPage();
+      if (ensured && ensured.id != null) cursorTabId = ensured.id;
+    }
+  }
+  // Inietta e mostra il cursore personalizzato reattivo
+  if (cursorTabId != null) {
+    await injectCursor(cursorTabId).catch(() => {});
+    await sendCursor(cursorTabId, "AC_CURSOR_SHOW", { label: "AgentCloud sta operando…" }).catch(() => {});
+  }
+  const cursorMoveRandom = () => {
+    if (cursorTabId == null) return;
+    const x = 120 + Math.random() * Math.max(200, (typeof screen !== "undefined" ? screen.width : 800) * 0.35);
+    const y = 120 + Math.random() * 260;
+    sendCursor(cursorTabId, "AC_CURSOR_MOVE", { x, y }).catch(() => {});
+  };
+  const cursorClickRandom = () => {
+    if (cursorTabId == null) return;
+    const x = 180 + Math.random() * 320;
+    const y = 160 + Math.random() * 220;
+    sendCursor(cursorTabId, "AC_CURSOR_CLICK", { x, y }).catch(() => {});
+  };
+
+  let answer = "";
+  try {
   const response = await request(RUN_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -290,7 +416,6 @@ async function runAgent({ agentId, messages, context, requestId }) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let answer = "";
   const emit = (payload) =>
     api.runtime.sendMessage({ action: "AGENT_STREAM", requestId, ...payload }).catch(() => {});
 
@@ -307,9 +432,17 @@ async function runAgent({ agentId, messages, context, requestId }) {
         if (data.type === "text" && typeof data.content === "string") {
           answer += data.content;
           emit({ type: "text", content: data.content });
-        } else if (data.type === "tool_start") emit({ type: "tool_start", toolName: data.toolName });
-        else if (data.type === "tool_done") emit({ type: "tool_done", toolName: data.toolName });
-        else if (data.type === "file") emit({ type: "file", filename: data.filename });
+          // micro-movimento reattivo durante la generazione
+          if (answer.length % 42 === 0) cursorMoveRandom();
+        } else if (data.type === "tool_start") {
+          emit({ type: "tool_start", toolName: data.toolName });
+          const label = cursorMoveForTool(data.toolName);
+          if (cursorTabId != null) sendCursor(cursorTabId, "AC_CURSOR_LABEL", { label }).catch(() => {});
+          cursorMoveRandom();
+        } else if (data.type === "tool_done") {
+          emit({ type: "tool_done", toolName: data.toolName });
+          cursorClickRandom();
+        } else if (data.type === "file") emit({ type: "file", filename: data.filename });
         else if (data.type === "error") throw new Error(data.message || data.error || "Errore dell'agente");
         else if (data.type === "done") {
           // continuerà fino a done del reader
@@ -318,13 +451,25 @@ async function runAgent({ agentId, messages, context, requestId }) {
         if (error instanceof SyntaxError) continue;
         // inoltra anche al pannello prima di propagare
         emit({ type: "error", message: error?.message || String(error) });
+        if (cursorTabId != null) sendCursor(cursorTabId, "AC_CURSOR_LABEL", { label: "Errore — riprovo…" }).catch(() => {});
         throw error;
       }
     }
   }
 
   emit({ type: "done" });
+  if (cursorTabId != null) {
+    sendCursor(cursorTabId, "AC_CURSOR_LABEL", { label: "Operazione completata ✓" }).catch(() => {});
+    setTimeout(() => sendCursor(cursorTabId, "AC_CURSOR_HIDE", {}).catch(() => {}), 1400);
+  }
   return { output: answer };
+  } catch (err) {
+    if (cursorTabId != null) {
+      sendCursor(cursorTabId, "AC_CURSOR_LABEL", { label: "Errore — riprovo…" }).catch(() => {});
+      setTimeout(() => sendCursor(cursorTabId, "AC_CURSOR_HIDE", {}).catch(() => {}), 1600);
+    }
+    throw err;
+  }
 }
 
 // ─── Messaggi dal pannello laterale ────────────────────────────────────────

@@ -69,6 +69,7 @@ import {
   HERO_CONVERSATION_HISTORY_KEY,
 } from "./HeroSection";
 import ExportReportButton from "./ExportReportButton";
+import SubscribePaywallModal from "./SubscribePaywallModal";
 
 type LocalMessage = {
   id: string;
@@ -182,6 +183,7 @@ export default function ChatInterface({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
+  const [paywallSlug, setPaywallSlug] = useState<string | null>(null);
   const initializedRef = useRef(false);
   const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
 
@@ -846,6 +848,7 @@ export default function ChatInterface({
     let responseText = "";
     // Messaggio di errore lato server (localizzato) catturato dallo stream SSE.
     let streamErrorMessage: string | null = null;
+    let streamErrorCode: string | null = null;
     try {
       // Invia l'intera cronologia della conversazione così l'AI resta coerente
       // nei messaggi successivi (e risponde sempre sui dati piattaforma più
@@ -891,13 +894,19 @@ export default function ChatInterface({
         });
         if (!res.ok) {
           let serverMessage: string | null = null;
+          let code: string | null = null;
           try {
-            const data = (await res.json()) as { error?: string };
+            const data = (await res.json()) as { error?: string; code?: string };
             if (data && typeof data.error === "string" && data.error.trim()) {
               serverMessage = data.error;
             }
+            if (data && typeof data.code === "string") code = data.code;
           } catch {}
           if (serverMessage) streamErrorMessage = serverMessage;
+          if (code) streamErrorCode = code;
+          // propagate paywall immediately
+          if (code === "FREE_LIMIT_REACHED" && agent) setPaywallSlug(agent.slug);
+          else if (code === "FREE_LIMIT_REACHED") setPaywallSlug(targetSlugs[0] ?? null);
           throw new Error("AI backend error");
         }
         if (!res.body) throw new Error("AI backend unavailable");
@@ -1006,6 +1015,30 @@ export default function ChatInterface({
       window.dispatchEvent(new CustomEvent("agentcloud:notifications-refresh"));
     } catch {}
   }
+
+  // Freemium: 4 messaggi per agente non posseduto
+  const ownedSet = useMemo(() => new Set(availableAgents.map((a) => a.slug)), [availableAgents]);
+  const nonOwnedSelected = useMemo(
+    () => selectedAgentSlugs.filter((s) => !ownedSet.has(s)),
+    [selectedAgentSlugs, ownedSet],
+  );
+  const freeLimitHitSlug = useMemo(() => {
+    if (nonOwnedSelected.length === 0) return null;
+    // conta i messaggi assistant per agente (ogni user message genera 1 reply)
+    const counts = new Map<string, number>();
+    for (const m of messages) {
+      if (m.role === "assistant" && m.agentSlug) {
+        counts.set(m.agentSlug, (counts.get(m.agentSlug) ?? 0) + 1);
+      }
+    }
+    // fallback: se i messaggi non hanno agentSlug (vecchia cronologia), usa conteggio totale user messages
+    const userCount = messages.filter((m) => m.role === "user").length;
+    for (const slug of nonOwnedSelected) {
+      const c = counts.get(slug) ?? (nonOwnedSelected.length === 1 ? userCount : 0);
+      if (c >= 4) return slug;
+    }
+    return null;
+  }, [messages, nonOwnedSelected]);
 
   async function handleSend() {
     const text = input.trim();
@@ -1879,6 +1912,19 @@ export default function ChatInterface({
           onDrop={attach.makeDrop(attachLabels)}
         >
           <div className="relative mx-auto max-w-content">
+            {paywallSlug && (
+              <div className="mb-3 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                <p className="text-xs font-semibold text-amber-300">
+                  {dict.paywallModal.limitReached} — 4/4
+                </p>
+                <button
+                  onClick={() => setPaywallSlug(paywallSlug)}
+                  className="rounded-full bg-amber-500 px-3 py-1 text-xs font-bold text-white hover:bg-amber-400"
+                >
+                  {dict.paywallModal.subscribe}
+                </button>
+              </div>
+            )}
             <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
             <AttachmentChips
               items={attach.attachments}
@@ -1920,6 +1966,17 @@ export default function ChatInterface({
         </main>
         </div>
       </div>
+      {paywallSlug && (
+        <SubscribePaywallModal
+          open={!!paywallSlug}
+          onClose={() => setPaywallSlug(null)}
+          agentName={
+            agentsBySlug.get(paywallSlug)?.name ??
+            paywallSlug
+          }
+          agentSlug={paywallSlug}
+        />
+      )}
     </div>
   );
 }

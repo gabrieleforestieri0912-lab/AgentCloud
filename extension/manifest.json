@@ -18,6 +18,12 @@
     "http://127.0.0.1:3000/*",
     "*://*/*"
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content/agent-cursor.js", "icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "action": {
     "default_title": "Apri AgentCloud Copilot (pannello laterale)"
   },

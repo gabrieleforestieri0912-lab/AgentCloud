@@ -68,6 +68,8 @@ const it = {
     aiConnectionFailed:
       "Impossibile contattare il backend AI. Riprova più tardi.",
     internalServerError: "Errore interno del server",
+    freeLimitReached:
+      "Hai raggiunto i 4 messaggi gratuiti per questo agente. Abbonati per sbloccare conversazioni illimitate.",
   },
 
   navbar: {
@@ -1616,6 +1618,14 @@ const it = {
     redirectNote: "Dopo l'accesso verrai reindirizzato a /chat con la conversazione salvata.",
       usedFreeMessages: "Hai usato i 10 messaggi gratuiti della chat demo. Accedi con il tuo account per continuare la conversazione nella chat completa — la ritroverai già salvata.",
   },
+  paywallModal: {
+    title: "Hai raggiunto il limite gratuito",
+    description: "Hai usato i 4 messaggi gratuiti per {agent}. Abbonati per sbloccare conversazioni illimitate e tutte le funzionalità.",
+    subscribe: "Abbonati ora",
+    viewPlans: "Vedi piani",
+    remaining: "{count}/4 messaggi gratuiti usati",
+    limitReached: "Limite gratuito raggiunto",
+  },
   countdownTimer: {
     launchDate: "Lancio il 15 Settembre 2026",
     platformLive: "La piattaforma è live!",
@@ -1805,6 +1815,7 @@ export const en: Dictionary = {
     aiConnectionFailed:
       "Could not reach the AI backend. Please try again later.",
     internalServerError: "Internal server error",
+    freeLimitReached: "You have reached the 4 free messages for this agent. Subscribe to unlock unlimited conversations.",
   },
 
   navbar: {
@@ -3331,6 +3342,14 @@ export const en: Dictionary = {
     redirectNote: "After signing in you'll be redirected to /chat with your conversation saved.",
       usedFreeMessages: "You've used the 10 free messages of the demo chat. Sign in to continue in the full chat — your conversation will be waiting there.",
   },
+  paywallModal: {
+    title: "Free limit reached",
+    description: "You have used the 4 free messages for {agent}. Subscribe to unlock unlimited conversations and all features.",
+    subscribe: "Subscribe now",
+    viewPlans: "View plans",
+    remaining: "{count}/4 free messages used",
+    limitReached: "Free limit reached",
+  },
   countdownTimer: {
     launchDate: "Launching September 15, 2026",
     platformLive: "The platform is live!",
@@ -3518,6 +3537,7 @@ export const es: Dictionary = {
     aiConnectionFailed:
       "No se pudo contactar con el backend de IA. Inténtalo más tarde.",
     internalServerError: "Error interno del servidor",
+    freeLimitReached: "Has alcanzado los 4 mensajes gratuitos para este agente. Suscribete para desbloquear conversaciones ilimitadas.",
   },
 
   navbar: {
@@ -5041,6 +5061,14 @@ export const es: Dictionary = {
     redirectNote: "Después de iniciar sesión serás redirigido a /chat con la conversación guardada.",
       usedFreeMessages: "Has usado los 10 mensajes gratuitos del chat de demostración. Inicia sesión con tu cuenta para continuar en el chat completo: tu conversación estará esperando allí.",
   },
+  paywallModal: {
+    title: "Limite gratuito alcanzado",
+    description: "Has usado los 4 mensajes gratuitos para {agent}. Suscribete para desbloquear conversaciones ilimitadas y todas las funciones.",
+    subscribe: "Suscribirse ahora",
+    viewPlans: "Ver planes",
+    remaining: "{count}/4 mensajes gratuitos usados",
+    limitReached: "Limite gratuito alcanzado",
+  },
   countdownTimer: {
     launchDate: "Lanzamiento el 15 de Septiembre de 2026",
     platformLive: "¡La plataforma está en vivo!",
@@ -5228,6 +5256,7 @@ export const de: Dictionary = {
     aiConnectionFailed:
       "KI-Backend nicht erreichbar. Bitte versuche es später erneut.",
     internalServerError: "Interner Serverfehler",
+    freeLimitReached: "Du hast die 4 kostenlosen Nachrichten fur diesen Agenten erreicht. Abonniere, um unbegrenzte Gesprache freizuschalten.",
   },
 
   navbar: {
@@ -6751,6 +6780,14 @@ export const de: Dictionary = {
     redirectNote: "Nach der Anmeldung wirst du zu /chat mit deinem gespeicherten Gespräch weitergeleitet.",
       usedFreeMessages: "Du hast die 10 kostenlosen Nachrichten des Demo-Chats genutzt. Melde dich mit deinem Konto an, um im vollständigen Chat weiterzumachen — dein Gespräch wartet dort bereits.",
   },
+  paywallModal: {
+    title: "Kostenloses Limit erreicht",
+    description: "Du hast die 4 kostenlosen Nachrichten fur {agent} verbraucht. Abonniere, um unbegrenzte Gesprache und alle Funktionen freizuschalten.",
+    subscribe: "Jetzt abonnieren",
+    viewPlans: "Plane ansehen",
+    remaining: "{count}/4 kostenlose Nachrichten verwendet",
+    limitReached: "Kostenloses Limit erreicht",
+  },
   countdownTimer: {
     launchDate: "Start am 15. September 2026",
     platformLive: "Die Plattform ist live!",
@@ -6938,6 +6975,7 @@ export const fr: Dictionary = {
     aiConnectionFailed:
       "Could not reach the AI backend. Please try again later.",
     internalServerError: "Internal server error",
+    freeLimitReached: "Vous avez atteint les 4 messages gratuits pour cet agent. Abonnez-vous pour debloquer des conversations illimitees.",
   },
 
   navbar: {
@@ -8460,6 +8498,14 @@ export const fr: Dictionary = {
     messagesLeft: "messages restants",
     redirectNote: "Après la connexion, vous serez redirigé vers /chat avec votre conversation sauvegardée.",
       usedFreeMessages: "Vous avez utilisé les 10 messages gratuits du chat de démonstration. Connectez-vous avec votre compte pour continuer dans le chat complet — votre conversation vous y attendra.",
+  },
+  paywallModal: {
+    title: "Limite gratuite atteinte",
+    description: "Vous avez utilise les 4 messages gratuits pour {agent}. Abonnez-vous pour debloquer des conversations illimitees et toutes les fonctionnalites.",
+    subscribe: "S'abonner maintenant",
+    viewPlans: "Voir les offres",
+    remaining: "{count}/4 messages gratuits utilises",
+    limitReached: "Limite gratuite atteinte",
   },
   countdownTimer: {
     launchDate: "Lancement le 15 Septembre 2026",

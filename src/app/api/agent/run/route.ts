@@ -24,6 +24,11 @@ import {
   createAgentNotification,
 } from "@/lib/agents/notifications";
 import { TENANT_SHOPIFY_ID } from "@/lib/shopify/connections";
+import {
+  FREE_MESSAGES_PER_AGENT,
+  getFreeMessagesUsed,
+  incrementAnonymousFreeCount,
+} from "@/lib/billing/free-limit";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -128,7 +133,43 @@ export async function POST(req: Request) {
   // Applica i limiti abbonamento + piano per gli utenti reali (saltati per gli
   // anonimi e per gli admin, che hanno accesso completo e illimitato).
   const check = await assertRunAllowed(userId, agentId, locale, isAdmin);
-  if (!check.allowed) {
+  const ipForFree = getClientIp(req);
+
+  // Freemium: 4 messaggi gratuiti per agente per chi non ha abbonamento attivo.
+  // Admin e beta bypassano. Gli abbonati attivi non passano da qui.
+  if (!isAdmin && !isBeta) {
+    let enforceFree = false;
+    if (userId === "anonymous") {
+      enforceFree = true;
+    } else if (
+      !check.allowed &&
+      (check.code === "NOT_SUBSCRIBED" ||
+        check.code === "SUBSCRIPTION_INACTIVE" ||
+        check.code === "SUBSCRIPTION_EXPIRED")
+    ) {
+      enforceFree = true;
+    }
+
+    if (enforceFree) {
+      const used = await getFreeMessagesUsed(userId, agentId, ipForFree);
+      if (used >= FREE_MESSAGES_PER_AGENT) {
+        return Response.json(
+          {
+            error: apiErrorMessageForLocale(locale, "freeLimitReached"),
+            code: "FREE_LIMIT_REACHED",
+            remaining: 0,
+            limit: FREE_MESSAGES_PER_AGENT,
+          },
+          { status: 402 },
+        );
+      }
+    } else if (!check.allowed) {
+      return Response.json(
+        { error: check.message, code: check.code },
+        { status: check.status },
+      );
+    }
+  } else if (!check.allowed) {
     return Response.json(
       { error: check.message, code: check.code },
       { status: check.status },
@@ -138,7 +179,7 @@ export async function POST(req: Request) {
   // Throttle dei chiamanti anonimi in anteprima: prima il filtro burst per
   // istanza, poi il limite distribuito (autoritativo tra tutte le istanze).
   if (userId === "anonymous") {
-    const ip = getClientIp(req);
+    const ip = ipForFree;
     const burstLimited = isAnonRateLimited(ip);
     const distributed = await rateLimit("agent-run-anon", ip, {
       limit: ANON_LIMIT_MAX,
@@ -356,6 +397,9 @@ export async function POST(req: Request) {
             tokens_input: inputTokens,
             tokens_output: outputTokens,
           });
+        } else if (userId === "anonymous") {
+          // Anonimo in freemium: incrementa il contatore distribuito
+          await incrementAnonymousFreeCount(ipForFree, agentId).catch(() => {});
         }
       } catch {
         emitter.stop();

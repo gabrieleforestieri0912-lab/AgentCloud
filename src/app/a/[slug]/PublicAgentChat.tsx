@@ -26,6 +26,7 @@ import {
 } from "@/components/ChatAttachments";
 import { composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
+import SubscribePaywallModal from "@/components/SubscribePaywallModal";
 
 type Message = {
   role: "user" | "assistant";
@@ -55,6 +56,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Auto-scroll solo quando l'utente è in fondo: scroll diretto del contenitore
@@ -89,9 +91,19 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
       ),
     );
 
+  // Freemium: 4 messaggi per agente (conteggio locale per UX immediata)
+  const FREE_LIMIT = 4;
+  const usedCount = messages.filter((m) => m.role === "user").length;
+  const isLimitReached = usedCount >= FREE_LIMIT;
+  const remaining = Math.max(0, FREE_LIMIT - usedCount);
+
   const sendMessage = async () => {
     const pending = attach.attachments;
     if ((!input.trim() && pending.length === 0) || isRunning) return;
+    if (isLimitReached) {
+      setPaywallOpen(true);
+      return;
+    }
 
     const apiText = composeUserContent(input, pending);
     const visionBlocks = toVisionBlocks(pending);
@@ -145,12 +157,15 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
       // mostriamo invece di restare appesi a uno stream vuoto.
       if (!res.ok) {
         let message = dict.publicChat.somethingWentWrong;
+        let code: string | null = null;
         try {
           const data = await res.json();
           if (data && typeof data.error === "string") message = data.error;
+          if (data && typeof data.code === "string") code = data.code;
         } catch {
           // ignora corpi di errore malformati
         }
+        if (code === "FREE_LIMIT_REACHED") setPaywallOpen(true);
         updateLastAssistant((last) => ({
           ...last,
           content: `\n\n⚠️ ${message}`,
@@ -395,10 +410,27 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
           {attach.notice && (
             <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>
           )}
+          {isLimitReached ? (
+            <div className="mb-3 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+              <p className="text-xs font-semibold text-amber-300">
+                {t(dict.paywallModal.remaining, { count: String(usedCount) })} — {dict.paywallModal.limitReached}
+              </p>
+              <button
+                onClick={() => setPaywallOpen(true)}
+                className="rounded-full bg-amber-500 px-3 py-1 text-xs font-bold text-white hover:bg-amber-400"
+              >
+                {dict.paywallModal.subscribe}
+              </button>
+            </div>
+          ) : usedCount > 0 ? (
+            <p className="mb-2 text-xs text-neutral-500">
+              {t(dict.paywallModal.remaining, { count: String(usedCount) })}
+            </p>
+          ) : null}
           <div className="flex items-end gap-2 bg-neutral-800 rounded-2xl border border-white/5 px-3 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
             <AttachPlusButton
               labels={attachLabels}
-              disabled={isRunning}
+              disabled={isRunning || isLimitReached}
               onPick={handleFileUpload}
             />
             <textarea
@@ -407,16 +439,16 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               onPaste={attach.makePaste(attachLabels)}
-              placeholder={t(dict.publicChat.messagePlaceholder, { name })}
+              placeholder={isLimitReached ? dict.paywallModal.limitReached : t(dict.publicChat.messagePlaceholder, { name })}
               rows={1}
               className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
               style={{ fieldSizing: "content" } as React.CSSProperties}
-              disabled={isRunning}
+              disabled={isRunning || isLimitReached}
             />
             <button
               onClick={sendMessage}
               disabled={
-                (!input.trim() && attach.attachments.length === 0) || isRunning
+                (!input.trim() && attach.attachments.length === 0) || isRunning || isLimitReached
               }
               className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed"
             >
@@ -434,6 +466,12 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
           </div>
         </div>
       </div>
+      <SubscribePaywallModal
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        agentName={name}
+        agentSlug={slug}
+      />
     </div>
   );
 }

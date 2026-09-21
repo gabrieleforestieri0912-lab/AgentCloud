@@ -268,7 +268,14 @@ if (composerEl) composerEl.addEventListener("submit", async (event) => {
   setBusy(true);
   setNotice("");
 
-  const response = await send({ action: "RUN_AGENT", payload: { agentId, messages: history, context, requestId } });
+  // Recupera tab attiva per far operare il cursore AgentCloud sulla pagina affianco (la apre se non è aperta)
+  let tabId = null;
+  try {
+    const tabs = await (api.tabs?.query ? api.tabs.query({ active: true, currentWindow: true }) : Promise.resolve([]));
+    tabId = tabs[0]?.id ?? null;
+  } catch {}
+
+  const response = await send({ action: "RUN_AGENT", payload: { agentId, messages: history, context, requestId, tabId } });
 
   if (!response?.success) {
     bubble.textContent = response?.error || "Impossibile completare la richiesta.";
