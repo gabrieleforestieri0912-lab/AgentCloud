@@ -445,6 +445,16 @@ export default function HeroSection() {
             },
           }}
         >
+          <motion.div
+            className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-3.5 py-1.5"
+            variants={{
+              hidden: { opacity: 0, y: 12 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+            }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
+            <span className="text-xs font-bold tracking-widest uppercase text-brand-300">Multi-tenant • 15 agenti • 8 integrazioni live</span>
+          </motion.div>
           <motion.h1
             className="text-[1.75rem] xs:text-[2rem] sm:text-5xl md:text-6xl lg:text-[76px] font-extrabold leading-[1.08] tracking-tight text-white"
             variants={{
@@ -477,6 +487,45 @@ export default function HeroSection() {
           >
             {dict.hero.subtitle}
           </motion.p>
+
+          {/* Eyebrow di fiducia + blocchi concreti (3) — solo transform/opacity */}
+          <motion.div
+            className="mx-auto mt-6 flex flex-wrap justify-center gap-2"
+            variants={{
+              hidden: { opacity: 0, y: 12 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+            }}
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-900/70 px-3 py-1.5 text-xs font-bold text-neutral-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Shopify OAuth live
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-900/70 px-3 py-1.5 text-xs font-bold text-neutral-300">
+              4 messaggi gratis per agente
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-900/70 px-3 py-1.5 text-xs font-bold text-neutral-300">
+              RLS per tenant — nessun segreto nel client
+            </span>
+          </motion.div>
+
+          <motion.div
+            className="mx-auto mt-6 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3 text-left"
+            variants={{
+              hidden: { opacity: 0, y: 12 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.6, staggerChildren: 0.08 } },
+            }}
+          >
+            {[
+              { k: "Shopify", t: "Cerca prodotti, genera link carrello, verifica stato ordine via OAuth.", c: "shopify-agent" },
+              { k: "Lead & Vendite", t: "Cattura lead, arricchisci profilo, notifica Slack/HubSpot.", c: "lead-capture" },
+              { k: "Calendario", t: "Disponibilità Google Calendar, prenota con Meet, invia conferma.", c: "calendar-booking" },
+            ].map((b) => (
+              <div key={b.k} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-3.5 backdrop-blur-sm">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-brand-300">{b.k}</p>
+                <p className="mt-1.5 text-sm font-semibold leading-5 text-neutral-300">{b.t}</p>
+                <p className="mt-2 text-xs font-bold text-neutral-500">{b.c}</p>
+              </div>
+            ))}
+          </motion.div>
 
           {/* ── Inline Mini-Chat Box ── */}
           <motion.div
@@ -760,6 +809,47 @@ export default function HeroSection() {
                 ? `${remaining} / ${DEMO_LIMIT} messaggi demo rimasti`
                 : `Limite demo raggiunto — accedi per continuare`}
             </p>
+          )}
+
+          {/* Visual mock UI — mock costruito in JSX/Tailwind, no immagini esterne */}
+          {!hasMessages && (
+            <motion.div
+              className="mx-auto mt-8 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3 text-left"
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, staggerChildren: 0.07 }}
+            >
+              {[
+                { eyeb: "Agente", title: "Shopify Agent", sub: "Prodotti • Ordini • Sconti", dot: "bg-emerald-400" },
+                { eyeb: "Collegamento", title: "Shopify OAuth", sub: "Token per tenant • RLS", dot: "bg-brand-400" },
+                { eyeb: "Output", title: "Link carrello pronto", sub: "Pronto da inviare al cliente", dot: "bg-pink-400" },
+              ].map((c) => (
+                <div key={c.title} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-3.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
+                    <span className="text-xs font-bold uppercase tracking-wide text-neutral-500">{c.eyeb}</span>
+                  </div>
+                  <p className="mt-2 text-sm font-bold text-white">{c.title}</p>
+                  <p className="mt-1 text-xs font-semibold leading-4 text-neutral-400">{c.sub}</p>
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+          {/* Micro-CTA coerente */}
+          {!hasMessages && (
+            <motion.div
+              className="mt-6 flex justify-center"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <a href="/agents" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10 transition-colors">
+                Sfoglia i 15 agenti <span aria-hidden>→</span>
+              </a>
+            </motion.div>
           )}
         </motion.div>
       </div>

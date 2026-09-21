@@ -15,10 +15,30 @@ export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const faqs = dict.faq.items;
+  // FAQ oneste aggiunte in Fase 2 — coerenti con stato reale (live vs in arrivo, freemium, RLS)
+  const extraFaqs = [
+    {
+      q: "Come collego il mio negozio Shopify?",
+      a: "Apri l’agente Shopify, clicca “Collega Shopify” e autorizza via OAuth. Il token è salvato per tenant (RLS) e le chiamate passano da Edge Functions: non incolli mai chiavi nel client. Se non hai uno store, l’agente può crearne uno con myshopify.com + link signup.",
+    },
+    {
+      q: "Cosa significa “4 messaggi gratis per agente”?",
+      a: "Ogni agente si può provare con 4 messaggi gratuiti (conteggio per IP se anonimo, per user_id se loggato). Al 5° l’agente invita ad abbonarsi (€9,99–€14,99, Stripe test mode). Admin e beta tester non hanno limite.",
+    },
+    {
+      q: "Dove sono i miei dati e come sono isolati?",
+      a: "Supabase con RLS su ogni tabella (user_agents, agent_runs, carts, profiles). Token OAuth cifrati at-rest, isolamento per tenantId = user.id, nessuna ANTHROPIC_API_KEY nel browser. Vedi /privacy e /terms.",
+    },
+    {
+      q: "Quali integrazioni sono live e quali “In arrivo”?",
+      a: "Live: Shopify, Stripe, Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack (8/40). In arrivo: WhatsApp, WooCommerce, PayPal, Facebook/Instagram/TikTok, Google Ads/Analytics/Meet e altre — mostrate con badge “In arrivo”.",
+    },
+  ];
+  const allFaqs = [...faqs, ...extraFaqs];
   const faqLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
+    mainEntity: allFaqs.map((faq) => ({
       "@type": "Question",
       name: faq.q,
       acceptedAnswer: {
@@ -72,7 +92,7 @@ export default function FAQSection() {
             },
           }}
         >
-          {faqs.map((faq, i) => (
+          {allFaqs.map((faq, i) => (
             <motion.div
               key={i}
               className={`bg-neutral-900 border rounded-2xl overflow-hidden transition-colors duration-200 ${

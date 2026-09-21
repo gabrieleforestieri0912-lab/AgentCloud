@@ -7,21 +7,23 @@
  */
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, ShieldCheck, Clock3, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
+import CountdownTimer from "./CountdownTimer";
+import { MAX_SPOTS } from "@/lib/waitlist-constants";
 
 export default function CTASection() {
   const { dict } = useLanguage();
   return (
     <section
       id="demo"
-      className="relative overflow-hidden px-4 py-24 sm:px-6 lg:px-8"
+      className="relative overflow-hidden px-4 py-16 sm:py-20 sm:px-6 lg:px-8"
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
 
       <motion.div
-        className="relative mx-auto max-w-5xl rounded-2xl border border-white/5 dark-gradient-cta p-8 text-center shadow-2xl shadow-brand-500/10 sm:p-12"
+        className="relative mx-auto max-w-5xl rounded-2xl border border-white/5 dark-gradient-cta p-6 text-center shadow-2xl shadow-brand-500/10 sm:p-10"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
@@ -72,7 +74,7 @@ export default function CTASection() {
         </motion.h2>
 
         <motion.p
-          className="mx-auto mt-6 max-w-xl text-lg leading-8 text-neutral-400"
+          className="mx-auto mt-4 max-w-xl text-lg leading-7 text-neutral-400"
           variants={{
             hidden: { opacity: 0, y: 20 },
             visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
@@ -81,8 +83,44 @@ export default function CTASection() {
           {dict.cta.subtitle}
         </motion.p>
 
+        {/* Blocchi concreti (3) */}
         <motion.div
-          className="mt-10 flex flex-col justify-center gap-3 sm:flex-row"
+          className="mx-auto mt-6 grid max-w-3xl gap-3 sm:grid-cols-3 text-left"
+          variants={{
+            hidden: { opacity: 0, y: 12 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.4, staggerChildren: 0.06 } },
+          }}
+        >
+          {[
+            { icon: Zap, t: "4 messaggi gratis", d: "per ogni agente, poi paywall chiaro" },
+            { icon: ShieldCheck, t: "Dati isolati", d: "RLS per tenant, token cifrati" },
+            { icon: Clock3, t: "Setup Same day", d: "OAuth in 2 click, chat pronta" },
+          ].map((b) => (
+            <div key={b.t} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-3.5">
+              <b.icon size={14} className="text-brand-400" />
+              <p className="mt-2 text-sm font-bold text-white">{b.t}</p>
+              <p className="mt-1 text-xs font-semibold leading-4 text-neutral-400">{b.d}</p>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Countdown + posti founding — coerenti con waitlist-constants */}
+        <motion.div
+          className="mx-auto mt-6 flex flex-col items-center gap-3"
+          variants={{
+            hidden: { opacity: 0, y: 12 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+          }}
+        >
+          <CountdownTimer className="max-w-sm" />
+          <p className="text-xs font-bold tracking-wide text-neutral-500">
+            Lancio 1 ottobre 2026 ore 16:00 — <span className="text-brand-300">{MAX_SPOTS} posti founding</span> • stessa data del proxy e di <code className="rounded bg-white/5 px-1">LAUNCH_AT</code>
+          </p>
+          <p className="max-w-xl text-xs font-semibold leading-4 text-neutral-500">Visual: CountdownTimer esistente + posti da <code className="rounded bg-white/5 px-1">MAX_SPOTS</code>, nessuna metrica inventata.</p>
+        </motion.div>
+
+        <motion.div
+          className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"
           variants={{
             hidden: { opacity: 0, y: 20 },
             visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
