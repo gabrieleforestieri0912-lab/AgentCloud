@@ -522,11 +522,23 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           <p className="mt-4 max-w-xl 3xl:max-w-2xl text-[14px] xs:text-[15px] leading-relaxed text-neutral-300 sm:text-lg 3xl:text-xl">{w.heroSub as string}</p>
 
           {/* Countdown sotto al titolo al centro — full width su mobile per non tagliare */}
-          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none flex-col items-center gap-3 px-2 xs:px-0 3xl:max-w-[520px] 3xl:gap-4">
+          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none flex-col items-center gap-4 px-2 xs:px-0 3xl:max-w-[520px] 3xl:gap-4">
             <CountdownTimer className="w-full xs:w-auto 3xl:w-full" />
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs 3xl:text-sm font-medium text-neutral-300">
-              <Users className="h-3.5 w-3.5 text-brand-400" /> {total.toLocaleString(locale === "it" ? "it-IT" : locale === "es" ? "es-ES" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "en-US")} {w.inList as string}
-            </span>
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.35 }}
+              className="inline-flex items-center gap-2.5 rounded-full border border-brand-500/30 bg-brand-500/15 px-5 py-2.5 shadow-lg shadow-brand-500/10 backdrop-blur sm:px-6 sm:py-3"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm sm:h-9 sm:w-9">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+              </span>
+              <span className="text-lg font-black tracking-tight text-white sm:text-xl 3xl:text-2xl">
+                {total.toLocaleString(locale === "it" ? "it-IT" : locale === "es" ? "es-ES" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "en-US")}
+              </span>
+              <span className="text-sm font-bold tracking-wide text-brand-100 sm:text-base">{w.inList as string}</span>
+              <span className="hidden h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse sm:inline-block" aria-hidden />
+            </motion.div>
           </div>
 
           {/* Bottone per unirsi — apre il form — touch target 46px minimo — più grande su 3xl */}
