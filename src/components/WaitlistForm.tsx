@@ -537,7 +537,6 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 {total.toLocaleString(locale === "it" ? "it-IT" : locale === "es" ? "es-ES" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "en-US")}
               </span>
               <span className="text-sm font-bold tracking-wide text-brand-100 sm:text-base">{w.inList as string}</span>
-              <span className="hidden h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse sm:inline-block" aria-hidden />
             </motion.div>
           </div>
 
@@ -669,12 +668,6 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.25 }} className="mt-10 w-full max-w-2xl 3xl:max-w-3xl">
           <div className="rounded-3xl 3xl:rounded-[28px] border border-white/10 bg-neutral-900/70 p-3 sm:p-4 3xl:p-5 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur">
             <div className="rounded-2xl border border-white/5 bg-neutral-950 p-4 sm:p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-semibold text-brand-300">
-                  <Sparkles className="h-3 w-3" /> {w.demoLiveBadge as string}
-                </span>
-                <span className={`h-2 w-2 rounded-full ${demoSending ? "animate-pulse bg-amber-400" : "animate-pulse bg-emerald-400"}`} />
-              </div>
               {/* Altezza fissa più grande — chat demo più visibile su mobile e desktop */}
               <div ref={demoBodyRef} className="h-[380px] space-y-3 overflow-y-auto pr-1 sm:h-[440px] 3xl:h-[520px]">
                 {demoMessages.length === 0 ? (
@@ -1190,28 +1183,6 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           <button onClick={openForm} className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black">
             {w.heroCta as string} <ArrowRight className="h-4 w-4" />
           </button>
-        </div>
-      </section>
-
-      {/* Social proof — 3xl: container + stats più ariose */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-8 sm:px-6 3xl:px-8 3xl:py-12">
-        <div className="rounded-3xl border border-white/10 bg-neutral-900/60 p-6 3xl:p-10 backdrop-blur">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="text-xs 3xl:text-sm font-semibold tracking-widest text-brand-400">{w.socialBadge as string}</div>
-              <h3 className="mt-1 text-lg 3xl:text-xl font-bold text-white">{w.socialTitle as string}</h3>
-            </div>
-            <span className="rounded-full bg-white/5 px-3 py-1 text-xs 3xl:text-sm text-neutral-400">{w.socialPreviewBadge as string}</span>
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {WAITLIST_FEATURED_AGENTS.map((agent) => (
-              <div key={agent.slug} className="rounded-2xl border border-white/5 bg-white/[0.03] p-4 text-center">
-                <Users className="mx-auto h-5 w-5 text-brand-400" />
-                <div className="mt-2 text-sm font-extrabold text-white">{agent.name}</div>
-                <div className="mt-1 text-xs text-neutral-500">{w.agentPreviewNote as string}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 

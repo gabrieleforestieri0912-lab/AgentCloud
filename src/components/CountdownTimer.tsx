@@ -12,7 +12,7 @@
  */
 import { useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PartyPopper, Sparkles, Clock } from "lucide-react";
+import { PartyPopper, Sparkles } from "lucide-react";
 import { LAUNCH_AT, hasLaunched } from "@/lib/waitlist-constants";
 import { useLanguage } from "./LanguageProvider";
 
@@ -134,21 +134,13 @@ function TimerCard({
 }
 
 /**
- * Separatore a due punti con pulsazione ritmica continua
+ * Separatore a due punti statico (senza animazione)
  */
-function PulsingColon() {
+function StaticColon() {
   return (
     <div className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-0 xs:px-0.5 pb-5 select-none" aria-hidden="true">
-      <motion.span
-        animate={{ opacity: [1, 0.25, 1], scale: [1, 0.85, 1] }}
-        transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-        className="h-1 w-1 xs:h-1.5 xs:w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]"
-      />
-      <motion.span
-        animate={{ opacity: [1, 0.25, 1], scale: [1, 0.85, 1] }}
-        transition={{ duration: 1, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
-        className="h-1 w-1 xs:h-1.5 xs:w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]"
-      />
+      <span className="h-1 w-1 xs:h-1.5 xs:w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]" />
+      <span className="h-1 w-1 xs:h-1.5 xs:w-1.5 rounded-full bg-brand-400 shadow-[0_0_6px_rgba(3,139,254,0.8)]" />
     </div>
   );
 }
@@ -168,19 +160,7 @@ export default function CountdownTimer({ className = "" }: { className?: string 
       {/* Bagliore radiale d'atmosfera sullo sfondo */}
       <div className="pointer-events-none absolute -top-10 left-1/2 h-24 w-48 -translate-x-1/2 rounded-full bg-brand-500/15 blur-2xl" />
 
-      {/* Intestazione del timer con radar pulse */}
-      <div className="relative z-10 mb-3 flex items-center justify-center gap-2">
-        <span className="relative flex h-2.5 w-2.5 shrink-0">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-gradient-to-r from-brand-400 to-pink-400" />
-        </span>
-        <div className="flex items-center gap-1.5">
-          <Clock className="h-3 w-3 text-brand-400" />
-          <span className="text-[11px] font-extrabold uppercase tracking-widest text-brand-300">
-            {dict.countdownTimer.launchDate}
-          </span>
-        </div>
-      </div>
+
 
       {/* Blocchi numerici — gap ridotto su mobile per evitare overflow orizzontale */}
       <div className="relative z-10 flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2.5">
@@ -191,7 +171,7 @@ export default function CountdownTimer({ className = "" }: { className?: string 
               label={dict.countdownTimer[UNIT_KEYS[i]]}
               isAccent={UNIT_KEYS[i] === "seconds"}
             />
-            {i < units.length - 1 && <PulsingColon />}
+            {i < units.length - 1 && <StaticColon />}
           </div>
         ))}
       </div>
