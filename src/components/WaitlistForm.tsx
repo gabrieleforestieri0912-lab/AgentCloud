@@ -483,8 +483,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </div>
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
-      {/* NAVBAR fissa a tutta larghezza — logo a sinistra, bottoni all'estremo destro — sfondo sfumato per leggibilità in scroll */}
-      <header className="fixed left-0 right-0 top-0 z-30 bg-[#1e1e24]/85 backdrop-blur-md">
+      {/* NAVBAR fissa trasparente come richiesto */}
+      <header className="fixed left-0 right-0 top-0 z-30 bg-transparent">
         <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-10 3xl:px-14 3xl:py-6">
           <div className="flex items-center gap-2.5">
             <div className="relative h-8 w-8">
@@ -665,25 +665,30 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           </AnimatePresence>
         </motion.div>
 
-        {/* Demo live: logo + benvenuto + 4 suggerimenti quando vuota, poi chat reale */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.25 }} className="mt-10 w-full max-w-xl 3xl:max-w-2xl">
-          <div className="rounded-3xl 3xl:rounded-[28px] border border-white/10 bg-neutral-900/70 p-3 3xl:p-4 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur">
-            <div className="rounded-2xl border border-white/5 bg-neutral-950 p-4">
+        {/* Demo live: logo + benvenuto + 4 suggerimenti quando vuota, poi chat reale — più grande e visibile */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.25 }} className="mt-10 w-full max-w-2xl 3xl:max-w-3xl">
+          <div className="rounded-3xl 3xl:rounded-[28px] border border-white/10 bg-neutral-900/70 p-3 sm:p-4 3xl:p-5 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur">
+            <div className="rounded-2xl border border-white/5 bg-neutral-950 p-4 sm:p-5">
               <div className="mb-3 flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-semibold text-brand-300">
                   <Sparkles className="h-3 w-3" /> {w.demoLiveBadge as string}
                 </span>
                 <span className={`h-2 w-2 rounded-full ${demoSending ? "animate-pulse bg-amber-400" : "animate-pulse bg-emerald-400"}`} />
               </div>
-              {/* Altezza fissa con scroll interno: la card non si allunga al crescere dei messaggi */}
-              <div ref={demoBodyRef} className="h-72 3xl:h-80 space-y-3 overflow-y-auto pr-1">
+              {/* Altezza fissa più grande — chat demo più visibile su mobile e desktop */}
+              <div ref={demoBodyRef} className="h-[380px] space-y-3 overflow-y-auto pr-1 sm:h-[440px] 3xl:h-[520px]">
                 {demoMessages.length === 0 ? (
                   <div className="flex flex-col items-center gap-4 py-2">
                     <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
                       <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="40px" />
                     </div>
                     <div className="w-full rounded-2xl rounded-bl-sm border border-brand-500/20 bg-linear-to-br from-brand-500/15 to-pink-500/15 px-4 py-3 text-left text-sm leading-relaxed text-white">
-                      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300"><span className="h-5 w-5 rounded-full bg-linear-to-r from-brand-500 to-pink-500" /> AgentCloud</div>
+                      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300">
+                        <span className="relative h-5 w-5 overflow-hidden rounded-full border border-white/10 bg-white">
+                          <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="20px" />
+                        </span>
+                        AgentCloud
+                      </div>
                       <p className="whitespace-pre-line">{w.demoWelcome as string}</p>
                     </div>
                     <div className="grid w-full gap-2">
@@ -704,7 +709,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                   demoMessages.map((message, index) => (
                     <div key={`${index}-${message.role}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                       <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-sm bg-white text-neutral-900" : "rounded-bl-sm border border-brand-500/20 bg-linear-to-br from-brand-500/15 to-pink-500/15 text-white"}`}>
-                        {message.role === "assistant" && <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300"><span className="h-5 w-5 rounded-full bg-linear-to-r from-brand-500 to-pink-500" /> AgentCloud</div>}
+                        {message.role === "assistant" && (
+                          <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300">
+                            <span className="relative h-5 w-5 overflow-hidden rounded-full border border-white/10 bg-white">
+                              <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="20px" />
+                            </span>
+                            AgentCloud
+                          </div>
+                        )}
                         {message.content}
                       </div>
                     </div>
