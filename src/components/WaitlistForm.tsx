@@ -521,23 +521,23 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           </h1>
           <p className="mt-4 max-w-xl 3xl:max-w-2xl text-[14px] xs:text-[15px] leading-relaxed text-neutral-300 sm:text-lg 3xl:text-xl">{w.heroSub as string}</p>
 
-          {/* Countdown sotto al titolo al centro — full width su mobile per non tagliare */}
-          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none flex-col items-center gap-4 px-2 xs:px-0 3xl:max-w-[520px] 3xl:gap-4">
-            <CountdownTimer className="w-full xs:w-auto 3xl:w-full" />
+          {/* Counter: numero waitlist ben visibile SOPRA il countdown */}
+          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none flex-col items-center gap-5 px-2 xs:px-0 3xl:max-w-[520px] 3xl:gap-5">
             <motion.div
               initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.35 }}
-              className="inline-flex items-center gap-2.5 rounded-full border border-brand-500/30 bg-brand-500/15 px-5 py-2.5 shadow-lg shadow-brand-500/10 backdrop-blur sm:px-6 sm:py-3"
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex w-full flex-col items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-5 backdrop-blur shadow-[0_8px_32px_rgba(0,0,0,0.35)] sm:px-8 sm:py-6"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm sm:h-9 sm:w-9">
-                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-300">
+                <Users className="h-3.5 w-3.5" /> {w.inList as string}
               </span>
-              <span className="text-lg font-black tracking-tight text-white sm:text-xl 3xl:text-2xl">
+              <span className="bg-linear-to-b from-white to-neutral-300 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl 3xl:text-6xl">
                 {total.toLocaleString(locale === "it" ? "it-IT" : locale === "es" ? "es-ES" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "en-US")}
               </span>
-              <span className="text-sm font-bold tracking-wide text-brand-100 sm:text-base">{w.inList as string}</span>
+              <span className="text-xs font-semibold tracking-wide text-neutral-400 sm:text-sm">persone in attesa • posti limitati</span>
             </motion.div>
+            <CountdownTimer className="w-full xs:w-auto 3xl:w-full" />
           </div>
 
           {/* Bottone per unirsi — apre il form — touch target 46px minimo — più grande su 3xl */}
@@ -794,54 +794,6 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           </div>
           <p className="mt-4 text-center text-xs text-neutral-500">{w.integrazioniMore as string}</p>
         </div>
-      </section>
-
-      {/* CHI SIAMO — founders — 3xl: container largo, card più spaziose */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
-        <div className="mx-auto max-w-3xl 3xl:max-w-4xl text-center">
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">{w.chiSiamoBadge as string}</span>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">{w.chiSiamoTitle as string}</h2>
-          <p className="mx-auto mt-3 max-w-2xl 3xl:max-w-3xl text-sm 3xl:text-base leading-relaxed text-neutral-400">{w.chiSiamoSub as string}</p>
-        </div>
-        <div className="mt-8 3xl:mt-10 grid gap-6 3xl:gap-8 sm:grid-cols-3">
-          {[
-            {
-              name: "Gabriele Forestieri",
-              role: "Developer",
-              img: "/founders/gabriele_forestieri.jpg",
-              bio: w.foundersGabBio as string,
-              instagram: "https://www.instagram.com/gabrieleforestieri_/",
-            },
-            {
-              name: "Alle Cerchiari",
-              role: "Social & Marketing",
-              img: "/founders/alle_cerchiari.jpeg",
-              bio: w.foundersAlleBio as string,
-              instagram: "https://www.instagram.com/_allespy_/",
-            },
-            {
-              name: "Matteo Parubi",
-              role: "Stripe & Pricing",
-              sub: "Paru",
-              img: "/founders/matteo_parubi.jpeg",
-              bio: w.foundersMatteoBio as string,
-              instagram: "https://www.instagram.com/matteo.parubi/",
-            },
-          ].map((m) => (
-            <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur">
-              <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border border-white/10 bg-neutral-800">
-                <Image src={m.img} alt={m.name} fill sizes="96px" className="object-cover" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-white">{m.name} {m.sub ? <span className="font-normal text-neutral-400">· {m.sub}</span> : null}</h3>
-              <p className="mt-1 text-xs font-bold uppercase tracking-widest text-brand-300">{m.role}</p>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-400">{m.bio}</p>
-              <a href={m.instagram} target="_blank" rel="noopener noreferrer" aria-label={`Instagram di ${m.name}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
-                <BrandIcon brand={BRANDS.instagram} size={16} color="currentColor" /> Instagram
-              </a>
-            </div>
-          ))}
-        </div>
-        <p className="mt-6 text-center text-xs text-neutral-500">{w.teamPhotosNote as string} <a href="/about" className="font-semibold text-brand-400 hover:text-brand-300">{w.teamPhotosLink as string}</a>.</p>
       </section>
 
       {/* MODAL FORM — appare su click bottoni — mobile-safe: dvh + overscroll-contain + input 16px anti-zoom */}
@@ -1223,6 +1175,54 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             </button>
           </div>
         </div>
+      </section>
+
+      {/* CHI SIAMO — founders — in fondo come richiesto — 3xl: container largo, card più spaziose */}
+      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
+        <div className="mx-auto max-w-3xl 3xl:max-w-4xl text-center">
+          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">{w.chiSiamoBadge as string}</span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">{w.chiSiamoTitle as string}</h2>
+          <p className="mx-auto mt-3 max-w-2xl 3xl:max-w-3xl text-sm 3xl:text-base leading-relaxed text-neutral-400">{w.chiSiamoSub as string}</p>
+        </div>
+        <div className="mt-8 3xl:mt-10 grid gap-6 3xl:gap-8 sm:grid-cols-3">
+          {[
+            {
+              name: "Gabriele Forestieri",
+              role: "Developer",
+              img: "/founders/gabriele_forestieri.jpg",
+              bio: w.foundersGabBio as string,
+              instagram: "https://www.instagram.com/gabrieleforestieri_/",
+            },
+            {
+              name: "Alle Cerchiari",
+              role: "Social & Marketing",
+              img: "/founders/alle_cerchiari.jpeg",
+              bio: w.foundersAlleBio as string,
+              instagram: "https://www.instagram.com/_allespy_/",
+            },
+            {
+              name: "Matteo Parubi",
+              role: "Stripe & Pricing",
+              sub: "Paru",
+              img: "/founders/matteo_parubi.jpeg",
+              bio: w.foundersMatteoBio as string,
+              instagram: "https://www.instagram.com/matteo.parubi/",
+            },
+          ].map((m) => (
+            <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur">
+              <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border border-white/10 bg-neutral-800">
+                <Image src={m.img} alt={m.name} fill sizes="96px" className="object-cover" />
+              </div>
+              <h3 className="mt-4 text-base font-bold text-white">{m.name} {m.sub ? <span className="font-normal text-neutral-400">· {m.sub}</span> : null}</h3>
+              <p className="mt-1 text-xs font-bold uppercase tracking-widest text-brand-300">{m.role}</p>
+              <p className="mt-3 text-sm leading-relaxed text-neutral-400">{m.bio}</p>
+              <a href={m.instagram} target="_blank" rel="noopener noreferrer" aria-label={`Instagram di ${m.name}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
+                <BrandIcon brand={BRANDS.instagram} size={16} color="currentColor" /> Instagram
+              </a>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-center text-xs text-neutral-500">{w.teamPhotosNote as string} <a href="/about" className="font-semibold text-brand-400 hover:text-brand-300">{w.teamPhotosLink as string}</a>.</p>
       </section>
 
       {/* Footer contatto + social — sfondo opaco: dietro c'è il gradiente globale fixed, e il footer trasparente lascerebbe trasparire il contenuto durante lo scroll */}
