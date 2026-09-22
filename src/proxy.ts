@@ -116,6 +116,22 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
+    // 2b. Bypass via codice di accesso: chi ha inserito il codice admin
+    // (waitlist_session / ac_wl_bypass) può navigare ovunque anche pre-lancio.
+    const hasWaitlistBypass =
+      request.cookies.get("waitlist_session")?.value ||
+      request.cookies.get("ac_wl_bypass")?.value;
+    if (hasWaitlistBypass) {
+      let res: NextResponse = NextResponse.next();
+      try {
+        const resolved = await resolveSession(request);
+        res = resolved.response;
+      } catch {
+        res = NextResponse.next();
+      }
+      return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
+    }
+
     // 3. API necessarie per la waitlist (POST/GET /api/waitlist + subroutes) e webhook/callback esterni
     const isWaitlistApi = pathname === "/api/waitlist" || pathname.startsWith("/api/waitlist/");
     // Copilot browser (estensione): la verifica della sessione deve rispondere

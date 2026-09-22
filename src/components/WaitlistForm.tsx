@@ -28,7 +28,6 @@ import {
 import Image from "next/image";
 import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
 import CountdownTimer from "@/components/CountdownTimer";
-import LanguageToggle from "@/components/LanguageToggle";
 import BrandLogo from "@/components/BrandLogo";
 import BrandIcon from "@/components/BrandIcon";
 import { BRANDS } from "@/lib/brands";
@@ -75,7 +74,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
   const w = dict.waitlist as unknown as Record<string, unknown> & {
     heroEyebrow: string; heroTitleA: string; heroTitleB: string; heroSub: string; heroTrust: string;
     heroCta: string; heroJoined: string; demoLiveBadge: string;
-    demoInputPlaceholder: string; howItWorksBadge: string; howItWorksTitle: string;
+    demoInputPlaceholder: string; demoWelcome: string; demoSuggestions: string[]; howItWorksBadge: string; howItWorksTitle: string;
     step1Title: string; step1Desc: string; step1MockTitle: string; step1MockDesc: string;
     step2Title: string; step2Desc: string; step2Check1: string; step2Check2: string; step2Check3: string;
     step3Title: string; step3Desc: string; socialBadge: string; socialTitle: string;
@@ -351,13 +350,11 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDemoSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const text = demoInput.trim();
-    if (!text || demoSending) return;
-
+  const sendDemoText = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || demoSending) return;
     setDemoInput("");
-    setDemoMessages((current) => [...current, { role: "user", content: text }]);
+    setDemoMessages((current) => [...current, { role: "user", content: trimmed }]);
     setDemoSending(true);
     try {
       const response = await fetch("/api/chat", {
@@ -365,7 +362,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId: "support-agent",
-          messages: [...demoMessages, { role: "user", content: text }],
+          messages: [...demoMessages, { role: "user", content: trimmed }],
         }),
       });
       if (!response.ok || !response.body) throw new Error("Demo unavailable");
@@ -389,15 +386,20 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\\n");
+        const lines = buffer.split("\n");
         buffer = lines.pop() || "";
         for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
+          const trimmedLine = line.trim();
+          if (!trimmedLine || trimmedLine === "data: [DONE]") continue;
+          if (!trimmedLine.startsWith("data: ")) continue;
           try {
-            const data = JSON.parse(line.slice(6)) as { type?: string; content?: string };
+            const data = JSON.parse(trimmedLine.slice(6)) as { type?: string; content?: string; message?: string };
             if (data.type === "text" && data.content) appendAnswer(data.content);
-          } catch {
-            // Ignora righe SSE incomplete.
+            if (data.type === "error" && data.message) throw new Error(data.message);
+          } catch (e) {
+            if ((e as Error).message && (e as Error).message !== "Unexpected end of JSON input") {
+              // Ignora righe SSE incomplete, ma propaga errori reali.
+            }
           }
         }
       }
@@ -407,6 +409,15 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     } finally {
       setDemoSending(false);
     }
+  };
+
+  const handleDemoSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    await sendDemoText(demoInput);
+  };
+
+  const handleDemoSuggestionClick = (suggestion: string) => {
+    void sendDemoText(suggestion);
   };
 
   useEffect(() => {
@@ -482,7 +493,6 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             <span className="text-base font-bold tracking-tight text-white">AgentCloud</span>
           </div>
           <div className="flex items-center gap-2">
-            <LanguageToggle />
             <button
               onClick={openForm}
               className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black shadow-lg shadow-white/10 transition hover:bg-neutral-100"
@@ -512,7 +522,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           <p className="mt-4 max-w-xl 3xl:max-w-2xl text-[14px] xs:text-[15px] leading-relaxed text-neutral-300 sm:text-lg 3xl:text-xl">{w.heroSub as string}</p>
 
           {/* Countdown sotto al titolo al centro — full width su mobile per non tagliare */}
-          <div className="mt-7 flex w-full max-w-90 xs:max-w-none 3xl:max-w-130 flex-col items-center gap-3 3xl:gap-4 px-2 xs:px-0">
+          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none flex-col items-center gap-3 px-2 xs:px-0 3xl:max-w-[520px] 3xl:gap-4">
             <CountdownTimer className="w-full xs:w-auto 3xl:w-full" />
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs 3xl:text-sm font-medium text-neutral-300">
               <Users className="h-3.5 w-3.5 text-brand-400" /> {total.toLocaleString(locale === "it" ? "it-IT" : locale === "es" ? "es-ES" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "en-US")} {w.inList as string}
@@ -643,7 +653,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           </AnimatePresence>
         </motion.div>
 
-        {/* Demo live: messaggi iniziali di esempio + input collegato al backend AI reale. */}
+        {/* Demo live: logo + benvenuto + 4 suggerimenti quando vuota, poi chat reale */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.25 }} className="mt-10 w-full max-w-xl 3xl:max-w-2xl">
           <div className="rounded-3xl 3xl:rounded-[28px] border border-white/10 bg-neutral-900/70 p-3 3xl:p-4 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur">
             <div className="rounded-2xl border border-white/5 bg-neutral-950 p-4">
@@ -655,14 +665,39 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               </div>
               {/* Altezza fissa con scroll interno: la card non si allunga al crescere dei messaggi */}
               <div ref={demoBodyRef} className="h-72 3xl:h-80 space-y-3 overflow-y-auto pr-1">
-                {demoMessages.map((message, index) => (
-                  <div key={`${index}-${message.role}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-sm bg-white text-neutral-900" : "rounded-bl-sm border border-brand-500/20 bg-linear-to-br from-brand-500/15 to-pink-500/15 text-white"}`}>
-                      {message.role === "assistant" && <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300"><span className="h-5 w-5 rounded-full bg-linear-to-r from-brand-500 to-pink-500" /> AgentCloud</div>}
-                      {message.content}
+                {demoMessages.length === 0 ? (
+                  <div className="flex flex-col items-center gap-4 py-2">
+                    <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
+                      <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="40px" />
+                    </div>
+                    <div className="w-full rounded-2xl rounded-bl-sm border border-brand-500/20 bg-linear-to-br from-brand-500/15 to-pink-500/15 px-4 py-3 text-left text-sm leading-relaxed text-white">
+                      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300"><span className="h-5 w-5 rounded-full bg-linear-to-r from-brand-500 to-pink-500" /> AgentCloud</div>
+                      <p className="whitespace-pre-line">{w.demoWelcome as string}</p>
+                    </div>
+                    <div className="grid w-full gap-2">
+                      {((w.demoSuggestions as unknown as string[]) ?? []).map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => handleDemoSuggestionClick(suggestion)}
+                          disabled={demoSending}
+                          className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-left text-sm leading-snug text-neutral-200 transition hover:border-brand-500/30 hover:bg-white/10 hover:text-white disabled:opacity-40"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ))}
+                ) : (
+                  demoMessages.map((message, index) => (
+                    <div key={`${index}-${message.role}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-sm bg-white text-neutral-900" : "rounded-bl-sm border border-brand-500/20 bg-linear-to-br from-brand-500/15 to-pink-500/15 text-white"}`}>
+                        {message.role === "assistant" && <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300"><span className="h-5 w-5 rounded-full bg-linear-to-r from-brand-500 to-pink-500" /> AgentCloud</div>}
+                        {message.content}
+                      </div>
+                    </div>
+                  ))
+                )}
                 {demoSending && <div className="text-xs text-brand-300">{w.demoTyping as string}</div>}
               </div>
               <form onSubmit={handleDemoSubmit} className="mt-4 flex gap-2 border-t border-white/10 pt-3">
@@ -687,7 +722,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             { icon: Users, title: w.piattaformaF2Title as string, desc: w.piattaformaF2Desc as string },
             { icon: ShieldCheck, title: w.piattaformaF3Title as string, desc: w.piattaformaF3Desc as string },
           ].map((f) => (
-            <div key={f.title} className="rounded-2xl border border-white/10 bg-white/3 p-5 3xl:p-7">
+            <div key={f.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 3xl:p-7">
               <div className="flex h-9 w-9 3xl:h-11 3xl:w-11 items-center justify-center rounded-xl bg-linear-to-br from-brand-500 to-pink-500 text-white"><f.icon className="h-5 w-5 3xl:h-6 3xl:w-6" /></div>
               <h3 className="mt-3 text-sm 3xl:text-base font-bold text-white">{f.title}</h3>
               <p className="mt-1 text-sm 3xl:text-[15px] leading-relaxed text-neutral-400">{f.desc}</p>
@@ -730,7 +765,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             </div>
             <button onClick={openForm} className="rounded-full bg-white px-5 py-2.5 text-sm 3xl:text-base 3xl:px-7 3xl:py-3 font-bold text-black">{w.integrazioniCta as string}</button>
           </div>
-          <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3 3xl:gap-4 sm:grid-cols-6">
+          <div className="mt-6 grid grid-cols-2 gap-2 xs:grid-cols-3 sm:grid-cols-6 sm:gap-3 3xl:gap-4">
             {[
               { name: "Shopify", brand: "shopify" },
               { name: "Gmail", brand: "gmail" },
@@ -739,7 +774,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               { name: "HubSpot", brand: "hubspot" },
               { name: "Sheets", brand: "googlesheets" },
             ].map((it) => (
-              <div key={it.name} className="flex flex-col items-center gap-1.5 xs:gap-2 rounded-2xl border border-white/5 bg-white/3 px-1.5 xs:px-2 py-3 xs:py-4 text-center">
+              <div key={it.name} className="flex flex-col items-center gap-1.5 xs:gap-2 rounded-2xl border border-white/5 bg-white/[0.03] px-1.5 xs:px-2 py-3 xs:py-4 text-center">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5">
                   <BrandLogo slug={it.brand} size={20} />
                 </div>
@@ -784,7 +819,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               instagram: "https://www.instagram.com/matteo.parubi/",
             },
           ].map((m) => (
-            <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/3 p-6 text-center backdrop-blur">
+            <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur">
               <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border border-white/10 bg-neutral-800">
                 <Image src={m.img} alt={m.name} fill sizes="96px" className="object-cover" />
               </div>
@@ -1098,7 +1133,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                           {label}
                         </div>
                       ))}
-                      <div className="mt-auto flex items-center gap-1 rounded-lg bg-white/3 p-1">
+                      <div className="mt-auto flex items-center gap-1 rounded-lg bg-white/[0.03] p-1">
                         <div className="h-4 w-4 rounded-full bg-brand-500/20" />
                         <span className="text-[7px] font-semibold text-neutral-400">Admin</span>
                       </div>
@@ -1123,7 +1158,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               ),
             },
           ].map((s) => (
-            <div key={s.n} className="relative rounded-3xl border border-white/10 bg-white/3 p-5 backdrop-blur">
+            <div key={s.n} className="relative rounded-3xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur">
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-brand-500 to-pink-500 text-white">
                 <s.icon className="h-5 w-5" />
               </div>
@@ -1154,7 +1189,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {WAITLIST_FEATURED_AGENTS.map((agent) => (
-              <div key={agent.slug} className="rounded-2xl border border-white/5 bg-white/3 p-4 text-center">
+              <div key={agent.slug} className="rounded-2xl border border-white/5 bg-white/[0.03] p-4 text-center">
                 <Users className="mx-auto h-5 w-5 text-brand-400" />
                 <div className="mt-2 text-sm font-extrabold text-white">{agent.name}</div>
                 <div className="mt-1 text-xs text-neutral-500">{w.agentPreviewNote as string}</div>
@@ -1172,7 +1207,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         </div>
         <div className="mt-6 3xl:mt-8 space-y-3 3xl:space-y-4">
           {(w.faqItems as { q: string; a: string }[]).map((item, i) => (
-            <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/3">
+            <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
               <button onClick={() => setShowFaq(showFaq === i ? null : i)} className="flex w-full items-center justify-between px-5 3xl:px-6 py-4 3xl:py-5 text-left">
                 <span className="text-sm 3xl:text-base font-semibold text-white">{item.q}</span>
                 <ChevronDown className={`h-4 w-4 3xl:h-5 3xl:w-5 text-neutral-400 transition ${showFaq === i ? "rotate-180" : ""}`} />

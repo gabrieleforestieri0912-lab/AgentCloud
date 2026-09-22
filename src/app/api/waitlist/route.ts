@@ -132,52 +132,48 @@ export async function POST(request: Request) {
     }
 
     if (validation.isAccessCode) {
-      if (!BYPASS_ENABLED) {
-        logAudit("waitlist_access_code_disabled", { ip: clientIp });
-        return NextResponse.json(
-          { error: "Accesso beta non disponibile al momento." },
-          { status: 403 },
-        );
+      // Codice admin (ACCESS_CODE, default T5PMY2R2) — bypass diretto senza
+      // dipendenza da Supabase Functions né da ENABLE_WAITLIST_BETA_BYPASS.
+      // Il controllo autorevole è isValidAccessCode() (normalize + constant-time).
+      logAudit("waitlist_access_code_valid", { ip: clientIp, code: validation.email });
+      const total = await getTotalCount().catch(() => null);
+      // Se la funzione esterna è configurata, prova a usarla per arricchire
+      // il token; altrimenti genera un token locale.
+      let sessionToken: string | null = null;
+      let expiresIn = 60 * 60 * 24 * 7; // 7 giorni di default
+      if (BYPASS_ENABLED && SUPABASE_URL && SUPABASE_ANON_KEY) {
+        try {
+          const validateRes = await fetch(`${SUPABASE_URL}/functions/v1/validate-waitlist-code`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+            body: JSON.stringify({ code: validation.email }),
+          });
+          const validateData = await validateRes.json().catch(() => ({}));
+          if (validateRes.ok && validateData.session_token) {
+            sessionToken = validateData.session_token;
+            expiresIn = validateData.expires_in || expiresIn;
+          }
+        } catch {}
       }
-      logAudit("waitlist_access_code_validating", { ip: clientIp });
-      try {
-        const validateRes = await fetch(`${SUPABASE_URL}/functions/v1/validate-waitlist-code`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({ code: validation.email }),
-        });
-        const validateData = await validateRes.json();
-        if (!validateRes.ok) {
-          logAudit("waitlist_access_code_invalid", { ip: clientIp, error: validateData.error });
-          return NextResponse.json(
-            { error: validateData.message || "Codice non valido" },
-            { status: validateRes.status },
-          );
-        }
-        logAudit("waitlist_access_code_valid", { ip: clientIp, role: validateData.role });
-        const total = await getTotalCount().catch(() => null);
-        const res = NextResponse.json({
-          success: true,
-          accessGranted: true,
-          total,
-        });
-        res.cookies.set("waitlist_session", validateData.session_token, {
-          path: "/",
-          maxAge: validateData.expires_in || 1800,
-          sameSite: "lax",
-          secure: true,
-        });
-        return res;
-      } catch (e) {
-        console.error("Waitlist code validation failed:", e);
-        return NextResponse.json(
-          { error: "Errore durante la validazione del codice." },
-          { status: 500 },
-        );
+      if (!sessionToken) {
+        sessionToken = `wl_${crypto.randomUUID().replace(/-/g, "")}_${Date.now().toString(36)}`;
       }
+      const res = NextResponse.json({ success: true, accessGranted: true, total });
+      res.cookies.set("waitlist_session", sessionToken, {
+        path: "/",
+        maxAge: expiresIn,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+      });
+      // Segna anche il bypass per il proxy (lettura rapida senza httpOnly su client non necessaria)
+      res.cookies.set("ac_wl_bypass", "1", {
+        path: "/",
+        maxAge: expiresIn,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+      return res;
     }
 
     if (hasLaunched()) {
