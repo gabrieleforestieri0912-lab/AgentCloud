@@ -24,6 +24,12 @@ import {
   MessageSquare,
   Store,
   Plug,
+  CreditCard,
+  Settings,
+  PenTool,
+  Clock,
+  Headset,
+  Wrench,
 } from "lucide-react";
 import Image from "next/image";
 import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
@@ -87,6 +93,9 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     foundersGabBio: string; foundersAlleBio: string; foundersMatteoBio: string;
     teamPhotosNote: string; teamPhotosLink: string;
     integrazioniBadge: string; integrazioniTitle: string; integrazioniSub: string; integrazioniCta: string; integrazioniMore: string;
+    customBadge: string; customTitle: string; customSub: string;
+    customB1Title: string; customB1Desc: string; customB2Title: string; customB2Desc: string; customB3Title: string; customB3Desc: string;
+    customFormTitle: string; customFormHint: string; customIdeaPh: string; customIntegrationsPh: string; customBudgetPh: string; customCta: string; customNote: string;
     socialPreviewBadge: string; agentPreviewNote: string;
     piattaformaBadge: string; piattaformaTitle: string; piattaformaSub: string;
     piattaformaF1Title: string; piattaformaF1Desc: string; piattaformaF2Title: string; piattaformaF2Desc: string;
@@ -765,6 +774,100 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         </div>
       </section>
 
+      {/* AGENTI PERSONALIZZATI — richiesta su misura, completa e fantastica */}
+      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
+        <div className="mx-auto max-w-3xl 3xl:max-w-4xl text-center">
+          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">{w.customBadge as string}</span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">{w.customTitle as string}</h2>
+          <p className="mx-auto mt-3 max-w-2xl 3xl:max-w-3xl text-sm 3xl:text-base leading-relaxed text-neutral-400">{w.customSub as string}</p>
+        </div>
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+          {/* Benefici */}
+          <div className="space-y-4">
+            {[
+              { icon: PenTool, title: w.customB1Title as string, desc: w.customB1Desc as string },
+              { icon: Plug, title: w.customB2Title as string, desc: w.customB2Desc as string },
+              { icon: Clock, title: w.customB3Title as string, desc: w.customB3Desc as string },
+            ].map((b) => (
+              <div key={b.title} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-400">
+                  <b.icon size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">{b.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-neutral-400">{b.desc}</p>
+                </div>
+              </div>
+            ))}
+            <div className="rounded-2xl border border-brand-500/20 bg-brand-500/10 p-5">
+              <div className="flex items-center gap-2 text-sm font-bold text-white">
+                <Sparkles size={16} className="text-brand-400" /> Come funziona
+              </div>
+              <ol className="mt-3 space-y-2 text-sm text-neutral-300">
+                <li className="flex gap-2">
+                  <span className="font-bold text-brand-400">1.</span> Racconti l&apos;idea — 2 minuti nel form
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-brand-400">2.</span> Ricevi proposta e preventivo in 24h
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-brand-400">3.</span> Consegna in 3-7 giorni, già nel tuo dashboard
+                </li>
+              </ol>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-bold text-emerald-300">
+                  <Check size={12} /> Senza codice
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2.5 py-1 text-xs font-semibold text-neutral-300">GDPR-ready</span>
+              </div>
+            </div>
+          </div>
+          {/* Form mock fantastico */}
+          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-900 p-6 shadow-2xl shadow-black/30">
+            <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-brand-500/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-pink-500/15 blur-3xl" />
+            <div className="relative">
+              <div className="mb-1 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500 text-white">
+                  <Wrench size={16} />
+                </div>
+                <h3 className="text-base font-bold text-white">{w.customFormTitle as string}</h3>
+              </div>
+              <p className="text-sm text-neutral-400">{w.customFormHint as string}</p>
+              <div className="mt-5 space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-neutral-300">La tua idea</label>
+                  <div className="mt-1 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm text-neutral-500">{w.customIdeaPh as string}</div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-neutral-300">Integrazioni</label>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {["shopify", "gmail", "slack", "stripe", "notion"].map((s) => (
+                      <span key={s} className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs font-medium text-neutral-300">
+                        <BrandLogo slug={s} size={12} />
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-1 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2 text-sm text-neutral-500">{w.customIntegrationsPh as string}</div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-neutral-300">Budget</label>
+                  <div className="mt-1 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm text-neutral-500">{w.customBudgetPh as string}</div>
+                </div>
+                <button onClick={openForm} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition hover:bg-brand-400">
+                  <Wrench size={16} /> {w.customCta as string} <ArrowRight size={16} />
+                </button>
+                <p className="text-center text-xs text-neutral-500">{w.customNote as string}</p>
+                <div className="flex items-center justify-center gap-1.5 pt-1 text-xs text-neutral-500">
+                  <Headset size={12} className="text-brand-400" /> Supporto dedicato • Risposta in 24h
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* MODAL FORM — appare su click bottoni — mobile-safe: dvh + overscroll-contain + input 16px anti-zoom */}
       <AnimatePresence>
         {showForm && (
@@ -1039,7 +1142,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 // Dashboard preview compatta — altezza ridotta e sidebar fedele a DashboardShell
                 <div className="overflow-hidden rounded-2xl border border-white/10 bg-neutral-950">
                   <div className="flex h-28">
-                    {/* Sidebar fedele allo stile reale: bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] */}
+                    {/* Sidebar fedele allo stile reale: bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] — ora riempita */}
                     <div className="flex w-24 shrink-0 flex-col gap-1 border-r border-white/6 bg-neutral-950/80 p-2 backdrop-blur-2xl">
                       <div className="mb-1 flex items-center gap-1.5 border-b border-white/6 pb-1.5">
                         <div className="relative h-4 w-4 overflow-hidden rounded-md">
@@ -1052,6 +1155,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                         { label: "Chat", icon: MessageSquare, active: false },
                         { label: "Agenti", icon: Store, active: false },
                         { label: "Integrazioni", icon: Plug, active: false },
+                        { label: "Fatturazione", icon: CreditCard, active: false },
+                        { label: "Impostazioni", icon: Settings, active: false },
                       ].map(({ label, icon: Icon, active }) => (
                         <div
                           key={label}
@@ -1063,9 +1168,19 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                           {label}
                         </div>
                       ))}
-                      <div className="mt-auto flex items-center gap-1 rounded-lg bg-white/[0.03] p-1">
-                        <div className="h-4 w-4 rounded-full bg-brand-500/20" />
-                        <span className="text-[7px] font-semibold text-neutral-400">Admin</span>
+                      <div className="mt-auto space-y-1">
+                        <div className="rounded-lg bg-white/[0.04] border border-white/5 p-1.5">
+                          <div className="text-[6px] font-bold uppercase tracking-widest text-neutral-500">Utilizzo</div>
+                          <div className="mt-1 h-1 overflow-hidden rounded-full bg-white/10">
+                            <div className="h-full w-[68%] rounded-full bg-linear-to-r from-brand-500 to-pink-500" />
+                          </div>
+                          <div className="mt-1 text-[6px] font-semibold text-neutral-400">1.2k / 2k token</div>
+                        </div>
+                        <div className="flex items-center gap-1 rounded-lg bg-white/[0.03] p-1">
+                          <div className="h-4 w-4 rounded-full bg-brand-500/20" />
+                          <span className="text-[7px] font-semibold text-neutral-400">Admin</span>
+                          <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        </div>
                       </div>
                     </div>
                     {/* Main — compatto */}

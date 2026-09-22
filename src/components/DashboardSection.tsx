@@ -14,14 +14,17 @@ import {
   Clock,
   CreditCard,
   Headset,
+  HelpCircle,
   History,
   LayoutDashboard,
   Mail,
   PenLine,
   Plug,
+  Settings,
   ShoppingBag,
   Sparkles,
   UserPlus,
+  Users,
   Zap,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -29,7 +32,7 @@ import { useLanguage } from "./LanguageProvider";
 
 // Icone per le voci della sidebar demo — allineate per indice con la lista
 // localizzata (Overview, Agents, Integrations, Runs, Billing).
-const SIDEBAR_ICONS = [LayoutDashboard, Bot, Plug, History, CreditCard];
+const SIDEBAR_ICONS = [LayoutDashboard, Bot, Plug, History, CreditCard, Settings, HelpCircle];
 
 // Accento per agente (tinta del chip icona) — allineato per indice sia con le
 // righe degli agenti sia con il feed attività recente nei dizionari (Shopify,
@@ -157,19 +160,14 @@ export default function DashboardSection() {
           </div>
 
           <div className="grid gap-3 p-2 pt-4 lg:grid-cols-[200px_minmax(0,1fr)_260px] xl:grid-cols-[220px_minmax(0,1fr)_300px] 3xl:grid-cols-[240px_minmax(0,1fr)_340px]">
-            {/* ── Sidebar ── */}
-            <aside className="hidden rounded-xl border border-white/5 bg-neutral-800 p-3 lg:flex lg:flex-col">
+            {/* ── Sidebar — ora completamente riempita, visibile anche su mobile come preview fedele ── */}
+            <aside className="flex flex-col rounded-xl border border-white/5 bg-neutral-800 p-3">
               <div className="mb-5 flex items-center gap-2 px-1">
                 <div className="relative h-7 w-7 overflow-hidden rounded-lg">
-                  <Image
-                    src="/agentcloud.png"
-                    alt="AgentCloud"
-                    fill
-                    className="object-cover"
-                    sizes="28px"
-                  />
+                  <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="28px" />
                 </div>
                 <span className="text-sm font-bold text-white">AgentCloud</span>
+                <span className="ml-auto rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300">Pro</span>
               </div>
               <nav className="space-y-1">
                 {ds.sidebar.map((item, idx) => {
@@ -181,18 +179,49 @@ export default function DashboardSection() {
                       className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                         active
                           ? "border border-brand-500/20 bg-brand-500/10 text-brand-300 shadow-sm"
-                          : "text-neutral-400"
+                          : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
                       }`}
                     >
                       <Icon size={15} className="shrink-0" />
                       {item}
-                      {active && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-400" />
-                      )}
+                      {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-400" />}
+                      {idx === 2 && <span className="ml-auto rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">3</span>}
                     </div>
                   );
                 })}
+                <div className="mt-3 space-y-1 border-t border-white/5 pt-3">
+                  <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-500">
+                    <Users size={15} className="shrink-0" /> Team
+                    <span className="ml-auto text-xs text-neutral-600">12</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-500">
+                    <Settings size={15} className="shrink-0" /> Impostazioni
+                  </div>
+                  <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-500">
+                    <HelpCircle size={15} className="shrink-0" /> Aiuto & Docs
+                  </div>
+                </div>
               </nav>
+              <div className="mt-auto space-y-3 pt-4">
+                <div className="rounded-xl border border-white/5 bg-neutral-900/60 p-3">
+                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wide text-neutral-500">
+                    <span>Utilizzo mensile</span>
+                    <span className="text-white">68%</span>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full w-[68%] rounded-full bg-linear-to-r from-brand-500 to-pink-500" />
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-neutral-500">1.4k / 2k esecuzioni • si rinnova tra 12 giorni</p>
+                </div>
+                <div className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-neutral-900/40 p-2.5">
+                  <div className="h-8 w-8 rounded-full bg-brand-500/20 ring-1 ring-white/10" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold text-white">Admin</p>
+                    <p className="truncate text-[11px] text-neutral-500">admin@agentcloud.agency</p>
+                  </div>
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                </div>
+              </div>
             </aside>
 
             {/* ── Main column ── */}
