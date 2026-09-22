@@ -71,7 +71,7 @@ type QueueState = {
 };
 
 export default function WaitlistForm({ initialTotal }: { initialTotal: number }) {
-  const { dict } = useLanguage();
+  const { dict, locale } = useLanguage();
   const w = dict.waitlist as unknown as Record<string, unknown> & {
     heroEyebrow: string; heroTitleA: string; heroTitleB: string; heroSub: string; heroTrust: string;
     heroCta: string; heroJoined: string; demoLiveBadge: string;
@@ -84,6 +84,19 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     queueLinkLabel: string; queueCopy: string; queueCopied: string; queueShare: string; queueRule: string;
     shareWhatsapp: string; shareX: string; shareEmail: string; shareSms: string; shareText: string;
     faqBadge: string; faqTitle: string; faqItems: { q: string; a: string }[]; footerCtaTitle: string; footerCtaSubtitle: string; noSpam: string;
+    navJoin: string; navJoinShort: string; heroDateLabel: string; heroDateDetails: string; heroDateNote: string;
+    chiSiamoBadge: string; chiSiamoTitle: string; chiSiamoSub: string;
+    foundersGabBio: string; foundersAlleBio: string; foundersMatteoBio: string;
+    teamPhotosNote: string; teamPhotosLink: string;
+    integrazioniBadge: string; integrazioniTitle: string; integrazioniSub: string; integrazioniCta: string; integrazioniMore: string;
+    socialPreviewBadge: string; agentPreviewNote: string;
+    piattaformaBadge: string; piattaformaTitle: string; piattaformaSub: string;
+    piattaformaF1Title: string; piattaformaF1Desc: string; piattaformaF2Title: string; piattaformaF2Desc: string;
+    piattaformaF3Title: string; piattaformaF3Desc: string; agentiBadge: string; agentiTitle: string; agentiCta: string;
+    rankTitle: string; rankPointsText: string; rankShareHint: string; rankPointsLabel: string;
+    rankGenerating: string; rankAheadTitle: string; rankAheadRow: string; rankTopNote: string;
+    welcomeNote: string; welcomeThanks: string; welcomeThanksName: string;
+    demoTyping: string; modalClose: string;
     placeholder: string; joining: string; joinWaitlist: string; agreeNote: string; alreadyOnList: string; somethingWrong: string; networkError: string;
     continueWithGoogle: string; orWithEmail: string; redirectingToGoogle: string;
     welcomeTitle: string; welcomeSubtitle: string; welcomePlaceholder: string; welcomeSave: string; welcomeSkip: string; welcomeSaving: string; welcomeSaved: string; welcomeError: string; welcomeNameRequired: string;
@@ -474,8 +487,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               onClick={openForm}
               className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black shadow-lg shadow-white/10 transition hover:bg-neutral-100"
             >
-              <span className="hidden sm:inline">{isSuccess ? (w.heroJoined as string) : "Join the waitlist"}</span>
-              <span className="sm:hidden">{isSuccess ? "✓" : "Join"}</span>
+              <span className="hidden sm:inline">{isSuccess ? (w.heroJoined as string) : (w.navJoin as string)}</span>
+              <span className="sm:hidden">{isSuccess ? "✓" : (w.navJoinShort as string)}</span>
             </button>
           </div>
         </div>
@@ -484,10 +497,6 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       {/* HERO centrato — titolo 2 righe + countdown al centro + bottone — dvh per mobile con barra indirizzi */}
       <section className="relative z-10 flex min-h-[88dvh] sm:min-h-[88vh] flex-col items-center justify-center px-4 pb-10 pt-28 sm:px-6 3xl:pt-36 3xl:pb-16">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex max-w-3xl 3xl:max-w-4xl flex-col items-center text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1 text-xs font-semibold text-brand-300 3xl:text-sm 3xl:px-4 3xl:py-1.5">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-brand-400" />
-            {w.heroEyebrow as string}
-          </div>
           {/* Data di scadenza ben visibile — 1 OTTOBRE 2026 */}
           <div className="mb-5 w-full max-w-md 3xl:max-w-lg rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-pink-500/10 px-5 py-4 3xl:px-7 3xl:py-5 shadow-lg shadow-amber-500/10 backdrop-blur">
             <div className="flex items-center justify-center gap-3">
@@ -495,12 +504,12 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 <span className="text-sm 3xl:text-base font-black">1</span>
               </div>
               <div className="text-left">
-                <p className="text-xs 3xl:text-sm font-bold uppercase tracking-widest text-amber-300">Scadenza • Lancio ufficiale</p>
+                <p className="text-xs 3xl:text-sm font-bold uppercase tracking-widest text-amber-300">{w.heroDateLabel as string}</p>
                 <p className="text-xl 3xl:text-2xl font-black tracking-tight text-white">1 OTTOBRE 2026</p>
-                <p className="text-xs 3xl:text-sm font-semibold text-neutral-300">ore 16:00 • 50 posti founding</p>
+                <p className="text-xs 3xl:text-sm font-semibold text-neutral-300">{w.heroDateDetails as string}</p>
               </div>
             </div>
-            <p className="mt-2 text-center text-xs 3xl:text-sm font-semibold leading-4 text-neutral-400">Stessa data del proxy <code className="rounded bg-white/10 px-1 py-0.5 text-white">LAUNCH_AT</code> e del countdown qui sotto — nessuna data diversa.</p>
+            <p className="mt-2 text-center text-xs 3xl:text-sm font-semibold leading-4 text-neutral-400">{(w.heroDateNote as string).replace("{launchat}", "LAUNCH_AT").split("LAUNCH_AT")[0]}<code className="rounded bg-white/10 px-1 py-0.5 text-white">LAUNCH_AT</code>{(w.heroDateNote as string).split("LAUNCH_AT")[1]}</p>
           </div>
           {/* Titolo 2 righe — responsive fluido: evita overflow su 320px, scala su 3xl */}
           <h1 className="text-[28px] xs:text-[34px] font-extrabold leading-[0.95] tracking-tight text-white sm:text-6xl 3xl:text-[76px]">
@@ -513,7 +522,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           <div className="mt-7 flex w-full max-w-90 xs:max-w-none 3xl:max-w-130 flex-col items-center gap-3 3xl:gap-4 px-2 xs:px-0">
             <CountdownTimer className="w-full xs:w-auto 3xl:w-full" />
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs 3xl:text-sm font-medium text-neutral-300">
-              <Users className="h-3.5 w-3.5 text-brand-400" /> {total.toLocaleString("it-IT")} {w.inList as string}
+              <Users className="h-3.5 w-3.5 text-brand-400" /> {total.toLocaleString(locale === "it" ? "it-IT" : locale === "es" ? "es-ES" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "en-US")} {w.inList as string}
             </span>
           </div>
 
@@ -544,7 +553,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 {/* Header dark — stack su 320px */}
                 <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 bg-neutral-900 px-4 xs:px-5 py-3 xs:py-4">
                   <h3 className="flex items-center gap-2 text-sm font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                    <BarChart3 className="h-4 w-4 shrink-0 text-[#E2A33D]" /> La tua posizione in classifica
+                    <BarChart3 className="h-4 w-4 shrink-0 text-[#E2A33D]" /> {w.rankTitle as string}
                   </h3>
                   <span className="shrink-0 rounded-full bg-[#E2A33D]/15 px-2.5 py-1 text-xs font-bold text-[#E2A33D]" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
                     #{ranking?.position ?? queue.position} su {ranking?.total ?? queue.total ?? total}
@@ -558,7 +567,13 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                       Sei <span style={{ color: "#E2A33D" }}>#{ranking?.position ?? queue.position}</span> in coda su {ranking?.total ?? queue.total ?? total}
                     </p>
                     <p className="mt-1 text-xs leading-relaxed" style={{ color: "#4B6357" }}>
-                      {ranking ? `${ranking.points} punti totali — ${ranking.breakdown.referrals} da referral (3×${ranking.referralsCompleted}) + ${ranking.breakdown.instagram} da Instagram` : "Condividi il tuo link per scalare — ogni amico ti fa salire."}
+                      {ranking
+                        ? (w.rankPointsText as string)
+                            .replace("{points}", String(ranking.points))
+                            .replace("{referrals}", String(ranking.breakdown.referrals))
+                            .replace("{count}", String(ranking.referralsCompleted))
+                            .replace("{instagram}", String(ranking.breakdown.instagram))
+                        : (w.rankShareHint as string)}
                     </p>
                   </div>
 
@@ -567,7 +582,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                     <div className="mt-4 grid grid-cols-3 gap-1.5 xs:gap-2">
                       <div className="rounded-xl border p-2.5 xs:p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#E2A33D", color: "#15231F" }}>
                         <p className="text-base xs:text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.points}</p>
-                        <p className="text-[9px] xs:text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>Punti totali</p>
+                        <p className="text-[9px] xs:text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>{w.rankPointsLabel as string}</p>
                       </div>
                       <div className="rounded-xl border p-2.5 xs:p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#4B6357", color: "#15231F" }}>
                         <p className="text-base xs:text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.referralsCompleted}</p>
@@ -582,11 +597,11 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
 
                   {/* Referral link — stack input+button su 320px solo se necessario, truncate gestito */}
                   <div className="mt-4 rounded-xl border bg-white p-3 xs:p-3" style={{ borderColor: "#4B6357" }}>
-                    <p className="text-xs font-bold" style={{ color: "#15231F", fontFamily: "'Space Grotesk', sans-serif" }}>Il tuo link referral</p>
+                    <p className="text-xs font-bold" style={{ color: "#15231F", fontFamily: "'Space Grotesk', sans-serif" }}>{w.queueLinkLabel as string}</p>
                     <div className="mt-2 flex gap-2">
-                      <code className="min-w-0 flex-1 truncate rounded-full border px-3 py-2.5 text-xs" style={{ backgroundColor: "#F7F5F0", borderColor: "#4B6357", color: "#15231F" }}>{referralLink || "Generazione in corso..."}</code>
+                      <code className="min-w-0 flex-1 truncate rounded-full border px-3 py-2.5 text-xs" style={{ backgroundColor: "#F7F5F0", borderColor: "#4B6357", color: "#15231F" }}>{referralLink || (w.rankGenerating as string)}</code>
                       <button onClick={copyLink} className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold text-white" style={{ backgroundColor: "#15231F" }}>
-                        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? "Copiato!" : "Copia"}
+                        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? (w.queueCopied as string) : (w.queueCopy as string)}
                       </button>
                     </div>
                     <div className="mt-3 grid grid-cols-4 gap-1.5 xs:gap-2">
@@ -600,7 +615,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                   {/* 5 davanti */}
                   {ahead.length > 0 ? (
                     <div className="mt-4">
-                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#4B6357", fontFamily: "'Space Grotesk', sans-serif" }}>I 5 davanti a te</p>
+                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#4B6357", fontFamily: "'Space Grotesk', sans-serif" }}>{w.rankAheadTitle as string}</p>
                       <ol className="mt-2 space-y-1.5">
                         {ahead.map((a) => (
                           <li key={a.rank} className="flex items-center justify-between gap-2 rounded-xl border bg-white px-2.5 xs:px-3 py-2" style={{ borderColor: "#4B6357" }}>
@@ -608,14 +623,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: "#4B6357" }}>#{a.rank}</span>
                               <span className="truncate text-sm font-medium" style={{ color: "#15231F" }}>{a.emailMasked}</span>
                             </span>
-                            <span className="shrink-0 text-[11px] xs:text-xs" style={{ color: "#4B6357" }}>davanti a te</span>
+                            <span className="shrink-0 text-[11px] xs:text-xs" style={{ color: "#4B6357" }}>{w.rankAheadRow as string}</span>
                           </li>
                         ))}
                       </ol>
                     </div>
                   ) : (
                     <p className="mt-3 rounded-xl px-3 py-2 text-center text-xs font-bold" style={{ backgroundColor: "#E2A33D", color: "#15231F" }}>
-                      Sei tra i primi! Nessuno davanti a te — invita amici per restare in testa.
+                      {w.rankTopNote as string}
                     </p>
                   )}
                 </div>
@@ -654,7 +669,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                     </div>
                   </div>
                 ))}
-                {demoSending && <div className="text-xs text-brand-300">AgentCloud sta scrivendo…</div>}
+                {demoSending && <div className="text-xs text-brand-300">{w.demoTyping as string}</div>}
               </div>
               <form onSubmit={handleDemoSubmit} className="mt-4 flex gap-2 border-t border-white/10 pt-3">
                 <input value={demoInput} onChange={(event) => setDemoInput(event.target.value)} placeholder={w.demoInputPlaceholder as string} disabled={demoSending} className="min-w-0 flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500" />
@@ -668,15 +683,15 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       {/* PIATTAFORMA — cos'è in 3 pillastri — 3xl: container largo + padding + typo */}
       <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
         <div className="mx-auto max-w-3xl 3xl:max-w-4xl text-center">
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-widest text-neutral-400 3xl:text-sm">La piattaforma</span>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">Automatizza senza scrivere codice</h2>
-          <p className="mx-auto mt-3 max-w-2xl 3xl:max-w-3xl text-sm 3xl:text-base leading-relaxed text-neutral-400">AgentCloud è un marketplace di agenti AI autonomi: scegli, colleghi i tuoi strumenti e lasci che lavorino per te — 24/7, su WhatsApp, Email, Shopify e oltre.</p>
+          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-widest text-neutral-400 3xl:text-sm">{w.piattaformaBadge as string}</span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">{w.piattaformaTitle as string}</h2>
+          <p className="mx-auto mt-3 max-w-2xl 3xl:max-w-3xl text-sm 3xl:text-base leading-relaxed text-neutral-400">{w.piattaformaSub as string}</p>
         </div>
         <div className="mt-8 3xl:mt-10 grid gap-4 3xl:gap-6 sm:grid-cols-3">
           {[
-            { icon: Zap, title: "Agenti autonomi", desc: "Ogni agente ha un obiettivo chiaro: vendere, rispondere, prenotare, fatturare. Decidono e agiscono da soli." },
-            { icon: Users, title: "Integrato ai tuoi tool", desc: "Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot — colleghi in 2 minuti." },
-            { icon: ShieldCheck, title: "Senza codice, sicuro", desc: "Setup guidato, token cifrati, GDPR-ready. Nessun dato per training." },
+            { icon: Zap, title: w.piattaformaF1Title as string, desc: w.piattaformaF1Desc as string },
+            { icon: Users, title: w.piattaformaF2Title as string, desc: w.piattaformaF2Desc as string },
+            { icon: ShieldCheck, title: w.piattaformaF3Title as string, desc: w.piattaformaF3Desc as string },
           ].map((f) => (
             <div key={f.title} className="rounded-2xl border border-white/10 bg-white/3 p-5 3xl:p-7">
               <div className="flex h-9 w-9 3xl:h-11 3xl:w-11 items-center justify-center rounded-xl bg-linear-to-br from-brand-500 to-pink-500 text-white"><f.icon className="h-5 w-5 3xl:h-6 3xl:w-6" /></div>
@@ -691,10 +706,10 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-8 sm:px-6 3xl:px-8 3xl:py-12">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">Agenti in azione</span>
-            <h2 className="mt-3 text-xl font-extrabold text-white sm:text-2xl 3xl:text-3xl">Scegli l’agente, lui fa il resto</h2>
+            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">{w.agentiBadge as string}</span>
+            <h2 className="mt-3 text-xl font-extrabold text-white sm:text-2xl 3xl:text-3xl">{w.agentiTitle as string}</h2>
           </div>
-          <button onClick={openForm} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm 3xl:text-base font-semibold text-white hover:bg-white/10">Vedi marketplace <ArrowRight className="h-4 w-4" /></button>
+          <button onClick={openForm} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm 3xl:text-base font-semibold text-white hover:bg-white/10">{w.agentiCta as string} <ArrowRight className="h-4 w-4" /></button>
         </div>
         <div className="mt-6 3xl:mt-8 grid gap-4 3xl:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {WAITLIST_FEATURED_AGENTS.map((agent) => (
@@ -715,11 +730,11 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         <div className="rounded-3xl border border-white/10 bg-neutral-900/60 p-6 3xl:p-10 backdrop-blur">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="text-xs 3xl:text-sm font-semibold tracking-widest text-brand-400">Integrazioni</div>
-              <h3 className="mt-1 text-lg 3xl:text-xl font-bold text-white">Collegato a ciò che usi già</h3>
-              <p className="mt-1 text-sm 3xl:text-base text-neutral-400">Colleghi in 2 minuti, token cifrati, disconnessione 1 click.</p>
+              <div className="text-xs 3xl:text-sm font-semibold tracking-widest text-brand-400">{w.integrazioniBadge as string}</div>
+              <h3 className="mt-1 text-lg 3xl:text-xl font-bold text-white">{w.integrazioniTitle as string}</h3>
+              <p className="mt-1 text-sm 3xl:text-base text-neutral-400">{w.integrazioniSub as string}</p>
             </div>
-            <button onClick={openForm} className="rounded-full bg-white px-5 py-2.5 text-sm 3xl:text-base 3xl:px-7 3xl:py-3 font-bold text-black">Collega il primo →</button>
+            <button onClick={openForm} className="rounded-full bg-white px-5 py-2.5 text-sm 3xl:text-base 3xl:px-7 3xl:py-3 font-bold text-black">{w.integrazioniCta as string}</button>
           </div>
           <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3 3xl:gap-4 sm:grid-cols-6">
             {[
@@ -739,16 +754,16 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               </div>
             ))}
           </div>
-          <p className="mt-4 text-center text-xs text-neutral-500">E altri in arrivo: WhatsApp, WooCommerce, PayPal, Stripe, TikTok, Analytics…</p>
+          <p className="mt-4 text-center text-xs text-neutral-500">{w.integrazioniMore as string}</p>
         </div>
       </section>
 
       {/* CHI SIAMO — founders — 3xl: container largo, card più spaziose */}
       <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
         <div className="mx-auto max-w-3xl 3xl:max-w-4xl text-center">
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">Chi siamo</span>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">Tre persone, una piattaforma</h2>
-          <p className="mx-auto mt-3 max-w-2xl 3xl:max-w-3xl text-sm 3xl:text-base leading-relaxed text-neutral-400">Costruiamo AgentCloud con ruoli chiari e zero fronzoli: prodotto solido, comunicazione chiara, conti in ordine.</p>
+          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">{w.chiSiamoBadge as string}</span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">{w.chiSiamoTitle as string}</h2>
+          <p className="mx-auto mt-3 max-w-2xl 3xl:max-w-3xl text-sm 3xl:text-base leading-relaxed text-neutral-400">{w.chiSiamoSub as string}</p>
         </div>
         <div className="mt-8 3xl:mt-10 grid gap-6 3xl:gap-8 sm:grid-cols-3">
           {[
@@ -756,14 +771,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               name: "Gabriele Forestieri",
               role: "Developer",
               img: "/founders/gabriele_forestieri.jpg",
-              bio: "Sviluppa la piattaforma, gli agenti e le integrazioni. Full-stack, ossessionato da velocità, dettagli e DX.",
+              bio: w.foundersGabBio as string,
               instagram: "https://www.instagram.com/gabrieleforestieri_/",
             },
             {
               name: "Alle Cerchiari",
               role: "Social & Marketing",
               img: "/founders/alle_cerchiari.jpeg",
-              bio: "Racconta AgentCloud sui social e nel marketing. Traduce la complessità in storie semplici e campagne che funzionano.",
+              bio: w.foundersAlleBio as string,
               instagram: "https://www.instagram.com/_allespy_/",
             },
             {
@@ -771,7 +786,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               role: "Stripe & Pricing",
               sub: "Paru",
               img: "/founders/matteo_parubi.jpeg",
-              bio: "Gestisce pagamenti, piani e prezzi via Stripe. Tiene i conti in ordine e l'esperienza di acquisto fluida.",
+              bio: w.foundersMatteoBio as string,
               instagram: "https://www.instagram.com/matteo.parubi/",
             },
           ].map((m) => (
@@ -788,7 +803,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             </div>
           ))}
         </div>
-        <p className="mt-6 text-center text-xs text-neutral-500">Foto reali del team — non placeholder. Contattaci su <a href="/about" className="font-semibold text-brand-400 hover:text-brand-300">Chi siamo</a>.</p>
+        <p className="mt-6 text-center text-xs text-neutral-500">{w.teamPhotosNote as string} <a href="/about" className="font-semibold text-brand-400 hover:text-brand-300">{w.teamPhotosLink as string}</a>.</p>
       </section>
 
       {/* MODAL FORM — appare su click bottoni — mobile-safe: dvh + overscroll-contain + input 16px anti-zoom */}
@@ -903,7 +918,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                       </div>
                     )}
                     <InstagramFollowCard onCompleted={refreshRanking} />
-                    <button onClick={closeForm} className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">Chiudi</button>
+                    <button onClick={closeForm} className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">{w.modalClose as string}</button>
                   </div>
                 )}
               </div>
@@ -996,14 +1011,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                           {w.welcomeSkip as string}
                         </button>
                       </form>
-                      <p className="mt-4 text-center text-xs text-neutral-500">Puoi saltare — potrai aggiungerlo più tardi dal tuo profilo.</p>
+                      <p className="mt-4 text-center text-xs text-neutral-500">{w.welcomeNote as string}</p>
                     </>
                   ) : (
                     <div className="py-2 text-center">
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
                         <Check className="h-6 w-6" />
                       </div>
-                      <h3 className="mt-4 text-lg font-bold text-white">Grazie{welcomeName ? `, ${welcomeName}` : ""}!</h3>
+                      <h3 className="mt-4 text-lg font-bold text-white">{welcomeName ? (w.welcomeThanksName as string).replace("{name}", welcomeName) : (w.welcomeThanks as string)}</h3>
                       <p className="mt-2 text-sm text-neutral-400">{w.welcomeSaved as string}</p>
                     </div>
                   )}
@@ -1141,14 +1156,14 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               <div className="text-xs 3xl:text-sm font-semibold tracking-widest text-brand-400">{w.socialBadge as string}</div>
               <h3 className="mt-1 text-lg 3xl:text-xl font-bold text-white">{w.socialTitle as string}</h3>
             </div>
-            <span className="rounded-full bg-white/5 px-3 py-1 text-xs 3xl:text-sm text-neutral-400">Anteprima agenti disponibili • countdown attivo</span>
+            <span className="rounded-full bg-white/5 px-3 py-1 text-xs 3xl:text-sm text-neutral-400">{w.socialPreviewBadge as string}</span>
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {WAITLIST_FEATURED_AGENTS.map((agent) => (
               <div key={agent.slug} className="rounded-2xl border border-white/5 bg-white/3 p-4 text-center">
                 <Users className="mx-auto h-5 w-5 text-brand-400" />
                 <div className="mt-2 text-sm font-extrabold text-white">{agent.name}</div>
-                <div className="mt-1 text-xs text-neutral-500">Disponibile in anteprima</div>
+                <div className="mt-1 text-xs text-neutral-500">{w.agentPreviewNote as string}</div>
               </div>
             ))}
           </div>

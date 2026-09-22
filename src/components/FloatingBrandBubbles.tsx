@@ -31,8 +31,12 @@ export default function FloatingBrandBubbles({
   bubbles: FloatingBubble[];
 }) {
   return (
+    // inset-0 sul wrapper dell'intera pagina farebbe ricalcolare le posizioni in
+    // percentuale ad ogni cambio di altezza della pagina (es. FAQ che si aprono),
+    // spostando le icone. Fissiamo il wrapper all'altezza della viewport così le
+    // bolle restano stabili: è pura decorazione di sfondo, la pagina scorre sopra.
     <div
-      className="hidden lg:block absolute inset-0 z-0 pointer-events-none select-none opacity-50"
+      className="hidden lg:block fixed inset-0 z-0 pointer-events-none select-none opacity-50"
       aria-hidden="true"
     >
       {bubbles.map((b, idx) => {
