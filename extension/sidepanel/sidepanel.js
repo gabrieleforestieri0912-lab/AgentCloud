@@ -34,6 +34,133 @@ let context = null;
 let messages = [];
 let requestId = null;
 let loading = false;
+let extMode = "login";
+let extThrottleUntil = 0;
+let extAttempts = 0;
+
+// ——— Estensione: replica del design di src/app/login e src/app/signup ———
+const extTitle = document.getElementById("extTitle");
+const extHint = document.getElementById("extHint");
+const extNameLabel = document.getElementById("extNameLabel");
+const extName = document.getElementById("extName");
+const extEmail = document.getElementById("extEmail");
+const extPassword = document.getElementById("extPassword");
+const extHoneypot = document.getElementById("extHoneypot");
+const extError = document.getElementById("extError");
+const extSuccess = document.getElementById("extSuccess");
+const extSubmit = document.getElementById("extSubmit");
+const extSubmitText = document.getElementById("extSubmitText");
+const extSubmitIcon = document.getElementById("extSubmitIcon");
+const extForgotBtn = document.getElementById("extForgotBtn");
+const extGoogleBtn = document.getElementById("extGoogleBtn");
+const extSwitchBtn = document.getElementById("extSwitchBtn");
+const extSwitchPrompt = document.getElementById("extSwitchPrompt");
+const extForm = document.getElementById("extForm");
+
+function extSetError(msg) {
+  if (!extError) return;
+  if (!msg) { extError.textContent = ""; extError.classList.add("hidden"); return; }
+  extError.textContent = msg;
+  extError.classList.remove("hidden");
+  if (extSuccess) { extSuccess.textContent = ""; extSuccess.classList.add("hidden"); }
+}
+function extSetSuccess(msg) {
+  if (!extSuccess) return;
+  if (!msg) { extSuccess.textContent = ""; extSuccess.classList.add("hidden"); return; }
+  extSuccess.textContent = msg;
+  extSuccess.classList.remove("hidden");
+  if (extError) { extError.textContent = ""; extError.classList.add("hidden"); }
+}
+function extUpdateMode(mode) {
+  extMode = mode;
+  const isSignup = mode === "signup";
+  if (extTitle) extTitle.textContent = isSignup ? "Crea il tuo account" : "Bentornato";
+  if (extHint) extHint.textContent = isSignup ? "Registrati con email e password o con Google" : "Accedi con email e password o con Google";
+  if (extNameLabel) extNameLabel.classList.toggle("hidden", !isSignup);
+  if (extSubmitText) extSubmitText.textContent = isSignup ? "Crea account" : "Accedi";
+  if (extSubmitIcon) extSubmitIcon.textContent = isSignup ? "＋" : "✉";
+  if (extSwitchPrompt) extSwitchPrompt.textContent = isSignup ? "Hai già un account?" : "Non hai ancora un account?";
+  if (extSwitchBtn) extSwitchBtn.textContent = isSignup ? "Accedi" : "Registrati";
+  if (extPassword) extPassword.placeholder = isSignup ? "Minimo 8 caratteri" : "La tua password";
+  if (extForgotBtn) extForgotBtn.style.display = isSignup ? "none" : "inline";
+  extSetError(""); extSetSuccess("");
+}
+function extValidateEmail(v) {
+  const t = String(v || "").trim();
+  if (!t) return "L'indirizzo email è obbligatorio.";
+  if (t.length > 254) return "Email troppo lunga.";
+  if (/[\x00-\x08\x0A-\x1F\x7F]/.test(t)) return "Caratteri non ammessi nell'email.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return "Inserisci un indirizzo email valido (es. nome@dominio.it).";
+  return null;
+}
+async function handleExtSubmit(e) {
+  e.preventDefault();
+  if (extHoneypot && extHoneypot.value.trim().length > 0) { extSetError("Richiesta non valida."); return; }
+  if (Date.now() < extThrottleUntil) {
+    const s = Math.ceil((extThrottleUntil - Date.now())/1000);
+    extSetError(`Troppi tentativi falliti. Riprova tra ${s} secondi.`);
+    return;
+  }
+  const email = extEmail ? extEmail.value.trim() : "";
+  const password = extPassword ? extPassword.value : "";
+  const name = extName ? extName.value.trim() : "";
+  const emailErr = extValidateEmail(email);
+  if (emailErr) { extSetError(emailErr); return; }
+  if (!password || password.length < 8) { extSetError(password.length < 8 ? "La password deve contenere almeno 8 caratteri." : "Password non valida."); return; }
+  if (password.length > 128) { extSetError("La password non può superare i 128 caratteri."); return; }
+  if (password.includes("\0")) { extSetError("La password contiene caratteri non ammessi."); return; }
+  if (extMode === "signup" && name.length > 80) { extSetError("Il nome non può superare gli 80 caratteri."); return; }
+  extSetError(""); extSetSuccess("");
+  if (extSubmit) { extSubmit.disabled = true; extSubmit.style.opacity = "0.7"; }
+  const action = extMode === "signup" ? "SIGNUP" : "LOGIN_WITH_PASSWORD";
+  const payload = extMode === "signup" ? { email, password, name } : { email, password };
+  const res = await send({ action, payload });
+  if (extSubmit) { extSubmit.disabled = false; extSubmit.style.opacity = ""; }
+  if (!res?.success) {
+    extAttempts += 1;
+    if (extAttempts >= 5) { extThrottleUntil = Date.now() + 30000; extAttempts = 0; }
+    extSetError(res?.error || (extMode === "signup" ? "Registrazione non riuscita. Riprova." : "Email o password non corretti."));
+    return;
+  }
+  extAttempts = 0;
+  if (res?.needsEmailConfirm) { extSetSuccess(res.message || "Controlla la tua email per confermare la registrazione."); return; }
+  await loadSession(true);
+}
+async function handleExtForgot() {
+  const email = extEmail ? extEmail.value.trim() : "";
+  const err = extValidateEmail(email);
+  if (err) { extSetError(err); return; }
+  extSetError(""); extSetSuccess("");
+  if (extForgotBtn) extForgotBtn.disabled = true;
+  const res = await send({ action: "FORGOT_PASSWORD", payload: { email } });
+  if (extForgotBtn) extForgotBtn.disabled = false;
+  if (!res?.success) { extSetError(res?.error || "Impossibile inviare il reset. Riprova."); return; }
+  extSetSuccess("Ti abbiamo inviato un link per reimpostare la password.");
+}
+function initExtAuth() {
+  extUpdateMode(extMode);
+  if (extForm && !extForm.dataset.bound) {
+    extForm.dataset.bound = "1";
+    extForm.addEventListener("submit", handleExtSubmit);
+  }
+  if (extSwitchBtn && !extSwitchBtn.dataset.bound) {
+    extSwitchBtn.dataset.bound = "1";
+    extSwitchBtn.addEventListener("click", () => extUpdateMode(extMode === "login" ? "signup" : "login"));
+  }
+  if (extForgotBtn && !extForgotBtn.dataset.bound) {
+    extForgotBtn.dataset.bound = "1";
+    extForgotBtn.addEventListener("click", handleExtForgot);
+  }
+  if (extGoogleBtn && !extGoogleBtn.dataset.bound) {
+    extGoogleBtn.dataset.bound = "1";
+    extGoogleBtn.addEventListener("click", () => send({ action: "OPEN_LOGIN" }));
+  }
+  const refreshBtn = document.getElementById("refreshLoggedOutBtn");
+  if (refreshBtn && !refreshBtn.dataset.bound) {
+    refreshBtn.dataset.bound = "1";
+    refreshBtn.addEventListener("click", () => loadSession(true));
+  }
+}
 
 function send(message) {
   // Compatibile sia con chrome (callback) che con browser (Promise)
@@ -195,6 +322,7 @@ async function loadSession(force = false) {
   if (session.status === "loggedOut") {
     setStatus("Non autenticato");
     showOnly("loggedOut");
+    initExtAuth();
     return;
   }
   if (session.status === "error") {

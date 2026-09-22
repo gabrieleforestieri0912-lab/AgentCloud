@@ -89,14 +89,37 @@ api.action.onClicked.addListener((tab) => {
   openSidePanel(tab);
 });
 
-// ─── Sessione AgentCloud (cookie del sito, nessun token salvato) ────────────
+// ─── Supabase (per replicare src/app/login e src/app/signup dentro l'estensione) ───
+const SUPABASE_URL = "https://umnvmlfzclkuorwnevpu.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtbnZtbGZ6Y2xrdW9yd25ldnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MzgyMjksImV4cCI6MjA5NzQxNDIyOX0.Q1PWWyocWG7I3hRJRyT_hxz_uY3P6QiXmE3_zMWopJg";
+const SUPABASE_SESSION_KEY = "ac_supabase_session";
 
-function request(url, options = {}) {
+async function getSupabaseSession() {
+  const s = await api.storage.local.get(SUPABASE_SESSION_KEY);
+  return s[SUPABASE_SESSION_KEY] || null;
+}
+async function setSupabaseSession(data) {
+  await api.storage.local.set({ [SUPABASE_SESSION_KEY]: data });
+}
+async function clearSupabaseSession() {
+  await api.storage.local.remove(SUPABASE_SESSION_KEY);
+}
+
+// ─── Sessione AgentCloud (cookie del sito + token Supabase dell'estensione) ───
+
+async function request(url, options = {}) {
   const accept = options.headers?.Accept || (url === RUN_ENDPOINT ? "text/event-stream, application/json" : "application/json");
+  const extraHeaders = { ...(options.headers || {}) };
+  // Se l'estensione ha un token Supabase salvato, invialo come Bearer per far
+  // passare il gate del proxy anche senza cookie (proxy.ts risolve Bearer).
+  try {
+    const supa = await getSupabaseSession();
+    if (supa?.access_token) extraHeaders["Authorization"] = `Bearer ${supa.access_token}`;
+  } catch {}
   return fetch(`${API_BASE}${url}`, {
     ...options,
     credentials: "include",
-    headers: { Accept: accept, ...(options.headers || {}) },
+    headers: { Accept: accept, ...extraHeaders },
   });
 }
 
@@ -131,6 +154,52 @@ function endpointFailure(response, path, hint) {
 const DEPLOY_HINT =
   `Il gate pre-lancio di ${API_BASE} sta rispondendo al posto delle API: pubblica un deployment che includa src/app/api/extension/ e l'esenzione per l'estensione in src/proxy.ts (vedi extension/README.md).`;
 
+async function supabaseLogin(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error_description || data.msg || data.error || "Email o password non corretti.");
+  const session = { access_token: data.access_token, refresh_token: data.refresh_token, user: data.user, expires_at: data.expires_in ? Date.now() + data.expires_in * 1000 : null };
+  await setSupabaseSession(session);
+  return session;
+}
+async function supabaseSignup(email, password, name) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, data: name ? { full_name: name } : {} }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.msg || data.error_description || data.error || "Registrazione non riuscita. Riprova.");
+  // Se serve conferma email, non c'è sessione
+  if (data.access_token) {
+    const session = { access_token: data.access_token, refresh_token: data.refresh_token, user: data.user, expires_at: data.expires_in ? Date.now() + data.expires_in * 1000 : null };
+    await setSupabaseSession(session);
+    return { session, needsConfirm: false };
+  }
+  return { needsConfirm: true, message: "Controlla la tua email per confermare la registrazione." };
+}
+async function supabaseForgot(email) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.msg || data.error_description || data.error || "Impossibile inviare il reset.");
+  return true;
+}
+async function supabaseGetUser(accessToken) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return null;
+  return await res.json().catch(() => null);
+}
+
 async function checkSession(force = false) {
   const stored = await api.storage.local.get(SESSION_KEY);
   const cached = stored[SESSION_KEY];
@@ -142,6 +211,39 @@ async function checkSession(force = false) {
     await api.storage.local.set({ [SESSION_KEY]: state });
     return state;
   };
+
+  // Replica di src/app/login: se l'estensione ha già un token Supabase, verifica
+  // direttamente con Supabase e poi prova a recuperare owned dal backend con Bearer.
+  try {
+    const supa = await getSupabaseSession();
+    if (supa?.access_token) {
+      const user = await supabaseGetUser(supa.access_token);
+      if (user?.email) {
+        try {
+          const r = await request(SESSION_ENDPOINT, { cache: "no-store" });
+          if (r.ok) {
+            const d = await r.json();
+            const owned = Array.isArray(d.owned) ? d.owned : [];
+            return await cache({
+              status: owned.length > 0 ? "loggedInWithAgents" : "loggedInEmpty",
+              owned,
+              email: d.email || user.email,
+              name: d.name || user.user_metadata?.full_name || null,
+              checkedAt: Date.now(),
+            });
+          }
+        } catch {}
+        return await cache({
+          status: "loggedInEmpty",
+          owned: [],
+          email: user.email,
+          name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+          checkedAt: Date.now(),
+        });
+      }
+      await clearSupabaseSession();
+    }
+  } catch {}
 
   try {
     const response = await request(SESSION_ENDPOINT, { cache: "no-store" });
@@ -500,8 +602,33 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true, data: await runAgent(message.payload) });
         return;
       }
+      if (message.action === "LOGIN_WITH_PASSWORD") {
+        const { email, password } = message.payload || {};
+        if (!email || !password) throw new Error("Email e password sono obbligatorie.");
+        await supabaseLogin(email, password);
+        await api.storage.local.remove(SESSION_KEY);
+        sendResponse({ success: true, data: await checkSession(true) });
+        return;
+      }
+      if (message.action === "SIGNUP") {
+        const { email, password, name } = message.payload || {};
+        if (!email || !password) throw new Error("Email e password sono obbligatorie.");
+        const r = await supabaseSignup(email, password, name);
+        if (r.needsConfirm) { sendResponse({ success: true, needsEmailConfirm: true, message: r.message }); return; }
+        await api.storage.local.remove(SESSION_KEY);
+        sendResponse({ success: true, data: await checkSession(true) });
+        return;
+      }
+      if (message.action === "FORGOT_PASSWORD") {
+        const { email } = message.payload || {};
+        if (!email) throw new Error("Email obbligatoria.");
+        await supabaseForgot(email);
+        sendResponse({ success: true });
+        return;
+      }
       if (message.action === "CLEAR_SESSION") {
         await api.storage.local.remove(SESSION_KEY);
+        await clearSupabaseSession();
         sendResponse({ success: true });
         return;
       }

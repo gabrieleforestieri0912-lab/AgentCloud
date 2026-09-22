@@ -24,16 +24,66 @@
       <p>Controllo della sessione…</p>
     </section>
 
-    <section id="loggedOutView" class="state-view hidden">
-      <div class="hero-icon">✦</div>
-      <h1>Il tuo copilota AI</h1>
-      <p id="loggedOutSub">Accedi con lo stesso account AgentCloud che usi sul web: l’estensione riusa quella sessione e non salva password, token o credenziali.</p>
-      <div class="auth-actions">
-        <button id="loginBtn" class="btn-primary">Accedi — ho già un account</button>
-        <button id="signupBtn" class="btn-secondary">Crea account nuovo</button>
+    <section id="loggedOutView" class="state-view ext-auth-view hidden">
+      <div class="ext-auth-bg" aria-hidden="true">
+        <div class="ext-auth-hairline"></div>
+        <div class="ext-auth-radials"></div>
+        <div class="ext-auth-bubbles">
+          <span class="ext-bubble b1"></span>
+          <span class="ext-bubble b2"></span>
+          <span class="ext-bubble b3"></span>
+          <span class="ext-bubble b4"></span>
+        </div>
       </div>
-      <p class="muted small">L’estensione verifica automaticamente se sei già entrato o sei nuovo: se hai già effettuato l’accesso il pannello si sblocca da solo.</p>
-      <button id="refreshLoggedOutBtn" class="btn-link">Ho già effettuato l’accesso — aggiorna</button>
+      <div class="ext-auth-inner">
+        <a href="https://www.agentcloud.agency" target="_blank" rel="noreferrer" class="ext-home-pill">
+          <span class="ext-home-dot">⌂</span> Torna alla home
+        </a>
+        <div class="ext-title-block">
+          <h1 id="extTitle">Bentornato</h1>
+          <p id="extHint">Accedi con email e password o con Google</p>
+        </div>
+        <div class="ext-card">
+          <form id="extForm" class="ext-form" novalidate>
+            <div class="honeypot" aria-hidden="true">
+              <input type="text" id="extHoneypot" name="website_hp" tabindex="-1" autocomplete="off">
+            </div>
+            <label id="extNameLabel" class="ext-label hidden">
+              <span>Nome (facoltativo)</span>
+              <div class="ext-input-wrap">
+                <span class="ext-input-icon">◯</span>
+                <input id="extName" type="text" autocomplete="name" placeholder="Mario Rossi">
+              </div>
+            </label>
+            <label class="ext-label">
+              <span>Email</span>
+              <input id="extEmail" type="email" required autocomplete="email" placeholder="tu@azienda.com">
+            </label>
+            <label class="ext-label">
+              <span>Password</span>
+              <input id="extPassword" type="password" required autocomplete="current-password" placeholder="La tua password">
+            </label>
+            <div id="extError" class="ext-error hidden"></div>
+            <div id="extSuccess" class="ext-success hidden"></div>
+            <button id="extSubmit" type="submit" class="ext-primary">
+              <span id="extSubmitIcon">✉</span> <span id="extSubmitText">Accedi</span>
+            </button>
+            <div class="ext-forgot">
+              <button id="extForgotBtn" type="button" class="ext-link-btn">Password dimenticata?</button>
+            </div>
+          </form>
+          <div class="ext-divider"><span>o</span></div>
+          <button id="extGoogleBtn" type="button" class="ext-google">
+            <span class="ext-google-g">G</span> Continua con Google
+          </button>
+          <p class="ext-switch">
+            <span id="extSwitchPrompt">Non hai ancora un account?</span>
+            <button id="extSwitchBtn" type="button" class="ext-switch-link">Registrati</button>
+          </p>
+          <button id="refreshLoggedOutBtn" class="ext-refresh-link">Ho già effettuato l'accesso — aggiorna</button>
+        </div>
+        <p class="ext-muted">L’estensione verifica automaticamente se sei già entrato: se hai già effettuato l’accesso il pannello si sblocca da solo.</p>
+      </div>
     </section>
 
     <section id="errorView" class="state-view hidden">
