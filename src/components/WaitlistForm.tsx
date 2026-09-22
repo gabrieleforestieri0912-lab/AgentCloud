@@ -472,8 +472,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </div>
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
-      {/* NAVBAR trasparente a tutta larghezza — logo a sinistra, bottoni all'estremo destro */}
-      <header className="absolute left-0 right-0 top-0 z-30 bg-transparent">
+      {/* NAVBAR fissa a tutta larghezza — logo a sinistra, bottoni all'estremo destro — sfondo sfumato per leggibilità in scroll */}
+      <header className="fixed left-0 right-0 top-0 z-30 bg-[#1e1e24]/85 backdrop-blur-md">
         <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-10 3xl:px-14 3xl:py-6">
           <div className="flex items-center gap-2.5">
             <div className="relative h-8 w-8">
@@ -497,19 +497,12 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       {/* HERO centrato — titolo 2 righe + countdown al centro + bottone — dvh per mobile con barra indirizzi */}
       <section className="relative z-10 flex min-h-[88dvh] sm:min-h-[88vh] flex-col items-center justify-center px-4 pb-10 pt-28 sm:px-6 3xl:pt-36 3xl:pb-16">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex max-w-3xl 3xl:max-w-4xl flex-col items-center text-center">
-          {/* Data di scadenza ben visibile — 1 OTTOBRE 2026 */}
-          <div className="mb-5 w-full max-w-md 3xl:max-w-lg rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-pink-500/10 px-5 py-4 3xl:px-7 3xl:py-5 shadow-lg shadow-amber-500/10 backdrop-blur">
-            <div className="flex items-center justify-center gap-3">
-              <div className="flex h-10 w-10 3xl:h-12 3xl:w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-md">
-                <span className="text-sm 3xl:text-base font-black">1</span>
-              </div>
-              <div className="text-left">
-                <p className="text-xs 3xl:text-sm font-bold uppercase tracking-widest text-amber-300">{w.heroDateLabel as string}</p>
-                <p className="text-xl 3xl:text-2xl font-black tracking-tight text-white">1 OTTOBRE 2026</p>
-                <p className="text-xs 3xl:text-sm font-semibold text-neutral-300">{w.heroDateDetails as string}</p>
-              </div>
-            </div>
-            <p className="mt-2 text-center text-xs 3xl:text-sm font-semibold leading-4 text-neutral-400">{(w.heroDateNote as string).replace("{launchat}", "LAUNCH_AT").split("LAUNCH_AT")[0]}<code className="rounded bg-white/10 px-1 py-0.5 text-white">LAUNCH_AT</code>{(w.heroDateNote as string).split("LAUNCH_AT")[1]}</p>
+          {/* Data di lancio — badge azzurro minimalista: una pillola, niente card */}
+          <div className="mb-5 inline-flex max-w-full flex-wrap items-center justify-center gap-x-2.5 gap-y-0.5 rounded-full border border-sky-400/30 bg-sky-400/10 px-4 py-1.5 3xl:px-5 3xl:py-2 backdrop-blur">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" />
+            <span className="text-xs 3xl:text-sm font-semibold tracking-wide text-sky-300">{w.heroDateLabel as string}</span>
+            <span className="text-xs 3xl:text-sm font-bold text-white">1 OTTOBRE 2026</span>
+            <span className="text-xs 3xl:text-sm font-medium text-sky-200/70">· {w.heroDateDetails as string}</span>
           </div>
           {/* Titolo 2 righe — responsive fluido: evita overflow su 320px, scala su 3xl */}
           <h1 className="text-[28px] xs:text-[34px] font-extrabold leading-[0.95] tracking-tight text-white sm:text-6xl 3xl:text-[76px]">
@@ -660,7 +653,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 </span>
                 <span className={`h-2 w-2 rounded-full ${demoSending ? "animate-pulse bg-amber-400" : "animate-pulse bg-emerald-400"}`} />
               </div>
-              <div ref={demoBodyRef} className="max-h-64 space-y-3 overflow-y-auto pr-1">
+              {/* Altezza fissa con scroll interno: la card non si allunga al crescere dei messaggi */}
+              <div ref={demoBodyRef} className="h-72 3xl:h-80 space-y-3 overflow-y-auto pr-1">
                 {demoMessages.map((message, index) => (
                   <div key={`${index}-${message.role}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-sm bg-white text-neutral-900" : "rounded-bl-sm border border-brand-500/20 bg-linear-to-br from-brand-500/15 to-pink-500/15 text-white"}`}>
@@ -1209,8 +1203,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         </div>
       </section>
 
-      {/* Footer contatto + social */}
-      <div className="relative z-10">
+      {/* Footer contatto + social — sfondo opaco: dietro c'è il gradiente globale fixed, e il footer trasparente lascerebbe trasparire il contenuto durante lo scroll */}
+      <div className="relative z-10 bg-[#121214]">
         <Footer />
       </div>
     </div>
