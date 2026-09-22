@@ -521,21 +521,21 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           </h1>
           <p className="mt-4 max-w-xl 3xl:max-w-2xl text-[14px] xs:text-[15px] leading-relaxed text-neutral-300 sm:text-lg 3xl:text-xl">{w.heroSub as string}</p>
 
-          {/* Counter: numero waitlist ben visibile SOPRA il countdown */}
-          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none flex-col items-center gap-5 px-2 xs:px-0 3xl:max-w-[520px] 3xl:gap-5">
+          {/* Counter: numero waitlist leggermente più grande dell'originale, sopra il countdown */}
+          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none flex-col items-center gap-3.5 px-2 xs:px-0 3xl:max-w-[520px] 3xl:gap-4">
             <motion.div
               initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex w-full flex-col items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-5 backdrop-blur shadow-[0_8px_32px_rgba(0,0,0,0.35)] sm:px-8 sm:py-6"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 shadow-sm backdrop-blur sm:px-5 sm:py-2.5"
             >
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-300">
-                <Users className="h-3.5 w-3.5" /> {w.inList as string}
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm sm:h-8 sm:w-8">
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </span>
-              <span className="bg-linear-to-b from-white to-neutral-300 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl 3xl:text-6xl">
+              <span className="text-[15px] font-black tracking-tight text-white sm:text-base 3xl:text-lg">
                 {total.toLocaleString(locale === "it" ? "it-IT" : locale === "es" ? "es-ES" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "en-US")}
               </span>
-              <span className="text-xs font-semibold tracking-wide text-neutral-400 sm:text-sm">persone in attesa • posti limitati</span>
+              <span className="text-xs font-bold tracking-wide text-neutral-300 sm:text-sm">{w.inList as string}</span>
             </motion.div>
             <CountdownTimer className="w-full xs:w-auto 3xl:w-full" />
           </div>
