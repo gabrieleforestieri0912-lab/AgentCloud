@@ -678,27 +678,19 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               {/* Altezza fissa più grande — chat demo più visibile su mobile e desktop */}
               <div ref={demoBodyRef} className="h-[380px] space-y-3 overflow-y-auto pr-1 sm:h-[440px] 3xl:h-[520px]">
                 {demoMessages.length === 0 ? (
-                  <div className="flex flex-col items-center gap-4 py-2">
-                    <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
-                      <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="40px" />
+                  <div className="flex flex-col items-center gap-5 py-4">
+                    <div className="relative h-12 w-12 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
+                      <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="48px" />
                     </div>
-                    <div className="w-full rounded-2xl rounded-bl-sm border border-brand-500/20 bg-linear-to-br from-brand-500/15 to-pink-500/15 px-4 py-3 text-left text-sm leading-relaxed text-white">
-                      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand-300">
-                        <span className="relative h-5 w-5 overflow-hidden rounded-full border border-white/10 bg-white">
-                          <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="20px" />
-                        </span>
-                        AgentCloud
-                      </div>
-                      <p className="whitespace-pre-line">{w.demoWelcome as string}</p>
-                    </div>
-                    <div className="grid w-full gap-2">
+                    <p className="max-w-sm text-center text-sm leading-relaxed text-neutral-300 whitespace-pre-line">{w.demoWelcome as string}</p>
+                    <div className="grid w-full grid-cols-2 gap-2">
                       {((w.demoSuggestions as unknown as string[]) ?? []).map((suggestion) => (
                         <button
                           key={suggestion}
                           type="button"
                           onClick={() => handleDemoSuggestionClick(suggestion)}
                           disabled={demoSending}
-                          className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-left text-sm leading-snug text-neutral-200 transition hover:border-brand-500/30 hover:bg-white/10 hover:text-white disabled:opacity-40"
+                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-left text-xs sm:text-sm leading-snug text-neutral-200 transition hover:border-brand-500/30 hover:bg-white/10 hover:text-white disabled:opacity-40"
                         >
                           {suggestion}
                         </button>
