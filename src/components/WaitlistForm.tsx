@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
-import CountdownTimer from "@/components/CountdownTimer";
 import BrandLogo from "@/components/BrandLogo";
 import BrandIcon from "@/components/BrandIcon";
 import { BRANDS } from "@/lib/brands";
@@ -507,38 +506,12 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       {/* HERO centrato — titolo 2 righe + countdown al centro + bottone — dvh per mobile con barra indirizzi */}
       <section className="relative z-10 flex min-h-[88dvh] sm:min-h-[88vh] flex-col items-center justify-center px-4 pb-10 pt-28 sm:px-6 3xl:pt-36 3xl:pb-16">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex max-w-3xl 3xl:max-w-4xl flex-col items-center text-center">
-          {/* Data di lancio — badge azzurro minimalista: una pillola, niente card */}
-          <div className="mb-5 inline-flex max-w-full flex-wrap items-center justify-center gap-x-2.5 gap-y-0.5 rounded-full border border-sky-400/30 bg-sky-400/10 px-4 py-1.5 3xl:px-5 3xl:py-2 backdrop-blur">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" />
-            <span className="text-xs 3xl:text-sm font-semibold tracking-wide text-sky-300">{w.heroDateLabel as string}</span>
-            <span className="text-xs 3xl:text-sm font-bold text-white">1 OTTOBRE 2026</span>
-            <span className="text-xs 3xl:text-sm font-medium text-sky-200/70">· {w.heroDateDetails as string}</span>
-          </div>
           {/* Titolo 2 righe — responsive fluido: evita overflow su 320px, scala su 3xl */}
           <h1 className="text-[28px] xs:text-[34px] font-extrabold leading-[0.95] tracking-tight text-white sm:text-6xl 3xl:text-[76px]">
             <span className="block">{w.heroTitleA as string}</span>
             <span className="block bg-linear-to-r from-brand-400 to-pink-400 bg-clip-text text-transparent">{w.heroTitleB as string}</span>
           </h1>
           <p className="mt-4 max-w-xl 3xl:max-w-2xl text-[14px] xs:text-[15px] leading-relaxed text-neutral-300 sm:text-lg 3xl:text-xl">{w.heroSub as string}</p>
-
-          {/* Counter: numero waitlist leggermente più grande dell'originale, sopra il countdown */}
-          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none flex-col items-center gap-3.5 px-2 xs:px-0 3xl:max-w-[520px] 3xl:gap-4">
-            <motion.div
-              initial={{ scale: 0.96, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 shadow-sm backdrop-blur sm:px-5 sm:py-2.5"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm sm:h-8 sm:w-8">
-                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </span>
-              <span className="text-[15px] font-black tracking-tight text-white sm:text-base 3xl:text-lg">
-                {total.toLocaleString(locale === "it" ? "it-IT" : locale === "es" ? "es-ES" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "en-US")}
-              </span>
-              <span className="text-xs font-bold tracking-wide text-neutral-300 sm:text-sm">{w.inList as string}</span>
-            </motion.div>
-            <CountdownTimer className="w-full xs:w-auto 3xl:w-full" />
-          </div>
 
           {/* Bottone per unirsi — apre il form — touch target 46px minimo — più grande su 3xl */}
           <motion.button
@@ -709,10 +682,6 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 )}
                 {demoSending && <div className="text-xs text-brand-300">{w.demoTyping as string}</div>}
               </div>
-              <form onSubmit={handleDemoSubmit} className="mt-4 flex gap-2 border-t border-white/10 pt-3">
-                <input value={demoInput} onChange={(event) => setDemoInput(event.target.value)} placeholder={w.demoInputPlaceholder as string} disabled={demoSending} className="min-w-0 flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500" />
-                <button type="submit" disabled={demoSending || !demoInput.trim()} className="rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-40" aria-label={w.demoInputPlaceholder as string}><ArrowRight className="h-4 w-4" /></button>
-              </form>
             </div>
           </div>
         </motion.div>
@@ -1225,8 +1194,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         <p className="mt-6 text-center text-xs text-neutral-500">{w.teamPhotosNote as string} <a href="/about" className="font-semibold text-brand-400 hover:text-brand-300">{w.teamPhotosLink as string}</a>.</p>
       </section>
 
-      {/* Footer contatto + social — sfondo opaco: dietro c'è il gradiente globale fixed, e il footer trasparente lascerebbe trasparire il contenuto durante lo scroll */}
-      <div className="relative z-10 bg-[#121214]">
+      {/* Footer — riempito con colore primario piattaforma, non trasparente */}
+      <div className="relative z-10 bg-[#1e1e24] border-t border-white/10">
         <Footer />
       </div>
     </div>
