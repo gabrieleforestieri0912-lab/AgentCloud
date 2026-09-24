@@ -26,22 +26,22 @@ const LANDING_BUBBLES: FloatingBubble[] = [
   { top: "82%", left: "85%", size: "w-10 h-10", brand: "facebook", delay: "0.9s", anim: "animate-float-reverse" },
 ];
 
-// Homepage: landing — layer fixed con gradienti + radiali + hairline, coerente con palette Ink/Paper.
+// Homepage: landing — layer fixed con gradiente (dark-gradient-main, ha l'override
+// per il tema chiaro in globals.css) + radiali + hairline, coerente con palette Ink/Paper.
 export default async function Home() {
   return (
-    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#1e1e24]">
-      {/* Sfondo landing — fixed */}
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-neutral-950">
+      {/* Sfondo landing — fixed: background scuro (base near-black) */}
       <div className="pointer-events-none fixed inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#25252d] via-[#1e1e24] to-[#121214]" />
+        <div className="absolute inset-0 dark-gradient-main" />
         <div
-          className="absolute inset-0 opacity-[0.55]"
+          className="absolute inset-0 opacity-[0.35]"
           style={{
             backgroundImage:
-              "radial-gradient(circle at 15% 10%, rgba(3,139,254,.22), transparent 34%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.16), transparent 30%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.14), transparent 38%)",
+              "radial-gradient(circle at 15% 10%, rgba(3,139,254,.18), transparent 32%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.14), transparent 28%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.12), transparent 36%)",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/[0.03]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/25 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
       </div>
       <FloatingBrandBubbles bubbles={LANDING_BUBBLES} />
 

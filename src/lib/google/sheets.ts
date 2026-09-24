@@ -245,7 +245,7 @@ export async function googleSheetsRequest(
       }
       return {
         ok: true,
-        data: `✅ Updated ${json.updatedRange ?? range} (${json.updatedRows ?? 0} rows, ${json.updatedCells ?? 0} cells).`,
+        data: `Updated ${json.updatedRange ?? range} (${json.updatedRows ?? 0} rows, ${json.updatedCells ?? 0} cells).`,
       };
     }
 
@@ -266,7 +266,7 @@ export async function googleSheetsRequest(
     }
     return {
       ok: true,
-      data: `✅ Appended ${json.updates?.updatedRows ?? 0} rows at ${json.updates?.updatedRange ?? range}.`,
+      data: `Appended ${json.updates?.updatedRows ?? 0} rows at ${json.updates?.updatedRange ?? range}.`,
     };
   } catch (e) {
     return {

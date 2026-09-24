@@ -1210,7 +1210,7 @@ export async function executeTool(
         tenantId: context.tenantId || null,
         reason: injectionCheck.reason || "unknown",
       });
-      return "⚠️ Input non valido: rilevato contenuto potenzialmente non sicuro. Riformula la richiesta.";
+      return "Input non valido: rilevato contenuto potenzialmente non sicuro. Riformula la richiesta.";
     }
   } catch {
     // Fail open: se la detection fallisce, non blocchiamo il tool
@@ -1587,7 +1587,7 @@ export async function executeTool(
           const created = json?.data?.developmentStoreCreate?.developmentStore?.shopDomain;
           if (created) {
             return [
-              `✅ Store di sviluppo creato!`,
+              `Store di sviluppo creato!`,
               `Dominio: ${created}`,
               `Nome: ${shopNameRaw}`,
               email ? `Email proprietario: ${email}` : null,
@@ -1612,7 +1612,7 @@ export async function executeTool(
       if (email && isValidEmail(email)) signupUrl.searchParams.set("email", email);
 
       return [
-        `🛍️ Perfetto — creo il tuo store "${shopNameRaw}"!`,
+        `Perfetto — creo il tuo store "${shopNameRaw}"!`,
         ``,
         `Dominio suggerito: ${shopDomain}`,
         country ? `Paese: ${country}` : null,
@@ -1772,7 +1772,7 @@ export async function executeTool(
       const currency = orderEdges[0]?.node?.totalPrice?.currencyCode || "EUR";
 
       return [
-        `📊 Analytics for ${data?.shop?.name ?? "your store"} — last ${days} day(s)`,
+        `Analytics for ${data?.shop?.name ?? "your store"} — last ${days} day(s)`,
         ``,
         `Total orders: ${orderEdges.length}`,
         `Total revenue: ${totalRevenue.toFixed(2)} ${currency}`,
@@ -1868,7 +1868,7 @@ export async function executeTool(
 
       const p = productResult?.productCreate?.product;
       return [
-        `✅ Product created successfully!`,
+        `Product created successfully!`,
         `Title: ${p?.title ?? title}`,
         `Price: ${price}`,
         compareAt ? `Compare at: ${compareAt}` : null,
@@ -1956,7 +1956,7 @@ export async function executeTool(
       }
 
       return [
-        `✅ Discount code created!`,
+        `Discount code created!`,
         `Code: ${code}`,
         `Type: ${type === "percentage" ? `${value}% off` : `€${value} off`}`,
         usageLimit ? `Usage limit: ${usageLimit}` : null,
@@ -2059,7 +2059,7 @@ export async function executeTool(
       }
 
       return [
-        `✅ Collection updated!`,
+        `Collection updated!`,
         `Collection: ${opResult?.collection?.title ?? collectionId}`,
         `Action: ${action === "add" ? "Added" : "Removed"} ${productIds.length} product(s)`,
       ].join("\n");
@@ -2143,7 +2143,7 @@ export async function executeTool(
       if (invResult.errors) return `Shopify GraphQL error: ${JSON.stringify(invResult.errors)}`;
 
       return [
-        `✅ Inventory updated!`,
+        `Inventory updated!`,
         `Product: ${variantData.product?.title ?? "N/A"}`,
         `Variant: ${variantData.title ?? "Default"}`,
         `Previous: ${currentAvailable} units`,`New: ${quantity} units`,`Delta: ${delta >= 0 ? "+" : ""}${delta} units` ].join("\n");
@@ -2362,7 +2362,7 @@ export async function executeTool(
           return `Gmail send failed: ${res.status} ${res.statusText} - ${txt}`;
         }
         const json = (await res.json()) as { id?: string };
-        return `✅ Email sent to ${to} (id: ${json.id ?? "unknown"}). Subject: "${subject}"`;
+        return `Email sent to ${to} (id: ${json.id ?? "unknown"}). Subject: "${subject}"`;
       } catch (e) {
         return `Gmail send network error: ${e instanceof Error ? e.message : String(e)}`;
       }
@@ -2385,7 +2385,7 @@ export async function executeTool(
           const txt = await res.text();
           return `Gmail trash failed: ${res.status} ${res.statusText} - ${txt}`;
         }
-        return `✅ Email ${messageId} moved to trash.`;
+        return `Email ${messageId} moved to trash.`;
       } catch (e) {
         return `Gmail trash network error: ${e instanceof Error ? e.message : String(e)}`;
       }
@@ -2408,7 +2408,7 @@ export async function executeTool(
           const txt = await res.text();
           return `Calendar delete failed: ${res.status} ${res.statusText} - ${txt}`;
         }
-        return `✅ Event ${eventId} deleted from Google Calendar.`;
+        return `Event ${eventId} deleted from Google Calendar.`;
       } catch (e) {
         return `Calendar delete network error: ${e instanceof Error ? e.message : String(e)}`;
       }
@@ -2438,7 +2438,7 @@ export async function executeTool(
           const txt = await res.text();
           return `Calendar reminder failed: ${res.status} ${res.statusText} - ${txt}`;
         }
-        return `✅ Reminder set for event ${eventId}: ${minutes} minutes before via ${validMethod}.`;
+        return `Reminder set for event ${eventId}: ${minutes} minutes before via ${validMethod}.`;
       } catch (e) {
         return `Calendar reminder network error: ${e instanceof Error ? e.message : String(e)}`;
       }
@@ -2596,9 +2596,7 @@ export async function executeTool(
         } catch (e) {
           return `Lead submission Slack error: ${e instanceof Error ? e.message : String(e)}`;
         }
-      }
-
-      return `✅ Lead captured successfully for tenant ${leadDetails.tenantId}: ${leadDetails.name} (${leadDetails.email}${leadDetails.company ? `, ${leadDetails.company}` : ""}). Configure LEAD_CAPTURE_ENDPOINT or SLACK_WEBHOOK_URL to forward externally.`;
+      }        return `Lead captured successfully for tenant ${leadDetails.tenantId}: ${leadDetails.name} (${leadDetails.email}${leadDetails.company ? `, ${leadDetails.company}` : ""}). Configure LEAD_CAPTURE_ENDPOINT or SLACK_WEBHOOK_URL to forward externally.`;
     }
 
     case "lead_capture_enrich": {
@@ -2747,10 +2745,10 @@ export async function executeTool(
       });
       const res = await sendQuoteByEmail(quote);
       if (res.previewOnly) {
-        return `✅ Preventivo ${quote.quoteId} generato. (RESEND_API_KEY non configurata: anteprima salvata)\n\n${formatQuoteMarkdown(quote)}`;
+        return `Preventivo ${quote.quoteId} generato. (RESEND_API_KEY non configurata: anteprima salvata)\n\n${formatQuoteMarkdown(quote)}`;
       }
       if (res.ok) {
-        return `✅ Preventivo ${quote.quoteId} inviato con successo via email a ${email}! (ID: ${res.messageId || "ok"})`;
+        return `Preventivo ${quote.quoteId} inviato con successo via email a ${email}! (ID: ${res.messageId || "ok"})`;
       }
       return `Errore durante l'invio dell'email per il preventivo ${quote.quoteId}.`;
     }

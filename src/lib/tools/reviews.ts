@@ -171,7 +171,7 @@ export async function replyToBusinessReview(
   logAudit("review_reply_saved_locally", { tenantId, reviewId });
   return {
     ok: true,
-    message: `✅ Risposta registrata per la recensione ${reviewId} (autore: ${target?.authorName || "Cliente"}):\n"${cleanReply}"`,
+    message: `Risposta registrata per la recensione ${reviewId} (autore: ${target?.authorName || "Cliente"}):\n"${cleanReply}"`,
   };
 }
 
@@ -180,11 +180,10 @@ export function formatReviewsMarkdown(reviews: GoogleBusinessReview[]): string {
 
   return reviews
     .map((r, i) => {
-      const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
       const replyBlock = r.reply
         ? `\n  ↳ **Risposta della sede:** "${r.reply.comment}" (${r.reply.updateTime.slice(0, 10)})`
         : "\n  ↳ *Nessuna risposta pubblicata.*";
-      return `[${i + 1}] **${r.authorName}** — ${stars} (${r.rating}/5)\n  "${r.comment}" (ID: \`${r.reviewId}\`, Data: ${r.createTime.slice(0, 10)})${replyBlock}`;
+      return `[${i + 1}] **${r.authorName}** — ${r.rating}/5\n  "${r.comment}" (ID: \`${r.reviewId}\`, Data: ${r.createTime.slice(0, 10)})${replyBlock}`;
     })
     .join("\n\n");
 }

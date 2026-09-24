@@ -275,10 +275,10 @@ export default function InstallClient() {
                 </div>
                 <div className="p-5 font-mono text-xs md:text-sm space-y-3 leading-relaxed text-neutral-300">
                   <div className="flex items-center gap-2 text-indigo-400">
-                    <span>❯ agentcloud run email-assistant --prompt &quot;Invia riassunto lead settimanali&quot;</span>
+                    <span>$ agentcloud run email-assistant --prompt &quot;Invia riassunto lead settimanali&quot;</span>
                   </div>
-                  <div className="text-neutral-500">✔ Connessione stabilita con cloud.agentcloud.agency</div>
-                  <div className="text-neutral-500">✔ Agente &apos;email-assistant&apos; caricato con successo</div>
+                  <div className="text-neutral-500">Connessione stabilita con cloud.agentcloud.agency</div>
+                  <div className="text-neutral-500">Agente &apos;email-assistant&apos; caricato con successo</div>
                   <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-neutral-300">
                     <span className="text-emerald-400 font-semibold">[Output Agente]:</span> Trovati 14 lead qualificati negli ultimi 7 giorni. Report generato e inoltrato al canale configurato.
                   </div>

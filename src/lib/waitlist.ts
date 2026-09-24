@@ -1,9 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { MAX_SPOTS } from "@/lib/waitlist-constants";
-
-// Posti totali legacy (non più limitante: la waitlist è ora illimitata con posizione in coda).
-export { MAX_SPOTS };
+// Nessun limite di posti: la waitlist è illimitata (solo posizione in coda).
 
 export type QueueInfo = {
   position: number; // 1-based
@@ -198,21 +195,6 @@ export async function getAhead(email: string): Promise<AheadEntry[]> {
   } catch {
     return [];
   }
-}
-
-/**
- * Conta gli utenti che occupano un posto (legacy, per compatibilità).
- */
-async function countTakenSpots(): Promise<number> {
-  return getTotalCount();
-}
-
-/**
- * Posti rimanenti legacy (non più usato per bloccare, ma mantenuto per compatibilità).
- */
-export async function getRemainingSpots(): Promise<number> {
-  const taken = await countTakenSpots();
-  return Math.max(MAX_SPOTS - taken, 0);
 }
 
 /**

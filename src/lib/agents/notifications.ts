@@ -125,7 +125,7 @@ const TOOL_ACTION_RULES: Record<string, ToolActionRule> = {
   lead_capture_submit: {
     kind: "lead_submitted",
     success: (r) =>
-      /Response: 2\d\d/.test(r) || r.startsWith("✅ Lead captured"),
+      /Response: 2\d\d/.test(r) || r.startsWith("Lead captured"),
     params: (input) => ({
       email: input.email || "",
       name: input.name || "",
@@ -181,7 +181,7 @@ const TOOL_ACTION_RULES: Record<string, ToolActionRule> = {
 
   gmail_send: {
     kind: "email_sent",
-    success: (r) => r.startsWith("✅ Email sent"),
+    success: (r) => r.startsWith("Email sent"),
     params: (input) => ({
       to: input.to || "",
       subject: input.subject || "",
@@ -206,7 +206,7 @@ const TOOL_ACTION_RULES: Record<string, ToolActionRule> = {
 
   calendar_set_reminder: {
     kind: "calendar_reminder_set",
-    success: (r) => r.startsWith("✅ Reminder set"),
+    success: (r) => r.startsWith("Reminder set"),
     params: (input) => ({
       event_id: input.event_id || "",
       minutes: input.minutes || "",

@@ -238,7 +238,7 @@ export async function executeWebSearch(
   try {
     const { searchWithChrome, isChromeAvailable } = await import("./chrome-search");
     if (isChromeAvailable()) {
-      console.log("🔍 Ricerca via Chrome headless...");
+      console.log("Ricerca via Chrome headless...");
       const chromeResult = await searchWithChrome(params.query, params.maxResults || 5);
       // Converti il formato Chrome in formato TavilySearchResponse
       return {

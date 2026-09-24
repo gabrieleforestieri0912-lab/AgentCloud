@@ -11,7 +11,6 @@ import { ArrowRight, Sparkles, ShieldCheck, Clock3, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
 import CountdownTimer from "./CountdownTimer";
-import { MAX_SPOTS } from "@/lib/waitlist-constants";
 
 export default function CTASection() {
   const { dict } = useLanguage();
@@ -104,7 +103,7 @@ export default function CTASection() {
           ))}
         </motion.div>
 
-        {/* Countdown + posti founding — coerenti con waitlist-constants */}
+        {/* Countdown — coerente con waitlist-constants */}
         <motion.div
           className="mx-auto mt-6 flex flex-col items-center gap-3"
           variants={{
@@ -114,9 +113,9 @@ export default function CTASection() {
         >
           <CountdownTimer className="max-w-sm" />
           <p className="text-xs font-bold tracking-wide text-neutral-500">
-            Lancio 1 ottobre 2026 ore 16:00 — <span className="text-brand-300">{MAX_SPOTS} posti founding</span> • stessa data del proxy e di <code className="rounded bg-white/5 px-1">LAUNCH_AT</code>
+            Lancio 1 ottobre 2026 ore 16:00 — <span className="text-brand-300">waitlist aperta a tutti</span>
           </p>
-          <p className="max-w-xl text-xs font-semibold leading-4 text-neutral-500">Visual: CountdownTimer esistente + posti da <code className="rounded bg-white/5 px-1">MAX_SPOTS</code>, nessuna metrica inventata.</p>
+          <p className="max-w-xl text-xs font-semibold leading-4 text-neutral-500">Visual: CountdownTimer esistente, nessuna metrica inventata.</p>
         </motion.div>
 
         <motion.div

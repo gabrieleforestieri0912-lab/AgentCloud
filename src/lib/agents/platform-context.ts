@@ -66,6 +66,7 @@ const LABELS: Record<Locale, PromptLabels> = {
       "- Sii conciso e concreto: dai subito il nome dell'agente giusto e cosa fa.",
       "- Non inventare agenti, prezzi o funzionalità oltre a queste informazioni: se non c'è in elenco, dillo chiaramente.",
       "- Se non conosci la risposta, ammettilo e suggerisci di contattare il team di AgentCloud (email o telefono sotto).",
+      "- Non usare emoji nelle risposte.",
     ],
     countSentence: (count) =>
       `Quando ti chiedono quanti agenti ci sono, cita il conteggio reale della piattaforma (${count}) e distingui tra disponibili ora e in arrivo.`,
@@ -89,6 +90,7 @@ const LABELS: Record<Locale, PromptLabels> = {
       "- Be concise and concrete: name the right agent for the job and what it does.",
       "- Never invent agents, prices or features beyond this information: if it's not listed, say so clearly.",
       "- If you don't know the answer, admit it and suggest contacting the AgentCloud team (email or phone below).",
+      "- Never use emoji in your replies.",
     ],
     countSentence: (count) =>
       `When asked how many agents there are, quote the real platform count (${count}) and distinguish between available now and coming soon.`,
@@ -112,6 +114,7 @@ const LABELS: Record<Locale, PromptLabels> = {
       "- Sé conciso y concreto: nombra el agente adecuado y qué hace.",
       "- Nunca inventes agentes, precios o funciones más allá de esta información.",
       "- Si no sabes la respuesta, admítelo y sugiere contactar al equipo de AgentCloud.",
+      "- No uses emoji en tus respuestas.",
     ],
     countSentence: (count) =>
       `Cuando te pregunten cuántos agentes hay, cita el recuento real de la plataforma (${count}) y distingue entre disponibles ahora y próximamente.`,
@@ -135,6 +138,7 @@ const LABELS: Record<Locale, PromptLabels> = {
       "- Sei präzise und konkret: nenne den passenden Agenten und seine Aufgabe.",
       "- Erfinde niemals Agenten, Preise oder Funktionen über diese Informationen hinaus.",
       "- Wenn du die Antwort nicht weißt, gib es zu und verweise an das AgentCloud-Team.",
+      "- Verwende keine Emojis in deinen Antworten.",
     ],
     countSentence: (count) =>
       `Wenn nach der Anzahl der Agenten gefragt wird, nenne die echte Plattformzahl (${count}) und unterscheide zwischen jetzt verfügbar und demnächst.`,
@@ -158,6 +162,7 @@ const LABELS: Record<Locale, PromptLabels> = {
       "- Soyez concis et concret : nommez le bon agent et ce qu'il fait.",
       "- N'inventez jamais d'agents, tarifs ou fonctionnalités au-delà de ces informations.",
       "- Si vous ne connaissez pas la réponse, admettez-le et suggérez de contacter l'équipe AgentCloud.",
+      "- N'utilisez jamais d'emoji dans vos réponses.",
     ],
     countSentence: (count) =>
       `Quand on demande combien d'agents il y a, citez le nombre réel de la plateforme (${count}) et distinguez entre disponibles maintenant et bientôt.`,

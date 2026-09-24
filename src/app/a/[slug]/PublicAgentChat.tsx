@@ -168,7 +168,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
         if (code === "FREE_LIMIT_REACHED") setPaywallOpen(true);
         updateLastAssistant((last) => ({
           ...last,
-          content: `\n\n⚠️ ${message}`,
+          content: `\n\n${message}`,
           error: true,
         }));
         setIsRunning(false);
@@ -223,7 +223,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
           if (data.type === "error") {
             updateLastAssistant((last) => ({
               ...last,
-              content: last.content + `\n\n⚠️ ${data.message}`,
+              content: last.content + `\n\n${data.message}`,
               error: true,
             }));
             setIsRunning(false);
@@ -233,7 +233,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
     } catch {
       updateLastAssistant((last) => ({
         ...last,
-        content: last.content + `\n\n⚠️ ${dict.publicChat.connectionError}`,
+        content: last.content + `\n\n${dict.publicChat.connectionError}`,
         error: true,
       }));
       setIsRunning(false);
@@ -365,7 +365,7 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
                       href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
                       className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 underline decoration-brand-400/40 underline-offset-2 hover:text-brand-300 transition-colors"
                     >
-                      ✉️ {dict.common.contactSupport}
+                      {dict.common.contactSupport}
                     </a>
                   )}
                   {msg.files && msg.files.length > 0 && (

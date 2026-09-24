@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Check, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
@@ -114,7 +114,7 @@ function CliAuthInner() {
     return (
       <main className="min-h-dvh flex items-center justify-center bg-[#0A0A0F] px-4">
         <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#13131A] p-8 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#10B981]/15 text-[#10B981]">✓</div>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#10B981]/15 text-[#10B981]"><Check size={24} strokeWidth={2.5} /></div>
           <h1 className="mt-3 text-xl font-bold text-white">Reindirizzamento alla CLI…</h1>
           <p className="mt-2 text-sm text-[#9CA3AF]">Stiamo inviando il token al tuo terminale su <code className="rounded bg-white/5 px-1 py-0.5 text-xs">127.0.0.1:{port}</code>.</p>
           <p className="mt-4 text-xs text-[#6B7280]">Se non vieni reindirizzato, <a href={manualUrl} className="text-[#818CF8] underline">clicca qui</a>.</p>

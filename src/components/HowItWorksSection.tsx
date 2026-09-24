@@ -108,7 +108,7 @@ export default function HowItWorksSection() {
             </div>
             <div className="rounded-xl border border-white/5 bg-neutral-950 p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">2. OAuth</p>
-              <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-xs font-bold text-emerald-300">✓ Shopify collegato • token per tenant</div>
+              <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-xs font-bold text-emerald-300"><Check size={12} className="mr-1 inline-block -translate-y-px" />Shopify collegato • token per tenant</div>
             </div>
             <div className="rounded-xl border border-white/5 bg-neutral-950 p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">3. Chat</p>

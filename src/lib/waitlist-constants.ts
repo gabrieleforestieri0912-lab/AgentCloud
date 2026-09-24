@@ -1,6 +1,6 @@
 // Costanti waitlist client-safe (nessuna dipendenza: le importano anche
 // componenti client e il proxy).
-export const MAX_SPOTS = 50;
+// Nessun limite di posti: la waitlist è illimitata (MAX_SPOTS rimosso).
 
 /**
  * Istante di lancio della piattaforma: 1 ottobre 2026, 16:00 ora italiana.

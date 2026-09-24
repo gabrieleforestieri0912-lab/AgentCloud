@@ -5,6 +5,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import {
+  Check,
   Send,
   Bot,
   User,
@@ -205,7 +206,7 @@ export default function AgentChatPage() {
           if (data.type === "error") {
             updateLastAssistant((last) => ({
               ...last,
-              content: last.content + `\n\n⚠️ ${data.message}`,
+              content: last.content + `\n\n${data.message}`,
               error: true,
             }));
             setIsRunning(false);
@@ -215,7 +216,7 @@ export default function AgentChatPage() {
     } catch {
       updateLastAssistant((last) => ({
         ...last,
-        content: last.content + `\n\n⚠️ ${dict.agentChat.connectionError}`,
+        content: last.content + `\n\n${dict.agentChat.connectionError}`,
         error: true,
       }));
       setIsRunning(false);
@@ -318,7 +319,7 @@ export default function AgentChatPage() {
                               className="animate-spin text-brand-400"
                             />
                           ) : (
-                            <span className="text-green-400">✓</span>
+                            <Check size={12} className="text-green-400" />
                           )}
                           <span>{dict.agentChat.using} {tool.name}</span>
                         </div>
@@ -376,7 +377,7 @@ export default function AgentChatPage() {
                       href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
                       className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 underline decoration-brand-400/40 underline-offset-2 hover:text-brand-300 transition-colors"
                     >
-                      ✉️ {dict.common.contactSupport}
+                      {dict.common.contactSupport}
                     </a>
                   )}
                   {msg.files && msg.files.length > 0 && (

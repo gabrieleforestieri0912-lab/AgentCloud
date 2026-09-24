@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
-import { MAX_SPOTS, generateReferralCode, getQueueInfo, getTotalCount, getAhead, provisionAuthUser } from "@/lib/waitlist";
+import { generateReferralCode, getQueueInfo, getTotalCount, getAhead, provisionAuthUser } from "@/lib/waitlist";
 import { hasLaunched } from "@/lib/waitlist-constants";
 import { logAudit } from "@/lib/audit";
 import {
@@ -68,8 +68,6 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      maxSpots: MAX_SPOTS,
-      remaining: Math.max(MAX_SPOTS - total, 0), // legacy compat
       total,
       joined,
       verified,

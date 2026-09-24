@@ -187,7 +187,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 {available ? (
                   isOwned ? (
                     <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3.5 text-sm font-bold text-emerald-300">
-                      ✓ {dict.agentDetail.alreadyPurchased}
+                      {dict.agentDetail.alreadyPurchased}
                     </span>
                   ) : (
                     <AddToCartButton slug={agent.slug} />
@@ -292,7 +292,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     </div>
                   )}
                   {isOwned && (
-                    <p className="mt-3 text-center text-xs font-bold text-emerald-400">✓ {dict.agentDetail.alreadyPurchased}</p>
+                    <p className="mt-3 text-center text-xs font-bold text-emerald-400">{dict.agentDetail.alreadyPurchased}</p>
                   )}
                 </div>
 
