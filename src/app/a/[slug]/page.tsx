@@ -1,15 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAgentBySlug, localizeAgent } from "@/lib/agents";
-
-// Pagina pubblica /a/[slug]: risolve l'agente (catalogo o registry runtime),
-// ne localizza nome/descrizione e delega la chat interattiva a PublicAgentChat.
-// I metadati impostano robots: noindex perché la pagina vive per l'embed/link
-// diretto del cliente, non per l'indicizzazione.
-
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
 import { getLocalizedAgentInfo } from "@/lib/i18n/agentCatalog";
 import { getLocale } from "@/lib/i18n/locale";
+import { getDetailEnrichment } from "@/lib/agents/agent-detail-enrichment";
 import PublicAgentChat from "./PublicAgentChat";
 
 type Props = {
@@ -53,11 +48,17 @@ export default async function PublicAgentPage({ params }: Props) {
   const name = meta.name;
   const description = meta.description;
 
+  // Enrichment for the public embed/info rail (only when catalog agent exists)
+  const enrichment = agentMeta ? getDetailEnrichment(localizeAgent(agentMeta, locale), locale) : null;
+  const agentForChat = agentMeta ? localizeAgent(agentMeta, locale) : null;
+
   return (
     <PublicAgentChat
       slug={slug}
       name={name}
       description={description}
+      enrichment={enrichment}
+      agent={agentForChat}
     />
   );
 }
