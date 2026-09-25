@@ -10,7 +10,6 @@ import Image from "next/image";
 import { ArrowRight, Sparkles, ShieldCheck, Clock3, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
-import CountdownTimer from "./CountdownTimer";
 
 export default function CTASection() {
   const { dict } = useLanguage();
@@ -101,21 +100,6 @@ export default function CTASection() {
               <p className="mt-1 text-xs font-semibold leading-4 text-neutral-400">{b.d}</p>
             </div>
           ))}
-        </motion.div>
-
-        {/* Countdown — coerente con waitlist-constants */}
-        <motion.div
-          className="mx-auto mt-6 flex flex-col items-center gap-3"
-          variants={{
-            hidden: { opacity: 0, y: 12 },
-            visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-          }}
-        >
-          <CountdownTimer className="max-w-sm" />
-          <p className="text-xs font-bold tracking-wide text-neutral-500">
-            Lancio 1 ottobre 2026 ore 16:00 — <span className="text-brand-300">waitlist aperta a tutti</span>
-          </p>
-          <p className="max-w-xl text-xs font-semibold leading-4 text-neutral-500">Visual: CountdownTimer esistente, nessuna metrica inventata.</p>
         </motion.div>
 
         <motion.div
