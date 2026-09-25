@@ -118,6 +118,8 @@ export async function proxy(request: NextRequest) {
 
     // 2b. Bypass via codice di accesso: chi ha inserito il codice admin
     // (waitlist_session / ac_wl_bypass) può navigare ovunque anche pre-lancio.
+    // Se c'è anche una sessione auth, promuovi eventuali email in ADMIN_EMAILS
+    // (altrimenti il bypass saltava ensureAdminRole e l'admin restava "normale").
     const hasWaitlistBypass =
       request.cookies.get("waitlist_session")?.value ||
       request.cookies.get("ac_wl_bypass")?.value;
@@ -126,6 +128,11 @@ export async function proxy(request: NextRequest) {
       try {
         const resolved = await resolveSession(request);
         res = resolved.response;
+        if (resolved.user && isAdminEmail(resolved.user.email)) {
+          try {
+            await ensureAdminRole(resolved.user.id, resolved.user.email);
+          } catch {}
+        }
       } catch {
         res = NextResponse.next();
       }

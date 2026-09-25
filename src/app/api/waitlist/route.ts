@@ -8,6 +8,7 @@ import { getClientIp } from "@/lib/request-ip";
 import { generateReferralCode, getQueueInfo, getTotalCount, getAhead, provisionAuthUser } from "@/lib/waitlist";
 import { hasLaunched } from "@/lib/waitlist-constants";
 import { logAudit } from "@/lib/audit";
+import { isAdminEmail } from "@/lib/admin-access";
 import {
   validateAndSanitizeEmail,
   isHoneypotTriggered,
@@ -187,6 +188,29 @@ export async function POST(request: Request) {
     }
 
     const email = validation.email.toLowerCase();
+
+    // Email in ADMIN_EMAILS: accesso piattaforma, mai iscrizione in coda.
+    if (isAdminEmail(email)) {
+      logAudit("waitlist_admin_email_bypass", { ip: clientIp, email });
+      const total = await getTotalCount().catch(() => null);
+      const sessionToken = `wl_admin_${crypto.randomUUID().replace(/-/g, "")}_${Date.now().toString(36)}`;
+      const expiresIn = 60 * 60 * 24 * 7;
+      const res = NextResponse.json({ success: true, accessGranted: true, total });
+      res.cookies.set("waitlist_session", sessionToken, {
+        path: "/",
+        maxAge: expiresIn,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+      });
+      res.cookies.set("ac_wl_bypass", "1", {
+        path: "/",
+        maxAge: expiresIn,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+      return res;
+    }
 
     const rl = await rateLimit("waitlist", clientIp, {
       limit: WAITLIST_LIMIT,

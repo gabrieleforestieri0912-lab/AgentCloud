@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
 import { completePendingReferrals, ensureWaitlistEntry } from "@/lib/waitlist";
 import { hasLaunched } from "@/lib/waitlist-constants";
+import { ensureAdminRole, isAdminEmail } from "@/lib/admin-access";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -23,7 +24,8 @@ const COOKIE_OPTIONS = {
  *
  * Se l'accesso proviene dalla waitlist (o se la piattaforma è in fase pre-lancio),
  * l'utente viene iscritto automaticamente alla waitlist e reindirizzato a /waitlist
- * con i cookie di stato coda valorizzati.
+ * con i cookie di stato coda valorizzati — ECCETTO admin (ADMIN_EMAILS) e chi
+ * ha già un bypass via codice di accesso (waitlist_session / ac_wl_bypass).
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -46,12 +48,12 @@ export async function GET(request: Request) {
   // Google OAuth = full auth method, so mark as completed.
   // Open Decision #7: referral points awarded only when referred user reaches auth_method_completed=true
   let userEmail: string | null = null;
-  let userIdForReferral: string | null = null;
+  let userId: string | null = null;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       userEmail = user.email ?? null;
-      userIdForReferral = user.id;
+      userId = user.id;
       await supabase
         .from("profiles")
         .update({ auth_method_completed: true })
@@ -65,12 +67,42 @@ export async function GET(request: Request) {
     // Non-blocking: auth gate will catch on next request if needed
   }
 
-  // --- Waitlist flow: se l'utente proviene dalla waitlist o il lancio non è ancora avvenuto ---
+  const cookieHeader = request.headers.get("cookie") || "";
+  const hasAccessBypass =
+    /(?:^|;\s*)waitlist_session=/.test(cookieHeader) ||
+    /(?:^|;\s*)ac_wl_bypass=/.test(cookieHeader);
+  const adminUser = Boolean(userEmail && isAdminEmail(userEmail));
+
+  // Admin whitelist: promuovi ruolo e vai in dashboard — MAI iscrivere in waitlist.
+  if (adminUser && userId) {
+    try {
+      await ensureAdminRole(userId, userEmail);
+    } catch {}
+    const safeNext = isSafeRedirectPath(next) && !next.startsWith("/waitlist")
+      ? next
+      : "/dashboard";
+    const response = NextResponse.redirect(`${origin}${safeNext}`);
+    clearWaitlistSessionCookie(response, cookieHeader);
+    return response;
+  }
+
+  // Bypass via codice di accesso: completa redemption e vai in piattaforma,
+  // senza iscrizione waitlist (il codice esiste proprio per entrare prima del lancio).
+  if (hasAccessBypass) {
+    await completeWaitlistRedemption(supabase, cookieHeader);
+    const safeNext = isSafeRedirectPath(next) && !next.startsWith("/waitlist")
+      ? next
+      : "/dashboard";
+    const response = NextResponse.redirect(`${origin}${safeNext}`);
+    clearWaitlistSessionCookie(response, cookieHeader);
+    return response;
+  }
+
+  // --- Waitlist flow: solo utenti senza privilegi admin/bypass ---
   const isWaitlistTarget = next === "/waitlist" || next.startsWith("/waitlist");
   const isPreLaunch = !hasLaunched();
 
   if (userEmail && (isWaitlistTarget || isPreLaunch)) {
-    const cookieHeader = request.headers.get("cookie") || "";
     const refMatch = cookieHeader.match(/ac_wl_ref=([^;]+)/);
     const refFromCookie = refMatch ? decodeURIComponent(refMatch[1]) : null;
     const effectiveRef = refFromParam || refFromCookie;
@@ -94,28 +126,7 @@ export async function GET(request: Request) {
 
   // --- Beta access: complete waitlist redemption if pending session cookie exists ---
   if (BYPASS_ENABLED) {
-    const cookieHeader = request.headers.get("cookie") || "";
-    const sessionMatch = cookieHeader.match(/waitlist_session=([^;]+)/);
-    const sessionToken = sessionMatch?.[1];
-
-    if (sessionToken) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          await fetch(`${SUPABASE_URL}/functions/v1/complete-waitlist-redemption`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${session.access_token}`,
-              "apikey": SUPABASE_ANON_KEY,
-            },
-            body: JSON.stringify({ session_token: sessionToken }),
-          });
-        }
-      } catch (e) {
-        console.error("Waitlist redemption failed (non-blocking):", e);
-      }
-    }
+    await completeWaitlistRedemption(supabase, cookieHeader);
   }
 
   // Consenti solo destinazioni relative same-origin per evitare open redirect.
@@ -123,20 +134,43 @@ export async function GET(request: Request) {
   const defaultDest = "/dashboard";
   const safeNext = isSafeRedirectPath(next) ? next : defaultDest;
   const response = NextResponse.redirect(`${origin}${safeNext}`);
-
-  // Clear the waitlist_session cookie after attempted redemption
-  if (BYPASS_ENABLED) {
-    const cookieHeader = request.headers.get("cookie") || "";
-    if (cookieHeader.includes("waitlist_session=")) {
-      response.cookies.set("waitlist_session", "", {
-        maxAge: 0,
-        path: "/",
-        sameSite: "lax",
-        secure: true,
-      });
-    }
-  }
-
+  clearWaitlistSessionCookie(response, cookieHeader);
   return response;
 }
 
+async function completeWaitlistRedemption(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  cookieHeader: string,
+) {
+  if (!BYPASS_ENABLED) return;
+  const sessionMatch = cookieHeader.match(/waitlist_session=([^;]+)/);
+  const sessionToken = sessionMatch?.[1];
+  if (!sessionToken) return;
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      await fetch(`${SUPABASE_URL}/functions/v1/complete-waitlist-redemption`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ session_token: sessionToken }),
+      });
+    }
+  } catch (e) {
+    console.error("Waitlist redemption failed (non-blocking):", e);
+  }
+}
+
+function clearWaitlistSessionCookie(response: NextResponse, cookieHeader: string) {
+  if (!cookieHeader.includes("waitlist_session=")) return;
+  response.cookies.set("waitlist_session", "", {
+    maxAge: 0,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+}

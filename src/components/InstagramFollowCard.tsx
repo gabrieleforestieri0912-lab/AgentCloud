@@ -67,7 +67,7 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-bold text-white">Follow us on Instagram</h3>
           <p className="mt-1 text-xs leading-relaxed text-neutral-400">
-            Segui <span className="font-semibold text-neutral-200">@_agentcloud</span> su Instagram e conferma per scalare la classifica. <span className="font-semibold text-amber-300">+1 punto</span> una tantum.
+            Segui <span className="font-semibold text-neutral-200">@_agentcloud</span> su Instagram e conferma per scalare la classifica. <span className="font-semibold text-brand-300">+1 punto</span> una tantum.
           </p>
           <p className="mt-1 text-[11px] text-neutral-500">
             v1 è self-report (honor system) — non verifichiamo via Graph API. Vedi limitazione in PR.
@@ -97,7 +97,7 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
             completed
               ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20"
               : linkClicked || alreadyCompleted
-                ? "bg-gradient-to-r from-amber-500 to-pink-500 text-white shadow-lg shadow-amber-500/20 hover:opacity-90"
+                ? "bg-linear-to-r from-brand-500 to-pink-500 text-white shadow-lg shadow-brand-500/20 hover:opacity-90"
                 : "bg-white/5 text-neutral-500 border border-white/5 cursor-not-allowed"
           }`}
           title={!linkClicked && !completed ? "Apri prima il profilo Instagram" : undefined}
@@ -111,7 +111,7 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className={`mt-3 text-center text-xs font-medium ${completed ? "text-emerald-300" : "text-amber-300"}`}
+          className={`mt-3 text-center text-xs font-medium ${completed ? "text-emerald-300" : "text-brand-300"}`}
         >
           {message}
         </motion.p>

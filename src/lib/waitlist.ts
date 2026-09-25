@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/admin-access";
 // Nessun limite di posti: la waitlist è illimitata (solo posizione in coda).
 
 export type QueueInfo = {
@@ -236,13 +237,18 @@ export async function provisionAuthUser(email: string): Promise<boolean> {
 /**
  * Assicura che un'email sia presente nella tabella waitlist (idempotente).
  * Utilizzato nel flusso OAuth Google per inserire l'utente e preservare l'eventuale referral.
+ * Le email in ADMIN_EMAILS non vengono mai iscritte: sono bypass admin, non coda.
  */
 export async function ensureWaitlistEntry(
   email: string,
   referredBy?: string | null
 ): Promise<{ success: boolean; alreadyJoined: boolean; referralCode?: string | null }> {
-  const supabase = createAdminClient() ?? (await createClient());
   const normalizedEmail = email.toLowerCase().trim();
+  if (isAdminEmail(normalizedEmail)) {
+    return { success: true, alreadyJoined: false, referralCode: null };
+  }
+
+  const supabase = createAdminClient() ?? (await createClient());
 
   // Verifica se è già iscritto
   const { data: existing } = await supabase
