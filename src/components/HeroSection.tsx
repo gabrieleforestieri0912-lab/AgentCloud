@@ -775,31 +775,7 @@ export default function HeroSection() {
             </p>
           )}
 
-          {/* Visual mock UI — mock costruito in JSX/Tailwind, no immagini esterne */}
-          {!hasMessages && (
-            <motion.div
-              className="mx-auto mt-8 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3 text-left"
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, staggerChildren: 0.07 }}
-            >
-              {[
-                { eyeb: "Agente", title: "Shopify Agent", sub: "Prodotti • Ordini • Sconti", dot: "bg-emerald-400" },
-                { eyeb: "Collegamento", title: "Shopify OAuth", sub: "Token per tenant • RLS", dot: "bg-brand-400" },
-                { eyeb: "Output", title: "Link carrello pronto", sub: "Pronto da inviare al cliente", dot: "bg-pink-400" },
-              ].map((c) => (
-                <div key={c.title} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
-                    <span className="text-xs font-bold uppercase tracking-wide text-neutral-500">{c.eyeb}</span>
-                  </div>
-                  <p className="mt-2 text-sm font-bold text-white">{c.title}</p>
-                  <p className="mt-1 text-xs font-semibold leading-4 text-neutral-400">{c.sub}</p>
-                </div>
-              ))}
-            </motion.div>
-          )}
+
 
           {/* Micro-CTA coerente */}
           {!hasMessages && (
