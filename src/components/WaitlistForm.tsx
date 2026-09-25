@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Mail,
   Copy,
@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
+import CountdownTimer from "@/components/CountdownTimer";
 import BrandLogo from "@/components/BrandLogo";
 import BrandIcon from "@/components/BrandIcon";
 import { BRANDS } from "@/lib/brands";
@@ -130,6 +131,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
   const [welcomeError, setWelcomeError] = useState("");
   const [welcomeDone, setWelcomeDone] = useState(false);
   const [joinedEmail, setJoinedEmail] = useState<string | null>(null);
+  const shouldReduceMotion = useReducedMotion();
   const [demoInput, setDemoInput] = useState("");
   const [demoSending, setDemoSending] = useState(false);
   // Demo chat vuota all'avvio: l'utente parte da zero e scrive lui il primo messaggio.
@@ -202,6 +204,17 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
   }, [showForm, showWelcome]);
+
+  // Phase 5: carica Space Grotesk + IBM Plex Sans per dashboard (palette spec)
+  useEffect(() => {
+    const id = "waitlist-dashboard-fonts";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
+    document.head.appendChild(link);
+  }, []);
 
   const refreshRanking = () => {
     fetch("/api/waitlist/ranking")
@@ -515,6 +528,149 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             <span className="block">{w.heroTitleA as string}</span>
             <span className="block bg-linear-to-r from-brand-400 to-pink-400 bg-clip-text text-transparent">{w.heroTitleB as string}</span>
           </h1>
+          <p className="mt-4 max-w-xl 3xl:max-w-2xl text-[14px] xs:text-[15px] leading-relaxed text-neutral-300 sm:text-lg 3xl:text-xl">{w.heroSub as string}</p>
+
+          {/* Counter: numero iscritti + countdown al lancio — visibili sotto il titolo */}
+          <div className="mt-7 flex w-full max-w-[360px] xs:max-w-none flex-col items-center gap-3.5 px-2 xs:px-0 3xl:max-w-[520px] 3xl:gap-4">
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 shadow-sm backdrop-blur sm:px-5 sm:py-2.5"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm sm:h-8 sm:w-8">
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </span>
+              <span className="text-[15px] font-black tracking-tight text-white sm:text-base 3xl:text-lg">
+                {total.toLocaleString(locale === "it" ? "it-IT" : locale === "es" ? "es-ES" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "en-US")}
+              </span>
+              <span className="text-xs font-bold tracking-wide text-neutral-300 sm:text-sm">{w.inList as string}</span>
+            </motion.div>
+            <CountdownTimer className="w-full xs:w-auto 3xl:w-full" />
+          </div>
+
+          {/* Bottone per unirsi — apre il form — touch target 46px minimo — più grande su 3xl */}
+          <motion.button
+            onClick={openForm}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="mt-8 inline-flex min-h-11.5 3xl:min-h-14 items-center gap-2 rounded-full bg-linear-to-r from-brand-500 to-pink-500 px-8 3xl:px-10 py-3.5 xs:py-4 3xl:py-4 text-[15px] xs:text-base 3xl:text-lg font-bold text-white shadow-xl shadow-brand-500/25 transition"
+          >
+            {isSuccess ? (w.heroJoined as string) : (w.heroCta as string)} <ArrowRight className="h-5 w-5" />
+          </motion.button>
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-500">
+            <ShieldCheck className="h-3.5 w-3.5" /> {w.heroTrust as string}
+          </p>
+
+          {/* Classifica: dopo iscrizione, sotto il bottone — dashboard con points breakdown (Phase 5) — responsive su 320px + scala 3xl */}
+          <AnimatePresence>
+            {isSuccess && (queue.position || ranking?.position) && (
+              <motion.div
+                initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3 }}
+                className="mt-8 w-full max-w-xl 3xl:max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-neutral-900/80 text-left backdrop-blur"
+                style={{ willChange: "transform, opacity" }}
+              >
+                {/* Header dark — stack su 320px */}
+                <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 bg-neutral-900 px-4 xs:px-5 py-3 xs:py-4">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <BarChart3 className="h-4 w-4 shrink-0 text-[#E2A33D]" /> {w.rankTitle as string}
+                  </h3>
+                  <span className="shrink-0 rounded-full bg-[#E2A33D]/15 px-2.5 py-1 text-xs font-bold text-[#E2A33D]" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                    #{ranking?.position ?? queue.position} su {ranking?.total ?? queue.total ?? total}
+                  </span>
+                </div>
+
+                {/* Dashboard Paper — Ink/Paper/Amber/Moss */}
+                <div className="bg-[#F7F5F0] p-4 xs:p-5" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                  <div className="text-center">
+                    <p className="text-sm font-bold" style={{ color: "#15231F", fontFamily: "'Space Grotesk', sans-serif" }}>
+                      Sei <span style={{ color: "#E2A33D" }}>#{ranking?.position ?? queue.position}</span> in coda su {ranking?.total ?? queue.total ?? total}
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed" style={{ color: "#4B6357" }}>
+                      {ranking
+                        ? (w.rankPointsText as string)
+                            .replace("{points}", String(ranking.points))
+                            .replace("{referrals}", String(ranking.breakdown.referrals))
+                            .replace("{count}", String(ranking.referralsCompleted))
+                            .replace("{instagram}", String(ranking.breakdown.instagram))
+                        : (w.rankShareHint as string)}
+                    </p>
+                  </div>
+
+                  {/* Points breakdown — più aria su mobile */}
+                  {ranking && (
+                    <div className="mt-4 grid grid-cols-3 gap-1.5 xs:gap-2">
+                      <div className="rounded-xl border p-2.5 xs:p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#E2A33D", color: "#15231F" }}>
+                        <p className="text-base xs:text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.points}</p>
+                        <p className="text-[9px] xs:text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>{w.rankPointsLabel as string}</p>
+                      </div>
+                      <div className="rounded-xl border p-2.5 xs:p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#4B6357", color: "#15231F" }}>
+                        <p className="text-base xs:text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.referralsCompleted}</p>
+                        <p className="text-[9px] xs:text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>Referral ×3</p>
+                      </div>
+                      <div className="rounded-xl border p-2.5 xs:p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#4B6357", color: "#15231F" }}>
+                        <p className="text-base xs:text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.instagramFollow}</p>
+                        <p className="text-[9px] xs:text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>Instagram ×1</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Referral link — stack input+button su 320px solo se necessario, truncate gestito */}
+                  <div className="mt-4 rounded-xl border bg-white p-3 xs:p-3" style={{ borderColor: "#4B6357" }}>
+                    <p className="text-xs font-bold" style={{ color: "#15231F", fontFamily: "'Space Grotesk', sans-serif" }}>{w.queueLinkLabel as string}</p>
+                    <div className="mt-2 flex gap-2">
+                      <code className="min-w-0 flex-1 truncate rounded-full border px-3 py-2.5 text-xs" style={{ backgroundColor: "#F7F5F0", borderColor: "#4B6357", color: "#15231F" }}>{referralLink || (w.rankGenerating as string)}</code>
+                      <button onClick={copyLink} className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold text-white" style={{ backgroundColor: "#15231F" }}>
+                        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? (w.queueCopied as string) : (w.queueCopy as string)}
+                      </button>
+                    </div>
+                    <div className="mt-3 grid grid-cols-4 gap-1.5 xs:gap-2">
+                      <a href={`https://wa.me/?text=${shareTextEncoded}`} target="_blank" rel="noopener noreferrer" className="rounded-full py-2.5 text-center text-[11px] xs:text-xs font-bold text-white" style={{ backgroundColor: "#4B6357" }}>WA</a>
+                      <a href={`https://twitter.com/intent/tweet?text=${shareTextEncoded}`} target="_blank" rel="noopener noreferrer" className="rounded-full border bg-white py-2.5 text-center text-[11px] xs:text-xs font-bold" style={{ borderColor: "#15231F", color: "#15231F" }}>X</a>
+                      <a href={`mailto:?subject=${encodeURIComponent("AgentCloud Waitlist")}&body=${shareTextEncoded}`} className="rounded-full py-2.5 text-center text-[11px] xs:text-xs font-bold text-white" style={{ backgroundColor: "#15231F" }}>Email</a>
+                      <a href={`sms:?&body=${shareTextEncoded}`} className="rounded-full py-2.5 text-center text-[11px] xs:text-xs font-bold text-white" style={{ backgroundColor: "#E2A33D", color: "#15231F" }}>SMS</a>
+                    </div>
+                  </div>
+
+                  {/* 5 davanti */}
+                  {ahead.length > 0 ? (
+                    <div className="mt-4">
+                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#4B6357", fontFamily: "'Space Grotesk', sans-serif" }}>{w.rankAheadTitle as string}</p>
+                      <ol className="mt-2 space-y-1.5">
+                        {ahead.map((a) => (
+                          <li key={a.rank} className="flex items-center justify-between gap-2 rounded-xl border bg-white px-2.5 xs:px-3 py-2" style={{ borderColor: "#4B6357" }}>
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: "#4B6357" }}>#{a.rank}</span>
+                              <span className="truncate text-sm font-medium" style={{ color: "#15231F" }}>{a.emailMasked}</span>
+                            </span>
+                            <span className="shrink-0 text-[11px] xs:text-xs" style={{ color: "#4B6357" }}>{w.rankAheadRow as string}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  ) : (
+                    <p className="mt-3 rounded-xl px-3 py-2 text-center text-xs font-bold" style={{ backgroundColor: "#E2A33D", color: "#15231F" }}>
+                      {w.rankTopNote as string}
+                    </p>
+                  )}
+                </div>
+
+                {/* Instagram card — still inside dashboard, but with Paper styling */}
+                <div className="bg-[#F7F5F0] px-5 pb-5" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                  <InstagramFollowCard onCompleted={refreshRanking} />
+                </div>
+
+                <div className="bg-neutral-900 px-5 py-3">
+                  <button onClick={openForm} className="flex w-full items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
+                    <Copy className="h-4 w-4" /> Vedi dettagli referral
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Demo live: logo + benvenuto + 4 suggerimenti quando vuota, poi chat reale — più grande e visibile */}

@@ -489,44 +489,7 @@ export default function HeroSection() {
             {dict.hero.subtitle}
           </motion.p>
 
-          {/* Eyebrow di fiducia + blocchi concreti (3) — solo transform/opacity */}
-          <motion.div
-            className="mx-auto mt-6 flex flex-wrap justify-center gap-2"
-            variants={{
-              hidden: { opacity: 0, y: 12 },
-              visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-            }}
-          >
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-900/70 px-3 py-1.5 text-xs font-bold text-neutral-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Shopify OAuth live
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-900/70 px-3 py-1.5 text-xs font-bold text-neutral-300">
-              4 messaggi gratis per agente
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-900/70 px-3 py-1.5 text-xs font-bold text-neutral-300">
-              RLS per tenant — nessun segreto nel client
-            </span>
-          </motion.div>
 
-          <motion.div
-            className="mx-auto mt-6 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3 text-left"
-            variants={{
-              hidden: { opacity: 0, y: 12 },
-              visible: { opacity: 1, y: 0, transition: { duration: 0.6, staggerChildren: 0.08 } },
-            }}
-          >
-            {[
-              { k: "Shopify", t: "Cerca prodotti, genera link carrello, verifica stato ordine via OAuth.", c: "shopify-agent" },
-              { k: "Lead & Vendite", t: "Cattura lead, arricchisci profilo, notifica Slack/HubSpot.", c: "lead-capture" },
-              { k: "Calendario", t: "Disponibilità Google Calendar, prenota con Meet, invia conferma.", c: "calendar-booking" },
-            ].map((b) => (
-              <div key={b.k} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-3.5 backdrop-blur-sm">
-                <p className="text-xs font-extrabold uppercase tracking-wide text-brand-300">{b.k}</p>
-                <p className="mt-1.5 text-sm font-semibold leading-5 text-neutral-300">{b.t}</p>
-                <p className="mt-2 text-xs font-bold text-neutral-500">{b.c}</p>
-              </div>
-            ))}
-          </motion.div>
 
           {/* ── Inline Mini-Chat Box ── */}
           <motion.div
