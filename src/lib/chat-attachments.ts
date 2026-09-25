@@ -17,6 +17,28 @@ export const CHAT_ATTACH_MAX_BYTES = 8 * 1024 * 1024;
 export const CHAT_ATTACH_MAX_FILES = 6;
 export const CHAT_ATTACH_TEXT_CAP = 80_000;
 
+/**
+ * Prompt dettagliato per l'analisi delle immagini (vision).
+ * Usato come testo di fallback / istruzione quando l'utente invia una o più immagini:
+ * obbliga il modello a descrivere in modo esaustivo prima di rispondere.
+ */
+export const DETAILED_IMAGE_ANALYSIS_PROMPT = `Analizza l'immagine allegata in modo estremamente dettagliato, preciso ed esaustivo. Descrivi con cura:
+- Soggetti principali e secondari (persone, animali, oggetti, elementi)
+- Colori dominanti, palette, luci, ombre e composizione / prospettiva
+- Testo visibile: trascrivi esattamente ogni scritta, numero, etichetta o watermark presente
+- Contesto, ambiente, sfondo, stile e atmosfera
+- Dettagli rilevanti: espressioni, posture, azioni, marchi, materiali, dimensioni percepite
+- Qualsiasi elemento utile o particolare degno di nota
+
+Struttura la descrizione in modo chiaro e ordinato (usa elenchi puntati se utile). Dopo la descrizione dettagliata, rispondi in modo completo e utile alla richiesta dell'utente, collegando esplicitamente l'analisi visiva alla domanda. Sii preciso, non generico, e non omettere dettagli visibili.`;
+
+export function buildVisionText(userText: string, hasImages: boolean): string {
+  if (!hasImages) return userText.trim();
+  const trimmed = userText.trim();
+  if (!trimmed) return DETAILED_IMAGE_ANALYSIS_PROMPT;
+  return `${trimmed}\n\n---\nISTRUZIONE ANALISI IMMAGINE: ${DETAILED_IMAGE_ANALYSIS_PROMPT}`;
+}
+
 const TEXT_EXT = /\.(txt|csv|md|json|html|htm|xml|log|tsv|yml|yaml|css|js|ts|tsx|py|rb|go|sql)$/i;
 
 export type ChatAttachmentKind = "image" | "text" | "file";
@@ -85,7 +107,10 @@ export async function readDroppedFiles(
     try {
       if (isImageFile(file)) {
         // Le immagini restano come data URL: servono per l'anteprima nella bolla
-        // e possono essere passate al tool read_file dell'agente.
+        // e per il percorso vision (base64). Usiamo il data URL anche come
+        // previewUrl così la conversazione resta visualizzabile dopo un reload
+        // (i blob: URL di createObjectURL non sopravvivono al reload / al
+        // salvataggio in localStorage e mostrerebbero alt="").
         const content = await readAsDataUrl(file);
         attachments.push({
           id,
@@ -94,7 +119,7 @@ export async function readDroppedFiles(
           mime: file.type || "image/*",
           size: file.size,
           content,
-          previewUrl: URL.createObjectURL(file),
+          previewUrl: content,
         });
       } else if (isTextFile(file)) {
         // I file di testo vengono letti e troncati a un tetto per non saturare

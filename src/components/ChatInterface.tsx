@@ -53,7 +53,7 @@ import {
   chatAttachLabels,
   useChatAttachments,
 } from "@/components/ChatAttachments";
-import { composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
+import { buildVisionText, composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import { getEnabledTools, AGENT_RUNTIME } from "@/lib/agents/registry";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
@@ -757,9 +757,10 @@ export default function ChatInterface({
   ) {
     const apiText = composeUserContent(text, pending);
     const visionBlocks = toVisionBlocks(pending);
-    // apiContent può essere stringa (solo testo) o array blocchi vision (testo + immagini) — mai mostra filename
-    const apiContent: unknown = visionBlocks.length > 0
-      ? ([{ type: "text" as const, text: apiText || "Analizza l'immagine allegata e descrivi cosa vedi, poi rispondi alla richiesta dell'utente." }, ...visionBlocks] as unknown)
+    const hasImages = visionBlocks.length > 0;
+    const visionText = buildVisionText(apiText, hasImages);
+    const apiContent: unknown = hasImages
+      ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown)
       : apiText;
     // Evita invio vuoto: serve testo o almeno un'immagine
     if ((!apiText || !apiText.trim()) && visionBlocks.length === 0) return;
@@ -1735,7 +1736,7 @@ export default function ChatInterface({
                     </div>
                   ))}
                 <div
-                  className={`max-w-[75%] sm:max-w-[65%] ${msg.role === "user" ? "order-1" : ""} w-full`}
+                  className={`${msg.role === "user" ? "max-w-[68%] sm:max-w-[48%] order-1" : "max-w-[78%] sm:max-w-[65%]"} w-full`}
                 >
                   {/* Chi sta parlando: nome dell'agente sopra la bolla */}
                   {msg.role === "assistant" && msg.agentName && (
@@ -1783,8 +1784,9 @@ export default function ChatInterface({
                                 <img
                                   key={file.id}
                                   src={file.previewUrl}
-                                  alt={file.name}
-                                  className="max-h-36 max-w-45 rounded-lg object-cover"
+                                  alt={file.name || "Immagine allegata"}
+                                  className="max-h-36 max-w-[180px] rounded-lg object-cover border border-white/10"
+                                  loading="lazy"
                                 />
                               ) : (
                                 <span
@@ -1892,15 +1894,7 @@ export default function ChatInterface({
             </div>
         </div>
 
-        {!isAtBottom && messages.length > 0 && (
-          <button
-            onClick={() => pinToBottom(true, true)}
-            className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-neutral-800 border border-white/10 px-3 py-1.5 text-xs font-bold text-white shadow-lg hover:bg-neutral-700"
-          >
-            <ChevronDown size={12} />
-            Vai in fondo
-          </button>
-        )}
+
 
         {/* Input area — solo quando ci sono messaggi */}
         <div

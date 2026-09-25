@@ -24,7 +24,7 @@ import {
   chatAttachLabels,
   useChatAttachments,
 } from "@/components/ChatAttachments";
-import { composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
+import { buildVisionText, composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import SubscribePaywallModal from "@/components/SubscribePaywallModal";
 
@@ -107,8 +107,10 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
 
     const apiText = composeUserContent(input, pending);
     const visionBlocks = toVisionBlocks(pending);
-    const userContent: unknown = visionBlocks.length > 0
-      ? ([{ type: "text" as const, text: apiText || "Analizza l'immagine allegata e descrivi cosa vedi, poi rispondi alla richiesta dell'utente." }, ...visionBlocks] as unknown)
+    const hasImages = visionBlocks.length > 0;
+    const visionText = buildVisionText(apiText, hasImages);
+    const userContent: unknown = hasImages
+      ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown)
       : apiText;
     // Non mostrare mai il filename nel fumetto (richiesta utente) — usa placeholder generico
     const displayContent =
@@ -337,8 +339,9 @@ export default function PublicAgentChat({ slug, name, description }: Props) {
                                 <img
                                   key={file.id}
                                   src={file.previewUrl}
-                                  alt={file.name}
-                                  className="max-h-28 max-w-35 rounded-lg object-cover"
+                                  alt={file.name || "Immagine allegata"}
+                                  className="max-h-28 max-w-[140px] rounded-lg object-cover border border-white/10"
+                                  loading="lazy"
                                 />
                               ) : (
                                 <span

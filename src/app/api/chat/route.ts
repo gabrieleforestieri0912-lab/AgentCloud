@@ -58,6 +58,12 @@ export async function POST(req: Request) {
     const conversationMessages: LLMMessage[] = (messages as unknown[]).map(
       (m) => {
         const msg = m as { role?: string; content?: unknown };
+        if (Array.isArray(msg.content)) {
+          return {
+            role: msg.role === "assistant" ? "assistant" : "user",
+            content: msg.content as unknown as LLMMessage["content"],
+          };
+        }
         return {
           role: msg.role === "assistant" ? "assistant" : "user",
           content:

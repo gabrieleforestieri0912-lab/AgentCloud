@@ -204,8 +204,8 @@ export function AttachmentChips({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.previewUrl}
-              alt=""
-              className="h-8 w-8 rounded-lg object-cover shrink-0"
+              alt={item.name || "Immagine allegata"}
+              className="h-8 w-8 rounded-lg object-cover shrink-0 border border-white/10"
             />
           ) : (
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800 text-brand-400 shrink-0">

@@ -27,7 +27,7 @@ import {
   chatAttachLabels,
   useChatAttachments,
 } from "@/components/ChatAttachments";
-import { composeUserContent } from "@/lib/chat-attachments";
+import { buildVisionText, composeUserContent, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 
 // La conversazione dell'hero viene salvata qui così la pagina chat completa
@@ -202,12 +202,16 @@ export default function HeroSection() {
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
-    const apiContent = composeUserContent(trimmed, pending);
+    const apiText = composeUserContent(trimmed, pending);
+    const visionBlocks = toVisionBlocks(pending);
+    const hasImages = visionBlocks.length > 0;
+    const visionText = buildVisionText(apiText, hasImages);
+    const apiContent: unknown = hasImages ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown) : apiText;
 
     const userMsg: HeroMessage = {
       id: heroId(),
       role: "user",
-      content: trimmed || pending.map((a) => a.name).join(", "),
+      content: trimmed || (hasImages ? "Immagine allegata" : pending.map((a) => a.name).join(", ") || "File allegato"),
       created_at: new Date().toISOString(),
       attachments: pending.map((a) => ({
         id: a.id,
@@ -235,7 +239,7 @@ export default function HeroSection() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{ role: "user", content: apiContent }],
+          messages: [{ role: "user", content: apiContent as unknown }],
         }),
         signal: controller.signal,
       });
@@ -566,8 +570,9 @@ export default function HeroSection() {
                                     <img
                                       key={file.id}
                                       src={file.previewUrl}
-                                      alt={file.name}
-                                      className="max-h-20 max-w-30 rounded-lg object-cover border border-white/10"
+                                      alt={file.name || "Immagine allegata"}
+                                      className="max-h-20 max-w-[120px] rounded-lg object-cover border border-white/10"
+                                      loading="lazy"
                                     />
                                   ) : (
                                     <span

@@ -26,7 +26,7 @@ import {
   chatAttachLabels,
   useChatAttachments,
 } from "@/components/ChatAttachments";
-import { composeUserContent, toFilesMap } from "@/lib/chat-attachments";
+import { buildVisionText, composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 
 type StreamEvent =
@@ -99,13 +99,16 @@ export default function AgentChatPage() {
     const pending = attach.attachments;
     if ((!input.trim() && pending.length === 0) || isRunning || !agent) return;
 
-    // Il corpo completo (contenuti file inclusi) va all'API così l'agente può
-    // leggere gli allegati; la bolla visibile conserva solo il testo più i chip
-    // di anteprima compatti, non i dump grezzi dei file.
-    const userContent = composeUserContent(input, pending);
-    const filesMap = toFilesMap(pending);
+    const apiText = composeUserContent(input, pending);
+    const visionBlocks = toVisionBlocks(pending);
+    const hasImages = visionBlocks.length > 0;
+    const visionText = buildVisionText(apiText, hasImages);
+    const userContent: unknown = hasImages
+      ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown)
+      : apiText;
+    const filesMap = toFilesMap(pending.filter((a) => a.kind !== "image"));
     const displayContent =
-      input.trim() || pending.map((a) => a.name).join(", ");
+      input.trim() || (pending.some((a) => a.kind === "image") ? "Immagine allegata" : pending.map((a) => a.name).join(", ") || "File allegato");
     setInput("");
     attach.clear();
     setIsRunning(true);
@@ -340,8 +343,9 @@ export default function AgentChatPage() {
                                 <img
                                   key={file.id}
                                   src={file.previewUrl}
-                                  alt={file.name}
-                                  className="max-h-28 max-w-[140px] rounded-lg object-cover"
+                                  alt={file.name || "Immagine allegata"}
+                                  className="max-h-28 max-w-[140px] rounded-lg object-cover border border-white/10"
+                                  loading="lazy"
                                 />
                               ) : (
                                 <span

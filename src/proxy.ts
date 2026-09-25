@@ -172,7 +172,7 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/api/whatsapp/webhook") ||
       pathname.startsWith("/api/email/webhook") ||
       pathname.startsWith("/api/integrations/") ||
-      pathname.startsWith("/api/auth/google/callback") ||
+      pathname.startsWith("/api/auth/google") ||
       pathname.startsWith("/auth/callback");
     // CLI auth: deve essere raggiungibile anche pre-lancio senza waitlist gate (usa stesso DB Supabase)
     const isCliAuth = pathname === "/cli/auth" || pathname.startsWith("/cli/") || pathname.startsWith("/api/cli");
