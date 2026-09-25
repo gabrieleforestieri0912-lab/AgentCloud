@@ -116,10 +116,6 @@ export default function IntegrationsSection() {
           ))}
         </motion.div>
 
-        <div className="mx-auto max-w-5xl rounded-2xl border border-white/5 bg-neutral-900/40 p-3 text-center text-xs font-semibold text-neutral-500">
-          Visual: griglia JSX/Tailwind da <code className="rounded bg-white/5 px-1">src/lib/integrations.ts</code> — live 8/40, nessun asset esterno.
-        </div>
-
         <motion.div
           className="text-center mt-8"
           initial={{ opacity: 0, scale: 0.95 }}
