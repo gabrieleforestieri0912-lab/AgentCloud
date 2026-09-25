@@ -60,8 +60,21 @@ export default async function AgentsPage() {
   );
 
   return (
-    <main className="relative min-h-screen bg-neutral-950 overflow-hidden">
-      <Navbar marketplaceAgents={navAgents} />
+    <main className="relative min-h-screen overflow-x-hidden bg-neutral-950">
+      {/* Sfondo pagina — stesso linguaggio della landing: gradiente + radiali +
+          hairline in un layer fisso e non interattivo, così le bolle dei brand
+          (z-0) restano visibili sopra il gradiente e sotto il contenuto (z-10). */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute inset-0 dark-gradient-main" />
+        <div
+          className="absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 15% 10%, rgba(3,139,254,.18), transparent 32%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.14), transparent 28%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.12), transparent 36%)",
+          }}
+        />
+        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
+      </div>
 
       {/* Floating brand bubbles decoration */}
       <FloatingBrandBubbles
@@ -83,7 +96,9 @@ export default async function AgentsPage() {
         ]}
       />
 
-      <section className="relative z-10 dark-gradient-subtle px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+      <Navbar marketplaceAgents={navAgents} />
+
+      <section className="relative z-10 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-12 max-w-xl">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">

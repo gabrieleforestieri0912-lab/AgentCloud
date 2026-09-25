@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import FloatingBrandBubbles from "@/components/FloatingBrandBubbles";
 import BrandLogo from "@/components/BrandLogo";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -68,9 +69,44 @@ export default async function IntegrationsPage() {
   const comingSoon = INTEGRATIONS.filter((i) => !i.available);
 
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="relative min-h-screen overflow-x-hidden bg-neutral-950">
+      {/* Sfondo — stesso linguaggio della landing e di /agents: il gradiente scuro
+          con radiali e hairline vive nel layer fisso; le bolle (z-0) stanno sopra
+          il gradiente e sotto il contenuto (z-10), altrimenti resterebbero
+          coperte da un fondo opaco. Replica la homepage 1:1. */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute inset-0 dark-gradient-main" />
+        <div
+          className="absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 15% 10%, rgba(3,139,254,.18), transparent 32%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.14), transparent 28%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.12), transparent 36%)",
+          }}
+        />
+        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
+      </div>
+
+      <FloatingBrandBubbles
+        bubbles={[
+          { top: "8%", left: "3%", size: "w-11 h-11", brand: "google", delay: "0s", anim: "animate-float-gentle" },
+          { top: "12%", left: "91%", size: "w-10 h-10", brand: "shopify", delay: "1.2s", anim: "animate-float-reverse" },
+          { top: "22%", left: "2%", size: "w-10 h-10", brand: "stripe", delay: "0.6s", anim: "animate-float-gentle" },
+          { top: "25%", left: "92%", size: "w-11 h-11", brand: "gmail", delay: "1.8s", anim: "animate-float-reverse" },
+          { top: "40%", left: "4%", size: "w-10 h-10", brand: "whatsapp", delay: "0.4s", anim: "animate-float-reverse" },
+          { top: "38%", left: "88%", size: "w-11 h-11", brand: "notion", delay: "2.0s", anim: "animate-float-gentle" },
+          { top: "55%", left: "3%", size: "w-12 h-12", brand: "hubspot", delay: "1.0s", anim: "animate-float-reverse" },
+          { top: "53%", left: "92%", size: "w-10 h-10", brand: "facebook", delay: "1.5s", anim: "animate-float-gentle" },
+          { top: "65%", left: "6%", size: "w-11 h-11", brand: "discord", delay: "1.6s", anim: "animate-float-gentle" },
+          { top: "63%", left: "86%", size: "w-12 h-12", brand: "google", delay: "0.9s", anim: "animate-float-reverse" },
+          { top: "78%", left: "5%", size: "w-10 h-10", brand: "github", delay: "1.1s", anim: "animate-float-gentle" },
+          { top: "76%", left: "91%", size: "w-11 h-11", brand: "trello", delay: "2.2s", anim: "animate-float-reverse" },
+          { top: "88%", left: "4%", size: "w-10 h-10", brand: "linkedin", delay: "0.7s", anim: "animate-float-gentle" },
+          { top: "86%", left: "88%", size: "w-11 h-11", brand: "dropbox", delay: "1.9s", anim: "animate-float-reverse" },
+        ]}
+      />
+
       <Navbar />
-      <section className="px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+      <section className="relative z-10 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-10 text-center">
             <div className="mb-4 flex items-center justify-center gap-2">
