@@ -117,7 +117,7 @@ export default function BundleCard({ bundle }: BundleCardProps) {
             {p === "monthly"
               ? dict.bundleDetail.monthly
               : p === "quarterly"
-                ? dict.bundleDetail.monthly
+                ? dict.bundleDetail.quarterlyShort
                 : dict.bundleDetail.yearly}
           </button>
         ))}
