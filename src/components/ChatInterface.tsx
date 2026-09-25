@@ -1573,15 +1573,13 @@ export default function ChatInterface({
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {AGENTS.map((agent) => (
+                {Array.from(agentsBySlug.values()).map((agent) => (
                   <Link
                     key={agent.slug}
                     href={`/agents/${agent.slug}`}
                     className="flex items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/50 px-4 py-3 hover:bg-neutral-800 hover:border-white/10 transition-all"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-                      <Bot size={20} className="text-brand-400" />
-                    </div>
+                    <AgentAvatar agent={agent} size="md" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-white truncate">{agent.name}</p>
                       <p className="text-xs text-neutral-500 truncate">{agent.description}</p>
