@@ -141,7 +141,7 @@ function CodeBlock({ lang, value }: { lang: string; value: string }) {
       <div className="flex">
         <div
           aria-hidden="true"
-          className="shrink-0 select-none border-r border-white/5 py-2.5 pr-2.5 pl-3 text-right text-xs leading-relaxed text-neutral-500 tabular-nums"
+          className="shrink-0 select-none border-r border-white/5 py-2.5 pr-2.5 pl-3 text-right font-mono text-xs leading-relaxed text-neutral-500 tabular-nums"
         >
           {lines.map((_, i) => (
             <div key={i}>{i + 1}</div>
