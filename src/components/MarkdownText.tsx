@@ -79,6 +79,10 @@ function CodeBlock({ lang, value }: { lang: string; value: string }) {
     [hljs, lang, value],
   );
 
+  // Le righe di `value` coincidono con le righe dell'HTML evidenziato
+  // (hljs preserva i newline), quindi il numero sempre allineato alla riga.
+  const lines = value.split("\n");
+
   const handleCopy = useCallback(async () => {
     const text = value;
     let ok = false;
@@ -130,13 +134,27 @@ function CodeBlock({ lang, value }: { lang: string; value: string }) {
           {copied ? dict.common.copied : dict.common.copy}
         </button>
       </div>
-      <pre className="overflow-x-auto px-3 py-2.5 text-xs leading-relaxed text-brand-100">
-        {html !== null ? (
-          <code className="hljs" dangerouslySetInnerHTML={{ __html: html }} />
-        ) : (
-          <code>{value}</code>
-        )}
-      </pre>
+      {/* Numeri di riga in una colonna separata fuori da <pre>: non finiscono
+          nella copia e restano fissi mentre il codice scorre in orizzontale.
+          Stesso font/ritmo di riga del pre così ogni numero si allinea alla
+          propria riga. */}
+      <div className="flex">
+        <div
+          aria-hidden="true"
+          className="shrink-0 select-none border-r border-white/5 py-2.5 pr-2.5 pl-3 text-right text-xs leading-relaxed text-neutral-500 tabular-nums"
+        >
+          {lines.map((_, i) => (
+            <div key={i}>{i + 1}</div>
+          ))}
+        </div>
+        <pre className="min-w-0 flex-1 overflow-x-auto px-3 py-2.5 text-xs leading-relaxed text-brand-100">
+          {html !== null ? (
+            <code className="hljs" dangerouslySetInnerHTML={{ __html: html }} />
+          ) : (
+            <code>{value}</code>
+          )}
+        </pre>
+      </div>
     </div>
   );
 }

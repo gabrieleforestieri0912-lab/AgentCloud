@@ -4,6 +4,11 @@
   --font-sans: "Manrope", "Inter", sans-serif;
   --font-manrope: "Manrope", "Inter", sans-serif;
 
+  /* Tema unico monospace: alimenta sia il preflight di <pre>/<code> (blocchi
+     e codice inline della chat) sia tutte le utility `font-mono` del sito. */
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+
   --color-brand-50: #e8f5ff;
   --color-brand-100: #b8e0ff;
   --color-brand-200: #8accff;
