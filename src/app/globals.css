@@ -934,3 +934,73 @@ html.light * { scrollbar-color: #c3c8d8 transparent; }
     display: none;
   }
 }
+
+/* ── Sintassi blocchi codice della chat (highlight.js) ─────────────────
+   Classi `.hljs-*` generate da src/lib/code-highlight.ts; tema ispirato a
+   GitHub Dark e tarato sullo sfondo bg-neutral-950 dei blocchi. */
+.hljs {
+  color: #e6edf3;
+  background: transparent;
+}
+.hljs-comment,
+.hljs-quote,
+.hljs-meta {
+  color: #8b949e;
+}
+.hljs-comment,
+.hljs-quote {
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-doctag,
+.hljs-formula {
+  color: #ff7b72;
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta .hljs-string {
+  color: #a5d6ff;
+}
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-template-variable,
+.hljs-variable,
+.hljs-property {
+  color: #79c0ff;
+}
+.hljs-title,
+.hljs-section,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: #d2a8ff;
+}
+.hljs-type,
+.hljs-built_in,
+.hljs-class .hljs-title,
+.hljs-params {
+  color: #ffa657;
+}
+.hljs-tag {
+  color: #7ee787;
+}
+.hljs-subst {
+  color: #e6edf3;
+}
+.hljs-deletion {
+  color: #ffdcd7;
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}

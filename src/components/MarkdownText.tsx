@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Check, Copy } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import {
@@ -7,6 +7,11 @@ import {
   type InlineSegment,
   type MarkdownBlock,
 } from "@/lib/markdown";
+import {
+  highlightCode,
+  loadHighlighter,
+  type Highlighter,
+} from "@/lib/code-highlight";
 
 /**
  * Renderizza il markdown leggero prodotto dall'AI (grassetto, corsivo, codice
@@ -46,12 +51,33 @@ function Inline({ segments }: { segments: InlineSegment[] }) {
 
 /**
  * Blocco di codice fenced con header lingua + bottone "Copia" (Claude-style).
- * Il copia usa la clipboard diagnostica con fallback `execCommand` per i
- * contesti non-secure; il feedback "Copiato!" resta 2s.
+ * Il codice viene colorato per linguaggio con highlight.js (caricato in lazy:
+ * finché non arriva resta incoloro, così server e primo render client
+ * coincidono). Il copia usa la clipboard diagnostica con fallback
+ * `execCommand` per i contesti non-secure; il feedback "Copiato!" resta 2s.
  */
 function CodeBlock({ lang, value }: { lang: string; value: string }) {
   const { dict } = useLanguage();
   const [copied, setCopied] = useState(false);
+
+  const [hljs, setHljs] = useState<Highlighter | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void loadHighlighter().then((h) => {
+      if (alive && h) setHljs(h);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Ricalcolato solo quando cambia il contenuto del blocco: durante lo
+  // streaming ri-colora l'ultimo blocco a ogni tick, i blocchi già completi
+  // restano in cache in useMemo.
+  const html = useMemo(
+    () => (hljs ? highlightCode(hljs, lang, value) : null),
+    [hljs, lang, value],
+  );
 
   const handleCopy = useCallback(async () => {
     const text = value;
@@ -105,7 +131,11 @@ function CodeBlock({ lang, value }: { lang: string; value: string }) {
         </button>
       </div>
       <pre className="overflow-x-auto px-3 py-2.5 text-xs leading-relaxed text-brand-100">
-        <code>{value}</code>
+        {html !== null ? (
+          <code className="hljs" dangerouslySetInnerHTML={{ __html: html }} />
+        ) : (
+          <code>{value}</code>
+        )}
       </pre>
     </div>
   );
