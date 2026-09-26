@@ -9,6 +9,7 @@ import {
 import { getLLMProvider } from "@/lib/llm";
 import type { LLMMessage } from "@/lib/llm";
 import { createWordEmitter } from "@/lib/stream";
+import { OUTPUT_FORMAT_DIRECTIVE } from "@/lib/agents/output-format";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
 /**
@@ -105,7 +106,9 @@ export async function POST(req: Request) {
         // La direttiva di lingua è accodata a ogni variante del prompt
         // (anche a quella generica di ripiego).
         const connectGuidanceChat =
-          "\n\nYou can help WITHOUT any integration connected. If the task would benefit from an app (shopify, gmail, calendar, sheets, slack, notion, hubspot, stripe, whatsapp), provide immediate value first (draft, template, analysis) AND include an inline marker [[CONNECT:provider]] (e.g. [[CONNECT:gmail]]) so the UI renders a card with app logo + Connetti button. Never block due to missing connection.";
+          "\n\nYou can help WITHOUT any integration connected. If the task would benefit from an app (shopify, gmail, calendar, sheets, slack, notion, hubspot, stripe, whatsapp), provide immediate value first (draft, template, analysis) AND include an inline marker [[CONNECT:provider]] (e.g. [[CONNECT:gmail]]) so the UI renders a card with app logo + Connetti button. Never block due to missing connection."
+          // Blocchi fenced con bottone "Copia" (stile Claude): vedi output-format.ts
+          + OUTPUT_FORMAT_DIRECTIVE;
         let systemPrompt = withLanguageDirective(
           "You are a helpful AI assistant." + connectGuidanceChat,
           replyLocale,

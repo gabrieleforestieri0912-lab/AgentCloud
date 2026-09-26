@@ -13,6 +13,7 @@
  *   - `**grassetto**`, `*corsivo*`, `` `codice` `` inline
  *   - elenchi puntati (`• `, `- `, `* `) e numerati (`1. `, `2) `)
  *   - paragrafi separati da righe vuote
+ *   - blocchi di codice fenced (```lang) con bottone "Copia" nella UI
  */
 
 export type InlineSegment =
@@ -29,7 +30,9 @@ export type MarkdownList = {
 export type MarkdownBlock =
   | { type: "paragraph"; segments: InlineSegment[] }
   | { type: "heading"; level: 1 | 2 | 3; segments: InlineSegment[] }
-  | { type: "list"; items: MarkdownList };
+  | { type: "list"; items: MarkdownList }
+  /** Blocco fenced (```lang … ```): `value` è il codice grezzo, senza i delimitatori. */
+  | { type: "code"; lang: string; value: string };
 
 /**
  * Analizza i marcatori inline (`**grassetto**`, `*corsivo*`, `` `codice` ``)
@@ -106,6 +109,11 @@ export function parseMarkdown(text: string): MarkdownBlock[] {
   const blocks: MarkdownBlock[] = [];
   let paragraph: InlineSegment[] = [];
   let listItems: MarkdownList | null = null;
+  // Stato del blocco fenced: dentro un fence le righe sono codice grezzo e
+  // non vengono interpretate (né titoli, né elenchi, né paragrafi uniti).
+  let inCode = false;
+  let codeLang = "";
+  let codeLines: string[] = [];
 
   const flushParagraph = () => {
     if (paragraph.length > 0) {
@@ -122,11 +130,36 @@ export function parseMarkdown(text: string): MarkdownBlock[] {
   };
 
   for (const rawLine of lines) {
+    // Dentro un fence ogni riga (incluse le vuote) è contenuto del codice.
+    if (inCode) {
+      if (/^\s*```/.test(rawLine)) {
+        blocks.push({ type: "code", lang: codeLang, value: codeLines.join("\n") });
+        inCode = false;
+        codeLang = "";
+        codeLines = [];
+      } else {
+        codeLines.push(rawLine);
+      }
+      continue;
+    }
+
     const line = rawLine.trimEnd();
 
     if (line.trim() === "") {
       flushParagraph();
       flushList();
+      continue;
+    }
+
+    // Apertura di un blocco fenced: ``` oppure ```lang. Tollerante verso lo
+    // streaming — un fence mai chiuso viene comunque emesso alla fine.
+    const fence = line.match(/^\s*```([^\s`]*)/);
+    if (fence) {
+      flushParagraph();
+      flushList();
+      inCode = true;
+      codeLang = fence[1];
+      codeLines = [];
       continue;
     }
 
@@ -163,5 +196,31 @@ export function parseMarkdown(text: string): MarkdownBlock[] {
 
   flushParagraph();
   flushList();
+  // Fence non ancora chiuso (risposta ancora in streaming): mostra comunque
+  // il codice ricevuto finora dentro un blocco.
+  if (inCode) {
+    blocks.push({ type: "code", lang: codeLang, value: codeLines.join("\n") });
+  }
   return blocks;
+}
+
+/**
+ * Inserisce un a capo dopo ogni frase (`. ` + maiuscola/numero) così le risposte
+ * dell'AI spezzano le frasi su righe separate, come voleva la chat.
+ *
+ * Applicato SOLO fuori dai blocchi fenced: dentro il codice `console.log("Hi. Ok")`
+ * non deve essere spezzato, altrimenti il fence si rompe in più paragrafi.
+ */
+export function insertSentenceBreaks(text: string): string {
+  let inCode = false;
+  return text
+    .split("\n")
+    .map((line) => {
+      if (/^\s*```/.test(line)) {
+        inCode = !inCode;
+        return line;
+      }
+      return inCode ? line : line.replace(/([.!?]) (?=[A-ZÀ-ÿ0-9])/g, "$1\n\n");
+    })
+    .join("\n");
 }

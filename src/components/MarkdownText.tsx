@@ -1,5 +1,8 @@
 import { useState, useRef, useCallback } from "react";
+import { Check, Copy } from "lucide-react";
+import { useLanguage } from "./LanguageProvider";
 import {
+  insertSentenceBreaks,
   parseMarkdown,
   type InlineSegment,
   type MarkdownBlock,
@@ -41,7 +44,78 @@ function Inline({ segments }: { segments: InlineSegment[] }) {
   );
 }
 
+/**
+ * Blocco di codice fenced con header lingua + bottone "Copia" (Claude-style).
+ * Il copia usa la clipboard diagnostica con fallback `execCommand` per i
+ * contesti non-secure; il feedback "Copiato!" resta 2s.
+ */
+function CodeBlock({ lang, value }: { lang: string; value: string }) {
+  const { dict } = useLanguage();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    const text = value;
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch {
+      // Clipboard API non disponibile (http non-secure): fallback manuale.
+    }
+    if (!ok) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch {
+        ok = false;
+      }
+    }
+    if (!ok) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [value]);
+
+  return (
+    <div className="my-2 overflow-hidden rounded-xl border border-white/10 bg-neutral-950">
+      <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-3 py-1.5">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+          {lang || "code"}
+        </span>
+        <button
+          type="button"
+          onClick={() => void handleCopy()}
+          aria-label="Copy code"
+          className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-bold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          {copied ? (
+            <Check size={11} className="text-emerald-400" />
+          ) : (
+            <Copy size={11} />
+          )}
+          {copied ? dict.common.copied : dict.common.copy}
+        </button>
+      </div>
+      <pre className="overflow-x-auto px-3 py-2.5 text-xs leading-relaxed text-brand-100">
+        <code>{value}</code>
+      </pre>
+    </div>
+  );
+}
+
 function Block({ block }: { block: MarkdownBlock }) {
+  if (block.type === "code") {
+    return <CodeBlock lang={block.lang} value={block.value} />;
+  }
+
   if (block.type === "heading") {
     const Tag = `h${block.level}` as "h1" | "h2" | "h3";
     return (
@@ -82,10 +156,9 @@ export default function MarkdownText({
   text: string;
   onReply?: (phrase: string) => void;
 }) {
-  // Per i messaggi AI: vai a capo dopo il punto (ogni frase su nuova riga)
-  // Inserisce un paragrafo separato dopo . ! ? quando segue una maiuscola/numero
-  const withBreaks = text.replace(/([.!?]) (?=[A-ZÀ-ÿ0-9])/g, "$1\n\n");
-  const blocks = parseMarkdown(withBreaks);
+  // Per i messaggi AI: vai a capo dopo il punto (ogni frase su nuova riga),
+  // ma mai dentro i blocchi di codice fenced — vedi insertSentenceBreaks.
+  const blocks = parseMarkdown(insertSentenceBreaks(text));
   const containerRef = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState<{ text: string; top: number; left: number } | null>(null);
 

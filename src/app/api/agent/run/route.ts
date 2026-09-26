@@ -15,6 +15,7 @@ import {
 } from "@/lib/agents/language";
 import type { LLMMessage, LLMToolResult } from "@/lib/llm";
 import { createWordEmitter } from "@/lib/stream";
+import { OUTPUT_FORMAT_DIRECTIVE } from "@/lib/agents/output-format";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
@@ -277,7 +278,10 @@ export async function POST(req: Request) {
               // Il system prompt dell'agente è in inglese e non parla di lingua:
               // la direttiva (lingua del messaggio, altrimenti lingua della
               // piattaforma) è quella condivisa, uguale per tutti gli agenti.
-              system: withLanguageDirective(config.systemPrompt + connectGuidance, replyLocale),
+              system: withLanguageDirective(
+                config.systemPrompt + connectGuidance + OUTPUT_FORMAT_DIRECTIVE,
+                replyLocale,
+              ),
               messages: conversationMessages,
               tools: enabledTools,
               maxTokens: MAX_TOKENS,
