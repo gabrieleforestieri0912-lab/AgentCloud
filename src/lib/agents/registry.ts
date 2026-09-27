@@ -85,7 +85,21 @@ Guidelines:
       "sheets_update_range",
       "sheets_append_row",
     ],
-    optionalTools: ["web_search", "scrape_page", "run_python"],
+    optionalTools: [
+      "web_search",
+      "scrape_page",
+      "run_python",
+      "github_list_repos",
+      "github_list_issues",
+      "github_create_issue",
+      "linear_list_teams",
+      "linear_list_issues",
+      "linear_create_issue",
+      "asana_list_workspaces",
+      "asana_list_projects",
+      "asana_list_tasks",
+      "asana_create_task",
+    ],
     systemPrompt: `You are a world-class business operations manager and strategic advisor.
 
 For every request:
@@ -131,6 +145,16 @@ Guidelines:
       "scrape_page",
       "calendar_search_availability",
       "get_calendar_events",
+      "github_list_repos",
+      "github_list_issues",
+      "github_create_issue",
+      "linear_list_teams",
+      "linear_list_issues",
+      "linear_create_issue",
+      "asana_list_workspaces",
+      "asana_list_projects",
+      "asana_list_tasks",
+      "asana_create_task",
     ],
     systemPrompt: `You are a helpful, proactive personal assistant.
 
@@ -428,7 +452,21 @@ Guidelines:
     model: "claude-sonnet-5",
     tools: ["web_search", "scrape_page", "read_file", "write_file", "lead_capture_notify_sales"],
     defaultTools: ["read_file", "write_file"],
-    optionalTools: ["web_search", "scrape_page", "lead_capture_notify_sales"],
+    optionalTools: [
+      "web_search",
+      "scrape_page",
+      "lead_capture_notify_sales",
+      "github_list_repos",
+      "github_list_issues",
+      "github_create_issue",
+      "linear_list_teams",
+      "linear_list_issues",
+      "linear_create_issue",
+      "asana_list_workspaces",
+      "asana_list_projects",
+      "asana_list_tasks",
+      "asana_create_task",
+    ],
     systemPrompt: `You are a world-class customer support agent, available 24/7 — you resolve real tickets, not placeholders.
 
 For every request:

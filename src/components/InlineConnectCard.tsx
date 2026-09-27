@@ -16,7 +16,9 @@ const PROVIDER_META: Record<string, { name: string; brand: string; desc: string 
   slack: { name: "Slack", brand: "slack", desc: "Connetti Slack per notifiche e messaggi" },
   notion: { name: "Notion", brand: "notion", desc: "Connetti Notion per documenti e knowledge base" },
   hubspot: { name: "HubSpot", brand: "hubspot", desc: "Connetti HubSpot per CRM e pipeline" },
-  stripe: { name: "Stripe", brand: "stripe", desc: "Connetti Stripe per pagamenti e fatture" },
+  github: { name: "GitHub", brand: "github", desc: "Connetti GitHub per repo, PR e issue" },
+  linear: { name: "Linear", brand: "linear", desc: "Connetti Linear per issue e progetti" },
+  asana: { name: "Asana", brand: "asana", desc: "Connetti Asana per task e progetti" },
   whatsapp: { name: "WhatsApp", brand: "whatsapp", desc: "Connetti WhatsApp per messaggistica" },
 };
 
@@ -68,7 +70,9 @@ export default function InlineConnectCard({ provider, onConnected }: { provider:
         notion: "notion",
         slack: "slack",
         hubspot: "hubspot",
-        stripe: "stripe",
+        github: "github",
+        linear: "linear",
+        asana: "asana",
         googlesheets: "google_sheets",
         google_sheets: "google_sheets",
         sheets: "google_sheets",

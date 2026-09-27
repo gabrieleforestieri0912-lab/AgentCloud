@@ -10,7 +10,7 @@ export type GuideStep = {
 };
 
 export type IntegrationGuide = {
-  provider: string; // brand lower, es. "shopify" | "stripe" | "gmail" etc
+  provider: string; // brand lower, es. "shopify" | "gmail" | "github" etc
   whatItDoes: string;
   steps: [GuideStep, GuideStep, GuideStep];
   needHelp?: string;
@@ -29,14 +29,34 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
     ],
     needHelp: "Se vedi errore, verifica il dominio e che l'app AgentCloud sia approvata.",
   },
-  stripe: {
-    provider: "stripe",
-    whatItDoes: "Collega i pagamenti: l'agente crea fatture e controlla incassi.",
+  github: {
+    provider: "github",
+    whatItDoes: "Collega GitHub: l'agente legge repo, PR e issue.",
+    time: "1 min",
+    steps: [
+      { title: "Prepara", desc: "Serve un account GitHub. Accedi a github.com prima di collegare." },
+      { title: "Collega", desc: "Clicca Connetti → autorizza AgentCloud su GitHub → torna qui." },
+      { title: "Prova", desc: "Connesso. Chiedi: lista le mie repo o crea una issue." },
+    ],
+  },
+  linear: {
+    provider: "linear",
+    whatItDoes: "Collega Linear: l'agente crea e aggiorna issue.",
     time: "2 min",
     steps: [
-      { title: "Prepara", desc: "Serve un account Stripe (anche test). Accedi a Stripe prima di collegare." },
-      { title: "Collega", desc: "Clicca Connetti → autorizza su Stripe Connect → torna qui." },
-      { title: "Prova", desc: "Stato Connesso. Prova con Finance Manager: chiedi di creare una fattura." },
+      { title: "Prepara", desc: "Serve un workspace Linear. Accedi a linear.app prima." },
+      { title: "Collega", desc: "Clicca Connetti → autorizza AgentCloud su Linear → torna qui." },
+      { title: "Prova", desc: "Connesso. Chiedi: crea un'issue per il bug login." },
+    ],
+  },
+  asana: {
+    provider: "asana",
+    whatItDoes: "Collega Asana: l'agente crea task e aggiorna progetti.",
+    time: "2 min",
+    steps: [
+      { title: "Prepara", desc: "Serve un account Asana. Accedi a app.asana.com prima." },
+      { title: "Collega", desc: "Clicca Connetti → autorizza AgentCloud su Asana → torna qui." },
+      { title: "Prova", desc: "Connesso. Chiedi: crea un task di prova nel mio progetto." },
     ],
   },
   gmail: {

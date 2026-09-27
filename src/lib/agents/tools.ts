@@ -22,6 +22,11 @@ import {
   revokeShopifyConnection,
 } from "@/lib/shopify/connections";
 import { googleApiProxy } from "@/lib/google/api-proxy";
+import {
+  INTEGRATION_TOOL_DEFINITIONS,
+  isIntegrationTool,
+  executeIntegrationTool,
+} from "./integration-tools";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
 import { googleSheetsRequest } from "@/lib/google/sheets";
 import { executeWebSearch, formatWebSearchResults } from "@/lib/tools/tavily";
@@ -944,13 +949,13 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   request_integration_connect: {
     name: "request_integration_connect",
     description:
-      "Request the user to connect an integration directly inside the chat. Use when the task requires an app that is not yet connected (e.g. Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot, Stripe). This renders an inline card with the app logo and a Connect button (Claude-style). The agent can still talk without the connection — use this only when the user would benefit from connecting now. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, stripe, whatsapp.",
+      "Request the user to connect an integration directly inside the chat. Use when the task requires an app that is not yet connected (e.g. Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot, GitHub, Linear, Asana). This renders an inline card with the app logo and a Connect button (Claude-style). The agent can still talk without the connection — use this only when the user would benefit from connecting now. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, linear, asana, whatsapp.",
     input_schema: {
       type: "object",
       properties: {
         provider: {
           type: "string",
-          description: "App to connect: shopify, gmail, calendar, sheets, slack, notion, hubspot, stripe, whatsapp",
+          description: "App to connect: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, linear, asana, whatsapp",
         },
         reason: {
           type: "string",
@@ -960,6 +965,8 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
       required: ["provider"],
     },
   },
+
+  ...INTEGRATION_TOOL_DEFINITIONS,
 };
 
 export type ToolContext = {
@@ -1214,6 +1221,12 @@ export async function executeTool(
     }
   } catch {
     // Fail open: se la detection fallisce, non blocchiamo il tool
+  }
+
+  // Integrazioni generiche (GitHub/Linear/Asana): delegate al modulo dedicato,
+  // che usa il token del tenant salvato in tenant_integrations.
+  if (isIntegrationTool(name)) {
+    return executeIntegrationTool(name, input, context);
   }
 
   switch (name) {
@@ -2897,7 +2910,7 @@ export async function executeTool(
 
     case "request_integration_connect": {
       const provider = sanitizeText(input.provider || "", 40).toLowerCase();
-      const allowed = ["shopify", "gmail", "calendar", "sheets", "slack", "notion", "hubspot", "stripe", "whatsapp", "google_sheets", "google_calendar"];
+      const allowed = ["shopify", "gmail", "calendar", "sheets", "slack", "notion", "hubspot", "github", "linear", "asana", "whatsapp", "google_sheets", "google_calendar"];
       const normalized = provider.replace(/[^a-z0-9_]/g, "");
       const isAllowed = allowed.some((a) => normalized.includes(a.replace(/[^a-z0-9_]/g, "")) || a.includes(normalized));
       const finalProvider = isAllowed ? (normalized.includes("gmail") ? "gmail" : normalized.includes("calendar") ? "calendar" : normalized.includes("sheets") ? "sheets" : normalized) : provider;

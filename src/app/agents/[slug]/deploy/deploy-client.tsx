@@ -27,6 +27,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
 import { readableConnectReason } from "@/lib/connect-errors";
 import { normalizeShopInput } from "@/lib/shopify-input";
+import { isIntegrationAvailable } from "@/lib/integrations";
 import type { DeployConnections } from "./page";
 
 const NO_CONNECTIONS: DeployConnections = {
@@ -46,20 +47,22 @@ const NO_CONNECTIONS: DeployConnections = {
  * Quale connettore OAuth reale corrisponde a un'etichetta di integrazione:
  *   "shopify" → OAuth Shopify (serve prima il dominio del negozio)
  *   "google"  → OAuth Google (Gmail + Calendar)
- *   "stripe" | "notion" | "slack" | "hubspot" | "google_sheets" → OAuth generico
+ *   "notion" | "slack" | "hubspot" | "google_sheets" | "github" | "linear" | "asana" → OAuth generico
  *               via /api/integrations/[provider]/authorize (stessa tabella usata
  *               dalla pagina /dashboard/integrations — single source of truth).
  *   null      → nessun connettore attivo
  */
-type ConnectorKind = "shopify" | "google" | "stripe" | "notion" | "slack" | "hubspot" | "google_sheets" | null;
+type ConnectorKind = "shopify" | "google" | "notion" | "slack" | "hubspot" | "google_sheets" | "github" | "linear" | "asana" | null;
 
 function genericProviderForIntegration(integration: string): Exclude<ConnectorKind, "shopify" | "google" | null> | null {
   const k = integration.toLowerCase();
-  if (k === "stripe" || k.includes("stripe")) return "stripe";
   if (k === "notion" || k.includes("notion")) return "notion";
   if (k === "slack" || k.includes("slack")) return "slack";
   if (k === "hubspot" || k.includes("hubspot")) return "hubspot";
   if (k === "google sheets" || k === "googlesheets" || k.includes("sheets")) return "google_sheets";
+  if (k === "github" || k.includes("github")) return "github";
+  if (k === "linear" || k.includes("linear")) return "linear";
+  if (k === "asana" || k.includes("asana")) return "asana";
   return null;
 }
 
@@ -185,7 +188,7 @@ export default function DeployAgentClient({
    */
   const startConnect = (integration: string) => {
     const kind = integrationKind(integration);
-    const genericProvider = kind && ["stripe", "notion", "slack", "hubspot", "google_sheets"].includes(kind) ? (kind as string) : null;
+    const genericProvider = kind && ["notion", "slack", "hubspot", "google_sheets", "github", "linear", "asana"].includes(kind) ? (kind as string) : null;
     const isConnected =
       (kind === "shopify" && connections.shopifyConnected) ||
       (kind === "google" && connections.googleConnected) ||
@@ -403,8 +406,9 @@ export default function DeployAgentClient({
                 <div className="space-y-2.5">
                   {agent.integrations.map((integration) => {
                     const kind = integrationKind(integration);
+                    const available = isIntegrationAvailable(integration);
                     const expanded = connectingIntegration === integration;
-                    const genericProvider = kind && ["stripe", "notion", "slack", "hubspot", "google_sheets"].includes(kind) ? kind : null;
+                    const genericProvider = kind && ["notion", "slack", "hubspot", "google_sheets", "github", "linear", "asana"].includes(kind) ? kind : null;
                     const connected =
                       (kind === "shopify" && connections.shopifyConnected) ||
                       (kind === "google" && connections.googleConnected) ||
@@ -422,10 +426,13 @@ export default function DeployAgentClient({
                         <button
                           type="button"
                           onClick={() => startConnect(integration)}
+                          disabled={!available}
                           className={`group flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3.5 text-left transition-all ${
                             connected
                               ? "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50"
-                              : "border-white/5 bg-neutral-800/60 hover:border-brand-500/30 hover:bg-neutral-800"
+                              : !available
+                                ? "cursor-not-allowed border-white/5 bg-neutral-800/40"
+                                : "border-white/5 bg-neutral-800/60 hover:border-brand-500/30 hover:bg-neutral-800"
                           }`}
                         >
                           <span className="flex items-center gap-3">
@@ -449,10 +456,12 @@ export default function DeployAgentClient({
                                   {connectedDetail ? ` · ${connectedDetail}` : ""}
                                 </span>
                               ) : (
-                                <span className="text-xs font-semibold text-neutral-500">
-                                  {kind
-                                    ? dict.deploy.oauthSecure
-                                    : dict.deploy.tryInChat}
+                                <span className={`text-xs font-semibold ${available ? "text-neutral-500" : "text-amber-400/80"}`}>
+                                  {!available
+                                    ? dict.common.comingSoonShort
+                                    : kind
+                                      ? dict.deploy.oauthSecure
+                                      : dict.deploy.tryInChat}
                                 </span>
                               )}
                             </span>
@@ -461,14 +470,22 @@ export default function DeployAgentClient({
                             className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
                               connected
                                 ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 group-hover:bg-emerald-500/20"
-                                : "border border-brand-500/40 bg-brand-500/10 text-brand-300 group-hover:bg-brand-500 group-hover:text-white"
+                                : !available
+                                  ? "border border-amber-500/40 bg-amber-500/10 text-amber-300"
+                                  : "border border-brand-500/40 bg-brand-500/10 text-brand-300 group-hover:bg-brand-500 group-hover:text-white"
                             }`}
                           >
-                            {connected ? dict.deploy.manage : dict.deploy.connect}
-                            <ArrowRight
-                              size={12}
-                              className="transition-transform group-hover:translate-x-0.5"
-                            />
+                            {connected
+                              ? dict.deploy.manage
+                              : available
+                                ? dict.deploy.connect
+                                : dict.common.comingSoon}
+                            {available && (
+                              <ArrowRight
+                                size={12}
+                                className="transition-transform group-hover:translate-x-0.5"
+                              />
+                            )}
                           </span>
                         </button>
 

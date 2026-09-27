@@ -1,16 +1,20 @@
 import type { SupportedProvider, IntegrationProvider } from "./types";
-import { stripeProvider } from "./providers/stripe";
 import { notionProvider } from "./providers/notion";
 import { slackProvider } from "./providers/slack";
 import { hubspotProvider } from "./providers/hubspot";
 import { googleSheetsProvider } from "./providers/googleSheets";
+import { githubProvider } from "./providers/github";
+import { linearProvider } from "./providers/linear";
+import { asanaProvider } from "./providers/asana";
 
 const registry: Record<SupportedProvider, IntegrationProvider> = {
-  stripe: stripeProvider,
   notion: notionProvider,
   slack: slackProvider,
   hubspot: hubspotProvider,
   google_sheets: googleSheetsProvider,
+  github: githubProvider,
+  linear: linearProvider,
+  asana: asanaProvider,
 };
 
 export function getProvider(provider: string): IntegrationProvider | null {

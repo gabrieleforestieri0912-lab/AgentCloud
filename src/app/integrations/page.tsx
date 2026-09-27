@@ -90,7 +90,7 @@ export default async function IntegrationsPage() {
         bubbles={[
           { top: "8%", left: "3%", size: "w-11 h-11", brand: "google", delay: "0s", anim: "animate-float-gentle" },
           { top: "12%", left: "91%", size: "w-10 h-10", brand: "shopify", delay: "1.2s", anim: "animate-float-reverse" },
-          { top: "22%", left: "2%", size: "w-10 h-10", brand: "stripe", delay: "0.6s", anim: "animate-float-gentle" },
+          { top: "22%", left: "2%", size: "w-10 h-10", brand: "github", delay: "0.6s", anim: "animate-float-gentle" },
           { top: "25%", left: "92%", size: "w-11 h-11", brand: "gmail", delay: "1.8s", anim: "animate-float-reverse" },
           { top: "40%", left: "4%", size: "w-10 h-10", brand: "whatsapp", delay: "0.4s", anim: "animate-float-reverse" },
           { top: "38%", left: "88%", size: "w-11 h-11", brand: "notion", delay: "2.0s", anim: "animate-float-gentle" },

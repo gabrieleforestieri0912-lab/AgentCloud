@@ -5,18 +5,22 @@
  */
 
 export type SupportedProvider =
-  | "stripe"
   | "notion"
   | "slack"
   | "hubspot"
-  | "google_sheets";
+  | "google_sheets"
+  | "github"
+  | "linear"
+  | "asana";
 
 export const SUPPORTED_PROVIDERS: readonly SupportedProvider[] = [
-  "stripe",
   "notion",
   "slack",
   "hubspot",
   "google_sheets",
+  "github",
+  "linear",
+  "asana",
 ] as const;
 
 export function isSupportedProvider(v: string): v is SupportedProvider {
@@ -40,7 +44,7 @@ export type IntegrationProvider = {
   getAuthUrl(opts: { state: string; redirectUri: string }): string;
   /** Exchange authorization_code for tokens (server-side only). */
   exchangeCode(opts: { code: string; redirectUri: string }): Promise<TokenExchangeResult>;
-  /** Optional refresh hook (used by Edge Function proxy in Phase 3). */
+  /** Optional refresh hook (usato dal refresh lato server in lib/integrations/api-proxy.ts). */
   refreshToken?(opts: { refreshToken: string }): Promise<TokenExchangeResult>;
   /** Optional revoke hook (disconnect). */
   revokeToken?(opts: { accessToken: string }): Promise<void>;

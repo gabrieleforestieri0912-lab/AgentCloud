@@ -70,3 +70,4 @@ export async function getSessionUser(): Promise<User | null> {
   }
   return null;
 }
+

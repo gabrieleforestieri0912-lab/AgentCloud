@@ -106,7 +106,7 @@ export async function POST(req: Request) {
         // La direttiva di lingua è accodata a ogni variante del prompt
         // (anche a quella generica di ripiego).
         const connectGuidanceChat =
-          "\n\nYou can help WITHOUT any integration connected. If the task would benefit from an app (shopify, gmail, calendar, sheets, slack, notion, hubspot, stripe, whatsapp), provide immediate value first (draft, template, analysis) AND include an inline marker [[CONNECT:provider]] (e.g. [[CONNECT:gmail]]) so the UI renders a card with app logo + Connetti button. Never block due to missing connection."
+          "\n\nYou can help WITHOUT any integration connected. If the task would benefit from an app (shopify, gmail, calendar, sheets, slack, notion, hubspot, github, linear, asana, whatsapp), provide immediate value first (draft, template, analysis) AND include an inline marker [[CONNECT:provider]] (e.g. [[CONNECT:gmail]]) so the UI renders a card with app logo + Connetti button. Never block due to missing connection."
           // Blocchi fenced con bottone "Copia" (stile Claude): vedi output-format.ts
           + OUTPUT_FORMAT_DIRECTIVE;
         let systemPrompt = withLanguageDirective(

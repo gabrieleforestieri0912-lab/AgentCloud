@@ -32,7 +32,7 @@ import { t } from "@/lib/i18n/dictionaries";
 // costellazione hero, tenuti lontani dal contenuto a due colonne.
 const FLOATING_BUBBLES: FloatingBubble[] = [
   { top: "16%", left: "6%", size: "w-12 h-12", brand: "shopify", delay: "0s", anim: "animate-float-gentle" },
-  { top: "14%", left: "88%", size: "w-11 h-11", brand: "stripe", delay: "1.2s", anim: "animate-float-reverse" },
+  { top: "14%", left: "88%", size: "w-11 h-11", brand: "github", delay: "1.2s", anim: "animate-float-reverse" },
   { top: "30%", left: "3%", size: "w-10 h-10", brand: "instagram", delay: "0.7s", anim: "animate-float-gentle" },
   { top: "28%", left: "93%", size: "w-12 h-12", brand: "gmail", delay: "1.9s", anim: "animate-float-reverse" },
   { top: "46%", left: "7%", size: "w-11 h-11", brand: "whatsapp", delay: "0.4s", anim: "animate-float-reverse" },
@@ -47,7 +47,7 @@ const BENEFIT_ICONS = [PenTool, Plug, Clock] as const;
 const STEP_ICONS = [MessageSquareText, FileText, Wrench, Package, Rocket] as const;
 
 // App suggerite per il campo integrazioni — icone ufficiali via BrandLogo
-const SUGGESTED_APPS = ["shopify", "gmail", "slack", "stripe", "notion", "hubspot"] as const;
+const SUGGESTED_APPS = ["shopify", "gmail", "slack", "github", "notion", "hubspot"] as const;
 const SUGGESTED_AGENTS: { slug: string; icon: "shopping-cart" | "mail" | "headphones" | "bar-chart"; brand?: "shopify" }[] = [
   { slug: "shopify-agent", icon: "shopping-cart", brand: "shopify" },
   { slug: "email-manager", icon: "mail" },

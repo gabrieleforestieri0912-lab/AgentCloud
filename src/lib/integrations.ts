@@ -26,14 +26,6 @@ export const INTEGRATIONS: Integration[] = [
     description: "Sincronizza prodotti, ordini e carrello",
   },
   {
-    name: "Stripe",
-    brand: "stripe",
-    category: "Payments",
-    agentSlug: "finance-manager",
-    available: true,
-    description: "Pagamenti e fatture",
-  },
-  {
     name: "Gmail",
     brand: "gmail",
     category: "Email Service",
@@ -178,7 +170,7 @@ export const INTEGRATIONS: Integration[] = [
     name: "Asana",
     brand: "asana",
     category: "Productivity",
-    available: false,
+    available: true,
     description: "Gestione progetti e task",
   },
   {
@@ -206,7 +198,7 @@ export const INTEGRATIONS: Integration[] = [
     name: "Linear",
     brand: "linear",
     category: "Productivity",
-    available: false,
+    available: true,
     description: "Issue tracking moderno",
   },
   {
@@ -220,8 +212,8 @@ export const INTEGRATIONS: Integration[] = [
     name: "GitHub",
     brand: "github",
     category: "Developer",
-    available: false,
-    description: "Repo e CI/CD",
+    available: true,
+    description: "Repo, PR e CI/CD",
   },
   {
     name: "Google Drive",
@@ -324,4 +316,22 @@ export const INTEGRATIONS: Integration[] = [
     description: "Fogli Excel online",
   },
 ];
+
+/**
+ * True se l'app citata nelle integrazioni di un agente (es. "Salesforce",
+ * "Google Business Profile") è disponibile come integrazione collegabile.
+ * Le card agente usano questo per mostrare "Prossimamente" al posto del
+ * bottone Connetti quando l'app non è ancora live nel catalogo.
+ */
+export function isIntegrationAvailable(label: string): boolean {
+  const key = label.trim().toLowerCase();
+  if (!key) return false;
+  const entry = INTEGRATIONS.find(
+    (i) =>
+      i.name.toLowerCase() === key ||
+      i.brand === key ||
+      key.includes(i.name.toLowerCase()),
+  );
+  return entry?.available ?? false;
+}
 

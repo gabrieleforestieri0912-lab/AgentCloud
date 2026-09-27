@@ -20,11 +20,13 @@ type GoogleConn = { googleEmail: string | null; connected: boolean; connectedAt:
 
 // Map catalog brand -> generic provider id (where OAuth is via /api/integrations)
 const BRAND_TO_PROVIDER: Record<string, string> = {
-  stripe: "stripe",
   notion: "notion",
   slack: "slack",
   hubspot: "hubspot",
   googlesheets: "google_sheets",
+  github: "github",
+  linear: "linear",
+  asana: "asana",
 };
 
 function metaLabel(row: Row | undefined): string | null {
@@ -34,7 +36,8 @@ function metaLabel(row: Row | undefined): string | null {
     (m.workspace_name as string) ||
     (m.team as { name?: string })?.name ||
     (m.hub_domain as string) ||
-    (m.stripe_user_id as string) ||
+    (m.login as string) ||
+    (m.asana_user as { email?: string })?.email ||
     row.external_account_id
   );
 }

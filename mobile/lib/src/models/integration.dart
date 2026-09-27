@@ -26,7 +26,9 @@ class Integration {
     Integration(slug: 'notion', name: 'Notion', brand: 'notion', category: 'Docs', available: true, icon: Icons.description),
     Integration(slug: 'hubspot', name: 'HubSpot', brand: 'hubspot', category: 'CRM', available: true, icon: Icons.hub),
     Integration(slug: 'google_sheets', name: 'Google Sheets', brand: 'googlesheets', category: 'Sheets', available: true, icon: Icons.table_chart),
-    Integration(slug: 'stripe', name: 'Stripe', brand: 'stripe', category: 'Payments', available: true, icon: Icons.credit_card),
+    Integration(slug: 'github', name: 'GitHub', brand: 'github', category: 'Developer', available: true, icon: Icons.code),
+    Integration(slug: 'linear', name: 'Linear', brand: 'linear', category: 'Productivity', available: true, icon: Icons.linear_scale),
+    Integration(slug: 'asana', name: 'Asana', brand: 'asana', category: 'Productivity', available: true, icon: Icons.check_circle_outline),
     Integration(slug: 'google_calendar', name: 'Google Calendar', brand: 'googlecalendar', category: 'Calendar', available: true, agentSlug: 'calendar-booking', icon: Icons.calendar_today),
     // Prossimamente
     Integration(slug: 'whatsapp', name: 'WhatsApp', brand: 'whatsapp', category: 'Messaging', icon: Icons.chat),

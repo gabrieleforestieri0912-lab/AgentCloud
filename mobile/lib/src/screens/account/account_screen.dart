@@ -35,7 +35,7 @@ class AccountScreen extends StatelessWidget {
           const SizedBox(height: 20),
           _tile(Icons.settings, 'Impostazioni', 'Lingua, tema, notifiche', onTap: () {}),
           _tile(Icons.shopping_bag, 'I miei abbonamenti', 'Gestisci fatturazione e rinnovi', onTap: () => launchUrl(Uri.parse('${AppConfig.siteUrl}/dashboard/subscriptions'), mode: LaunchMode.externalApplication)),
-          _tile(Icons.hub, 'Integrazioni', 'Collega Stripe, Notion, Slack...', onTap: () {}),
+          _tile(Icons.hub, 'Integrazioni', 'Collega GitHub, Notion, Slack...', onTap: () {}),
           _tile(Icons.privacy_tip_outlined, 'Privacy', 'Informativa e GDPR', onTap: () => launchUrl(Uri.parse('${AppConfig.siteUrl}/privacy'), mode: LaunchMode.externalApplication)),
           _tile(Icons.description_outlined, 'Termini', 'Termini di servizio', onTap: () => launchUrl(Uri.parse('${AppConfig.siteUrl}/terms'), mode: LaunchMode.externalApplication)),
           _tile(Icons.support_agent, 'Supporto', AppConfig.supportEmail, onTap: () => launchUrl(Uri.parse('mailto:${AppConfig.supportEmail}'))),

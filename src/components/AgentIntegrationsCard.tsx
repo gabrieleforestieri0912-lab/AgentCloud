@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Plug, CheckCircle2, ArrowRight } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
+import { isIntegrationAvailable } from "@/lib/integrations";
 
 type Props = {
   integrations: string[];
@@ -17,7 +18,6 @@ function providerForIntegration(label: string): string | null {
   const k = label.toLowerCase();
   if (k.includes("shopify")) return "shopify";
   if (k === "gmail" || k === "google calendar" || k === "calendar" || k.includes("google calendar")) return "google";
-  if (k === "stripe" || k.includes("stripe")) return "stripe";
   if (k === "notion" || k.includes("notion")) return "notion";
   if (k === "slack" || k.includes("slack")) return "slack";
   if (k === "hubspot" || k.includes("hubspot")) return "hubspot";
@@ -44,7 +44,8 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
       <div className="space-y-2">
         {integrations.map((label) => {
           const prov = providerForIntegration(label);
-          const isGeneric = prov && ["stripe", "notion", "slack", "hubspot", "google_sheets"].includes(prov);
+          const soon = !isIntegrationAvailable(label);
+          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "github", "linear", "asana"].includes(prov);
           const connected = isGeneric
             ? !!genericConnected[prov!]
             : prov === "shopify"
@@ -72,6 +73,10 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
                 <Link href="/dashboard/integrations" className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20">
                   {dict.agentIntegrations.manage} <ArrowRight size={12} />
                 </Link>
+              ) : soon ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-300">
+                  {dict.common.comingSoon}
+                </span>
               ) : (
                 <Link href={href} className="inline-flex items-center gap-1 rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white hover:bg-brand-400">
                   {dict.agentIntegrations.connect} <ArrowRight size={12} />
