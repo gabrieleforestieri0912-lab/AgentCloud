@@ -174,9 +174,9 @@ export function AttachPlusButton({
         onClick={() => inputRef.current?.click()}
         aria-label={labels.attachAria}
         title={labels.attachAria}
-        className="w-9 h-9 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
       >
-        <Plus size={18} strokeWidth={2.25} />
+        <Plus size={16} strokeWidth={2.25} />
       </button>
     </>
   );

@@ -35,6 +35,7 @@ import {
   Pencil,
   Archive,
   RotateCcw,
+  MoreVertical,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -181,6 +182,8 @@ export default function ChatInterface({
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  // Menù opzioni per conversazione: un solo bottone "⋯" apre le azioni.
+  const [conversationMenuId, setConversationMenuId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [paywallSlug, setPaywallSlug] = useState<string | null>(null);
@@ -694,6 +697,7 @@ export default function ChatInterface({
   function switchConversation(id: string) {
     setActiveId(id);
     setMobileSidebarOpen(false);
+    setConversationMenuId(null);
     const conv = conversations.find((c) => c.id === id);
     if (conv?.agentSlugs) {
       setSelectedAgentSlugs(conv.agentSlugs);
@@ -716,22 +720,24 @@ export default function ChatInterface({
     setMobileSidebarOpen(false);
   }
 
-  function handleDelete(e: React.MouseEvent, id: string) {
-    e.stopPropagation();
+  // Azioni conversazione: chiamate dal menù "⋯" (il menù chiude se stesso).
+  function handleDelete(id: string) {
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (id === activeId) {
       setActiveId(null);
     }
+    setConversationMenuId(null);
   }
 
-  function handleArchive(e: React.MouseEvent, id: string) {
-    e.stopPropagation();
+  function handleArchive(id: string) {
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, archived_at: c.archived_at ? undefined : new Date().toISOString() } : c))
     );
+    setConversationMenuId(null);
   }
 
   function startRename(id: string, currentTitle: string) {
+    setConversationMenuId(null);
     setRenamingId(id);
     setRenameValue(currentTitle);
   }
@@ -1092,10 +1098,10 @@ export default function ChatInterface({
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-30
-          w-72 bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] h-dvh
+          w-64 bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] h-dvh
             flex flex-col transition-all duration-300 shrink-0 overflow-y-auto
             ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-            ${sidebarOpen ? "lg:w-72 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
+            ${sidebarOpen ? "lg:w-64 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
           `}
         >
         {/* Header: Close sidebar (left) + Home (right) */}
@@ -1106,16 +1112,16 @@ export default function ChatInterface({
               setSidebarOpen(false);
             }}
             aria-label={dict.chat.closeSidebar}
-            className="w-11 h-11 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
           >
-            <PanelLeftClose size={18} />
+            <PanelLeftClose size={16} />
           </button>
           <Link
             href="/"
             data-onboard="home"
-            className="w-11 h-11 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
           >
-            <Home size={18} />
+            <Home size={16} />
           </Link>
         </div>
 
@@ -1124,7 +1130,7 @@ export default function ChatInterface({
           <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
             <button
               onClick={() => setSidebarView("chat")}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                 sidebarView === "chat"
                   ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
                   : "text-neutral-400 hover:text-white hover:bg-white/5"
@@ -1135,7 +1141,7 @@ export default function ChatInterface({
             </button>
             <button
               onClick={() => setSidebarView("tools")}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                 sidebarView === "tools"
                   ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
                   : "text-neutral-400 hover:text-white hover:bg-white/5"
@@ -1146,7 +1152,7 @@ export default function ChatInterface({
             </button>
             <button
               onClick={() => setSidebarView("agents")}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                 sidebarView === "agents"
                   ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
                   : "text-neutral-400 hover:text-white hover:bg-white/5"
@@ -1163,15 +1169,15 @@ export default function ChatInterface({
           <button
             data-onboard="new-chat"
             onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 bg-white text-neutral-900 text-sm font-bold py-2.5 px-4 rounded-full transition-all hover:bg-neutral-100 shadow-lg shadow-white/5"
+            className="w-full flex items-center justify-center gap-2 bg-white text-neutral-900 text-sm font-bold py-2 px-3.5 rounded-full transition-all hover:bg-neutral-100 shadow-lg shadow-white/5"
           >
-            <Plus size={16} strokeWidth={2.5} />
+            <Plus size={14} strokeWidth={2.5} />
             {dict.chat.newChat}
           </button>
         </div>
 
         {/* Conversations list */}
-        <div data-onboard="conversations" className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
+        <div data-onboard="conversations" className="flex-1 overflow-y-auto px-2.5 py-2 space-y-0.5">
           <div className="flex items-center justify-between px-3 py-2">
             <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
               {showArchived ? dict.chat.archived : dict.chat.conversations}
@@ -1202,14 +1208,14 @@ export default function ChatInterface({
                     switchConversation(conv.id);
                   }
                 }}
-                className={`group flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 rounded-xl text-sm text-left transition-all ${
+                className={`group flex w-full cursor-pointer flex-col gap-1 px-2.5 py-2 rounded-lg text-[13px] text-left transition-all ${
                   conv.id === activeId
                     ? "bg-white/[0.06] text-white border border-white/[0.08]"
                     : "text-neutral-400 hover:text-white hover:bg-white/[0.03]"
                 }`}
               >
                 <div className="flex w-full items-center gap-2.5">
-                  <div className={`flex h-6 w-6 items-center justify-center rounded-lg shrink-0 ${
+                  <div className={`flex h-5 w-5 items-center justify-center rounded-md shrink-0 ${
                     conv.id === activeId ? "bg-brand-500/15" : "bg-white/5"
                   }`}>
                     <MessageSquare
@@ -1233,32 +1239,68 @@ export default function ChatInterface({
                   ) : (
                     <span className="truncate flex-1 font-medium">{conv.title}</span>
                   )}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 sm:group-hover:opacity-100 transition-all shrink-0">
+                  <div className="relative shrink-0">
                     <button
-                      onClick={(e) => { e.stopPropagation(); startRename(conv.id, conv.title); }}
-                      className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
-                      title={dict.chat.rename}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConversationMenuId((v) => (v === conv.id ? null : conv.id));
+                      }}
+                      aria-haspopup="menu"
+                      aria-expanded={conversationMenuId === conv.id}
+                      aria-label={dict.chat.conversationOptions}
+                      className={`p-1.5 flex items-center justify-center rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-all ${
+                        conversationMenuId === conv.id
+                          ? "opacity-100 bg-white/10 text-white"
+                          : conv.id === activeId
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100"
+                      }`}
+                      title={dict.chat.conversationOptions}
                     >
-                      <Pencil size={12} />
+                      <MoreVertical size={14} />
                     </button>
-                    <button
-                      onClick={(e) => handleArchive(e, conv.id)}
-                      className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-all"
-                      title={conv.archived_at ? dict.chat.restore : dict.chat.archiveAction}
-                    >
-                      {conv.archived_at ? <RotateCcw size={12} /> : <Archive size={12} />}
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(e, conv.id)}
-                      className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-red-500/15 text-neutral-500 hover:text-red-400 transition-all"
-                      title={dict.chat.deleteConversation}
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    {conversationMenuId === conv.id && (
+                      <>
+                        <button
+                          aria-label={dict.chat.close}
+                          className="fixed inset-0 z-40 cursor-default"
+                          onClick={(e) => { e.stopPropagation(); setConversationMenuId(null); }}
+                        />
+                        <div
+                          role="menu"
+                          className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-white/10 bg-neutral-900/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl"
+                        >
+                          <button
+                            role="menuitem"
+                            onClick={(e) => { e.stopPropagation(); startRename(conv.id, conv.title); }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-all"
+                          >
+                            <Pencil size={12} />
+                            {dict.chat.rename}
+                          </button>
+                          <button
+                            role="menuitem"
+                            onClick={(e) => { e.stopPropagation(); handleArchive(conv.id); }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-all"
+                          >
+                            {conv.archived_at ? <RotateCcw size={12} /> : <Archive size={12} />}
+                            {conv.archived_at ? dict.chat.restore : dict.chat.archiveAction}
+                          </button>
+                          <button
+                            role="menuitem"
+                            onClick={(e) => { e.stopPropagation(); handleDelete(conv.id); }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-all"
+                          >
+                            <Trash2 size={12} />
+                            {dict.chat.deleteConversation}
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
                 {conv.agentSlugs && conv.agentSlugs.length > 0 && (
-                  <div className="ml-8 flex flex-wrap gap-1">
+                  <div className="ml-7 flex flex-wrap gap-1">
                     {conv.agentSlugs.map((slug) => {
                       const ag = agentsBySlug.get(slug);
                       return (
@@ -1605,19 +1647,19 @@ export default function ChatInterface({
               className="flex-1 flex flex-col items-center justify-center px-4"
             >
               {/* Welcome message */}
-              <div className="mb-8 text-center">
-                <div className="mb-6 flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-white/5">
+              <div className="mb-6 text-center">
+                <div className="mb-5 flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-white/5">
                   <Image
                     src="/agentcloud.png"
                     alt="AgentCloud"
-                    width={40}
-                    height={40}
+                    width={32}
+                    height={32}
                   />
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-2">
+                <h2 className="text-2xl font-bold text-white mb-1.5">
                   {dict.chat.emptyTitle}
                 </h2>
-                <p className="text-base text-neutral-400 max-w-lg leading-relaxed">
+                <p className="text-sm text-neutral-400 max-w-lg leading-relaxed">
                   {dict.chat.emptySubtitle}
                 </p>
               </div>
@@ -1638,7 +1680,7 @@ export default function ChatInterface({
                       removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
                     />
                     {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
-                    <div className="flex items-center gap-2 bg-neutral-800 rounded-2xl border border-white/10 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+                    <div className="flex items-center gap-1.5 bg-neutral-800 rounded-2xl border border-white/10 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
                       <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
                       <textarea
                         ref={inputRef}
@@ -1648,7 +1690,7 @@ export default function ChatInterface({
                         onPaste={attach.makePaste(attachLabels)}
                         placeholder={dict.chat.placeholder}
                         rows={1}
-                        className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
+                        className="flex-1 bg-transparent text-[13px] text-white placeholder-neutral-500 resize-none outline-none min-h-5 max-h-24 leading-relaxed"
                         style={{ fieldSizing: "content" } as React.CSSProperties}
                       />
                       <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
@@ -1657,7 +1699,7 @@ export default function ChatInterface({
                         disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
                         aria-label={dict.chat.sendMessage}
                         title={dict.chat.sendMessage}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
                       >
                         <Send size={16} />
                       </button>
@@ -1668,7 +1710,7 @@ export default function ChatInterface({
               </div>
 
               {/* Suggerimenti dinamici */}
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-2xl px-4">
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-2xl px-4">
                 {dynamicSuggestions.map((suggestion, idx) => (
                   <button
                     key={idx}
@@ -1676,10 +1718,10 @@ export default function ChatInterface({
                       setInput(suggestion);
                       setTimeout(() => inputRef.current?.focus(), 0);
                     }}
-                    className="group flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left text-sm text-neutral-300 hover:bg-white/[0.06] hover:border-brand-500/30 hover:text-white transition-all duration-200"
+                    className="group flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-2.5 text-left text-[13px] text-neutral-300 hover:bg-white/[0.06] hover:border-brand-500/30 hover:text-white transition-all duration-200"
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-400 group-hover:bg-brand-500/20 transition-colors">
-                      <MessageSquare size={13} />
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-400 group-hover:bg-brand-500/20 transition-colors">
+                      <MessageSquare size={12} />
                     </span>
                     <span className="truncate leading-snug">{suggestion}</span>
                   </button>
@@ -1702,12 +1744,12 @@ export default function ChatInterface({
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="flex-1 flex flex-col min-h-0"
+              className="relative flex-1 flex flex-col min-h-0"
             >
             <div
               ref={attachMessages}
               onScroll={handleMessagesScroll}
-              className="flex-1 overflow-y-auto px-4 sm:px-6 py-6"
+              className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-32"
             >
             <div ref={contentRef} className="space-y-6 mx-auto max-w-content">
             {messages.map((msg) => (
@@ -1892,12 +1934,10 @@ export default function ChatInterface({
             </div>
         </div>
 
-
-
-        {/* Input area — solo quando ci sono messaggi */}
+        {/* Input fluttuante: contenitore trasparente con fade sul contenuto */}
         <div
           data-onboard="chat-input"
-          className="px-4 sm:px-6 py-4 bg-neutral-900/80 backdrop-blur-sm border-t border-white/5"
+          className="absolute inset-x-0 bottom-0 z-10 px-4 sm:px-6 pb-4 pt-8 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent"
           onDragEnter={attach.onDragEnter}
           onDragOver={attach.onDragOver}
           onDragLeave={attach.onDragLeave}
@@ -1924,7 +1964,7 @@ export default function ChatInterface({
               removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
             />
             {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
-            <div className="flex items-center gap-2 bg-neutral-800 rounded-2xl border border-white/10 px-4 py-3 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+            <div className="flex items-center gap-1.5 bg-neutral-800 rounded-2xl border border-white/10 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
               <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
               <textarea
                 ref={inputRef}
@@ -1934,7 +1974,7 @@ export default function ChatInterface({
                 onPaste={attach.makePaste(attachLabels)}
                 placeholder={dict.chat.placeholder}
                 rows={1}
-                className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 resize-none outline-none min-h-6 max-h-30 leading-relaxed"
+                className="flex-1 bg-transparent text-[13px] text-white placeholder-neutral-500 resize-none outline-none min-h-5 max-h-24 leading-relaxed"
                 style={{ fieldSizing: "content" } as React.CSSProperties}
               />
               <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
@@ -1943,7 +1983,7 @@ export default function ChatInterface({
                 disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
                 aria-label={dict.chat.sendMessage}
                 title={dict.chat.sendMessage}
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
+                className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
               >
                 <Send size={16} />
               </button>
