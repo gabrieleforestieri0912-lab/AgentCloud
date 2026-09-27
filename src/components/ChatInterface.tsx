@@ -1776,7 +1776,13 @@ export default function ChatInterface({
                     </div>
                   ))}
                 <div
-                  className={`${msg.role === "user" ? "max-w-[68%] sm:max-w-[48%] order-1" : "max-w-[78%] sm:max-w-[65%]"} w-full`}
+                  className={`${
+                    msg.role === "user"
+                      // La bolla utente abbraccia il contenuto (senza w-full):
+                      // i messaggi corti non si allargano per tutta la riga.
+                      ? "order-1 max-w-[80%] sm:max-w-[55%]"
+                      : "max-w-[78%] sm:max-w-[65%] w-full"
+                  }`}
                 >
                   {/* Chi sta parlando: nome dell'agente sopra la bolla */}
                   {msg.role === "assistant" && msg.agentName && (
@@ -1786,7 +1792,7 @@ export default function ChatInterface({
                     </p>
                   )}
                   <div
-                    className={`px-4 py-3 text-sm leading-relaxed ${
+                    className={`px-3.5 py-2.5 text-sm leading-relaxed ${
                       msg.role === "user"
                         ? "whitespace-pre-wrap bg-white/5 text-white rounded-2xl rounded-br-md border border-white/5"
                         : "text-neutral-200"
@@ -1858,26 +1864,6 @@ export default function ChatInterface({
               </div>
             ))}
 
-          {/* Export buttons - show when there are messages */}
-          {messages.length > 0 && (
-            <div className="flex justify-center py-2">
-              <ExportReportButton
-                type="chat"
-                messages={messages.map((m) => ({
-                  role: m.role,
-                  content: m.content,
-                  agentName:
-                    m.role === "assistant"
-                      ? (m.agentName ?? activeAgentDisplayName)
-                      : undefined,
-                  timestamp: m.created_at,
-                }))}
-                agentName={activeAgentDisplayName || "AgentCloud"}
-                agentSlug={activeAgentId || "agent"}
-              />
-            </div>
-          )}
-
           {isTyping && !hasPartialReply && (
             <div className="flex items-start gap-3">
               {activeAgent ? (
@@ -1944,6 +1930,26 @@ export default function ChatInterface({
           onDrop={attach.makeDrop(attachLabels)}
         >
           <div className="relative mx-auto max-w-content">
+            {/* Comandi fluttuanti (PDF / Looker Studio) sopra l'input, a sinistra */}
+            {messages.length > 0 && (
+              <div className="mb-2">
+                <ExportReportButton
+                  variant="floating"
+                  type="chat"
+                  messages={messages.map((m) => ({
+                    role: m.role,
+                    content: m.content,
+                    agentName:
+                      m.role === "assistant"
+                        ? (m.agentName ?? activeAgentDisplayName)
+                        : undefined,
+                    timestamp: m.created_at,
+                  }))}
+                  agentName={activeAgentDisplayName || "AgentCloud"}
+                  agentSlug={activeAgentId || "agent"}
+                />
+              </div>
+            )}
             {paywallSlug && (
               <div className="mb-3 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
                 <p className="text-xs font-semibold text-amber-300">
