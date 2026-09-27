@@ -14,9 +14,19 @@ import { isExpiringSoon } from "@/lib/billing/subscription-notifications";
 type WebhookSubscription = {
   id: string;
   status?: string;
+  // Nelle versioni API recenti (basil+) current_period_end è stato spostato a
+  // livello di subscription item; teniamo entrambe le posizioni per coprire
+  // anche payload legacy.
   current_period_end?: number | null;
   cancel_at_period_end?: boolean | null;
+  items?: { data?: Array<{ current_period_end?: number | null }> };
 };
+
+function subscriptionPeriodEndIso(sub: WebhookSubscription): string | null {
+  const ts =
+    sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end ?? null;
+  return ts ? new Date(ts * 1000).toISOString() : null;
+}
 
 type WebhookInvoice = {
   subscription?: string | null;
@@ -81,6 +91,21 @@ async function activateSubscription(
     typeof session.subscription === "string" ? session.subscription : null;
   const customerId =
     typeof session.customer === "string" ? session.customer : null;
+
+  // Periodo corrente: recuperato dall'abbonamento Stripe appena creato. È la
+  // fonte di verità per le notifiche di scadenza (7 giorni prima): senza
+  // questo campo la riga `user_agents` resta senza scadenza e il preavviso
+  // non può mai scattare. invoice.paid e subscription.updated lo tengono poi
+  // sincronizzato ai rinnovi.
+  let periodEndIso: string | null = null;
+  if (subscriptionId) {
+    try {
+      const sub = await getStripe().subscriptions.retrieve(subscriptionId);
+      periodEndIso = subscriptionPeriodEndIso(sub as unknown as WebhookSubscription);
+    } catch (err) {
+      console.error("Failed to retrieve subscription period end:", err);
+    }
+  }
   const config: Record<string, unknown> = {
     planId: resolution.planId,
     vertical: resolution.vertical,
@@ -131,6 +156,7 @@ async function activateSubscription(
         config,
         activated_at: new Date().toISOString(),
         cancelled_at: null,
+        current_period_end: periodEndIso,
       },
       { onConflict: "user_id, agent_slug" },
     );
@@ -213,9 +239,7 @@ export async function POST(req: Request) {
 
     case "customer.subscription.updated": {
       const subscription = event.data.object as unknown as WebhookSubscription;
-      const periodEnd = subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000).toISOString()
-        : null;
+      const periodEnd = subscriptionPeriodEndIso(subscription);
       const cancelAtPeriodEnd = subscription.cancel_at_period_end === true;
 
       await db
@@ -257,6 +281,7 @@ export async function POST(req: Request) {
 
     case "customer.subscription.deleted": {
       const subscription = event.data.object as unknown as WebhookSubscription;
+      const lastPeriodEnd = subscriptionPeriodEndIso(subscription);
 
       await db
         .from("subscriptions")
@@ -268,6 +293,7 @@ export async function POST(req: Request) {
         .update({
           status: "canceled",
           cancelled_at: new Date().toISOString(),
+          current_period_end: lastPeriodEnd,
         })
         .eq("stripe_subscription_id", subscription.id);
       break;

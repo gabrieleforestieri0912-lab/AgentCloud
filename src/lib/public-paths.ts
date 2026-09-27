@@ -46,6 +46,10 @@ export const PUBLIC_PATHS = [
   "/api/email/send",
   "/api/whatsapp/webhook",
   "/api/billing/webhook",
+  // Cron notifiche scadenza (Vercel Cron): self-authenticato dentro l'handler
+  // con `Authorization: Bearer $CRON_SECRET` / `$ADMIN_API_TOKEN`, quindi deve
+  // essere raggiungibile senza sessione utente.
+  "/api/billing/notify-expiring",
   // Admin API — autenticata con `Authorization: Bearer <ADMIN_API_TOKEN>`
   // dentro l'handler (nessuna sessione richiesta: il chiamante è uno script/server).
   "/api/admin/tenants",

@@ -169,6 +169,8 @@ export async function proxy(request: NextRequest) {
     const isWebhookOrCallback =
       pathname.startsWith("/api/shopify/") ||
       pathname.startsWith("/api/billing/webhook") ||
+      // Cron notifiche scadenza: machine-to-machine, self-authenticato nell'handler.
+      pathname.startsWith("/api/billing/notify-expiring") ||
       pathname.startsWith("/api/whatsapp/webhook") ||
       pathname.startsWith("/api/email/webhook") ||
       pathname.startsWith("/api/integrations/") ||

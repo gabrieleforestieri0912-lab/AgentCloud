@@ -212,6 +212,25 @@ create table if not exists public.user_agents (
 
 create index if not exists idx_user_agents_user
   on public.user_agents(user_id);
+
+-- Integrità notifiche scadenza: una riga può essere "active" solo se ha una
+-- scadenza (current_period_end) oppure un abbonamento Stripe collegato (da cui
+-- il webhook ricava il periodo). Senza questo vincolo le righe senza scadenza
+-- restano invisibili al cron delle notifiche e l'utente non riceve mai il
+-- preavviso di 7 giorni.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'user_agents_expiry_sync_check'
+  ) then
+    alter table public.user_agents
+      add constraint user_agents_expiry_sync_check check (
+        status <> 'active'
+        or current_period_end is not null
+        or stripe_subscription_id is not null
+      );
+  end if;
+end $$;
 create index if not exists idx_user_agents_slug
   on public.user_agents(agent_slug);
 create index if not exists idx_user_agents_status

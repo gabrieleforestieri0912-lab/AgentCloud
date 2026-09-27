@@ -1,7 +1,8 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "path": "/api/billing/notify-expiring?token=$CRON_SECRET",
+      "path": "/api/billing/notify-expiring",
       "schedule": "27 8 * * *"
     }
   ]
