@@ -127,6 +127,11 @@ export async function POST() {
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
+    // Managed Payments (attivo di default sull'account Stripe) rifiuta il
+    // parametro payment_method_types e impone il tax_code sui prodotti:
+    // disabilitato per-sessione per mantenere la selezione esplicita
+    // card/klarna/amazon_pay e i prezzi dinamici senza tax code.
+    managed_payments: { enabled: false },
     payment_method_types: ["card", "klarna", "amazon_pay"],
     line_items: lineItems,
     subscription_data: {
