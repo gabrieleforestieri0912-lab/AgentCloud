@@ -4,12 +4,14 @@
  * Header dell'area applicativa (chat/dashboard/impostazioni).
  *
  * Mostra logo, titolo di contesto (es. nome agente attivo o email utente) e
- * controlli condivisi: toggle sidebar, cambio lingua e campanella notifiche.
+ * controlli condivisi: passaggio dashboard/chat e campanella notifiche.
  * La variante cambia i link di ritorno (back to home/area).
+ * Nella variante "chat" l'header è trasparente (nessuno sfondo/bordo) e
+ * espone la rotella delle impostazioni in alto a destra.
  */
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, LayoutDashboard, MessageSquare, PanelLeft, PanelLeftClose } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, MessageSquare, Settings } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import NotificationBell from "./NotificationBell";
 
@@ -17,8 +19,6 @@ type AppHeaderProps = {
   variant: "dashboard" | "chat";
   title?: string;
   subtitle?: string;
-  sidebarOpen?: boolean;
-  onToggleSidebar?: () => void;
   agentLabel?: string;
 };
 
@@ -26,14 +26,16 @@ export default function AppHeader({
   variant,
   title,
   subtitle,
-  sidebarOpen,
-  onToggleSidebar,
   agentLabel,
 }: AppHeaderProps) {
   const { dict } = useLanguage();
   const homeLabel = dict.appHeader.backHome;
   const dashboardLabel = dict.appHeader.dashboard;
   const chatLabel = dict.appHeader.chat;
+  const settingsLabel = dict.navbar.settings;
+  // In chat l'header è sovrapposto al contenuto: niente sfondo né bordo, così
+  // resta trasparente sul fondo della pagina.
+  const transparent = variant === "chat";
 
   const defaultTitle =
     variant === "dashboard"
@@ -43,7 +45,11 @@ export default function AppHeader({
   const displayTitle = title ?? defaultTitle;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/5 bg-neutral-950/90 backdrop-blur-xl">
+    <header
+      className={`sticky top-0 z-40 ${
+        transparent ? "bg-transparent" : "border-b border-white/5 bg-neutral-950/90 backdrop-blur-xl"
+      }`}
+    >
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 3xl:max-w-[1720px]">
         {/* Sinistra */}
         <div className="flex items-center gap-3 min-w-0">
@@ -102,6 +108,17 @@ export default function AppHeader({
               <ArrowLeft size={14} />
               <span className="hidden sm:inline">{homeLabel}</span>
               <span className="sm:hidden">Home</span>
+            </Link>
+          )}
+
+          {variant === "chat" && (
+            <Link
+              href="/settings"
+              title={settingsLabel}
+              aria-label={settingsLabel}
+              className="flex h-8 w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white"
+            >
+              <Settings size={18} strokeWidth={1.75} />
             </Link>
           )}
 

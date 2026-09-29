@@ -401,6 +401,11 @@ export default function ChatInterface({
   const pinnedScrollTop = useRef(0);
   const lastTouchY = useRef<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  // Un solo scroll per frame: durante lo streaming arrivano decine di mutazioni
+  // al secondo (ogni token) e ognuna chiamava scrollTo + due letture di
+  // layout, provocando "scatti" visibili e lavoro inutile.
+  const pinFrame = useRef<number | null>(null);
+  const pendingSmooth = useRef(false);
 
   const unpin = useCallback(() => {
     stickToBottom.current = false;
@@ -417,8 +422,6 @@ export default function ChatInterface({
    */
   const pinToBottom = useCallback(
     (smooth = false, force = false) => {
-      const el = messagesRef.current;
-      if (!el) return;
       if (force) {
         // Richiesta esplicita dell'utente (bottone "Vai in fondo"): riaggancia
         // anche se l'auto-scroll era staccato.
@@ -427,19 +430,39 @@ export default function ChatInterface({
       } else if (!stickToBottom.current) {
         return;
       }
-      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-      const movedByUser =
-        !force &&
-        !atBottom &&
-        Date.now() >= smoothScrollUntil.current &&
-        el.scrollTop < pinnedScrollTop.current - 24;
-      if (movedByUser) {
-        unpin();
-        return;
-      }
-      if (smooth) smoothScrollUntil.current = Date.now() + 800;
-      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
-      pinnedScrollTop.current = el.scrollHeight - el.clientHeight;
+      // Coalesce più richieste nello stesso frame. `smooth` "vince" perché è
+      // un'azione esplicita dell'utente e deve completarsi.
+      pendingSmooth.current = pendingSmooth.current || smooth;
+      if (pinFrame.current !== null) return;
+      pinFrame.current = requestAnimationFrame(() => {
+        pinFrame.current = null;
+        const el = messagesRef.current;
+        if (!el) return;
+        const useSmooth = pendingSmooth.current;
+        pendingSmooth.current = false;
+
+        const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+        const movedByUser =
+          !force &&
+          !atBottom &&
+          Date.now() >= smoothScrollUntil.current &&
+          el.scrollTop < pinnedScrollTop.current - 24;
+        if (movedByUser) {
+          unpin();
+          return;
+        }
+        if (useSmooth) smoothScrollUntil.current = Date.now() + 800;
+        // `scrollTo` con `behavior:"smooth"` non si sovrappone bene: durante
+        // lo streaming ogni token ne avvia uno nuovo e l'animazione si
+        // interrompe a metà, producendo salti visibili. L'auto-scroll durante
+        // la generazione è quindi sempre istantaneo; lo smooth resta solo per
+        // le azioni esplicite dell'utente.
+        el.scrollTo({ top: el.scrollHeight, behavior: useSmooth ? "smooth" : "auto" });
+        // Rileggiamo il fondo DOPO lo scroll: durante il rendering il
+        // contenuto può essere cresciuto, e un valore letto prima diverrebbe
+        // stale, facendo scattare l'unpin al token successivo.
+        pinnedScrollTop.current = el.scrollHeight - el.clientHeight;
+      });
     },
     [unpin],
   );
@@ -480,21 +503,30 @@ export default function ChatInterface({
   // Il contenuto cresce anche senza un nuovo messaggio (blocchi markdown che si
   // assestano, immagini/allegati che caricano, tool call che si espandono):
   // osserviamo l'altezza reale del contenuto e restiamo incollati al fondo
-  // finché l'utente non risale.
+  // finché l'utente non risale. pinToBottom già coalesce per frame.
   useEffect(() => {
     const el = messagesNode;
     const content = contentRef.current;
     if (!el || !content || typeof ResizeObserver === "undefined") return;
-    const pin = () => pinToBottom();
-    const observer = new ResizeObserver(pin);
+    const observer = new ResizeObserver(() => pinToBottom());
     observer.observe(content);
-    const mutations = new MutationObserver(pin);
+    const mutations = new MutationObserver(() => pinToBottom());
     mutations.observe(content, { childList: true, subtree: true, characterData: true });
     return () => {
       observer.disconnect();
       mutations.disconnect();
     };
   }, [messagesNode, pinToBottom]);
+
+  // Smette un frame di scroll pendente se il componente si smonta.
+  useEffect(() => {
+    return () => {
+      if (pinFrame.current !== null) {
+        cancelAnimationFrame(pinFrame.current);
+        pinFrame.current = null;
+      }
+    };
+  }, []);
 
   // Lo scroll manuale dell'utente (rotella verso l'alto, dito verso il basso)
   // stacca l'auto-scroll; tornare in fondo lo riattiva. Questi listener coprono
@@ -1063,21 +1095,104 @@ export default function ChatInterface({
     }
   }
 
-  function handleAppHeaderToggle() {
-    // Su desktop (>=lg) apre/chiude la sidebar persistente, su mobile l'overlay.
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setMobileSidebarOpen((v) => !v);
-    } else {
-      setSidebarOpen((v) => !v);
-    }
-  }
-
   function handleReplyToPhrase(phrase: string) {
     const quoted = `> ${phrase.trim()}\n\n`;
     setInput((prev) => (prev ? prev + "\n" + quoted : quoted));
     // Porta il focus sull'input
     setTimeout(() => inputRef.current?.focus(), 0);
   }
+
+  // Selettore agente: vive sopra l'input (allineato a destra, sulla stessa riga
+  // dei comandi di esportazione) sia nella chat vuota che durante la conversazione.
+  const agentPicker = (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setShowAgentPicker((v) => !v)}
+        aria-expanded={showAgentPicker}
+        aria-haspopup="listbox"
+        title={dict.chat.changeAgent}
+        className="inline-flex max-w-[220px] items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 transition-all hover:bg-white/10"
+      >
+        {selectedAgents.length > 1 ? (
+          <span className="flex items-center -space-x-2 pl-1">
+            {selectedAgents.slice(0, 3).map((a) => (
+              <AgentAvatar
+                key={a.slug}
+                agent={a}
+                size="sm"
+                className="ring-2 ring-neutral-900"
+              />
+            ))}
+          </span>
+        ) : activeAgent ? (
+          <AgentAvatar agent={activeAgent} size="sm" />
+        ) : (
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+            <Image
+              src="/agentcloud.png"
+              alt="AgentCloud"
+              width={16}
+              height={16}
+              className="w-4 h-4"
+            />
+          </span>
+        )}
+        <span className="truncate text-sm font-bold text-white">
+          {activeAgentDisplayName}
+        </span>
+        <ChevronDown
+          size={14}
+          className={`shrink-0 text-neutral-400 transition-transform ${showAgentPicker ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {showAgentPicker && (
+        <>
+          <button
+            type="button"
+            aria-label={dict.chat.close}
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => setShowAgentPicker(false)}
+          />
+          <div className="absolute bottom-full right-0 z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl">
+            <p className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+              {dict.chat.agentsInChat}
+            </p>
+            {selectableAgents.length === 0 ? (
+              <p className="px-2 py-2 text-xs text-neutral-500">
+                {dict.chat.noAgentsAvailable}
+              </p>
+            ) : (
+              <div className="max-h-72 overflow-y-auto">
+                {selectableAgents.map((a) => {
+                  const isSelected = selectedAgentSlugs.includes(a.slug);
+                  return (
+                    <button
+                      key={a.slug}
+                      type="button"
+                      onClick={() => toggleAgent(a.slug)}
+                      className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-all ${
+                        isSelected ? "bg-white/10" : "hover:bg-white/5"
+                      }`}
+                    >
+                      <AgentAvatar agent={a} size="sm" />
+                      <span className="min-w-0 flex-1 truncate text-xs font-bold text-white">
+                        {a.name}
+                      </span>
+                      {isSelected && (
+                        <CheckCircle2 size={14} className="shrink-0 text-emerald-400" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex h-dvh bg-neutral-950">
@@ -1413,8 +1528,6 @@ export default function ChatInterface({
         <AppHeader
           variant="chat"
           agentLabel={activeAgentDisplayName}
-          sidebarOpen={sidebarOpen || mobileSidebarOpen}
-          onToggleSidebar={handleAppHeaderToggle}
         />
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
           {/* Trigger sidebar su mobile */}
@@ -1434,118 +1547,6 @@ export default function ChatInterface({
         onDragLeave={attach.onDragLeave}
         onDrop={attach.makeDrop(attachLabels)}
       >
-        {/* Header — always shown */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleNewChat}
-              title={dict.chat.newChat}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 transition-all"
-            >
-              <Plus size={16} />
-            </button>
-            <div className="relative">
-              {sidebarView === "chat" ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAgentPicker((v) => !v)}
-                  aria-expanded={showAgentPicker}
-                  aria-haspopup="listbox"
-                  title={dict.chat.changeAgent}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 transition-all hover:bg-white/10"
-                >
-                  {selectedAgents.length > 1 ? (
-                    <span className="flex items-center -space-x-2 pl-1">
-                      {selectedAgents.slice(0, 3).map((a) => (
-                        <AgentAvatar
-                          key={a.slug}
-                          agent={a}
-                          size="sm"
-                          className="ring-2 ring-neutral-900"
-                        />
-                      ))}
-                    </span>
-                  ) : activeAgent ? (
-                    <AgentAvatar agent={activeAgent} size="sm" />
-                  ) : (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-                      <Image
-                        src="/agentcloud.png"
-                        alt="AgentCloud"
-                        width={16}
-                        height={16}
-                        className="w-4 h-4"
-                      />
-                    </span>
-                  )}
-                  <span className="max-w-[170px] truncate text-sm font-bold text-white">
-                    {activeAgentDisplayName}
-                  </span>
-                  <ChevronDown
-                    size={14}
-                    className={`text-neutral-400 transition-transform ${showAgentPicker ? "rotate-180" : ""}`}
-                  />
-                </button>
-              ) : (
-                <p className="text-sm font-semibold text-white">
-                  {sidebarView === "tools" ? dict.chat.tools : dict.chat.agents}
-                </p>
-              )}
-
-              {showAgentPicker && sidebarView === "chat" && (
-                <>
-                  <button
-                    type="button"
-                    aria-label={dict.chat.close}
-                    className="fixed inset-0 z-40 cursor-default"
-                    onClick={() => setShowAgentPicker(false)}
-                  />
-                  <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl">
-                    <p className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                      {dict.chat.agentsInChat}
-                    </p>
-                    {selectableAgents.length === 0 ? (
-                      <p className="px-2 py-2 text-xs text-neutral-500">
-                        {dict.chat.noAgentsAvailable}
-                      </p>
-                    ) : (
-                      <div className="max-h-72 overflow-y-auto">
-                        {selectableAgents.map((a) => {
-                          const isSelected = selectedAgentSlugs.includes(a.slug);
-                          return (
-                            <button
-                              key={a.slug}
-                              type="button"
-                              onClick={() => toggleAgent(a.slug)}
-                              className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-all ${
-                                isSelected ? "bg-white/10" : "hover:bg-white/5"
-                              }`}
-                            >
-                              <AgentAvatar agent={a} size="sm" />
-                              <span className="min-w-0 flex-1 truncate text-xs font-bold text-white">
-                                {a.name}
-                              </span>
-                              {isSelected && (
-                                <CheckCircle2 size={14} className="shrink-0 text-emerald-400" />
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-              {sidebarView === "chat" && isTyping && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-brand-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-                  {dict.chat.thinking}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
         {sidebarView === "chat" && activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
         {sidebarView === "chat" && needsGoogle && <GoogleConnectionPrompt />}
 
@@ -1553,11 +1554,17 @@ export default function ChatInterface({
         {sidebarView === "tools" && (
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="mx-auto max-w-3xl space-y-6">
-              <div>
-                <h2 className="text-lg font-bold text-white mb-1">{dict.chat.tools}</h2>
-                <p className="text-sm text-neutral-400">
-                  {dict.chat.toolsDescription}
-                </p>
+              {/* Intestazione allineata allo stile della pagina (badge + titolo + descrizione) */}
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+                  <Wrench size={18} className="text-brand-300" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold text-white mb-1">{dict.chat.tools}</h2>
+                  <p className="text-sm text-neutral-400 leading-relaxed">
+                    {dict.chat.toolsDescription}
+                  </p>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {INTEGRATIONS.filter((i) => i.available).map((integ) => (
@@ -1608,11 +1615,17 @@ export default function ChatInterface({
         {sidebarView === "agents" && (
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="mx-auto max-w-3xl space-y-6">
-              <div>
-                <h2 className="text-lg font-bold text-white mb-1">{dict.chat.agents}</h2>
-                <p className="text-sm text-neutral-400">
-                  {dict.chat.agentsDescription}
-                </p>
+              {/* Intestazione allineata allo stile della pagina (badge + titolo + descrizione) */}
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+                  <Bot size={18} className="text-brand-300" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold text-white mb-1">{dict.chat.agents}</h2>
+                  <p className="text-sm text-neutral-400 leading-relaxed">
+                    {dict.chat.agentsDescription}
+                  </p>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {Array.from(agentsBySlug.values()).map((agent) => (
@@ -1665,7 +1678,7 @@ export default function ChatInterface({
               </div>
 
               {/* Input ridotto centrato */}
-              <div className="w-full max-w-2xl px-4">
+              <div className="w-full max-w-3xl px-4">
                 <div
                   onDragEnter={attach.onDragEnter}
                   onDragOver={attach.onDragOver}
@@ -1673,6 +1686,8 @@ export default function ChatInterface({
                   onDrop={attach.makeDrop(attachLabels)}
                 >
                   <div className="relative">
+                    {/* Selettore agente sopra l'input, allineato a destra */}
+                    <div className="mb-2 flex items-center justify-end">{agentPicker}</div>
                     <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
                     <AttachmentChips
                       items={attach.attachments}
@@ -1710,7 +1725,7 @@ export default function ChatInterface({
               </div>
 
               {/* Suggerimenti dinamici */}
-              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-2xl px-4">
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-3xl px-4">
                 {dynamicSuggestions.map((suggestion, idx) => (
                   <button
                     key={idx}
@@ -1749,9 +1764,9 @@ export default function ChatInterface({
             <div
               ref={attachMessages}
               onScroll={handleMessagesScroll}
-              className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-32"
+              className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-44"
             >
-            <div ref={contentRef} className="space-y-6 mx-auto max-w-content">
+            <div ref={contentRef} className="space-y-6 mx-auto max-w-3xl">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -1929,27 +1944,30 @@ export default function ChatInterface({
           onDragLeave={attach.onDragLeave}
           onDrop={attach.makeDrop(attachLabels)}
         >
-          <div className="relative mx-auto max-w-content">
-            {/* Comandi fluttuanti (PDF / Looker Studio) sopra l'input, a sinistra */}
-            {messages.length > 0 && (
-              <div className="mb-2">
-                <ExportReportButton
-                  variant="floating"
-                  type="chat"
-                  messages={messages.map((m) => ({
-                    role: m.role,
-                    content: m.content,
-                    agentName:
-                      m.role === "assistant"
-                        ? (m.agentName ?? activeAgentDisplayName)
-                        : undefined,
-                    timestamp: m.created_at,
-                  }))}
-                  agentName={activeAgentDisplayName || "AgentCloud"}
-                  agentSlug={activeAgentId || "agent"}
-                />
+          <div className="relative mx-auto max-w-3xl">
+            {/* Riga sopra l'input: comandi (PDF / Looker Studio) a sinistra, selettore agente a destra */}
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                {messages.length > 0 && (
+                  <ExportReportButton
+                    variant="floating"
+                    type="chat"
+                    messages={messages.map((m) => ({
+                      role: m.role,
+                      content: m.content,
+                      agentName:
+                        m.role === "assistant"
+                          ? (m.agentName ?? activeAgentDisplayName)
+                          : undefined,
+                      timestamp: m.created_at,
+                    }))}
+                    agentName={activeAgentDisplayName || "AgentCloud"}
+                    agentSlug={activeAgentId || "agent"}
+                  />
+                )}
               </div>
-            )}
+              {agentPicker}
+            </div>
             {paywallSlug && (
               <div className="mb-3 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
                 <p className="text-xs font-semibold text-amber-300">
