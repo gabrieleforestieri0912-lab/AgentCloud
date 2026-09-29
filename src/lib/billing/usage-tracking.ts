@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrCreateMeterItem, isOverageBillingEnabled, reportOverageUsage } from "@/lib/stripe/overage";
 import { apiErrorMessageForLocale } from "@/lib/i18n/api-errors";
-import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/constants";
+import { DATE_LOCALES, DEFAULT_LOCALE, type Locale } from "@/lib/i18n/constants";
 import { DEFAULT_TOKEN_LIMIT, OVERAGE_HARD_CAP_MULTIPLIER } from "./pricing";
 
 export type UsageRecord = {
@@ -157,7 +157,7 @@ export async function assertRunAllowed(
           status: 429,
           code: "OVERAGE_CAP_REACHED",
           message: apiErrorMessageForLocale(locale, "overageCapReached", {
-            cap: hardCap.toLocaleString(locale === "en" ? "en-US" : "it-IT"),
+            cap: hardCap.toLocaleString(DATE_LOCALES[locale]),
             multiplier: OVERAGE_HARD_CAP_MULTIPLIER,
           }),
         };
@@ -169,7 +169,7 @@ export async function assertRunAllowed(
       status: 429,
       code: "LIMIT_EXCEEDED",
       message: apiErrorMessageForLocale(locale, "limitExceeded", {
-        limit: tokenLimit.toLocaleString(locale === "en" ? "en-US" : "it-IT"),
+        limit: tokenLimit.toLocaleString(DATE_LOCALES[locale]),
       }),
     };
   }

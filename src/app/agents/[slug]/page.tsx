@@ -102,7 +102,6 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   const pricingNotes = getPricingNotes(locale);
   const bundleWithAgent = BUNDLES.find((b) => b.agentSlugs.includes(agent.slug));
   const bundleTeaserAgents = bundleWithAgent ? getBundleAgents(bundleWithAgent).slice(0, 4) : [];
-  const isIt = locale === "it";
   return (
     <OwnedProvider initialOwned={ownedSlugs}>
       <main className="min-h-screen bg-neutral-950">
@@ -184,7 +183,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                           href={`/chat?agent=${agent.slug}`}
                           className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white hover:bg-white/5"
                         >
-                          {isIt ? "Prova in chat" : "Try in chat"} <MessagesSquare size={16} />
+                          {dict.agentDetail.tryInChat} <MessagesSquare size={16} />
                         </Link>
                       </>
                     )
@@ -197,11 +196,11 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     href="/contact"
                     className="inline-flex items-center gap-2 rounded-xl border border-white/5 bg-white/5 px-5 py-3 text-sm font-bold text-neutral-300 hover:bg-white/10"
                   >
-                    {isIt ? "Parla con noi" : "Talk to us"}
+                    {dict.agentDetail.talkToUs}
                   </Link>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-semibold text-neutral-500">
-                  <span>{isIt ? "Funziona con" : "Works with"}</span>
+                  <span>{dict.agentDetail.worksWith}</span>
                   <span className="inline-flex flex-wrap gap-1.5">
                     {agent.integrations.map((l) => (
                       <span key={l} className="rounded-full border border-white/10 bg-neutral-900 px-2.5 py-1 text-xs font-bold text-neutral-300">
@@ -270,7 +269,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   </div>
                   {bundleWithAgent && (
                     <div className="rounded-2xl border border-brand-500/20 bg-neutral-900 p-4">
-                      <p className="text-xs font-bold uppercase tracking-widest text-brand-300">{isIt ? "Risparmia con il bundle" : "Save with bundle"}</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-brand-300">{dict.agentDetail.saveWithBundle}</p>
                       <p className="mt-1 text-sm font-bold text-white">{bundleWithAgent.name}</p>
                       <p className="line-clamp-2 text-xs font-semibold text-neutral-400">{bundleWithAgent.description}</p>
                       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -286,7 +285,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                           <span className="text-xs font-semibold text-neutral-500">/mo</span>
                         </span>
                         <Link href={`/bundles/${bundleWithAgent.slug}`} className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900 hover:bg-neutral-100">
-                          {isIt ? "Vedi bundle" : "View bundle"} →
+                          {dict.agentDetail.viewBundle} →
                         </Link>
                       </div>
                     </div>
@@ -333,7 +332,11 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   {dict.agentDetail.whatAutomates}
                 </h2>
                 <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-bold text-neutral-400">
-                  {agent.tasks.length} {isIt ? "capability" : "capabilities"} · {agent.integrations.length} {isIt ? "integrazioni" : "integrations"}
+                  {agent.tasks.length}{" "}
+                  {agent.tasks.length === 1
+                    ? dict.agentDetail.capabilitiesLabel
+                    : dict.agentDetail.capabilitiesLabelPlural}{" "}
+                  · {agent.integrations.length} {dict.agentDetail.integrationsLabel}
                 </span>
               </div>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -361,12 +364,12 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
                     <MessagesSquare size={16} />
                   </span>
-                  {isIt ? "Come lavora — demo dal vivo" : "How it works — live demo"}
+                  {dict.agentDetail.howItWorksLive}
                 </h2>
-                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">{isIt ? "Transcript reale" : "Real transcript"}</span>
+                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">{dict.agentDetail.realTranscript}</span>
               </div>
               <p className="mt-2 text-sm font-semibold leading-relaxed text-neutral-400">
-                {t(dict.agentDetail.howItWorksDesc, { name: agent.shortName })} — {isIt ? "ecco uno scambio tipico con strumenti e tempi" : "here’s a typical exchange with tools and timing"}.
+                {t(dict.agentDetail.howItWorksDesc, { name: agent.shortName })} — {dict.agentDetail.howItWorksLiveDesc}.
               </p>
               <div className="mt-6 overflow-hidden rounded-2xl border border-white/5 bg-neutral-950">
                 <div className="flex items-center justify-between border-b border-white/5 bg-neutral-900 px-4 py-3">
@@ -375,7 +378,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     <span className="text-xs font-bold text-white">{agent.shortName}</span>
                     <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs font-semibold text-neutral-400">{agent.category}</span>
                   </div>
-                  <span className="text-xs font-semibold text-neutral-500">{isIt ? "Demo interattiva" : "Interactive demo"}</span>
+                  <span className="text-xs font-semibold text-neutral-500">{dict.agentDetail.interactiveDemo}</span>
                 </div>
                 <div className="space-y-3 p-4">
                   {enrichment.transcript.map((turn, idx) => (
@@ -399,7 +402,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     {dict.agentDetail.openChat} <ArrowRight size={12} />
                   </Link>
                   <span className="text-xs font-semibold leading-6 text-neutral-500">
-                    {isIt ? "Provalo con i tuoi dati — 4 messaggi gratuiti" : "Try with your data — 4 free messages"}
+                    {dict.agentDetail.tryWithData}
                   </span>
                 </div>
               </div>
@@ -466,21 +469,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
                   <h3 className="flex items-center gap-2 text-sm font-bold text-white">
                     <BarChart3 size={14} className="text-brand-400" />
-                    {isIt ? "Perché questo agente" : "Why this agent"}
+                    {dict.agentDetail.whyThisAgent}
                   </h3>
                   <ul className="mt-3 space-y-2">
-                    {(isIt
-                      ? [
-                          "Chat → azione diretta (carrello, booking, email) senza moduli.",
-                          "Strumenti veri su API reali, non mock — auditabile dai log.",
-                          "Supporto all'avvio: tono, trigger e workflow ottimizzati sui tuoi dati.",
-                        ]
-                      : [
-                          "Chat → direct action (cart, booking, email) — no forms.",
-                          "Real tools on real APIs, not mocks — auditable in logs.",
-                          "Onboarding: tone, triggers and workflow tuned on your data.",
-                        ]
-                    ).map((li) => (
+                    {dict.agentDetail.whyBullets.map((li) => (
                       <li key={li} className="flex gap-2 text-sm font-semibold leading-5 text-neutral-300">
                         <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-brand-400" />
                         {li}
@@ -495,7 +487,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
                   <Shield size={16} />
                 </span>
-                {isIt ? "Sicurezza & conformità" : "Security & compliance"}
+                {dict.agentDetail.securityCompliance}
               </h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {enrichment.security.map((s) => (
@@ -558,7 +550,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 </Link>
               ) : null}
               <Link href="/contact" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900 px-7 py-3 text-sm font-bold text-white">
-                {isIt ? "Contattaci" : "Contact us"}
+                {dict.agentDetail.contactUs}
               </Link>
             </div>
           </div>

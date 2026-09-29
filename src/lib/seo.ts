@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { getSiteUrl } from "@/lib/site-url";
-import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/constants";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_LABELS,
+  type Locale,
+} from "@/lib/i18n/constants";
 
 /**
  * Costruisce metadata SEO coerenti per ogni pagina.
@@ -26,7 +30,10 @@ export function pageSeo(opts: {
   const BASE = getSiteUrl();
   const url = `${BASE}${opts.path}`;
   const locale = opts.locale ?? DEFAULT_LOCALE;
-  const ogLocale = locale === "it" ? "it_IT" : "en_US";
+  // LOCALE_LABELS[locale].og copre tutte e 5 le lingue: il vecchio
+  // `locale === "it" ? "it_IT" : "en_US"` etichettava es/de/fr come en_US,
+  // così social e Slack li mostravano con il tag sbagliato.
+  const ogLocale = LOCALE_LABELS[locale].og;
 
   return {
     title: opts.title,

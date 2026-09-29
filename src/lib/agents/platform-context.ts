@@ -172,6 +172,102 @@ const LABELS: Record<Locale, PromptLabels> = {
 const CENTS_TO_DISPLAY = (cents: number): string =>
   `€${(cents / 100).toFixed(0)}/mese`;
 
+/**
+ * Suffisso del prezzo e parole usate nel prompt, per locale.
+ *
+ * Prima esisteva un `locale === "it" ? "mese" : "month"` sparso in tre punti:
+ * es/de/fr ricevevano il suffisso inglese dentro un prompt già tradotto.
+ */
+const PROMPT_WORDS: Record<
+  Locale,
+  {
+    perMonth: string;
+    available: string;
+    comingSoon: string;
+    verticalFull: string;
+    verticalServices: string;
+    verticalShopify: string;
+    verticalConfigPrefix: string;
+    integrations: string[];
+  }
+> = {
+  it: {
+    perMonth: "mese",
+    available: "disponibili",
+    comingSoon: "in arrivo",
+    verticalFull: "piattaforma completa",
+    verticalServices: "verticale servizi",
+    verticalShopify: "verticale Shopify (e-commerce)",
+    verticalConfigPrefix: "Configurazione attiva",
+    integrations: [
+      "- **Shopify** — negozio collegato dal cliente via OAuth (prodotti, ordini, clienti, sconti, analytics)",
+      "- **Stripe** — abbonamenti, pagamenti e fatturazione",
+      "- **Google Calendar** — prenotazioni e appuntamenti",
+      "- **Web search** — ricerca sul web via Chrome/Tavily",
+    ],
+  },
+  en: {
+    perMonth: "month",
+    available: "available",
+    comingSoon: "coming soon",
+    verticalFull: "full platform",
+    verticalServices: "services vertical",
+    verticalShopify: "Shopify (e-commerce) vertical",
+    verticalConfigPrefix: "Active configuration",
+    integrations: [
+      "- **Shopify** — the customer's store connected via OAuth (products, orders, customers, discounts, analytics)",
+      "- **Stripe** — subscriptions, payments and billing",
+      "- **Google Calendar** — bookings and appointments",
+      "- **Web search** — web search via Chrome/Tavily",
+    ],
+  },
+  es: {
+    perMonth: "mes",
+    available: "disponibles",
+    comingSoon: "próximamente",
+    verticalFull: "plataforma completa",
+    verticalServices: "vertical de servicios",
+    verticalShopify: "vertical de Shopify (e-commerce)",
+    verticalConfigPrefix: "Configuración activa",
+    integrations: [
+      "- **Shopify** — la tienda del cliente conectada vía OAuth (productos, pedidos, clientes, descuentos, analítica)",
+      "- **Stripe** — suscripciones, pagos y facturación",
+      "- **Google Calendar** — reservas y citas",
+      "- **Web search** — búsqueda web vía Chrome/Tavily",
+    ],
+  },
+  de: {
+    perMonth: "Monat",
+    available: "verfügbar",
+    comingSoon: "demnächst",
+    verticalFull: "vollständige Plattform",
+    verticalServices: "Dienstleistungs-Vertical",
+    verticalShopify: "Shopify-Vertical (E-Commerce)",
+    verticalConfigPrefix: "Aktive Konfiguration",
+    integrations: [
+      "- **Shopify** — der per OAuth verbundene Shop des Kunden (Produkte, Bestellungen, Kunden, Rabatte, Analytics)",
+      "- **Stripe** — Abonnements, Zahlungen und Abrechnung",
+      "- **Google Calendar** — Buchungen und Termine",
+      "- **Web search** — Websuche über Chrome/Tavily",
+    ],
+  },
+  fr: {
+    perMonth: "mois",
+    available: "disponibles",
+    comingSoon: "bientôt disponibles",
+    verticalFull: "plateforme complète",
+    verticalServices: "verticale services",
+    verticalShopify: "verticale Shopify (e-commerce)",
+    verticalConfigPrefix: "Configuration active",
+    integrations: [
+      "- **Shopify** — la boutique du client connectée via OAuth (produits, commandes, clients, remises, analytique)",
+      "- **Stripe** — abonnements, paiements et facturation",
+      "- **Google Calendar** — réservations et rendez-vous",
+      "- **Web search** — recherche web via Chrome/Tavily",
+    ],
+  },
+};
+
 const CATALOG_SLUGS = [
   "seo-agent",
   "business-manager",
@@ -197,21 +293,17 @@ function runtimeFallbackAgents(): AgentRow[] {
 
 /** Quale preset verticale è attivo (da env), usato come contesto nel prompt. */
 function activeVerticalLabel(locale: Locale): string {
+  const w = PROMPT_WORDS[locale];
   const vertical = process.env.AGENTCLOUD_VERTICAL?.toLowerCase();
-  if (locale === "it") {
-    if (vertical === "full" || vertical === "all") return "piattaforma completa";
-    if (vertical === "services") return "verticale servizi";
-    return "verticale Shopify (e-commerce)";
-  }
-  if (vertical === "full" || vertical === "all") return "full platform";
-  if (vertical === "services") return "services vertical";
-  return "Shopify (e-commerce) vertical";
+  if (vertical === "full" || vertical === "all") return w.verticalFull;
+  if (vertical === "services") return w.verticalServices;
+  return w.verticalShopify;
 }
 
 /** Righe prezzi + add-on generate dalla configurazione prezzi Shopify. */
 function pricingLines(locale: Locale): string[] {
   const { plans } = SHOPIFY_PRICING;
-  const perMonth = locale === "it" ? "mese" : "month";
+  const perMonth = PROMPT_WORDS[locale].perMonth;
   const lines = [plans.starter, plans.growth].map(
     (plan) => `- **${plan.name}** — ${plan.priceDisplay}`,
   );
@@ -270,9 +362,10 @@ export async function buildPlatformSystemPrompt(
     return `- **${a.name}** (\`${a.slug}\`)${price}${description}`;
   };
 
-  const count = `${agents.length} (${available.length} ${locale === "it" ? "disponibili" : "available"}, ${comingSoon.length} ${locale === "it" ? "in arrivo" : "coming soon"})`;
+  const words = PROMPT_WORDS[locale];
+  const count = `${agents.length} (${available.length} ${words.available}, ${comingSoon.length} ${words.comingSoon})`;
 
-  const verticalLine = `Configurazione attiva: ${activeVerticalLabel(locale)}.`;
+  const verticalLine = `${words.verticalConfigPrefix}: ${activeVerticalLabel(locale)}.`;
 
   const sections = [
     labels.intro,
@@ -289,19 +382,7 @@ export async function buildPlatformSystemPrompt(
     ...pricingLines(locale),
     "",
     labels.integrationsTitle,
-    ...(locale === "it"
-      ? [
-          "- **Shopify** — negozio collegato dal cliente via OAuth (prodotti, ordini, clienti, sconti, analytics)",
-          "- **Stripe** — abbonamenti, pagamenti e fatturazione",
-          "- **Google Calendar** — prenotazioni e appuntamenti",
-          "- **Web search** — ricerca sul web via Chrome/Tavily",
-        ]
-      : [
-          "- **Shopify** — the customer's store connected via OAuth (products, orders, customers, discounts, analytics)",
-          "- **Stripe** — subscriptions, payments and billing",
-          "- **Google Calendar** — bookings and appointments",
-          "- **Web search** — web search via Chrome/Tavily",
-        ]),
+    ...words.integrations,
     "",
     labels.contactsTitle,
     `- **Email:** ${PLATFORM_CONTACTS.email}`,

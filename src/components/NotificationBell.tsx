@@ -8,7 +8,7 @@
  * /api/notifications/read).
  */
 import { useEffect, useRef, useState } from "react";
-import type { Locale } from "@/lib/i18n/constants";
+import { DATE_LOCALES, type Locale } from "@/lib/i18n/constants";
 import Link from "next/link";
 import {
   Bell,
@@ -55,7 +55,7 @@ const POLL_MS = 30_000;
 
 function formatDate(iso: string | null, locale: Locale): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(locale === "en" ? "en-GB" : "it-IT", {
+  return new Date(iso).toLocaleDateString(DATE_LOCALES[locale], {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -191,7 +191,7 @@ export default function NotificationBell() {
       const start = new Date(String(params.start));
       params.start = isNaN(start.getTime())
         ? String(params.start)
-        : start.toLocaleString(locale === "en" ? "en-GB" : "it-IT", {
+        : start.toLocaleString(DATE_LOCALES[locale], {
             day: "numeric",
             month: "short",
             hour: "2-digit",

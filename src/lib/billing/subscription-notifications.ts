@@ -15,7 +15,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Locale } from "@/lib/i18n/constants";
+import { DATE_LOCALES, type Locale } from "@/lib/i18n/constants";
 import { getResend } from "@/lib/resend";
 import { FROM_EMAIL } from "@/lib/email-config";
 import { getDictionary, t, type Dictionary } from "@/lib/i18n/dictionaries";
@@ -96,7 +96,7 @@ export function computeNotifications(
 
 function formatDate(iso: string | null, locale: Locale): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(locale === "en" ? "en-GB" : "it-IT", {
+  return new Date(iso).toLocaleDateString(DATE_LOCALES[locale], {
     day: "numeric",
     month: "long",
     year: "numeric",

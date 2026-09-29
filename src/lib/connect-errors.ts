@@ -37,11 +37,65 @@ const REASONS_EN: Record<string, string> = {
   consent: "consent was not granted",
 };
 
+const REASONS_ES: Record<string, string> = {
+  auth: "debes iniciar sesión antes de conectar",
+  config: "configuración del servidor no encontrada",
+  invalid_shop: "dominio de la tienda no válido",
+  missing_params: "respuesta incompleta del proveedor",
+  state_mismatch: "la comprobación de seguridad falló",
+  hmac: "la verificación de la solicitud falló",
+  token_exchange: "no se pudo intercambiar el token",
+  no_token: "no se recibió ningún token",
+  store: "no se pudo guardar la conexión",
+  denied: "se denegó la autorización",
+  consent: "no se concedió el consentimiento",
+};
+
+const REASONS_DE: Record<string, string> = {
+  auth: "du musst dich anmelden, bevor du verbindest",
+  config: "Serverkonfiguration nicht gefunden",
+  invalid_shop: "ungültige Shop-Domain",
+  missing_params: "unvollständige Antwort des Anbieters",
+  state_mismatch: "Sicherheitsprüfung fehlgeschlagen",
+  hmac: "Anfrageprüfung fehlgeschlagen",
+  token_exchange: "Token-Austausch fehlgeschlagen",
+  no_token: "kein Token empfangen",
+  store: "Verbindung konnte nicht gespeichert werden",
+  denied: "Autorisierung wurde verweigert",
+  consent: "keine Einwilligung erteilt",
+};
+
+const REASONS_FR: Record<string, string> = {
+  auth: "vous devez vous connecter avant de connecter un outil",
+  config: "configuration du serveur introuvable",
+  invalid_shop: "domaine de boutique invalide",
+  missing_params: "réponse incomplète du fournisseur",
+  state_mismatch: "la vérification de sécurité a échoué",
+  hmac: "la vérification de la requête a échoué",
+  token_exchange: "échange du jeton impossible",
+  no_token: "aucun jeton reçu",
+  store: "impossible d’enregistrer la connexion",
+  denied: "l’autorisation a été refusée",
+  consent: "le consentement n’a pas été accordé",
+};
+
+/**
+ * Un solo oggetto per locale: una chiave mancante in una lingua non può
+ * più ricadere silenziosamente sull'inglese, perché il tipo `Record<Locale, …>`
+ * lo rende un errore di compilazione.
+ */
+const REASONS: Record<Locale, Record<string, string>> = {
+  it: REASONS_IT,
+  en: REASONS_EN,
+  es: REASONS_ES,
+  de: REASONS_DE,
+  fr: REASONS_FR,
+};
+
 export function readableConnectReason(
   reason: string | null,
   locale: Locale,
 ): string {
   if (!reason) return "error";
-  const map = locale === "it" ? REASONS_IT : REASONS_EN;
-  return map[reason] ?? reason;
+  return REASONS[locale][reason] ?? reason;
 }

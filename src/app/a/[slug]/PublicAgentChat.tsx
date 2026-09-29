@@ -59,7 +59,7 @@ function formatTime(d: Date) {
 }
 
 export default function PublicAgentChat({ slug, name, description, agent, enrichment }: Props) {
-  const { dict, locale } = useLanguage();
+  const { dict } = useLanguage();
   const attachLabels = chatAttachLabels(dict);
   const attach = useChatAttachments();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -69,7 +69,6 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const stickToBottom = useRef(true);
-  const isIt = locale === "it";
 
   const handleMessagesScroll = () => {
     const el = messagesRef.current;
@@ -259,7 +258,7 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
               href={`/agents/${slug}`}
               className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:bg-white/10"
             >
-              {isIt ? "Scheda completa" : "View details"} <ArrowRight size={12} />
+              {dict.publicChat.fullCard} <ArrowRight size={12} />
             </Link>
           )}
           <a
@@ -302,7 +301,7 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
               <div className="flex flex-col items-end gap-2 shrink-0">
                 <p className="text-lg font-bold leading-none text-white">{agent.price}<span className="text-xs font-semibold text-neutral-500">/mo</span></p>
                 <Link href={`/agents/${slug}`} className="rounded-full bg-brand-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-400">
-                  {isIt ? "Vedi prezzo & dettagli" : "See pricing"}
+                  {dict.publicChat.seePricing}
                 </Link>
               </div>
             </div>
@@ -345,7 +344,7 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
             {samplePrompts.length > 0 && (
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">
-                  {isIt ? "Prova questi prompt" : "Try these prompts"}
+                  {dict.publicChat.tryPrompts}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-1">
                   {samplePrompts.map((prompt) => (
@@ -369,7 +368,7 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-white/5 bg-neutral-900 p-4">
                   <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                    <CheckCircle2 size={12} className="text-brand-400" /> {isIt ? "Cosa fa" : "What it does"}
+                    <CheckCircle2 size={12} className="text-brand-400" /> {dict.publicChat.whatItDoes}
                   </p>
                   <ul className="mt-3 space-y-2">
                     {agent.tasks.slice(0, 4).map((t) => (
@@ -380,12 +379,12 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
                     ))}
                   </ul>
                   <Link href={`/agents/${slug}`} className="mt-3 inline-flex text-xs font-bold text-brand-400 hover:text-brand-300">
-                    {isIt ? "Tutto su questo agente →" : "Full details →"}
+                    {dict.publicChat.fullDetails}
                   </Link>
                 </div>
                 <div className="rounded-xl border border-white/5 bg-neutral-900 p-4">
                   <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                    <Plug size={12} className="text-purple-400" /> {isIt ? "Integrazioni" : "Integrations"}
+                    <Plug size={12} className="text-purple-400" /> {dict.publicChat.integrationsLabel}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {agent.integrations.map((l) => (
@@ -395,10 +394,10 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
                     ))}
                   </div>
                   <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-neutral-500">
-                    <ShieldCheck size={12} className="text-emerald-400" /> {isIt ? "OAuth sicuro · revoca 1-click" : "Secure OAuth · 1-click revoke"}
+                    <ShieldCheck size={12} className="text-emerald-400" /> {dict.publicChat.secureOauth}
                   </p>
                   <p className="mt-1 text-xs leading-4 text-neutral-500">
-                    {isIt ? "Token cifrati, nessun segreto nel client. Log auditabili." : "Encrypted tokens, no secrets in client. Auditable logs."}
+                    {dict.publicChat.encryptedTokens}
                   </p>
                 </div>
               </div>
@@ -408,8 +407,8 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
             {enrichment?.transcript && enrichment.transcript.length > 0 && (
               <div className="rounded-xl border border-white/5 bg-neutral-900 overflow-hidden">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">{isIt ? "Anteprima conversazione" : "Conversation preview"}</p>
-                  <span className="text-xs font-semibold text-neutral-500">{isIt ? "Esempio reale" : "Real example"}</span>
+                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.publicChat.conversationPreview}</p>
+                  <span className="text-xs font-semibold text-neutral-500">{dict.publicChat.realExample}</span>
                 </div>
                 <div className="p-4 space-y-2 bg-neutral-950/50">
                   {enrichment.transcript.slice(0, 2).map((turn, i) => (
