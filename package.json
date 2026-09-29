@@ -7,8 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run --configLoader runner",
-    "test:watch": "vitest --configLoader runner",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -39,7 +37,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^3.2.4"
+    "typescript": "^5"
   }
 }
