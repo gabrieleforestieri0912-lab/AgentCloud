@@ -80,7 +80,7 @@ export default async function AgentsPage() {
       <FloatingBrandBubbles
         bubbles={[
           { top: "10%", left: "4%", size: "w-12 h-12", brand: "shopify", delay: "0s", anim: "animate-float-gentle" },
-          { top: "15%", left: "90%", size: "w-11 h-11", brand: "linear", delay: "1.2s", anim: "animate-float-reverse" },
+          { top: "15%", left: "90%", size: "w-11 h-11", brand: "clickup", delay: "1.2s", anim: "animate-float-reverse" },
           { top: "25%", left: "2%", size: "w-10 h-10", brand: "instagram", delay: "0.7s", anim: "animate-float-gentle" },
           { top: "22%", left: "92%", size: "w-12 h-12", brand: "gmail", delay: "1.9s", anim: "animate-float-reverse" },
           { top: "40%", left: "5%", size: "w-11 h-11", brand: "whatsapp", delay: "0.4s", anim: "animate-float-reverse" },

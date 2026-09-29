@@ -8,14 +8,10 @@ import {
 import { apiErrorMessageForLocale } from "@/lib/i18n/api-errors";
 import { getLocale } from "@/lib/i18n/locale";
 import { getLLMProvider } from "@/lib/llm";
-import {
-  lastUserText,
-  replyLanguage,
-  withLanguageDirective,
-} from "@/lib/agents/language";
+import { lastUserText, replyLanguage } from "@/lib/agents/language";
 import type { LLMMessage, LLMToolResult } from "@/lib/llm";
 import { createWordEmitter } from "@/lib/stream";
-import { OUTPUT_FORMAT_DIRECTIVE } from "@/lib/agents/output-format";
+import { buildAgentSystemPrompt } from "@/lib/agents/system-prompt";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
@@ -30,6 +26,7 @@ import {
   getFreeMessagesUsed,
   incrementAnonymousFreeCount,
 } from "@/lib/billing/free-limit";
+import { detectConnectProviders } from "@/lib/integrations";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -263,6 +260,19 @@ export async function POST(req: Request) {
         send({ type: "text", content: word }),
       );
 
+      // Card di connessione garantita: se il modello spiega come collegare
+      // un'app senza emettere il marker (né chiamare il tool), l'evento `connection`
+      // va inviato comunque, altrimenti la UI non mostra nulla e l'utente legge
+      // di un "pulsante Connetti" che non esiste. Una sola card per provider.
+      const sentConnections = new Set<string>();
+      const emitConnectCard = (text: string) => {
+        for (const provider of detectConnectProviders(text)) {
+          if (sentConnections.has(provider)) continue;
+          sentConnections.add(provider);
+          send({ type: "connection", provider });
+        }
+      };
+
       try {
         let conversationMessages = [...initialMessages];
         let iterations = 0;
@@ -270,18 +280,16 @@ export async function POST(req: Request) {
         while (iterations < MAX_ITERATIONS) {
           iterations++;
 
-          const connectGuidance =
-            "\n\nYou can fully help WITHOUT any integration connected. If the task would benefit from a real app connection (shopify, gmail, calendar, sheets, slack, notion, hubspot, github, linear, asana, whatsapp), do BOTH: 1) provide immediate value without it (draft, template, analysis, mock data) and 2) offer to connect now by calling the tool request_integration_connect with provider (e.g. shopify, gmail, calendar, sheets) AND include the inline marker [[CONNECT:provider]] in your answer so the UI renders a card with app logo + Connetti button (Claude-style). Never block or say you cannot help due to missing connection.";
           const response = await provider.chat(
             {
               model: config.model,
               // Il system prompt dell'agente è in inglese e non parla di lingua:
               // la direttiva (lingua del messaggio, altrimenti lingua della
               // piattaforma) è quella condivisa, uguale per tutti gli agenti.
-              system: withLanguageDirective(
-                config.systemPrompt + connectGuidance + OUTPUT_FORMAT_DIRECTIVE,
-                replyLocale,
-              ),
+              // Direttive condivise e ordine sono definiti una volta sola in
+              // lib/agents/system-prompt.ts, così route e test usano lo stesso
+              // prompt (connect guidance, formato, identità, consegna, lingua).
+              system: buildAgentSystemPrompt(config.systemPrompt, replyLocale),
               messages: conversationMessages,
               tools: enabledTools,
               maxTokens: MAX_TOKENS,
@@ -297,6 +305,7 @@ export async function POST(req: Request) {
           await emitter.flush();
 
           if (response.stopReason === "end_turn") {
+            emitConnectCard(response.text);
             send({ type: "done" });
             break;
           }
@@ -314,6 +323,7 @@ export async function POST(req: Request) {
               // Inline connect card: emit immediately so UI can render without waiting for next LLM turn
               if (use.name === "request_integration_connect") {
                 const prov = String((use.input as Record<string, unknown>)?.provider || "unknown");
+                sentConnections.add(prov);
                 send({ type: "connection", provider: prov });
               }
 
@@ -381,6 +391,7 @@ export async function POST(req: Request) {
             ];
           } else {
             // Stop inatteso (max_tokens / length / stop): niente loop tool.
+            emitConnectCard(response.text);
             send({ type: "done" });
             break;
           }

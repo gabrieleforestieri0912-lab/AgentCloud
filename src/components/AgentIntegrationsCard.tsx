@@ -45,7 +45,7 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
         {integrations.map((label) => {
           const prov = providerForIntegration(label);
           const soon = !isIntegrationAvailable(label);
-          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "github", "linear", "asana"].includes(prov);
+          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "github", "clickup", "asana"].includes(prov);
           const connected = isGeneric
             ? !!genericConnected[prov!]
             : prov === "shopify"

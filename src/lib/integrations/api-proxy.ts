@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptMaybe, encryptToken } from "@/lib/integrations/encryption";
 
 /**
- * Integrations API proxy — GitHub / Linear / Asana (chiamate dirette, no Edge).
+ * Integrations API proxy — GitHub / ClickUp / Asana (chiamate dirette, no Edge).
  *
  * Perché esiste: gli agenti non devono mai toccare OAuth o token. Questo modulo
  * è il gemello di `lib/google/api-proxy.ts` e `lib/google/sheets.ts` per il
@@ -11,7 +11,7 @@ import { decryptMaybe, encryptToken } from "@/lib/integrations/encryption";
  * restituendo testo compatto e leggibile per il modello.
  */
 
-export type GenericProvider = "github" | "linear" | "asana";
+export type GenericProvider = "github" | "clickup" | "asana";
 
 export type IntegrationApiResult =
   | { ok: true; data: string }
@@ -30,12 +30,25 @@ type IntegrationRow = {
 
 type ResolvedToken = { accessToken: string; account: string | null };
 
-function notConnected(name: string): IntegrationApiResult {
-  return {
-    ok: false,
-    error: `No ${name} account connected. Ask the user to connect ${name} from the dashboard (Integrations), then retry.`,
-  };
+/**
+ * Esito della risoluzione del token. `ok: false` porta già il messaggio d'errore
+ * pronto per il modello (non connesso / da riconnettere), così i proxy non devono
+ * dedurlo da un `null` ambiguo.
+ */
+export type ResolvedIntegration =
+  | { ok: true; token: ResolvedToken }
+  | { ok: false; error: string };
+
+function notConnectedError(name: string): string {
+  return `No ${name} account connected. Ask the user to connect ${name} from the dashboard (Integrations), then retry.`;
 }
+
+/** Etichetta umana del provider, usata nei messaggi che il modello riporta all'utente. */
+const PROVIDER_LABEL: Record<GenericProvider, string> = {
+  github: "GitHub",
+  clickup: "ClickUp",
+  asana: "Asana",
+};
 
 /** True se un token con questa scadenza va rinfrescato ora (null = non scade). */
 function shouldRefresh(expiresAt: string | null): boolean {
@@ -95,10 +108,13 @@ async function refreshAsana(
 export async function resolveIntegrationToken(
   tenantId: string,
   provider: GenericProvider,
-): Promise<ResolvedToken | null> {
-  if (!tenantId) return null;
+): Promise<ResolvedIntegration> {
+  const label = PROVIDER_LABEL[provider];
+  const none = (): ResolvedIntegration => ({ ok: false, error: notConnectedError(label) });
+
+  if (!tenantId) return none();
   const admin = createAdminClient();
-  if (!admin) return null;
+  if (!admin) return none();
 
   const { data, error } = await admin
     .from("tenant_integrations")
@@ -106,35 +122,44 @@ export async function resolveIntegrationToken(
     .eq("tenant_id", tenantId)
     .eq("provider", provider)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error || !data) return none();
 
   const row = data as IntegrationRow;
-  if (row.status && row.status !== "connected") return null;
+  if (row.status && row.status !== "connected") return none();
 
-  let accessToken = decryptMaybe(row.access_token);
-  if (!accessToken) return null;
+  const accessToken = decryptMaybe(row.access_token);
+  if (!accessToken) return none();
 
   const refreshToken = decryptMaybe(row.refresh_token);
-  if (refreshToken && shouldRefresh(row.expires_at)) {
-    const refreshed = provider === "asana" ? await refreshAsana(refreshToken) : null;
-    if (refreshed?.accessToken) {
-      accessToken = refreshed.accessToken;
-      const update: Record<string, unknown> = {
-        access_token: encryptToken(refreshed.accessToken),
-        expires_at: refreshed.expiresAt,
-        status: "connected",
-        updated_at: new Date().toISOString(),
+  if (provider === "asana" && refreshToken && shouldRefresh(row.expires_at)) {
+    const refreshed = await refreshAsana(refreshToken);
+    // Rinnovo fallito (refresh token revocato o scaduto): riusare il token vecchio
+    // darebbe solo un 401 oscuro, quindi chiediamo di riconnettere l'account.
+    if (!refreshed?.accessToken) {
+      return {
+        ok: false,
+        error: `The ${label} connection has expired and could not be refreshed. Ask the user to reconnect ${label} from the dashboard (Integrations), then retry.`,
       };
-      if (refreshed.refreshToken) update.refresh_token = encryptToken(refreshed.refreshToken);
-      await admin
-        .from("tenant_integrations")
-        .update(update)
-        .eq("tenant_id", tenantId)
-        .eq("provider", provider);
     }
+    const update: Record<string, unknown> = {
+      access_token: encryptToken(refreshed.accessToken),
+      expires_at: refreshed.expiresAt,
+      status: "connected",
+      updated_at: new Date().toISOString(),
+    };
+    if (refreshed.refreshToken) update.refresh_token = encryptToken(refreshed.refreshToken);
+    await admin
+      .from("tenant_integrations")
+      .update(update)
+      .eq("tenant_id", tenantId)
+      .eq("provider", provider);
+    return {
+      ok: true,
+      token: { accessToken: refreshed.accessToken, account: row.external_account_id },
+    };
   }
 
-  return { accessToken, account: row.external_account_id };
+  return { ok: true, token: { accessToken, account: row.external_account_id } };
 }
 
 // ---------------------------------------------------------------------------
@@ -198,8 +223,9 @@ export async function githubApiProxy(
   params: GithubParams,
   tenantId: string,
 ): Promise<IntegrationApiResult> {
-  const token = await resolveIntegrationToken(tenantId, "github");
-  if (!token) return notConnected("GitHub");
+  const resolved = await resolveIntegrationToken(tenantId, "github");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token.accessToken}`,
@@ -248,105 +274,268 @@ export async function githubApiProxy(
 }
 
 // ---------------------------------------------------------------------------
-// Linear (GraphQL)
+// ClickUp (REST v2) — sostituisce Linear (OAuth Linear richiede piano a pagamento)
 // ---------------------------------------------------------------------------
 
-export type LinearAction = "listTeams" | "listIssues" | "createIssue";
+export type ClickupAction = "listSpaces" | "listTasks" | "createTask";
 
-export type LinearParams = {
+export type ClickupParams = {
   teamId?: string;
+  listId?: string;
   title?: string;
   description?: string;
   limit?: number;
 };
 
-function formatLinear(action: LinearAction, data: unknown): string {
-  if (action === "listTeams") {
-    const teams =
-      (data as { teams?: { nodes?: Array<{ id?: string; name?: string; key?: string }> } })?.teams
-        ?.nodes ?? [];
-    if (teams.length === 0) return "No Linear teams found.";
-    return teams.map((t) => `- ${t.name ?? "?"} (${t.key ?? "?"}) — id: ${t.id ?? "?"}`).join("\n");
-  }
-  if (action === "listIssues") {
-    const issues =
-      (data as {
-        issues?: {
-          nodes?: Array<{
-            title?: string;
-            state?: { name?: string };
-            team?: { name?: string };
-            url?: string;
-          }>;
-        };
-      })?.issues?.nodes ?? [];
-    if (issues.length === 0) return "No Linear issues found.";
-    return issues
-      .map(
-        (i) =>
-          `- ${i.title ?? "?"} [${i.state?.name ?? "?"}]${i.team?.name ? ` · ${i.team.name}` : ""}${i.url ? `\n  ${i.url}` : ""}`,
-      )
-      .join("\n");
-  }
-  const issue = (
-    data as { issueCreate?: { success?: boolean; issue?: { title?: string; url?: string } } }
-  )?.issueCreate;
-  if (issue?.success && issue.issue) {
-    return `Created Linear issue: ${issue.issue.title ?? ""}${issue.issue.url ? ` — ${issue.issue.url}` : ""}`;
-  }
-  return "Linear issue creation failed.";
+const CLICKUP_API = "https://api.clickup.com/api/v2";
+
+type ClickupTeam = { id?: string; name?: string };
+type ClickupSpace = { id?: string; name?: string };
+type ClickupFolder = { id?: string; name?: string };
+type ClickupList = { id?: string; name?: string };
+type ClickupTask = {
+  id?: string;
+  name?: string;
+  url?: string;
+  status?: { status?: string };
+  list?: { name?: string };
+};
+
+/** Messaggio d'errore compatto dalle risposte ClickUp ({ err } oppure { error }). */
+function clickupErrorMessage(json: unknown, status: number, statusText: string): string {
+  const j = json as { err?: string; error?: string };
+  return j?.err || j?.error || `${status} ${statusText}`;
 }
 
-export async function linearApiProxy(
-  action: LinearAction,
-  params: LinearParams,
+/**
+ * Riga di avviso per un sotto-livello non caricato: un 404 su space/cartelle non
+ * deve sparire in silenzio, altrimenti il modello vede un albero incompleto senza
+ * sapere perché (e non trova i listId per clickup_create_task).
+ */
+function clickupWarningLine(
+  indent: string,
+  label: string,
+  json: unknown,
+  status: number,
+  statusText: string,
+): string {
+  return `${indent}! ${label}: ${clickupErrorMessage(json, status, statusText)}`;
+}
+
+function formatClickupTasks(tasks: ClickupTask[], limit: number): string {
+  const slice = tasks.slice(0, limit);
+  if (slice.length === 0) return "No ClickUp tasks found.";
+  return slice
+    .map((t) => {
+      const link = t.url || (t.id ? `https://app.clickup.com/t/${t.id}` : "");
+      return `- ${t.name ?? "?"} [${t.status?.status ?? "?"}]${t.list?.name ? ` · ${t.list.name}` : ""}${link ? `\n  ${link}` : ""}`;
+    })
+    .join("\n");
+}
+
+export async function clickupApiProxy(
+  action: ClickupAction,
+  params: ClickupParams,
   tenantId: string,
 ): Promise<IntegrationApiResult> {
-  const token = await resolveIntegrationToken(tenantId, "linear");
-  if (!token) return notConnected("Linear");
+  const resolved = await resolveIntegrationToken(tenantId, "clickup");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token.accessToken}`,
+    Accept: "application/json",
     "Content-Type": "application/json",
   };
+  const limit = clampLimit(params.limit);
 
-  let query = "";
-  let variables: Record<string, unknown> = {};
+  const get = async (path: string) => {
+    const res = await fetch(`${CLICKUP_API}${path}`, { headers });
+    const json = (await res.json().catch(() => ({}))) as unknown;
+    return { res, json };
+  };
 
-  if (action === "listTeams") {
-    query = `query { teams { nodes { id name key description } } }`;
-  } else if (action === "listIssues") {
-    query = `query ListIssues($first: Int) { issues(first: $first) { nodes { id title state { name } team { id name key } assignee { name email } updatedAt url } } }`;
-    variables = { first: clampLimit(params.limit) };
-  } else {
-    if (!params.title || !params.teamId) {
-      return { ok: false, error: "linear_create_issue requires title and teamId." };
-    }
-    query = `mutation CreateIssue($title: String!, $teamId: ID!, $description: String) { issueCreate(input: { title: $title, teamId: $teamId, description: $description }) { success issue { id title url } } }`;
-    variables = { title: params.title, teamId: params.teamId, description: params.description ?? "" };
-  }
+  /** Primo workspace autorizzato: usato quando il modello non passa un teamId. */
+  const resolveTeamId = async (): Promise<string | null> => {
+    if (params.teamId) return params.teamId;
+    const { res, json } = await get("/team");
+    if (!res.ok) return null;
+    const teams = ((json as { teams?: ClickupTeam[] })?.teams ?? []).filter((t) => t.id);
+    return teams[0]?.id ?? null;
+  };
 
   try {
-    const res = await fetch("https://api.linear.app/graphql", {
+    if (action === "listSpaces") {
+      const { res, json } = await get("/team");
+      if (!res.ok) {
+        return {
+          ok: false,
+          error: `ClickUp API error: ${clickupErrorMessage(json, res.status, res.statusText)}`,
+        };
+      }
+      const teams = ((json as { teams?: ClickupTeam[] })?.teams ?? []).filter((t) => t.id);
+      if (teams.length === 0) {
+        return {
+          ok: true,
+          data: "No ClickUp workspace authorized. Reconnect ClickUp and select at least one Workspace.",
+        };
+      }
+      // Poche chiamate per workspace/space: la risposta resta compatta ma contiene
+      // tutti gli id (listId) che servono a clickup_create_task. Attenzione agli
+      // endpoint: le liste stanno in `/space/{id}/list` (senza cartella) oppure in
+      // `/folder/{id}/list` — NON esiste `/team/{id}/space/{id}/list`.
+      const lines: string[] = [];
+      for (const team of teams.slice(0, 5)) {
+        lines.push(`Workspace "${team.name ?? "?"}" (id: ${team.id})`);
+        const spacesCall = await get(`/team/${team.id}/space?archived=false`);
+        if (!spacesCall.res.ok) {
+          lines.push(
+            clickupWarningLine(
+              "  ",
+              "Could not load spaces",
+              spacesCall.json,
+              spacesCall.res.status,
+              spacesCall.res.statusText,
+            ),
+          );
+          continue;
+        }
+        const spaces = ((spacesCall.json as { spaces?: ClickupSpace[] })?.spaces ?? []).filter(
+          (s) => s.id,
+        );
+        for (const space of spaces.slice(0, 10)) {
+          lines.push(`  Space "${space.name ?? "?"}" (id: ${space.id})`);
+
+          // Liste che stanno direttamente nello space (senza cartella).
+          const folderlessCall = await get(`/space/${space.id}/list?archived=false`);
+          if (folderlessCall.res.ok) {
+            const lists = (
+              (folderlessCall.json as { lists?: ClickupList[] })?.lists ?? []
+            ).filter((l) => l.id);
+            for (const list of lists.slice(0, 20)) {
+              lines.push(`    List "${list.name ?? "?"}" (id: ${list.id})`);
+            }
+          } else {
+            lines.push(
+              clickupWarningLine(
+                "    ",
+                "Could not load folderless lists",
+                folderlessCall.json,
+                folderlessCall.res.status,
+                folderlessCall.res.statusText,
+              ),
+            );
+          }
+
+          // Cartelle dello space e liste contenute (in ClickUp è il caso più comune).
+          const foldersCall = await get(`/team/${team.id}/space/${space.id}/folder?archived=false`);
+          if (!foldersCall.res.ok) {
+            lines.push(
+              clickupWarningLine(
+                "    ",
+                "Could not load folders",
+                foldersCall.json,
+                foldersCall.res.status,
+                foldersCall.res.statusText,
+              ),
+            );
+            continue;
+          }
+          const folders = ((foldersCall.json as { folders?: ClickupFolder[] })?.folders ?? []).filter(
+            (f) => f.id,
+          );
+          for (const folder of folders.slice(0, 10)) {
+            lines.push(`    Folder "${folder.name ?? "?"}" (id: ${folder.id})`);
+            const listsCall = await get(`/folder/${folder.id}/list?archived=false`);
+            if (!listsCall.res.ok) {
+              lines.push(
+                clickupWarningLine(
+                  "      ",
+                  "Could not load lists",
+                  listsCall.json,
+                  listsCall.res.status,
+                  listsCall.res.statusText,
+                ),
+              );
+              continue;
+            }
+            const lists = ((listsCall.json as { lists?: ClickupList[] })?.lists ?? []).filter(
+              (l) => l.id,
+            );
+            for (const list of lists.slice(0, 20)) {
+              lines.push(`      List "${list.name ?? "?"}" (id: ${list.id})`);
+            }
+          }
+        }
+      }
+      return { ok: true, data: lines.join("\n") };
+    }
+
+    if (action === "listTasks") {
+      let tasks: ClickupTask[] = [];
+      if (params.listId) {
+        const { res, json } = await get(
+          `/list/${encodeURIComponent(params.listId)}/task?archived=false&subtasks=true&include_closed=false&order_by=updated&reverse=true&page=0`,
+        );
+        if (!res.ok) {
+          return {
+            ok: false,
+            error: `ClickUp API error: ${clickupErrorMessage(json, res.status, res.statusText)}`,
+          };
+        }
+        tasks = (json as { tasks?: ClickupTask[] })?.tasks ?? [];
+      } else {
+        const teamId = await resolveTeamId();
+        if (!teamId) {
+          return {
+            ok: false,
+            error:
+              "clickup_list_tasks needs a listId (from clickup_list_spaces) or at least one authorized ClickUp workspace.",
+          };
+        }
+        const { res, json } = await get(
+          `/team/${encodeURIComponent(teamId)}/task?subtasks=true&include_closed=false&order_by=updated&reverse=true&page=0`,
+        );
+        if (!res.ok) {
+          return {
+            ok: false,
+            error: `ClickUp API error: ${clickupErrorMessage(json, res.status, res.statusText)}`,
+          };
+        }
+        tasks = (json as { tasks?: ClickupTask[] })?.tasks ?? [];
+      }
+      return { ok: true, data: formatClickupTasks(tasks, limit) };
+    }
+
+    // createTask
+    if (!params.listId || !params.title) {
+      return { ok: false, error: "clickup_create_task requires listId and title." };
+    }
+    const res = await fetch(`${CLICKUP_API}/list/${encodeURIComponent(params.listId)}/task`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ query, variables }),
+      body: JSON.stringify({ name: params.title, description: params.description ?? "" }),
     });
     const json = (await res.json().catch(() => ({}))) as {
-      data?: unknown;
-      errors?: Array<{ message?: string }>;
+      id?: string;
+      name?: string;
+      url?: string;
     };
-    if (!res.ok || json.errors) {
-      const message =
-        json.errors?.map((e) => e.message).filter(Boolean).join("; ") ||
-        `${res.status} ${res.statusText}`;
-      return { ok: false, error: `Linear API error: ${message}` };
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: `ClickUp API error: ${clickupErrorMessage(json, res.status, res.statusText)}`,
+      };
     }
-    return { ok: true, data: formatLinear(action, json.data) };
+    const link = json.url || (json.id ? `https://app.clickup.com/t/${json.id}` : "");
+    return {
+      ok: true,
+      data: `Created ClickUp task: ${json.name ?? params.title}${json.id ? ` (id: ${json.id})` : ""}${link ? ` — ${link}` : ""}`,
+    };
   } catch (e) {
     return {
       ok: false,
-      error: `Linear network error: ${e instanceof Error ? e.message : String(e)}`,
+      error: `ClickUp network error: ${e instanceof Error ? e.message : String(e)}`,
     };
   }
 }
@@ -405,8 +594,9 @@ export async function asanaApiProxy(
   params: AsanaParams,
   tenantId: string,
 ): Promise<IntegrationApiResult> {
-  const token = await resolveIntegrationToken(tenantId, "asana");
-  if (!token) return notConnected("Asana");
+  const resolved = await resolveIntegrationToken(tenantId, "asana");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token.accessToken}`,
@@ -425,12 +615,14 @@ export async function asanaApiProxy(
     if (!params.workspaceId) {
       return { ok: false, error: "asana_list_projects requires workspaceId." };
     }
-    url = `https://app.asana.com/api/1.0/projects?workspace=${encodeURIComponent(params.workspaceId)}&limit=${limit}&opt_fields=name,archived,permalink_url`;
+    // `name` e `permalink_url` sono gli unici campi usati da formatAsana (il gid c'è sempre).
+    url = `https://app.asana.com/api/1.0/projects?workspace=${encodeURIComponent(params.workspaceId)}&limit=${limit}&opt_fields=name,permalink_url`;
   } else if (action === "listTasks") {
     if (!params.projectId) {
       return { ok: false, error: "asana_list_tasks requires projectId." };
     }
-    url = `https://app.asana.com/api/1.0/tasks?project=${encodeURIComponent(params.projectId)}&limit=${limit}&opt_fields=name,completed,assignee,due_on,permalink_url`;
+    // Solo i campi che formatAsana legge davvero: name, completed e due_on.
+    url = `https://app.asana.com/api/1.0/tasks?project=${encodeURIComponent(params.projectId)}&limit=${limit}&opt_fields=name,completed,due_on`;
   } else {
     if (!params.taskName) {
       return { ok: false, error: "asana_create_task requires taskName." };

@@ -2,12 +2,12 @@ import type { LLMTool } from "@/lib/llm";
 import type { ToolContext } from "./tools";
 import {
   githubApiProxy,
-  linearApiProxy,
+  clickupApiProxy,
   asanaApiProxy,
 } from "@/lib/integrations/api-proxy";
 
 /**
- * Tool agente per le integrazioni GitHub / Linear / Asana.
+ * Tool agente per le integrazioni GitHub / ClickUp / Asana.
  *
  * Perché un modulo dedicato: tiene `lib/agents/tools.ts` focalizzato sugli
  * strumenti core e raccoglie qui definizioni + handler delle integrazioni
@@ -20,9 +20,9 @@ const INTEGRATION_TOOL_NAMES = [
   "github_list_repos",
   "github_list_issues",
   "github_create_issue",
-  "linear_list_teams",
-  "linear_list_issues",
-  "linear_create_issue",
+  "clickup_list_spaces",
+  "clickup_list_tasks",
+  "clickup_create_task",
   "asana_list_workspaces",
   "asana_list_projects",
   "asana_list_tasks",
@@ -99,34 +99,38 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
     },
   },
 
-  linear_list_teams: {
-    name: "linear_list_teams",
-    description: "List the connected Linear workspace's teams (name, key and id).",
+  clickup_list_spaces: {
+    name: "clickup_list_spaces",
+    description:
+      "List the connected ClickUp workspace's spaces and their lists (with ids). Call this first: clickup_create_task needs a listId from here.",
     input_schema: { type: "object", properties: {} },
   },
 
-  linear_list_issues: {
-    name: "linear_list_issues",
-    description: "List the most recently updated issues in the connected Linear workspace.",
+  clickup_list_tasks: {
+    name: "clickup_list_tasks",
+    description:
+      "List the most recently updated tasks in the connected ClickUp workspace. Pass a listId (from clickup_list_spaces) for a single list, otherwise the whole workspace is used.",
     input_schema: {
       type: "object",
       properties: {
-        limit: { type: "integer", description: "Max issues to return (default 20, max 50)" },
+        listId: { type: "string", description: "ClickUp list id (optional, from clickup_list_spaces)" },
+        limit: { type: "integer", description: "Max tasks to return (default 20, max 50)" },
       },
     },
   },
 
-  linear_create_issue: {
-    name: "linear_create_issue",
-    description: "Create an issue in Linear. Requires the teamId (get it from linear_list_teams).",
+  clickup_create_task: {
+    name: "clickup_create_task",
+    description:
+      "Create a task in ClickUp. Requires the listId (get it from clickup_list_spaces).",
     input_schema: {
       type: "object",
       properties: {
-        teamId: { type: "string", description: "Linear team id (from linear_list_teams)" },
-        title: { type: "string", description: "Issue title" },
-        description: { type: "string", description: "Issue description (optional)" },
+        listId: { type: "string", description: "ClickUp list id (from clickup_list_spaces)" },
+        title: { type: "string", description: "Task name" },
+        description: { type: "string", description: "Task description (optional)" },
       },
-      required: ["teamId", "title"],
+      required: ["listId", "title"],
     },
   },
 
@@ -220,23 +224,28 @@ export async function executeIntegrationTool(
       return r.ok ? r.data : r.error;
     }
 
-    case "linear_list_teams": {
-      const r = await linearApiProxy("listTeams", {}, tenantId);
+    case "clickup_list_spaces": {
+      const r = await clickupApiProxy("listSpaces", {}, tenantId);
       return r.ok ? r.data : r.error;
     }
 
-    case "linear_list_issues": {
-      const r = await linearApiProxy("listIssues", { limit: parseLimit(input.limit) }, tenantId);
+    case "clickup_list_tasks": {
+      const listId = input.listId ? clean(input.listId, 200) : undefined;
+      const r = await clickupApiProxy(
+        "listTasks",
+        { listId, limit: parseLimit(input.limit) },
+        tenantId,
+      );
       return r.ok ? r.data : r.error;
     }
 
-    case "linear_create_issue": {
-      const teamId = clean(input.teamId, 200);
+    case "clickup_create_task": {
+      const listId = clean(input.listId, 200);
       const title = clean(input.title, 300);
-      if (!teamId || !title) return "linear_create_issue requires teamId and title.";
-      const r = await linearApiProxy(
-        "createIssue",
-        { teamId, title, description: input.description ? clean(input.description, 8000) : undefined },
+      if (!listId || !title) return "clickup_create_task requires listId and title.";
+      const r = await clickupApiProxy(
+        "createTask",
+        { listId, title, description: input.description ? clean(input.description, 8000) : undefined },
         tenantId,
       );
       return r.ok ? r.data : r.error;

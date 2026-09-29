@@ -31,7 +31,7 @@ export default function FAQSection() {
     },
     {
       q: "Quali integrazioni sono live e quali “In arrivo”?",
-      a: "Live: Shopify, Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, Linear, Asana (10/41). In arrivo: WhatsApp, WooCommerce, PayPal, Facebook/Instagram/TikTok, Google Ads/Analytics/Meet e altre — mostrate con badge “In arrivo”.",
+      a: "Live: Shopify, Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana (10/41). In arrivo: WhatsApp, WooCommerce, PayPal, Facebook/Instagram/TikTok, Google Ads/Analytics/Meet e altre — mostrate con badge “In arrivo”.",
     },
   ];
   const allFaqs = [...faqs, ...extraFaqs];

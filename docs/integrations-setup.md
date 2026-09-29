@@ -7,9 +7,9 @@ Layer di integrazioni generiche multi-tenant, separato da Shopify. Ogni provider
 - una riga in `tenant_integrations` (token cifrati app-level);
 - una voce nel catalogo `src/lib/integrations.ts` con `available: true`.
 
-Provider disponibili (7): **Notion, Slack, HubSpot, Google Sheets, GitHub, Linear, Asana**.
+Provider disponibili (7): **Notion, Slack, HubSpot, Google Sheets, GitHub, ClickUp, Asana**.
 
-Le chiamate alle API dei provider con tool agente (GitHub, Linear, Asana, Google Sheets) sono **dirette**, fatte lato server con il token del tenant (`lib/integrations/api-proxy.ts`, `lib/google/sheets.ts`). **Non** esistono Edge Function proxy per le integrazioni: le uniche Supabase Function sono quelle del flusso waitlist.
+Le chiamate alle API dei provider con tool agente (GitHub, ClickUp, Asana, Google Sheets) sono **dirette**, fatte lato server con il token del tenant (`lib/integrations/api-proxy.ts`, `lib/google/sheets.ts`). **Non** esistono Edge Function proxy per le integrazioni: le uniche Supabase Function sono quelle del flusso waitlist.
 
 ## Flusso OAuth
 
@@ -25,7 +25,7 @@ Redirect URI da registrare per **ogni** provider nella sua console OAuth:
 ${SITE}/api/integrations/<provider>/callback
 ```
 
-dove `<provider>` ∈ `notion | slack | hubspot | google_sheets | github | linear | asana`.
+dove `<provider>` ∈ `notion | slack | hubspot | google_sheets | github | clickup | asana`.
 
 ## Variabili comuni
 
@@ -84,14 +84,16 @@ dove `<provider>` ∈ `notion | slack | hubspot | google_sheets | github | linea
 | Token | Non scade → nessun refresh |
 | Tool agente | `github_list_repos`, `github_list_issues`, `github_create_issue` — chiamate dirette via `lib/integrations/api-proxy.ts`. |
 
-### Linear
+### ClickUp
 | | |
 |---|---|
-| Env | `LINEAR_CLIENT_ID`, `LINEAR_CLIENT_SECRET` |
-| Opzionali | `LINEAR_SCOPES` (default `read write`) |
-| Creazione app | <https://linear.app/settings/api> → OAuth applications |
-| Token | Long-lived → nessun refresh |
-| Tool agente | `linear_list_teams`, `linear_list_issues`, `linear_create_issue` — GraphQL `https://api.linear.app/graphql` via `lib/integrations/api-proxy.ts`. |
+| Env | `CLICKUP_CLIENT_ID`, `CLICKUP_CLIENT_SECRET` |
+| Opzionali | — (ClickUp non usa `scope`; l'utente sceglie i Workspace in fase di consenso) |
+| Creazione app | ClickUp → avatar → **Settings → Apps → Create new app** (<https://app.clickup.com/settings/apps>) — gratis, anche su piano Free |
+| Token | Long-lived, **nessun refresh token** |
+| Tool agente | `clickup_list_spaces`, `clickup_list_tasks`, `clickup_create_task` — REST v2 `https://api.clickup.com/api/v2` via `lib/integrations/api-proxy.ts`. |
+
+> Nota: ClickUp sostituisce Linear (l'OAuth di Linear richiede un piano Business/Enterprise a pagamento).
 
 ### Asana
 | | |
@@ -104,10 +106,10 @@ dove `<provider>` ∈ `notion | slack | hubspot | google_sheets | github | linea
 
 ## Database
 
-Esegui `supabase/schema-integrations.sql` (idempotente). La migrazione rimuove il provider `stripe` e abilita `github`/`linear`/`asana` nel check:
+Esegui `supabase/schema-integrations.sql` (idempotente). La migrazione rimuove i provider `stripe` e `linear` e abilita `github`/`clickup`/`asana` nel check:
 
 ```sql
-provider in ('notion','slack','hubspot','google_sheets','github','linear','asana')
+provider in ('notion','slack','hubspot','google_sheets','github','clickup','asana')
 ```
 
 ## Tool agente
@@ -125,9 +127,9 @@ Nessun JWT dell'utente viene inoltrato: l'autorizzazione verso il provider usa i
 | `github_list_repos` | GitHub | Lista repo dell'account |
 | `github_list_issues` | GitHub | Lista issue di un repo (`owner`, `repo`) |
 | `github_create_issue` | GitHub | Crea issue (`owner`, `repo`, `title`) |
-| `linear_list_teams` | Linear | Lista team |
-| `linear_list_issues` | Linear | Lista issue |
-| `linear_create_issue` | Linear | Crea issue (`teamId`, `title`) |
+| `clickup_list_spaces` | ClickUp | Lista workspace/spaces/lists (con id) |
+| `clickup_list_tasks` | ClickUp | Lista task (`listId` opzionale) |
+| `clickup_create_task` | ClickUp | Crea task (`listId`, `title`) |
 | `asana_list_workspaces` | Asana | Lista workspace |
 | `asana_list_projects` | Asana | Lista progetti (`workspaceId`) |
 | `asana_list_tasks` | Asana | Lista task (`projectId`) |

@@ -1,6 +1,6 @@
 # AgentCloud
 
-**v0.6.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing **Stripe + PayPal** (Klarna/Amazon Pay) con overage, **41 integrazioni** (10 disponibili + 31 Prossimamente), backend Claude (Anthropic), **Shopify + Google OAuth multi-tenant + generic integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/Linear/Asana)**, account unificato e i miei abbonamenti, i18n IT/EN.
+**v0.6.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing **Stripe + PayPal** (Klarna/Amazon Pay) con overage, **41 integrazioni** (10 disponibili + 31 Prossimamente), backend Claude (Anthropic), **Shopify + Google OAuth multi-tenant + generic integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/ClickUp/Asana)**, account unificato e i miei abbonamenti, i18n IT/EN.
 
 ---
 
@@ -58,7 +58,7 @@ src/
 └── lib/
     ├── i18n/                # dictionaries (it/en), locale, api-errors, agentCatalog
     ├── billing/ · stripe/ · paypal/ # pricing, overage, PayPal REST (sandbox/live)
-    ├── agents/ · integrations/ # registry, feature-flags, generic providers (notion/slack/hubspot/google_sheets/github/linear/asana)
+    ├── agents/ · integrations/ # registry, feature-flags, generic providers (notion/slack/hubspot/google_sheets/github/clickup/asana)
     ├── brands.ts            # 42 brand (simple-icons + custom Microsoft)
     ├── integrations.ts      # Catalogo 41 integrazioni (10 disponibili + 31 Prossimamente: Microsoft/Google suite)
     └── site-url.ts          # getSiteUrl()
@@ -189,7 +189,7 @@ Schema in `supabase/schema.sql` + `supabase/schema-shopify-oauth.sql` + `supabas
 | `agent_notifications` | Azioni agenti — campanella, `read` badge |
 | `shopify_connections` | OAuth Shopify multi-tenant (AES-256-GCM, `user_id text` per `__tenant__`) |
 | `google_connections` | OAuth Google (Gmail/Calendar) multi-tenant |
-| `tenant_integrations` | **Generic 7 provider** (`notion,slack,hubspot,google_sheets,github,linear,asana`) — `tenant_id text` (uuid o `__tenant__` per admin via code), `unique(tenant_id,provider)`, RLS `auth.uid()::text = tenant_id`, cifratura app-level, `metadata` |
+| `tenant_integrations` | **Generic 7 provider** (`notion,slack,hubspot,google_sheets,github,clickup,asana`) — `tenant_id text` (uuid o `__tenant__` per admin via code), `unique(tenant_id,provider)`, RLS `auth.uid()::text = tenant_id`, cifratura app-level, `metadata` |
 | `carts`, `cart_items` | Carrello (uno `active` per utente, bundle gestiti via `localStorage` + merge, `status` converted) |
 | **`rate_limits`** | Bucket rate limiting — PK `(bucket, key, window_start)`, RLS deny-all |
 
@@ -246,7 +246,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 |-----------|-----|
 | `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SHOPIFY_SCOPES`, `SHOPIFY_REDIRECT_URI`, `SHOPIFY_WEBHOOK_ADDRESS`, `SHOPIFY_TOKEN_ENCRYPTION_KEY` | OAuth Shopify (public app) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, `GOOGLE_SCOPES` (= `gmail.modify calendar spreadsheets`) | OAuth Google (Gmail/Calendar/Sheets) |
-| `NOTION_OAUTH_CLIENT_ID/SECRET` (`3d5d87...`), `SLACK_CLIENT_ID/SECRET` + `SLACK_SIGNING_SECRET`, `HUBSPOT_CLIENT_ID/SECRET` (`575f16...`), `GITHUB_CLIENT_ID/SECRET` (+ `GITHUB_SCOPES`), `LINEAR_CLIENT_ID/SECRET` (+ `LINEAR_SCOPES`), `ASANA_CLIENT_ID/SECRET` (+ `ASANA_SCOPES`), `GOOGLE_SHEETS` riusa Google client | Generic 7 provider (`tenant_integrations`, tool agente via `lib/integrations/api-proxy.ts`) — setup in `docs/integrations-setup.md`, redirect `.../api/integrations/<provider>/callback` |
+| `NOTION_OAUTH_CLIENT_ID/SECRET` (`3d5d87...`), `SLACK_CLIENT_ID/SECRET` + `SLACK_SIGNING_SECRET`, `HUBSPOT_CLIENT_ID/SECRET` (`575f16...`), `GITHUB_CLIENT_ID/SECRET` (+ `GITHUB_SCOPES`), `CLICKUP_CLIENT_ID/SECRET`, `ASANA_CLIENT_ID/SECRET` (+ `ASANA_SCOPES`), `GOOGLE_SHEETS` riusa Google client | Generic 7 provider (`tenant_integrations`, tool agente via `lib/integrations/api-proxy.ts`) — setup in `docs/integrations-setup.md`, redirect `.../api/integrations/<provider>/callback` |
 | `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | JS SDK PayPal (client, non secret) |
 | `LEAD_CAPTURE_ENDPOINT`, `SLACK_WEBHOOK_URL` | Lead capture (opzionale) |
 
@@ -319,7 +319,7 @@ Gmail/Calendar/Sheets (stesso pattern Shopify: token AES-256-GCM in `google_conn
 
 Flusso: `/api/auth/google/connect` (Gmail/Calendar) o `/api/integrations/google_sheets/authorize` (Sheets) → callback → upsert cifrato. Refresh 5m (`lib/google/token.ts` per Gmail/Calendar, `lib/google/sheets.ts` per Sheets — gemello su `tenant_integrations`). I tool agente di Sheets sono `sheets_read_range`, `sheets_update_range`, `sheets_append_row`.
 
-## Generic Integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/Linear/Asana) — multi-tenant
+## Generic Integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/ClickUp/Asana) — multi-tenant
 
 Nuovo layer generico (separato da Shopify): tabella `tenant_integrations` (`tenant_id text` per `__tenant__`, `provider`, `status`, `access_token`/`refresh_token` cifrati, `unique(tenant_id,provider)`, RLS) + adapter `lib/integrations/providers/*` con interfaccia `IntegrationProvider` e tool agente (`lib/integrations/api-proxy.ts`, chiamate dirette alle API dei provider). Setup: `docs/integrations-setup.md` — redirect `.../api/integrations/<provider>/callback` (7 provider). UI: `/dashboard/integrations` (41 app, 10 disponibili + 31 Prossimamente, Microsoft/Google suite) e `/agents/[slug]` (card integrazioni con **Già connesso** se già in `tenant_integrations`).
 

@@ -39,14 +39,14 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
       { title: "Prova", desc: "Connesso. Chiedi: lista le mie repo o crea una issue." },
     ],
   },
-  linear: {
-    provider: "linear",
-    whatItDoes: "Collega Linear: l'agente crea e aggiorna issue.",
+  clickup: {
+    provider: "clickup",
+    whatItDoes: "Collega ClickUp: l'agente crea task e organizza i tuoi progetti.",
     time: "2 min",
     steps: [
-      { title: "Prepara", desc: "Serve un workspace Linear. Accedi a linear.app prima." },
-      { title: "Collega", desc: "Clicca Connetti → autorizza AgentCloud su Linear → torna qui." },
-      { title: "Prova", desc: "Connesso. Chiedi: crea un'issue per il bug login." },
+      { title: "Prepara", desc: "Serve un account ClickUp: anche il piano Free va bene. Accedi a clickup.com prima." },
+      { title: "Collega", desc: "Clicca Connetti → scegli il Workspace da autorizzare → torna qui." },
+      { title: "Prova", desc: "Connesso. Chiedi: crea un task di prova nel mio space." },
     ],
   },
   asana: {

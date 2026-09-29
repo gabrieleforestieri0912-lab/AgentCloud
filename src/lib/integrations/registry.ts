@@ -4,7 +4,7 @@ import { slackProvider } from "./providers/slack";
 import { hubspotProvider } from "./providers/hubspot";
 import { googleSheetsProvider } from "./providers/googleSheets";
 import { githubProvider } from "./providers/github";
-import { linearProvider } from "./providers/linear";
+import { clickupProvider } from "./providers/clickup";
 import { asanaProvider } from "./providers/asana";
 
 const registry: Record<SupportedProvider, IntegrationProvider> = {
@@ -13,7 +13,7 @@ const registry: Record<SupportedProvider, IntegrationProvider> = {
   hubspot: hubspotProvider,
   google_sheets: googleSheetsProvider,
   github: githubProvider,
-  linear: linearProvider,
+  clickup: clickupProvider,
   asana: asanaProvider,
 };
 

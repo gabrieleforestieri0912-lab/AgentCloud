@@ -88,7 +88,7 @@ export default async function DeployAgentPage(props: {
       googleEmail: google?.googleEmail ?? null,
     };
   }
-  // Generic integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/Linear/Asana) — same table used by /dashboard/integrations
+  // Generic integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/ClickUp/Asana) — same table used by /dashboard/integrations
   // Se configurate dalla pagina integrazioni, l'agente le vede già connesse (single source of truth).
   if (user?.id) {
     const admin = (await import("@/lib/supabase/admin")).createAdminClient();

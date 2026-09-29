@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { ExternalLink, CheckCircle2, Plug } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
+import { isIntegrationAvailable } from "@/lib/integrations";
 
 type Provider = string;
 
@@ -17,7 +18,7 @@ const PROVIDER_META: Record<string, { name: string; brand: string; desc: string 
   notion: { name: "Notion", brand: "notion", desc: "Connetti Notion per documenti e knowledge base" },
   hubspot: { name: "HubSpot", brand: "hubspot", desc: "Connetti HubSpot per CRM e pipeline" },
   github: { name: "GitHub", brand: "github", desc: "Connetti GitHub per repo, PR e issue" },
-  linear: { name: "Linear", brand: "linear", desc: "Connetti Linear per issue e progetti" },
+  clickup: { name: "ClickUp", brand: "clickup", desc: "Connetti ClickUp per task e progetti" },
   asana: { name: "Asana", brand: "asana", desc: "Connetti Asana per task e progetti" },
   whatsapp: { name: "WhatsApp", brand: "whatsapp", desc: "Connetti WhatsApp per messaggistica" },
 };
@@ -35,6 +36,9 @@ function getMeta(provider: Provider) {
 export default function InlineConnectCard({ provider, onConnected }: { provider: string; onConnected?: () => void }) {
   const { dict } = useLanguage();
   const meta = getMeta(provider);
+  // App non ancora collegabile (catalogo `available: false`): la card resta, ma
+  // senza un bottone "Connetti" che porterebbe a un errore di OAuth.
+  const available = isIntegrationAvailable(meta.brand);
   const [connecting, setConnecting] = useState(false);
   const [shop, setShop] = useState("");
   const [showShopInput, setShowShopInput] = useState(false);
@@ -71,7 +75,7 @@ export default function InlineConnectCard({ provider, onConnected }: { provider:
         slack: "slack",
         hubspot: "hubspot",
         github: "github",
-        linear: "linear",
+        clickup: "clickup",
         asana: "asana",
         googlesheets: "google_sheets",
         google_sheets: "google_sheets",
@@ -132,6 +136,15 @@ export default function InlineConnectCard({ provider, onConnected }: { provider:
           >
             Autorizza
           </button>
+        </div>
+      ) : !available ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-2 text-sm font-bold text-amber-300">
+            Prossimamente
+          </span>
+          <span className="text-xs text-neutral-500">
+            Non è ancora collegabile: ti avvisiamo quando lo diventa
+          </span>
         </div>
       ) : (
         <div className="mt-3 flex flex-wrap items-center gap-2">

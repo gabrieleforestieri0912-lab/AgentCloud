@@ -10,7 +10,7 @@ export type SupportedProvider =
   | "hubspot"
   | "google_sheets"
   | "github"
-  | "linear"
+  | "clickup"
   | "asana";
 
 export const SUPPORTED_PROVIDERS: readonly SupportedProvider[] = [
@@ -19,7 +19,7 @@ export const SUPPORTED_PROVIDERS: readonly SupportedProvider[] = [
   "hubspot",
   "google_sheets",
   "github",
-  "linear",
+  "clickup",
   "asana",
 ] as const;
 

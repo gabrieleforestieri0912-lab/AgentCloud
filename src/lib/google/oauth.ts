@@ -24,11 +24,27 @@ const DEFAULT_GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar",
 ];
 
+/**
+ * Scope richiesto dalla Reviews API di Google Business Profile (v4). È uno
+ * scope sensibile che allarga parecchio il consenso, quindi lo si chiede solo
+ * quando la sede Business è effettivamente configurata: chiederlo sempre
+ * appesantirebbe la schermata di consenso (e la verifica OAuth) per tutti gli
+ * utenti senza alcun beneficio. Nota: cambiando gli scope, le connessioni già
+ * esistenti vanno rifatte per ottenerlo (il flow usa già `prompt=consent`).
+ */
+const BUSINESS_MANAGE_SCOPE = "https://www.googleapis.com/auth/business.manage";
+
 export function getGoogleScopes(): string[] {
   const override = process.env.GOOGLE_SCOPES;
-  return override
-    ? override.split(/[\s,]+/).filter(Boolean)
-    : DEFAULT_GOOGLE_SCOPES;
+  if (override) return override.split(/[\s,]+/).filter(Boolean);
+  const scopes = [...DEFAULT_GOOGLE_SCOPES];
+  if (
+    process.env.GOOGLE_BUSINESS_ACCOUNT_ID &&
+    process.env.GOOGLE_BUSINESS_LOCATION_ID
+  ) {
+    scopes.push(BUSINESS_MANAGE_SCOPE);
+  }
+  return scopes;
 }
 
 export function getGoogleRedirectUri(): string {

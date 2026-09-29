@@ -1,4 +1,5 @@
 import { getShopifyWebhookAddress } from "./oauth";
+import { shopifyAdminGraphqlUrl } from "./version";
 
 /**
  * Registra i webhook Shopify obbligatori per un negozio appena autorizzato.
@@ -25,7 +26,7 @@ export async function registerShopifyWebhooks(
   for (const topic of SHOPIFY_WEBHOOK_TOPICS) {
     try {
       const res = await fetch(
-        `https://${shopDomain}/admin/api/2024-10/graphql.json`,
+        shopifyAdminGraphqlUrl(shopDomain),
         {
           method: "POST",
           headers: {

@@ -13,7 +13,7 @@ Piattaforma di **agenti AI** per le aziende: marketplace di agenti pronti al lan
 - 🔑 **Accesso con codice** — durante la fase waitlist si entra con un codice di accesso (niente più email admin): elimina il vincolo del login (niente account Supabase) e sblocca **tutte** le pagine e **tutti** gli agenti, anche quelli “in arrivo”
 - 🛡️ **Rate limiting distribuito** — Supabase (`rate_limits` + RPC), fail-open
 - 🔌 **Shopify OAuth multi-tenant** — App pubblica installabile da qualsiasi merchant (install/callback/webhooks, token cifrati AES-256-GCM)
-- 🔗 **Integrazioni generiche multi-tenant** — 7 provider (Notion, Slack, HubSpot, Google Sheets, GitHub, Linear, Asana) con OAuth e token cifrati in `tenant_integrations`; **10 app live** nel catalogo. Tool agente per GitHub/Linear/Asana (`lib/integrations/api-proxy.ts`) e Google Sheets (`lib/google/sheets.ts`) con chiamate **dirette** alle API: nessuna Edge Function proxy per le integrazioni
+- 🔗 **Integrazioni generiche multi-tenant** — 7 provider (Notion, Slack, HubSpot, Google Sheets, GitHub, ClickUp, Asana) con OAuth e token cifrati in `tenant_integrations`; **10 app live** nel catalogo. Tool agente per GitHub/ClickUp/Asana (`lib/integrations/api-proxy.ts`) e Google Sheets (`lib/google/sheets.ts`) con chiamate **dirette** alle API: nessuna Edge Function proxy per le integrazioni
 
 ## Stack
 
@@ -77,7 +77,7 @@ Gli schemi Supabase sono separati per fase:
 - **`supabase/schema-waitlist.sql`** — fase waitlist: registra solo l'utente (`profiles` + trigger auth), raccoglie le email (`waitlist`) e include `rate_limits` con le RPC per il rate limiting dell'endpoint waitlist.
 - **`supabase/schema.sql`** — piattaforma completa (quando è disponibile): aggiunge agenti, billing/usage (`subscriptions`, `user_agents`, `agent_runs`), notifiche azioni agenti (`agent_notifications`), `demo_requests`, `waitlist`, `rate_limits` e il bootstrap di `agents_registry`.
 - **`supabase/schema-shopify-oauth.sql`** — tabelle dell'OAuth multi-tenant Shopify (`shopify_connections`, token cifrati).
-- **`supabase/schema-integrations.sql`** — layer generico multi-tenant (`tenant_integrations`, provider consentiti `notion/slack/hubspot/google_sheets/github/linear/asana`, RLS).
+- **`supabase/schema-integrations.sql`** — layer generico multi-tenant (`tenant_integrations`, provider consentiti `notion/slack/hubspot/google_sheets/github/clickup/asana`, RLS).
 
 Esegui lo schema scelto (Supabase SQL Editor o `supabase db push`) — **rieseguilo dopo ogni aggiornamento** (idempotente).
 

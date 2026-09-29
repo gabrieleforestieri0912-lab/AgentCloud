@@ -47,12 +47,12 @@ const NO_CONNECTIONS: DeployConnections = {
  * Quale connettore OAuth reale corrisponde a un'etichetta di integrazione:
  *   "shopify" → OAuth Shopify (serve prima il dominio del negozio)
  *   "google"  → OAuth Google (Gmail + Calendar)
- *   "notion" | "slack" | "hubspot" | "google_sheets" | "github" | "linear" | "asana" → OAuth generico
+ *   "notion" | "slack" | "hubspot" | "google_sheets" | "github" | "clickup" | "asana" → OAuth generico
  *               via /api/integrations/[provider]/authorize (stessa tabella usata
  *               dalla pagina /dashboard/integrations — single source of truth).
  *   null      → nessun connettore attivo
  */
-type ConnectorKind = "shopify" | "google" | "notion" | "slack" | "hubspot" | "google_sheets" | "github" | "linear" | "asana" | null;
+type ConnectorKind = "shopify" | "google" | "notion" | "slack" | "hubspot" | "google_sheets" | "github" | "clickup" | "asana" | null;
 
 function genericProviderForIntegration(integration: string): Exclude<ConnectorKind, "shopify" | "google" | null> | null {
   const k = integration.toLowerCase();
@@ -61,7 +61,7 @@ function genericProviderForIntegration(integration: string): Exclude<ConnectorKi
   if (k === "hubspot" || k.includes("hubspot")) return "hubspot";
   if (k === "google sheets" || k === "googlesheets" || k.includes("sheets")) return "google_sheets";
   if (k === "github" || k.includes("github")) return "github";
-  if (k === "linear" || k.includes("linear")) return "linear";
+  if (k === "clickup" || k.includes("clickup")) return "clickup";
   if (k === "asana" || k.includes("asana")) return "asana";
   return null;
 }
@@ -188,7 +188,7 @@ export default function DeployAgentClient({
    */
   const startConnect = (integration: string) => {
     const kind = integrationKind(integration);
-    const genericProvider = kind && ["notion", "slack", "hubspot", "google_sheets", "github", "linear", "asana"].includes(kind) ? (kind as string) : null;
+    const genericProvider = kind && ["notion", "slack", "hubspot", "google_sheets", "github", "clickup", "asana"].includes(kind) ? (kind as string) : null;
     const isConnected =
       (kind === "shopify" && connections.shopifyConnected) ||
       (kind === "google" && connections.googleConnected) ||
@@ -408,7 +408,7 @@ export default function DeployAgentClient({
                     const kind = integrationKind(integration);
                     const available = isIntegrationAvailable(integration);
                     const expanded = connectingIntegration === integration;
-                    const genericProvider = kind && ["notion", "slack", "hubspot", "google_sheets", "github", "linear", "asana"].includes(kind) ? kind : null;
+                    const genericProvider = kind && ["notion", "slack", "hubspot", "google_sheets", "github", "clickup", "asana"].includes(kind) ? kind : null;
                     const connected =
                       (kind === "shopify" && connections.shopifyConnected) ||
                       (kind === "google" && connections.googleConnected) ||

@@ -184,7 +184,7 @@ export const INTEGRATIONS: Integration[] = [
     name: "ClickUp",
     brand: "clickup",
     category: "Productivity",
-    available: false,
+    available: true,
     description: "Task, doc e goal",
   },
   {
@@ -193,13 +193,6 @@ export const INTEGRATIONS: Integration[] = [
     category: "Productivity",
     available: false,
     description: "Issue tracking Agile",
-  },
-  {
-    name: "Linear",
-    brand: "linear",
-    category: "Productivity",
-    available: true,
-    description: "Issue tracking moderno",
   },
   {
     name: "Figma",
@@ -333,5 +326,80 @@ export function isIntegrationAvailable(label: string): boolean {
       key.includes(i.name.toLowerCase()),
   );
   return entry?.available ?? false;
+}
+
+/**
+ * App collegabili con l'id usato dal marker inline `[[CONNECT:<id>]]` che la UI
+ * trasforma nella card con logo + bottone "Connetti". Gli id coincidono con
+ * quelli accettati dal tool `request_integration_connect` (vedi `tools.ts`).
+ */
+const CONNECTABLE_PROVIDERS: { id: string; names: string[] }[] = [
+  { id: "shopify", names: ["shopify"] },
+  { id: "gmail", names: ["gmail", "google mail"] },
+  { id: "calendar", names: ["google calendar", "calendario", "calendar"] },
+  { id: "sheets", names: ["google sheets", "spreadsheet", "fogli", "sheets"] },
+  { id: "slack", names: ["slack"] },
+  { id: "notion", names: ["notion"] },
+  { id: "hubspot", names: ["hubspot"] },
+  { id: "github", names: ["github"] },
+  { id: "clickup", names: ["clickup", "click up"] },
+  { id: "asana", names: ["asana"] },
+  { id: "whatsapp", names: ["whatsapp"] },
+];
+
+/**
+ * Intenzione di connessione, in italiano/inglese/spagnolo/tedesco/francese.
+ * Cattura sia l'infinito ("collegare", "connect") sia il participio passato
+ * ("non collegato", "not connected") che è il modo più frequente in cui un
+ * agente spiega che manca un account.
+ */
+const CONNECT_INTENT =
+  /(connett|colleg|connect|vincul|verbind|\blink (?:your|the|an)\b|\bnot linked\b|nessun account|kein konto|aucun compte)/i;
+
+/** Distanza (caratteri) entro cui l'app deve essere citata dall'intenzione. */
+const CONNECT_WINDOW = 140;
+
+/**
+ * Ritorna gli id delle app che il testo sta dicendo all'utente di collegare.
+ *
+ * Perché esiste: la card di connessione compare solo quando il modello emette
+ * il marker `[[CONNECT:<id>]]` o chiama il tool `request_integration_connect`,
+ * ma l'adesione a quelle istruzioni non è garantita (il testo può spiegare
+ * come collegare l'app senza emettere nulla). Questa funzione è il fallback
+ * lato server: se la risposta parla di collegare un'app e il marker manca, la
+ * route invia comunque l'evento `connection` e la UI mostra la card.
+ *
+ * Restituisce solo le app davvero citate accanto a un'intenzione di
+ * connessione, così una risposta che menziona "Shopify" a caso non fa apparire
+ * card inutili. I marker già presenti nel testo vengono ignorati.
+ */
+export function detectConnectProviders(text: string): string[] {
+  if (!text) return [];
+  const cleaned = text.replace(/\[\[CONNECT:[a-zA-Z0-9_\-]+\]\]/g, " ");
+  const lowered = cleaned.toLowerCase();
+  const found: string[] = [];
+
+  /** True se il nome dell'app è citato accanto a un'intenzione di connessione. */
+  const mentionsWithIntent = (name: string): boolean => {
+    let from = 0;
+    // Ogni occorrenza del nome: l'intenzione può stare prima o dopo.
+    for (let hits = 0; hits < 25; hits++) {
+      const idx = lowered.indexOf(name, from);
+      if (idx === -1) return false;
+      const start = Math.max(0, idx - CONNECT_WINDOW);
+      const end = Math.min(lowered.length, idx + name.length + CONNECT_WINDOW);
+      if (CONNECT_INTENT.test(cleaned.slice(start, end))) return true;
+      from = idx + name.length;
+    }
+    return false;
+  };
+
+  // Una sola card per app, anche quando il nome compare più volte ("Google
+  // Calendar" è citato due volte → una card, non due).
+  for (const { id, names } of CONNECTABLE_PROVIDERS) {
+    if (found.includes(id)) continue;
+    if (names.some(mentionsWithIntent)) found.push(id);
+  }
+  return found;
 }
 

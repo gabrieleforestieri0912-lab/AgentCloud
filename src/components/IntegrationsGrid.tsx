@@ -25,7 +25,7 @@ const BRAND_TO_PROVIDER: Record<string, string> = {
   hubspot: "hubspot",
   googlesheets: "google_sheets",
   github: "github",
-  linear: "linear",
+  clickup: "clickup",
   asana: "asana",
 };
 

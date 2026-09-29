@@ -21,6 +21,10 @@ import {
   getShopifyConnection,
   revokeShopifyConnection,
 } from "@/lib/shopify/connections";
+import {
+  shopifyAdminGraphqlUrl,
+  shopifyPartnerGraphqlUrl,
+} from "@/lib/shopify/version";
 import { googleApiProxy } from "@/lib/google/api-proxy";
 import {
   INTEGRATION_TOOL_DEFINITIONS,
@@ -949,13 +953,13 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   request_integration_connect: {
     name: "request_integration_connect",
     description:
-      "Request the user to connect an integration directly inside the chat. Use when the task requires an app that is not yet connected (e.g. Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot, GitHub, Linear, Asana). This renders an inline card with the app logo and a Connect button (Claude-style). The agent can still talk without the connection — use this only when the user would benefit from connecting now. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, linear, asana, whatsapp.",
+      "Request the user to connect an integration directly inside the chat. Use when the task requires an app that is not yet connected (e.g. Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot, GitHub, ClickUp, Asana). This renders an inline card with the app logo and a Connect button (Claude-style). The agent can still talk without the connection — use this only when the user would benefit from connecting now. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp.",
     input_schema: {
       type: "object",
       properties: {
         provider: {
           type: "string",
-          description: "App to connect: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, linear, asana, whatsapp",
+          description: "App to connect: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp",
         },
         reason: {
           type: "string",
@@ -1094,7 +1098,7 @@ async function shopifyGraphQL(
 }> {
   try {
     const res = await fetch(
-      `https://${shopDomain}/admin/api/2024-10/graphql.json`,
+      shopifyAdminGraphqlUrl(shopDomain),
       {
         method: "POST",
         headers: {
@@ -1223,7 +1227,7 @@ export async function executeTool(
     // Fail open: se la detection fallisce, non blocchiamo il tool
   }
 
-  // Integrazioni generiche (GitHub/Linear/Asana): delegate al modulo dedicato,
+  // Integrazioni generiche (GitHub/ClickUp/Asana): delegate al modulo dedicato,
   // che usa il token del tenant salvato in tenant_integrations.
   if (isIntegrationTool(name)) {
     return executeIntegrationTool(name, input, context);
@@ -1573,12 +1577,15 @@ export async function executeTool(
       const partnerOrg = process.env.SHOPIFY_PARTNER_ORG_ID;
       if (partnerToken && partnerOrg) {
         try {
-          // Partners GraphQL: crea un development store (richiede la Partners API)
-          const res = await fetch("https://partners.shopify.com/api/cli/graphql", {
+          // Partner API documentata (org id nel path + X-Shopify-Access-Token).
+          // Nota: `developmentStoreCreate` non compare fra i permessi dichiarati
+          // dei client Partner API (financials/apps/themes/jobs), quindi è
+          // possibile che il Partner API pubblico risponda con un errore di
+          // schema: in quel caso si logga e si prosegue col flusso guidato.
+          const res = await fetch(shopifyPartnerGraphqlUrl(partnerOrg), {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${partnerToken}`,
               "X-Shopify-Access-Token": partnerToken,
             },
             body: JSON.stringify({
@@ -1597,6 +1604,13 @@ export async function executeTool(
             data?: { developmentStoreCreate?: { developmentStore?: { shopDomain?: string }; userErrors?: Array<{ message?: string }> } };
             errors?: unknown;
           } | null;
+          const userErrors = json?.data?.developmentStoreCreate?.userErrors;
+          if (userErrors?.length || json?.errors) {
+            console.warn(
+              "Shopify Partner API: developmentStoreCreate non disponibile",
+              userErrors ?? json?.errors,
+            );
+          }
           const created = json?.data?.developmentStoreCreate?.developmentStore?.shopDomain;
           if (created) {
             return [
@@ -1826,7 +1840,8 @@ export async function executeTool(
         }
       `;
 
-      // Conforme API 2024-10: productOptions + variants con optionValues,
+      // Conforme all'Admin API pinnata in lib/shopify/version.ts:
+      // productOptions + variants con optionValues,
       // media al posto di images
       const hasValidImage = imageUrl && isValidHttpsUrl(imageUrl);
       const productInput: Record<string, unknown> = {
@@ -2910,7 +2925,7 @@ export async function executeTool(
 
     case "request_integration_connect": {
       const provider = sanitizeText(input.provider || "", 40).toLowerCase();
-      const allowed = ["shopify", "gmail", "calendar", "sheets", "slack", "notion", "hubspot", "github", "linear", "asana", "whatsapp", "google_sheets", "google_calendar"];
+      const allowed = ["shopify", "gmail", "calendar", "sheets", "slack", "notion", "hubspot", "github", "clickup", "asana", "whatsapp", "google_sheets", "google_calendar"];
       const normalized = provider.replace(/[^a-z0-9_]/g, "");
       const isAllowed = allowed.some((a) => normalized.includes(a.replace(/[^a-z0-9_]/g, "")) || a.includes(normalized));
       const finalProvider = isAllowed ? (normalized.includes("gmail") ? "gmail" : normalized.includes("calendar") ? "calendar" : normalized.includes("sheets") ? "sheets" : normalized) : provider;

@@ -29,6 +29,12 @@ import {
 } from "@/components/ChatAttachments";
 import { buildVisionText, composeUserContent, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
+import { AGENTS } from "@/lib/agents";
+import { INTEGRATIONS } from "@/lib/integrations";
+
+// Numeri mostrati nel badge della hero: derivati dai cataloghi reali così non
+// restano indietro quando un agente o un'integrazione vengono aggiunti.
+const LIVE_INTEGRATIONS = INTEGRATIONS.filter((i) => i.available).length;
 
 // La conversazione dell'hero viene salvata qui così la pagina chat completa
 // (/chat) la riprende in automatico come conversazione salvata.
@@ -458,7 +464,7 @@ export default function HeroSection() {
             }}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-            <span className="text-xs font-bold tracking-widest uppercase text-brand-300">Multi-tenant • 15 agenti • 8 integrazioni live</span>
+            <span className="text-xs font-bold tracking-widest uppercase text-brand-300">Multi-tenant • {AGENTS.length} agenti • {LIVE_INTEGRATIONS} integrazioni live</span>
           </motion.div>
           <motion.h1
             className="text-[1.75rem] xs:text-[2rem] sm:text-5xl md:text-6xl lg:text-[76px] font-extrabold leading-[1.08] tracking-tight text-white"

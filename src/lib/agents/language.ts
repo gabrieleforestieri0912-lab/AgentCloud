@@ -33,6 +33,12 @@ const STOPWORDS: Record<Locale, string[]> = {
     "sempre", "devo", "devi", "fare", "fatto", "ordini", "prodotti", "clienti",
     "vendite", "negozio", "aiutarmi", "aiutarti", "spiegami", "dimmi", "senza",
     "dopo", "prima", "molto", "tutto", "niente", "adesso", "quindi", "invece",
+    // Lessico di commercio e supporto, escluse le parole condivise con altre
+    // lingue ("problema", "clienti", "su", "mi"): un solo indizio estraneo non
+    // deve far scivolare un messaggio italiano in un'altra lingua.
+    "ho", "con", "ordine", "spedizione", "consegna", "reso", "rimborso",
+    "prezzo", "fattura", "prodotto", "quanto", "quando", "dove", "bene",
+    "aiuto", "oggi", "domani", "subito", "gentile", "saluti",
   ],
   en: [
     "the", "and", "you", "your", "yours", "with", "for", "this", "that",
@@ -40,6 +46,17 @@ const STOPWORDS: Record<Locale, string[]> = {
     "need", "want", "please", "thanks", "thank", "hello", "help", "my",
     "have", "has", "does", "about", "from", "into", "over", "give", "show",
     "tell", "make", "set", "which", "there", "order", "orders", "store",
+    // Parole che compaiono nei messaggi BREVI (una frase: "How do I return an
+    // item I bought 40 days ago?"): senza queste il messaggio non superava la
+    // soglia e la risposta finiva nella lingua della piattaforma. Restano fuori
+    // i termini condivisi con altre lingue supportate ("in", "was",
+    // "problem", "question").
+    "do", "i", "is", "it", "to", "of", "on", "at", "be", "were", "they",
+    "them", "we", "us", "if", "so", "but", "not", "hi", "hey", "get",
+    "got", "will", "just", "also", "still", "when", "where", "who", "buy",
+    "bought", "return", "returns", "refund", "refunds", "item", "items",
+    "day", "days", "product", "products", "read", "write", "put", "say",
+    "see", "look", "work", "works", "working", "issue", "issues", "ready",
   ],
   es: [
     "el", "los", "las", "que", "para", "por", "puedes", "puedo", "necesito",
@@ -48,6 +65,8 @@ const STOPWORDS: Record<Locale, string[]> = {
     "hacer", "hecho", "pedidos", "productos", "clientes", "ventas", "tienda",
     "también", "siempre", "debo", "debes", "después", "antes", "mucho",
     "todo", "nada", "ahora", "entonces", "cuando", "dónde", "quién",
+    "producto", "pedido", "pedidos", "venta", "precio", "devolver", "cambiar",
+    "gustaría", "días", "día", "puede", "tiene", "rembolso", "factura",
   ],
   de: [
     "der", "die", "das", "und", "ich", "nicht", "für", "mit", "ein", "eine",
@@ -57,6 +76,8 @@ const STOPWORDS: Record<Locale, string[]> = {
     "dein", "deine", "auch", "immer", "muss", "musst", "machen", "gemacht",
     "bestellungen", "produkte", "kunden", "umsatz", "bestellung", "nach", "vor",
     "sehr", "alles", "nichts", "jetzt", "dann", "wann", "wo", "wer",
+    "frage", "lieferung", "rechnung", "stornieren", "termin", "preis",
+    "produkt", "problem", "bestellung", "was", "kostet",
   ],
   fr: [
     "les", "des", "une", "est", "sont", "que", "qui", "quoi", "vous", "nous",
@@ -65,6 +86,8 @@ const STOPWORDS: Record<Locale, string[]> = {
     "aussi", "toujours", "dois", "devez", "faire", "fait", "commandes",
     "produits", "clients", "ventes", "boutique", "après", "avant", "beaucoup",
     "tout", "rien", "maintenant", "donc", "quand", "où", "commande",
+    "je", "pas", "remboursement", "facture", "annuler", "produit", "jour",
+    "jours", "semaine", "devis", "prix", "livraison",
   ],
 };
 
@@ -82,8 +105,18 @@ const INDEX: Record<Locale, Set<string>> = Object.fromEntries(
   LOCALES.map((locale) => [locale, new Set(STOPWORDS[locale])]),
 ) as Record<Locale, Set<string>>;
 
-/** Sotto questo punteggio il messaggio non è abbastanza per decidere. */
-const MIN_SCORE = 2;
+/**
+ * Sotto questo punteggio il messaggio non è abbastanza per decidere.
+ *
+ * Era 2, ma una frase breve in inglese — "How do I return an item I bought 40
+ * days ago?" — contiene un solo stopword della sua lingua e finiva quindi nel
+ * fallback (lingua della piattaforma): un cliente che scriveva in inglese
+ * riceveva la risposta in italiano. Con 1 decide anche un solo indizio, e i casi
+ * davvero ambigui restano coperti: un numero, un emoji o una parola condivisa
+ * (\(ok\), \(no\), un nome proprio) danno punteggio 0, e in caso di parità fra
+ * due lingue si continua a tornare `null`.
+ */
+const MIN_SCORE = 1;
 
 /**
  * Lingua del testo, oppure `null` quando il testo non la indica (una parola
@@ -156,29 +189,38 @@ const DIRECTIVES: Record<Locale, string> = {
     "dell'utente o, quando quel messaggio non ne indica una, la lingua della " +
     "piattaforma. Non mescolare le lingue nella stessa risposta: esempi e " +
     "risultati degli strumenti possono essere in un'altra lingua, la tua " +
-    "risposta resta in italiano.",
+    "risposta resta in italiano. Non aggiungere frasi, domande o inviti " +
+    "finali in un'altra lingua: ogni riga è in italiano, anche una domanda " +
+    "breve di chiusura.",
   en:
     "Language: answer in English. That is the language of the user's latest " +
     "message, or — when that message does not indicate one — the platform " +
     "language. Never mix languages in the same answer: examples and tool " +
-    "results may be in another language, your answer stays in English.",
+    "results may be in another language, your answer stays in English. Never " +
+    "append sentences, questions or closing lines in another language: every " +
+    "line is in English, including a short follow-up question.",
   es:
     "Idioma: responde en español. Es el idioma del último mensaje del usuario " +
     "o, si ese mensaje no indica ninguno, el idioma de la plataforma. No " +
     "mezcles idiomas en la misma respuesta: los ejemplos y los resultados de " +
-    "las herramientas pueden estar en otro idioma, tu respuesta sigue en español.",
+    "las herramientas pueden estar en otro idioma, tu respuesta sigue en español. " +
+    "No añadas frases, preguntas ni cierres en otro idioma: cada línea está en " +
+    "español, incluso una pregunta breve.",
   de:
     "Sprache: Antworte auf Deutsch. Das ist die Sprache der letzten Nachricht " +
     "des Nutzers oder, wenn diese Nachricht keine erkennen lässt, die Sprache " +
     "der Plattform. Mische niemals mehrere Sprachen in einer Antwort: Beispiele " +
     "und Tool-Ergebnisse können in einer anderen Sprache sein, deine Antwort " +
-    "bleibt auf Deutsch.",
+    "bleibt auf Deutsch. Hänge keine Sätze, Fragen oder Schlusszeilen in einer " +
+    "anderen Sprache an: jede Zeile ist auf Deutsch, auch eine kurze Rückfrage.",
   fr:
     "Langue : répondez en français. C'est la langue du dernier message de " +
     "l'utilisateur ou, si ce message n'en indique aucune, celle de la " +
     "plateforme. Ne mélangez jamais plusieurs langues dans la même réponse : " +
     "les exemples et les résultats des outils peuvent être dans une autre " +
-    "langue, votre réponse reste en français.",
+    "langue, votre réponse reste en français. N'ajoutez pas de phrases, de " +
+    "questions ni de formules de conclusion dans une autre langue : chaque " +
+    "ligne est en français, même une courte question.",
 };
 
 /** Istruzione di lingua per la lingua della risposta. */

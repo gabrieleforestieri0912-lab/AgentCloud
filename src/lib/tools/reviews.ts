@@ -12,7 +12,7 @@ import { getTenantCredentials } from "@/lib/tenants";
 export type GoogleBusinessReview = {
   reviewId: string;
   authorName: string;
-  rating: number; // da 1 a 5
+  rating: number; // 1..5 (0 = non specificato dall'API)
   comment: string;
   createTime: string;
   reply?: {
@@ -39,6 +39,42 @@ type GoogleBusinessReviewPayload = {
   createTime?: string;
   reviewReply?: { comment?: string; updateTime?: string } | null;
 };
+
+const BUSINESS_API_BASE = "https://mybusiness.googleapis.com/v4";
+
+/** Valori dell'enum `StarRating` della Reviews API (v4). */
+const STAR_RATING_VALUES: Record<string, number> = {
+  ONE: 1,
+  TWO: 2,
+  THREE: 3,
+  FOUR: 4,
+  FIVE: 5,
+};
+
+/**
+ * L'API restituisce `starRating` come enum testuale (ONE..FIVE), non come
+ * numero: fare `Number(starRating)` dava sempre NaN. I valori numerici sono
+ * accettati solo per robustezza; 0 significa "non specificato".
+ */
+function parseStarRating(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.min(5, Math.max(1, Math.round(value)));
+  }
+  return STAR_RATING_VALUES[String(value ?? "").trim().toUpperCase()] ?? 0;
+}
+
+/**
+ * URL della Reviews API per la sede configurata, o null se manca account id o
+ * location id: in v4 il path è `accounts/{accountId}/locations/{locationId}/reviews`
+ * e `-` non è un wildcard (a differenza delle nuove Business Profile API v1),
+ * quindi senza un location id reale la chiamata non può funzionare.
+ */
+function businessReviewsUrl(): string | null {
+  const accountId = process.env.GOOGLE_BUSINESS_ACCOUNT_ID;
+  const locationId = process.env.GOOGLE_BUSINESS_LOCATION_ID;
+  if (!accountId || !locationId) return null;
+  return `${BUSINESS_API_BASE}/accounts/${encodeURIComponent(accountId)}/locations/${encodeURIComponent(locationId)}/reviews`;
+}
 
 // Store di fallback in memoria per le recensioni demo/test per-tenant
 const tenantReviewsStore = new Map<string, GoogleBusinessReview[]>();
@@ -76,11 +112,11 @@ export async function listBusinessReviews(
   const creds = getTenantCredentials(tenantId);
   const token = creds?.google?.accessToken;
 
-  // Se è configurato l'accesso live alla Google API ed è impostato l'account id:
-  if (token && process.env.GOOGLE_BUSINESS_ACCOUNT_ID) {
+  // Accesso live solo con account id E location id configurati.
+  const reviewsUrl = businessReviewsUrl();
+  if (token && reviewsUrl) {
     try {
-      const url = `https://mybusiness.googleapis.com/v4/accounts/${process.env.GOOGLE_BUSINESS_ACCOUNT_ID}/locations/-/reviews`;
-      const res = await fetch(url, {
+      const res = await fetch(`${reviewsUrl}?pageSize=50`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -90,7 +126,7 @@ export async function listBusinessReviews(
         const apiReviews: GoogleBusinessReview[] = (data.reviews ?? []).map((r) => ({
           reviewId: r.reviewId || r.name || "",
           authorName: r.reviewer?.displayName || "Utente",
-          rating: Number(r.starRating) || 5,
+          rating: parseStarRating(r.starRating),
           comment: r.comment || "",
           createTime: r.createTime || new Date().toISOString(),
           reply: r.reviewReply?.comment
@@ -134,14 +170,21 @@ export async function replyToBusinessReview(
   if (!cleanReply) {
     return { ok: false, message: "Il testo della risposta non può essere vuoto." };
   }
+  // Limite documentato da Google: 4096 byte per risposta.
+  if (Buffer.byteLength(cleanReply, "utf8") > 4096) {
+    return {
+      ok: false,
+      message: "La risposta supera il limite di 4096 byte imposto da Google Business Profile.",
+    };
+  }
 
   const creds = getTenantCredentials(tenantId);
   const token = creds?.google?.accessToken;
 
-  if (token && process.env.GOOGLE_BUSINESS_ACCOUNT_ID) {
+  const reviewsUrl = businessReviewsUrl();
+  if (token && reviewsUrl) {
     try {
-      const url = `https://mybusiness.googleapis.com/v4/accounts/${process.env.GOOGLE_BUSINESS_ACCOUNT_ID}/locations/-/reviews/${encodeURIComponent(reviewId)}/reply`;
-      const res = await fetch(url, {
+      const res = await fetch(`${reviewsUrl}/${encodeURIComponent(reviewId)}/reply`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

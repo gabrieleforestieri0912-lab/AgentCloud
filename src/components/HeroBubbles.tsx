@@ -17,7 +17,7 @@ const LEFT_BUBBLES = [
   { top: "10%", left: "76%", size: "w-9 h-9", brand: "apple", delay: "1.3s", anim: "animate-float-gentle" },
   { top: "25%", left: "18%", size: "w-14 h-14", brand: "facebook", delay: "2.0s", anim: "animate-float-gentle" },
   { top: "22%", left: "68%", size: "w-10 h-10", brand: "github", delay: "0.7s", anim: "animate-float-reverse" },
-  { top: "38%", left: "3%", size: "w-11 h-11", brand: "linear", delay: "1.8s", anim: "animate-float-reverse" },
+  { top: "38%", left: "3%", size: "w-11 h-11", brand: "clickup", delay: "1.8s", anim: "animate-float-reverse" },
   { top: "40%", left: "42%", size: "w-14 h-14", brand: "instagram", delay: "1.1s", anim: "animate-float-gentle" },
   { top: "36%", left: "80%", size: "w-10 h-10", brand: "tiktok", delay: "2.5s", anim: "animate-float-gentle" },
   { top: "54%", left: "24%", size: "w-14 h-14", brand: "discord", delay: "0.3s", anim: "animate-float-reverse" },
