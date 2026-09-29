@@ -2,17 +2,39 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Trash2, ShoppingCart, ArrowRight, Loader2, Package, Users, ShieldCheck } from "lucide-react";
-import { useCart } from "@/components/CartProvider";
+import { Trash2, ShoppingCart, ArrowRight, Loader2, Package, Users, ShieldCheck, Sparkles, Check } from "lucide-react";
+import { useCart, type CartItem } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import AgentIcon from "@/components/AgentIcon";
+import { t as interpolate } from "@/lib/i18n/dictionaries";
+import { getBundleBySlug, getBundleAgents } from "@/lib/bundles";
+
+/**
+ * Sconto reale del bundle rispetto all'acquisto dei singoli agenti.
+ * `null` quando il bundle non ha un prezzo di confronto (agenti mancanti).
+ */
+function bundleSavings(item: CartItem): number | null {
+  if (item.type !== "bundle" || !item.bundleSlug) return null;
+  const bundle = getBundleBySlug(item.bundleSlug);
+  if (!bundle) return null;
+  const agents = getBundleAgents(bundle);
+  if (agents.length === 0) return null;
+  const sumCents = agents.reduce((s, a) => s + a.priceCents, 0);
+  // priceCents è il totale del periodo per quarterly/yearly, il confronto va
+  // fatto sullo stesso periodo o il risparmio risulterebbe sempre enorme.
+  const months = item.period === "quarterly" ? 3 : item.period === "yearly" ? 12 : 1;
+  const baseline = sumCents * months;
+  if (baseline <= 0 || item.priceCents >= baseline) return null;
+  return Math.round((1 - item.priceCents / baseline) * 100);
+}
 
 export default function CartPageClient() {
   const { items, totalDisplay, totalCents, remove, clear } = useCart();
-  const { locale, dict } = useLanguage();
+  const { dict } = useLanguage();
   const { isAdmin } = useIsAdmin();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
 
   async function handleCheckout() {
     // Doppia guardia client: l'admin non deve mai avviare uno checkout
@@ -51,8 +73,7 @@ export default function CartPageClient() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">{dict.cartPage.cartTitle}</h1>
-              <p className="text-sm text-neutral-500">
-                {items.length === 0
+              <p className="text-sm text-neutral-500">                {items.length === 0
                   ? dict.cartPage.noAgentsInCart
                   : `${items.length} ${dict.cartPage.agentsLabel} — ${totalDisplay}`}
               </p>
@@ -74,43 +95,131 @@ export default function CartPageClient() {
             </div>
           ) : (
             <>
-              <div className="space-y-3">
-                {items.map((item) => (
-                  <div key={item.agent_slug} className="flex items-center gap-4 rounded-xl border border-white/5 bg-neutral-900 p-4">
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${item.type === "bundle" ? "bg-gradient-to-br from-brand-500 to-purple-600" : item.accent}`}>
-                      {item.type === "bundle" ? (
-                        <Package size={20} className="text-white" />
-                      ) : (
-                        <AgentIcon icon={item.icon} brand={item.brand} size={20} className="text-white" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-white">{item.name}</p>
-                        {item.type === "bundle" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-300">
-                            <Users size={10} />
-                            {item.agentSlugs?.length} {dict.cartPage.bundleLabel}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-neutral-500">
-                        {item.type === "bundle"
-                          ? `${item.price} · ${item.period === "monthly" ? dict.cartPage.monthlyLabel : item.period === "quarterly" ? dict.cartPage.quarterlyLabel : dict.cartPage.yearlyLabel}`
-                          : `${item.price} / mese`}
-                      </p>
-                    </div>
-                    <p className="text-sm font-bold text-white">{item.price}</p>
-                    <button
-                      onClick={() => remove(item.agent_slug)}
-                      aria-label={dict.cartPage.removeAria}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-neutral-400 hover:bg-red-500/15 hover:text-red-300"
+              <ul className="space-y-3">
+                {items.map((item) => {
+                  const isBundle = item.type === "bundle";
+                  const savings = bundleSavings(item);
+                  const bundleAgents =
+                    isBundle && item.bundleSlug
+                      ? (() => {
+                          const b = getBundleBySlug(item.bundleSlug);
+                          return b ? getBundleAgents(b) : [];
+                        })()
+                      : [];
+                  const billingNote =
+                    item.period === "quarterly"
+                      ? interpolate(dict.cartPage.billedEvery, { n: 3 })
+                      : item.period === "yearly"
+                        ? interpolate(dict.cartPage.billedEvery, { n: 12 })
+                        : dict.cartPage.billedMonthly;
+                  const busy = removing === item.agent_slug;
+                  return (
+                    <li
+                      key={item.agent_slug}
+                      className={`overflow-hidden rounded-xl border border-white/5 bg-neutral-900 transition-opacity ${
+                        busy ? "opacity-50" : ""
+                      }`}
                     >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      <div className="flex items-start gap-4 p-4">
+                        <div
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${
+                            isBundle
+                              ? "bg-gradient-to-br from-brand-500 to-purple-600"
+                              : item.accent
+                          }`}
+                        >
+                          {isBundle ? (
+                            <Package size={20} className="text-white" />
+                          ) : (
+                            <AgentIcon icon={item.icon} brand={item.brand} size={20} className="text-white" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <p className="text-sm font-bold text-white">{item.name}</p>
+                            {isBundle && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-300">
+                                <Users size={10} />
+                                {item.agentSlugs?.length} {dict.cartPage.bundleLabel}
+                              </span>
+                            )}
+                            {savings !== null && savings > 0 && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                                <Sparkles size={10} />
+                                {interpolate(dict.cartPage.savingsBadge, { pct: savings })}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                            {isBundle ? (
+                              <>
+                                <span className="font-semibold text-neutral-400">
+                                  {dict.cartPage.periodSuffix[
+                                    item.period === "quarterly"
+                                      ? "quarterly"
+                                      : item.period === "yearly"
+                                        ? "yearly"
+                                        : "monthly"
+                                  ]}
+                                </span>
+                                {" · "}
+                                {billingNote}
+                              </>
+                            ) : (
+                              interpolate(dict.cartPage.pricePerMonth, { price: item.price })
+                            )}
+                          </p>
+
+                          {isBundle && bundleAgents.length > 0 && (
+                            <div className="mt-2.5 border-t border-white/5 pt-2.5">
+                              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                                {dict.cartPage.bundleIncludes}
+                              </p>
+                              <ul className="flex flex-wrap gap-1.5">
+                                {bundleAgents.map((a) => (
+                                  <li
+                                    key={a.slug}
+                                    className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2 py-1 text-[11px] font-semibold text-neutral-300"
+                                  >
+                                    <Check size={10} className="text-emerald-400" />
+                                    {a.shortName}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <p className="text-sm font-bold text-white">{item.price}</p>
+                          <p className="text-[10px] font-semibold text-neutral-500">{billingNote}</p>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setRemoving(item.agent_slug);
+                            void remove(item.agent_slug).finally(() =>
+                              setRemoving((cur) => (cur === item.agent_slug ? null : cur)),
+                            );
+                          }}
+                          disabled={busy}
+                          aria-label={interpolate(dict.cartPage.removeItem, { name: item.name })}
+                          title={interpolate(dict.cartPage.removeItem, { name: item.name })}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-neutral-400 transition-colors hover:bg-red-500/15 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {busy ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={14} />
+                          )}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
 
               <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-white/5 bg-neutral-900 p-5">
                 <div className="flex gap-3">
@@ -131,7 +240,12 @@ export default function CartPageClient() {
                   <div className="text-right">
                     <p className="text-xs text-neutral-500">{dict.cartPage.totalLabel}</p>
                     <p className="text-xl font-bold text-white">{totalDisplay}</p>
-                    <p className="text-xs text-neutral-600">{dict.cartPage.vatIncluded} — {totalCents > 0 ? `${items.length} × abbonamento mensile` : ""}</p>
+                    <p className="text-xs text-neutral-600">
+                      {dict.cartPage.vatIncluded}
+                      {totalCents > 0 && items.length > 0 && (
+                        <>{" — "}{interpolate(dict.cartPage.perMonthNote, { count: items.length })}</>
+                      )}
+                    </p>
                   </div>
                   {isAdmin ? (
                     <div className="flex flex-col items-end gap-2">

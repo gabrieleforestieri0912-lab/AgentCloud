@@ -151,34 +151,56 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   });
   const [loading, setLoading] = useState(true);
-  const [isAuthed, setIsAuthed] = useState(false);
   const authedRef = useRef(false);
+  // La migrazione anonimo→server deve avvenire UNA volta sola. Prima girava a
+  // ogni refresh(): dopo una rimozione riuscita, lo slug rimaneva in
+  // localStorage e la refresh successiva lo reinseriva nel carrello server,
+  // rendendo impossibile rimuovere un agente.
+  const migratedRef = useRef(false);
+
+  const readLocalSlugs = useCallback((): string[] => {
+    try {
+      const raw = localStorage.getItem(LOCAL_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return normalizeStoredSlugs(parsed as string[]);
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const writeLocalSlugs = useCallback((slugs: string[]) => {
+    try {
+      if (slugs.length === 0) {
+        localStorage.removeItem(LOCAL_KEY);
+        cleanupLegacyBundlePeriodKeys();
+      } else {
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(slugs));
+      }
+    } catch {
+      /* storage pieno o non disponibile: lo stato React resta la fonte UI */
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     const supabase = createClient();
     const { data } = await supabase.auth.getSession();
     const authed = !!data.session;
     authedRef.current = authed;
-    setIsAuthed(authed);
     try {
-      if (authed) {
-        const raw = localStorage.getItem(LOCAL_KEY);
-        if (raw) {
-          try {
-            let slugs = JSON.parse(raw) as string[];
-            slugs = normalizeStoredSlugs(slugs);
-            if (slugs.length > 0) {
-              for (const slug of slugs) {
-                await fetch("/api/cart", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ agentSlug: slug }),
-                }).catch(() => {});
-              }
-              localStorage.removeItem(LOCAL_KEY);
-              cleanupLegacyBundlePeriodKeys();
-            }
-          } catch {}
+      if (authed && !migratedRef.current) {
+        migratedRef.current = true;
+        const slugs = readLocalSlugs();
+        if (slugs.length > 0) {
+          for (const slug of slugs) {
+            await fetch("/api/cart", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ agentSlug: slug }),
+            }).catch(() => {});
+          }
+          writeLocalSlugs([]);
         }
       }
       const res = await fetch("/api/cart");
@@ -186,43 +208,42 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         const apiItems = (data.items ?? []) as Array<{ agent_slug: string; quantity: number }>;
         const enrichedApi = apiItems.map((it) => enrichLocal(it.agent_slug, it.quantity)).filter(Boolean) as CartItem[];
-        // fallback bundle da localStorage se API 401 non aveva ancora migrato (anon)
-        const rawBundles = !authed ? localStorage.getItem(LOCAL_KEY) : null;
-        let bundleItems: CartItem[] = [];
-        if (rawBundles) {
-          try {
-            let slugs = JSON.parse(rawBundles) as string[];
-            slugs = normalizeStoredSlugs(slugs);
-            bundleItems = slugs.filter((s) => s.startsWith("bundle:")).map((s) => enrichLocal(s)).filter(Boolean) as CartItem[];
-          } catch {}
+        // Anonimo: il server risponde 401, quindi si ricostruisce da localStorage.
+        let merged = enrichedApi;
+        if (!authed) {
+          const localItems = readLocalSlugs()
+            .map((s) => enrichLocal(s))
+            .filter(Boolean) as CartItem[];
+          const apiSlugs = new Set(enrichedApi.map((i) => i.agent_slug));
+          // Per bundle, evita duplicati per stesso bundleSlug (qualsiasi periodo) — l'API ha già il periodo corretto
+          const bundleSlugsInApi = new Set(enrichedApi.filter((i) => i.type === "bundle").map((i) => i.bundleSlug));
+          merged = [
+            ...enrichedApi,
+            ...localItems.filter(
+              (b) => !apiSlugs.has(b.agent_slug) && !bundleSlugsInApi.has(b.bundleSlug!),
+            ),
+          ];
         }
-        const apiSlugs = new Set(enrichedApi.map((i) => i.agent_slug));
-        // Per bundle, evita duplicati per stesso bundleSlug (qualsiasi periodo) — l'API ha già il periodo corretto
-        const bundleSlugsInApi = new Set(enrichedApi.filter((i) => i.type === "bundle").map((i) => i.bundleSlug));
-        const merged = [
-          ...enrichedApi,
-          ...bundleItems.filter((b) => !apiSlugs.has(b.agent_slug) && !bundleSlugsInApi.has(b.bundleSlug!)),
-        ];
         setItems(merged);
       } else if (res.status === 401) {
-        const raw = localStorage.getItem(LOCAL_KEY);
-        if (raw) {
-          let slugs = JSON.parse(raw) as string[];
-          slugs = normalizeStoredSlugs(slugs);
-          setItems(slugs.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
-        }
+        setItems(readLocalSlugs().map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
       }
     } catch {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [readLocalSlugs, writeLocalSlugs]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     const supabase = createClient();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => refresh());
+    // Un cambio di sessione invalida la migrazione: al prossimo login il
+    // carrello anonimo va di nuovo trasferito (ora la guardia è per-sessione).
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      migratedRef.current = false;
+      refresh();
+    });
     const onStorage = (e: StorageEvent) => {
       if (e.key === LOCAL_KEY) refresh();
     };
@@ -252,12 +273,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json().catch(() => ({}));
         if (data.error === "already_owned") return { ok: false, error: "already_owned" };
         if (res.status === 401) {
-          const raw = localStorage.getItem(LOCAL_KEY);
-          const slugs: string[] = raw ? JSON.parse(raw) : [];
-          const norm = normalizeStoredSlugs(slugs);
-          if (norm.includes(slug) || norm.some((s) => s === slug)) return { ok: false, error: "already_in_cart" };
+          const norm = readLocalSlugs();
+          if (norm.includes(slug)) return { ok: false, error: "already_in_cart" };
           const next = [...norm, slug];
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+          writeLocalSlugs(next);
           setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
           window.dispatchEvent(new CustomEvent("cart:updated"));
           return { ok: true };
@@ -266,71 +285,59 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           return { ok: false, error: data.error ?? "error" };
         }
       }
-      const raw = localStorage.getItem(LOCAL_KEY);
-      const slugs: string[] = raw ? JSON.parse(raw) : [];
-      const norm = normalizeStoredSlugs(slugs);
+      const norm = readLocalSlugs();
       if (norm.includes(slug)) return { ok: false, error: "already_in_cart" };
       const next = [...norm, slug];
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+      writeLocalSlugs(next);
       setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
       window.dispatchEvent(new CustomEvent("cart:updated"));
       return { ok: true };
     },
-    [refresh],
+    [refresh, readLocalSlugs, writeLocalSlugs],
   );
 
   const remove = useCallback(
     async (slug: string) => {
-      const isBundle = slug.startsWith("bundle:");
-      const res = await fetch(`/api/cart?agentSlug=${encodeURIComponent(slug)}`, { method: "DELETE" }).catch(() => null);
-      if (res && res.ok) {
-        await refresh();
-      } else if (res && res.status === 401) {
-        const raw = localStorage.getItem(LOCAL_KEY);
-        const slugs: string[] = raw ? JSON.parse(raw) : [];
-        const norm = normalizeStoredSlugs(slugs);
-        const next = isBundle
-          ? norm.filter((s) => {
-              const p = parseStoredBundleSlug(s);
-              const q = parseStoredBundleSlug(slug);
-              if (p && q) return p.bundleSlug !== q.bundleSlug;
-              return s !== slug;
-            })
-          : norm.filter((s) => s !== slug);
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-        setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
-      } else if (res && res.ok === false && res.status !== 401) {
-        await refresh();
-      } else {
-        const raw = localStorage.getItem(LOCAL_KEY);
-        const slugs: string[] = raw ? JSON.parse(raw) : [];
-        const norm = normalizeStoredSlugs(slugs);
-        const next = isBundle
-          ? norm.filter((s) => {
-              const p = parseStoredBundleSlug(s);
-              const q = parseStoredBundleSlug(slug);
-              if (p && q) return p.bundleSlug !== q.bundleSlug;
-              return s !== slug;
-            })
-          : norm.filter((s) => s !== slug);
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-        setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
-      }
-      window.dispatchEvent(new CustomEvent("cart:updated"));
+      // Rimozione ottimistica: l'UI non deve aspettare la rete per
+      // sparire, e la riga non deve "resuscitare" se la chiamata è lenta.
+      const withoutSlug = (list: string[]) => {
+        const parsed = parseStoredBundleSlug(slug);
+        if (!parsed) return list.filter((s) => s !== slug);
+        // Un bundle si rimuove per bundleSlug: il periodo non conta, perché
+        // il server cancella tutte le righe dello stesso bundle.
+        return list.filter((s) => parseStoredBundleSlug(s)?.bundleSlug !== parsed.bundleSlug);
+      };
+
+      setItems((prev) =>
+        prev.filter((i) => {
+          const parsed = parseStoredBundleSlug(slug);
+          if (parsed) return parseStoredBundleSlug(i.agent_slug)?.bundleSlug !== parsed.bundleSlug;
+          return i.agent_slug !== slug;
+        }),
+      );
+      // localStorage è la sorgente per gli anonimi: va allineato sempre, o
+      // la refresh successiva riporta indietro l'elemento rimosso.
+      writeLocalSlugs(withoutSlug(readLocalSlugs()));
+
+      const res = await fetch(`/api/cart?agentSlug=${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+      }).catch(() => null);
+      // 401 = anonimo: niente server da aggiornare, lo stato locale basta.
+      if (res && res.status === 401) return;
+      await refresh().catch(() => {});
     },
-    [refresh],
+    [refresh, readLocalSlugs, writeLocalSlugs],
   );
 
   const clear = useCallback(async () => {
-    localStorage.removeItem(LOCAL_KEY);
-    cleanupLegacyBundlePeriodKeys();
+    writeLocalSlugs([]);
     setItems([]);
     window.dispatchEvent(new CustomEvent("cart:updated"));
     try {
       await fetch("/api/cart", { method: "DELETE" });
     } catch {}
     await refresh().catch(() => {});
-  }, [refresh]);
+  }, [refresh, writeLocalSlugs]);
 
   const isInCart = useCallback((slug: string) => items.some((i) => i.agent_slug === slug && i.type === "agent"), [items]);
 
@@ -340,6 +347,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     async (bundleSlug: string, period: BundlePeriod) => {
       const bundleKey = bundleDbSlug(bundleSlug, period);
       if (isBundleInCart(bundleSlug)) return { ok: false, error: "already_in_cart" } as const;
+      const alreadyLocal = () =>
+        readLocalSlugs().some((s) => parseStoredBundleSlug(s)?.bundleSlug === bundleSlug);
       try {
         const res = await fetch("/api/cart", {
           method: "POST",
@@ -352,13 +361,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           return { ok: true } as const;
         }
         if (res && res.status === 401) {
-          // fallback anon
-          const raw = localStorage.getItem(LOCAL_KEY);
-          const slugs: string[] = raw ? JSON.parse(raw) : [];
-          const norm = normalizeStoredSlugs(slugs);
-          if (norm.some((s) => parseStoredBundleSlug(s)?.bundleSlug === bundleSlug)) return { ok: false, error: "already_in_cart" } as const;
-          const next = [...norm, bundleKey];
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+          if (alreadyLocal()) return { ok: false, error: "already_in_cart" } as const;
+          const next = [...readLocalSlugs(), bundleKey];
+          writeLocalSlugs(next);
           setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
           window.dispatchEvent(new CustomEvent("cart:updated"));
           return { ok: true } as const;
@@ -368,18 +373,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           if (data.error) return { ok: false, error: data.error } as const;
         }
       } catch {}
-      const raw = localStorage.getItem(LOCAL_KEY);
-      const slugs: string[] = raw ? JSON.parse(raw) : [];
-      const norm = normalizeStoredSlugs(slugs);
-      if (norm.some((s) => parseStoredBundleSlug(s)?.bundleSlug === bundleSlug)) return { ok: false, error: "already_in_cart" } as const;
-      const next = [...norm, bundleKey];
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+      if (alreadyLocal()) return { ok: false, error: "already_in_cart" } as const;
+      const next = [...readLocalSlugs(), bundleKey];
+      writeLocalSlugs(next);
       setItems(next.map((s) => enrichLocal(s)).filter(Boolean) as CartItem[]);
       window.dispatchEvent(new CustomEvent("cart:updated"));
       refresh().catch(() => {});
       return { ok: true } as const;
     },
-    [refresh, isBundleInCart],
+    [refresh, isBundleInCart, readLocalSlugs, writeLocalSlugs],
   );
 
   const totalCents = items.reduce((sum, it) => sum + it.priceCents * it.quantity, 0);
