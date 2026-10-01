@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getSiteUrl } from "@/lib/site-url";
 import { AGENTS } from "@/lib/agents";
+import { hasLaunched } from "@/lib/waitlist-constants";
 
 const BASE_URL = getSiteUrl();
 
@@ -26,18 +27,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.7,
     },
-    {
-      url: `${BASE_URL}/demo`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/waitlist`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
+    // La waitlist va indicizzata solo prima del lancio: dopo, /waitlist
+    // reindirizza alla home e non deve più comparire nel sitemap.
+    ...(!hasLaunched()
+      ? [
+          {
+            url: `${BASE_URL}/waitlist`,
+            lastModified: new Date(),
+            changeFrequency: "monthly" as const,
+            priority: 0.6,
+          },
+        ]
+      : []),
     {
       url: `${BASE_URL}/about`,
       lastModified: new Date(),
@@ -46,6 +47,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE_URL}/integrations`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/mobile`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.6,

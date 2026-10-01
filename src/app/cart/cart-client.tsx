@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Trash2, ShoppingCart, ArrowRight, Loader2, Package, Users, ShieldCheck, Sparkles, Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Trash2, ShoppingCart, ArrowRight, Loader2, Package, Users, ShieldCheck, Sparkles, Check, Tag } from "lucide-react";
 import { useCart, type CartItem } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import AgentIcon from "@/components/AgentIcon";
 import { t as interpolate } from "@/lib/i18n/dictionaries";
 import { getBundleBySlug, getBundleAgents } from "@/lib/bundles";
+import { COUPON_CODE, COUPON_PERCENT, COUPON_APPLIES_TO_LOW_PRICE, COUPON_MAX_PRICE, couponIsApplicable, couponDiscountCents } from "@/lib/coupon";
+
+const CLAIMED_KEY = "coupon_agentcloud50_claimed";
 
 /**
  * Sconto reale del bundle rispetto all'acquisto dei singoli agenti.
@@ -29,12 +32,44 @@ function bundleSavings(item: CartItem): number | null {
   return Math.round((1 - item.priceCents / baseline) * 100);
 }
 
+/**
+ * Calcola lo sconto coupon per gli elementi idonei nel carrello.
+ * Il coupon dà 50% su agenti con prezzo 9,99€-14,99€.
+ */
+function calculateCouponDiscount(items: CartItem[]): { discountCents: number; eligibleItems: CartItem[] } {
+  let claimed = false;
+  try {
+    claimed = localStorage.getItem(CLAIMED_KEY) === "true";
+  } catch {
+    claimed = false;
+  }
+  if (!claimed) return { discountCents: 0, eligibleItems: [] };
+
+  const eligibleItems = items.filter(
+    (item) => item.type === "agent" && couponIsApplicable(item.priceCents)
+  );
+  const discountCents = eligibleItems.reduce(
+    (sum, item) => sum + couponDiscountCents(item.priceCents) * item.quantity,
+    0
+  );
+  return { discountCents, eligibleItems };
+}
+
 export default function CartPageClient() {
   const { items, totalDisplay, totalCents, remove, clear } = useCart();
   const { dict } = useLanguage();
   const { isAdmin } = useIsAdmin();
   const [checkingOut, setCheckingOut] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [couponData, setCouponData] = useState<{ discountCents: number; eligibleItems: CartItem[] }>({
+    discountCents: 0,
+    eligibleItems: [],
+  });
+
+  // Ricalcola lo sconto coupon quando cambiano gli items
+  useEffect(() => {
+    setCouponData(calculateCouponDiscount(items));
+  }, [items]);
 
   async function handleCheckout() {
     // Doppia guardia client: l'admin non deve mai avviare uno checkout
@@ -60,7 +95,7 @@ export default function CartPageClient() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="min-h-dvh bg-neutral-950">
       <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <Link href="/" className="mb-8 inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-500 hover:text-white transition-colors">
@@ -207,7 +242,7 @@ export default function CartPageClient() {
                           disabled={busy}
                           aria-label={interpolate(dict.cartPage.removeItem, { name: item.name })}
                           title={interpolate(dict.cartPage.removeItem, { name: item.name })}
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-neutral-400 transition-colors hover:bg-red-500/15 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-neutral-400 transition-colors hover:bg-red-500/15 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {busy ? (
                             <Loader2 size={14} className="animate-spin" />
@@ -239,10 +274,39 @@ export default function CartPageClient() {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-xs text-neutral-500">{dict.cartPage.totalLabel}</p>
-                    <p className="text-xl font-bold text-white">{totalDisplay}</p>
+                    {couponData.discountCents > 0 && couponData.eligibleItems.length > 0 && (
+                      <div className="mb-1 flex items-center justify-end gap-1.5 text-sm font-bold text-emerald-400">
+                        <Tag size={12} />
+                        <span>
+                          -{interpolate(dict.cartPage.couponDiscount, {
+                            discount: `€${(couponData.discountCents / 100).toFixed(2).replace(".", ",")}`,
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-xl font-bold text-white">
+                      {couponData.discountCents > 0
+                        ? `€${((totalCents - couponData.discountCents) / 100).toFixed(2).replace(".", ",")}`
+                        : totalDisplay}
+                    </p>
                     <p className="text-xs text-neutral-600">
                       {dict.cartPage.vatIncluded}
-                      {totalCents > 0 && items.length > 0 && (
+                      {couponData.discountCents > 0 && (
+                        <>
+                          {" — "}
+                          {interpolate(dict.cartPage.couponApplied, {
+                            code: COUPON_CODE,
+                            count: couponData.eligibleItems.length,
+                          })}
+                        </>
+                      )}
+                      {/* La nota "{n} x abbonamento mensile" ha senso solo se
+                          tutto il carrello è mensile: con un bundle trimestrale/
+                          annuale il totale è il primo ciclo di fatturazione, non
+                          un importo mensile. */}
+                      {totalCents > 0 &&
+                        items.length > 0 &&
+                        items.every((i) => !i.period || i.period === "monthly") && (
                         <>{" — "}{interpolate(dict.cartPage.perMonthNote, { count: items.length })}</>
                       )}
                     </p>

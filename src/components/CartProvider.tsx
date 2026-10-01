@@ -6,6 +6,7 @@ import type { Agent } from "@/lib/agents";
 import { getAgentBySlug } from "@/lib/agents";
 import type { BundlePeriod } from "@/lib/bundles";
 import { getBundleBySlug, getBundleAgents, formatPrice } from "@/lib/bundles";
+import { migrateLocalSlugsToServer } from "@/lib/cart-migration";
 
 export type CartItemType = "agent" | "bundle";
 
@@ -193,14 +194,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         migratedRef.current = true;
         const slugs = readLocalSlugs();
         if (slugs.length > 0) {
-          for (const slug of slugs) {
-            await fetch("/api/cart", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ agentSlug: slug }),
-            }).catch(() => {});
-          }
-          writeLocalSlugs([]);
+          const notMigrated = await migrateLocalSlugsToServer(
+            slugs,
+            async (slug) => {
+              const r = await fetch("/api/cart", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ agentSlug: slug }),
+              }).catch(() => null);
+              return r ? { ok: r.ok, status: r.status } : null;
+            },
+          );
+          writeLocalSlugs(notMigrated);
         }
       }
       const res = await fetch("/api/cart");
@@ -269,8 +274,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new CustomEvent("cart:updated"));
         return { ok: true };
       }
+      let data: { error?: string } = {};
       if (res) {
-        const data = await res.json().catch(() => ({}));
+        data = await res.json().catch(() => ({}));
         if (data.error === "already_owned") return { ok: false, error: "already_owned" };
         if (res.status === 401) {
           const norm = readLocalSlugs();
@@ -282,8 +288,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           return { ok: true };
         }
         if (data.error && data.error !== "unauthorized") {
-          return { ok: false, error: data.error ?? "error" };
+          return { ok: false, error: data.error };
         }
+      }
+      // Loggato ma il server non ha confermato l'aggiunta (timeout, 5xx, …):
+      // NON simularla in locale. L'elemento apparirebbe in UI e sparirebbe al
+      // primo refresh che ricarica lo stato reale del server.
+      if (authedRef.current) {
+        return { ok: false, error: data.error || "error" };
       }
       const norm = readLocalSlugs();
       if (norm.includes(slug)) return { ok: false, error: "already_in_cart" };
@@ -332,11 +344,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clear = useCallback(async () => {
     writeLocalSlugs([]);
     setItems([]);
-    window.dispatchEvent(new CustomEvent("cart:updated"));
     try {
       await fetch("/api/cart", { method: "DELETE" });
     } catch {}
     await refresh().catch(() => {});
+    // Solo DOPO che il server è stato svuotato: l'evento fa partire un altro
+    // refresh, e se partisse prima la GET risolverebbe col carrello ancora
+    // pieno e "resusciterebbe" gli elementi appena rimossi.
+    window.dispatchEvent(new CustomEvent("cart:updated"));
   }, [refresh, writeLocalSlugs]);
 
   const isInCart = useCallback((slug: string) => items.some((i) => i.agent_slug === slug && i.type === "agent"), [items]);

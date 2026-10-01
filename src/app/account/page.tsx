@@ -50,7 +50,7 @@ export default async function AccountPage() {
   const dict = getDictionary(locale);
 
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="min-h-dvh bg-neutral-950">
       <Navbar />
       <section className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl space-y-6">

@@ -88,6 +88,15 @@ export function useChatAttachments() {
     return snapshot;
   }, []);
 
+  // Ripristina una lista di allegati precedentemente rimossa con take(): serve
+  // quando l'utente cambia conversazione e poi torna indietro — ogni chat deve
+  // ritrovare i propri allegati invece di ereditare quelli di un'altra.
+  const restore = useCallback((items: ChatAttachment[]) => {
+    attachmentsRef.current = items;
+    setAttachments(items);
+    setNotice(null);
+  }, []);
+
   const onDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -136,6 +145,7 @@ export function useChatAttachments() {
     remove,
     clear,
     take,
+    restore,
     onDragEnter,
     onDragOver,
     onDragLeave,

@@ -27,7 +27,7 @@ export default async function AdminWaitlistCodesPage() {
   const db = createAdminClient();
   if (!db) {
     return (
-      <main className="min-h-screen bg-neutral-950">
+      <main className="min-h-dvh bg-neutral-950">
         <AppHeader variant="chat" />
         <div className="p-8 text-center text-neutral-400">DB non configurato</div>
       </main>
@@ -47,7 +47,7 @@ export default async function AdminWaitlistCodesPage() {
     .order("redeemed_at", { ascending: false });
 
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="min-h-dvh bg-neutral-950">
       <AppHeader variant="chat" />
       <div className="px-4 sm:px-6 py-8">
         <div className="mx-auto max-w-5xl">

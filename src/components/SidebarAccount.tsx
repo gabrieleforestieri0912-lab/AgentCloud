@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { User, ShoppingCart, Home, LogOut, Settings, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { avatarThumbnail } from "@/lib/avatar";
 import type { Session } from "@supabase/supabase-js";
 import type { AccountIdentity } from "@/lib/account-identity";
 import { useLanguage } from "./LanguageProvider";
@@ -64,7 +65,7 @@ export default function SidebarAccount({
     (session?.user?.user_metadata as { picture?: string } | undefined)?.picture ||
     account?.avatarUrl ||
     null;
-  const accountAvatarUrl = rawAvatarUrl ? rawAvatarUrl.replace(/=s\d+-c$/, "=s200-c") : null;
+  const accountAvatarUrl = avatarThumbnail(rawAvatarUrl, 64);
   const accountLabelBase =
     (session?.user?.user_metadata as { full_name?: string } | undefined)?.full_name ||
     session?.user?.email ||

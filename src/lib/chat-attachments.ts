@@ -8,6 +8,11 @@
  * e per il tool `read_file`) o un breve segnaposto (binari illeggibili). I
  * limiti (8 MB per file, 6 file, 80k caratteri di testo) evitano che un
  * allegato enorme saturi la memoria del client o il contesto del modello.
+ *
+ * Immagini: `content` è ciò che viene inviato al modello (blocchi vision),
+ * normalizzato in un formato leggibile e ridimensionato solo se necessario;
+ * `previewUrl` è una miniatura WebP usata per l'anteprima e per la cronologia
+ * in localStorage, così lo storage non si satura con i data URL originali.
  */
 
 export const CHAT_ATTACH_ACCEPT =
@@ -16,6 +21,13 @@ export const CHAT_ATTACH_ACCEPT =
 export const CHAT_ATTACH_MAX_BYTES = 8 * 1024 * 1024;
 export const CHAT_ATTACH_MAX_FILES = 6;
 export const CHAT_ATTACH_TEXT_CAP = 80_000;
+/** Lato massimo della miniatura salvata in bolla e in localStorage. */
+export const CHAT_ATTACH_THUMB_MAX_SIDE = 384;
+/** Lato massimo dell'immagine inviata al modello quando va ridimensionata. */
+export const CHAT_ATTACH_VISION_MAX_SIDE = 1600;
+/** Sotto questa soglia, e con un formato supportato, l'immagine va al modello
+ *  così com'è (nessuna perdita di qualità). */
+export const CHAT_ATTACH_VISION_KEEP_BYTES = 2 * 1024 * 1024;
 
 /**
  * Prompt dettagliato per l'analisi delle immagini (vision).
@@ -56,6 +68,87 @@ export type ChatAttachment = {
 
 function isImageFile(file: File): boolean {
   return file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(file.name);
+}
+
+/** Formati che il percorso vision (blocchi immagine) accetta così come sono. */
+const VISION_MEDIA_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+/** Carica il file in un <img> per poterlo ridisegnare su canvas. */
+function loadImageElement(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("decode-failed"));
+    };
+    img.src = url;
+  });
+}
+
+function imageSize(img: HTMLImageElement): { w: number; h: number } {
+  // Gli SVG senza dimensioni esplicite riportano 0: usa un box di default per
+  // non disegnare un canvas vuoto.
+  return { w: img.naturalWidth || img.width || 300, h: img.naturalHeight || img.height || 150 };
+}
+
+/** Disegna l'immagine ridimensionata (lato massimo `maxSide`). */
+function drawScaled(img: HTMLImageElement, maxSide: number): HTMLCanvasElement {
+  const { w, h } = imageSize(img);
+  const scale = Math.min(1, maxSide / Math.max(w, h));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(w * scale));
+  canvas.height = Math.max(1, Math.round(h * scale));
+  canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+/**
+ * Miniatura leggera per l'anteprima in bolla e per localStorage.
+ * WebP (piccolo e con supporto all'alfa), con fallback JPEG. `null` quando il
+ * browser non riesce a decodificare il file (es. HEIC): in quel caso si usa il
+ * data URL originale.
+ */
+async function makeImageThumbnail(file: File): Promise<string | null> {
+  try {
+    const img = await loadImageElement(file);
+    const canvas = drawScaled(img, CHAT_ATTACH_THUMB_MAX_SIDE);
+    const webp = canvas.toDataURL("image/webp", 0.75);
+    if (webp.startsWith("data:image/webp")) return webp;
+    return canvas.toDataURL("image/jpeg", 0.75);
+  } catch {
+    return null;
+  }
+}
+
+function canHaveAlpha(mime: string): boolean {
+  return mime === "image/png" || mime === "image/webp" || mime === "image/gif" || mime === "image/svg+xml";
+}
+
+/**
+ * Prepara il data URL che verrà inviato al modello.
+ * - formato già supportato e non troppo pesante → invariato (qualità piena);
+ * - formato non supportato (SVG, BMP, AVIF…) o immagine enorme → convertito su
+ *   canvas in PNG (se può avere trasparenza) o JPEG, ridimensionato a
+ *   `CHAT_ATTACH_VISION_MAX_SIDE`.
+ * Ritorna `null` se non è possibile convertire: il chiamante tiene l'originale.
+ */
+async function normalizeImageForVision(file: File, original: string): Promise<string | null> {
+  const mime = (file.type || "").toLowerCase();
+  if (VISION_MEDIA_TYPES.includes(mime) && file.size <= CHAT_ATTACH_VISION_KEEP_BYTES) {
+    return original;
+  }
+  try {
+    const img = await loadImageElement(file);
+    const canvas = drawScaled(img, CHAT_ATTACH_VISION_MAX_SIDE);
+    return canHaveAlpha(mime) ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", 0.85);
+  } catch {
+    return null;
+  }
 }
 
 function isTextFile(file: File): boolean {
@@ -106,12 +199,15 @@ export async function readDroppedFiles(
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     try {
       if (isImageFile(file)) {
-        // Le immagini restano come data URL: servono per l'anteprima nella bolla
-        // e per il percorso vision (base64). Usiamo il data URL anche come
-        // previewUrl così la conversazione resta visualizzabile dopo un reload
-        // (i blob: URL di createObjectURL non sopravvivono al reload / al
-        // salvataggio in localStorage e mostrerebbero alt="").
-        const content = await readAsDataUrl(file);
+        // Due data URL con scopi diversi:
+        //  - `content` va al modello (percorso vision): piena qualità se il
+        //    formato è supportato, altrimenti convertito/ridimensionato;
+        //  - `previewUrl` è la miniatura mostrata in bolla e salvata in
+        //    localStorage: resta leggera per non saturare lo storage.
+        // Entrambi sono data URL (non blob:) così sopravvivono al reload.
+        const original = await readAsDataUrl(file);
+        const content = (await normalizeImageForVision(file, original)) ?? original;
+        const previewUrl = (await makeImageThumbnail(file)) ?? content;
         attachments.push({
           id,
           name: file.name,
@@ -119,7 +215,7 @@ export async function readDroppedFiles(
           mime: file.type || "image/*",
           size: file.size,
           content,
-          previewUrl: content,
+          previewUrl,
         });
       } else if (isTextFile(file)) {
         // I file di testo vengono letti e troncati a un tetto per non saturare

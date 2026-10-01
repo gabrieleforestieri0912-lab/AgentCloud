@@ -89,7 +89,10 @@ export async function proxy(request: NextRequest) {
   const { locale: detectedLocale, needsCookie } = getLocaleForRequest(request);
 
   // ─── Rotte esenti da auth ─
-  const isWaitlistRoute = pathname === "/waitlist";
+  // Include anche le sotto-rotte (/waitlist/join, /waitlist/…): chiuse dal
+  // proxy post-lancio e lasciate passare pre-lancio (servono a preservare ?ref).
+  const isWaitlistRoute =
+    pathname === "/waitlist" || pathname.startsWith("/waitlist/");
   const launched = hasLaunched();
   const isAuthRoute =
     pathname.startsWith("/auth/") ||
@@ -254,6 +257,20 @@ export async function proxy(request: NextRequest) {
     return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;
   }
 
+  // La waitlist è chiusa anche lato API: nessuna iscrizione/lettura di stato
+  // deve sopravvivere al lancio (la pagina è già reindirizzata qui sopra).
+  if (pathname === "/api/waitlist" || pathname.startsWith("/api/waitlist/")) {
+    const closedRes = NextResponse.json(
+      {
+        error:
+          "La waitlist è chiusa: la piattaforma è live, accedi o crea un account.",
+        closed: true,
+      },
+      { status: 410 },
+    );
+    return needsCookie ? withLocaleCookie(closedRes, detectedLocale) : closedRes;
+  }
+
   const isPublicPage = isPublicPath(pathname) && !pathname.startsWith("/api/");
 
   if (isAuthRoute || isApiPublic || isAsset || isPublicPage) {
@@ -313,7 +330,9 @@ export async function proxy(request: NextRequest) {
         if (profile && profile.auth_method_completed === false) {
           const url = request.nextUrl.clone();
           url.pathname = "/login";
-          url.search = "reason=complete_account";
+          // Precompila l'email del waitlist-user: deve poter richiedere in un
+          // clic il link di accesso (non conosce la password provvisoria).
+          url.search = `reason=complete_account&email=${encodeURIComponent(user.email ?? "")}`;
           url.hash = "";
           const redirectRes = NextResponse.redirect(url);
           return needsCookie ? withLocaleCookie(redirectRes, detectedLocale) : redirectRes;

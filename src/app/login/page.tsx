@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Home, Loader2, Mail } from "lucide-react";
@@ -41,7 +41,8 @@ function CompleteAccountNotice() {
   if (searchParams.get("reason") !== "complete_account") return null;
   return (
     <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-      Per accedere alla piattaforma, effettua il login con Google o imposta una password.
+      Per accedere alla piattaforma, ricevi un link di accesso via email (qui sotto) oppure
+      imposta una password con &laquo;Password dimenticata?&raquo;.
     </p>
   );
 }
@@ -58,7 +59,7 @@ function getNextParam(): string | null {
 // Legge ?intent=shopify|google (impostato quando le route di connessione OAuth
 // rimbalzano qui l'utente) e spiega perché gli viene chiesto di accedere.
 function ConnectIntentNotice() {
-  const { dict, locale } = useLanguage();
+  const { dict } = useLanguage();
   const searchParams = useSearchParams();
   const intent = searchParams.get("intent");
   if (intent !== "shopify" && intent !== "google") return null;
@@ -79,11 +80,22 @@ export default function LoginPage() {
   const [honeypotValue, setHoneypotValue] = useState("");
   const [error, setError] = useState("");
   const [resetSent, setResetSent] = useState("");
+  const [otpSent, setOtpSent] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
 
   const a = dict.auth;
+
+  // Precompila l'email quando il proxy rimanda qui un waitlist-user
+  // (?reason=complete_account&email=...): non conosce la password provvisoria,
+  // quindi il link di accesso deve partire con un solo clic.
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("email");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (param) setEmail(param.trim());
+  }, []);
 
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -202,6 +214,47 @@ export default function LoginPage() {
       setError(a.errors.network);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Accesso senza password per i waitlist-user (solo email a suo tempo):
+  // invia un link monouso all'email già registrata. `shouldCreateUser: false`
+  // impedisce di creare account per email sconosciute.
+  async function handleMagicLink() {
+    if (otpLoading) return;
+    setError("");
+    setResetSent("");
+    setOtpSent("");
+
+    const emailCheck = validateAndSanitizeEmail(email);
+    if (!emailCheck.valid || !emailCheck.email) {
+      setError(emailCheck.error || a.errors.invalidCredentials);
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      const supabase = createClient();
+      const next = getNextParam();
+      // Destinazione: l'account, dove l'utente completa/aggiorna i suoi dati.
+      const target = next ?? "/account";
+      const { error } = await supabase.auth.signInWithOtp({
+        email: emailCheck.email,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
+        },
+      });
+      // Non riveliamo se l'email è registrata: messaggio generico anche in caso
+      // di errore restituito da Supabase (anti-enumerazione).
+      if (error) console.warn("[login] magic link non inviato:", error.message);
+      setOtpSent(
+        "Ti abbiamo inviato un link di accesso. Controlla l'email (anche lo spam) e aprilo per entrare.",
+      );
+    } catch {
+      setError(a.errors.network);
+    } finally {
+      setOtpLoading(false);
     }
   }
 
@@ -370,6 +423,11 @@ export default function LoginPage() {
                   {resetSent}
                 </p>
               )}
+              {otpSent && (
+                <p className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-300">
+                  {otpSent}
+                </p>
+              )}
 
               <button
                 type="submit"
@@ -382,6 +440,16 @@ export default function LoginPage() {
                   <Mail size={16} />
                 )}
                 {a.login.submit}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleMagicLink}
+                disabled={otpLoading || !email}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-500/40 bg-brand-500/10 px-5 py-3 text-sm font-bold text-brand-200 transition-all hover:bg-brand-500/20 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {otpLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                Ricevi un link di accesso via email
               </button>
 
               <div className="text-center">

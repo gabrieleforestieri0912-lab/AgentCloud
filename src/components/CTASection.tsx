@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Sezione CTA finale della landing: invita a entrare in chat o richiedere
- * una demo. Testi localizzati (dizionario) e micro-animazioni framer-motion
+ * Sezione CTA finale della landing: invita a entrare in chat o a esplorare il
+ * marketplace. Testi localizzati (dizionario) e micro-animazioni framer-motion
  * in ingresso allo scroll.
  */
 import Link from "next/link";
@@ -15,7 +15,7 @@ export default function CTASection() {
   const { dict } = useLanguage();
   return (
     <section
-      id="demo"
+      id="cta"
       className="relative overflow-hidden px-4 py-16 sm:py-20 sm:px-6 lg:px-8"
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />

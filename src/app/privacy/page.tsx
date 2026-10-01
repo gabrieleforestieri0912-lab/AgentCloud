@@ -33,7 +33,7 @@ export default async function PrivacyPage() {
   const legal = getLegalDocument(locale, "privacy");
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden dark-gradient-main">
+    <main className="relative min-h-dvh overflow-x-hidden dark-gradient-main">
       {/* Sfondo decorativo — stesso linguaggio visivo dell'hero */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
       <div

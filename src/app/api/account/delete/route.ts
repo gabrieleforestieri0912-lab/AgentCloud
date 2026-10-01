@@ -50,10 +50,7 @@ export async function POST() {
     // 4. Elimina dalla waitlist
     await admin.from("waitlist").delete().eq("email", user.email || "");
 
-    // 5. Elimina richieste demo
-    await admin.from("demo_requests").delete().eq("email", user.email || "");
-
-    // 6. Elimina l'utente Supabase Auth
+    // 5. Elimina l'utente Supabase Auth
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
     if (deleteError) {
       console.error("Failed to delete user:", deleteError);
@@ -63,7 +60,7 @@ export async function POST() {
       );
     }
 
-    // 7. Disconnetti la sessione corrente
+    // 6. Disconnetti la sessione corrente
     await supabase.auth.signOut();
 
     return NextResponse.json({ ok: true });

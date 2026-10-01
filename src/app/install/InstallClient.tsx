@@ -53,7 +53,7 @@ export default function InstallClient() {
   const cliInstallCmd = getCliInstallCommand();
 
   return (
-    <div className="relative min-h-screen bg-[#07070c] text-white pt-28 pb-24 overflow-hidden">
+    <div className="relative min-h-dvh bg-[#07070c] text-white pt-28 pb-24 overflow-hidden">
       {/* Background Gradients */}
       <div className="pointer-events-none absolute inset-0 select-none">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-indigo-500/15 via-cyan-500/5 to-transparent blur-3xl rounded-full" />

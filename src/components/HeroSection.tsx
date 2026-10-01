@@ -18,7 +18,7 @@ import Link from "next/link";
 import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
 import DemoLimitModal from "./DemoLimitModal";
-import { createClient } from "@/lib/supabase/client";
+import { useAccountSession, accountTooltipLabel } from "@/lib/use-account-session";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import {
   AttachPlusButton,
@@ -69,7 +69,16 @@ export default function HeroSection() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<HeroMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [isAuthed, setIsAuthed] = useState(false);
+  // Sessione/avatar dell'account: l'autenticazione applica il limite di 10
+  // messaggi demo solo agli ospiti; l'avatar compare nei messaggi utente.
+  const {
+    avatarUrl: accountAvatarUrl,
+    name: accountName,
+    email: accountEmail,
+    isAuthed,
+  } = useAccountSession();
+  // Tooltip dell'avatar nei messaggi utente: nome e email quando disponibili.
+  const accountTooltip = accountTooltipLabel(accountName, accountEmail);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -85,6 +94,12 @@ export default function HeroSection() {
   // setMessages e react-hooks/immutability vieta di mutare valori catturati
   // da una closure; la mutazione di un ref è invece consentita.
   const aiTextRef = useRef("");
+  // Streaming in corso anche come ref: i controlli dentro sendText (async) non
+  // vedono lo stato React aggiornato di questo render.
+  const typingRef = useRef(false);
+  // Messaggi premuti con Enter durante la generazione: bolla già visibile,
+  // invio automatico appena la risposta in corso finisce.
+  const queueRef = useRef<{ text: string; pending: ChatAttachment[] }[]>([]);
 
   const hasMessages = messages.length > 0 || isTyping;
   const userCount = messages.filter((m) => m.role === "user").length;
@@ -138,20 +153,6 @@ export default function HeroSection() {
     return t(dict.hero.askAboutChip, { chip });
   }
 
-  // Tiene traccia dello stato di autenticazione per applicare il limite di 10
-  // messaggi solo agli ospiti.
-  // Admin / possessori del codice sono trattati come autenticati (stessa
-  // gestione degli utenti normali: niente limite demo, cronologia salvata)
-  useEffect(() => {
-    const supabase = createClient();
-    const checkAccess = () => false;
-    supabase.auth.getSession().then(({ data }) => setIsAuthed(!!data.session || checkAccess()));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
-      setIsAuthed(!!session || checkAccess()),
-    );
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
   // Auto-resize della textarea
   useEffect(() => {
     const ta = textareaRef.current;
@@ -196,24 +197,11 @@ export default function HeroSection() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, isTyping, hasMessages]);
 
-  async function sendText(text: string, pending: ChatAttachment[] = []) {
+  // Mostra subito la bolla utente della demo (riusata da invio immediato e
+  // coda, così il messaggio premuto durante la generazione è visibile subito).
+  function appendHeroUserMsg(text: string, pending: ChatAttachment[]) {
     const trimmed = text.trim();
-    const hasAttachments = pending.length > 0;
-    if ((!trimmed && !hasAttachments) || isTyping) return;
-    // Limite demo per utenti non autenticati: 10 messaggi utente, poi modale di login
-    if (!isAuthed && userCount >= DEMO_LIMIT) {
-      setShowLimitModal(true);
-      return;
-    }
-    setInput("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-
-    const apiText = composeUserContent(trimmed, pending);
-    const visionBlocks = toVisionBlocks(pending);
-    const hasImages = visionBlocks.length > 0;
-    const visionText = buildVisionText(apiText, hasImages);
-    const apiContent: unknown = hasImages ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown) : apiText;
-
+    const hasImages = toVisionBlocks(pending).length > 0;
     const userMsg: HeroMessage = {
       id: heroId(),
       role: "user",
@@ -227,6 +215,31 @@ export default function HeroSection() {
       })),
     };
     setMessages((prev) => [...prev, userMsg]);
+  }
+
+  async function sendText(text: string, pending: ChatAttachment[] = [], preAdded = false) {
+    const trimmed = text.trim();
+    const hasAttachments = pending.length > 0;
+    if ((!trimmed && !hasAttachments) || typingRef.current) return;
+    // Limite demo per utenti non autenticati: 10 messaggi utente, poi modale di
+    // login. Saltato per i messaggi in coda (già accettati con Enter).
+    if (!preAdded && !isAuthed && userCount >= DEMO_LIMIT) {
+      setShowLimitModal(true);
+      return;
+    }
+    if (!preAdded) {
+      setInput("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+    }
+
+    const apiText = composeUserContent(trimmed, pending);
+    const visionBlocks = toVisionBlocks(pending);
+    const hasImages = visionBlocks.length > 0;
+    const visionText = buildVisionText(apiText, hasImages);
+    const apiContent: unknown = hasImages ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown) : apiText;
+
+    if (!preAdded) appendHeroUserMsg(trimmed, pending);
+    typingRef.current = true;
     setIsTyping(true);
 
     const aiMsgId = heroId();
@@ -328,13 +341,35 @@ export default function HeroSection() {
     }
 
     if (discardStreamRef.current) return;
+    typingRef.current = false;
     setIsTyping(false);
     textareaRef.current?.focus();
+
+    // Coda: messaggi premuti con Enter mentre la demo generava. La bolla è già
+    // visibile, ora che la risposta è completa partono davvero.
+    const next = queueRef.current.shift();
+    if (next) await sendText(next.text, next.pending, true);
   }
 
   async function handleSend() {
+    const text = input;
+    // Guard PRIMA di take(): se l'invio verrà rifiutato (limite demo raggiunto)
+    // gli allegati restano nei chip invece di essere consumati e persi
+    // silenziosamente.
+    if (!text.trim() && attach.attachments.length === 0) return;
+    if (!isAuthed && userCount >= DEMO_LIMIT) {
+      setShowLimitModal(true);
+      return;
+    }
     const pending = attach.take();
-    await sendText(input, pending);
+    // Stream in corso: messaggio in coda, bolla subito visibile.
+    if (typingRef.current) {
+      appendHeroUserMsg(text, pending);
+      setInput("");
+      queueRef.current.push({ text, pending });
+      return;
+    }
+    await sendText(text, pending);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -381,6 +416,9 @@ export default function HeroSection() {
     discardStreamRef.current = true;
     streamAbortRef.current?.abort();
     attach.clear();
+    // I messaggi in coda appartengono alla conversazione appena azzerata.
+    queueRef.current = [];
+    typingRef.current = false;
     setIsTyping(false);
     setMessages([]);
     setInput("");
@@ -595,10 +633,23 @@ export default function HeroSection() {
                         )}
                       </div>
                       {msg.role === "user" && (
-                        <div className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center shrink-0">
-                          <span className="text-neutral-300 text-[10px] font-bold">
-                            U
-                          </span>
+                        <div
+                          className="relative w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center shrink-0 overflow-hidden"
+                          title={accountTooltip ?? undefined}
+                          aria-label={accountTooltip ?? undefined}
+                        >
+                          {/* Fallback iniziale: resta visibile se l'avatar non carica. */}
+                          <span className="text-neutral-300 text-[10px] font-bold">U</span>
+                          {accountAvatarUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={accountAvatarUrl}
+                              alt=""
+                              referrerPolicy="no-referrer"
+                              className="absolute inset-0 h-full w-full object-cover"
+                              onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+                            />
+                          )}
                         </div>
                       )}
                     </div>

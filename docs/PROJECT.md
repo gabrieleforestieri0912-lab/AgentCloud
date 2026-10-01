@@ -39,7 +39,7 @@ src/
 │   ├── account/page.tsx     # Account unificato (profilo + piano + connessioni + impostazioni) — /settings redirect
 │   ├── cart/page.tsx        # Carrello (agenti + bundle, svuota fixato, badge rosso)
 │   ├── bundles/page.tsx     # Bundle con pricing coerente (sconti 12/22/35%)
-│   ├── login | signup | waitlist | demo | contact | privacy | terms
+│   ├── login | signup | waitlist | contact | privacy | terms
 │   └── api/
 │       ├── agent/run/       # POST — esecuzione agente (Claude) + tool, limiti e rate limit
 │       ├── billing/webhook/ # POST — webhook Stripe (attivazione, rinnovo, cancellazione)
@@ -53,7 +53,7 @@ src/
 │       ├── email/send/      # Admin-only
 │       ├── notifications/   # Campanella (elenco + read)
 │       ├── shopify/ · google/ # OAuth multi-tenant legacy (shopify_connections, google_connections)
-│       └── waitlist | contact | demo/request | sitemap
+│       └── waitlist | contact | sitemap
 ├── components/              # Navbar (cart icon-only prima di campanella, pannelli link migliorati), ChatInterface (working-on), AgentCard (Già acquistato), IntegrationsGrid (41), BundleCard, CartProvider…
 └── lib/
     ├── i18n/                # dictionaries (it/en), locale, api-errors, agentCatalog
@@ -73,7 +73,7 @@ src/
 | `/` | Homepage | Pubblico |
 | `/agents`, `/agents/[slug]`, `/agents/[slug]/deploy` | Marketplace / dettaglio / deploy | Pubblico |
 | `/a/[slug]` | Chat pubblica agente (embed) | Pubblico |
-| `/waitlist`, `/demo`, `/contact`, `/about`, `/integrations`, `/privacy`, `/terms`, `/refunds`, `/login`, `/signup` | Landing/legal/auth | Pubblico |
+| `/waitlist`, `/contact`, `/about`, `/integrations`, `/privacy`, `/terms`, `/refunds`, `/login`, `/signup` | Landing/legal/auth | Pubblico |
 | `/chat` | Chat generica (con indicatore app collegata) | Protetto (Supabase) |
 | `/agent/[id]` | Chat agente | Protetto (Supabase) |
 | `/dashboard` | Dashboard | Protetto |
@@ -82,7 +82,7 @@ src/
 | `/account` | Account unificato (profilo + impostazioni) — `/settings` redirect | Protetto |
 | `/cart`, `/bundles` | Carrello + Bundle (pricing coerente) | Pubblico (carrello sync) |
 
-**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/paypal/webhook`, `billing/payment-link`, `checkout`, `cart`, `cart/checkout` (Klarna/Amazon Pay), `user/owned`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `chat`, `embed/[slug]`, `notifications`, `shopify/install`, `shopify/callback`, `shopify/webhooks`, `shopify/status`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `demo/request`, `sitemap`.
+**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/paypal/webhook`, `billing/payment-link`, `checkout`, `cart`, `cart/checkout` (Klarna/Amazon Pay), `user/owned`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `chat`, `embed/[slug]`, `notifications`, `shopify/install`, `shopify/callback`, `shopify/webhooks`, `shopify/status`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `sitemap`.
 **API protette (Supabase)**: `billing/portal`, `billing/paypal/create` (ri-verifica sessione), `integrations/[provider]/{authorize,callback,disconnect,status}` (generic OAuth, signed state).
 
 ---
@@ -145,6 +145,42 @@ Regola: una stringa in `es`/`de`/`fr` è **solo** nella sua lingua. Ammessi unic
 - `profiles` popolati automaticamente dal trigger `handle_new_user` (vedi `schema.sql`).
 - ID utente = UUID `auth.users.id` (niente più `user_2…` di Clerk).
 
+### Google sign-in (redirect URI)
+
+Il pulsante «Continua con Google» usa `supabase.auth.signInWithOAuth({ provider: "google", redirectTo: <origin>/auth/callback })`: Supabase costruisce la URL di Google e ci mette il **proprio** callback, non quello dell'app.
+
+**Usa un client OAuth dedicato per il sign-in, separato da quello di Gmail/Calendar/Sheets.** Sono due flussi diversi e vanno tenuti su due client Google distinti:
+
+| | Sign-in (Supabase Auth) | Gmail/Calendar/Sheets (integrazione) |
+|---|---|---|
+| Chi lo configura | Dashboard Supabase | `.env` (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`) |
+| Redirect URI | `https://<project-ref>.supabase.co/auth/v1/callback` | `https://<host>/api/auth/google/callback` + `https://<host>/api/integrations/google_sheets/callback` |
+| Scope | `openid`, `userinfo.email`, `userinfo.profile` (non sensibili) | `gmail.modify`, `calendar`, `spreadsheets` (sensibili) |
+| Client ID | solo nella dashboard Supabase | `GOOGLE_CLIENT_ID` |
+
+#### Setup del client dedicato al sign-in
+
+1. **Google Cloud Console** → Credentials → **Create credentials → OAuth client ID**, tipo **Web application**.
+   - Nome suggerito: `AgentCloud – Sign in with Google (Supabase)`.
+   - **Authorized JavaScript origins**: `https://<host>` (es. `https://www.agentcloud.agency`) e `http://localhost:3000`.
+   - **Authorized redirect URIs**: `https://<project-ref>.supabase.co/auth/v1/callback`
+     (per questo progetto: `https://umnvmlfzclkuorwnevpu.supabase.co/auth/v1/callback`).
+     Nessun altro URI: la callback dell'app `/auth/callback` va su Supabase, **non** qui.
+2. **Supabase** → Authentication → **Providers → Google**: abilita e incolla **Client ID / Secret** del *nuovo* client. Non usare più le credenziali di Gmail/Calendar.
+3. **Supabase** → Authentication → **URL Configuration**: **Site URL** = `NEXT_PUBLIC_SITE_URL`; in **Redirect URLs** `<host>/auth/callback` (e `http://localhost:3000/auth/callback`).
+4. **Lascia invariato** `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `.env`: restano il client di Gmail/Calendar/Sheets. Le credenziali del sign-in **non** vanno in `.env`, restano solo nella dashboard Supabase.
+
+> ⚠️ Se manca la redirect URI di Supabase in Google Cloud Console, il login Google fallisce con **`Error 400: redirect_uri_mismatch`** («Access blocked: This app's request is invalid»). Tenere i due client separati evita anche che il consenso dei soli scope sensibili (Gmail/Calendar) condizioni il sign-in.
+
+Verifica rapida della URI inviata a Google:
+
+```bash
+curl -s -o /dev/null -D - \
+  "https://<project-ref>.supabase.co/auth/v1/authorize?provider=google&redirect_to=<host>%2Fauth%2Fcallback" \
+  -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" | grep -i '^location'
+# → redirect_uri=https://<project-ref>.supabase.co/auth/v1/callback
+```
+
 ---
 
 ## Billing
@@ -166,7 +202,6 @@ Backed da **Supabase** (tabella `rate_limits` + RPC atomici) — vale su tutte l
 |----------|--------|------|
 | `/api/agent/run` (anonimi) | **30/min per IP** | burst filter in-memory + limite distribuito; header `Retry-After` |
 | `/api/contact` | **5/h per IP** | 429 localizzato |
-| `/api/demo/request` | **5/h per IP** | 429 localizzato |
 | `/api/waitlist` | **3/h per IP** | email comunque deduplicata dal DB |
 
 - **Fail-open**: se il DB non è raggiungibile la richiesta passa (un guasto al rate limiter non blocca mai il traffico).
@@ -185,7 +220,7 @@ Schema in `supabase/schema.sql` + `supabase/schema-shopify-oauth.sql` + `supabas
 | `subscriptions` | Ledger Stripe/PayPal (una riga per subscription × agente, `stripe_subscription_id` riusato per PayPal `I-...`) |
 | `user_agents` | Ownership autoritativa (limiti e stato per utente × agente, `config.paypal` per PayPal) |
 | `agent_runs` | Log + conteggio token |
-| `demo_requests`, `waitlist` | Form pubblici |
+| `waitlist` | Form pubblici |
 | `agent_notifications` | Azioni agenti — campanella, `read` badge |
 | `shopify_connections` | OAuth Shopify multi-tenant (AES-256-GCM, `user_id text` per `__tenant__`) |
 | `google_connections` | OAuth Google (Gmail/Calendar) multi-tenant |
@@ -231,7 +266,6 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `ADMIN_API_TOKEN` | ✅ | admin API |
 | `ADMIN_EMAILS` | ✅ | email admin separate da virgola: chi ci compare riceve `profiles.role = 'admin'` al primo accesso. Vedi `src/lib/admin-access.ts` e `supabase/schema-admin-role.sql` |
 | `ACCESS_CODE` | – | waitlist (sblocca tutti gli agenti) |
-| `DEMO_EMAIL_TO` | – | default `support@agentcloud.agency` |
 
 ### Billing
 
@@ -313,7 +347,7 @@ revocano su 401 (APP_UNINSTALLED / shop/redact). La tabella
 Gmail/Calendar/Sheets (stesso pattern Shopify: token AES-256-GCM in `google_connections` per Gmail/Calendar e `tenant_integrations` `google_sheets` per Sheets, RLS `auth.uid()::text = tenant_id` con `__tenant__` per admin via code). Codice `src/lib/google/*` + `src/lib/integrations/providers/googleSheets.ts`:
 
 1. **Google Cloud Console** → OAuth consent screen (External), abilita **Gmail API**, **Calendar API**, **Sheets API**.
-2. **Credentials → OAuth client ID** (Web): **Authorized redirect URIs** `https://<host>/api/auth/google/callback` (Gmail/Calendar) e `https://<host>/api/integrations/google_sheets/callback` (Sheets — **obbligatorio**: il flusso generico usa e verifica il proprio callback, senza questa URI si ottiene `redirect_uri_mismatch`).
+2. **Credentials → OAuth client ID** (Web): **Authorized redirect URIs** `https://<host>/api/auth/google/callback` (Gmail/Calendar) e `https://<host>/api/integrations/google_sheets/callback` (Sheets — **obbligatorio**: il flusso generico usa e verifica il proprio callback, senza questa URI si ottiene `redirect_uri_mismatch`). Il **Google sign-in è separato**: usa un client dedicato configurato nella dashboard Supabase (vedi [Google sign-in](#google-sign-in-redirect-uri)).
 3. Scope: `gmail.modify`, `calendar`, `spreadsheets` (override `GOOGLE_SCOPES` = `gmail.modify calendar spreadsheets`).
 4. Env: `GOOGLE_CLIENT_ID/SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, `INTEGRATIONS_TOKEN_ENCRYPTION_KEY`.
 

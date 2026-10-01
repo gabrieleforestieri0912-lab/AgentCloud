@@ -14,6 +14,7 @@
  * testuale (o JSON strutturato per le azioni con effetti, come la creazione
  * di file/prodotti che generano notifiche).
  */
+import { randomUUID } from "node:crypto";
 import type { LLMTool } from "@/lib/llm";
 import { logAudit } from "@/lib/audit";
 import { getTenantCredentials } from "@/lib/tenants";
@@ -979,6 +980,42 @@ export type ToolContext = {
   files?: Record<string, string>;
 };
 
+/**
+ * Provider supportati dalla card di connessione inline (vedi InlineConnectCard).
+ */
+export const CONNECT_PROVIDERS = [
+  "shopify",
+  "gmail",
+  "calendar",
+  "sheets",
+  "slack",
+  "notion",
+  "hubspot",
+  "github",
+  "clickup",
+  "asana",
+  "whatsapp",
+] as const;
+
+/**
+ * Normalizza il provider richiesto dal modello sul nome canonico della card di
+ * connessione (es. "Google Sheets" → "sheets", "e-mail" → "gmail").
+ * Restituisce null se il provider non è supportato: in quel caso né il tool né
+ * la route devono emettere una card (l'URL di autorizzazione non esisterebbe).
+ */
+export function normalizeConnectProvider(raw: string | undefined): string | null {
+  const key = String(raw ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (!key) return null;
+  if (key.includes("shopify")) return "shopify";
+  if (key.includes("gmail") || key === "email" || key === "mail" || key === "google" || key === "googlemail") return "gmail";
+  if (key.includes("calendar") || key.includes("agenda")) return "calendar";
+  if (key.includes("sheet") || key.includes("fogli")) return "sheets";
+  if (key.includes("whatsapp")) return "whatsapp";
+  return (CONNECT_PROVIDERS as readonly string[]).includes(key) ? key : null;
+}
+
 async function getGoogleTokenForContext(context: ToolContext) {
   let token = await getValidGoogleAccessToken(context.userId).catch(() => null);
   if (!token && context.tenantId && context.tenantId !== context.userId) {
@@ -1339,7 +1376,7 @@ export async function executeTool(
         const looksPython = /(^|\n)\s*(import\s+(pandas|numpy|matplotlib)|from\s+\w+\s+import|def\s+\w+\s*\(|print\s*\(|if\s+__name__)/m.test(rawCode);
         if (looksPython) { return "Python runtime non disponibile su questo host (python3/python non trovato). Il tuo codice \u00e8 Python puro e richiede un runtime Python.\n\nAzioni concrete:\n- In locale: installa Python 3 e riprova (il tool user\u00e0 automaticamente python3 -c).\n- In produzione (Vercel/serverless): aggiungi un servizio sandbox Python (es. container dedicato, Pipedream, o Pyodide lato client) oppure riscrivi il calcolo in JavaScript \u2014 posso eseguirlo subito via VM JS.\n\nCodice ricevuto (primi 800 char):\n\u0060\u0060\u0060python\n" + rawCode.slice(0, 800) + "\n\u0060\u0060\u0060"; }
         let vmResult = undefined;
-        try { vmResult = runInNewContext("let __result;\n" + rawCode + "\n__result", sandbox, { timeout: 3000 }); } catch (vmErr) { try { vmResult = runInNewContext(rawCode, sandbox, { timeout: 3000 }); } catch (e2) { throw vmErr; } }
+        try { vmResult = runInNewContext("let __result;\n" + rawCode + "\n__result", sandbox, { timeout: 3000 }); } catch (vmErr) { try { vmResult = runInNewContext(rawCode, sandbox, { timeout: 3000 }); } catch { throw vmErr; } }
         const outParts = [];
         if (logs.length) outParts.push(logs.join("\n"));
         if (vmResult !== undefined && vmResult !== null && String(vmResult).trim() !== "undefined" && String(vmResult).trim() !== "") { const asStr = typeof vmResult === "string" ? vmResult : JSON.stringify(vmResult, null, 2); if (asStr && !logs.join("\n").includes(asStr.slice(0, 200))) outParts.push(String(asStr)); }
@@ -1363,7 +1400,6 @@ export async function executeTool(
                 title
                 handle
                 onlineStoreUrl
-                featuredImage { url }
                 priceRangeV2 { minVariantPrice { amount currencyCode } }
                 variants(first: 1) {
                   edges { node { id availableForSale } }
@@ -1462,7 +1498,7 @@ export async function executeTool(
                 displayFinancialStatus
                 displayFulfillmentStatus
                 statusPageUrl
-                fulfillments(first: 3) {
+                fulfillments {
                   trackingInfo { number url company }
                 }
               }
@@ -1674,9 +1710,9 @@ export async function executeTool(
               node {
                 firstName
                 lastName
-                email
-                ordersCount { quantity }
-                totalSpent { amount currencyCode }
+                defaultEmailAddress { emailAddress }
+                numberOfOrders
+                amountSpent { amount currencyCode }
                 createdAt
                 tags
               }
@@ -1699,9 +1735,9 @@ export async function executeTool(
         node?: {
           firstName?: string;
           lastName?: string;
-          email?: string;
-          ordersCount?: { quantity?: number };
-          totalSpent?: { amount?: string; currencyCode?: string };
+          defaultEmailAddress?: { emailAddress?: string };
+          numberOfOrders?: number;
+          amountSpent?: { amount?: string; currencyCode?: string };
           createdAt?: string;
           tags?: string[];
         };
@@ -1714,9 +1750,9 @@ export async function executeTool(
         const name = [n?.firstName, n?.lastName].filter(Boolean).join(" ") || "N/A";
         return [
           `Name: ${name}`,
-          `Email: ${n?.email ?? "N/A"}`,
-          `Orders: ${n?.ordersCount?.quantity ?? 0}`,
-          `Total spent: ${n?.totalSpent?.amount ?? "0"} ${n?.totalSpent?.currencyCode ?? ""}`,
+          `Email: ${n?.defaultEmailAddress?.emailAddress ?? "N/A"}`,
+          `Orders: ${n?.numberOfOrders ?? 0}`,
+          `Total spent: ${n?.amountSpent?.amount ?? "0"} ${n?.amountSpent?.currencyCode ?? ""}`,
           `Created: ${n?.createdAt ?? "N/A"}`,
           n?.tags?.length ? `Tags: ${n.tags.join(", ")}` : null,
         ].filter(Boolean).join("\n");
@@ -1740,14 +1776,13 @@ export async function executeTool(
           orders(first: 250, query: $query) {
             edges {
               node {
-                totalPrice { amount currencyCode }
+                totalPriceSet { shopMoney { amount currencyCode } }
                 createdAt
                 lineItems(first: 5) {
                   edges {
                     node {
                       title
                       quantity
-                      originalTotalPrice { amount }
                     }
                   }
                 }
@@ -1771,7 +1806,7 @@ export async function executeTool(
       if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
 
       const data = result.data as {
-        orders?: { edges?: Array<{ node?: { totalPrice?: { amount?: string; currencyCode?: string }; lineItems?: { edges?: Array<{ node?: { title?: string; quantity?: number; originalTotalPrice?: { amount?: string } } }> } } }> };
+        orders?: { edges?: Array<{ node?: { totalPriceSet?: { shopMoney?: { amount?: string; currencyCode?: string } }; lineItems?: { edges?: Array<{ node?: { title?: string; quantity?: number } }> } } }> };
         shop?: { name?: string };
       };
 
@@ -1781,7 +1816,7 @@ export async function executeTool(
 
       for (const edge of orderEdges) {
         const n = edge.node;
-        const amount = parseFloat(n?.totalPrice?.amount || "0");
+        const amount = parseFloat(n?.totalPriceSet?.shopMoney?.amount || "0");
         totalRevenue += amount;
         for (const li of n?.lineItems?.edges || []) {
           const title = li.node?.title || "Unknown";
@@ -1796,7 +1831,8 @@ export async function executeTool(
         .map(([title, qty], i) => `  ${i + 1}. ${title} (×${qty})`)
         .join("\n");
 
-      const currency = orderEdges[0]?.node?.totalPrice?.currencyCode || "EUR";
+      const currency =
+        orderEdges[0]?.node?.totalPriceSet?.shopMoney?.currencyCode || "EUR";
 
       return [
         `Analytics for ${data?.shop?.name ?? "your store"} — last ${days} day(s)`,
@@ -1825,56 +1861,41 @@ export async function executeTool(
       if (!title) return "Product title is required.";
       if (isNaN(parseFloat(price))) return "Price must be a valid number.";
 
+      // Admin API 2026-07 (versione pinnata in lib/shopify/version.ts):
+      // `productCreate` accetta `product: ProductCreateInput!` e `media` come
+      // argomento separato. ProductCreateInput non ha né `variants` né `price`:
+      // il prezzo si imposta dopo, sull'unica variante creata, con
+      // productVariantsBulkUpdate.
       const graphql = `
-        mutation productCreate($input: ProductInput!) {
-          productCreate(input: $input) {
+        mutation productCreate($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+          productCreate(product: $product, media: $media) {
             product {
               id
               title
               handle
               onlineStoreUrl
-              priceRangeV2 { minVariantPrice { amount currencyCode } }
+              status
+              variants(first: 1) {
+                nodes { id price }
+              }
             }
             userErrors { field message }
           }
         }
       `;
 
-      // Conforme all'Admin API pinnata in lib/shopify/version.ts:
-      // productOptions + variants con optionValues,
-      // media al posto di images
-      const hasValidImage = imageUrl && isValidHttpsUrl(imageUrl);
+      const hasValidImage = imageUrl ? isValidHttpsUrl(imageUrl) : false;
       const productInput: Record<string, unknown> = {
         title,
         descriptionHtml,
-        productOptions: [{ name: "Title", values: [{ name: "Default Title" }] }],
-        variants: [
-          {
-            price,
-            optionValues: [{ name: "Default Title" }],
-            ...(compareAt && parseFloat(compareAt) > 0 ? { compareAtPrice: compareAt } : {}),
-          },
-        ],
+        status: "ACTIVE",
         ...(tags ? { tags: tags.split(",").map((t: string) => t.trim()).filter(Boolean) } : {}),
-        ...(hasValidImage ? { media: [{ originalSource: imageUrl, mediaContentType: "IMAGE" }] } : {}),
       };
 
-      let result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { input: productInput });
-      // Fallback: se il formato variants viene rifiutato (es. mismatch versione
-      // API), riprova senza variants/media e imposta il prezzo via bulk update
-      const shouldFallback =
-        result.ok &&
-        (result.data as { productCreate?: { userErrors?: Array<{ message?: string }> } })?.productCreate?.userErrors?.some(
-          (e) => e.message?.toLowerCase().includes("variant") || e.message?.toLowerCase().includes("media"),
-        );
-      if (shouldFallback) {
-        const fallbackInput: Record<string, unknown> = {
-          title,
-          descriptionHtml,
-          ...(tags ? { tags: tags.split(",").map((t: string) => t.trim()).filter(Boolean) } : {}),
-        };
-        result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, { input: fallbackInput });
-      }
+      const result = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphql, {
+        product: productInput,
+        media: hasValidImage ? [{ originalSource: imageUrl, mediaContentType: "IMAGE" }] : null,
+      });
       if (result.status === 401) {
         if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
         return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
@@ -1884,7 +1905,14 @@ export async function executeTool(
 
       const productResult = result.data as {
         productCreate?: {
-          product?: { id?: string; title?: string; handle?: string; onlineStoreUrl?: string };
+          product?: {
+            id?: string;
+            title?: string;
+            handle?: string;
+            onlineStoreUrl?: string;
+            status?: string;
+            variants?: { nodes?: Array<{ id?: string }> };
+          };
           userErrors?: Array<{ field?: string; message?: string }>;
         };
       };
@@ -1895,16 +1923,62 @@ export async function executeTool(
       }
 
       const p = productResult?.productCreate?.product;
+      const variantId = p?.variants?.nodes?.[0]?.id;
+      const wantsCompareAt = Boolean(compareAt && parseFloat(compareAt) > 0);
+      let priceNote = `Price: ${price}`;
+      let priceWarning: string | null = null;
+
+      // Il prezzo (e il compare-at) si impostano sulla variante creata da productCreate.
+      if (variantId && (parseFloat(price) > 0 || wantsCompareAt)) {
+        const priceMutation = `
+          mutation setVariantPrice($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+            productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+              productVariants { id price }
+              userErrors { field message }
+            }
+          }
+        `;
+        const priceRes = await shopifyGraphQL(creds.shopDomain, creds.accessToken, priceMutation, {
+          productId: p?.id,
+          variants: [
+            {
+              id: variantId,
+              price,
+              ...(wantsCompareAt ? { compareAtPrice: compareAt } : {}),
+            },
+          ],
+        });
+        const priceErrors = (priceRes.data as {
+          productVariantsBulkUpdate?: { userErrors?: Array<{ message?: string }> };
+        } | undefined)?.productVariantsBulkUpdate?.userErrors;
+        if (!priceRes.ok || priceRes.errors || priceErrors?.length) {
+          const detail = priceErrors?.length
+            ? priceErrors.map((e) => e.message).join(", ")
+            : priceRes.errors
+              ? JSON.stringify(priceRes.errors)
+              : priceRes.statusText || "errore sconosciuto";
+          priceNote = `Price: non impostato (0.00) — ${detail}`;
+          priceWarning = `Il prodotto è stato creato ma il prezzo non è stato applicato (${detail}). Puoi impostarlo dall'admin Shopify.`;
+        }
+      } else if (!variantId) {
+        priceNote = `Price: non impostato — variante non leggibile dalla risposta di Shopify`;
+        priceWarning = "Il prodotto è stato creato ma non è stato possibile impostare il prezzo: verificalo dall'admin Shopify.";
+      }
+
       return [
-        `Product created successfully!`,
+        `Product created!`,
         `Title: ${p?.title ?? title}`,
-        `Price: ${price}`,
-        compareAt ? `Compare at: ${compareAt}` : null,
+        priceNote,
+        wantsCompareAt ? `Compare at: ${compareAt}` : null,
         `Handle: ${p?.handle ?? "N/A"}`,
         p?.onlineStoreUrl ? `URL: ${p.onlineStoreUrl}` : null,
+        p?.status ? `Status: ${p.status}` : null,
         ``,
-        `The product is now live on your store. You can manage it from your Shopify admin.`,
-      ].filter(Boolean).join("\n");
+        priceWarning ??
+          `Il prodotto è attivo nel catalogo. Se non compare ancora nello store online, pubblicalo sul canale Online Store dal tuo admin Shopify.`,
+      ]
+        .filter(Boolean)
+        .join("\n");
     }
 
     case "shopify_create_discount": {
@@ -1955,7 +2029,7 @@ export async function executeTool(
         customerGets: {
           value: {
             ...(type === "percentage"
-              ? { discountPercentage: parseFloat(value) / 100 }
+              ? { percentage: parseFloat(value) / 100 }
               : { discountAmount: { amount: value, appliesOnEachItem: false } }),
           },
           items: { all: true },
@@ -1986,7 +2060,7 @@ export async function executeTool(
       return [
         `Discount code created!`,
         `Code: ${code}`,
-        `Type: ${type === "percentage" ? `${value}% off` : `€${value} off`}`,
+        `Type: ${type === "percentage" ? `${value}% off` : `${value} off`}`,
         usageLimit ? `Usage limit: ${usageLimit}` : null,
         startsAt ? `Starts: ${startsAt}` : null,
         endsAt ? `Ends: ${endsAt}` : null,
@@ -2057,12 +2131,16 @@ export async function executeTool(
 
       const productIds = productIdsRaw.split(",").map((s) => s.trim()).filter(Boolean);
 
-      // Usa le mutation collectionAddProducts / collectionRemoveProducts
+      // Admin API 2026-07: `collectionAddProducts` restituisce `collection`,
+      // mentre `collectionRemoveProducts` è asincrona e restituisce `job`.
+      // Entrambe sono deprecate a favore di `collectionUpdate` con
+      // `inclusion.selectionsToAdd/selectionsToRemove` (migrazione futura).
       const mutationName = action === "add" ? "collectionAddProducts" : "collectionRemoveProducts";
+      const payloadFields = action === "add" ? "collection { id title }" : "job { id done }";
       const graphql = `
         mutation ${mutationName}($id: ID!, $productIds: [ID!]!) {
           ${mutationName}(id: $id, productIds: $productIds) {
-            collection { id title }
+            ${payloadFields}
             userErrors { field message }
           }
         }
@@ -2079,7 +2157,14 @@ export async function executeTool(
       if (!result.ok) return `Shopify API error: ${result.statusText}`;
       if (result.errors) return `Shopify GraphQL error: ${JSON.stringify(result.errors)}`;
 
-      const resData = result.data as Record<string, { collection?: { title?: string }; userErrors?: Array<{ message?: string }> }>;
+      const resData = result.data as Record<
+        string,
+        {
+          collection?: { title?: string };
+          job?: { id?: string; done?: boolean };
+          userErrors?: Array<{ message?: string }>;
+        }
+      >;
       const opResult = resData?.[mutationName];
       const errors = opResult?.userErrors;
       if (errors?.length) {
@@ -2090,7 +2175,12 @@ export async function executeTool(
         `Collection updated!`,
         `Collection: ${opResult?.collection?.title ?? collectionId}`,
         `Action: ${action === "add" ? "Added" : "Removed"} ${productIds.length} product(s)`,
-      ].join("\n");
+        action === "remove" && opResult?.job?.id
+          ? `Job: ${opResult.job.id}${opResult.job.done ? " (completato)" : " (in esecuzione)"}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
     }
 
     case "shopify_update_inventory": {
@@ -2105,76 +2195,130 @@ export async function executeTool(
       if (!variantId) return "variant_id is required (e.g. gid://shopify/ProductVariant/123).";
       if (isNaN(quantity) || quantity < 0) return "quantity must be a non-negative number.";
 
-      // Prima trova l'inventory item per questa variante
-      const graphqlVariant = `
-        query getVariant($id: ID!) {
-          productVariant(id: $id) {
+      // Admin API 2026-07:
+      // - `inventoryAdjustQuantityAtLocation` non esiste più: si usa
+      //   `inventoryAdjustQuantities` (delta per item+location);
+      // - dalla versione 2026-04 la mutation richiede la direttiva @idempotent;
+      // - `InventoryItem.inventoryLevel` richiede l'argomento `locationId`
+      //   e la quantità si legge da `quantities(names: ["available"])`.
+      const graphqlTargets = `
+        query inventoryTargets($variantId: ID!) {
+          productVariant(id: $variantId) {
             id
             title
-            inventoryItem { id inventoryLevel { location { name } available } }
             product { title }
+            inventoryItem { id }
           }
+          locations(first: 1) { edges { node { id name } } }
         }
       `;
 
-      const variantResult = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphqlVariant, { id: variantId });
-      if (!variantResult.ok) return `Shopify API error: ${variantResult.statusText}`;
-      if (variantResult.errors) return `Shopify GraphQL error: ${JSON.stringify(variantResult.errors)}`;
+      const targetsResult = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphqlTargets, {
+        variantId,
+      });
+      if (targetsResult.status === 401) {
+        if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
+        return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
+      }
+      if (!targetsResult.ok) return `Shopify API error: ${targetsResult.statusText}`;
+      if (targetsResult.errors) return `Shopify GraphQL error: ${JSON.stringify(targetsResult.errors)}`;
 
-      const variantData = (variantResult.data as {
+      const targets = targetsResult.data as {
         productVariant?: {
           id?: string;
           title?: string;
-          inventoryItem?: { id?: string; inventoryLevel?: { location?: { name?: string }; available?: number } };
+          inventoryItem?: { id?: string };
           product?: { title?: string };
         };
-      })?.productVariant;
+        locations?: { edges?: Array<{ node?: { id?: string; name?: string } }> };
+      } | undefined;
 
+      const variantData = targets?.productVariant;
       if (!variantData) return `Variant not found: ${variantId}`;
 
       const inventoryItemId = variantData.inventoryItem?.id;
-      if (!inventoryItemId) return `No inventory item found for variant ${variantData.title}."`;
+      if (!inventoryItemId) {
+        return `No inventory item found for variant ${variantData.title ?? variantId}.`;
+      }
 
-      // Recupera la location su cui impostare l'inventario
-      const graphqlLocations = `
-        query { locations(first: 1) { edges { node { id name } } } }
+      const location = targets?.locations?.edges?.[0]?.node;
+      if (!location?.id) return "No location found in your Shopify store.";
+
+      // Quantità disponibile attuale nella location scelta.
+      const graphqlLevel = `
+        query inventoryLevel($inventoryItemId: ID!, $locationId: ID!) {
+          inventoryItem(id: $inventoryItemId) {
+            inventoryLevel(locationId: $locationId) {
+              quantities(names: ["available"]) { name quantity }
+            }
+          }
+        }
       `;
-      const locResult = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphqlLocations);
-      const locationId = (
-        (locResult.data as { locations?: { edges?: Array<{ node?: { id?: string } }> } })?.locations?.edges?.[0]?.node?.id
-      );
+      const levelResult = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphqlLevel, {
+        inventoryItemId,
+        locationId: location.id,
+      });
+      if (!levelResult.ok) return `Shopify API error: ${levelResult.statusText}`;
+      if (levelResult.errors) return `Shopify GraphQL error: ${JSON.stringify(levelResult.errors)}`;
 
-      if (!locationId) return "No location found in your Shopify store.";
+      const levelQuantities = (levelResult.data as {
+        inventoryItem?: {
+          inventoryLevel?: { quantities?: Array<{ name?: string; quantity?: number }> };
+        };
+      } | undefined)?.inventoryItem?.inventoryLevel?.quantities;
+      const currentAvailable =
+        levelQuantities?.find((q) => q.name === "available")?.quantity ?? 0;
+      const delta = quantity - currentAvailable;
 
-      // Imposta il livello di inventario
-      const graphqlSetInventory = `
-        mutation inventoryAdjustQuantityAtLocation($inventoryItemId: ID!, $locationId: ID!, $delta: Int!) {
-          inventoryAdjustQuantityAtLocation(
-            inventoryItemId: $inventoryItemId,
-            locationId: $locationId,
-            delta: $delta
-          ) {
-            inventoryLevel { available }
+      if (delta === 0) {
+        return [
+          `Nessuna modifica: l'inventario è già ${currentAvailable} unità.`,
+          `Product: ${variantData.product?.title ?? "N/A"}`,
+          `Variant: ${variantData.title ?? "Default"}`,
+          `Location: ${location.name ?? "N/A"}`,
+        ].join("\n");
+      }
+
+      const graphqlAdjust = `
+        mutation inventoryAdjustQuantities($input: InventoryAdjustQuantitiesInput!, $key: String!) @idempotent(key: $key) {
+          inventoryAdjustQuantities(input: $input) {
+            inventoryAdjustmentGroup { changes { name delta } }
+            userErrors { field message }
           }
         }
       `;
 
-      const currentAvailable = variantData.inventoryItem?.inventoryLevel?.available || 0;
-      const delta = quantity - currentAvailable;
-
-      const invResult = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphqlSetInventory, {
-        inventoryItemId,
-        locationId,
-        delta,
+      const invResult = await shopifyGraphQL(creds.shopDomain, creds.accessToken, graphqlAdjust, {
+        input: {
+          name: "available",
+          reason: "correction",
+          changes: [{ delta, inventoryItemId, locationId: location.id }],
+        },
+        key: randomUUID(),
       });
+      if (invResult.status === 401) {
+        if (context.tenantId) await revokeShopifyConnection(context.tenantId, creds.shopDomain).catch(() => {});
+        return "La connessione Shopify è scaduta o è stata revocata. Riconnetti lo store dal pannello 'Connetti Shopify'.";
+      }
       if (!invResult.ok) return `Shopify API error: ${invResult.statusText}`;
       if (invResult.errors) return `Shopify GraphQL error: ${JSON.stringify(invResult.errors)}`;
 
+      const adjustErrors = (invResult.data as {
+        inventoryAdjustQuantities?: { userErrors?: Array<{ message?: string }> };
+      } | undefined)?.inventoryAdjustQuantities?.userErrors;
+      if (adjustErrors?.length) {
+        return `Inventory update failed: ${adjustErrors.map((e) => e.message).join(", ")}`;
+      }
+
       return [
-        `Inventory updated!`,
+        `Inventory aggiornato!`,
         `Product: ${variantData.product?.title ?? "N/A"}`,
         `Variant: ${variantData.title ?? "Default"}`,
-        `Previous: ${currentAvailable} units`,`New: ${quantity} units`,`Delta: ${delta >= 0 ? "+" : ""}${delta} units` ].join("\n");
+        `Location: ${location.name ?? "N/A"}`,
+        `Previous: ${currentAvailable} units`,
+        `New: ${quantity} units`,
+        `Delta: ${delta >= 0 ? "+" : ""}${delta} units`,
+      ].join("\n");
     }
 
     case "calendar_search_availability": {
@@ -2924,12 +3068,13 @@ export async function executeTool(
     }
 
     case "request_integration_connect": {
-      const provider = sanitizeText(input.provider || "", 40).toLowerCase();
-      const allowed = ["shopify", "gmail", "calendar", "sheets", "slack", "notion", "hubspot", "github", "clickup", "asana", "whatsapp", "google_sheets", "google_calendar"];
-      const normalized = provider.replace(/[^a-z0-9_]/g, "");
-      const isAllowed = allowed.some((a) => normalized.includes(a.replace(/[^a-z0-9_]/g, "")) || a.includes(normalized));
-      const finalProvider = isAllowed ? (normalized.includes("gmail") ? "gmail" : normalized.includes("calendar") ? "calendar" : normalized.includes("sheets") ? "sheets" : normalized) : provider;
+      const finalProvider = normalizeConnectProvider(input.provider);
       const reason = sanitizeText(input.reason || "", 200);
+      if (!finalProvider) {
+        // Provider sconosciuto: meglio un errore esplicito che una card che punta
+        // a un endpoint di autorizzazione inesistente.
+        return `request_integration_connect: provider "${sanitizeText(input.provider || "", 40)}" non supportato. Usa uno tra: ${CONNECT_PROVIDERS.join(", ")}.`;
+      }
       // Return a structured marker that the frontend will render as an inline connect card
       // The LLM will see this result and should explain that the user can connect now.
       return JSON.stringify({

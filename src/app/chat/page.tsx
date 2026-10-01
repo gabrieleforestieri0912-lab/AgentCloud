@@ -74,7 +74,7 @@ export default async function ChatPage(props: {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="min-h-dvh bg-neutral-950">
       <ChatInterface
         account={accountIdentityFromUser(user)}
         initialQuery={initialQuery}

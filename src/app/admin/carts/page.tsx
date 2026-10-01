@@ -45,7 +45,7 @@ export default async function AdminCartsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="min-h-dvh bg-neutral-950">
       <AppHeader variant="dashboard" title="Carrelli — Admin" subtitle={displayEmail} />
       <section className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">

@@ -61,6 +61,7 @@ import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 import { createClient } from "@/lib/supabase/client";
 import BrandLogo from "./BrandLogo";
 import AgentAvatar from "./AgentAvatar";
+import { avatarThumbnail } from "@/lib/avatar";
 import type { AccountIdentity } from "@/lib/account-identity";
 import AgentIcon from "./AgentIcon";
 import { AGENTS, localizeAgent, type Agent } from "@/lib/agents";
@@ -71,6 +72,14 @@ import {
 } from "./HeroSection";
 import ExportReportButton from "./ExportReportButton";
 import SubscribePaywallModal from "./SubscribePaywallModal";
+import {
+  chatTextZoom,
+  readChatTextSize,
+  readDefaultAgent,
+  saveChatTextSize,
+  saveDefaultAgent,
+  type ChatTextSize,
+} from "@/lib/chat-settings";
 
 type LocalMessage = {
   id: string;
@@ -162,14 +171,30 @@ export default function ChatInterface({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState(initialQuery || "");
   const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  // True da quando la risposta corrente dell'assistente ha iniziato lo
-  // streaming (la bolla cresce parola per parola). L'indicatore a tre puntini
-  // appare solo prima dell'arrivo della prima parola — mentre la macchina da
-  // scrivere è in funzione, i puntini restano nascosti.
-  const [hasPartialReply, setHasPartialReply] = useState(false);
+  // Conversazioni che stanno attualmente generando (una per conv; più conv
+  // possono streamare in parallelo dopo uno switch). isTyping / hasPartialReply
+  // sono DERIVATI dalla conversazione attiva: così uno switch a metà
+  // generazione non disabilita l'input di un'altra chat, l'indicatore resta
+  // nella chat giusta e la risposta non finisce nella chat sbagliata.
+  const [streamingConvs, setStreamingConvs] = useState<string[]>([]);
+  // True da quando la risposta della conv attiva ha iniziato lo streaming (la
+  // bolla cresce parola per parola). L'indicatore a tre puntini appare solo
+  // prima dell'arrivo della prima parola.
+  const [partialConvs, setPartialConvs] = useState<string[]>([]);
+  const isTyping = activeId !== null && streamingConvs.includes(activeId);
+  const hasPartialReply = activeId !== null && partialConvs.includes(activeId);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Scroll lock del body mentre il drawer della cronologia è aperto su mobile.
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileSidebarOpen]);
   const [sidebarSession, setSidebarSession] = useState<import("@supabase/supabase-js").Session | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   // L'identità arriva dal server (prop `account`): la sidebar mostra subito
@@ -187,11 +212,34 @@ export default function ChatInterface({
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [paywallSlug, setPaywallSlug] = useState<string | null>(null);
+  // Preferenze rapide (pannello della rotella): agente usato dalle nuove chat e
+  // dimensione del testo dell'area messaggi. Persistite in localStorage.
+  const [defaultAgentSlug, setDefaultAgentSlug] = useState("");
+  const [chatTextSize, setChatTextSize] = useState<ChatTextSize>("md");
   const initializedRef = useRef(false);
   const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
+  // Streaming per-conversazione anche come ref: la coda dei messaggi (Invio
+  // premuto mentre la chat genera) va processata alla fine dello stream, dove
+  // lo stato React del render corrente non è ancora aggiornato.
+  const streamingRef = useRef<Set<string>>(new Set());
+  // Messaggi in atteso per conversazione: la bolla è già visibile, l'invio
+  // all'API parte appena la generazione in corso termina.
+  const queueRef = useRef<Record<string, { text: string; pending: ChatAttachment[]; msgId: string }[]>>({});
+  // Bozze per conversazione: testo e allegati non ancora inviati. Quando si
+  // cambia chat la bozza corrente viene salvata qui e viene ripristinata quella
+  // di destinazione, così il testo o un'immagine preparati in una chat non
+  // "viaggiano" dentro un'altra e non finiscono nel messaggio sbagliato.
+  const draftsRef = useRef<Record<string, { input: string; attachments: ChatAttachment[] }>>({});
 
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Copia sincronizzata delle conversazioni: dentro sendMessage (async) lo
+  // stato React è quello del render precedente, quindi la cronologia va letta
+  // da qui per restare corretta anche quando parte un messaggio in coda.
+  const conversationsRef = useRef<LocalConversation[]>([]);
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
   // True finché l'utente è in fondo alla conversazione. L'auto-scroll scatta
   // solo allora: in streaming gli aggiornamenti parola per parola scorrono il
   // contenitore direttamente (istantaneo, niente animazione smooth che lotta
@@ -254,15 +302,6 @@ export default function ChatInterface({
     return [];
   }, [availableAgents]);
 
-  const activeAgentDisplayName =
-    selectedAgentSlugs.length === 0
-      ? dict.chat.assistantName
-      : selectedAgentSlugs.length === 1
-        ? effectiveAvailableAgents.find((a) => a.slug === selectedAgentSlugs[0])?.name ??
-          (agentLabel && selectedAgentSlugs[0] ? agentLabel : undefined) ??
-          dict.chat.assistantName
-        : `${selectedAgentSlugs.length} agenti`;
-
   // Catalogo localizzato per slug: serve agli avatar dei messaggi, alla pill
   // dell'agente che sta conversando e al selettore dell'header.
   const agentsBySlug = useMemo(() => {
@@ -270,6 +309,19 @@ export default function ChatInterface({
     for (const a of AGENTS) map.set(a.slug, localizeAgent(a, locale));
     return map;
   }, [locale]);
+
+  // Nome mostrato per la selezione attiva. Il catalogo dell'utente ha la
+  // precedenza, poi il catalogo statico: una chat riaperta (o aperta senza
+  // ?agent=) deve comunque mostrare il nome dell'agente selezionato.
+  const activeAgentDisplayName =
+    selectedAgentSlugs.length === 0
+      ? dict.chat.assistantName
+      : selectedAgentSlugs.length === 1
+        ? effectiveAvailableAgents.find((a) => a.slug === selectedAgentSlugs[0])?.name ??
+          agentsBySlug.get(selectedAgentSlugs[0])?.name ??
+          (agentLabel && selectedAgentSlugs[0] ? agentLabel : undefined) ??
+          dict.chat.assistantName
+        : `${selectedAgentSlugs.length} agenti`;
 
   /** Agente che ha prodotto una bolla (null per l'assistente generico). */
   const agentForMessage = useCallback(
@@ -305,17 +357,25 @@ export default function ChatInterface({
   // (immediata), poi — appena disponibile — la sessione letta nel browser, che
   // la sostituisce arricchendola con l'avatar.
   const accountEmail = sidebarSession?.user?.email || account?.email || "";
-  const accountAvatarUrl =
+  // Thumbnail piccolo: l'avatar è mostrato a 28–36px, non serve il formato originale.
+  const accountAvatarUrl = avatarThumbnail(
     sidebarSession?.user?.user_metadata?.avatar_url ||
-    sidebarSession?.user?.user_metadata?.picture ||
-    account?.avatarUrl ||
-    null;
+      sidebarSession?.user?.user_metadata?.picture ||
+      account?.avatarUrl ||
+      null,
+    64,
+  );
   const accountLabelBase =
     sidebarSession?.user?.user_metadata?.full_name ||
     sidebarSession?.user?.email ||
     account?.name ||
     account?.email ||
     "";
+  // Tooltip dell'avatar: nome e email quando entrambi presenti.
+  const accountTooltip =
+    accountLabelBase && accountEmail && accountLabelBase !== accountEmail
+      ? `${accountLabelBase} · ${accountEmail}`
+      : accountLabelBase || accountEmail || null;
 
   /** Agenti che l'utente può mettere nella conversazione (dal suo catalogo). */
   const selectableAgents = useMemo(() => {
@@ -608,8 +668,18 @@ export default function ChatInterface({
         const parsed = JSON.parse(raw) as LocalConversation[];
         if (Array.isArray(parsed) && parsed.length > 0) {
           setConversations((prev) => (prev.length === 0 ? parsed : prev));
-          const firstId = (parsed[0] as LocalConversation)?.id;
-          if (firstId) setActiveId((prev) => prev ?? firstId);
+          const first = parsed[0] as LocalConversation | undefined;
+          if (first?.id) {
+            setActiveId((prev) => prev ?? first.id);
+            // La conversazione riaperta porta con sé i suoi agenti: senza questo
+            // la selezione (vuota dopo un reload) li rimuoverebbe al primo
+            // invio, perché è la selezione corrente a essere salvata nel turno.
+            const slugs = first.agentSlugs ?? [];
+            if (slugs.length > 0) {
+              setSelectedAgentSlugs((prev) => (prev.length > 0 ? prev : slugs));
+              setActiveAgentId((prev) => prev || slugs[0] || "");
+            }
+          }
         }
       }
     } catch {
@@ -617,17 +687,46 @@ export default function ChatInterface({
     }
   }, []);
 
+  // Preferenze rapide salvate: si leggono al mount (solo client, localStorage)
+  // per non far divergere l'HTML server-rendered da quello idratato.
   useEffect(() => {
-    try {
-      if (conversations.length > 0) {
+    setDefaultAgentSlug(readDefaultAgent());
+    setChatTextSize(readChatTextSize());
+  }, []);
+
+  function handleDefaultAgentChange(slug: string) {
+    setDefaultAgentSlug(slug);
+    saveDefaultAgent(slug);
+  }
+
+  function handleChatTextSizeChange(size: ChatTextSize) {
+    setChatTextSize(size);
+    saveChatTextSize(size);
+  }
+
+  // Salvataggio della cronologia. In streaming le conversazioni cambiano a
+  // ogni token: serializzare l'intero storico (immagini incluse, come data URL)
+  // a ogni chunk blocca il main thread. Si scrive quindi con un piccolo debounce
+  // e si forza la scrittura se la pagina viene nascosta/chiusa.
+  useEffect(() => {
+    if (conversations.length === 0) return;
+    const write = () => {
+      try {
         localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(conversations));
-      } else if (initializedRef.current) {
-        // mantieni la cronologia vuota come array vuoto, non cancellare subito
-        // per evitare sfarfallii
+      } catch {
+        // Storage pieno o non disponibile — la cronologia resta in memoria.
       }
-    } catch {
-      // ignora
-    }
+    };
+    const timer = setTimeout(write, 400);
+    const flush = () => {
+      clearTimeout(timer);
+      write();
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("pagehide", flush);
+    };
   }, [conversations]);
 
   useEffect(() => {
@@ -650,14 +749,17 @@ export default function ChatInterface({
   // il bottone reset dell'hero ha archiviato. Entrambe le chiavi vengono
   // consumate all'import.
   useEffect(() => {
-    try {
-      type StoredMsg = {
+    try {      type StoredMsg = {
         id?: string;
         role: "user" | "assistant";
         content: string;
         created_at?: string;
         error?: boolean;
+        // Allegati (immagini/file) salvati dall'hero: senza di qui l'immagine
+        // inviata nella demo sparisce alla migrazione in /chat.
+        attachments?: Pick<ChatAttachment, "id" | "name" | "kind" | "previewUrl">[];
       };
+
       const toConversation = (stored: StoredMsg[]): LocalConversation => ({
         id: generateId(),
         title: getConvTitle(stored as LocalMessage[], dict.chat.newChat),
@@ -667,6 +769,14 @@ export default function ChatInterface({
           content: m.content,
           created_at: m.created_at || new Date().toISOString(),
           error: m.error,
+          attachments: Array.isArray(m.attachments)
+            ? m.attachments.filter((a) => {
+                if (!a || typeof a.id !== "string" || typeof a.name !== "string") return false;
+                // Le immagini senza anteprima non hanno nulla da mostrare
+                if (a.kind === "image" && typeof a.previewUrl !== "string") return false;
+                return true;
+              })
+            : undefined,
         })),
         created_at: new Date().toISOString(),
       });
@@ -709,11 +819,20 @@ export default function ChatInterface({
       // marketplace su /chat?agent=...) invece di restare disabilitato.
       if (!initializedRef.current) {
         initializedRef.current = true;
+        // Agenti della prima chat: quelli con cui l'utente è arrivato
+        // (?agent=...) oppure l'agente predefinito scelto nel pannello rapido.
+        const presetSlug = readDefaultAgent();
+        const initialSlugs = selectedAgentSlugs.length > 0
+          ? [...selectedAgentSlugs]
+          : presetSlug
+            ? [presetSlug]
+            : [];
         const conv: LocalConversation = {
           id: generateId(),
           title: dict.chat.newChat,
           messages: [],
           created_at: new Date().toISOString(),
+          agentSlugs: initialSlugs,
         };
         // La cronologia già caricata ha la precedenza: sovrascrivendola con
         // questa conversazione vuota l'intera cronologia dell'utente spariva a
@@ -726,7 +845,29 @@ export default function ChatInterface({
     }
   }, []);
 
+  // Salva la bozza della chat che sta per essere lasciata (testo + allegati):
+  // `attach.take()` svuota gli allegati live restituendoli come snapshot.
+  function saveActiveDraft() {
+    if (!activeId) return;
+    draftsRef.current[activeId] = { input, attachments: attach.take() };
+  }
+
+  // Ripristina la bozza della chat di destinazione (vuota se non ce n'è una).
+  // L'entrata viene consumata: da qui in poi la bozza "live" è la fonte di
+  // verità e viene risalvata solo allo switch successivo, così non rimangono
+  // copie stale nel ref.
+  function restoreDraft(id: string) {
+    const draft = draftsRef.current[id];
+    delete draftsRef.current[id];
+    setInput(draft?.input ?? "");
+    attach.restore(draft?.attachments ?? []);
+  }
+
   function switchConversation(id: string) {
+    if (id !== activeId) {
+      saveActiveDraft();
+      restoreDraft(id);
+    }
     setActiveId(id);
     setMobileSidebarOpen(false);
     setConversationMenuId(null);
@@ -740,23 +881,36 @@ export default function ChatInterface({
   }
 
   function handleNewChat() {
+    // Conserva la bozza della chat corrente prima di partire da una vuota.
+    saveActiveDraft();
+    // Agente predefinito scelto nel pannello rapido (vuoto = chat generica).
+    const agentSlugs = defaultAgentSlug ? [defaultAgentSlug] : [];
     const conv: LocalConversation = {
       id: generateId(),
       title: dict.chat.newChat,
       messages: [],
       created_at: new Date().toISOString(),
-      agentSlugs: [...selectedAgentSlugs],
+      agentSlugs,
     };
     setConversations((prev) => [conv, ...prev]);
     setActiveId(conv.id);
+    setSelectedAgentSlugs(agentSlugs);
+    setActiveAgentId(agentSlugs[0] ?? "");
+    restoreDraft(conv.id);
     setMobileSidebarOpen(false);
   }
 
   // Azioni conversazione: chiamate dal menù "⋯" (il menù chiude se stesso).
   function handleDelete(id: string) {
+    delete draftsRef.current[id];
+    delete queueRef.current[id];
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (id === activeId) {
+      // La bozza live apparteneva alla conversazione eliminata: si ripulisce,
+      // così non resta testo orfano che verrebbe scartato al primo switch.
       setActiveId(null);
+      setInput("");
+      attach.clear();
     }
     setConversationMenuId(null);
   }
@@ -788,25 +942,10 @@ export default function ChatInterface({
     await sendMessage(text, convId, []);
   }
 
-  async function sendMessage(
-    text: string,
-    convId: string,
-    pending: ChatAttachment[] = [],
-  ) {
-    const apiText = composeUserContent(text, pending);
-    const visionBlocks = toVisionBlocks(pending);
-    const hasImages = visionBlocks.length > 0;
-    const visionText = buildVisionText(apiText, hasImages);
-    const apiContent: unknown = hasImages
-      ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown)
-      : apiText;
-    // Evita invio vuoto: serve testo o almeno un'immagine
-    if ((!apiText || !apiText.trim()) && visionBlocks.length === 0) return;
-    if (!convId) return;
-    if (isTyping) return;
-    setIsAtBottom(true);
-    stickToBottom.current = true;
-
+  // Mostra subito la bolla del messaggio utente (con il titolo aggiornato).
+  // Usata sia dall'invio immediato sia dalla coda, così un messaggio premuto
+  // durante la generazione è visibile da subito e non sembra mai perduto.
+  function appendUserMessage(text: string, convId: string, pending: ChatAttachment[]): LocalMessage {
     // Nel fumetto utente non mostrare mai il filename: usa testo digitato o placeholder generico
     const displayText = text.trim() || (pending.length > 0 ? (pending.some((a) => a.kind === "image") ? "Immagine allegata" : "File allegato") : "");
     const userMsg: LocalMessage = {
@@ -821,7 +960,6 @@ export default function ChatInterface({
         previewUrl: a.previewUrl,
       })),
     };
-
     setConversations((prev) =>
       prev.map((c) =>
         c.id === convId
@@ -833,10 +971,43 @@ export default function ChatInterface({
           : c,
       ),
     );
-
-    setIsTyping(true);
-    setHasPartialReply(false);
     if (inputCentered) setInputCentered(false);
+    return userMsg;
+  }
+
+  async function sendMessage(
+    text: string,
+    convId: string,
+    pending: ChatAttachment[] = [],
+    preAddedMsgId?: string,
+  ) {
+    const apiText = composeUserContent(text, pending);
+    const visionBlocks = toVisionBlocks(pending);
+    const hasImages = visionBlocks.length > 0;
+    const visionText = buildVisionText(apiText, hasImages);
+    const apiContent: unknown = hasImages
+      ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown)
+      : apiText;
+    // Evita invio vuoto: serve testo o almeno un'immagine
+    if ((!apiText || !apiText.trim()) && visionBlocks.length === 0) return;
+    if (!convId) return;
+    // Stessa conversazione già in generazione: rifiuta. La coda (Invio premuto
+    // durante lo stream) è gestita in handleSend e riparte da qui a fine stream;
+    // il ref evita lo stato React stale nelle chiamate in coda.
+    if (streamingRef.current.has(convId)) return;
+    setIsAtBottom(true);
+    stickToBottom.current = true;
+
+    // Messaggio già mostrato (caso coda): recupera la bolla esistente per non
+    // duplicarla. Senza id la bolla viene creata qui (invio normale).
+    let userMsg: LocalMessage | null = preAddedMsgId
+      ? conversationsRef.current.find((c) => c.id === convId)?.messages.find((m) => m.id === preAddedMsgId) ?? null
+      : null;
+    if (!userMsg) userMsg = appendUserMessage(text, convId, pending);
+
+    streamingRef.current.add(convId);
+    setStreamingConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
+    setPartialConvs((prev) => prev.filter((id) => id !== convId));
 
     // Aggiorna un singolo messaggio dell'assistente man mano che lo stream
     // arriva. Restituisce l'id stabile così i chunk successivi aggiornano la
@@ -892,8 +1063,11 @@ export default function ChatInterface({
       // Invia l'intera cronologia della conversazione così l'AI resta coerente
       // nei messaggi successivi (e risponde sempre sui dati piattaforma più
       // recenti).
-      const history =
-        conversations.find((c) => c.id === convId)?.messages ?? [];
+      const history = (
+        conversationsRef.current.find((c) => c.id === convId)?.messages ?? []
+        // La bolla appena creata è aggiunta sotto come apiContent: toglierla
+        // dalla cronologia evita di inviare due volte lo stesso messaggio.
+      ).filter((m) => m.id !== userMsg.id);
       const apiMessages = [
         ...history.map((m) => ({ role: m.role, content: m.content })),
         { role: "user" as const, content: apiContent },
@@ -974,7 +1148,7 @@ export default function ChatInterface({
               responseText += json.content;
               if (!assistantId) {
                 assistantId = generateId();
-                setHasPartialReply(true);
+                setPartialConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
               }
               patchAssistant(assistantId, prefix + localText, false, agent);
             }
@@ -987,7 +1161,7 @@ export default function ChatInterface({
                 responseText += marker;
                 if (!assistantId) {
                   assistantId = generateId();
-                  setHasPartialReply(true);
+                  setPartialConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
                 }
                 patchAssistant(assistantId, prefix + localText, false, agent);
               }
@@ -1044,15 +1218,28 @@ export default function ChatInterface({
           ? (streamErrorMessage as unknown as string)
           : dict.common.aiUnavailable;
       const assistantId = generateId();
-      setHasPartialReply(true);
+      setPartialConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
       patchAssistant(assistantId, message, true);
     }
 
-    setIsTyping(false);
+    streamingRef.current.delete(convId);
+    setStreamingConvs((prev) => prev.filter((id) => id !== convId));
     // Notifica alla campanella che potrebbero esserci nuove notifiche agente
     try {
       window.dispatchEvent(new CustomEvent("agentcloud:notifications-refresh"));
     } catch {}
+
+    // Coda: l'utente ha premuto Invio mentre la chat generava. La bolla è già
+    // visibile; ora che la risposta è completa il messaggio parte davvero.
+    const queue = queueRef.current[convId];
+    const next = queue && queue.length > 0 ? queue.shift() : undefined;
+    if (queue && queue.length === 0) delete queueRef.current[convId];
+    if (next) {
+      // Un tick di attesa: la cronologia (ref) deve includere la risposta
+      // appena generata prima di inviare il messaggio in coda.
+      await new Promise((r) => setTimeout(r, 0));
+      await sendMessage(next.text, convId, next.pending, next.msgId);
+    }
   }
 
   // Freemium: 4 messaggi per agente non posseduto
@@ -1082,10 +1269,20 @@ export default function ChatInterface({
   async function handleSend() {
     const text = input.trim();
     if ((!text && attach.attachments.length === 0) || !activeId) return;
+    // Il messaggio viene SEMPRE consumato dall'input: se la chat sta già
+    // generando va in coda (bolla subito visibile, invio appena la risposta in
+    // corso finisce) invece di sparire silenziosamente. Il bottone invio è
+    // disabilitato durante lo stream, ma Enter non lo è.
+    const convId = activeId;
     const pending = attach.take();
     setInput("");
     inputRef.current?.focus();
-    await sendMessage(text, activeId, pending);
+    if (streamingRef.current.has(convId)) {
+      const userMsg = appendUserMessage(text, convId, pending);
+      (queueRef.current[convId] ||= []).push({ text, pending, msgId: userMsg.id });
+      return;
+    }
+    await sendMessage(text, convId, pending);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -1195,7 +1392,9 @@ export default function ChatInterface({
   );
 
   return (
-    <div className="flex h-dvh bg-neutral-950">
+    // data-streaming: stato di generazione della chat attiva, usato dagli E2E
+    // per attendere la fine dello stream senza dipendere dal testo localizzato.
+    <div className="flex h-dvh bg-neutral-950" data-streaming={isTyping ? "true" : "false"}>
       {/* Chat onboarding tour */}
       {showOnboarding && (
         <ChatOnboarding onComplete={() => setShowOnboarding(false)} />
@@ -1227,17 +1426,10 @@ export default function ChatInterface({
               setSidebarOpen(false);
             }}
             aria-label={dict.chat.closeSidebar}
-            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+            className="w-11 h-11 lg:w-9 lg:h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
           >
             <PanelLeftClose size={16} />
           </button>
-          <Link
-            href="/"
-            data-onboard="home"
-            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
-          >
-            <Home size={16} />
-          </Link>
         </div>
 
         {/* Navigation — pill style: Chat / Tools / Agents */}
@@ -1363,7 +1555,7 @@ export default function ChatInterface({
                       aria-haspopup="menu"
                       aria-expanded={conversationMenuId === conv.id}
                       aria-label={dict.chat.conversationOptions}
-                      className={`p-1.5 flex items-center justify-center rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-all ${
+                      className={`p-1.5 min-h-11 min-w-11 lg:min-h-0 lg:min-w-0 flex items-center justify-center rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-all ${
                         conversationMenuId === conv.id
                           ? "opacity-100 bg-white/10 text-white"
                           : conv.id === activeId
@@ -1528,12 +1720,19 @@ export default function ChatInterface({
         <AppHeader
           variant="chat"
           agentLabel={activeAgentDisplayName}
+          quickSettings={{
+            agents: selectableAgents.map((a) => ({ slug: a.slug, name: a.name })),
+            defaultAgentSlug,
+            onDefaultAgentChange: handleDefaultAgentChange,
+            textSize: chatTextSize,
+            onTextSizeChange: handleChatTextSizeChange,
+          }}
         />
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
           {/* Trigger sidebar su mobile */}
           <button
             onClick={() => setMobileSidebarOpen(true)}
-            className="lg:hidden fixed bottom-6 left-4 z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
+            className="lg:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-[calc(1rem+env(safe-area-inset-left))] z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
             title={dict.chat.openSidebar}
           >
             <MessageSquare size={18} className="text-white" />
@@ -1541,6 +1740,7 @@ export default function ChatInterface({
 
           {/* Area chat principale */}
           <main
+            style={chatTextSize === "md" ? undefined : { zoom: chatTextZoom(chatTextSize) }}
             className="flex-1 flex flex-col min-h-0 bg-neutral-900 relative"
         onDragEnter={attach.onDragEnter}
         onDragOver={attach.onDragOver}
@@ -1872,8 +2072,23 @@ export default function ChatInterface({
                   </p>
                 </div>
                 {msg.role === "user" && (
-                  <div className="w-7 h-7 rounded-lg bg-neutral-700 flex items-center justify-center shrink-0">
+                  <div
+                    className="relative mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-700"
+                    title={accountTooltip ?? undefined}
+                    aria-label={accountTooltip ?? undefined}
+                  >
+                    {/* Fallback iniziale: resta visibile se l'avatar non carica. */}
                     <span className="text-white text-xs font-bold">U</span>
+                    {accountAvatarUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={accountAvatarUrl}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                        className="absolute inset-0 h-full w-full object-cover"
+                        onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -1938,7 +2153,7 @@ export default function ChatInterface({
         {/* Input fluttuante: contenitore trasparente con fade sul contenuto */}
         <div
           data-onboard="chat-input"
-          className="absolute inset-x-0 bottom-0 z-10 px-4 sm:px-6 pb-4 pt-8 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent"
+          className="absolute inset-x-0 bottom-0 z-10 px-4 sm:px-6 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent"
           onDragEnter={attach.onDragEnter}
           onDragOver={attach.onDragOver}
           onDragLeave={attach.onDragLeave}

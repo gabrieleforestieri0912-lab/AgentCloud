@@ -248,7 +248,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     e.preventDefault();
     if (isSubmitting) return;
     if (honeypotValue.trim().length > 0) {
-      setError("Richiesta non valida.");
+      setError(w.invalidRequest as string);
       return;
     }
     const validation = validateAndSanitizeEmail(email, true);
@@ -450,7 +450,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       return;
     }
     if (trimmed.length > 80) {
-      setWelcomeError("Il nome è troppo lungo (max 80).");
+      setWelcomeError(w.welcomeNameTooLong as string);
       return;
     }
     setWelcomeSaving(true);
@@ -473,6 +473,20 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     } finally {
       setWelcomeSaving(false);
     }
+  };
+
+  // Etichette della preview dashboard (mock) tradotte come il resto della UI.
+  const mockNav = ((w.mockNav as string[] | undefined) ?? []).slice(0, 6);
+  // "Sei #{position} in coda su {total}" spezzato nei suoi segmenti, così il
+  // numero della posizione resta evidenziato nel markup senza hardcoding.
+  const [queueBeforePosition = "", queueRest = ""] = (
+    (w.rankQueueLine as string | undefined) ?? "Sei #{position} in coda su {total}"
+  ).split("#{position}");
+  const [queueAfterPosition = "", queueEnd = ""] = queueRest.split("{total}");
+  const rankQueueParts = {
+    before: queueBeforePosition,
+    after: queueAfterPosition,
+    end: queueEnd,
   };
 
   return (
@@ -579,7 +593,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                     <BarChart3 className="h-4 w-4 shrink-0 text-[#E2A33D]" /> {w.rankTitle as string}
                   </h3>
                   <span className="shrink-0 rounded-full bg-[#E2A33D]/15 px-2.5 py-1 text-xs font-bold text-[#E2A33D]" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
-                    #{ranking?.position ?? queue.position} su {ranking?.total ?? queue.total ?? total}
+                    #{ranking?.position ?? queue.position} / {ranking?.total ?? queue.total ?? total}
                   </span>
                 </div>
 
@@ -587,7 +601,11 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 <div className="bg-[#F7F5F0] p-4 xs:p-5" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
                   <div className="text-center">
                     <p className="text-sm font-bold" style={{ color: "#15231F", fontFamily: "'Space Grotesk', sans-serif" }}>
-                      Sei <span style={{ color: "#E2A33D" }}>#{ranking?.position ?? queue.position}</span> in coda su {ranking?.total ?? queue.total ?? total}
+                      {rankQueueParts.before}
+                      <span style={{ color: "#E2A33D" }}>#{ranking?.position ?? queue.position}</span>
+                      {rankQueueParts.after}
+                      {ranking?.total ?? queue.total ?? total}
+                      {rankQueueParts.end}
                     </p>
                     <p className="mt-1 text-xs leading-relaxed" style={{ color: "#4B6357" }}>
                       {ranking
@@ -665,7 +683,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
 
                 <div className="bg-neutral-900 px-5 py-3">
                   <button onClick={openForm} className="flex w-full items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
-                    <Copy className="h-4 w-4" /> Vedi dettagli referral
+                    <Copy className="h-4 w-4" /> {w.rankDetailsCta as string}
                   </button>
                 </div>
               </motion.div>
@@ -832,7 +850,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             ))}
             <div className="rounded-2xl border border-brand-500/20 bg-brand-500/10 p-5">
               <div className="flex items-center gap-2 text-sm font-bold text-white">
-                <Sparkles size={16} className="text-brand-400" /> Come funziona
+                <Sparkles size={16} className="text-brand-400" /> {w.howItWorksBadge as string}
               </div>
               <ol className="mt-3 space-y-2 text-sm text-neutral-300">
                 <li className="flex gap-2">
@@ -1042,7 +1060,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 <button
                   onClick={closeWelcome}
                   className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white"
-                  aria-label="Chiudi"
+                  aria-label={w.modalClose as string}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -1182,12 +1200,12 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                         <span className="text-[7px] font-bold tracking-tight text-white">AgentCloud</span>
                       </div>
                       {[
-                        { label: "Dashboard", icon: LayoutDashboard, active: true },
-                        { label: "Chat", icon: MessageSquare, active: false },
-                        { label: "Agenti", icon: Store, active: false },
-                        { label: "Integrazioni", icon: Plug, active: false },
-                        { label: "Fatturazione", icon: CreditCard, active: false },
-                        { label: "Impostazioni", icon: Settings, active: false },
+                        { label: mockNav[0] ?? "Dashboard", icon: LayoutDashboard, active: true },
+                        { label: mockNav[1] ?? "Chat", icon: MessageSquare, active: false },
+                        { label: mockNav[2] ?? "Agenti", icon: Store, active: false },
+                        { label: mockNav[3] ?? "Integrazioni", icon: Plug, active: false },
+                        { label: mockNav[4] ?? "Fatturazione", icon: CreditCard, active: false },
+                        { label: mockNav[5] ?? "Impostazioni", icon: Settings, active: false },
                       ].map(({ label, icon: Icon, active }) => (
                         <div
                           key={label}
@@ -1201,7 +1219,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                       ))}
                       <div className="mt-auto space-y-1">
                         <div className="rounded-lg bg-white/[0.04] border border-white/5 p-1.5">
-                          <div className="text-[6px] font-bold uppercase tracking-widest text-neutral-500">Utilizzo</div>
+                          <div className="text-[6px] font-bold uppercase tracking-widest text-neutral-500">{w.mockUsageLabel as string}</div>
                           <div className="mt-1 h-1 overflow-hidden rounded-full bg-white/10">
                             <div className="h-full w-[68%] rounded-full bg-linear-to-r from-brand-500 to-pink-500" />
                           </div>
@@ -1217,8 +1235,8 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                     {/* Main — compatto */}
                     <div className="flex min-w-0 flex-1 flex-col bg-neutral-950 p-2.5">
                       <div className="flex items-baseline justify-between">
-                        <span className="text-[9px] font-semibold uppercase tracking-widest text-neutral-500">Task completati</span>
-                        <span className="flex items-center gap-1 text-xs font-bold text-white">— <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[7px] font-bold text-amber-300">Esempio</span></span>
+                        <span className="text-[9px] font-semibold uppercase tracking-widest text-neutral-500">{w.mockTasksLabel as string}</span>
+                        <span className="flex items-center gap-1 text-xs font-bold text-white">— <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[7px] font-bold text-amber-300">{w.mockExampleBadge as string}</span></span>
                       </div>
                       <div className="mt-2 grid h-10 flex-1 grid-cols-7 items-end gap-1 opacity-60">
                         {[40, 65, 45, 80, 60, 90, 75].map((h, i) => (
@@ -1226,7 +1244,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                         ))}
                       </div>
                       <div className="mt-1.5 flex gap-1">
-                        <span className="text-[7px] text-neutral-500">7 giorni</span>
+                        <span className="text-[7px] text-neutral-500">{w.mockDaysLabel as string}</span>
                       </div>
                     </div>
                   </div>

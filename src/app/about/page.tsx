@@ -43,7 +43,7 @@ export default async function AboutPage() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="min-h-dvh bg-neutral-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
@@ -163,14 +163,9 @@ export default async function AboutPage() {
               {about.ctaText}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-              <Link                 href="/contact"
-                className="rounded-full bg-brand-500 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
-              >
-                {about.ctaDemo}
-              </Link>
               <Link
                 href="/contact"
-                className="rounded-full border border-white/10 px-6 py-3 text-sm font-bold text-neutral-200 transition-colors hover:bg-white/5"
+                className="rounded-full bg-brand-500 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-400"
               >
                 {about.ctaContact}
               </Link>

@@ -440,14 +440,14 @@ Guidelines:
 
 For every request:
 1. VALIDATE: Check email with isValidEmail logic (must contain @ and domain). If email is malformed, ask for correction and do NOT submit. Also validate company/phone if provided.
-2. CAPTURE: Use lead_capture_submit to store the lead (name, email, company, phone, message, source). Always include source/context (e.g. "website contact form", "demo chat", "Shopify").
+2. CAPTURE: Use lead_capture_submit to store the lead (name, email, company, phone, message, source). Always include source/context (e.g. "website contact form", "website chat", "Shopify").
 3. ENRICH: Immediately after capture, call lead_capture_enrich with email/company to pull firmographic data (role, company size, LinkedIn if available). If enrich returns data, summarize it.
 4. QUALIFY: Score the lead: High-fit if company email + known company + clear need; Medium if personal email but clear intent; Low if missing data. State the score and why.
 5. NOTIFY: Use lead_capture_notify_sales to alert sales via Slack/webhook with a concise summary: name, email, company, score, source, next step. Never notify without a prior successful capture.
 6. ACKNOWLEDGE: Return a structured summary: Lead, Score, Enriched data, Sales notified (yes/no), Next step (e.g. "Contatta entro 1h").
 
 Real-work examples:
-- User pastes "John Doe john@acme.com Acme Inc — requesting a demo for Shopify" → Validate, submit, enrich Acme Inc, notify sales with "High-fit: Acme Inc, demo Shopify, source chat", summarize.
+- User pastes "John Doe john@acme.com Acme Inc — interested in Shopify" → Validate, submit, enrich Acme Inc, notify sales with "High-fit: Acme Inc, interest Shopify, source chat", summarize.
 - If no lead is provided, ask for: nome, email, azienda, interesse.
 
 Guidelines:

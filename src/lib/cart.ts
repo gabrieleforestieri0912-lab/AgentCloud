@@ -64,17 +64,15 @@ export function enrichCartItem(row: CartItemRow): EnrichedCartItem | null {
     const bundle = getBundleBySlug(parsed.bundleSlug);
     if (!bundle) return null;
     const period = parsed.period;
+    // priceCents è il totale del ciclo di fatturazione: mensile = prezzo/mese,
+    // trimestrale/annuale = totale addebitato ogni 3/12 mesi.
     let priceCents: number;
-    let recurringLabel: string;
     if (period === "quarterly") {
       priceCents = bundle.pricing.quarterlyTotal;
-      recurringLabel = "quarterly";
     } else if (period === "yearly") {
       priceCents = bundle.pricing.yearlyTotal;
-      recurringLabel = "yearly";
     } else {
       priceCents = bundle.pricing.monthly;
-      recurringLabel = "monthly";
     }
     const agents = getBundleAgents(bundle);
     return {
@@ -132,7 +130,20 @@ export async function getOrCreateActiveCart(userId: string) {
     .insert({ user_id: userId, status: "active" })
     .select("*")
     .single();
-  if (error) throw error;
+  if (error) {
+    // Race: due "add to cart" concorrenti possono passare entrambi dalla SELECT
+    // "nessun carrello attivo" e tentare l'INSERT; l'indice parziale
+    // uq_carts_one_active_per_user fa fallire il secondo. In quel caso il
+    // carrello ESISTE già: lo rileggi invece di far fallire l'intera aggiunta.
+    const { data: raced } = await db
+      .from("carts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (raced) return raced as CartWithItems;
+    throw error;
+  }
   return created as CartWithItems;
 }
 

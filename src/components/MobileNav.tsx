@@ -17,6 +17,7 @@ import { AGENTS, AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agent
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
 import { createClient } from "@/lib/supabase/client";
+import { avatarThumbnail } from "@/lib/avatar";
 import type { Session } from "@supabase/supabase-js";
 
 type MobileNavProps = {
@@ -60,7 +61,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   const isSignedIn = Boolean(session);
   const userMeta = session?.user?.user_metadata as { full_name?: string; avatar_url?: string; picture?: string } | undefined;
   const rawAvatarUrl = userMeta?.avatar_url || userMeta?.picture || null;
-  const avatarUrl = rawAvatarUrl ? rawAvatarUrl.replace(/=s\d+-c$/, "=s200-c") : null;
+  const avatarUrl = avatarThumbnail(rawAvatarUrl, 64);
   const userEmail = session?.user?.email || null;
   const userInitials = isSignedIn
     ? (userMeta?.full_name || session?.user?.email || "?")

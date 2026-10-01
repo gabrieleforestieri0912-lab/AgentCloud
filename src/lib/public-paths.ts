@@ -19,8 +19,8 @@ export const PUBLIC_PATHS = [
   // ricerca indicizzano (vedi anche sitemap.ts / robots.ts).
   "/",
   "/about",
+  "/mobile",
   "/integrations",
-  "/demo",
   "/agents",
   "/a", // pagine chat pubbliche dell'agente
   "/agent", // pagine chat pubbliche dell'agente (stessa superficie di anteprima di /a)
@@ -61,7 +61,6 @@ export const PUBLIC_PATHS = [
   "/api/agent/run",
   "/api/extension/session",
   "/api/user/usage",
-  "/api/demo/request",
   "/api/waitlist",
   "/api/contact",
   "/api/sitemap",

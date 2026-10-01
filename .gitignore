@@ -43,6 +43,10 @@ tsconfig.tsbuildinfo
 
 # build artifacts
 .esbuild-test-out.mjs
+# probe dei tool degli agenti: bundle generato da tools-probe/build.cjs
+tools-probe/probe.mjs
+# test del carrello: bundle generato da cart-probe/build.cjs
+cart-probe/dist/
 
 # logs
 logs/

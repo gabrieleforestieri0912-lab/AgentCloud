@@ -232,7 +232,7 @@ export default function AgentChatPage() {
 
   if (!agent) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-dvh bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <Bot size={48} className="mx-auto text-neutral-600 mb-4" />
           <h1 className="text-2xl font-bold text-white mb-2">

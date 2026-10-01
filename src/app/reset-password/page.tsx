@@ -97,7 +97,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black">
+    <main className="min-h-dvh bg-black">
       <Navbar />
       <section className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-4">
         <div className="w-full max-w-md">

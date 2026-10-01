@@ -29,7 +29,7 @@ export default function InstallPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen">
+      <main className="min-h-dvh">
         <InstallClient />
       </main>
       <Footer />

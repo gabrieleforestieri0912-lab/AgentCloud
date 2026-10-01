@@ -35,6 +35,7 @@ import {
 import { buildVisionText, composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import SubscribePaywallModal from "@/components/SubscribePaywallModal";
+import { useAccountSession, accountTooltipLabel } from "@/lib/use-account-session";
 import type { Agent } from "@/lib/agents";
 import type { getDetailEnrichment } from "@/lib/agents/agent-detail-enrichment";
 
@@ -62,6 +63,10 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
   const { dict } = useLanguage();
   const attachLabels = chatAttachLabels(dict);
   const attach = useChatAttachments();
+  // Avatar dell'account nei messaggi utente (null per i visitatori anonimi).
+  const { avatarUrl: accountAvatarUrl, name: accountName, email: accountEmail } = useAccountSession();
+  // Tooltip dell'avatar: nome e email quando disponibili.
+  const accountTooltip = accountTooltipLabel(accountName, accountEmail);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
@@ -520,8 +525,23 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
                 </div>
               </div>
               {msg.role === "user" && (
-                <div className="w-8 h-8 rounded-xl bg-neutral-700 flex items-center justify-center shrink-0">
+                <div
+                  className="relative w-8 h-8 rounded-xl bg-neutral-700 flex items-center justify-center shrink-0 overflow-hidden"
+                  title={accountTooltip ?? undefined}
+                  aria-label={accountTooltip ?? undefined}
+                >
+                  {/* Fallback icona: resta visibile se l'avatar non carica. */}
                   <User size={14} className="text-white" />
+                  {accountAvatarUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={accountAvatarUrl}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+                    />
+                  )}
                 </div>
               )}
             </div>

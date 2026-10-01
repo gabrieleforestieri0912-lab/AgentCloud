@@ -43,7 +43,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="relative border-t border-white/5 text-white">
+    <footer className="relative border-t border-white/5 pb-[env(safe-area-inset-bottom)] text-white">
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/70 to-transparent" />
       <div
         className="pointer-events-none absolute inset-0 select-none"
@@ -71,12 +71,12 @@ export default function Footer() {
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.footer.contact}</span>
             <ul className="flex flex-col gap-3">
               <li>
-                <a href="tel:+393519863021" className="text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                <a href="tel:+393519863021" className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
                   {dict.footer.phone}
                 </a>
               </li>
               <li>
-                <a href="mailto:info@agentcloud.agency" className="text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                <a href="mailto:info@agentcloud.agency" className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
                   {dict.footer.email}
                 </a>
               </li>
@@ -89,7 +89,7 @@ export default function Footer() {
             <ul className="flex flex-col gap-3">
               {socialLinks.map(({ label, href }) => (
                 <li key={label}>
-                  <Link href={href} target="_blank" rel="noopener noreferrer" className="text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                  <Link href={href} target="_blank" rel="noopener noreferrer" className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
                     {label}
                   </Link>
                 </li>
@@ -102,20 +102,26 @@ export default function Footer() {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-neutral-500">
             <span className="select-none">{dict.footer.rights}</span>
             <Link
+              href="/mobile"
+              className="block py-3 text-neutral-400 hover:text-brand-400 transition-colors"
+            >
+              {dict.mobile.badge}
+            </Link>
+            <Link
               href="/privacy"
-              className="text-neutral-400 hover:text-brand-400 transition-colors"
+              className="block py-3 text-neutral-400 hover:text-brand-400 transition-colors"
             >
               {dict.footer.privacy}
             </Link>
             <Link
               href="/terms"
-              className="text-neutral-400 hover:text-brand-400 transition-colors"
+              className="block py-3 text-neutral-400 hover:text-brand-400 transition-colors"
             >
               {dict.footer.terms}
             </Link>
             <Link
               href="/refunds"
-              className="text-neutral-400 hover:text-brand-400 transition-colors"
+              className="block py-3 text-neutral-400 hover:text-brand-400 transition-colors"
             >
               {dict.footer.refunds}
             </Link>
@@ -127,7 +133,7 @@ export default function Footer() {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group text-neutral-500 hover:text-white transition-colors"
+                className="group inline-flex h-11 w-11 items-center justify-center text-neutral-500 hover:text-white transition-colors"
                 aria-label={label}
               >
                 <span className="sr-only">{label}</span>

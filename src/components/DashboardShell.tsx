@@ -35,6 +35,16 @@ export default function DashboardShell({
       })
       .catch(() => {});
   }, []);
+
+  // Scroll lock del body mentre il drawer laterale è aperto su mobile.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
   const nav = [
     { href: "/dashboard", label: ds.navDashboard, icon: LayoutDashboard },
     { href: "/chat", label: ds.navChat, icon: MessageSquare },
@@ -69,7 +79,7 @@ export default function DashboardShell({
             </span>
             <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
           </Link>
-          <button onClick={() => setMobileOpen(false)} className="lg:hidden flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all">
+          <button onClick={() => setMobileOpen(false)} className="lg:hidden flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all">
             <X size={16} />
           </button>
         </div>
@@ -113,12 +123,7 @@ export default function DashboardShell({
           </button>
           <span className="text-sm font-bold text-white">{ds.mobileTitle}</span>
         </div>
-        <div className="hidden lg:block">
-          <AppHeader variant="dashboard" subtitle={email} />
-        </div>
-        <div className="lg:hidden">
-          <AppHeader variant="dashboard" subtitle={email} />
-        </div>
+        <AppHeader variant="dashboard" subtitle={email} />
         <div className="flex-1 overflow-y-auto bg-neutral-950">
           {children}
         </div>

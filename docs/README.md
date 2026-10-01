@@ -75,7 +75,7 @@ ACCESS_CODE=…
 Gli schemi Supabase sono separati per fase:
 
 - **`supabase/schema-waitlist.sql`** — fase waitlist: registra solo l'utente (`profiles` + trigger auth), raccoglie le email (`waitlist`) e include `rate_limits` con le RPC per il rate limiting dell'endpoint waitlist.
-- **`supabase/schema.sql`** — piattaforma completa (quando è disponibile): aggiunge agenti, billing/usage (`subscriptions`, `user_agents`, `agent_runs`), notifiche azioni agenti (`agent_notifications`), `demo_requests`, `waitlist`, `rate_limits` e il bootstrap di `agents_registry`.
+- **`supabase/schema.sql`** — piattaforma completa (quando è disponibile): aggiunge agenti, billing/usage (`subscriptions`, `user_agents`, `agent_runs`), notifiche azioni agenti (`agent_notifications`), `waitlist`, `rate_limits` e il bootstrap di `agents_registry`.
 - **`supabase/schema-shopify-oauth.sql`** — tabelle dell'OAuth multi-tenant Shopify (`shopify_connections`, token cifrati).
 - **`supabase/schema-integrations.sql`** — layer generico multi-tenant (`tenant_integrations`, provider consentiti `notion/slack/hubspot/google_sheets/github/clickup/asana`, RLS).
 
@@ -94,5 +94,5 @@ Tutta la documentazione del progetto è raccolta in **`docs/`**:
 
 ## Deploy
 
-Consigliato su Vercel (o qualsiasi host Node). Prima del lancio: Google OAuth abilitato in Supabase con brand verificato, chiavi **live** Stripe, webhook Stripe configurati, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, `supabase/schema.sql` eseguito.
+Consigliato su Vercel (o qualsiasi host Node). Prima del lancio: Google OAuth abilitato in Supabase con brand verificato e un **client OAuth dedicato** al sign-in, separato da quello di Gmail/Calendar (tra le sue Authorized redirect URIs deve esserci `https://<project-ref>.supabase.co/auth/v1/callback`, altrimenti il login Google dà **`Error 400: redirect_uri_mismatch`** — vedi [docs/PROJECT.md → Google sign-in](PROJECT.md#google-sign-in-redirect-uri)), chiavi **live** Stripe, webhook Stripe configurati, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, `supabase/schema.sql` eseguito. In **Supabase → Authentication → URL Configuration** imposta **Site URL** = `NEXT_PUBLIC_SITE_URL` e aggiungi `<host>/auth/callback` tra le Redirect URLs.
 

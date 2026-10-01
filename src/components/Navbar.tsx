@@ -3,7 +3,7 @@
 /**
  * Barra di navigazione principale (pagine marketing e app).
  *
- * Mostra logo, voci (agenti/integrazioni/demo), dropdown agenti in evidenza,
+ * Mostra logo, voci (agenti/integrazioni), dropdown agenti in evidenza,
  * toggle lingua, campanella notifiche e stato sessione (login / dashboard).
  * La sessione Supabase viene ascoltata per aggiornare i pulsanti al login.
  */
@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { avatarThumbnail } from "@/lib/avatar";
 import {
   ArrowRight,
   LogOut,
@@ -129,10 +130,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     | undefined;
   // Supabase mappa Google `picture` -> `avatar_url`, ma gestiamo entrambi + fallback
   const rawAvatarUrl = userMeta?.avatar_url || userMeta?.picture || null;
-  // Normalizza s96-c -> s200-c per qualità migliore, se presente
-  const avatarUrl = rawAvatarUrl
-    ? rawAvatarUrl.replace(/=s\d+-c$/, "=s200-c")
-    : null;
+  // Thumbnail piccolo: l'avatar è mostrato a 36px, non serve `=s200-c`.
+  const avatarUrl = avatarThumbnail(rawAvatarUrl, 64);
   const accountInitials = isSignedIn
     ? (userMeta?.full_name || session?.user?.email || "?")
         .split(/[\s@.]+/)
@@ -397,7 +396,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                                 {dict.navbar.pricingItems.map(({ plan, price, text }) => (
                                   <Link
                                     key={plan}
-                                    href="/#demo"
+                                    href="/#cta"
                                     className="rounded-lg p-3 text-center transition-colors hover:bg-white/5"
                                   >
                                     <p className="text-sm font-bold text-white">
@@ -426,7 +425,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
               <Link
                 href="/cart"
                 aria-label={dict.navbar.ariaCart}
-                className="relative flex h-8 w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white lg:hidden"
+                className="relative flex h-11 w-11 items-center justify-center text-neutral-400 transition-colors hover:text-white lg:hidden"
               >
                 <ShoppingCart size={18} strokeWidth={1.75} />
                 {cartCount > 0 && (
@@ -450,7 +449,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                   <Link
                     href="/cart"
                     aria-label={dict.navbar.ariaCart}
-                    className="relative flex h-8 w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white"
+                    className="relative flex h-11 w-11 lg:h-8 lg:w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white"
                   >
                     <ShoppingCart size={18} strokeWidth={1.75} />
                     {cartCount > 0 && (
@@ -464,7 +463,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     <button
                       onClick={() => setUserMenuOpen((v) => !v)}
                       aria-label={dict.navbar.ariaAccount}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-brand-500/15 text-sm font-bold text-brand-300 transition-colors hover:border-brand-500/40 hover:bg-brand-500/25 overflow-hidden"
+                      className="flex h-11 w-11 lg:h-9 lg:w-9 items-center justify-center rounded-full border border-white/10 bg-brand-500/15 text-sm font-bold text-brand-300 transition-colors hover:border-brand-500/40 hover:bg-brand-500/25 overflow-hidden"
                     >
                       {avatarUrl ? (
                         // <img> invece di next/image: evita blocco remotePatterns e gestisce referrer Google

@@ -4,9 +4,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MarketplaceGrid from "@/components/MarketplaceGrid";
 import FloatingBrandBubbles from "@/components/FloatingBrandBubbles";
+import CouponBanner from "@/components/CouponBanner";
 import { BUNDLES } from "@/lib/bundles";
 import BundleCard from "@/components/BundleCard";
 import { Sparkles } from "lucide-react";
+import { OwnedProvider } from "@/components/OwnedProvider";
 // Pagina marketplace (lista agenti): server component che filtra il catalogo
 // in base ai feature flag runtime e alla presenza del codice di accesso, poi
 // passa il risultato alla griglia client.
@@ -20,8 +22,11 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
 import { getSessionUser } from "@/lib/supabase/server";
+import { getCouponLimit } from "@/lib/coupon";
 import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
-import { OwnedProvider } from "@/components/OwnedProvider";
+
+export const dynamic = "force-dynamic";
+import { isCouponActive } from "@/lib/coupon";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -33,7 +38,6 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // L'elenco dipende dai feature flag runtime (env var solo server), quindi va
 // renderizzato per richiesta e non "cotto" in fase di build.
-export const dynamic = "force-dynamic";
 
 export default async function AgentsPage() {
   const locale = await getLocale();
@@ -59,8 +63,14 @@ export default async function AgentsPage() {
     localizeAgent(a, locale),
   );
 
+  // Coupon promozionale 50%-off (AGENTCLOUD50), max 20 utilizzi, valido su
+  // agenti 0,99€–4,99€. È una promo client-side: il codice è liberamente
+  // scaricabile, ma il consumo avviene solo server-side (API
+  // `/api/coupon`), quindi due utenti contemporanei non possono oversellare.
+  const activeCoupon = isCouponActive();
+
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-neutral-950">
+    <main className="relative min-h-dvh overflow-x-hidden bg-neutral-950">
       {/* Sfondo pagina — stesso linguaggio della landing: gradiente + radiali +
           hairline in un layer fisso e non interattivo, così le bolle dei brand
           (z-0) restano visibili sopra il gradiente e sotto il contenuto (z-10). */}
@@ -96,8 +106,6 @@ export default async function AgentsPage() {
         ]}
       />
 
-      <Navbar marketplaceAgents={navAgents} />
-
       <section className="relative z-10 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <div className="mb-12 max-w-xl">
@@ -117,13 +125,21 @@ export default async function AgentsPage() {
               >
                 {dict.agentsPage.startChat}
               </Link>
-              <Link                 href="/contact"
+              <Link
+                href="/contact"
                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"
                >
                  {dict.agentsPage.requestDemo}
-              </Link>
+               </Link>
             </div>
           </div>
+        </div>
+
+      {activeCoupon && (
+        <CouponBanner coupon={activeCoupon} locale={locale} dict={dict} />
+      )}
+
+      <Navbar marketplaceAgents={navAgents} />
 
           {/* Griglia marketplace con filtri per categoria */}
           <OwnedProvider initialOwned={initialOwned}>
@@ -167,7 +183,8 @@ export default async function AgentsPage() {
           </div>
 
           {/* CTA agente personalizzato — ben visibile per chi non trova ciò
-              they need know we'll build it for them. */}              <div className="relative mt-14 sm:mt-16 overflow-hidden rounded-3xl border border-white/5 bg-neutral-900 p-10 text-center shadow-xl shadow-black/20 sm:p-14">
+              they need know we'll build it for them. */}
+            <div className="relative mt-14 sm:mt-16 overflow-hidden rounded-3xl border border-white/5 bg-neutral-900 p-10 text-center shadow-xl shadow-black/20 sm:p-14">
             <div
               className="pointer-events-none absolute inset-0 select-none"
               style={{
@@ -201,7 +218,6 @@ export default async function AgentsPage() {
               </div>
             </div>
           </div>
-        </div>
       </section>
 
       <Footer />

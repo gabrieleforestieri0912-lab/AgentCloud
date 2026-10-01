@@ -38,7 +38,7 @@ export default function ResetPage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950">
+    <div className="flex min-h-dvh items-center justify-center bg-neutral-950">
       <div className="text-center">
         <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent mx-auto" />
         <p className="text-sm font-semibold text-neutral-400">

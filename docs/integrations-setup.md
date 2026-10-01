@@ -70,7 +70,7 @@ dove `<provider>` ∈ `notion | slack | hubspot | google_sheets | github | click
 |---|---|
 | Env | Riusa `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (stesso OAuth client di Gmail/Calendar) |
 | Opzionali | `GOOGLE_SHEETS_SCOPES` (default `https://www.googleapis.com/auth/spreadsheets`) |
-| Redirect | **Devi** aggiungere `${SITE}/api/integrations/google_sheets/callback` tra gli Authorized redirect URIs del client Google, oltre a `/api/auth/google/callback`. |
+| Redirect | **Devi** aggiungere `${SITE}/api/integrations/google_sheets/callback` tra gli Authorized redirect URIs del client Google, oltre a `/api/auth/google/callback`. Il **Google sign-in** (Supabase Auth) usa un **client dedicato** con la sua redirect URI, non questo. |
 | Token | access token 1h + refresh token → **auto-refresh** (`lib/google/sheets.ts`) |
 | Tool agente | `sheets_read_range`, `sheets_update_range`, `sheets_append_row` — chiamate dirette via `lib/google/sheets.ts`. |
 | Note | Senza la redirect URI dedicata si ottiene `redirect_uri_mismatch`. |
@@ -148,6 +148,7 @@ I tool sono in `ALL_TOOLS_LIST` (`lib/agents/feature-flags.ts`) e abilitati come
 |---------|-----------------|
 | `provider_not_configured` | Manca l'env `<PROVIDER>_CLIENT_ID`/`_SECRET`. |
 | `redirect_uri_mismatch` (Google) | Redirect del layer generico non registrata sul client OAuth. |
+| `redirect_uri_mismatch` sul **login Google** | Client di Supabase Auth non configurato: crea un client OAuth dedicato (separato da Gmail/Calendar) e registra `https://<project-ref>.supabase.co/auth/v1/callback`. |
 | `state_mismatch` / `state_provider_mismatch` | Cookie di stato scaduto o provider diverso: riparti da Connetti. |
 | "No … account connected" dal tool | Riga assente o `status <> 'connected'` in `tenant_integrations`. |
 | Asana scade e fallisce | `ASANA_CLIENT_ID`/`ASANA_CLIENT_SECRET` mancanti lato server. |

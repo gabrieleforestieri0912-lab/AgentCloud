@@ -69,7 +69,7 @@ export default async function IntegrationsPage() {
   const comingSoon = INTEGRATIONS.filter((i) => !i.available);
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-neutral-950">
+    <main className="relative min-h-dvh overflow-x-hidden bg-neutral-950">
       {/* Sfondo — stesso linguaggio della landing e di /agents: il gradiente scuro
           con radiali e hairline vive nel layer fisso; le bolle (z-0) stanno sopra
           il gradiente e sotto il contenuto (z-10), altrimenti resterebbero

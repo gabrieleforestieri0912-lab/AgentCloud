@@ -305,33 +305,7 @@ create policy "Service role can manage agent_runs"
 
 
 -- -----------------------------------------------------------------------------
--- 6. demo_requests
---    Public demo contact form submissions.
--- -----------------------------------------------------------------------------
-create table if not exists public.demo_requests (
-  id uuid default gen_random_uuid() primary key,
-  name text not null,
-  surname text not null,
-  email text not null,
-  created_at timestamptz default now(),
-  notified boolean default false
-);
-
-alter table public.demo_requests enable row level security;
-
-drop policy if exists "Anyone can insert demo requests" on public.demo_requests;
-create policy "Anyone can insert demo requests"
-  on public.demo_requests for insert
-  with check (true);
-
-drop policy if exists "Only authenticated users can view demo requests" on public.demo_requests;
-create policy "Only authenticated users can view demo requests"
-  on public.demo_requests for select
-  using (auth.role() = 'authenticated');
-
-
--- -----------------------------------------------------------------------------
--- 7. waitlist
+-- 6. waitlist
 --    Public waitlist signups. The app also provisions a Supabase Auth user for
 --    each email (via `/api/waitlist`) so signups appear in Auth → Users and
 --    are already registered when the platform opens.
@@ -358,7 +332,7 @@ create policy "Only authenticated users can view waitlist"
 
 
 -- -----------------------------------------------------------------------------
--- 8. agent_notifications
+-- 7. agent_notifications
 --    Important actions performed by agents on behalf of the user (file
 --    created, product published, event booked, lead captured, ...). Written
 --    server-side by the agent run loop, read in the in-app bell. Users can
@@ -398,7 +372,7 @@ create policy "Service role can manage agent_notifications"
 
 
 -- -----------------------------------------------------------------------------
--- 9. rate_limits
+-- 8. rate_limits
 --    Distributed rate limiting buckets (rate limit helpers in the app).
 --
 --    One row per (bucket, key, window_start). Counters are incremented
@@ -454,8 +428,8 @@ $$;
 
 
 -- -----------------------------------------------------------------------------
--- 10. carts — carrello acquisti per utente (uno attivo per utente)
--- 11. cart_items — righe del carrello (agenti aggiunti)
+-- 9. carts — carrello acquisti per utente (uno attivo per utente)
+-- 10. cart_items — righe del carrello (agenti aggiunti)
 -- -----------------------------------------------------------------------------
 create table if not exists public.carts (
   id uuid default gen_random_uuid() primary key,

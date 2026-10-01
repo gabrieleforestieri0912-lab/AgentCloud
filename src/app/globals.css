@@ -95,6 +95,8 @@
   }
   html {
     scroll-behavior: smooth;
+    /* Highlight tap coerente con la palette (evita il flash grigio di default). */
+    -webkit-tap-highlight-color: rgba(3, 139, 254, 0.18);
   }
   body {
     font-family: "Manrope", "Inter", sans-serif;
@@ -849,11 +851,86 @@ html.light * { scrollbar-color: #c3c8d8 transparent; }
   html,
   body {
     max-width: 100%;
+    /* Rete di sicurezza: i veri overflow vanno comunque risolti alla radice. */
+    overflow-x: hidden;
   }
   img,
   video,
   svg {
     max-width: 100%;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE FOUNDATIONS — input iOS, safe-area, container/tipografia, touch
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* iOS: un campo con font < 16px fa zoomare la pagina al focus. Sotto i 1024px
+   forziamo 16px su input/textarea/select: le utility `text-*` hanno specificità
+   maggiore di un selettore di elemento, quindi serve !important nel media query. */
+@media (max-width: 1023.98px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe-area (notch / home indicator): utility applicabili a header, footer,
+   bottom bar e FAB. Vedi anche i breakpoint dei componenti fissi. */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pl-safe { padding-left: env(safe-area-inset-left); }
+  .pr-safe { padding-right: env(safe-area-inset-right); }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Container di pagina riusabile, mobile-first (padding cresce con il viewport). */
+.container-page {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 80rem;
+  padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .container-page { padding-inline: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .container-page { padding-inline: 2rem; }
+}
+
+/* Scala tipografica fluida per gli heading: evita titoli enormi su 320px e
+   mantiene la gerarchia su schermi grandi. */
+.heading-fluid-1 {
+  font-size: clamp(1.75rem, 5.5vw + 1rem, 3.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+.heading-fluid-2 {
+  font-size: clamp(1.35rem, 3.5vw + 0.65rem, 2.25rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+/* Target touch minimo 44x44 per i controlli icona. */
+.touch-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+/* Accessibilità: rispetta prefers-reduced-motion (le animazioni restano solo
+   transform/opacity e vengono di fatto disattivate su richiesta dell'OS). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
 

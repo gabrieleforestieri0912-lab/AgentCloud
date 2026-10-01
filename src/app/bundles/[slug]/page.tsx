@@ -135,7 +135,7 @@ export default async function BundleDetailPage({ params }: Props) {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-neutral-950">
+    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-neutral-950">
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute inset-0 dark-gradient-main" />
         <div

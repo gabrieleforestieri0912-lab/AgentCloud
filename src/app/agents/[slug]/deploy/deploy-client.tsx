@@ -231,7 +231,7 @@ export default function DeployAgentClient({
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950">
+    <main className="min-h-dvh bg-neutral-950">
       <Navbar marketplaceAgents={marketplaceAgents} />
 
       <section className="px-4 pb-20 pt-28 sm:px-6 lg:px-8">

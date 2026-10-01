@@ -1,6 +1,10 @@
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { getEnabledToolsForAgent } from "@/lib/agents/feature-flags";
-import { TOOL_DEFINITIONS, executeTool } from "@/lib/agents/tools";
+import {
+  TOOL_DEFINITIONS,
+  executeTool,
+  normalizeConnectProvider,
+} from "@/lib/agents/tools";
 import {
   assertRunAllowed,
   recordUsageAndReportOverage,
@@ -20,7 +24,6 @@ import {
   buildActionNotification,
   createAgentNotification,
 } from "@/lib/agents/notifications";
-import { TENANT_SHOPIFY_ID } from "@/lib/shopify/connections";
 import {
   FREE_MESSAGES_PER_AGENT,
   getFreeMessagesUsed,
@@ -320,11 +323,18 @@ export async function POST(req: Request) {
                 toolInput: use.input,
               });
 
-              // Inline connect card: emit immediately so UI can render without waiting for next LLM turn
+              // Inline connect card: emit immediately so UI can render without waiting
+              // for the next LLM turn. Solo per provider supportati: la card punta a
+              // /api/integrations/<provider>/authorize, quindi un nome inventato dal
+              // modello mostrerebbe un pulsante che non porta da nessuna parte.
               if (use.name === "request_integration_connect") {
-                const prov = String((use.input as Record<string, unknown>)?.provider || "unknown");
-                sentConnections.add(prov);
-                send({ type: "connection", provider: prov });
+                const prov = normalizeConnectProvider(
+                  String((use.input as Record<string, unknown>)?.provider ?? ""),
+                );
+                if (prov) {
+                  sentConnections.add(prov);
+                  send({ type: "connection", provider: prov });
+                }
               }
 
               const result = await executeTool(

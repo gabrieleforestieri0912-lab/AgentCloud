@@ -20,9 +20,11 @@ export {
  *
  * Priorità di risoluzione della lingua:
  *  1. Cookie esplicito (l'utente ha scelto una lingua col toggle)
- *  2. Header paese geografico (x-vercel-ip-country / cf-ipcountry / x-country)
- *  3. Header Accept-Language
- *  4. DEFAULT_LOCALE
+ *  2. Header paese geografico (x-vercel-ip-country / cf-ipcountry / x-country):
+ *     paese conosciuto -> lingua corrispondente (vedi COUNTRY_LOCALE_MAP),
+ *     paese sconosciuto -> inglese
+ *  3. Header Accept-Language (solo se il paese non è disponibile)
+ *  4. DEFAULT_LOCALE (inglese)
  *
  * Gli URL restano invariati (nessun routing /it /en): la scelta viene
  * persistita in un cookie leggibile sia dai client sia dai server component.

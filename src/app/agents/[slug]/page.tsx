@@ -104,7 +104,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   const bundleTeaserAgents = bundleWithAgent ? getBundleAgents(bundleWithAgent).slice(0, 4) : [];
   return (
     <OwnedProvider initialOwned={ownedSlugs}>
-      <main className="min-h-screen bg-neutral-950">
+      <main className="min-h-dvh bg-neutral-950">
         <Navbar marketplaceAgents={marketplaceAgents} />
         <section className="relative overflow-hidden px-4 pb-10 pt-28 sm:px-6 lg:px-8">
           <div

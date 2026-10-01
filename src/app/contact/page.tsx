@@ -63,7 +63,7 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden dark-gradient-main">
+    <main className="relative min-h-dvh overflow-hidden dark-gradient-main">
       {/* Sfondo decorativo — stesso linguaggio visivo dell'hero */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
       <div
@@ -115,21 +115,6 @@ export default function ContactPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-400">
-                    <MessageSquare size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">
-                      {dict.contact.scheduleCall}
-                    </h3>
-                    <Link                       href="/contact"
-                      className="text-sm font-semibold text-neutral-400 hover:text-brand-400 transition-colors"
-                    >
-                      {dict.contact.bookDemo}
-                    </Link>
-                  </div>
-                </div>
               </div>
 
               <div className="mt-12 rounded-2xl border border-white/5 bg-neutral-900 p-6">

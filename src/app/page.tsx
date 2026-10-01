@@ -30,7 +30,7 @@ const LANDING_BUBBLES: FloatingBubble[] = [
 // per il tema chiaro in globals.css) + radiali + hairline, coerente con palette Ink/Paper.
 export default async function Home() {
   return (
-    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-neutral-950">
+    <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-neutral-950">
       {/* Sfondo landing — fixed: background scuro (base near-black) */}
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute inset-0 dark-gradient-main" />
