@@ -117,6 +117,7 @@ export default function GoogleConnectionPrompt() {
         <span className="font-bold text-white">{dict.chat.googleConnectTitle}</span>
       </div>
       <p className="mt-2 text-neutral-300">{dict.chat.googleConnectDesc}</p>
+      <p className="mt-1.5 text-xs leading-5 text-neutral-500">{dict.chat.googleVerifyNote}</p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"

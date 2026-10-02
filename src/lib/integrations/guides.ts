@@ -68,6 +68,7 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
       { title: "Collega", desc: "Clicca Connetti Google → consenti Gmail e Calendar (schermata Google)." },
       { title: "Prova", desc: "Vedrai l'email collegata. Chiedi: smista le email di oggi." },
     ],
+    needHelp: "Se Google mostra “app non verificata”: clicca Avanzate → Vai a AgentCloud per continuare in sicurezza.",
   },
   googlecalendar: {
     provider: "googlecalendar",
@@ -78,6 +79,7 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
       { title: "Collega", desc: "Clicca Connetti Google → consenti l'accesso al calendario." },
       { title: "Prova", desc: "Connesso. Prova: aggiungi un evento domani alle 15." },
     ],
+    needHelp: "Se Google mostra “app non verificata”: clicca Avanzate → Vai a AgentCloud per continuare in sicurezza.",
   },
   hubspot: {
     provider: "hubspot",

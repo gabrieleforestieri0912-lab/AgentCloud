@@ -412,6 +412,8 @@ const it = {
     googleConnectedLine: "Account Google collegato: {email}",
     googleReadOnlyHint:
       "Accesso completo a Gmail e Google Calendar: invio, eliminazione email e gestione eventi con promemoria (consenso OAuth sicuro).",
+    googleVerifyNote:
+      "Se Google mostra l'avviso “app non verificata”, clicca “Avanzate” → “Vai a AgentCloud”: è la schermata standard di Google e puoi continuare in sicurezza.",
     home: "Home",
     chat: "Chat",
     tools: "Strumenti",
@@ -2250,6 +2252,8 @@ export const en: Dictionary = {
     googleConnectedLine: "Google account connected: {email}",
     googleReadOnlyHint:
       "Full access to Gmail and Google Calendar: send, delete emails and manage events with reminders (secure OAuth consent).",
+    googleVerifyNote:
+      "If Google shows an “unverified app” warning, click “Advanced” → “Go to AgentCloud”: this is Google's standard screen and you can continue safely.",
     home: "Home",
     chat: "Chat",
     tools: "Tools",
@@ -4087,6 +4091,8 @@ export const es: Dictionary = {
     googleConnectedLine: "Cuenta de Google conectada: {email}",
     googleReadOnlyHint:
       "Acceso completo a Gmail y Google Calendar: enviar, eliminar correos y gestionar eventos con recordatorios (consentimiento OAuth seguro).",
+    googleVerifyNote:
+      "Si Google muestra el aviso de “aplicación no verificada”, haz clic en “Opciones avanzadas” → “Ir a AgentCloud”: es la pantalla estándar de Google y puedes continuar con seguridad.",
     home: "Inicio",
     chat: "Chat",
     tools: "Herramientas",
@@ -5921,6 +5927,8 @@ browseAll: "Alle Agenten ansehen",
     googleConnectedLine: "Google-Konto verbunden: {email}",
     googleReadOnlyHint:
       "Vollzugriff auf Gmail und Google Calendar: E-Mails senden und löschen sowie Termine mit Erinnerungen verwalten (sichere OAuth-Zustimmung).",
+    googleVerifyNote:
+      "Wenn Google eine Warnung „nicht verifizierte App“ anzeigt, klicke auf „Erweitert“ → „Zu AgentCloud“: Das ist Googles Standardbildschirm, du kannst sicher fortfahren.",
     home: "Start",
     chat: "Chat",
     tools: "Tools",
@@ -7755,6 +7763,8 @@ export const fr: Dictionary = {
     googleConnectedLine: "Compte Google connecté : {email}",
     googleReadOnlyHint:
       "Accès complet à Gmail et Google Calendar : envoi, suppression d'e-mails et gestion d'événements avec rappels (consentement OAuth sécurisé).",
+    googleVerifyNote:
+      "Si Google affiche l'avertissement « application non vérifiée », cliquez sur « Paramètres avancés » → « Accéder à AgentCloud » : c'est l'écran standard de Google, vous pouvez continuer en sécurité.",
     home: "Accueil",
     chat: "Chat",
     tools: "Outils",
