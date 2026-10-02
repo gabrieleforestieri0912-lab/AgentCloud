@@ -15,6 +15,7 @@ import {
 import DashboardShell from "@/components/DashboardShell";
 import DashboardCharts from "@/components/DashboardCharts";
 import DashboardExportBar from "@/components/DashboardExportBar";
+import RecentActivity, { type RecentRun } from "@/components/RecentActivity";
 import AgentIcon from "@/components/AgentIcon";
 import { AGENTS, localizeAgent } from "@/lib/agents";
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
@@ -38,6 +39,9 @@ function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
 }
+
+// Quante run mostrano le "Attività recente".
+const RECENT_ACTIVITY_LIMIT = 10;
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -91,6 +95,7 @@ export default async function DashboardPage({
   let totalRuns = 0;
   let totalTokens = 0;
   let dbAvailable = false;
+  let recentRuns: RecentRun[] = [];
 
   if (db && userId) {
     dbAvailable = true;
@@ -99,7 +104,13 @@ export default async function DashboardPage({
       Date.UTC(now.getFullYear(), now.getMonth(), 1),
     ).toISOString();
 
-    const [{ data: userAgents }, { data: runs }] = await Promise.all([
+    const [
+      { data: userAgents },
+      { data: runs },
+      // Attività recente: le ultime run assolute, non filtrate per mese, così
+      // la sezione resta utile anche a un account nuovo o dopo un mese fermo.
+      { data: recent },
+    ] = await Promise.all([
       db
         .from("user_agents")
         .select("*")
@@ -110,7 +121,23 @@ export default async function DashboardPage({
         .select("agent_slug, input_tokens, output_tokens, started_at, finished_at")
         .eq("user_id", userId)
         .gte("started_at", periodStart),
+      db
+        .from("agent_runs")
+        .select("id, agent_slug, status, input_tokens, output_tokens, started_at, finished_at")
+        .eq("user_id", userId)
+        .order("started_at", { ascending: false })
+        .limit(RECENT_ACTIVITY_LIMIT),
     ]);
+
+    recentRuns = (recent ?? []).map((r) => ({
+      id: String(r.id),
+      slug: r.agent_slug,
+      status: r.status ?? null,
+      inputTokens: r.input_tokens || 0,
+      outputTokens: r.output_tokens || 0,
+      startedAt: r.started_at ?? null,
+      finishedAt: r.finished_at ?? null,
+    }));
 
     const runsByAgent = new Map<
       string,
@@ -511,6 +538,8 @@ export default async function DashboardPage({
               </div>
             </aside>
           </div>
+
+          <RecentActivity runs={recentRuns} locale={locale} />
         </div>
       </section>
     </DashboardShell>
