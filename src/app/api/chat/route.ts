@@ -1,5 +1,5 @@
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
-import { buildPlatformSystemPrompt } from "@/lib/agents/platform-context";
+import { buildAgentCatalogContext, buildPlatformSystemPrompt } from "@/lib/agents/platform-context";
 import { getLocale } from "@/lib/i18n/locale";
 import {
   lastUserText,
@@ -103,11 +103,13 @@ export async function POST(req: Request) {
         };
 
         // System prompt: specifico dell'agente quando è indicato un agente,
-        // altrimenti costruito dai dati REALI della piattaforma (agenti attivi
-        // e conteggi letti dal DB agents_registry — vedi platform-context).
+        // altrimenti costruito dal CATALOGO UFFICIALE della piattaforma
+        // (agenti, prezzi e conteggi — vedi platform-context). In entrambi i
+        // casi l'agente riceve il catalogo, così sa quanti agenti ci sono e
+        // quanto costano senza andare a indovinare.
         // Viene costruito in modo lazy così gli header arrivano subito al
-        // client e cold start / query DB lente non bloccano lo stream prima
-        // del primo byte. Un errore degrada al prompt generico, mai a un errore.
+        // client e il cold start non blocca lo stream prima del primo byte.
+        // Un errore degrada al prompt generico, mai a un errore.
         // La direttiva di lingua è accodata a ogni variante del prompt
         // (anche a quella generica di ripiego).
         // Direttive condivise (connect guidance + blocchi fenced con bottone
@@ -124,7 +126,9 @@ export async function POST(req: Request) {
               ? buildAgentSystemPrompt(
                   AGENT_RUNTIME[agentId].systemPrompt,
                   replyLocale,
-                )
+                ) +
+                "\n\n" +
+                buildAgentCatalogContext(replyLocale)
               : // Il prompt di piattaforma è scritto nella lingua della
                 // risposta (contiene elenchi, prezzi e regole) e chiude già
                 // con la direttiva.

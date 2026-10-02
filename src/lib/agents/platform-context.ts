@@ -1,29 +1,41 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import type { Locale } from "@/lib/i18n/constants";
-import { createClient } from "@/lib/supabase/server";
 import { SHOPIFY_PRICING } from "@/lib/billing/pricing";
-import { AGENT_RUNTIME } from "./registry";
-import { getFeatureFlags } from "./feature-flags";
+import { AGENTS, isAvailable, localizeAgent, type Agent } from "@/lib/agents";
 import { languageDirective } from "./language";
 
 /**
  * Conoscenza piattaforma server-only per la chat generica.
  *
  * Come funziona: costruisce il system prompt della chat senza agente
- * (`/api/chat` senza `agentId`) a partire dai DATI REALI della piattaforma:
- * gli agenti attivi nella tabella `agents_registry` (così i conteggi coincidono
- * sempre con ciò che c'è davvero nel DB) più i feature flag runtime (quali
- * agenti sono disponibili ora vs. in arrivo), prezzi, contatti e integrazioni.
- * La lista agenti viene riletta dal database a ogni richiesta, quindi
- * l'assistente conosce sempre gli ultimi aggiornamenti. Se il database non è
- * raggiungibile degrada al registry runtime nel codice, senza mai far fallire
- * la richiesta di chat.
+ * (`/api/chat` senza `agentId`) a partire dal CATALOGO UFFICIALE in
+ * `src/lib/agents.ts`, lo stesso array che alimenta la UI, più i feature flag
+ * runtime (disponibili ora vs. in arrivo), prezzi, contatti e integrazioni.
+ *
+ * Perché il catalogo e non la tabella `agents_registry`: le due fonti erano
+ * in disaccordo (il seed del database contiene 10 righe, il catalogo 15
+ * agenti) e il prompt riportava il numero del database mentre la landing
+ * mostrava `AGENTS.length`. L'assistente rispondeva quindi "10 agenti" mentre
+ * la pagina ne prometteva 15. Usando il catalogo, i conteggi non possono
+ * divergere: un solo numero, una sola fonte. Non serve più interrogare il
+ * database a ogni richiesta.
+ *
+ * I dati sono localizzati con `localizeAgent`, quindi un prompt italiano
+ * contiene nomi, descrizioni e task in italiano.
  */
 
-type AgentRow = {
-  slug: string;
-  name: string;
-  display_price: string | null;
+/** Riga di catalogo pronta per il prompt: agente canonico + overlay locale. */
+type CatalogEntry = {
+  agent: Agent;
+  price: string;
+  setup: string;
+};
+
+const DECIMAL_SEP: Record<Locale, string> = {
+  it: ",",
+  en: ".",
+  es: ",",
+  de: ",",
+  fr: ",",
 };
 
 type PromptLabels = {
@@ -37,6 +49,9 @@ type PromptLabels = {
   contactsTitle: string;
   integrationsTitle: string;
   liveNote: string;
+  /** Titolo e regola del catalogo compatto dato agli agenti singoli. */
+  catalogTitle: string;
+  catalogRule: string;
   rules: string[];
   countSentence: (count: string) => string;
 };
@@ -51,7 +66,7 @@ const LABELS: Record<Locale, PromptLabels> = {
     intro:
       "Sei l'assistente AI di AgentCloud, la piattaforma di agenti AI per automatizzare e-commerce, marketing, supporto e operations.",
     totalSuffix: "agenti AI",
-    sourceNote: "(fonte: database agents_registry, letto in tempo reale)",
+    sourceNote: "(catalogo ufficiale della piattaforma)",
     available: "Disponibili ora",
     comingSoon: "In arrivo",
     none: "- (nessuno)",
@@ -59,7 +74,11 @@ const LABELS: Record<Locale, PromptLabels> = {
     contactsTitle: "**Contatti AgentCloud:**",
     integrationsTitle: "**Integrazioni principali:**",
     liveNote:
-      "I dati su agenti, disponibilità e prezzi vengono letti dal database a ogni richiesta, quindi sono sempre aggiornati.",
+      "Agenti, disponibilità e prezzi arrivano dal catalogo ufficiale della piattaforma, quindi sono sempre aggiornati.",
+    catalogTitle:
+      "## Catalogo piattaforma (AgentCloud)\nQuesti sono gli agenti AI della piattaforma. Quando ti chiedono quanti agenti ci sono, di cosa fanno o quanto costano, usa questo elenco e non altri numeri.",
+    catalogRule:
+      "Resta il tuo ruolo: se la domanda riguarda te, rispondi come agente. Se riguarda gli altri agenti o la piattaforma, indirizza in base a questo elenco.",
     rules: [
       "Regole:",
       "- Usa il markdown: **grassetto** per nomi e punti chiave, elenchi con • — la UI lo renderizza.",
@@ -75,7 +94,7 @@ const LABELS: Record<Locale, PromptLabels> = {
     intro:
       "You are the AgentCloud assistant, the AI of the AgentCloud platform for automating e-commerce, marketing, support and operations.",
     totalSuffix: "AI agents",
-    sourceNote: "(source: agents_registry database, read live)",
+    sourceNote: "(official platform catalog)",
     available: "Available now",
     comingSoon: "Coming soon",
     none: "- (none)",
@@ -83,7 +102,11 @@ const LABELS: Record<Locale, PromptLabels> = {
     contactsTitle: "**AgentCloud contacts:**",
     integrationsTitle: "**Main integrations:**",
     liveNote:
-      "Agent, availability and pricing data is read from the database on every request, so it is always up to date.",
+      "Agents, availability and pricing come from the official platform catalog, so they are always up to date.",
+    catalogTitle:
+      "## Platform catalog (AgentCloud)\nThese are the platform's AI agents. When asked how many agents there are, what they do or how much they cost, use this list and no other numbers.",
+    catalogRule:
+      "Stay in your role: if the question is about you, answer as the agent. If it is about other agents or the platform, point using this list.",
     rules: [
       "Rules:",
       "- Use markdown: **bold** for names and key points, • bullet lists — the UI renders it.",
@@ -99,7 +122,7 @@ const LABELS: Record<Locale, PromptLabels> = {
     intro:
       "Eres el asistente de AgentCloud, la IA de la plataforma AgentCloud para automatizar e-commerce, marketing, soporte y operaciones.",
     totalSuffix: "agentes IA",
-    sourceNote: "(fuente: base de datos agents_registry, leída en vivo)",
+    sourceNote: "(catálogo oficial de la plataforma)",
     available: "Disponibles ahora",
     comingSoon: "Próximamente",
     none: "- (ninguno)",
@@ -107,7 +130,11 @@ const LABELS: Record<Locale, PromptLabels> = {
     contactsTitle: "**Contactos AgentCloud:**",
     integrationsTitle: "**Integraciones principales:**",
     liveNote:
-      "Los datos de agentes, disponibilidad y precios se leen de la base de datos en cada solicitud, por lo que siempre están actualizados.",
+      "Los datos de agentes, disponibilidad y precios provienen del catálogo oficial de la plataforma, por lo que siempre están actualizados.",
+    catalogTitle:
+      "## Catálogo de la plataforma (AgentCloud)\nEstos son los agentes IA de la plataforma. Cuando pregunten cuántos agentes hay, qué hacen o cuánto cuestan, usa esta lista y ningún otro número.",
+    catalogRule:
+      "Mantén tu rol: si la pregunta es sobre ti, responde como agente. Si es sobre otros agentes o la plataforma, orienta con esta lista.",
     rules: [
       "Reglas:",
       "- Usa markdown: **negrita** para nombres y puntos clave, listas con •.",
@@ -123,7 +150,7 @@ const LABELS: Record<Locale, PromptLabels> = {
     intro:
       "Du bist der AgentCloud-Assistent, die KI der AgentCloud-Plattform zur Automatisierung von E-Commerce, Marketing, Support und Operations.",
     totalSuffix: "KI-Agenten",
-    sourceNote: "(Quelle: agents_registry Datenbank, live gelesen)",
+    sourceNote: "(offizieller Plattformkatalog)",
     available: "Jetzt verfügbar",
     comingSoon: "Demnächst",
     none: "- (keine)",
@@ -131,7 +158,11 @@ const LABELS: Record<Locale, PromptLabels> = {
     contactsTitle: "**AgentCloud-Kontakte:**",
     integrationsTitle: "**Wichtigste Integrationen:**",
     liveNote:
-      "Agent-, Verfügbarkeits- und Preisdaten werden bei jeder Anfrage aus der Datenbank gelesen und sind daher immer aktuell.",
+      "Agenten-, Verfügbarkeits- und Preisdaten stammen aus dem offiziellen Plattformkatalog und sind daher immer aktuell.",
+    catalogTitle:
+      "## Plattformkatalog (AgentCloud)\nDas sind die KI-Agenten der Plattform. Wenn gefragt wird, wie viele Agenten es gibt, was sie tun oder was sie kosten, nutze diese Liste und keine anderen Zahlen.",
+    catalogRule:
+      "Bleibe in deiner Rolle: Geht es um dich, antworte als Agent. Geht es um andere Agenten oder die Plattform, verweise mit dieser Liste.",
     rules: [
       "Regeln:",
       "- Verwende Markdown: **fett** für Namen und Kernpunkte, Aufzählungen mit •.",
@@ -147,7 +178,7 @@ const LABELS: Record<Locale, PromptLabels> = {
     intro:
       "Vous êtes l'assistant AgentCloud, l'IA de la plateforme AgentCloud pour automatiser e-commerce, marketing, support et opérations.",
     totalSuffix: "agents IA",
-    sourceNote: "(source : base de données agents_registry, lue en direct)",
+    sourceNote: "(catalogue officiel de la plateforme)",
     available: "Disponibles maintenant",
     comingSoon: "Bientôt disponible",
     none: "- (aucun)",
@@ -155,7 +186,11 @@ const LABELS: Record<Locale, PromptLabels> = {
     contactsTitle: "**Contacts AgentCloud :**",
     integrationsTitle: "**Intégrations principales :**",
     liveNote:
-      "Les données d'agents, de disponibilité et de tarifs sont lues depuis la base de données à chaque requête, donc toujours à jour.",
+      "Les données d'agents, de disponibilité et de tarifs proviennent du catalogue officiel de la plateforme, donc toujours à jour.",
+    catalogTitle:
+      "## Catalogue de la plateforme (AgentCloud)\nVoici les agents IA de la plateforme. Lorsqu'on demande combien d'agents il existe, ce qu'ils font ou ce qu'ils coûtent, utilise cette liste et aucun autre chiffre.",
+    catalogRule:
+      "Reste dans ton rôle : si la question te concerne, réponds en tant qu'agent. Si elle concerne les autres agents ou la plateforme, oriente avec cette liste.",
     rules: [
       "Règles :",
       "- Utilisez le markdown : **gras** pour les noms et points clés, listes à puces avec •.",
@@ -168,9 +203,6 @@ const LABELS: Record<Locale, PromptLabels> = {
       `Quand on demande combien d'agents il y a, citez le nombre réel de la plateforme (${count}) et distinguez entre disponibles maintenant et bientôt.`,
   },
 };
-
-const CENTS_TO_DISPLAY = (cents: number): string =>
-  `€${(cents / 100).toFixed(0)}/mese`;
 
 /**
  * Suffisso del prezzo e parole usate nel prompt, per locale.
@@ -268,27 +300,39 @@ const PROMPT_WORDS: Record<
   },
 };
 
-const CATALOG_SLUGS = [
-  "seo-agent",
-  "business-manager",
-  "personal-assistant",
-  "email-manager",
-  "finance-manager",
-  "shopify-agent",
-  "calendar-booking",
-  "lead-capture",
-  "support-agent",
-  "copywriter",
-];
+/** Prezzo con 2 decimali e separatore decimale della lingua del prompt. */
+function formatPrice(cents: number, locale: Locale): string {
+  const amount = (cents / 100).toFixed(2).replace(".", DECIMAL_SEP[locale]);
+  return `€${amount}/${PROMPT_WORDS[locale].perMonth}`;
+}
 
-function runtimeFallbackAgents(): AgentRow[] {
-  return CATALOG_SLUGS.map((slug) => AGENT_RUNTIME[slug])
-    .filter(Boolean)
-    .map((a) => ({
-      slug: a.id,
-      name: a.name,
-      display_price: CENTS_TO_DISPLAY(a.price),
-    }));
+/**
+ * Catalogo localizzato pronto per il prompt. La disponibilità usa
+ * `isAvailable`, cioè gli stessi feature flag che guidano la UI: se un agente
+ * è in arrivo sulla pagina /agents, qui lo è anche nel prompt.
+ */
+function catalogEntries(locale: Locale): CatalogEntry[] {
+  return AGENTS.map((agent) => {
+    const localized = localizeAgent(agent, locale);
+    return { agent: localized, price: formatPrice(agent.priceCents, locale), setup: localized.setupTime };
+  });
+}
+
+/** Scheda completa di un agente: identità, prezzo, descrizione, task, tool. */
+function describeEntry(entry: CatalogEntry): string[] {
+  const { agent, price, setup } = entry;
+  const lines = [
+    `- **${agent.name}** (\`${agent.slug}\`) · ${price} · setup: ${setup} · ${agent.badgeLabel ?? agent.badge}`,
+    `  ${agent.description}`,
+    `  Categoria: ${agent.category} — ${agent.industry}`,
+  ];
+  if (agent.tasks.length > 0) {
+    lines.push(`  Fa: ${agent.tasks.join("; ")}`);
+  }
+  if (agent.integrations.length > 0) {
+    lines.push(`  Integra: ${agent.integrations.join(", ")}`);
+  }
+  return lines;
 }
 
 /** Quale preset verticale è attivo (da env), usato come contesto nel prompt. */
@@ -317,66 +361,33 @@ function pricingLines(locale: Locale): string[] {
 }
 
 /**
- * Interroga gli agenti attivi da `agents_registry`. Restituisce null quando
- * il database non è disponibile o è vuoto, così i chiamanti possono ripiegare
- * sul registry runtime. Non lancia mai.
- */
-async function fetchActiveAgentsFromDb(): Promise<AgentRow[] | null> {
-  try {
-    const admin = createAdminClient();
-    const supabase = admin ?? (await createClient());
-
-    const { data, error } = await supabase
-      .from("agents_registry")
-      .select("slug, name, display_price")
-      .eq("active", true)
-      .order("name");
-
-    if (error || !data || data.length === 0) return null;
-    return data as AgentRow[];
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Costruisce il system prompt della chat generica con la conoscenza reale
- * della piattaforma (agenti, prezzi e conteggi dal database, più prezzi,
- * contatti e integrazioni).
+ * della piattaforma: catalogo completo degli agenti con prezzi e task,
+ * disponibilità, piani Shopify, contatti e integrazioni.
  */
 export async function buildPlatformSystemPrompt(
   locale: Locale,
 ): Promise<string> {
-  const agents =
-    (await fetchActiveAgentsFromDb()) ?? runtimeFallbackAgents();
   const labels = LABELS[locale];
-
-  const enabledSlugs = new Set(getFeatureFlags().enabledAgents);
-  const available = agents.filter((a) => enabledSlugs.has(a.slug));
-  const comingSoon = agents.filter((a) => !enabledSlugs.has(a.slug));
-
-  const describe = (a: AgentRow) => {
-    const runtime = AGENT_RUNTIME[a.slug];
-    const price = a.display_price ? ` · ${a.display_price}` : "";
-    const description = runtime?.description ? ` — ${runtime.description}` : "";
-    return `- **${a.name}** (\`${a.slug}\`)${price}${description}`;
-  };
+  const entries = catalogEntries(locale);
+  const available = entries.filter((e) => isAvailable(e.agent.slug));
+  const comingSoon = entries.filter((e) => !isAvailable(e.agent.slug));
 
   const words = PROMPT_WORDS[locale];
-  const count = `${agents.length} (${available.length} ${words.available}, ${comingSoon.length} ${words.comingSoon})`;
+  const count = `${entries.length} (${available.length} ${words.available}, ${comingSoon.length} ${words.comingSoon})`;
 
   const verticalLine = `${words.verticalConfigPrefix}: ${activeVerticalLabel(locale)}.`;
 
   const sections = [
     labels.intro,
     "",
-    `**${agents.length} ${labels.totalSuffix}** ${labels.sourceNote}:`,
+    `**${entries.length} ${labels.totalSuffix}** ${labels.sourceNote}:`,
     "",
     `**${labels.available} (${available.length}):**`,
-    ...(available.length > 0 ? available.map(describe) : [labels.none]),
+    ...(available.length > 0 ? available.flatMap(describeEntry) : [labels.none]),
     "",
     `**${labels.comingSoon} (${comingSoon.length}):**`,
-    ...(comingSoon.length > 0 ? comingSoon.map(describe) : [labels.none]),
+    ...(comingSoon.length > 0 ? comingSoon.flatMap(describeEntry) : [labels.none]),
     "",
     labels.pricingTitle,
     ...pricingLines(locale),
@@ -400,4 +411,35 @@ export async function buildPlatformSystemPrompt(
   ];
 
   return sections.join("\n");
+}
+
+/**
+ * Contesto compatto di catalogo per il system prompt di un agente singolo
+ * (`/api/agent/run`). Un agente sapeva solo di sé: chiedendo "quanti agenti
+ * avete?" rispondeva a spanne, o si dichiarava un negozio. Qui trova il
+ * conteggio reale, l'elenco dei pari con la sua funzione e il prezzo, così
+ * può indirizzare l'utente al confronto senza inventare nulla.
+ *
+ * Volutamente solo nomi, ruolo e prezzo: il prompt dell'agente gira a ogni
+ * messaggio, quindi qui il contenuto si tiene corto rispetto al catalogo
+ * completo della chat generica.
+ */
+export function buildAgentCatalogContext(locale: Locale): string {
+  const labels = LABELS[locale];
+  const words = PROMPT_WORDS[locale];
+  const entries = catalogEntries(locale);
+  const available = entries.filter((e) => isAvailable(e.agent.slug));
+  const count = `${entries.length} (${available.length} ${words.available})`;
+
+  const lines = entries.map(
+    (e) =>
+      `- **${e.agent.name}** (${e.agent.slug}) · ${e.price} — ${e.agent.description}`,
+  );
+
+  return [
+    labels.catalogTitle,
+    `${count}.`,
+    ...lines,
+    labels.catalogRule,
+  ].join("\n");
 }

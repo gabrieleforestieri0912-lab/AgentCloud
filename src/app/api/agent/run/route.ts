@@ -16,6 +16,7 @@ import { lastUserText, replyLanguage } from "@/lib/agents/language";
 import type { LLMMessage, LLMToolResult } from "@/lib/llm";
 import { createWordEmitter } from "@/lib/stream";
 import { buildAgentSystemPrompt } from "@/lib/agents/system-prompt";
+import { buildAgentCatalogContext } from "@/lib/agents/platform-context";
 import { rateLimit, RATE_LIMIT_WINDOWS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
@@ -292,7 +293,13 @@ export async function POST(req: Request) {
               // Direttive condivise e ordine sono definiti una volta sola in
               // lib/agents/system-prompt.ts, così route e test usano lo stesso
               // prompt (connect guidance, formato, identità, consegna, lingua).
-              system: buildAgentSystemPrompt(config.systemPrompt, replyLocale),
+              // Con catalogo piattaforma in coda: senza, l'agente non sapeva
+              // quanti agenti esistono né quanto costano, e rispondeva a
+              // spanne alle domande sulla piattaforma.
+              system:
+                buildAgentSystemPrompt(config.systemPrompt, replyLocale) +
+                "\n\n" +
+                buildAgentCatalogContext(replyLocale),
               messages: conversationMessages,
               tools: enabledTools,
               maxTokens: MAX_TOKENS,
