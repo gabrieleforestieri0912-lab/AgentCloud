@@ -215,6 +215,9 @@ export default function ChatInterface({
   // Id dell'ultimo messaggio utente inviato: la sua bolla entra con
   // l'animazione `animate-msg-send` (si azzera da sola dopo l'animazione).
   const [justSentId, setJustSentId] = useState<string | null>(null);
+  // Conversazioni per cui il titolo per argomento è già stato generato (una
+  // sola chiamata AI per chat).
+  const titledRef = useRef<Set<string>>(new Set());
   // Preferenze rapide (pannello della rotella): agente usato dalle nuove chat e
   // dimensione del testo dell'area messaggi. Persistite in localStorage.
   const [defaultAgentSlug, setDefaultAgentSlug] = useState("");
@@ -995,7 +998,6 @@ export default function ChatInterface({
           ? {
               ...c,
               messages: [...c.messages, userMsg],
-              title: getConvTitle([...c.messages, userMsg], dict.chat.newChat),
             }
           : c,
       ),
@@ -1007,6 +1009,89 @@ export default function ChatInterface({
       setJustSentId((cur) => (cur === userMsg.id ? null : cur));
     }, 600);
     return userMsg;
+  }
+
+  /** Titolo per argomento: dopo la prima risposta l'AI riassume la chat in
+      poche parole (mai il primo messaggio troncato). Una sola chiamata per
+      conversazione; se l'utente ha rinominato, non si tocca nulla. */
+  async function maybeGenerateTitle(convId: string) {
+    if (titledRef.current.has(convId)) return;
+    titledRef.current.add(convId);
+    try {
+      const conv = conversationsRef.current.find((c) => c.id === convId);
+      // Chat già intitolata (rinominata o titolo precedente): non toccare.
+      if (!conv || conv.title !== dict.chat.newChat) return;
+      const userMsgs = conv.messages.filter((m) => m.role === "user").slice(0, 2);
+      const asstMsgs = conv.messages.filter((m) => m.role === "assistant" && !m.error).slice(0, 1);
+      if (userMsgs.length === 0 || asstMsgs.length === 0) return;
+      const excerpt = [
+        ...userMsgs.map((m) => `Utente: ${m.content.slice(0, 500)}`),
+        ...asstMsgs.map((m) => `Assistente: ${m.content.slice(0, 500)}`),
+      ].join("\n");
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "user",
+              content: `Riassumi questa conversazione in un titolo brevissimo (massimo 5 parole) nella stessa lingua del testo. Rispondi con il solo titolo, senza virgolette né punto finale.\n\n${excerpt}`,
+            },
+          ],
+        }),
+      });
+      if (!res.ok || !res.body) throw new Error("title request failed");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let raw = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const json = JSON.parse(line.slice(6)) as { type?: string; content?: string };
+            if (json.type === "text" && typeof json.content === "string") raw += json.content;
+            if (json.type === "done") break;
+          } catch {
+            // chunk parziale: ignora
+          }
+        }
+      }
+      let title = raw
+        .split("\n")[0]
+        .trim()
+        .replace(/^["'«»“”]+|["'«»“”.!?…]+$/g, "")
+        .trim();
+      if (title.length > 42) title = title.substring(0, 42).trimEnd() + "…";
+      if (!title) throw new Error("empty title");
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convId && c.title === dict.chat.newChat ? { ...c, title } : c,
+        ),
+      );
+    } catch {
+      // Fallback senza AI: nome dell'agente (se unico) invece del default.
+      try {
+        const conv = conversationsRef.current.find((c) => c.id === convId);
+        if (!conv || conv.title !== dict.chat.newChat) return;
+        const slugs = conv.agentSlugs ?? [];
+        const slug = slugs[0];
+        const name = (slug && agentsBySlug.get(slug)?.name) || null;
+        if (!name || slugs.length !== 1) return;
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === convId && c.title === dict.chat.newChat ? { ...c, title: name } : c,
+          ),
+        );
+      } catch {
+        // resta "Nuova chat"
+      }
+    }
   }
 
   async function sendMessage(
@@ -1258,6 +1343,8 @@ export default function ChatInterface({
 
     streamingRef.current.delete(convId);
     setStreamingConvs((prev) => prev.filter((id) => id !== convId));
+    // Titolo per argomento (una sola volta per chat, in background).
+    void maybeGenerateTitle(convId);
     // Notifica alla campanella che potrebbero esserci nuove notifiche agente
     try {
       window.dispatchEvent(new CustomEvent("agentcloud:notifications-refresh"));
