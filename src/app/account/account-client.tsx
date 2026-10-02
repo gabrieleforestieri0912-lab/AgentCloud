@@ -7,9 +7,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useAccountSession } from "@/lib/use-account-session";
 import { t } from "@/lib/i18n/dictionaries";
 import { DATE_LOCALES, type Locale } from "@/lib/i18n/constants";
-import { User, Mail, Shield, CreditCard, Plug, Trash2, LogOut, CheckCircle2, AlertCircle, Save } from "lucide-react";
+import { User, Mail, Shield, CreditCard, Plug, Trash2, LogOut, CheckCircle2, AlertCircle, Save, Unplug, Loader2 } from "lucide-react";
 
 export default function AccountClient({
   initialEmail,
@@ -35,10 +36,15 @@ export default function AccountClient({
   locale: Locale;
 }) {
   const { dict } = useLanguage();
+  const { avatarUrl } = useAccountSession();
   const [name, setName] = useState(initialName);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [updatingEmail, setUpdatingEmail] = useState(false);
+  const [google, setGoogle] = useState<string | null>(googleEmail);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   async function handleSaveName() {
     if (isMock) {
@@ -62,6 +68,44 @@ export default function AccountClient({
   async function handleSignOut() {
     try { await createClient().auth.signOut(); } catch {}
     window.location.replace("/waitlist");
+  }
+
+  async function handleUpdateEmail() {
+    const value = newEmail.trim().toLowerCase();
+    if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) || value === initialEmail.toLowerCase()) return;
+    if (isMock) {
+      setMsg({ kind: "err", text: dict.chat.accountMockError });
+      return;
+    }
+    setUpdatingEmail(true);
+    setMsg(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ email: value });
+      if (error) throw error;
+      setNewEmail("");
+      setMsg({ kind: "ok", text: dict.chat.accountEmailUpdateSent });
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+    } finally {
+      setUpdatingEmail(false);
+    }
+  }
+
+  async function handleGoogleDisconnect() {
+    if (!confirm(dict.chat.accountDisconnectConfirm)) return;
+    setDisconnecting(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/google/disconnect", { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setGoogle(null);
+      setMsg({ kind: "ok", text: dict.chat.accountSaved });
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+    } finally {
+      setDisconnecting(false);
+    }
   }
 
   async function handleDelete() {
@@ -94,8 +138,18 @@ export default function AccountClient({
       {/* Profilo */}
       <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-300 text-lg font-bold">
-            {initials}
+          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand-500/15 text-brand-300 text-lg font-bold">
+            <span>{initials}</span>
+            {avatarUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 h-full w-full object-cover"
+                onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+              />
+            )}
           </div>
           <div className="flex-1">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -124,6 +178,29 @@ export default function AccountClient({
             </div>
           </label>
         </div>
+        <div className="mt-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-neutral-300">{dict.chat.accountNewEmail}</span>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleUpdateEmail(); }}
+                type="email"
+                placeholder={initialEmail}
+                className="flex-1 rounded-xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500/50"
+              />
+              <button
+                onClick={handleUpdateEmail}
+                disabled={updatingEmail || isMock || !newEmail.trim()}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10 disabled:opacity-50"
+              >
+                {updatingEmail ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+                {dict.chat.accountUpdateEmail}
+              </button>
+            </div>
+          </label>
+        </div>
         {msg && (
           <p className={`mt-3 inline-flex items-center gap-1 text-sm font-semibold ${msg.kind === "ok" ? "text-emerald-300" : "text-red-300"}`}>
             {msg.kind === "ok" ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />} {msg.text}
@@ -144,6 +221,12 @@ export default function AccountClient({
           <Link href="/agents" className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 hover:bg-neutral-100">
             {dict.chat.accountBrowseAgents}
           </Link>
+          <Link href="/dashboard" className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
+            {dict.dashboard.myAgents}
+          </Link>
+          <Link href="/dashboard/subscriptions" className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
+            {dict.navbar.subscriptions}
+          </Link>
           <Link href="/api/billing/portal" className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
             {dict.chat.accountManageBilling}
           </Link>
@@ -160,12 +243,24 @@ export default function AccountClient({
           <div className="rounded-xl border border-white/5 bg-neutral-800 p-4">
             <p className="text-sm font-bold text-white">Shopify</p>
             <p className="text-xs text-neutral-500">{shopifyShops.length ? shopifyShops.join(", ") : dict.chat.accountNotConnected}</p>
-            <Link href="/integrations" className="mt-3 inline-flex text-xs font-bold text-brand-400 hover:underline">{dict.chat.accountManage} →</Link>
+            <Link href="/dashboard/integrations" className="mt-3 inline-flex text-xs font-bold text-brand-400 hover:underline">{dict.chat.accountManage} →</Link>
           </div>
           <div className="rounded-xl border border-white/5 bg-neutral-800 p-4">
             <p className="text-sm font-bold text-white">Google</p>
-            <p className="text-xs text-neutral-500">{googleEmail ?? (dict.chat.accountNotConnected)}</p>
-            <Link href="/dashboard" className="mt-3 inline-flex text-xs font-bold text-brand-400 hover:underline">{dict.chat.accountManage} →</Link>
+            <p className="text-xs text-neutral-500">{google ?? (dict.chat.accountNotConnected)}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Link href="/dashboard/integrations" className="inline-flex text-xs font-bold text-brand-400 hover:underline">{dict.chat.accountManage} →</Link>
+              {google && (
+                <button
+                  onClick={handleGoogleDisconnect}
+                  disabled={disconnecting || isMock}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-red-300 hover:text-red-200 disabled:opacity-50"
+                >
+                  {disconnecting ? <Loader2 size={12} className="animate-spin" /> : <Unplug size={12} />}
+                  {dict.chat.accountDisconnect}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

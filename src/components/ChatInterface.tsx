@@ -212,6 +212,9 @@ export default function ChatInterface({
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [paywallSlug, setPaywallSlug] = useState<string | null>(null);
+  // Id dell'ultimo messaggio utente inviato: la sua bolla entra con
+  // l'animazione `animate-msg-send` (si azzera da sola dopo l'animazione).
+  const [justSentId, setJustSentId] = useState<string | null>(null);
   // Preferenze rapide (pannello della rotella): agente usato dalle nuove chat e
   // dimensione del testo dell'area messaggi. Persistite in localStorage.
   const [defaultAgentSlug, setDefaultAgentSlug] = useState("");
@@ -998,6 +1001,11 @@ export default function ChatInterface({
       ),
     );
     if (inputCentered) setInputCentered(false);
+    // La bolla entra con l'animazione di invio; l'id si azzera da solo dopo.
+    setJustSentId(userMsg.id);
+    window.setTimeout(() => {
+      setJustSentId((cur) => (cur === userMsg.id ? null : cur));
+    }, 600);
     return userMsg;
   }
 
@@ -2001,7 +2009,7 @@ export default function ChatInterface({
                 key={msg.id}
                 className={`flex items-start gap-3 ${
                   msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
+                }${msg.role === "user" && msg.id === justSentId ? " animate-msg-send" : ""}`}
               >
                 {msg.role === "assistant" &&
                   (agentForMessage(msg) ? (

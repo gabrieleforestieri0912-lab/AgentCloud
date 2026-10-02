@@ -256,6 +256,32 @@
 .animate-typing-pulse {
   animation: typing-pulse 1.2s ease-in-out infinite;
 }
+
+/* Bolla messaggio appena inviato: entra dal basso con un leggero rimbalzo. */
+@keyframes msg-send {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-msg-send {
+  animation: msg-send 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-msg-send {
+    animation: none;
+  }
+}
 .animate-fade-in {
   animation: fade-in 0.2s ease-out forwards;
 }
