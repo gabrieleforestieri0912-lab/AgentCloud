@@ -159,9 +159,62 @@ function CodeBlock({ lang, value }: { lang: string; value: string }) {
   );
 }
 
+const ALIGN_CLASS = {
+  left: "text-left",
+  center: "text-center",
+  right: "text-right",
+} as const;
+
+/**
+ * Blocco tabella markdown. Va in overflow orizzontale: su schermi stretti
+ * una tabella a 3+ colonne non può comprimersi, quindi scorre invece di
+ * spezzare le celle o far uscire il testo dalla bolla.
+ */
+function Table({ block }: { block: Extract<MarkdownBlock, { type: "table" }> }) {
+  const alignOf = (i: number) =>
+    block.align[i] ? ALIGN_CLASS[block.align[i]!] : ALIGN_CLASS.left;
+  return (
+    <div className="my-2 overflow-x-auto rounded-xl border border-white/10">
+      <table className="w-full min-w-[360px] border-collapse text-left text-xs leading-relaxed">
+        <thead>
+          <tr className="bg-white/5">
+            {block.header.map((cell, i) => (
+              <th
+                key={i}
+                scope="col"
+                className={`border-b border-white/10 px-3 py-2 font-bold text-white ${alignOf(i)}`}
+              >
+                <Inline segments={cell} />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {block.rows.map((row, ri) => (
+            <tr key={ri} className="border-b border-white/5 last:border-b-0">
+              {row.map((cell, ci) => (
+                <td
+                  key={ci}
+                  className={`px-3 py-2 align-top text-neutral-300 ${alignOf(ci)}`}
+                >
+                  <Inline segments={cell} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function Block({ block }: { block: MarkdownBlock }) {
   if (block.type === "code") {
     return <CodeBlock lang={block.lang} value={block.value} />;
+  }
+
+  if (block.type === "table") {
+    return <Table block={block} />;
   }
 
   if (block.type === "heading") {
