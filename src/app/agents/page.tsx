@@ -22,7 +22,6 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
 import { getSessionUser } from "@/lib/supabase/server";
-import { getCouponLimit } from "@/lib/coupon";
 import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
 
 export const dynamic = "force-dynamic";

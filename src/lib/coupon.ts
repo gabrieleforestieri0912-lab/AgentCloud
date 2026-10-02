@@ -15,7 +15,17 @@ export const COUPON_MAX_USES = 20;
 export const COUPON_APPLIES_TO_LOW_PRICE = 999; // in centesimi: 9,99€
 export const COUPON_MAX_PRICE = 1499; // in centesimi: 14,99€
 
+/**
+ * Kill switch della promozione: `false` finché il coupon non è lanciato.
+ *
+ * Tutto il resto del meccanismo resta intatto e funzionante dietro questo
+ * flag — banner su /agents, sconto in carrello e decremento server. Basta
+ * portarlo a `true` al lancio: nessun'altra riga da toccare.
+ */
+export const COUPON_LAUNCHED = false;
+
 export function couponIsApplicable(priceCents: number): boolean {
+  if (!COUPON_LAUNCHED) return false;
   if (!Number.isFinite(priceCents)) return false;
   return priceCents >= COUPON_APPLIES_TO_LOW_PRICE && priceCents <= COUPON_MAX_PRICE;
 }
@@ -40,6 +50,8 @@ export function couponDiscountedPrice(priceCents: number): string {
 import { type CouponState } from "./coupon-store";
 
 export function isCouponActive(): CouponState | null {
+  // Promozione non lanciata: nessun banner, nessun codice mostrato.
+  if (!COUPON_LAUNCHED) return null;
   if (typeof window === "undefined") {
     // SSR: coupon sempre "attivo" per mostrare il banner, il controllo reale è server-side
     return {
