@@ -1594,6 +1594,65 @@ const it = {
     selected: "Selezionato: {subject}",
     somethingWrong: "Qualcosa è andato storto",
     failedSend: "Invio del messaggio non riuscito",
+    // ── Agente su misura: cosa ottieni e come lavoriamo ─────────────────
+    customTitle: "Serve un agente su misura?",
+    customIntro:
+      "Se nessuno dei 15 agenti del marketplace copre il tuo workflow, lo progettiamo per te. Nessun canone di progettazione: si paga il canone mensile dell'agente, come per tutti gli altri.",
+    customPointsTitle: "Cosa include",
+    customPoints: [
+      "Analisi del workflow: mappiamo il processo attuale e i passi manuali da eliminare",
+      "Agente con prompt e strumenti dedicati, addestrato sui tuoi dati e il tuo lessico",
+      "Integrazione con i tuoi sistemi (CRM, e-commerce, calendario, ticket)",
+      "Permessi e dati separati: l'agente agisce solo dove glielo autorizzi",
+      "Versione di lancio entro 10 giorni lavorativi dalla conferma del workflow",
+    ],
+    processTitle: "Come lavoriamo",
+    processSteps: [
+      {
+        title: "1. Ci racconti il processo",
+        desc: "Un modulo e una call. Ci interessa il flusso reale, non il desiderato: da dove parte, chi decide, dove finisce.",
+      },
+      {
+        title: "2. Ti mandiamo una proposta",
+        desc: "Workflow disegnato, ambito, prezzo mensile e data di consegna. Se non convince, non proseguiamo e non paghi nulla.",
+      },
+      {
+        title: "3. Sviluppo e test sul tuo caso",
+        desc: "Costruiamo l'agente e lo proviamo con i tuoi dati reali, in un ambiente di prova, prima di metterlo in produzione.",
+      },
+      {
+        title: "4. Consegna e supporto",
+        desc: "Attivazione, formazione del team e canone mensile. Dopo puoi modificarlo ogni mese: gli agenti si evolvono col tuo lavoro.",
+      },
+    ],
+    whatToInclude: "Per una risposta più precisa, nel messaggio indicaci: quale processo vuoi automatizzare, quali strumenti usi oggi e cosa non funziona.",
+    faqTitle: "Domande frequenti",
+    faqs: [
+      {
+        q: "Quanto costa un agente su misura?",
+        a: "Dipende dagli strumenti da collegare e dalla complessità del workflow. Dopo la call ricevi un prezzo mensivo preciso: paghi la sola tariffa dell'agente, senza costi di sviluppo una tantum.",
+      },
+      {
+        q: "Posso partire da un agente già del marketplace?",
+        a: "Sì, ed è la strada più rapida. Installi l'agente più vicino e ci chiedi solo la parte mancante: in quel caso il canone è quello dell'agente esistente più l'adattamento.",
+      },
+      {
+        q: "I miei dati restano miei?",
+        a: "Sì. Ogni agente gira con permessi separati e legge solo gli strumenti che autorizzi. I dati del cliente non vengono usati per addestrare modelli.",
+      },
+      {
+        q: "Quanto tempo serve per la consegna?",
+        a: "Per un workflow ben definito la versione di lancio arriva in 10 giorni lavorativi. Progetti che richiedono dati storici o integrazioni non standard richiedono una valutazione dedicata.",
+      },
+      {
+        q: "Cosa succede dopo il lancio?",
+        a: "Ogni mese puoi estendere o modificare l'agente. Resti con lo stesso canone mensile, senza penali di uscita.",
+      },
+    ],
+    channelsTitle: "Canali",
+    phoneLabel: "Telefono e WhatsApp",
+    phone: "+39 351 986 3021",
+    emailLabel: "Email di supporto",
   },
 
   legal: {
@@ -3937,6 +3996,66 @@ export const en: Dictionary = {
     selected: "Selected: {subject}",
     somethingWrong: "Something went wrong",
     failedSend: "Failed to send message",
+    // ── Custom agent: what you get and how we work ───────────────────────
+    customTitle: "Need a custom agent?",
+    customIntro:
+      "If none of the 15 marketplace agents covers your workflow, we build it for you. No design fee: you pay the agent's monthly fee, like everyone else.",
+    customPointsTitle: "What's included",
+    customPoints: [
+      "Workflow analysis: we map your current process and the manual steps to remove",
+      "An agent with a dedicated prompt and tools, trained on your data and your wording",
+      "Integration with your systems (CRM, e-commerce, calendar, ticketing)",
+      "Separate permissions and data: the agent acts only where you allow it",
+      "Launch version within 10 business days from workflow sign-off",
+    ],
+    processTitle: "How we work",
+    processSteps: [
+      {
+        title: "1. You tell us the process",
+        desc: "A form and a call. We care about the real flow, not the wishful one: where it starts, who decides, where it ends.",
+      },
+      {
+        title: "2. We send a proposal",
+        desc: "Drawn workflow, scope, monthly price and delivery date. If it doesn't convince you, we stop and you pay nothing.",
+      },
+      {
+        title: "3. Build and test on your case",
+        desc: "We build the agent and test it with your real data in a sandbox before it goes to production.",
+      },
+      {
+        title: "4. Delivery and support",
+        desc: "Activation, team training and the monthly fee. Afterwards you can change it every month: agents evolve with your work.",
+      },
+    ],
+    whatToInclude:
+      "For a sharper answer, tell us in the message which process you want to automate, what tools you use today and what doesn't work.",
+    faqTitle: "Frequently asked questions",
+    faqs: [
+      {
+        q: "How much does a custom agent cost?",
+        a: "It depends on the tools to connect and the workflow complexity. After the call you get a precise monthly price: you only pay the agent's fee, with no one-off development cost.",
+      },
+      {
+        q: "Can I start from an existing marketplace agent?",
+        a: "Yes, and it's the fastest route. Install the closest agent and ask us only for the missing part: then you pay the existing agent's fee plus the adaptation.",
+      },
+      {
+        q: "Do my data stay mine?",
+        a: "Yes. Every agent runs with separate permissions and only reads the tools you authorise. Customer data is never used to train models.",
+      },
+      {
+        q: "How long does delivery take?",
+        a: "For a well-defined workflow the launch version lands in 10 business days. Projects needing historical data or non-standard integrations get a dedicated assessment.",
+      },
+      {
+        q: "What happens after launch?",
+        a: "Every month you can extend or modify the agent. You keep the same monthly fee, with no exit penalty.",
+      },
+    ],
+    channelsTitle: "Channels",
+    phoneLabel: "Phone and WhatsApp",
+    phone: "+39 351 986 3021",
+    emailLabel: "Support email",
   },
 
   legal: {
@@ -6275,6 +6394,66 @@ agentsPage: {
     selected: "Seleccionado: {subject}",
     somethingWrong: "Algo ha salido mal",
     failedSend: "No se pudo enviar el mensaje",
+    // ── Agente a medida: qué obtienes y cómo trabajamos ─────────────────
+    customTitle: "¿Necesitas un agente a medida?",
+    customIntro:
+      "Si ninguno de los 15 agentes del marketplace cubre tu flujo de trabajo, lo creamos para ti. Sin honorarios de diseño: pagas la cuota mensual del agente, como todos los demás.",
+    customPointsTitle: "Qué incluye",
+    customPoints: [
+      "Análisis del flujo de trabajo: mapeamos el proceso actual y los pasos manuales que hay que eliminar",
+      "Agente con prompt y herramientas propios, entrenado con tus datos y tu terminología",
+      "Integración con tus sistemas (CRM, e-commerce, calendario, tickets)",
+      "Permisos y datos separados: el agente actúa solo donde tú lo autorizas",
+      "Versión de lanzamiento en 10 días laborables desde la confirmación del flujo",
+    ],
+    processTitle: "Cómo trabajamos",
+    processSteps: [
+      {
+        title: "1. Nos cuentas el proceso",
+        desc: "Un formulario y una llamada. Nos interesa el flujo real, no el ideal: dónde empieza, quién decide, dónde termina.",
+      },
+      {
+        title: "2. Te enviamos una propuesta",
+        desc: "Flujo diseñado, alcance, precio mensual y fecha de entrega. Si no te convence, paramos y no pagas nada.",
+      },
+      {
+        title: "3. Desarrollo y pruebas con tu caso",
+        desc: "Construimos el agente y lo probamos con tus datos reales, en un entorno de pruebas, antes de llevarlo a producción.",
+      },
+      {
+        title: "4. Entrega y soporte",
+        desc: "Activación, formación del equipo y cuota mensual. Después puedes modificarlo cada mes: los agentes evolucionan con tu trabajo.",
+      },
+    ],
+    whatToInclude:
+      "Para una respuesta más precisa, indica en el mensaje qué proceso quieres automatizar, qué herramientas usas hoy y qué no funciona.",
+    faqTitle: "Preguntas frecuentes",
+    faqs: [
+      {
+        q: "¿Cuánto cuesta un agente a medida?",
+        a: "Depende de las herramientas a conectar y de la complejidad del flujo. Tras la llamada recibes un precio mensual exacto: pagas solo la cuota del agente, sin coste único de desarrollo.",
+      },
+      {
+        q: "¿Puedo partir de un agente del marketplace?",
+        a: "Sí, y es la vía más rápida. Instalas el agente más cercano y nos pides solo la parte que falta: pagarás la cuota del agente existente más la adaptación.",
+      },
+      {
+        q: "¿Mis datos siguen siendo míos?",
+        a: "Sí. Cada agente funciona con permisos separados y solo lee las herramientas que autorizas. Los datos del cliente nunca se usan para entrenar modelos.",
+      },
+      {
+        q: "¿Cuánto tarda la entrega?",
+        a: "Para un flujo bien definido la versión de lanzamiento llega en 10 días laborables. Los proyectos que necesitan histórico o integraciones no estándar requieren una evaluación dedicada.",
+      },
+      {
+        q: "¿Qué pasa después del lanzamiento?",
+        a: "Cada mes puedes ampliar o modificar el agente. Mantienes la misma cuota mensual, sin penalización de salida.",
+      },
+    ],
+    channelsTitle: "Canales",
+    phoneLabel: "Teléfono y WhatsApp",
+    phone: "+39 351 986 3021",
+    emailLabel: "Email de soporte",
   },
 
   legal: {
@@ -8613,6 +8792,66 @@ browseAll: "Alle Agenten ansehen",
     selected: "Ausgewählt: {subject}",
     somethingWrong: "Etwas ist schiefgelaufen",
     failedSend: "Nachricht konnte nicht gesendet werden",
+    // ── Individueller Agent: was du bekommst und wie wir arbeiten ─────────
+    customTitle: "Brauchst du einen individuellen Agenten?",
+    customIntro:
+      "Wenn keiner der 15 Marketplace-Agenten deinen Workflow abdeckt, bauen wir ihn dir. Keine Designgebühr: Du zahlst die monatliche Gebühr des Agenten, wie alle anderen.",
+    customPointsTitle: "Das ist enthalten",
+    customPoints: [
+      "Workflow-Analyse: Wir erfassen deinen heutigen Ablauf und die manuellen Schritte, die wegfallen",
+      "Agent mit eigenem Prompt und eigenen Tools, trainiert auf deinen Daten und deiner Terminologie",
+      "Anbindung an deine Systeme (CRM, E-Commerce, Kalender, Tickets)",
+      "Getrennte Berechtigungen und Daten: Der Agent handelt nur dort, wo du es erlaubst",
+      "Startversion innerhalb von 10 Werktagen nach Freigabe des Workflows",
+    ],
+    processTitle: "So arbeiten wir",
+    processSteps: [
+      {
+        title: "1. Du erzählst uns den Ablauf",
+        desc: "Ein Formular und ein Gespräch. Uns interessiert der echte Ablauf, nicht der gewünschte: Wo beginnt er, wer entscheidet, wo endet er.",
+      },
+      {
+        title: "2. Wir schicken einen Vorschlag",
+        desc: "Gezeichneter Workflow, Umfang, monatlicher Preis und Liefertermin. Wenn er dich nicht überzeugt, hören wir auf und du zahlst nichts.",
+      },
+      {
+        title: "3. Umsetzung und Test mit deinem Fall",
+        desc: "Wir bauen den Agenten und testen ihn in einer Testumgebung mit deinen echten Daten, bevor er live geht.",
+      },
+      {
+        title: "4. Übergabe und Support",
+        desc: "Aktivierung, Schulung deines Teams und monatliche Gebühr. Danach kannst du ihn jeden Monat ändern: Agenten wachsen mit deiner Arbeit.",
+      },
+    ],
+    whatToInclude:
+      "Für eine präzisere Antwort: Schreib im Nachrichten, welchen Prozess du automatisieren willst, welche Tools du heute nutzt und was nicht funktioniert.",
+    faqTitle: "Häufige Fragen",
+    faqs: [
+      {
+        q: "Was kostet ein individueller Agent?",
+        a: "Das hängt von den anzubindenden Tools und der Komplexität des Workflows ab. Nach dem Gespräch bekommst du einen genauen Monatspreis: Du zahlst nur die Gebühr des Agenten, keine einmaligen Entwicklungskosten.",
+      },
+      {
+        q: "Kann ich bei einem Marketplace-Agenten anfangen?",
+        a: "Ja, und das ist der schnellste Weg. Du installierst den passendsten Agenten und wir ergänzen nur den fehlenden Teil: Dann zahlst du die bestehende Gebühr plus Anpassung.",
+      },
+      {
+        q: "Bleiben meine Daten meine?",
+        a: "Ja. Jeder Agent läuft mit getrennten Berechtigungen und liest nur die Tools, die du freigibst. Kundendaten werden nie zum Trainieren von Modellen verwendet.",
+      },
+      {
+        q: "Wie lange dauert die Lieferung?",
+        a: "Bei einem klar definierten Workflow kommt die Startversion in 10 Werktagen. Projekte mit Historiendaten oder nicht standardisierten Anbindungen brauchen eine eigene Einschätzung.",
+      },
+      {
+        q: "Was passiert nach dem Start?",
+        a: "Du kannst den Agenten jeden Monat erweitern oder ändern. Die monatliche Gebühr bleibt gleich, ohne Ausstiegsstrafe.",
+      },
+    ],
+    channelsTitle: "Kanäle",
+    phoneLabel: "Telefon und WhatsApp",
+    phone: "+39 351 986 3021",
+    emailLabel: "Support-E-Mail",
   },
 
   legal: {
@@ -10951,6 +11190,66 @@ export const fr: Dictionary = {
     selected: "Sélectionné : {subject}",
     somethingWrong: "Une erreur est survenue",
     failedSend: "Impossible d'envoyer le message",
+    // ── Agent sur mesure : ce que vous obtenez et comment nous travaillons ─
+    customTitle: "Besoin d'un agent sur mesure ?",
+    customIntro:
+      "Si aucun des 15 agents du marketplace ne couvre votre workflow, nous le construisons pour vous. Aucun frais de conception : vous payez l'abonnement mensuel de l'agent, comme tout le monde.",
+    customPointsTitle: "Ce qui est inclus",
+    customPoints: [
+      "Analyse du workflow : nous cartographions le processus actuel et les étapes manuelles à supprimer",
+      "Un agent avec prompt et outils dédiés, entraîné sur vos données et votre vocabulaire",
+      "Intégration avec vos systèmes (CRM, e-commerce, calendrier, tickets)",
+      "Permissions et données séparées : l'agent n'agit que là où vous l'autorisez",
+      "Version de lancement sous 10 jours ouvrés après validation du workflow",
+    ],
+    processTitle: "Comment nous travaillons",
+    processSteps: [
+      {
+        title: "1. Vous nous décrivez le processus",
+        desc: "Un formulaire et un appel. Ce qui nous intéresse, c'est le flux réel, pas le flux rêvé : où il commence, qui décide, où il finit.",
+      },
+      {
+        title: "2. Nous envoyons une proposition",
+        desc: "Workflow dessiné, périmètre, prix mensuel et date de livraison. Si cela ne vous convainc pas, nous arrêtons et vous ne payez rien.",
+      },
+      {
+        title: "3. Développement et test sur votre cas",
+        desc: "Nous construisons l'agent et le testons avec vos données réelles, dans un environnement de test, avant la mise en production.",
+      },
+      {
+        title: "4. Livraison et support",
+        desc: "Activation, formation de l'équipe et abonnement mensuel. Ensuite vous pouvez le modifier chaque mois : les agents évoluent avec votre travail.",
+      },
+    ],
+    whatToInclude:
+      "Pour une réponse plus précise, indiquez dans le message quel processus vous voulez automatiser, quels outils vous utilisez aujourd'hui et ce qui ne fonctionne pas.",
+    faqTitle: "Questions fréquentes",
+    faqs: [
+      {
+        q: "Combien coûte un agent sur mesure ?",
+        a: "Cela dépend des outils à connecter et de la complexité du workflow. Après l'appel vous recevez un prix mensuel précis : vous ne payez que l'abonnement de l'agent, sans coût de développement unique.",
+      },
+      {
+        q: "Puis-je partir d'un agent du marketplace ?",
+        a: "Oui, et c'est la voie la plus rapide. Vous installez l'agent le plus proche et vous ne nous demandez que la partie manquante : vous payez l'abonnement de l'agent existant plus l'adaptation.",
+      },
+      {
+        q: "Mes données restent-elles les miennes ?",
+        a: "Oui. Chaque agent fonctionne avec des permissions séparées et ne lit que les outils que vous autorisez. Les données clients ne servent jamais à entraîner des modèles.",
+      },
+      {
+        q: "Quel est le délai de livraison ?",
+        a: "Pour un workflow bien défini, la version de lancement arrive en 10 jours ouvrés. Les projets nécessitant des données historiques ou des intégrations non standard demandent une évaluation dédiée.",
+      },
+      {
+        q: "Que se passe-t-il après le lancement ?",
+        a: "Chaque mois, vous pouvez étendre ou modifier l'agent. Vous conservez le même abonnement mensuel, sans pénalité de sortie.",
+      },
+    ],
+    channelsTitle: "Canaux",
+    phoneLabel: "Téléphone et WhatsApp",
+    phone: "+39 351 986 3021",
+    emailLabel: "Email du support",
   },
 
   legal: {

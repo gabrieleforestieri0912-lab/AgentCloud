@@ -4,16 +4,17 @@ import { useState } from "react";
 import {
   Check,
   AlertCircle,
+  ChevronDown,
   Loader2,
   Mail,
   MessageSquare,
+  Phone,
   Sparkles,
   Send,
 } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import HeroBubbles from "@/components/HeroBubbles";
 import { useLanguage } from "@/components/LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 
@@ -74,8 +75,9 @@ export default function ContactPage() {
         }}
       />
 
-      {/* Icone app (sinistra) e agenti (destra) fluttuanti in background */}
-      <HeroBubbles />
+      {/* HeroBubbles rimosso: le icone flottanti rendevano illeggibile una
+          pagina che ora porta contenuto tecnico (cosa include, processo, FAQ).
+          Resta il gradiente radiale di sfondo, che non compete col testo. */}
 
       <Navbar />
 
@@ -105,7 +107,9 @@ export default function ContactPage() {
                     <Mail size={20} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white">{dict.contact.emailUs}</h3>
+                    <h3 className="text-sm font-bold text-white">
+                      {dict.contact.emailLabel}
+                    </h3>
                     <Link
                       href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@agentcloud.agency"}`}
                       className="text-sm font-semibold text-neutral-400 hover:text-brand-400 transition-colors"
@@ -115,6 +119,22 @@ export default function ContactPage() {
                   </div>
                 </div>
 
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-400">
+                    <Phone size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      {dict.contact.phoneLabel}
+                    </h3>
+                    <Link
+                      href={`tel:${dict.contact.phone.replace(/\s/g, "")}`}
+                      className="text-sm font-semibold text-neutral-400 hover:text-brand-400 transition-colors"
+                    >
+                      {dict.contact.phone}
+                    </Link>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-12 rounded-2xl border border-white/5 bg-neutral-900 p-6">
@@ -232,6 +252,9 @@ export default function ContactPage() {
                     rows={5}
                     className="w-full rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 disabled:opacity-50 resize-none"
                   />
+                  <p className="mt-2 text-xs leading-5 text-neutral-500">
+                    {dict.contact.whatToInclude}
+                  </p>
                 </div>
 
                 <button
@@ -270,6 +293,95 @@ export default function ContactPage() {
               )}
             </div>
           </div>
+
+          {/* ── Agente su misura: cosa include ─────────────────────────── */}
+          <section className="mt-20 rounded-2xl border border-white/5 bg-neutral-900 p-6 sm:p-8">
+            <div className="mb-8 flex items-center gap-2">
+              <Sparkles size={14} className="text-brand-400" />
+              <span className="text-xs font-bold uppercase tracking-[0.08em] text-brand-400">
+                {dict.contact.customTitle}
+              </span>
+            </div>
+
+            <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr]">
+              <div>
+                <p className="text-lg leading-8 text-neutral-300">
+                  {dict.contact.customIntro}
+                </p>
+                <Link
+                  href="/agents"
+                  className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-brand-400 transition-colors hover:text-brand-300"
+                >
+                  {dict.marketplace.browseAll}
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-white">
+                  {dict.contact.customPointsTitle}
+                </h3>
+                <ul className="mt-4 space-y-3">
+                  {dict.contact.customPoints.map((point) => (
+                    <li key={point} className="flex gap-3 text-sm leading-6 text-neutral-400">
+                      <Check
+                        size={16}
+                        className="mt-0.5 shrink-0 text-emerald-400"
+                        aria-hidden
+                      />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Come lavoriamo ──────────────────────────────────────────── */}
+          <section className="mt-6">
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              {dict.contact.processTitle}
+            </h2>
+            <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {dict.contact.processSteps.map((step, i) => (
+                <li
+                  key={step.title}
+                  className="rounded-2xl border border-white/5 bg-neutral-900 p-5"
+                >
+                  <span
+                    className="mb-4 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-xs font-black text-brand-400"
+                    aria-hidden
+                  >
+                    {i + 1}
+                  </span>
+                  <h3 className="text-sm font-bold text-white">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-neutral-400">{step.desc}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          {/* ── FAQ ─────────────────────────────────────────────────────── */}
+          <section className="mt-16">
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              {dict.contact.faqTitle}
+            </h2>
+            <div className="mt-6 divide-y divide-white/5 rounded-2xl border border-white/5 bg-neutral-900">
+              {dict.contact.faqs.map((faq) => (
+                <details key={faq.q} className="group p-5 sm:p-6">
+                  <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-sm font-bold text-white">
+                    <span>{faq.q}</span>
+                    <ChevronDown
+                      size={18}
+                      className="mt-0.5 shrink-0 text-neutral-500 transition-transform group-open:rotate-180"
+                      aria-hidden
+                    />
+                  </summary>
+                  <p className="mt-3 text-sm leading-6 text-neutral-400">{faq.a}</p>
+                </details>
+              ))}
+            </div>
+          </section>
         </div>
       </section>
 
