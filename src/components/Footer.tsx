@@ -42,6 +42,19 @@ export default function Footer() {
     );
   };
 
+  const companyLinks = [
+    { label: dict.footer.about, href: "/about" },
+    { label: dict.footer.faq, href: "/#faq" },
+    { label: dict.footer.contact, href: "/contact" },
+  ];
+
+  const productLinks = [
+    { label: dict.navbar.marketplace, href: "/agents" },
+    { label: dict.navbar.solutions, href: "/#soluzioni" },
+    { label: dict.navbar.integrations, href: "/#integrazioni" },
+    { label: "CLI & Estensione", href: "/install" },
+  ];
+
   return (
     <footer className="relative border-t border-white/5 pb-[env(safe-area-inset-bottom)] text-white">
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/70 to-transparent" />
@@ -54,9 +67,9 @@ export default function Footer() {
       />
 
       <div className="relative mx-auto max-w-7xl 3xl:max-w-[1720px] px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-8 py-20 border-b border-white/10">
+        <div className="grid grid-cols-1 gap-12 border-b border-white/10 py-20 sm:grid-cols-2 lg:grid-cols-6 lg:gap-8">
           {/* Colonna brand */}
-          <div className="flex flex-col items-start gap-4">
+          <div className="flex flex-col items-start gap-4 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="relative h-8 w-8">
                 <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="32px" />
@@ -66,30 +79,58 @@ export default function Footer() {
             <p className="text-sm font-semibold text-neutral-400 select-none">{dict.footer.tagline}</p>
           </div>
 
-          {/* Colonna contatti — solo link di contatto */}
+          {/* Colonna prodotto */}
+          <div className="flex flex-col gap-3.5">
+            <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.navbar.marketplace}</span>
+            <ul className="flex flex-col gap-3">
+              {productLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <Link href={href} className="block py-1 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Colonna azienda */}
+          <div className="flex flex-col gap-3.5">
+            <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.footer.company}</span>
+            <ul className="flex flex-col gap-3">
+              {companyLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <Link href={href} className="block py-1 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Colonna contatti */}
           <div className="flex flex-col gap-3.5">
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.footer.contact}</span>
             <ul className="flex flex-col gap-3">
               <li>
-                <a href="tel:+393519863021" className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                <a href="tel:+393519863021" className="block py-1 text-base font-bold text-neutral-300 hover:text-white transition-colors">
                   {dict.footer.phone}
                 </a>
               </li>
               <li>
-                <a href="mailto:info@agentcloud.agency" className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                <a href="mailto:info@agentcloud.agency" className="block py-1 text-base font-bold text-neutral-300 hover:text-white transition-colors">
                   {dict.footer.email}
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Colonna social — contatti social */}
+          {/* Colonna social */}
           <div className="flex flex-col gap-3.5">
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.footer.follow}</span>
             <ul className="flex flex-col gap-3">
               {socialLinks.map(({ label, href }) => (
                 <li key={label}>
-                  <Link href={href} target="_blank" rel="noopener noreferrer" className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                  <Link href={href} target="_blank" rel="noopener noreferrer" className="block py-1 text-base font-bold text-neutral-300 hover:text-white transition-colors">
                     {label}
                   </Link>
                 </li>
