@@ -397,20 +397,46 @@ export default function ChatInterface({
     return Array.from(bySlug.values());
   }, [effectiveAvailableAgents, agentsBySlug, selectedAgentSlugs]);
 
-  /** Aggiunge/toglie un agente dalla conversazione e lo persiste nella cronologia. */
+  /** Cambia gli agenti della chat: qualsiasi modifica all'insieme apre una
+      NUOVA conversazione, così ogni chat resta con un solo contesto e non si
+      mischiano agenti diversi negli stessi messaggi. Unica eccezione: la chat
+      nuova ancora vuota, che viene riusata sul posto per non accumulare
+      conversazioni vuote. Il testo già digitato viene riportato nella nuova. */
   function toggleAgent(slug: string) {
     const next = selectedAgentSlugs.includes(slug)
       ? selectedAgentSlugs.filter((s) => s !== slug)
       : [...selectedAgentSlugs, slug];
-    setSelectedAgentSlugs(next);
-    setActiveAgentId(next[0] ?? "");
-    if (activeId) {
+    setShowAgentPicker(false);
+    const activeConv = conversationsRef.current.find((c) => c.id === activeId);
+    if (activeConv && activeConv.messages.length === 0) {
+      // Chat nuova ancora vuota: cambia agente sul posto.
+      setSelectedAgentSlugs(next);
+      setActiveAgentId(next[0] ?? "");
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === activeId ? { ...c, agentSlugs: [...next] } : c,
+          c.id === activeConv.id ? { ...c, agentSlugs: [...next] } : c,
         ),
       );
+      return;
     }
+    // Fork: la chat corrente resta intatta in cronologia, si riparte da una
+    // nuova con gli agenti scelti. Testo e allegati digitati seguono l'utente.
+    const carriedInput = input;
+    const carriedAttachments = attach.take();
+    const conv: LocalConversation = {
+      id: generateId(),
+      title: dict.chat.newChat,
+      messages: [],
+      created_at: new Date().toISOString(),
+      agentSlugs: [...next],
+    };
+    setConversations((prev) => [conv, ...prev]);
+    setActiveId(conv.id);
+    setSelectedAgentSlugs(next);
+    setActiveAgentId(next[0] ?? "");
+    setInput(carriedInput);
+    attach.restore(carriedAttachments);
+    setMobileSidebarOpen(false);
   }
 
   // Gli agenti i cui tool di default leggono Gmail/Calendar richiedono una
@@ -1355,6 +1381,9 @@ export default function ChatInterface({
           <div className="absolute bottom-full right-0 z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl">
             <p className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
               {dict.chat.agentsInChat}
+            </p>
+            <p className="px-2 pb-1.5 text-[11px] font-semibold leading-4 text-neutral-500">
+              {dict.chat.agentSwitchNewChat}
             </p>
             {selectableAgents.length === 0 ? (
               <p className="px-2 py-2 text-xs text-neutral-500">
