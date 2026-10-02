@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
   Terminal,
   Globe,
@@ -24,6 +25,8 @@ import {
 type ActiveTab = "cli" | "extension" | "mobile";
 
 export default function InstallClient() {
+  const { dict } = useLanguage();
+  const ins = dict.install;
   const [activeTab, setActiveTab] = useState<ActiveTab>("cli");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [cliPkg, setCliPkg] = useState<"npm" | "pnpm" | "yarn" | "npx">("npm");
@@ -66,17 +69,17 @@ export default function InstallClient() {
         <div className="flex justify-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-indigo-300 backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Ecosistema Multi-Piattaforma AgentCloud</span>
+            <span>{ins.badge}</span>
           </div>
         </div>
 
         {/* Hero Title */}
         <div className="text-center mt-6 max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white via-white/95 to-white/60">
-            AgentCloud ovunque lavori.
+            {ins.heroTitle}
           </h1>
           <p className="mt-4 text-base md:text-lg text-neutral-300 leading-relaxed">
-            Installa la <strong>CLI</strong> per automatizzare da terminale e script, aggiungi l&apos;<strong>estensione Chrome</strong> per interagire dal browser, o usa l&apos;<strong>app mobile Flutter</strong> per il monitoraggio in mobilità.
+            {ins.heroA1} <strong>{ins.heroCli}</strong> {ins.heroA2} <strong>{ins.heroExt}</strong> {ins.heroA3} <strong>{ins.heroMobile}</strong> {ins.heroA4}
           </p>
         </div>
 
@@ -89,7 +92,7 @@ export default function InstallClient() {
                 <Terminal className="w-5 h-5 text-indigo-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs text-neutral-400 font-medium">Installa CLI (Globale)</div>
+                <div className="text-xs text-neutral-400 font-medium">{ins.quickCliTitle}</div>
                 <div className="text-sm font-mono text-indigo-200 truncate mt-0.5">
                   npm install -g @agentcloud/cli
                 </div>
@@ -102,12 +105,12 @@ export default function InstallClient() {
               {copiedKey === "quick-cli" ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Copiato!</span>
+                  <span>{ins.copied}</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5" />
-                  <span>Copia</span>
+                  <span>{ins.copy}</span>
                 </>
               )}
             </button>
@@ -120,7 +123,7 @@ export default function InstallClient() {
                 <Globe className="w-5 h-5 text-cyan-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs text-neutral-400 font-medium">Estensione Chrome (URL)</div>
+                <div className="text-xs text-neutral-400 font-medium">{ins.quickExtTitle}</div>
                 <div className="text-sm font-mono text-cyan-200 truncate mt-0.5">
                   agentcloud.agency/install#extension
                 </div>
@@ -133,12 +136,12 @@ export default function InstallClient() {
               {copiedKey === "quick-ext" ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  <span>Copiato!</span>
+                  <span>{ins.copied}</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5" />
-                  <span>Copia URL</span>
+                  <span>{ins.copyUrl}</span>
                 </>
               )}
             </button>
@@ -157,7 +160,7 @@ export default function InstallClient() {
               }`}
             >
               <Terminal className="w-4 h-4" />
-              <span>CLI Terminale</span>
+              <span>{ins.tabCli}</span>
             </button>
             <button
               onClick={() => setActiveTab("extension")}
@@ -168,7 +171,7 @@ export default function InstallClient() {
               }`}
             >
               <Globe className="w-4 h-4" />
-              <span>Estensione Chrome</span>
+              <span>{ins.tabExt}</span>
             </button>
             <button
               onClick={() => setActiveTab("mobile")}
@@ -179,7 +182,7 @@ export default function InstallClient() {
               }`}
             >
               <Smartphone className="w-4 h-4" />
-              <span>App Mobile (Flutter)</span>
+              <span>{ins.tabMobile}</span>
             </button>
           </div>
         </div>
@@ -192,10 +195,10 @@ export default function InstallClient() {
                 <div>
                   <h2 className="text-2xl font-bold flex items-center gap-2.5 text-white">
                     <Terminal className="w-6 h-6 text-indigo-400" />
-                    <span>AgentCloud CLI</span>
+                    <span>{ins.cliTitle}</span>
                   </h2>
                   <p className="mt-1 text-sm text-neutral-400">
-                    Esegui agenti in background, passa file locali e integra automazioni nei tuoi script bash, cron o pipeline CI/CD.
+                    {ins.cliDesc}
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/5 border border-white/10 text-xs">
@@ -218,7 +221,7 @@ export default function InstallClient() {
               {/* Install Snippet */}
               <div className="mt-6">
                 <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-                  1. Comando di Installazione
+                  {ins.stepInstall}
                 </div>
                 <div className="flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-4 font-mono text-sm text-indigo-300">
                   <div className="flex items-center gap-3 select-all">
@@ -228,7 +231,7 @@ export default function InstallClient() {
                   <button
                     onClick={() => copyToClipboard(cliInstallCmd, "cli-install")}
                     className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white transition-colors cursor-pointer"
-                    title="Copia comando"
+                    title={ins.copyCommand}
                   >
                     {copiedKey === "cli-install" ? (
                       <Check className="w-4 h-4 text-emerald-400" />
@@ -242,7 +245,7 @@ export default function InstallClient() {
               {/* Login Snippet */}
               <div className="mt-5">
                 <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-                  2. Autenticazione con la tua API Key
+                  {ins.stepAuth}
                 </div>
                 <div className="flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-4 font-mono text-sm text-neutral-200">
                   <div className="flex items-center gap-3 select-all">
@@ -275,14 +278,14 @@ export default function InstallClient() {
                 </div>
                 <div className="p-5 font-mono text-xs md:text-sm space-y-3 leading-relaxed text-neutral-300">
                   <div className="flex items-center gap-2 text-indigo-400">
-                    <span>$ agentcloud run email-assistant --prompt &quot;Invia riassunto lead settimanali&quot;</span>
+                    <span>$ agentcloud run email-assistant --prompt &quot;{ins.termPrompt}&quot;</span>
                   </div>
-                  <div className="text-neutral-500">Connessione stabilita con cloud.agentcloud.agency</div>
-                  <div className="text-neutral-500">Agente &apos;email-assistant&apos; caricato con successo</div>
+                  <div className="text-neutral-500">{ins.termConnected}</div>
+                  <div className="text-neutral-500">{ins.termLoaded}</div>
                   <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-neutral-300">
-                    <span className="text-emerald-400 font-semibold">[Output Agente]:</span> Trovati 14 lead qualificati negli ultimi 7 giorni. Report generato e inoltrato al canale configurato.
+                    <span className="text-emerald-400 font-semibold">{ins.termOutputLabel}</span> {ins.termOutput}
                   </div>
-                  <div className="text-neutral-600 text-xs">Tempo di esecuzione: 1.28s • Token consumati: 420</div>
+                  <div className="text-neutral-600 text-xs">{ins.termStats}</div>
                 </div>
               </div>
 
@@ -290,26 +293,26 @@ export default function InstallClient() {
               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="text-indigo-400 font-semibold text-sm flex items-center gap-1.5">
-                    <Zap className="w-4 h-4" /> Scripting & Cron
+                    <Zap className="w-4 h-4" /> {ins.featScripting}
                   </div>
                   <div className="mt-1 text-xs text-neutral-400">
-                    Pianifica l&apos;esecuzione periodica degli agenti via crontab o GitHub Actions.
+                    {ins.featScriptingDesc}
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="text-indigo-400 font-semibold text-sm flex items-center gap-1.5">
-                    <Code className="w-4 h-4" /> Output JSON
+                    <Code className="w-4 h-4" /> {ins.featJson}
                   </div>
                   <div className="mt-1 text-xs text-neutral-400">
-                    Flag <code className="text-indigo-300">--json</code> per pipe diretta con <code className="text-indigo-300">jq</code> e altri tool Unix.
+                    {ins.featJsonA} <code className="text-indigo-300">--json</code> {ins.featJsonB} <code className="text-indigo-300">jq</code> {ins.featJsonC}
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="text-indigo-400 font-semibold text-sm flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4" /> Zero Config
+                    <ShieldCheck className="w-4 h-4" /> {ins.featZero}
                   </div>
                   <div className="mt-1 text-xs text-neutral-400">
-                    Archiviazione sicura delle credenziali nel keyring di sistema o tramite variabili d&apos;ambiente.
+                    {ins.featZeroDesc}
                   </div>
                 </div>
               </div>
@@ -325,14 +328,14 @@ export default function InstallClient() {
                 <div>
                   <h2 className="text-2xl font-bold flex items-center gap-2.5 text-white">
                     <Globe className="w-6 h-6 text-cyan-400" />
-                    <span>Estensione Chrome per AgentCloud</span>
+                    <span>{ins.extTitle}</span>
                   </h2>
                   <p className="mt-1 text-sm text-neutral-400">
-                    Porta il copilota AI su qualsiasi scheda: automazioni web, scraping di pagine, composizione email e analisi in tempo reale.
+                    {ins.extDesc}
                   </p>
                 </div>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-                  Manifest V3 Ufficiale
+                  {ins.extBadge}
                 </span>
               </div>
 
@@ -341,13 +344,13 @@ export default function InstallClient() {
                 <div className="p-6 rounded-2xl bg-gradient-to-br from-cyan-950/40 to-neutral-900 border border-cyan-500/20 flex flex-col justify-between">
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wider text-cyan-400">
-                      Installazione Diretta
+                      {ins.extDirect}
                     </div>
                     <h3 className="text-lg font-bold text-white mt-1">
-                      Aggiungi al tuo browser Chromium
+                      {ins.extDirectTitle}
                     </h3>
                     <p className="text-xs text-neutral-300 mt-2 leading-relaxed">
-                      Compatibile con Google Chrome, Microsoft Edge, Brave, Arc e qualsiasi browser basato su Chromium.
+                      {ins.extDirectDesc}
                     </p>
                   </div>
                   <div className="mt-6 flex flex-col gap-2.5">
@@ -358,17 +361,17 @@ export default function InstallClient() {
                       {copiedKey === "ext-url" ? (
                         <>
                           <Check className="w-4 h-4" />
-                          <span>URL Estensione Copiato!</span>
+                          <span>{ins.extUrlCopied}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-4 h-4" />
-                          <span>Copia URL di Installazione</span>
+                          <span>{ins.extCopyUrl}</span>
                         </>
                       )}
                     </button>
                     <div className="text-[11px] text-center text-neutral-400">
-                      Link permanente: <span className="text-cyan-300 font-mono">agentcloud.agency/install#extension</span>
+                      {ins.extPerma}<span className="text-cyan-300 font-mono">agentcloud.agency/install#extension</span>
                     </div>
                   </div>
                 </div>
@@ -377,22 +380,22 @@ export default function InstallClient() {
                 <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col justify-between">
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
-                      Installazione Manuale / Beta
+                      {ins.extManual}
                     </div>
                     <h3 className="text-lg font-bold text-white mt-1">
-                      Carica estensione decompressa
+                      {ins.extManualTitle}
                     </h3>
                     <ol className="mt-3 text-xs text-neutral-300 space-y-2 list-decimal list-inside">
-                      <li>Apri nel browser <code className="text-cyan-300 font-mono">chrome://extensions</code></li>
-                      <li>Attiva la spunta <strong>Modalità sviluppatore</strong> in alto a destra</li>
-                      <li>Clicca su <strong>Carica estensione non pacchettizzata</strong></li>
-                      <li>Seleziona la cartella <code className="text-indigo-300 font-mono">extension/</code> del progetto</li>
+                      <li>{ins.extStep1a} <code className="text-cyan-300 font-mono">chrome://extensions</code></li>
+                      <li>{ins.extStep2a} <strong>{ins.extStep2b}</strong> {ins.extStep2c}</li>
+                      <li>{ins.extStep3a} <strong>{ins.extStep3b}</strong></li>
+                      <li>{ins.extStep4a} <code className="text-indigo-300 font-mono">extension/</code> {ins.extStep4b}</li>
                     </ol>
                   </div>
                   <div className="mt-6">
                     <div className="p-3 rounded-xl bg-neutral-950 border border-white/10 text-xs text-neutral-400 flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>Supporta SidePanel nativo e storage crittografato locale.</span>
+                      <span>{ins.extNote}</span>
                     </div>
                   </div>
                 </div>
@@ -402,26 +405,26 @@ export default function InstallClient() {
               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="text-cyan-400 font-semibold text-sm flex items-center gap-1.5">
-                    <Layers className="w-4 h-4" /> Side Panel Laterale
+                    <Layers className="w-4 h-4" /> {ins.extFeat1t}
                   </div>
                   <div className="mt-1 text-xs text-neutral-400">
-                    Accedi all&apos;assistente AI accanto a qualsiasi pagina senza mai cambiare finestra o scheda.
+                    {ins.extFeat1d}
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="text-cyan-400 font-semibold text-sm flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4" /> Comprensione del Contesto
+                    <Sparkles className="w-4 h-4" /> {ins.extFeat2t}
                   </div>
                   <div className="mt-1 text-xs text-neutral-400">
-                    L&apos;agente legge automaticamente il contenuto della pagina attiva quando richiesto.
+                    {ins.extFeat2d}
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="text-cyan-400 font-semibold text-sm flex items-center gap-1.5">
-                    <Zap className="w-4 h-4" /> Compilazione Form
+                    <Zap className="w-4 h-4" /> {ins.extFeat3t}
                   </div>
                   <div className="mt-1 text-xs text-neutral-400">
-                    Compila form complessi e bozze email con un singolo clic grazie all&apos;agente dedicato.
+                    {ins.extFeat3d}
                   </div>
                 </div>
               </div>
@@ -437,37 +440,37 @@ export default function InstallClient() {
                 <div>
                   <h2 className="text-2xl font-bold flex items-center gap-2.5 text-white">
                     <Smartphone className="w-6 h-6 text-purple-400" />
-                    <span>AgentCloud Mobile (Flutter)</span>
+                    <span>{ins.mobTitle}</span>
                   </h2>
                   <p className="mt-1 text-sm text-neutral-400">
-                    L&apos;app nativa per iOS e Android realizzata in Flutter per governare i tuoi agenti ovunque ti trovi.
+                    {ins.mobDesc}
                   </p>
                 </div>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/30">
-                  iOS & Android Ready
+                  {ins.mobBadge}
                 </span>
               </div>
 
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                 <div className="space-y-4">
                   <h3 className="text-xl font-bold text-white">
-                    Tutto il potere del cloud nel tuo palmo
+                    {ins.mobH}
                   </h3>
                   <p className="text-sm text-neutral-300 leading-relaxed">
-                    Ricevi notifiche push istantanee quando un agente termina una sequenza di follow-up, approva pagamenti o risolve un ticket cliente.
+                    {ins.mobP}
                   </p>
                   <ul className="space-y-2.5 text-xs text-neutral-300 pt-2">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>Chat in tempo reale con gli agenti tramite SSE</span>
+                      <span>{ins.mobF1}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>Archiviazione token sicura con FlutterSecureStorage</span>
+                      <span>{ins.mobF2}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>Dark theme elegante con Material 3 e colori AgentCloud</span>
+                      <span>{ins.mobF3}</span>
                     </li>
                   </ul>
 
@@ -479,16 +482,16 @@ export default function InstallClient() {
                       {copiedKey === "mobile-url" ? (
                         <>
                           <Check className="w-3.5 h-3.5" />
-                          <span>Link Copiato!</span>
+                          <span>{ins.mobCopied}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5" />
-                          <span>Copia Link Mobile</span>
+                          <span>{ins.mobCopyLink}</span>
                         </>
                       )}
                     </button>
-                    <span className="text-xs text-neutral-400">Build compilata: <code className="text-purple-300 font-mono">mobile/lib/main.dart</code></span>
+                    <span className="text-xs text-neutral-400">{ins.mobBuilt}<code className="text-purple-300 font-mono">mobile/lib/main.dart</code></span>
                   </div>
                 </div>
 
@@ -496,12 +499,12 @@ export default function InstallClient() {
                   <div className="w-16 h-16 mx-auto rounded-2xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center">
                     <Smartphone className="w-8 h-8 text-purple-400" />
                   </div>
-                  <div className="mt-4 text-base font-bold text-white">Esecuzione Locale con Flutter</div>
+                  <div className="mt-4 text-base font-bold text-white">{ins.mobLocal}</div>
                   <div className="mt-2 text-xs font-mono text-purple-300 bg-white/[0.04] p-2.5 rounded-xl border border-white/5 select-all">
                     cd mobile && flutter run
                   </div>
                   <div className="mt-3 text-xs text-neutral-400">
-                    Analisi del codice: <strong>0 errori</strong> con flutter analyze.
+                    {ins.mobAnalyzeA} <strong>{ins.mobAnalyzeB}</strong> {ins.mobAnalyzeC}
                   </div>
                 </div>
               </div>
@@ -516,13 +519,13 @@ export default function InstallClient() {
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">
                   <Key className="w-3.5 h-3.5" />
-                  <span>Autenticazione Unificata</span>
+                  <span>{ins.apiBadge}</span>
                 </div>
                 <h3 className="text-xl font-bold text-white">
-                  Collega i tuoi strumenti con la tua API Key
+                  {ins.apiTitle}
                 </h3>
                 <p className="text-sm text-neutral-300 max-w-xl">
-                  Usa una singola chiave per autenticare sia la CLI che l&apos;estensione Chrome e l&apos;app mobile. Generala con un clic nelle tue impostazioni.
+                  {ins.apiDesc}
                 </p>
               </div>
 
@@ -530,7 +533,7 @@ export default function InstallClient() {
                 href="/settings"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-neutral-200 text-neutral-950 font-bold text-sm transition-all shrink-0 shadow-lg shadow-white/10"
               >
-                <span>Genera API Key</span>
+                <span>{ins.apiCta}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

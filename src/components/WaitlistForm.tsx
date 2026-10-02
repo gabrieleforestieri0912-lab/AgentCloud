@@ -41,6 +41,7 @@ import Footer from "@/components/Footer";
 import InstagramFollowCard from "@/components/InstagramFollowCard";
 import { AVAILABLE_AGENTS } from "@/lib/agents";
 import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { validateAndSanitizeEmail, HONEYPOT_FIELD_NAME } from "@/lib/forms-security";
@@ -90,6 +91,9 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
     shareWhatsapp: string; shareX: string; shareEmail: string; shareSms: string; shareText: string;
     faqBadge: string; faqTitle: string; faqItems: { q: string; a: string }[]; footerCtaTitle: string; footerCtaSubtitle: string; noSpam: string;
     navJoin: string; navJoinShort: string; heroDateLabel: string; heroDateDetails: string; heroDateNote: string;
+    launchDate: string; rankReferralLabel: string; rankInstagramLabel: string; oneClick: string;
+    howStep1: string; howStep2: string; howStep3: string; noCodeBadge: string;
+    ideaLabel: string; integrationsLabel: string; budgetLabel: string; supportLine: string;
     chiSiamoBadge: string; chiSiamoTitle: string; chiSiamoSub: string;
     foundersGabBio: string; foundersAlleBio: string; foundersMatteoBio: string;
     teamPhotosNote: string; teamPhotosLink: string;
@@ -534,7 +538,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           <div className="mb-5 inline-flex max-w-full flex-wrap items-center justify-center gap-x-2.5 gap-y-0.5 rounded-full border border-sky-400/30 bg-sky-400/10 px-4 py-1.5 3xl:px-5 3xl:py-2 backdrop-blur">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" />
             <span className="text-xs 3xl:text-sm font-semibold tracking-wide text-sky-300">{w.heroDateLabel as string}</span>
-            <span className="text-xs 3xl:text-sm font-bold text-white">1 OTTOBRE 2026</span>
+            <span className="text-xs 3xl:text-sm font-bold text-white">{w.launchDate as string}</span>
             <span className="text-xs 3xl:text-sm font-medium text-sky-200/70">· {w.heroDateDetails as string}</span>
           </div>
           {/* Titolo 2 righe — responsive fluido: evita overflow su 320px, scala su 3xl */}
@@ -627,11 +631,11 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                       </div>
                       <div className="rounded-xl border p-2.5 xs:p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#4B6357", color: "#15231F" }}>
                         <p className="text-base xs:text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.referralsCompleted}</p>
-                        <p className="text-[9px] xs:text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>Referral ×3</p>
+                        <p className="text-[9px] xs:text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>{w.rankReferralLabel as string}</p>
                       </div>
                       <div className="rounded-xl border p-2.5 xs:p-3 text-center" style={{ backgroundColor: "#FFFFFF", borderColor: "#4B6357", color: "#15231F" }}>
                         <p className="text-base xs:text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{ranking.instagramFollow}</p>
-                        <p className="text-[9px] xs:text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>Instagram ×1</p>
+                        <p className="text-[9px] xs:text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4B6357" }}>{w.rankInstagramLabel as string}</p>
                       </div>
                     </div>
                   )}
@@ -815,7 +819,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                   <BrandLogo slug={it.brand} size={20} />
                 </div>
                 <span className="text-[11px] xs:text-xs font-semibold text-white">{it.name}</span>
-                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">1 click</span>
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">{w.oneClick as string}</span>
               </div>
             ))}
           </div>
@@ -854,18 +858,18 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               </div>
               <ol className="mt-3 space-y-2 text-sm text-neutral-300">
                 <li className="flex gap-2">
-                  <span className="font-bold text-brand-400">1.</span> Racconti l&apos;idea — 2 minuti nel form
+                  <span className="font-bold text-brand-400">1.</span> {w.howStep1 as string}
                 </li>
                 <li className="flex gap-2">
-                  <span className="font-bold text-brand-400">2.</span> Ricevi proposta e preventivo in 24h
+                  <span className="font-bold text-brand-400">2.</span> {w.howStep2 as string}
                 </li>
                 <li className="flex gap-2">
-                  <span className="font-bold text-brand-400">3.</span> Consegna in 3-7 giorni, già nel tuo dashboard
+                  <span className="font-bold text-brand-400">3.</span> {w.howStep3 as string}
                 </li>
               </ol>
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-bold text-emerald-300">
-                  <Check size={12} /> Senza codice
+                  <Check size={12} /> {w.noCodeBadge as string}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2.5 py-1 text-xs font-semibold text-neutral-300">GDPR-ready</span>
               </div>
@@ -885,11 +889,11 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               <p className="text-sm text-neutral-400">{w.customFormHint as string}</p>
               <div className="mt-5 space-y-3">
                 <div>
-                  <label className="text-xs font-semibold text-neutral-300">La tua idea</label>
+                  <label className="text-xs font-semibold text-neutral-300">{w.ideaLabel as string}</label>
                   <div className="mt-1 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm text-neutral-500">{w.customIdeaPh as string}</div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-neutral-300">Integrazioni</label>
+                  <label className="text-xs font-semibold text-neutral-300">{w.integrationsLabel as string}</label>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     {["shopify", "gmail", "slack", "stripe", "notion"].map((s) => (
                       <span key={s} className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs font-medium text-neutral-300">
@@ -901,7 +905,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                   <div className="mt-1 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2 text-sm text-neutral-500">{w.customIntegrationsPh as string}</div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-neutral-300">Budget</label>
+                  <label className="text-xs font-semibold text-neutral-300">{w.budgetLabel as string}</label>
                   <div className="mt-1 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm text-neutral-500">{w.customBudgetPh as string}</div>
                 </div>
                 <button onClick={openForm} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition hover:bg-brand-400">
@@ -909,7 +913,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
                 </button>
                 <p className="text-center text-xs text-neutral-500">{w.customNote as string}</p>
                 <div className="flex items-center justify-center gap-1.5 pt-1 text-xs text-neutral-500">
-                  <Headset size={12} className="text-brand-400" /> Supporto dedicato • Risposta in 24h
+                  <Headset size={12} className="text-brand-400" /> {w.supportLine as string}
                 </div>
               </div>
             </div>
@@ -1320,40 +1324,39 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
         <div className="mt-8 3xl:mt-10 grid gap-6 3xl:gap-8 sm:grid-cols-3">
           {[
             {
-              name: "Gabriele Forestieri",
-              role: "Developer",
               img: "/founders/gabriele_forestieri.jpg",
-              bio: w.foundersGabBio as string,
               instagram: "https://www.instagram.com/gabrieleforestieri_/",
             },
             {
-              name: "Alle Cerchiari",
-              role: "Social & Marketing",
               img: "/founders/alle_cerchiari.jpeg",
-              bio: w.foundersAlleBio as string,
               instagram: "https://www.instagram.com/_allespy_/",
             },
             {
-              name: "Matteo Parubi",
-              role: "Stripe & Pricing",
-              sub: "Paru",
               img: "/founders/matteo_parubi.jpeg",
-              bio: w.foundersMatteoBio as string,
               instagram: "https://www.instagram.com/matteo.parubi/",
+              sub: "Paru",
             },
-          ].map((m) => (
+          ].map((meta, i) => {
+            const m = {
+              ...meta,
+              name: dict.about.members[i]?.name ?? "",
+              role: dict.about.members[i]?.role ?? "",
+              bio: [w.foundersGabBio, w.foundersAlleBio, w.foundersMatteoBio][i] as string,
+            };
+            return (
             <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur">
               <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border border-white/10 bg-neutral-800">
                 <Image src={m.img} alt={m.name} fill sizes="96px" className="object-cover" />
               </div>
-              <h3 className="mt-4 text-base font-bold text-white">{m.name} {m.sub ? <span className="font-normal text-neutral-400">· {m.sub}</span> : null}</h3>
+              <h3 className="mt-4 text-base font-bold text-white">{m.name} {"sub" in meta && (meta as { sub?: string }).sub ? <span className="font-normal text-neutral-400">· {(meta as { sub?: string }).sub}</span> : null}</h3>
               <p className="mt-1 text-xs font-bold uppercase tracking-widest text-brand-300">{m.role}</p>
               <p className="mt-3 text-sm leading-relaxed text-neutral-400">{m.bio}</p>
-              <a href={m.instagram} target="_blank" rel="noopener noreferrer" aria-label={`Instagram di ${m.name}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
+              <a href={m.instagram} target="_blank" rel="noopener noreferrer" aria-label={t(dict.about.instagramOf, { name: m.name })} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
                 <BrandIcon brand={BRANDS.instagram} size={16} color="currentColor" /> Instagram
               </a>
             </div>
-          ))}
+            );
+          })}
         </div>
         <p className="mt-6 text-center text-xs text-neutral-500">{w.teamPhotosNote as string} <a href="/about" className="font-semibold text-brand-400 hover:text-brand-300">{w.teamPhotosLink as string}</a>.</p>
       </section>

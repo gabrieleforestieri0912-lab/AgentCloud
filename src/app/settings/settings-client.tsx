@@ -93,7 +93,7 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
       const a = document.createElement("a");
       a.href = url;
       const date = new Date().toISOString().slice(0, 10);
-      const safeEmail = email ? email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "_") : "utente";
+      const safeEmail = email ? email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "_") : dict.chat.settingsExportFallbackName;
       a.download = `agentcloud-export-${safeEmail}-${date}.json`;
       document.body.appendChild(a);
       a.click();
@@ -120,7 +120,7 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
         <h1 className="text-3xl font-bold text-white">{dict.chat.settingsPageTitle}</h1>
         <p className="mt-2 text-neutral-400">
           {t(dict.chat.settingsPageDesc, { email })}
-          {isMock && <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-300">Mock admin</span>}
+          {isMock && <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-300">{dict.chat.mockAdmin}</span>}
         </p>
       </div>
 
@@ -232,13 +232,13 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <Link href="/privacy" className="rounded-xl border border-white/5 bg-neutral-800 p-4 text-sm font-bold text-white hover:bg-neutral-700">
-            Privacy
+            {dict.footer.privacy}
           </Link>
           <Link href="/terms" className="rounded-xl border border-white/5 bg-neutral-800 p-4 text-sm font-bold text-white hover:bg-neutral-700">
             {dict.chat.settingsTerms}
           </Link>
           <Link href="/account" className="rounded-xl border border-white/5 bg-neutral-800 p-4 text-sm font-bold text-white hover:bg-neutral-700">
-            Account
+            {dict.sidebarAccount.account}
           </Link>
         </div>
       </div>

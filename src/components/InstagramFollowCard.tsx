@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ExternalLink, CheckCircle2, Loader2 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
+import { useLanguage } from "./LanguageProvider";
 
 const IG_URL = "https://www.instagram.com/_agentcloud/";
 
 export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () => void }) {
+  const { dict } = useLanguage();
+  const ig = dict.waitlist.instagramCard;
   const [linkClicked, setLinkClicked] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -30,7 +33,7 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
   const handleConfirm = async () => {
     if (completed || loading) return;
     if (!linkClicked && !alreadyCompleted) {
-      setMessage("Apri prima il profilo Instagram cliccando sul link.");
+      setMessage(ig.openFirst);
       return;
     }
     setLoading(true);
@@ -40,13 +43,13 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
       const data = await res.json();
       if (res.ok) {
         setCompleted(true);
-        setMessage(data?.alreadyCompleted ? "Già completato — +1 punto già assegnato." : "Fatto! +1 punto per il ranking.");
+        setMessage(data?.alreadyCompleted ? ig.alreadyDone : ig.donePoint);
         if (onCompleted) onCompleted();
       } else {
-        setMessage(data?.error || "Errore, riprova.");
+        setMessage(data?.error || ig.errorRetry);
       }
     } catch {
-      setMessage("Errore di rete, riprova.");
+      setMessage(ig.networkError);
     } finally {
       setLoading(false);
     }
@@ -65,17 +68,14 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
           <BrandLogo slug="instagram" size={18} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-white">Follow us on Instagram</h3>
+          <h3 className="text-sm font-bold text-white">{ig.title}</h3>
           <p className="mt-1 text-xs leading-relaxed text-neutral-400">
-            Segui <span className="font-semibold text-neutral-200">@_agentcloud</span> su Instagram e conferma per scalare la classifica. <span className="font-semibold text-brand-300">+1 punto</span> una tantum.
-          </p>
-          <p className="mt-1 text-[11px] text-neutral-500">
-            v1 è self-report (honor system) — non verifichiamo via Graph API. Vedi limitazione in PR.
+            {ig.descPrefix} <span className="font-semibold text-neutral-200">@_agentcloud</span> {ig.descMid} <span className="font-semibold text-brand-300">{ig.points}</span> {ig.descSuffix}
           </p>
         </div>
         {completed && (
           <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-bold text-emerald-300">
-            <CheckCircle2 size={12} /> Fatto
+            <CheckCircle2 size={12} /> {ig.doneBadge}
           </span>
         )}
       </div>
@@ -88,7 +88,7 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
           onClick={() => setLinkClicked(true)}
           className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10"
         >
-          Apri Instagram <ExternalLink size={14} />
+          {ig.openInstagram} <ExternalLink size={14} />
         </a>
         <button
           onClick={handleConfirm}
@@ -100,10 +100,10 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
                 ? "bg-linear-to-r from-brand-500 to-pink-500 text-white shadow-lg shadow-brand-500/20 hover:opacity-90"
                 : "bg-white/5 text-neutral-500 border border-white/5 cursor-not-allowed"
           }`}
-          title={!linkClicked && !completed ? "Apri prima il profilo Instagram" : undefined}
+          title={!linkClicked && !completed ? ig.openProfileTitle : undefined}
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : completed ? <CheckCircle2 size={14} /> : null}
-          {completed ? "Confermato +1" : "Ho seguito su Instagram"}
+          {completed ? ig.confirmDone : ig.followedButton}
         </button>
       </div>
 
@@ -118,7 +118,7 @@ export default function InstagramFollowCard({ onCompleted }: { onCompleted?: () 
       )}
 
       {!completed && !linkClicked && (
-        <p className="mt-2 text-center text-[11px] text-neutral-500">Clicca prima “Apri Instagram”, poi conferma.</p>
+        <p className="mt-2 text-center text-[11px] text-neutral-500">{ig.clickFirstHint}</p>
       )}
     </motion.div>
   );

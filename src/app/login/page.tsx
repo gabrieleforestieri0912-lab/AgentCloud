@@ -37,12 +37,12 @@ function CallbackErrorNotice() {
 }
 
 function CompleteAccountNotice() {
+  const { dict } = useLanguage();
   const searchParams = useSearchParams();
   if (searchParams.get("reason") !== "complete_account") return null;
   return (
     <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-      Per accedere alla piattaforma, ricevi un link di accesso via email (qui sotto) oppure
-      imposta una password con &laquo;Password dimenticata?&raquo;.
+      {dict.auth.login.completeAccountNotice}
     </p>
   );
 }
@@ -103,14 +103,14 @@ export default function LoginPage() {
 
     // 1. Controllo Honeypot Anti-Bot
     if (honeypotValue.trim().length > 0) {
-      setError("Richiesta non valida.");
+      setError(a.login.invalidRequest);
       return;
     }
 
     // 2. Controllo Throttling Client-Side contro attacchi brute-force / dictionary
     const throttle = checkClientThrottle("login_attempt");
     if (!throttle.allowed) {
-      setError(`Troppi tentativi falliti. Riprova tra ${throttle.retryAfterSeconds} secondi.`);
+      setError(t(a.login.tooManyAttempts, { n: String(throttle.retryAfterSeconds) }));
       return;
     }
 
@@ -249,7 +249,7 @@ export default function LoginPage() {
       // di errore restituito da Supabase (anti-enumerazione).
       if (error) console.warn("[login] magic link non inviato:", error.message);
       setOtpSent(
-        "Ti abbiamo inviato un link di accesso. Controlla l'email (anche lo spam) e aprilo per entrare.",
+        a.login.magicLinkSent,
       );
     } catch {
       setError(a.errors.network);
@@ -449,7 +449,7 @@ export default function LoginPage() {
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-500/40 bg-brand-500/10 px-5 py-3 text-sm font-bold text-brand-200 transition-all hover:bg-brand-500/20 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {otpLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
-                Ricevi un link di accesso via email
+                {a.login.emailLinkCta}
               </button>
 
               <div className="text-center">
@@ -467,7 +467,7 @@ export default function LoginPage() {
             <div className="my-5 flex items-center gap-3">
               <span className="h-px flex-1 bg-white/10" />
               <span className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
-                o
+                {a.login.orDivider}
               </span>
               <span className="h-px flex-1 bg-white/10" />
             </div>

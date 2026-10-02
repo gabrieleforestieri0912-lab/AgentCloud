@@ -8,9 +8,11 @@
  */
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function ResetPage() {
   const router = useRouter();
+  const { dict } = useLanguage();
 
   useEffect(() => {
     // Pulisci TUTTI i cookie del dominio
@@ -42,7 +44,7 @@ export default function ResetPage() {
       <div className="text-center">
         <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent mx-auto" />
         <p className="text-sm font-semibold text-neutral-400">
-          Pulizia cookie in corso...
+          {dict.auth.resetPage.cleaning}
         </p>
       </div>
     </div>

@@ -15,26 +15,7 @@ export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const faqs = dict.faq.items;
-  // FAQ aggiuntive: collegamenti, prova gratuita, dati e integrazioni.
-  const extraFaqs = [
-    {
-      q: "Come collego il mio negozio Shopify?",
-      a: "Apri l’agente Shopify, clicca “Collega Shopify” e autorizza l’accesso in modo sicuro: non devi copiare nessuna chiave. Se non hai uno store, l’agente ti guida a crearne uno.",
-    },
-    {
-      q: "Cosa significa “4 messaggi gratis per agente”?",
-      a: "Ogni agente si può provare con 4 messaggi gratuiti, senza impegno. Per continuare a usarlo puoi sbloccarlo con l’abbonamento (€9,99–€14,99 al mese).",
-    },
-    {
-      q: "I miei dati sono al sicuro?",
-      a: "Sì: ogni account vede solo i propri dati, le connessioni a Shopify e Google sono cifrate e revocabili in un click, e puoi esportare o cancellare tutto dalle impostazioni quando vuoi. Dettagli in /privacy e /terms.",
-    },
-    {
-      q: "Quali integrazioni sono disponibili?",
-      a: "Già disponibili: Shopify, Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp e Asana. Altre sono in arrivo — WhatsApp, WooCommerce, PayPal, social e Google Ads/Analytics.",
-    },
-  ];
-  const allFaqs = [...faqs, ...extraFaqs];
+  const allFaqs = [...faqs];
   const faqLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",

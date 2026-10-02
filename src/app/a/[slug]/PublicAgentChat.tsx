@@ -115,7 +115,7 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
       ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown)
       : apiText;
     const displayContent =
-      text.trim() || (pending.length > 0 ? (pending.some((a) => a.kind === "image") ? "Immagine allegata" : "File allegato") : "");
+      text.trim() || (pending.length > 0 ? (pending.some((a) => a.kind === "image") ? attachLabels.attachedImage : attachLabels.attachedFile) : "");
     const filesMap = toFilesMap(pending.filter((a) => a.kind !== "image"));
     setInput("");
     attach.clear();
@@ -443,11 +443,11 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
               </span>
               <span className="ml-auto">
                 <Link href="/privacy" className="underline decoration-white/20 underline-offset-2">
-                  Privacy
+                  {dict.footer.privacy}
                 </Link>{" "}
                 ·{" "}
                 <Link href="/terms" className="underline decoration-white/20 underline-offset-2">
-                  Termini
+                  {dict.footer.terms}
                 </Link>
               </span>
             </div>
@@ -483,7 +483,7 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
                                 <img
                                   key={file.id}
                                   src={file.previewUrl}
-                                  alt={file.name || "Immagine allegata"}
+                                  alt={file.name || attachLabels.attachedImage}
                                   className="max-h-28 max-w-[140px] rounded-lg object-cover border border-white/10"
                                   loading="lazy"
                                 />
@@ -562,6 +562,7 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
             items={attach.attachments}
             onRemove={attach.remove}
             removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
+            imageAlt={attachLabels.attachedImage}
           />
           {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
           {isLimitReached ? (

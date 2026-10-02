@@ -11,7 +11,7 @@ import { BRANDS } from "@/lib/brands";
 
 import Footer from "@/components/Footer";
 import { getLocale } from "@/lib/i18n/locale";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -92,47 +92,41 @@ export default async function AboutPage() {
             <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
               {[
                 {
-                  name: "Gabriele Forestieri",
-                  role: "Developer",
                   img: "/founders/gabriele_forestieri.jpg",
-                  bio: "Sviluppa la piattaforma, gli agenti e le integrazioni. Full-stack, ossessionato da velocità, dettagli e DX.",
                   instagram: "https://www.instagram.com/gabrieleforestieri_/",
                 },
                 {
-                  name: "Alle Cerchiari",
-                  role: "Social & Marketing",
                   img: "/founders/alle_cerchiari.jpeg",
-                  bio: "Racconta AgentCloud sui social e nel marketing. Traduce la complessità in storie semplici e campagne che funzionano.",
                   instagram: "https://www.instagram.com/_allespy_/",
                 },
                 {
-                  name: "Matteo Parubi",
-                  role: "Stripe & Pricing",
-                  sub: "Paru",
                   img: "/founders/matteo_parubi.jpeg",
-                  bio: "Gestisce pagamenti, piani e prezzi via Stripe. Tiene i conti in ordine e l'esperienza di acquisto fluida.",
                   instagram: "https://www.instagram.com/matteo.parubi/",
+                  sub: "Paru",
                 },
-              ].map((member) => (
+              ].map((meta, i) => {
+                const member = about.members[i] ?? { name: "", role: "", bio: "" };
+                return (
                 <div
                   key={member.name}
                   className="rounded-2xl border border-white/5 bg-white/[0.02] p-6 text-center"
                 >
                   <div className="relative mx-auto h-20 w-20 overflow-hidden rounded-full border border-white/10 bg-neutral-800">
-                    <Image src={member.img} alt={member.name} fill sizes="80px" className="object-cover" />
+                    <Image src={meta.img} alt={member.name} fill sizes="80px" className="object-cover" />
                   </div>
                   <h3 className="mt-4 text-base font-bold text-white">
-                    {member.name} {("sub" in member && (member as { sub?: string }).sub) ? <span className="font-normal text-neutral-400">· {(member as { sub?: string }).sub}</span> : null}
+                    {member.name} {("sub" in meta && (meta as { sub?: string }).sub) ? <span className="font-normal text-neutral-400">· {(meta as { sub?: string }).sub}</span> : null}
                   </h3>
                   <p className="mt-1 text-sm font-semibold text-brand-300">
                     {member.role}
                   </p>
                   <p className="mt-3 text-sm text-neutral-400">{member.bio}</p>
-                  <a href={member.instagram} target="_blank" rel="noopener noreferrer" aria-label={`Instagram di ${member.name}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
+                  <a href={meta.instagram} target="_blank" rel="noopener noreferrer" aria-label={t(about.instagramOf, { name: member.name })} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
                     <BrandIcon brand={BRANDS.instagram} size={16} color="currentColor" /> Instagram
                   </a>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

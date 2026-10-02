@@ -90,9 +90,9 @@ export default function CTASection() {
           }}
         >
           {[
-            { icon: Zap, t: "4 messaggi gratis", d: "per ogni agente, prima di decidere" },
-            { icon: ShieldCheck, t: "Dati al sicuro", d: "connessioni cifrate e account separati" },
-            { icon: Clock3, t: "Pronto in giornata", d: "colleghi tutto in 2 click" },
+            { icon: Zap, ...(dict.cta.points[0] ?? { t: "", d: "" }) },
+            { icon: ShieldCheck, ...(dict.cta.points[1] ?? { t: "", d: "" }) },
+            { icon: Clock3, ...(dict.cta.points[2] ?? { t: "", d: "" }) },
           ].map((b) => (
             <div key={b.t} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-3.5">
               <b.icon size={14} className="text-brand-400" />

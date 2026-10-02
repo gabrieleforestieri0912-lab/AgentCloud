@@ -526,7 +526,7 @@ export default function DeployAgentClient({
                             </div>
                             {shopDomainError && (
                               <p className="mt-2 text-xs font-semibold text-red-400">
-                                Dominio non valido — usa tuo-negozio.myshopify.com
+                                {dict.inlineConnect.invalidShopPrefix} — tuo-negozio.myshopify.com
                               </p>
                             )}
                             <p className="mt-2 text-xs text-neutral-500">
@@ -592,10 +592,10 @@ export default function DeployAgentClient({
                         <p className="text-sm font-bold text-white">
                           {dict.deploy.starter}
                         </p>
-                        <p className="text-xs text-neutral-500">€9,99/mese</p>
+                        <p className="text-xs text-neutral-500">{dict.deploy.priceStarter}</p>
                       </div>
                       <span className="text-[10px] font-semibold text-neutral-500">
-                        300 conv/mese
+                        {dict.deploy.convsStarter}
                       </span>
                     </div>
                     <ul className="mt-2 space-y-1">
@@ -615,15 +615,15 @@ export default function DeployAgentClient({
                         <p className="text-sm font-bold text-white">
                           {dict.deploy.growth}
                         </p>
-                        <p className="text-xs text-neutral-400">€14,99/mese</p>
+                        <p className="text-xs text-neutral-400">{dict.deploy.priceGrowth}</p>
                       </div>
                       <span className="rounded-full bg-brand-500/20 px-2 py-0.5 text-[10px] font-bold text-brand-300">
                         {dict.deploy.popular}
                       </span>
                     </div>
-                    <div className="mt-2 flex items-center gap-1.5 text-[11px] text-neutral-500">
-                      <span>1.000 conv/mese</span>
-                    </div>
+                      <div className="mt-2 flex items-center gap-1.5 text-[11px] text-neutral-500">
+                        <span>{dict.deploy.convsGrowth}</span>
+                      </div>
                     <ul className="mt-1.5 space-y-1">
                       <li className="flex items-center gap-1.5 text-[11px] text-neutral-400">
                         <Check size={11} className="text-brand-400" />

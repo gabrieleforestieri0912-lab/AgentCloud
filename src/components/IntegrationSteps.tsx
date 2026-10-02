@@ -4,6 +4,8 @@ import { CheckCircle2, Circle, Clock3, AlertCircle, Plug, Unplug, Loader2, Arrow
 import BrandLogo from "./BrandLogo";
 import Link from "next/link";
 import { getGuideForBrand, type IntegrationGuide } from "@/lib/integrations/guides";
+import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 
 type Props = {
   brand: string;
@@ -34,7 +36,9 @@ export default function IntegrationSteps({
   onDisconnect,
   busy,
 }: Props) {
-  const guide: IntegrationGuide | null = getGuideForBrand(brand);
+  const { dict } = useLanguage();
+  const igs = dict.integrationSteps;
+  const guide: IntegrationGuide | null = getGuideForBrand(brand, dict);
 
   return (
     <div className="rounded-2xl border border-white/10 bg-neutral-900 p-5 flex flex-col hover:border-white/15 transition-colors">
@@ -46,7 +50,7 @@ export default function IntegrationSteps({
           </span>
           <div className="min-w-0">
             <h3 className="text-sm font-bold text-white truncate">{name}</h3>
-            <p className="text-xs font-semibold text-neutral-500">{category} · {guide?.time ?? "2 min"}</p>
+            <p className="text-xs font-semibold text-neutral-500">{category} · {guide?.time ?? igs.defaultTime}</p>
           </div>
         </div>
         <span
@@ -61,7 +65,7 @@ export default function IntegrationSteps({
           }`}
         >
           {connected ? <CheckCircle2 size={12} /> : error ? <AlertCircle size={12} /> : pending ? <Clock3 size={12} /> : <Plug size={12} />}
-          {connected ? "Connesso" : error ? "Errore" : pending ? "In attesa" : "Non connesso"}
+          {connected ? igs.connected : error ? igs.error : pending ? igs.pending : igs.notConnected}
         </span>
       </div>
 
@@ -89,7 +93,7 @@ export default function IntegrationSteps({
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-                    Passo {stepNum} · {s.title}
+                    {t(igs.stepLabel, { n: String(stepNum) })} · {s.title}
                   </p>
                   <p className="mt-0.5 text-sm leading-5 text-neutral-200">{s.desc}</p>
                 </div>
@@ -103,13 +107,13 @@ export default function IntegrationSteps({
 
       {guide?.needHelp && !connected && (
         <p className="mt-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs leading-5 text-amber-200">
-          Suggerimento: {guide.needHelp}
+          {igs.tip}: {guide.needHelp}
         </p>
       )}
 
       {workspace && (
         <p className="mt-3 truncate text-xs text-neutral-500">
-          <span className="font-semibold text-neutral-400">Account:</span> {workspace}
+          <span className="font-semibold text-neutral-400">{igs.accountLabel}:</span> {workspace}
         </p>
       )}
 
@@ -123,11 +127,11 @@ export default function IntegrationSteps({
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10 disabled:opacity-50"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Unplug size={14} />}
-              Disconnetti
+              {igs.disconnect}
             </button>
           ) : (
             <span className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-300">
-              <CheckCircle2 size={14} /> Collegato — pronto all’uso
+              <CheckCircle2 size={14} /> {igs.connectedReady}
             </span>
           )
         ) : onConnectHref ? (
@@ -136,14 +140,14 @@ export default function IntegrationSteps({
               href={onConnectHref}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-400 shadow-lg shadow-brand-500/20"
             >
-              <Plug size={14} /> Collega in {guide?.time ?? "2 minuti"} <ArrowRight size={14} />
+              <Plug size={14} /> {t(igs.connectIn, { time: guide?.time ?? igs.defaultTime })} <ArrowRight size={14} />
             </a>
           ) : (
             <Link
               href={onConnectHref}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-400 shadow-lg shadow-brand-500/20"
             >
-              <Plug size={14} /> Collega in {guide?.time ?? "2 minuti"} <ArrowRight size={14} />
+              <Plug size={14} /> {t(igs.connectIn, { time: guide?.time ?? igs.defaultTime })} <ArrowRight size={14} />
             </Link>
           )
         ) : (
@@ -151,11 +155,11 @@ export default function IntegrationSteps({
             href="/contact"
             className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10"
           >
-            Richiedi accesso
+            {igs.requestAccess}
           </Link>
         )}
       </div>
-      {connected && <p className="mt-2 text-center text-xs font-medium text-emerald-300/80">Passo 3 completato — prova l’agente ora.</p>}
+      {connected && <p className="mt-2 text-center text-xs font-medium text-emerald-300/80">{igs.step3done}</p>}
     </div>
   );
 }

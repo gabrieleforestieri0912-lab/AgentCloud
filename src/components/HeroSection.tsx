@@ -205,7 +205,7 @@ export default function HeroSection() {
     const userMsg: HeroMessage = {
       id: heroId(),
       role: "user",
-      content: trimmed || (hasImages ? "Immagine allegata" : pending.map((a) => a.name).join(", ") || "File allegato"),
+      content: trimmed || (hasImages ? attachLabels.attachedImage : pending.map((a) => a.name).join(", ") || attachLabels.attachedFile),
       created_at: new Date().toISOString(),
       attachments: pending.map((a) => ({
         id: a.id,
@@ -502,7 +502,7 @@ export default function HeroSection() {
             }}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-            <span className="text-xs font-bold tracking-widest uppercase text-brand-300">{AGENTS.length} agenti pronti all’uso • {LIVE_INTEGRATIONS} integrazioni</span>
+            <span className="text-xs font-bold tracking-widest uppercase text-brand-300">{t(dict.hero.badgeStats, { agents: String(AGENTS.length), integrations: String(LIVE_INTEGRATIONS) })}</span>
           </motion.div>
           <motion.h1
             className="text-[1.75rem] xs:text-[2rem] sm:text-5xl md:text-6xl lg:text-[76px] font-extrabold leading-[1.08] tracking-tight text-white"
@@ -614,7 +614,7 @@ export default function HeroSection() {
                                     <img
                                       key={file.id}
                                       src={file.previewUrl}
-                                      alt={file.name || "Immagine allegata"}
+                                      alt={file.name || attachLabels.attachedImage}
                                       className="max-h-20 max-w-[120px] rounded-lg object-cover border border-white/10"
                                       loading="lazy"
                                     />
@@ -700,6 +700,7 @@ export default function HeroSection() {
                       removeLabel={(name) =>
                         dict.chat.removeAttachment.replace("{name}", name)
                       }
+                      imageAlt={attachLabels.attachedImage}
                     />
                   </div>
                 )}
@@ -832,8 +833,8 @@ export default function HeroSection() {
           {hasMessages && !isAuthed && (
             <p className="mt-3 text-center text-xs font-semibold text-neutral-500">
               {remaining > 0
-                ? `${remaining} / ${DEMO_LIMIT} messaggi demo rimasti`
-                : `Limite demo raggiunto — accedi per continuare`}
+                ? t(dict.hero.demoLeft, { remaining: String(remaining), total: String(DEMO_LIMIT) })
+                : dict.hero.demoLimitReached}
             </p>
           )}
 
@@ -849,7 +850,7 @@ export default function HeroSection() {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <Link href="/agents" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10 transition-colors">
-                Sfoglia i 15 agenti <span aria-hidden>→</span>
+                {t(dict.marketplace.browseAgents, { count: String(AGENTS.length) })} <span aria-hidden>→</span>
               </Link>
             </motion.div>
           )}

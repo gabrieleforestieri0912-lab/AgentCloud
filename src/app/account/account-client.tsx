@@ -59,7 +59,7 @@ export default function AccountClient({
       if (error) throw error;
       setMsg({ kind: "ok", text: dict.chat.accountNameUpdated });
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : dict.chat.accountError });
     } finally {
       setSaving(false);
     }
@@ -86,7 +86,7 @@ export default function AccountClient({
       setNewEmail("");
       setMsg({ kind: "ok", text: dict.chat.accountEmailUpdateSent });
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : dict.chat.accountError });
     } finally {
       setUpdatingEmail(false);
     }
@@ -102,7 +102,7 @@ export default function AccountClient({
       setGoogle(null);
       setMsg({ kind: "ok", text: dict.chat.accountSaved });
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : dict.chat.accountError });
     } finally {
       setDisconnecting(false);
     }
@@ -121,7 +121,7 @@ export default function AccountClient({
       // Account cancellato — reindirizza alla home
       window.location.href = "/";
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : dict.chat.accountError });
       setDeleting(false);
     }
   }
@@ -276,7 +276,7 @@ export default function AccountClient({
             {dict.chat.accountChangePassword}
           </Link>
           <Link href="/privacy" className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
-            Privacy
+            {dict.footer.privacy}
           </Link>
         </div>
       </div>

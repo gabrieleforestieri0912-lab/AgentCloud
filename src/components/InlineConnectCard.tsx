@@ -6,37 +6,44 @@ import BrandLogo from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
 import { isIntegrationAvailable } from "@/lib/integrations";
 import { resolveShopDomain } from "@/lib/shopify-input";
+import { t, type Dictionary } from "@/lib/i18n/dictionaries";
 
 type Provider = string;
 
-const PROVIDER_META: Record<string, { name: string; brand: string; desc: string }> = {
-  shopify: { name: "Shopify", brand: "shopify", desc: "Collega il tuo store per gestire prodotti, ordini e carrello" },
-  gmail: { name: "Gmail", brand: "gmail", desc: "Connetti Gmail per leggere, inviare e gestire le email" },
-  google_calendar: { name: "Google Calendar", brand: "googlecalendar", desc: "Collega Calendar per prenotazioni e disponibilità" },
-  google_sheets: { name: "Google Sheets", brand: "googlesheets", desc: "Connetti Sheets per leggere e scrivere fogli" },
-  calendar: { name: "Google Calendar", brand: "googlecalendar", desc: "Collega Calendar per prenotazioni e disponibilità" },
-  slack: { name: "Slack", brand: "slack", desc: "Connetti Slack per notifiche e messaggi" },
-  notion: { name: "Notion", brand: "notion", desc: "Connetti Notion per documenti e knowledge base" },
-  hubspot: { name: "HubSpot", brand: "hubspot", desc: "Connetti HubSpot per CRM e pipeline" },
-  github: { name: "GitHub", brand: "github", desc: "Connetti GitHub per repo, PR e issue" },
-  clickup: { name: "ClickUp", brand: "clickup", desc: "Connetti ClickUp per task e progetti" },
-  asana: { name: "Asana", brand: "asana", desc: "Connetti Asana per task e progetti" },
-  whatsapp: { name: "WhatsApp", brand: "whatsapp", desc: "Connetti WhatsApp per messaggistica" },
+type ProviderMeta = { name: string; brand: string; desc: string };
+
+const PROVIDER_BRANDS: Record<string, { name: string; brand: string }> = {
+  shopify: { name: "Shopify", brand: "shopify" },
+  gmail: { name: "Gmail", brand: "gmail" },
+  google_calendar: { name: "Google Calendar", brand: "googlecalendar" },
+  google_sheets: { name: "Google Sheets", brand: "googlesheets" },
+  calendar: { name: "Google Calendar", brand: "googlecalendar" },
+  slack: { name: "Slack", brand: "slack" },
+  notion: { name: "Notion", brand: "notion" },
+  hubspot: { name: "HubSpot", brand: "hubspot" },
+  github: { name: "GitHub", brand: "github" },
+  clickup: { name: "ClickUp", brand: "clickup" },
+  asana: { name: "Asana", brand: "asana" },
+  whatsapp: { name: "WhatsApp", brand: "whatsapp" },
 };
 
-function getMeta(provider: Provider) {
+function getMeta(provider: Provider, descs: Dictionary["inlineConnect"]["descs"]): ProviderMeta {
   const key = provider.toLowerCase().replace(/[^a-z0-9]/g, "");
   // normalize aliases
-  if (key.includes("gmail") || key === "email") return PROVIDER_META.gmail;
-  if (key.includes("calendar")) return PROVIDER_META.google_calendar;
-  if (key.includes("sheets") || key.includes("googlesheets")) return PROVIDER_META.google_sheets;
-  if (key.includes("shopify")) return PROVIDER_META.shopify;
-  return PROVIDER_META[key] || { name: provider.charAt(0).toUpperCase() + provider.slice(1), brand: key, desc: `Connetti ${provider} per sbloccare le automazioni` };
+  if (key.includes("gmail") || key === "email") return { ...PROVIDER_BRANDS.gmail, desc: descs.gmail };
+  if (key.includes("calendar")) return { ...PROVIDER_BRANDS.google_calendar, desc: descs.google_calendar };
+  if (key.includes("sheets") || key.includes("googlesheets")) return { ...PROVIDER_BRANDS.google_sheets, desc: descs.google_sheets };
+  if (key.includes("shopify")) return { ...PROVIDER_BRANDS.shopify, desc: descs.shopify };
+  const base = PROVIDER_BRANDS[key];
+  if (base && key in descs) return { ...base, desc: descs[key as keyof typeof descs] };
+  return { name: provider.charAt(0).toUpperCase() + provider.slice(1), brand: key, desc: "" };
 }
 
 export default function InlineConnectCard({ provider }: { provider: string }) {
   const { dict } = useLanguage();
-  const meta = getMeta(provider);
+  const ic = dict.inlineConnect;
+  const meta = getMeta(provider, ic.descs);
+  const desc = meta.desc || t(ic.fallbackDesc, { provider: meta.name });
   // App non ancora collegabile (catalogo `available: false`): la card resta, ma
   // senza un bottone "Connetti" che porterebbe a un errore di OAuth.
   const available = isIntegrationAvailable(meta.brand);
@@ -107,12 +114,12 @@ export default function InlineConnectCard({ provider }: { provider: string }) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-white flex items-center gap-1.5">
             <Plug size={14} className="text-brand-400" />
-            Connetti {meta.name}
+            {ic.connect} {meta.name}
           </p>
-          <p className="text-xs text-neutral-400 leading-relaxed">{meta.desc}</p>
+          <p className="text-xs text-neutral-400 leading-relaxed">{desc}</p>
         </div>
         <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-300">
-          Richiesto
+          {ic.required}
         </span>
       </div>
 
@@ -136,22 +143,22 @@ export default function InlineConnectCard({ provider }: { provider: string }) {
               onClick={confirmShop}
               className="rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400"
             >
-              Autorizza
+              {ic.authorize}
             </button>
           </div>
           {shopError && (
             <p className="mt-1.5 text-xs text-red-400">
-              Inserisci un dominio valido tipo <span className="font-bold">tuo-negozio.myshopify.com</span>
+              {ic.invalidShopPrefix} <span className="font-bold">tuo-negozio.myshopify.com</span>
             </p>
           )}
         </div>
       ) : !available ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-2 text-sm font-bold text-amber-300">
-            Prossimamente
+            {dict.common.comingSoon}
           </span>
           <span className="text-xs text-neutral-500">
-            Non è ancora collegabile: ti avvisiamo quando lo diventa
+            {ic.comingSoonDesc}
           </span>
         </div>
       ) : (
@@ -163,16 +170,16 @@ export default function InlineConnectCard({ provider }: { provider: string }) {
             className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400 disabled:opacity-50 transition-colors"
           >
             <ExternalLink size={14} />
-            {connecting ? "Apertura..." : `Connetti ${meta.name}`}
+            {connecting ? ic.opening : `${ic.connect} ${meta.name}`}
           </button>
           <span className="text-xs text-neutral-500">
-            Si apre in OAuth sicuro — poi torni qui
+            {ic.oauthNote}
           </span>
         </div>
       )}
 
       <p className="mt-2 text-[11px] text-neutral-600">
-        L&apos;agente può già rispondere senza connessione. Collega quando vuoi sbloccare azioni reali su {meta.name}.
+        {t(ic.agentHelps, { name: meta.name })}
       </p>
     </div>
   );

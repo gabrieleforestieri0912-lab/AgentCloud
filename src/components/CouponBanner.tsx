@@ -192,7 +192,7 @@ export default function CouponBanner({ coupon, locale, dict }: Props) {
             {status === "loading" ? (
               <>
                 <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                Applicando...
+                {dict.agentsPage.coupon.applying}
               </>
             ) : (
               <>

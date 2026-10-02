@@ -7,6 +7,7 @@ import { Home, Loader2, Mail, User } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import HeroBubbles from "@/components/HeroBubbles";
 import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 import {
   validateAndSanitizeEmail,
@@ -41,14 +42,14 @@ export default function SignupPage() {
 
     // 1. Controllo Honeypot Anti-Bot
     if (honeypotValue.trim().length > 0) {
-      setError("Richiesta non valida.");
+      setError(a.signup.invalidRequest);
       return;
     }
 
     // 2. Throttling client-side contro registrazioni massive / spam
     const throttle = checkClientThrottle("signup_attempt");
     if (!throttle.allowed) {
-      setError(`Troppi tentativi consecutivi. Attendi ${throttle.retryAfterSeconds} secondi.`);
+      setError(t(a.signup.tooManyAttempts, { n: String(throttle.retryAfterSeconds) }));
       return;
     }
 
@@ -311,7 +312,7 @@ export default function SignupPage() {
             <div className="my-5 flex items-center gap-3">
               <span className="h-px flex-1 bg-white/10" />
               <span className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
-                o
+                {a.signup.orDivider}
               </span>
               <span className="h-px flex-1 bg-white/10" />
             </div>

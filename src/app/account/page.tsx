@@ -14,6 +14,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function AccountPage() {
   const locale = await getLocale();
+  const dict = getDictionary(locale);
 
   const user = await getSessionUser();
   if (!user) redirect("/login");
@@ -23,7 +24,7 @@ export default async function AccountPage() {
     typeof user.user_metadata?.full_name === "string"
       ? user.user_metadata.full_name
       : "";
-  const firstName = fullName.split(" ")[0] || email.split("@")[0] || "Utente";
+  const firstName = fullName.split(" ")[0] || email.split("@")[0] || dict.chat.accountGuestName;
   const isAdmin = await resolveIsAdmin(user);
   const createdAt =
     (user as unknown as { created_at?: string })?.created_at ?? null;
@@ -46,8 +47,6 @@ export default async function AccountPage() {
     .map((c) => c.shopDomain);
   const g = await getGoogleConnectionSummary(user.id).catch(() => null);
   googleEmail = g?.googleEmail ?? null;
-
-  const dict = getDictionary(locale);
 
   return (
     <main className="min-h-dvh bg-neutral-950">

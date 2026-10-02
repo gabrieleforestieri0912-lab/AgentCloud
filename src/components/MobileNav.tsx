@@ -281,22 +281,22 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/cart" onClick={() => setIsOpen(false)} className="relative flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-white hover:bg-white/10">
                     <ShoppingCart size={16} />
-                    Carrello
+                    {dict.sidebarAccount.cart}
                     {cartCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">{cartCount}</span>}
                   </Link>
                   <Link href="/chat" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-3 py-3 text-sm font-bold text-white hover:bg-brand-400">
                     <MessageSquare size={16} />
-                    Chat AI
+                    {dict.navbar.aiChat}
                   </Link>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/dashboard" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm font-bold text-white hover:bg-neutral-700">
                     <LayoutDashboard size={14} />
-                    Dashboard
+                    {dict.sidebarAccount.dashboard}
                   </Link>
                   <Link href="/account" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm font-bold text-white hover:bg-neutral-700">
                     <User size={14} />
-                    Account
+                    {dict.sidebarAccount.account}
                   </Link>
                 </div>
                 {isSignedIn ? (
@@ -314,7 +314,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold text-white">{userEmail || "..."}</p>
-                        <p className="text-[10px] text-neutral-500 font-medium">Account</p>
+                        <p className="text-[10px] text-neutral-500 font-medium">{dict.sidebarAccount.account}</p>
                       </div>
                     </div>
                     {/* Sign out */}
@@ -326,7 +326,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                       className="flex w-full items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300 hover:bg-red-500/15 transition-all"
                     >
                       <LogOut size={16} />
-                      Esci
+                      {dict.sidebarAccount.signOut}
                     </button>
                   </>
                 ) : (

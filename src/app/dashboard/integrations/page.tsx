@@ -7,7 +7,7 @@ import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/conne
 import DashboardShell from "@/components/DashboardShell";
 import IntegrationsGrid from "@/components/IntegrationsGrid";
 import { getLocale } from "@/lib/i18n/locale";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary, t } from "@/lib/i18n/dictionaries";
 
 export default async function DashboardIntegrationsPage({
   searchParams,
@@ -70,7 +70,7 @@ export default async function DashboardIntegrationsPage({
                     <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
                   </div>
                   <p className="text-sm font-semibold text-white">
-                    {connectedCount === 0 ? "Inizia dal primo: scegli un'app qui sotto e clicca Connetti — 2 minuti, senza codice." : connectedCount < total ? `${connectedCount} di ${total} connesse · prossimo: clicca Connetti sulla prossima card` : "Tutte connesse — prova gli agenti in chat."}
+                    {connectedCount === 0 ? dict.dashboardIntegrations.progressStart : connectedCount < total ? t(dict.dashboardIntegrations.progressMiddle, { done: String(connectedCount), total: String(total) }) : dict.dashboardIntegrations.progressDone}
                   </p>
                   <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-white">{connectedCount}/{total}</span>
                 </div>

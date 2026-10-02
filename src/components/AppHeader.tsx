@@ -150,7 +150,7 @@ export default function AppHeader({
             >
               <ArrowLeft size={14} />
               <span className="hidden sm:inline">{homeLabel}</span>
-              <span className="sm:hidden">Home</span>
+              <span className="sm:hidden">{homeLabel}</span>
             </Link>
           )}
 

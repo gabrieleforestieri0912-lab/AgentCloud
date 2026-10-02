@@ -133,7 +133,7 @@ export default function SidebarAccount({
               href="/dashboard"
               className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
             >
-              <Home size={12} /> Dashboard
+              <Home size={12} /> {dict.sidebarAccount.dashboard}
             </Link>
           </div>
           <button

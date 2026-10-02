@@ -27,6 +27,8 @@ export type Labels = {
   fileTooLarge: (name: string) => string;
   tooManyFiles: string;
   unsupportedFile: (name: string) => string;
+  attachedImage: string;
+  attachedFile: string;
 };
 
 export function useChatAttachments() {
@@ -196,10 +198,12 @@ export function AttachmentChips({
   items,
   onRemove,
   removeLabel,
+  imageAlt,
 }: {
   items: ChatAttachment[];
   onRemove: (id: string) => void;
   removeLabel: (name: string) => string;
+  imageAlt?: string;
 }) {
   if (items.length === 0) return null;
 
@@ -214,7 +218,7 @@ export function AttachmentChips({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.previewUrl}
-              alt={item.name || "Immagine allegata"}
+              alt={item.name || imageAlt || ""}
               className="h-8 w-8 rounded-lg object-cover shrink-0 border border-white/10"
             />
           ) : (
@@ -254,6 +258,8 @@ export function chatAttachLabels(dict: {
     fileTooLarge: string;
     tooManyFiles: string;
     unsupportedFile: string;
+    attachedImage: string;
+    attachedFile: string;
   };
 }): Labels {
   const c = dict.chat;
@@ -264,5 +270,7 @@ export function chatAttachLabels(dict: {
     fileTooLarge: (name) => c.fileTooLarge.replace("{name}", name).replace("{max}", "8 MB"),
     tooManyFiles: c.tooManyFiles.replace("{n}", "6"),
     unsupportedFile: (name) => c.unsupportedFile.replace("{name}", name),
+    attachedImage: c.attachedImage,
+    attachedFile: c.attachedFile,
   };
 }

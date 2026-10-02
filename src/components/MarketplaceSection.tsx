@@ -8,12 +8,15 @@ import Link from "next/link";
 import { Puzzle, ShoppingCart, Zap, Clock3, Tag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import { AGENTS, localizeAgent } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
 
 export default function MarketplaceSection() {
   const { dict, locale } = useLanguage();
   const previewAgents = AGENTS.slice(0, 6).map((a) => localizeAgent(a, locale));
+  const mp = dict.marketplacePreview;
+  const catCount = new Set(AGENTS.map((a) => a.category)).size;
   return (
     <section id="marketplace" className="py-24">
       <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
@@ -96,11 +99,11 @@ export default function MarketplaceSection() {
         >
           <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">15 agenti • 6 categorie • da €9,99/mese</p>
-              <h3 className="mt-1 text-2xl font-bold tracking-tight text-white">Anteprima del marketplace</h3>
-              <p className="mt-1 max-w-xl text-sm font-semibold leading-5 text-neutral-400">Prezzi chiari, attivazione in giornata e integrazioni incluse. Provali gratis prima di decidere.</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">{t(mp.overline, { agents: String(AGENTS.length), cats: String(catCount), from: mp.fromPrice })}</p>
+              <h3 className="mt-1 text-2xl font-bold tracking-tight text-white">{mp.title}</h3>
+              <p className="mt-1 max-w-xl text-sm font-semibold leading-5 text-neutral-400">{mp.subtitle}</p>
             </div>
-            <Link href="/agents" className="text-sm font-bold text-brand-400 hover:text-brand-300">Vedi tutti →</Link>
+            <Link href="/agents" className="text-sm font-bold text-brand-400 hover:text-brand-300">{mp.seeAll}</Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {previewAgents.map((agent) => (
@@ -126,7 +129,7 @@ export default function MarketplaceSection() {
                     <span key={i} className="rounded-full border border-white/5 bg-neutral-800 px-2 py-1 text-xs font-bold text-neutral-500">{i}</span>
                   ))}
                 </div>
-                <Link href={`/agents/${agent.slug}`} className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-brand-400 group-hover:text-brand-300">Vedi dettagli <span aria-hidden>→</span></Link>
+                <Link href={`/agents/${agent.slug}`} className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-brand-400 group-hover:text-brand-300">{mp.details} <span aria-hidden>→</span></Link>
               </motion.div>
             ))}
           </div>

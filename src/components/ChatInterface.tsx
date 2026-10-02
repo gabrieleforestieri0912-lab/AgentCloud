@@ -40,6 +40,7 @@ import {
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import MarkdownText from "./MarkdownText";
 import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
@@ -327,7 +328,7 @@ export default function ChatInterface({
           agentsBySlug.get(selectedAgentSlugs[0])?.name ??
           (agentLabel && selectedAgentSlugs[0] ? agentLabel : undefined) ??
           dict.chat.assistantName
-        : `${selectedAgentSlugs.length} agenti`;
+        : t(dict.agentsPage.agentsCount, { count: String(selectedAgentSlugs.length) });
 
   /** Agente che ha prodotto una bolla (null per l'assistente generico). */
   const agentForMessage = useCallback(
@@ -979,7 +980,7 @@ export default function ChatInterface({
   // durante la generazione è visibile da subito e non sembra mai perduto.
   function appendUserMessage(text: string, convId: string, pending: ChatAttachment[]): LocalMessage {
     // Nel fumetto utente non mostrare mai il filename: usa testo digitato o placeholder generico
-    const displayText = text.trim() || (pending.length > 0 ? (pending.some((a) => a.kind === "image") ? "Immagine allegata" : "File allegato") : "");
+    const displayText = text.trim() || (pending.length > 0 ? (pending.some((a) => a.kind === "image") ? attachLabels.attachedImage : attachLabels.attachedFile) : "");
     const userMsg: LocalMessage = {
       id: generateId(),
       role: "user",
@@ -1787,7 +1788,7 @@ export default function ChatInterface({
                 <p className="truncate text-sm font-bold text-white">
                   {accountEmail || "..."}
                 </p>
-                <p className="text-[10px] text-neutral-500 font-medium">Account</p>
+                <p className="text-[10px] text-neutral-500 font-medium">{dict.sidebarAccount.account}</p>
               </div>
               <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform duration-200 ${accountMenuOpen ? "rotate-180" : ""}`} />
             </button>
@@ -1799,7 +1800,7 @@ export default function ChatInterface({
                     className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <User size={12} />
-                    Account
+                    {dict.sidebarAccount.account}
                   </Link>
                   <Link
                     href="/settings"
@@ -1820,7 +1821,7 @@ export default function ChatInterface({
                     className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
                   >
                     <Home size={12} />
-                    Dashboard
+                    {dict.sidebarAccount.dashboard}
                   </Link>
                 </div>
                 <button
@@ -2017,6 +2018,7 @@ export default function ChatInterface({
                       items={attach.attachments}
                       onRemove={attach.remove}
                       removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
+                      imageAlt={attachLabels.attachedImage}
                     />
                     {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
                     <div className="flex items-center gap-1.5 bg-neutral-800 rounded-2xl border border-white/10 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
@@ -2169,7 +2171,7 @@ export default function ChatInterface({
                                 <img
                                   key={file.id}
                                   src={file.previewUrl}
-                                  alt={file.name || "Immagine allegata"}
+                                  alt={file.name || attachLabels.attachedImage}
                                   className="max-h-36 max-w-[180px] rounded-lg object-cover border border-white/10"
                                   loading="lazy"
                                 />
@@ -2325,6 +2327,7 @@ export default function ChatInterface({
               items={attach.attachments}
               onRemove={attach.remove}
               removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
+              imageAlt={attachLabels.attachedImage}
             />
             {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
             <div className="flex items-center gap-1.5 bg-neutral-800 rounded-2xl border border-white/10 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">

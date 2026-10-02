@@ -121,7 +121,7 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
                     </span>
                     {shopifyError && (
                       <span className="text-[11px] font-semibold text-red-400">
-                        Dominio non valido (es. mio-negozio.myshopify.com)
+                        {dict.inlineConnect.invalidShopPrefix} (es. mio-negozio.myshopify.com)
                       </span>
                     )}
                   </span>

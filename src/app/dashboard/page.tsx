@@ -364,7 +364,7 @@ export default async function DashboardPage({
                   {installed.map(({ agent, slug, status, runs, tokens, lastRun, runtimeName, config }) => {
                     const displayName =
                       agent?.shortName ?? runtimeName ?? slug;
-                    const category = agent?.category ?? "Agent";
+                    const category = agent?.category ?? dict.dashboard.defaultCategory;
                     const accent = agent?.accent ?? "bg-neutral-700";
                     const active = status === "active";
                     const cancelsAtPeriodEnd =
@@ -459,7 +459,7 @@ export default async function DashboardPage({
                           <div key={slug}>
                             <div className="mb-1.5 flex items-center justify-between text-sm">
                               <span className="font-semibold text-neutral-300">{displayName}</span>
-                              <span className="text-neutral-500">{formatTokens(tokens)} tok · {runs} run</span>
+                              <span className="text-neutral-500">{t(dict.dashboard.usageLine, { tokens: formatTokens(tokens), runs: String(runs) })}</span>
                             </div>
                             <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
                               <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />

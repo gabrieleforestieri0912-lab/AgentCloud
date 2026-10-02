@@ -52,7 +52,7 @@ export default function Footer() {
     { label: dict.navbar.marketplace, href: "/agents" },
     { label: dict.navbar.solutions, href: "/#soluzioni" },
     { label: dict.navbar.integrations, href: "/#integrazioni" },
-    { label: "CLI & Estensione", href: "/install" },
+    { label: dict.footer.cliExtension, href: "/install" },
   ];
 
   return (
