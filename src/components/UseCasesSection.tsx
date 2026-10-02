@@ -1,7 +1,7 @@
 "use client";
 /**
- * Casi d’uso per tipo di attività — solo da agenti esistenti (audit Fase 0).
- * 4 card: E-commerce D2C, Studio/Clinica, Agenzia vendite, Ristorazione/locale.
+ * Casi d’uso per tipo di attività: 4 esempi concreti.
+ * E-commerce D2C, Studio/Clinica, Agenzia vendite, Ristorazione/locale.
  */
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -57,10 +57,10 @@ export default function UseCasesSection() {
         <motion.div className="mx-auto max-w-3xl text-center" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
-            <span className="text-xs font-bold uppercase tracking-widest text-brand-400">Casi d’uso — solo agenti esistenti</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-brand-400">Casi d’uso per la tua attività</span>
           </div>
           <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">Un agente per <span className="bg-linear-to-r from-brand-500 to-pink-500 bg-clip-text text-transparent">ogni lavoro ripetitivo</span></h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-7 text-neutral-400">Niente verticali inventati. Ogni caso usa <code className="rounded bg-white/5 px-1">tasks</code> e <code className="rounded bg-white/5 px-1">workflow</code> reali da <code className="rounded bg-white/5 px-1">src/lib/agents.ts</code>.</p>
+          <p className="mx-auto mt-4 max-w-2xl text-lg leading-7 text-neutral-400">Esempi concreti di cosa puoi delegare da domani mattina, scegliendo l’agente giusto.</p>
         </motion.div>
 
         <div className="mx-auto mt-10 grid max-w-5xl gap-4 sm:grid-cols-2">
@@ -82,8 +82,6 @@ export default function UseCasesSection() {
             </motion.div>
           ))}
         </div>
-
-        <p className="mx-auto mt-6 max-w-5xl text-center text-xs font-semibold text-neutral-500">Visual: grid JSX/Tailwind con <code className="rounded bg-white/5 px-1">AgentIcon</code> e <code className="rounded bg-white/5 px-1">accent</code> reali — no immagini esterne.</p>
       </div>
     </section>
   );

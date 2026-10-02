@@ -1,7 +1,7 @@
 "use client";
 /**
- * Problema → Soluzione per PMI — sostituisce FeaturesSection generica.
- * 3 problemi misurabili → soluzione con agente reale, workflow e integrazione live.
+ * Problema → Soluzione per PMI.
+ * 3 problemi concreti → soluzione con l’agente giusto e il suo flusso di lavoro.
  */
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -11,7 +11,7 @@ const ITEMS = [
   {
     icon: Clock3,
     problem: "Ore perse a copiare ordini e prodotti tra Shopify, email e fogli.",
-    solution: "Shopify Agent cerca nel catalogo, genera link carrello e verifica stato ordine via OAuth — in chat, senza copiare.",
+    solution: "Shopify Agent cerca nel catalogo, genera link carrello e verifica lo stato ordine in tempo reale — in chat, senza copiare.",
     agent: "Shopify Agent",
     workflow: "Query catalogo → Suggerisci → Carrello rapido → Conferma",
     href: "/agents/shopify-agent",
@@ -44,7 +44,7 @@ export default function ProblemSolutionSection() {
             <span className="text-xs font-bold uppercase tracking-widest text-amber-300">Problema → Soluzione per PMI</span>
           </div>
           <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">Dove perdi tempo, <span className="bg-linear-to-r from-amber-400 to-pink-500 bg-clip-text text-transparent">l’agente lo fa per te</span></h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-7 text-neutral-400">Tre colli di bottiglia reali, risolti con <code className="rounded bg-white/5 px-1">tasks</code> e <code className="rounded bg-white/5 px-1">workflow</code> già nel codice.</p>
+          <p className="mx-auto mt-4 max-w-2xl text-lg leading-7 text-neutral-400">Tre colli di bottiglia tipici, risolti da agenti pronti all’uso che lavorano in chat.</p>
         </motion.div>
 
         <div className="mx-auto mt-10 grid max-w-5xl gap-4 lg:grid-cols-3">
@@ -59,10 +59,6 @@ export default function ProblemSolutionSection() {
               <Link href={it.href} className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-brand-400 hover:text-brand-300">Vedi agente <ArrowRight size={12} /></Link>
             </motion.div>
           ))}
-        </div>
-
-        <div className="mx-auto mt-6 max-w-5xl rounded-2xl border border-white/5 bg-neutral-900/40 p-3 text-center text-xs font-semibold text-neutral-500">
-          Visual: 3 card JSX/Tailwind con workflow reali da <code className="rounded bg-white/5 px-1">src/lib/agents.ts</code> — solo transform/opacity.
         </div>
 
         <div className="mt-8 text-center">

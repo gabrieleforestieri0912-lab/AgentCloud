@@ -45,16 +45,16 @@ export default function IntegrationsSection() {
             {dict.integrations.subtitle}
           </p>
           <p className="mx-auto mt-3 max-w-2xl text-xs font-semibold text-neutral-500">
-            8 live • {coming.length} in arrivo — Shopify OAuth live, token per tenant via Edge, nessun segreto nel client.
+            {live.length} già disponibili • {coming.length} in arrivo — si collegano in 2 click, in modo sicuro.
           </p>
         </motion.div>
 
         {/* Blocchi concreti (3) + visual */}
         <div className="mx-auto mb-10 grid max-w-5xl gap-3 sm:grid-cols-3">
           {[
-            { icon: PlugZap, t: "OAuth sicuro", d: "Shopify, Gmail, Calendar con token per tenant" },
-            { icon: Lock, t: "Nessun segreto client", d: "Chiamate proxate da Edge Functions" },
-            { icon: ShieldCheck, t: "RLS per tenant", d: "Ogni tabella isolata su Supabase" },
+            { icon: PlugZap, t: "Connessione sicura", d: "Shopify, Gmail, Calendar e altri si collegano in 2 click" },
+            { icon: Lock, t: "Niente password condivise", d: "Accedi con i tuoi account, senza copiare chiavi" },
+            { icon: ShieldCheck, t: "I tuoi dati restano tuoi", d: "Ogni account vede solo i propri dati e collegamenti" },
           ].map((b) => (
             <div key={b.t} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-4">
               <b.icon size={16} className="text-brand-400" />

@@ -96,9 +96,9 @@ export default function MarketplaceSection() {
         >
           <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Catalogo reale • 15 agenti • 6 categorie</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">15 agenti • 6 categorie • da €9,99/mese</p>
               <h3 className="mt-1 text-2xl font-bold tracking-tight text-white">Anteprima del marketplace</h3>
-              <p className="mt-1 max-w-xl text-sm font-semibold leading-5 text-neutral-400">Prezzi reali (€9,99–€14,99), setup “Same day/1 day”, integrazioni verificate. Nessun prezzo inventato.</p>
+              <p className="mt-1 max-w-xl text-sm font-semibold leading-5 text-neutral-400">Prezzi chiari, attivazione in giornata e integrazioni incluse. Provali gratis prima di decidere.</p>
             </div>
             <Link href="/agents" className="text-sm font-bold text-brand-400 hover:text-brand-300">Vedi tutti →</Link>
           </div>
@@ -130,7 +130,6 @@ export default function MarketplaceSection() {
               </motion.div>
             ))}
           </div>
-          <p className="mt-3 text-xs font-semibold text-neutral-500">Visual: mock UI costruito in JSX/Tailwind con dati da <code className="rounded bg-white/5 px-1 py-0.5">src/lib/agents.ts</code> — nessuna immagine esterna.</p>
         </motion.div>
 
         {/* Bottone "sfoglia" in fondo */}

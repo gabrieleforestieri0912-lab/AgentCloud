@@ -502,7 +502,7 @@ export default function HeroSection() {
             }}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-            <span className="text-xs font-bold tracking-widest uppercase text-brand-300">Multi-tenant • {AGENTS.length} agenti • {LIVE_INTEGRATIONS} integrazioni live</span>
+            <span className="text-xs font-bold tracking-widest uppercase text-brand-300">{AGENTS.length} agenti pronti all’uso • {LIVE_INTEGRATIONS} integrazioni</span>
           </motion.div>
           <motion.h1
             className="text-[1.75rem] xs:text-[2rem] sm:text-5xl md:text-6xl lg:text-[76px] font-extrabold leading-[1.08] tracking-tight text-white"

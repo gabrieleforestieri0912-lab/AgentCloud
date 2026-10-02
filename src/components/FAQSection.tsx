@@ -15,23 +15,23 @@ export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const faqs = dict.faq.items;
-  // FAQ oneste aggiunte in Fase 2 — coerenti con stato reale (live vs in arrivo, freemium, RLS)
+  // FAQ aggiuntive: collegamenti, prova gratuita, dati e integrazioni.
   const extraFaqs = [
     {
       q: "Come collego il mio negozio Shopify?",
-      a: "Apri l’agente Shopify, clicca “Collega Shopify” e autorizza via OAuth. Il token è salvato per tenant (RLS) e le chiamate passano da Edge Functions: non incolli mai chiavi nel client. Se non hai uno store, l’agente può crearne uno con myshopify.com + link signup.",
+      a: "Apri l’agente Shopify, clicca “Collega Shopify” e autorizza l’accesso in modo sicuro: non devi copiare nessuna chiave. Se non hai uno store, l’agente ti guida a crearne uno.",
     },
     {
       q: "Cosa significa “4 messaggi gratis per agente”?",
-      a: "Ogni agente si può provare con 4 messaggi gratuiti (conteggio per IP se anonimo, per user_id se loggato). Al 5° l’agente invita ad abbonarsi (€9,99–€14,99, Stripe test mode). Admin e beta tester non hanno limite.",
+      a: "Ogni agente si può provare con 4 messaggi gratuiti, senza impegno. Per continuare a usarlo puoi sbloccarlo con l’abbonamento (€9,99–€14,99 al mese).",
     },
     {
-      q: "Dove sono i miei dati e come sono isolati?",
-      a: "Supabase con RLS su ogni tabella (user_agents, agent_runs, carts, profiles). Token OAuth cifrati at-rest, isolamento per tenantId = user.id, nessuna ANTHROPIC_API_KEY nel browser. Vedi /privacy e /terms.",
+      q: "I miei dati sono al sicuro?",
+      a: "Sì: ogni account vede solo i propri dati, le connessioni a Shopify e Google sono cifrate e revocabili in un click, e puoi esportare o cancellare tutto dalle impostazioni quando vuoi. Dettagli in /privacy e /terms.",
     },
     {
-      q: "Quali integrazioni sono live e quali “In arrivo”?",
-      a: "Live: Shopify, Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana (10/41). In arrivo: WhatsApp, WooCommerce, PayPal, Facebook/Instagram/TikTok, Google Ads/Analytics/Meet e altre — mostrate con badge “In arrivo”.",
+      q: "Quali integrazioni sono disponibili?",
+      a: "Già disponibili: Shopify, Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp e Asana. Altre sono in arrivo — WhatsApp, WooCommerce, PayPal, social e Google Ads/Analytics.",
     },
   ];
   const allFaqs = [...faqs, ...extraFaqs];

@@ -1,7 +1,7 @@
 "use client";
 /**
- * Come funziona — 4 passi verificabili: scegli → collega → lavora → gestisci.
- * Visual: stepper + mock UI JSX (AgentCard, OAuth, chat bubble, dashboard check).
+ * Come funziona — 4 passi per il cliente: scegli → collega → delega → gestisci.
+ * Visual: stepper + esempio concreto (agente, collegamento, chat).
  * Solo transform/opacity, no layout anim.
  */
 import Link from "next/link";
@@ -13,29 +13,25 @@ const STEPS = [
     n: "01",
     icon: Bot,
     title: "Scegli l’agente",
-    desc: "15 agenti in 6 categorie (E-commerce, Marketing, Customer Service, Business Ops, Design, E-commerce & Finance). Ogni agente mostra prezzo reale (€9,99/€14,99), setup Same day/1 day e integrazioni verificate da src/lib/agents.ts.",
-    meta: "src/lib/agents.ts • localizeAgent()",
+    desc: "15 agenti in 6 categorie: E-commerce, Marketing, Customer Service, Business Ops, Design e Finanza. Prezzi chiari (€9,99/€14,99 al mese) e attivazione in giornata.",
   },
   {
     n: "02",
     icon: PlugZap,
-    title: "Collega lo strumento con OAuth",
-    desc: "Shopify OAuth live, Gmail/Calendar via Google OAuth. Token per tenant salvato con RLS, chiamate proxate da Edge Functions — non incolli mai chiavi nel client.",
-    meta: "src/proxy.ts • src/lib/shopify/*",
+    title: "Collega i tuoi strumenti",
+    desc: "Shopify, Gmail, Calendar e gli altri tool si collegano in 2 click con accesso sicuro. Niente chiavi da copiare, niente configurazioni complicate.",
   },
   {
     n: "03",
     icon: MessageSquare,
     title: "L’agente lavora per te",
-    desc: "Chat in /chat o side-panel estensione con cursore AgentCloud reattivo sulla pagina affianco (apre la pagina se non è aperta). 4 messaggi gratis per agente, poi paywall chiaro.",
-    meta: "POST /api/agent/run • agent-cursor.js",
+    desc: "Chiedi in chat e l’agente esegue: cerca prodotti, crea link al carrello, prenota appuntamenti, invia email. Provalo gratis con 4 messaggi.",
   },
   {
     n: "04",
     icon: LayoutDashboard,
-    title: "Gestisci da dashboard",
-    desc: "Stato agenti, run, token e isolamento per tenant visibili in /dashboard. Ogni tabella è RLS su Supabase (tenantId = user.id).",
-    meta: "supabase/schema.sql • /dashboard",
+    title: "Gestisci tutto da un posto",
+    desc: "Agenti attivi, attività svolte e abbonamento sotto controllo dalla tua dashboard, in qualsiasi momento.",
   },
 ];
 
@@ -55,10 +51,10 @@ export default function HowItWorksSection() {
             <span className="text-xs font-bold uppercase tracking-widest text-brand-400">Come funziona</span>
           </div>
           <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Scegli l’agente <span className="bg-linear-to-r from-brand-500 to-pink-500 bg-clip-text text-transparent">→ collega →</span> l’agente lavora
+            Dal primo messaggio <span className="bg-linear-to-r from-brand-500 to-pink-500 bg-clip-text text-transparent">al risultato in 4 passi</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg leading-7 text-neutral-400">
-            Niente orchestrazione magica. Un agente alla volta, con strumenti limitati a <code className="rounded bg-white/5 px-1">defaultTools</code> e OAuth per tenant.
+            Scegli l’agente, collega i tuoi strumenti e delega il lavoro: al resto pensa lui.
           </p>
         </motion.div>
 
@@ -80,12 +76,11 @@ export default function HowItWorksSection() {
               </div>
               <p className="mt-3 text-sm font-bold text-white">{s.title}</p>
               <p className="mt-1.5 text-xs font-semibold leading-5 text-neutral-400">{s.desc}</p>
-              <p className="mt-3 text-xs font-bold text-neutral-500">{s.meta}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* Visual mock — stepper + 3 card JSX */}
+        {/* Visual — esempio concreto: dal prodotto al carrello */}
         <motion.div
           className="mx-auto mt-8 max-w-5xl rounded-2xl border border-white/5 bg-neutral-900 p-4"
           initial={{ opacity: 0 }}
@@ -95,23 +90,23 @@ export default function HowItWorksSection() {
         >
           <div className="flex items-center gap-2 border-b border-white/5 pb-3">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            <span className="text-xs font-bold text-neutral-400">Mock UI — JSX/Tailwind, nessuna immagine esterna</span>
+            <span className="text-xs font-bold text-neutral-400">Esempio: dal prodotto al carrello, senza uscire dalla chat</span>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-white/5 bg-neutral-950 p-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">1. AgentCard</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">1. Scegli</p>
               <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/5 bg-neutral-900 p-2.5">
                 <span className="h-8 w-8 rounded-lg bg-green-500/20" />
-                <div><p className="text-xs font-bold text-white">Shopify Agent</p><p className="text-xs text-neutral-500">€9,99/mo • Same day</p></div>
+                <div><p className="text-xs font-bold text-white">Shopify Agent</p><p className="text-xs text-neutral-500">€9,99/mese • Pronto oggi</p></div>
                 <Check size={12} className="ml-auto text-emerald-400" />
               </div>
             </div>
             <div className="rounded-xl border border-white/5 bg-neutral-950 p-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">2. OAuth</p>
-              <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-xs font-bold text-emerald-300"><Check size={12} className="mr-1 inline-block -translate-y-px" />Shopify collegato • token per tenant</div>
+              <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">2. Collega</p>
+              <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-xs font-bold text-emerald-300"><Check size={12} className="mr-1 inline-block -translate-y-px" />Negozio Shopify collegato</div>
             </div>
             <div className="rounded-xl border border-white/5 bg-neutral-950 p-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">3. Chat</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">3. Delega</p>
               <div className="mt-2 rounded-lg bg-brand-500 p-2.5 text-xs font-bold text-white">Link carrello pronto → invia al cliente</div>
             </div>
           </div>
