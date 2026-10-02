@@ -10,7 +10,7 @@ import { Store, Plus, ExternalLink } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 import { readableConnectReason } from "@/lib/connect-errors";
-import { normalizeShopInput } from "@/lib/shopify-input";
+import { resolveShopDomain } from "@/lib/shopify-input";
 
 /**
  * Prompt in-chat mostrato quando l'agente Shopify è attivo e nessun negozio
@@ -91,7 +91,7 @@ export default function ShopifyConnectionPrompt() {
 
   const connectExisting = () => {
     // Accetta sia link completi al negozio (https://.../admin) sia domini nudi.
-    const s = normalizeShopInput(shop) ?? shop.trim().toLowerCase();
+    const s = resolveShopDomain(shop);
     if (!s) return;
     const u = new URL("/api/shopify/install", window.location.origin);
     u.searchParams.set("shop", s);

@@ -26,7 +26,7 @@ import { getAgentBySlug, localizeAgent, type Agent } from "@/lib/agents";
 import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
 import { readableConnectReason } from "@/lib/connect-errors";
-import { normalizeShopInput } from "@/lib/shopify-input";
+import { resolveShopDomain } from "@/lib/shopify-input";
 import { isIntegrationAvailable } from "@/lib/integrations";
 import type { DeployConnections } from "./page";
 
@@ -103,6 +103,7 @@ export default function DeployAgentClient({
     string | null
   >(null);
   const [shopDomain, setShopDomain] = useState("");
+  const [shopDomainError, setShopDomainError] = useState(false);
   // Esito di un round-trip OAuth appena concluso (?shopify= / ?google=),
   // mostrato inline su questa pagina invece di rimbalzare alla dashboard.
   const [banner, setBanner] = useState<{
@@ -200,6 +201,7 @@ export default function DeployAgentClient({
     }
     if (kind === "shopify") {
       setShopDomain("");
+      setShopDomainError(false);
       setConnectingIntegration((cur) =>
         cur === integration ? null : integration,
       );
@@ -221,9 +223,13 @@ export default function DeployAgentClient({
   };
 
   const connectShopify = (domain: string) => {
-    // Accetta sia link completi al negozio (https://.../admin) sia domini nudi.
-    const s = normalizeShopInput(domain) ?? domain.trim().toLowerCase();
-    if (!s) return;
+    // Accetta nome negozio, dominio nudo o URL completo; la validazione
+    // rigorosa resta lato server (normalizeShop in lib/shopify/oauth).
+    const s = resolveShopDomain(domain);
+    if (!s) {
+      setShopDomainError(true);
+      return;
+    }
     const u = new URL("/api/shopify/install", window.location.origin);
     u.searchParams.set("shop", s);
     u.searchParams.set("returnTo", window.location.pathname + window.location.search);
@@ -495,14 +501,18 @@ export default function DeployAgentClient({
                             <div className="flex gap-2">
                               <input
                                 value={shopDomain}
-                                onChange={(e) => setShopDomain(e.target.value)}
+                                onChange={(e) => {
+                                  setShopDomain(e.target.value);
+                                  setShopDomainError(false);
+                                }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter")
                                     connectShopify(shopDomain);
                                 }}
                                 placeholder={dict.deploy.shopifyPlaceholder}
                                 autoFocus
-                                className="h-10 flex-1 rounded-xl border border-white/10 bg-neutral-800 px-4 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+                                aria-invalid={shopDomainError}
+                                className={`h-10 flex-1 rounded-xl border bg-neutral-800 px-4 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:ring-1 ${shopDomainError ? "border-red-500/60" : "border-white/10 focus:border-brand-500/50 focus:ring-brand-500/20"}`}
                               />
                               <button
                                 type="button"
@@ -514,6 +524,11 @@ export default function DeployAgentClient({
                                 {dict.deploy.connect}
                               </button>
                             </div>
+                            {shopDomainError && (
+                              <p className="mt-2 text-xs font-semibold text-red-400">
+                                Dominio non valido — usa tuo-negozio.myshopify.com
+                              </p>
+                            )}
                             <p className="mt-2 text-xs text-neutral-500">
                               {dict.deploy.shopifyOAuthDesc}
                             </p>

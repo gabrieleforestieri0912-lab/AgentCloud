@@ -22,3 +22,21 @@ export function normalizeShopInput(input: string): string | null {
     ? host
     : null;
 }
+
+/**
+ * Versione "comoda" per i form di connessione: oltre ai casi gestiti da
+ * `normalizeShopInput` (dominio nudo o URL completo), accetta anche il solo
+ * nome del negozio ("mystore") a cui appende `.myshopify.com`.
+ * Restituisce null quando l'input non può diventare un host valido — la
+ * validazione rigorosa resta lato server (`normalizeShop` in lib/shopify/oauth).
+ */
+export function resolveShopDomain(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  const direct = normalizeShopInput(raw);
+  if (direct) return direct;
+  if (!raw.includes(".") && !raw.includes("/")) {
+    return normalizeShopInput(`${raw.toLowerCase()}.myshopify.com`);
+  }
+  return null;
+}

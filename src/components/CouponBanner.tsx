@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
@@ -16,6 +16,38 @@ import {
 import { t } from "@/lib/i18n/dictionaries";
 
 const CLAIMED_KEY = "coupon_agentcloud50_claimed";
+/** Evento custom: `storage` scatta solo su altre tab, qui serve anche la corrente. */
+const CLAIMED_EVENT = "ac:coupon-claimed-changed";
+
+function readClaimed(): boolean {
+  try {
+    return localStorage.getItem(CLAIMED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function subscribeClaimed(onChange: () => void): () => void {
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === null || e.key === CLAIMED_KEY) onChange();
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(CLAIMED_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(CLAIMED_EVENT, onChange);
+  };
+}
+
+function writeClaimed(value: boolean) {
+  try {
+    if (value) localStorage.setItem(CLAIMED_KEY, "true");
+    else localStorage.removeItem(CLAIMED_KEY);
+  } catch {
+    // storage non disponibile
+  }
+  window.dispatchEvent(new Event(CLAIMED_EVENT));
+}
 
 type Props = {
   coupon: CouponState;
@@ -28,30 +60,15 @@ export default function CouponBanner({ coupon, locale, dict }: Props) {
   const { dict: commonDict } = useLanguage();
   const [input, setInput] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
-  const [claimed, setClaimed] = useState(false);
+  // Stato già reclamato: derivato da localStorage via useSyncExternalStore
+  // (snapshot lato server = false), così nessun setState dentro un effect.
+  const claimed = useSyncExternalStore(subscribeClaimed, readClaimed, () => false);
 
   // Sincronizza lo state sul client con quello server-side renderizzato.
   useEffect(() => {
     if (!coupon.enabled) return;
     preloadCouponState(coupon);
   }, [coupon]);
-
-  // Controlla se l'utente ha già reclamato il coupon
-  useEffect(() => {
-    try {
-      const claimed = localStorage.getItem(CLAIMED_KEY);
-      setClaimed(claimed === "true");
-    } catch {
-      // storage non disponibile
-    }
-  }, []);
-
-  useEffect(() => {
-    if (coupon.applied && input.trim().toUpperCase() === COUPON_CODE) {
-      setInput("");
-      setStatus("idle");
-    }
-  }, [input, coupon.applied]);
 
   async function handleApply(e: React.FormEvent) {
     e.preventDefault();
@@ -79,18 +96,14 @@ export default function CouponBanner({ coupon, locale, dict }: Props) {
       });
 
       if (!decrement.ok) {
-        const d = await decrement.json().catch(() => ({}));
-        setStatus(d.code === "INSUFFICIENT_USES" ? "error" : "error");
+        // 409 = 20 usi già consumati, 400 = codice errato: stesso messaggio.
+        setStatus("error");
         return;
       }
 
-      // Marca il coupon come reclamato localmente
-      try {
-        localStorage.setItem(CLAIMED_KEY, "true");
-      } catch {
-        // storage non disponibile
-      }
-      setClaimed(true);
+      // Marca il coupon come reclamato localmente (notifica anche questa tab)
+      writeClaimed(true);
+      setInput("");
       setStatus("ok");
     } catch {
       setStatus("error");
@@ -125,10 +138,8 @@ export default function CouponBanner({ coupon, locale, dict }: Props) {
           <button
             type="button"
             onClick={() => {
-              try {
-                localStorage.removeItem(CLAIMED_KEY);
-              } catch {}
-              setClaimed(false);
+              writeClaimed(false);
+              setStatus("idle");
             }}
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/60 px-4 py-2.5 text-sm font-bold text-neutral-700 transition-colors hover:bg-white/80"
           >

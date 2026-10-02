@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import fs from "node:fs";
+import path from "node:path";
 
-const LIMIT_KEY = "coupon_agentcloud50_uses_left";
 const LIMIT = 20;
 const TTL_MS = 5 * 60 * 1000; // 5 min per warmup
 
@@ -13,8 +14,6 @@ function getStore(): Map<string, number> {
   // Prova a leggere da un file per persistenza cross-request (solo dev/single server)
   if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
     try {
-      const fs = require("fs");
-      const path = require("path");
       const filePath = path.join(process.cwd(), ".coupon-store.json");
       if (fs.existsSync(filePath)) {
         const raw = fs.readFileSync(filePath, "utf-8");
@@ -36,8 +35,6 @@ function setStore(map: Map<string, number>) {
   // Persistenza su file (solo dev/single server)
   if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
     try {
-      const fs = require("fs");
-      const path = require("path");
       const filePath = path.join(process.cwd(), ".coupon-store.json");
       fs.writeFileSync(filePath, JSON.stringify(Array.from(map.entries())));
     } catch {

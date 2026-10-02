@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSessionUser } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
-import { TENANT_GOOGLE_ID } from "@/lib/google/connections";
 import {
   buildGoogleConsentUrl,
   encodeGoogleState,
@@ -36,7 +35,6 @@ export async function GET(req: NextRequest) {
 
   const sessionUser = await getSessionUser();
   const userId: string | null = sessionUser?.id ?? null;
-  // I possessori del codice (admin) senza account Supabase usano il tenant condiviso
 
   if (!userId) {
     const nextPath =

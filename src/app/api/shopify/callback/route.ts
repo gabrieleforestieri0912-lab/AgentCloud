@@ -37,8 +37,11 @@ export async function GET(req: NextRequest) {
   if (!sessionUser) {
     // Sessione scaduta a metà flusso: il codice monouso non è riutilizzabile,
     // quindi l'utente deve solo riavviare la connessione dopo il login.
+    // Ripristiniamo però la pagina di partenza così non finisce su /dashboard.
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("intent", "shopify");
+    const ret = req.cookies.get(SHOPIFY_RETURN_COOKIE)?.value;
+    if (ret && isSafeRedirectPath(ret)) loginUrl.searchParams.set("next", ret);
     return NextResponse.redirect(loginUrl);
   }
   // I possessori del codice (con o senza sessione) collegano lo store tenant
@@ -91,19 +94,41 @@ export async function GET(req: NextRequest) {
     return fail("hmac");
   }
 
-  // 4. Scambio del codice con un access token
-  let tokenData: { access_token?: string; scope?: string };
-  try {
-    const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
-      method: "POST",
+  // 4. Scambio del codice con un access token.
+  //    Shopify documenta `application/x-www-form-urlencoded`; il JSON è
+  //    tollerato ma non garantito, quindi proviamo il form-encoded e in
+  //    fallback il JSON, così un cambio di comportamento non blocca il flusso.
+  let tokenData: { access_token?: string; scope?: string } | null = null;
+  const tokenUrl = `https://${shop}/admin/oauth/access_token`;
+  const attempts: Array<{ headers: HeadersInit; body: string }> = [
+    {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ client_id: clientId, client_secret: secret, code }).toString(),
+    },
+    {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ client_id: clientId, client_secret: secret, code }),
-    });
-    if (!tokenRes.ok) {
-      return fail("token_exchange");
+    },
+  ];
+  for (const attempt of attempts) {
+    try {
+      const tokenRes = await fetch(tokenUrl, {
+        method: "POST",
+        headers: attempt.headers,
+        body: attempt.body,
+      });
+      if (!tokenRes.ok) continue;
+      const data = (await tokenRes.json()) as { access_token?: string; scope?: string } | null;
+      if (data && typeof data === "object") {
+        // Risposta valida (anche senza token: in quel caso serve no_token).
+        tokenData = data;
+        if (data.access_token) break;
+      }
+    } catch {
+      // riprova con l'altro content-type
     }
-    tokenData = await tokenRes.json();
-  } catch {
+  }
+  if (!tokenData) {
     return fail("token_exchange");
   }
 

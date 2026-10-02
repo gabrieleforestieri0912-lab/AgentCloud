@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Plug, CheckCircle2, ArrowRight } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { isIntegrationAvailable } from "@/lib/integrations";
+import { resolveShopDomain } from "@/lib/shopify-input";
 
 type Props = {
   integrations: string[];
@@ -28,6 +30,20 @@ function providerForIntegration(label: string): string | null {
 
 export default function AgentIntegrationsCard({ integrations, agentSlug, genericConnected, shopifyConnected, googleConnected }: Props) {
   const { dict } = useLanguage();
+  const [shopifyOpen, setShopifyOpen] = useState(false);
+  const [shopifyShop, setShopifyShop] = useState("");
+  const [shopifyError, setShopifyError] = useState(false);
+
+  const connectShopify = () => {
+    const shop = resolveShopDomain(shopifyShop);
+    if (!shop) {
+      setShopifyError(true);
+      return;
+    }
+    const returnTo = encodeURIComponent(`/agents/${agentSlug}`);
+    window.location.href = `/api/shopify/install?shop=${encodeURIComponent(shop)}&returnTo=${returnTo}`;
+  };
+
   return (
     <div className="rounded-2xl border border-white/5 bg-neutral-900/80 p-6 shadow-xl shadow-black/20 backdrop-blur">
       <div className="mb-4 flex items-center gap-2.5 border-b border-white/5 pb-4">
@@ -55,11 +71,12 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
                 : false;
           const href = isGeneric
             ? `/api/integrations/${prov}/authorize?returnTo=${encodeURIComponent(`/agents/${agentSlug}`)}`
-            : prov === "shopify"
-              ? `/api/shopify/install?returnTo=${encodeURIComponent(`/agents/${agentSlug}`)}`
-              : prov === "google"
-                ? `/api/auth/google/connect?returnTo=${encodeURIComponent(`/agents/${agentSlug}`)}`
-                : `/dashboard/integrations`;
+            : prov === "google"
+              ? `/api/auth/google/connect?returnTo=${encodeURIComponent(`/agents/${agentSlug}`)}`
+              : `/dashboard/integrations`;
+          // Shopify richiede il dominio del negozio: lo chiediamo inline,
+          // altrimenti /api/shopify/install rifiuta la richiesta (invalid_shop).
+          const needsShopInput = prov === "shopify" && !connected && !soon;
           return (
             <div key={label} className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${connected ? "border-emerald-500/30 bg-emerald-500/5" : "border-white/5 bg-neutral-800/60"}`}>
               <span className="flex items-center gap-2">
@@ -77,6 +94,46 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-300">
                   {dict.common.comingSoon}
                 </span>
+              ) : needsShopInput ? (
+                shopifyOpen ? (
+                  <span className="flex flex-col items-end gap-1">
+                    <span className="flex items-center gap-2">
+                      <input
+                        value={shopifyShop}
+                        onChange={(e) => {
+                          setShopifyShop(e.target.value);
+                          setShopifyError(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") connectShopify();
+                        }}
+                        placeholder="tuo-negozio.myshopify.com"
+                        aria-invalid={shopifyError}
+                        className={`w-44 rounded-full border bg-neutral-900 px-3 py-1 text-xs text-white placeholder-neutral-500 focus:outline-none ${shopifyError ? "border-red-500/60" : "border-white/10 focus:border-brand-500"}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={connectShopify}
+                        className="inline-flex items-center gap-1 rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white hover:bg-brand-400"
+                      >
+                        {dict.agentIntegrations.connect} <ArrowRight size={12} />
+                      </button>
+                    </span>
+                    {shopifyError && (
+                      <span className="text-[11px] font-semibold text-red-400">
+                        Dominio non valido (es. mio-negozio.myshopify.com)
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShopifyOpen(true)}
+                    className="inline-flex items-center gap-1 rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white hover:bg-brand-400"
+                  >
+                    {dict.agentIntegrations.connect} <ArrowRight size={12} />
+                  </button>
+                )
               ) : (
                 <Link href={href} className="inline-flex items-center gap-1 rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white hover:bg-brand-400">
                   {dict.agentIntegrations.connect} <ArrowRight size={12} />

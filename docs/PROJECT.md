@@ -322,23 +322,58 @@ Il codice (`src/lib/shopify/*`, `/api/shopify/*`) supporta un'app **pubblica**
 installabile da qualsiasi merchant. Passi manuali nel **Shopify Partner Dashboard**
 (non automatizzabili da codice):
 
-1. **App setup → App URL** = `NEXT_PUBLIC_URL`; in **Allowed redirection URLs**
-   aggiungi `https://<host>/api/shopify/callback`.
-2. Imposta la **distribuzione su "Public"** e invia l'app per la **review Shopify**.
-3. **Scopes**: quelli in `SHOPIFY_SCOPES` (default: read/write products, orders,
-   inventory). Chiedi solo ciò che serve.
-4. **Webhook**: l'endpoint `https://<host>/api/shopify/webhooks` è
-   **auto-registrato** a ogni install (APP_UNINSTALLED + 3 GDPR). In alternativa
-   configurali nel Dashboard.
-5. Inserisci **privacy policy** e **termini** richiesti da Shopify.
-6. Usa `SHOPIFY_API_KEY` / `SHOPIFY_API_SECRET` del Partner Dashboard.
+1. **App setup → App URL** = `NEXT_PUBLIC_URL` (`https://www.agentcloud.agency`).
+2. **Allowed redirection URLs**: deve contenere **esattamente** il valore di
+   `SHOPIFY_REDIRECT_URI`, cioè `https://www.agentcloud.agency/api/shopify/callback`
+   (host **www**, stesso host di `NEXT_PUBLIC_URL` e di `SHOPIFY_WEBHOOK_ADDRESS`).
+   Aggiungi anche la variante apex `https://agentcloud.agency/api/shopify/callback`
+   per sicurezza: Shopify confronta l'URI **byte per byte** e qualsiasi
+   discrepanza (apex vs `www`) fa fallire il flusso prima ancora del callback con
+   *"redirect_uri must match an allowed redirection URL"* → l'utente vede
+   "non si può collegare".
+3. Imposta la **distribuzione su "Public"** e invia l'app per la **review Shopify**.
+4. **Scopes**: in Partner Dashboard devono essere dichiarati **tutti** gli scope di
+   `SHOPIFY_SCOPES` (12, comma-separated):
+   `read_products,write_products,read_orders,write_orders,read_inventory,write_inventory,read_customers,write_customers,read_content,write_content,read_themes,write_themes`.
+   Se manca anche solo uno → `invalid_scope` e il flusso non parte. Se non ti
+   servono tutti, **riduci `SHOPIFY_SCOPES`** (i tool usano soprattutto products,
+   orders, inventory, customers) e allinea il Dashboard: chiedere meno scope
+   riduce anche l'impegno di review (i `*_customers` sono *protected customer data*).
+5. **Webhook**: l'endpoint `SHOPIFY_WEBHOOK_ADDRESS`
+   (`https://www.agentcloud.agency/api/shopify/webhooks`) è **auto-registrato** a
+   ogni install (`app/uninstalled` via GraphQL). I 3 topic GDPR
+   (`customers/data_request`, `customers/redact`, `shop/redact`) **non possono**
+   essere creati via API: configurali a mano nel Dashboard (obbligatorio per la
+   review) — il codice li prova e ignora i `userErrors`.
+6. Inserisci **privacy policy** e **termini** richiesti da Shopify
+   (`/privacy`, `/terms`, `/refunds` sono già pubblici).
+7. Usa `SHOPIFY_API_KEY` / `SHOPIFY_API_SECRET` del Partner Dashboard.
 
-Flusso runtime: `/api/shopify/install` (CSRF state + redirect) →
-`/api/shopify/callback` (verifica HMAC + exchange token, cifrato AES-256-GCM in
-`shopify_connections`) → i tool dell'agente leggono il token cifrato e lo
-revocano su 401 (APP_UNINSTALLED / shop/redact). La tabella
+Flusso runtime: `/api/shopify/install` (valida `shop`, CSRF state, redirect) →
+`/api/shopify/callback` (verifica HMAC + exchange token form-encoded con fallback
+JSON, cifrato AES-256-GCM in `shopify_connections`) → i tool dell'agente leggono
+il token cifrato e lo revocano su 401 (APP_UNINSTALLED / shop/redact). La tabella
 `shopify_connections` è creata da `supabase/schema-shopify-oauth.sql`
 (rieseguire dopo il deploy).
+
+### Troubleshooting "Shopify non si collega"
+
+Il ritorno a `/api/shopify/callback` (o alla pagina di partenza) include
+`?shopify=error&reason=<motivo>` — è la prima cosa da guardare:
+
+| `reason` | Causa | Fix |
+|---|---|---|
+| `invalid_shop` | manca/il dominio non è `*.myshopify.com` (link senza `shop=`, URL completo incollato) | usare `mio-negozio.myshopify.com`; i form ora normalizzano con `normalizeShopInput` |
+| `config` | `SHOPIFY_API_KEY`/`SHOPIFY_API_SECRET` assenti nel deploy | verificare le env |
+| `state_mismatch` | cookie CSRF non tornato (host apex/www diverso, sessione expirata, cookie cancellati) | allineare `SHOPIFY_REDIRECT_URI` all'host canonico **www** |
+| `hmac` | `SHOPIFY_API_SECRET` diverso da quello del Partner Dashboard | re-copiare il secret |
+| `token_exchange` / `no_token` | scambio code→token fallito | secret errato, o `redirect_uri` dell'exchange diversa da quella authorize |
+| `store` | upsert su Supabase fallito | manca `SUPABASE_SERVICE_ROLE_KEY` o tabella `shopify_connections` non creata |
+| *(nessun callback)* | Shopify rifiuta **prima** del redirect: `redirect_uri must match...` oppure `invalid_scope` | correggere **Allowed redirection URLs** e la lista **scopes** nel Dashboard |
+
+Errore a metà flusso (sessione scaduta): la route reindirizza a
+`/login?intent=shopify&next=<pagina di partenza>` così dopo il login si torna
+dove si era rimasti.
 
 ---
 
@@ -352,6 +387,50 @@ Gmail/Calendar/Sheets (stesso pattern Shopify: token AES-256-GCM in `google_conn
 4. Env: `GOOGLE_CLIENT_ID/SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, `INTEGRATIONS_TOKEN_ENCRYPTION_KEY`.
 
 Flusso: `/api/auth/google/connect` (Gmail/Calendar) o `/api/integrations/google_sheets/authorize` (Sheets) → callback → upsert cifrato. Refresh 5m (`lib/google/token.ts` per Gmail/Calendar, `lib/google/sheets.ts` per Sheets — gemello su `tenant_integrations`). I tool agente di Sheets sono `sheets_read_range`, `sheets_update_range`, `sheets_append_row`.
+
+### "Google non ha verificato questa app" — cause e rimedi
+
+Il warning dipende **solo** dalla configurazione del progetto in Google Cloud
+Console, non dal codice. Gli scope richiesti (`gmail.modify`, `calendar`,
+`spreadsheets`) sono tutti **sensibili**, quindi finché l'app non è verificata e
+in produzione Google mostra la schermata "non verificato" a tutti. Checklist
+nella **Google Cloud Console → OAuth consent screen** (stesso progetto del
+`GOOGLE_CLIENT_ID` in env, client `789153861649-…`):
+
+1. **Publishing status = "In production"**. Se è ancora **"Testing"**, solo i
+   *test users* possono consensare e **tutti** gli altri vedono il warning
+   (spesso è la causa esatta del "dice non verificato ma non è vero": la verifica
+   era stata fatta, ma lo status è rimasto Testing, oppure su un **altro progetto**).
+   ⚠️ Verifica è **per client_id**: se il client verificato è quello di Supabase
+   (sign-in) e non questo, il warning resta.
+2. **User consent → Test users**: se lo status è Testing, aggiungi gli email
+   degli utenti reali, oppure passa In production.
+3. **App information**: App name, logo, **App home page** (`https://www.agentcloud.agency`),
+   **App domain di autorizzazione** (`agentcloud.agency` + `www.agentcloud.agency`),
+   **privacy policy** (`https://www.agentcloud.agency/privacy`), **terms**
+   (`https://www.agentcloud.agency/terms`), **Developer contact email**.
+   Tutte le pagine legali sono già pubbliche (fuori da `PUBLIC_PATHS` gate).
+4. **Scopes**: devono corrispondere a quelli realmente richiesti dal codice.
+   `GOOGLE_SCOPES` in env aggiunge **spreadsheets** oltre a Gmail/Calendar: se la
+   verifica è stata fatta solo per Gmail+Calendar, rimuovi `spreadsheets` da
+   `GOOGLE_SCOPES` (o dichiarala in Console) e disabilita/abilita la **Sheets API**.
+   `business.manage` (restricted) viene richiesto **solo** se `GOOGLE_BUSINESS_ACCOUNT_ID`
+   + `GOOGLE_BUSINESS_LOCATION_ID` sono impostati: non lo sono, quindi non pesa.
+5. **Domain verification**: già presente nel codice — meta tag
+   `GOOGLE_SITE_VERIFICATION=googlea6268f8bf7c70352` in `layout.tsx` e file
+   `public/googlea6268f8bf7c70352.html` servibili pubblicamente
+   (`public-paths.ts`). Verifica anche in **Search Console** che il dominio sia
+   verificato con lo stesso metodo.
+6. **API abilitate**: Gmail API, Calendar API, Sheets API nel progetto.
+7. Dopo la verifica, lo status "**Verified**" + **In production** rimuove il
+   warning. Un eventuale ritorno del warning segnala che lo status è tornato in
+   Testing o che si sta usando un client diverso.
+
+Nota: `prompt=consent` è forzato per ottenere sempre un `refresh_token`; di
+conseguenza la schermata di consenso completa (con eventuale banner di avviso)
+viene mostrata **a ogni** ricollegamento. Il callback riusa il refresh token già
+salvato se Google non ne emette uno nuovo, così una riconnessione non rompe il
+flusso.
 
 ## Generic Integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/ClickUp/Asana) — multi-tenant
 

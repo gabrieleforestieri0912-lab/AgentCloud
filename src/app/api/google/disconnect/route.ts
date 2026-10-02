@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
-import { TENANT_GOOGLE_ID, getGoogleConnection, deleteGoogleConnection } from "@/lib/google/connections";
+import { getGoogleConnection, deleteGoogleConnection } from "@/lib/google/connections";
 
 const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 
@@ -8,6 +8,10 @@ const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
  * POST /api/google/disconnect
  * Revoca il refresh token salvato presso Google (best effort) e cancella la
  * riga dell'utente da google_connections. Richiede una sessione.
+ *
+ * La riga viene cancellata anche quando il token non è decifrabile (chiave
+ * ruotata): altrimenti l'utente resterebbe con una connessione "fantasma"
+ * che la UI non sa più né mostrare né rimuovere.
  */
 export async function POST() {
   const user = await getSessionUser();
@@ -19,25 +23,26 @@ export async function POST() {
     );
   }
 
-  const conn =
-    (await getGoogleConnection(userId).catch(() => null)) ??
-    (user?.id && true ? await getGoogleConnection(user?.id ?? null).catch(() => null) : null);
-  if (!conn) {
-    return NextResponse.json({ ok: true, disconnected: false });
+  const conn = await getGoogleConnection(userId).catch(() => null);
+
+  if (conn) {
+    // Revoca il refresh token lato server. L'endpoint di revoca di Google è
+    // fire-and-forget — un errore qui non deve bloccare la rimozione della riga.
+    try {
+      await fetch(REVOKE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ token: conn.refreshToken }).toString(),
+      });
+    } catch {
+      // ignora — la disconnessione locale prosegue comunque
+    }
   }
 
-  // Revoca il refresh token lato server. L'endpoint di revoca di Google è
-  // fire-and-forget — un errore qui non deve bloccare la rimozione della riga.
-  try {
-    await fetch(REVOKE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ token: conn.refreshToken }).toString(),
-    });
-  } catch {
-    // ignora — la disconnessione locale prosegue comunque
-  }
+  // La riga viene cancellata anche quando il token non è decifrabile (chiave
+  // ruotata): altrimenti l'utente resterebbe con una connessione "fantasma"
+  // che la UI non sa più né mostrare né rimuovere.
+  const deleted = await deleteGoogleConnection(userId).then(() => true).catch(() => false);
 
-  await deleteGoogleConnection(userId).catch(() => {});
-  return NextResponse.json({ ok: true, disconnected: true });
+  return NextResponse.json({ ok: deleted, disconnected: deleted && conn !== null });
 }

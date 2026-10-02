@@ -43,6 +43,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Config mancante: meglio un errore leggibile che mandare il merchant su
+  // una pagina di errore grezza di Shopify con client_id vuoto.
+  if (!process.env.SHOPIFY_API_KEY || !process.env.SHOPIFY_API_SECRET) {
+    const url = new URL(returnTo ?? "/dashboard", req.url);
+    url.searchParams.set("shopify", "error");
+    url.searchParams.set("reason", "config");
+    return NextResponse.redirect(url);
+  }
+
   // Chi si sta connettendo?
   //  - Possessore del codice (admin) → il negozio è salvato come connessione
   //    tenant condivisa; nessuna email registrata e nessun login richiesto.

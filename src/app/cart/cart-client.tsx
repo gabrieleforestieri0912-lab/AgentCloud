@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Trash2, ShoppingCart, ArrowRight, Loader2, Package, Users, ShieldCheck, Sparkles, Check, Tag } from "lucide-react";
 import { useCart, type CartItem } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -61,15 +61,13 @@ export default function CartPageClient() {
   const { isAdmin } = useIsAdmin();
   const [checkingOut, setCheckingOut] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
-  const [couponData, setCouponData] = useState<{ discountCents: number; eligibleItems: CartItem[] }>({
-    discountCents: 0,
-    eligibleItems: [],
-  });
 
-  // Ricalcola lo sconto coupon quando cambiano gli items
-  useEffect(() => {
-    setCouponData(calculateCouponDiscount(items));
-  }, [items]);
+  // Ricalcola lo sconto coupon quando cambiano gli items (deriva da `items`,
+  // quindi va calcolato in render: un useEffect creerebbe un render extra).
+  const couponData = useMemo(
+    () => calculateCouponDiscount(items),
+    [items],
+  );
 
   async function handleCheckout() {
     // Doppia guardia client: l'admin non deve mai avviare uno checkout

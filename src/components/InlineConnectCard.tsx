@@ -5,6 +5,7 @@ import { ExternalLink, CheckCircle2, Plug } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
 import { isIntegrationAvailable } from "@/lib/integrations";
+import { resolveShopDomain } from "@/lib/shopify-input";
 
 type Provider = string;
 
@@ -33,7 +34,7 @@ function getMeta(provider: Provider) {
   return PROVIDER_META[key] || { name: provider.charAt(0).toUpperCase() + provider.slice(1), brand: key, desc: `Connetti ${provider} per sbloccare le automazioni` };
 }
 
-export default function InlineConnectCard({ provider, onConnected }: { provider: string; onConnected?: () => void }) {
+export default function InlineConnectCard({ provider }: { provider: string }) {
   const { dict } = useLanguage();
   const meta = getMeta(provider);
   // App non ancora collegabile (catalogo `available: false`): la card resta, ma
@@ -42,31 +43,29 @@ export default function InlineConnectCard({ provider, onConnected }: { provider:
   const [connecting, setConnecting] = useState(false);
   const [shop, setShop] = useState("");
   const [showShopInput, setShowShopInput] = useState(false);
+  const [shopError, setShopError] = useState(false);
 
   const handleConnect = useCallback(async () => {
     if (connecting) return;
     setConnecting(true);
     try {
       const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-      let url = "";
       const p = provider.toLowerCase();
       if (p.includes("shopify")) {
         if (!showShopInput) {
           setShowShopInput(true);
-          setConnecting(false);
           return;
         }
-        const s = shop.trim().toLowerCase();
-        if (!s) { setConnecting(false); return; }
-        // normalize shop input like ShopifyConnectionPrompt
-        const normalized = s.includes(".") ? s : `${s}.myshopify.com`;
-        url = `/api/shopify/install?shop=${encodeURIComponent(normalized)}&returnTo=${returnTo}`;
-        window.location.href = url;
+        const normalized = resolveShopDomain(shop);
+        if (!normalized) {
+          setShopError(true);
+          return;
+        }
+        window.location.href = `/api/shopify/install?shop=${encodeURIComponent(normalized)}&returnTo=${returnTo}`;
         return;
       }
       if (p.includes("gmail") || p.includes("calendar") || p === "google") {
-        url = `/api/auth/google/connect?returnTo=${returnTo}`;
-        window.location.assign(url);
+        window.location.assign(`/api/auth/google/connect?returnTo=${returnTo}`);
         return;
       }
       // generic integrations via tenant_integrations
@@ -83,21 +82,19 @@ export default function InlineConnectCard({ provider, onConnected }: { provider:
       };
       const gKey = p.replace(/[^a-z0-9_]/g, "");
       const mapped = genericMap[gKey] || gKey;
-      // try generic authorize, fallback to google for sheets
-      url = `/api/integrations/${mapped}/authorize?returnTo=${returnTo}`;
-      // check if endpoint exists by fetching, if 404 fallback to dashboard
-      window.location.assign(url);
+      window.location.assign(`/api/integrations/${mapped}/authorize?returnTo=${returnTo}`);
     } finally {
       setConnecting(false);
-      onConnected?.();
     }
-  }, [provider, connecting, shop, showShopInput, onConnected]);
+  }, [provider, connecting, shop, showShopInput]);
 
   const confirmShop = () => {
-    const s = shop.trim();
-    if (!s) return;
+    const normalized = resolveShopDomain(shop);
+    if (!normalized) {
+      setShopError(true);
+      return;
+    }
     const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-    const normalized = s.includes(".") ? s : `${s}.myshopify.com`;
     window.location.href = `/api/shopify/install?shop=${encodeURIComponent(normalized)}&returnTo=${returnTo}`;
   };
 
@@ -120,22 +117,33 @@ export default function InlineConnectCard({ provider, onConnected }: { provider:
       </div>
 
       {provider.toLowerCase().includes("shopify") && showShopInput ? (
-        <div className="mt-3 flex gap-2">
-          <input
-            value={shop}
-            onChange={(e) => setShop(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") confirmShop(); }}
-            placeholder="tuo-negozio.myshopify.com"
-            className="flex-1 rounded-full border border-white/10 bg-neutral-800 px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-brand-500"
-            autoFocus
-          />
-          <button
-            type="button"
-            onClick={confirmShop}
-            className="rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400"
-          >
-            Autorizza
-          </button>
+        <div className="mt-3">
+          <div className="flex gap-2">
+            <input
+              value={shop}
+              onChange={(e) => {
+                setShop(e.target.value);
+                setShopError(false);
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmShop(); }}
+              placeholder="tuo-negozio.myshopify.com"
+              aria-invalid={shopError}
+              className={`flex-1 rounded-full border bg-neutral-800 px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none ${shopError ? "border-red-500/60" : "border-white/10 focus:border-brand-500"}`}
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={confirmShop}
+              className="rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400"
+            >
+              Autorizza
+            </button>
+          </div>
+          {shopError && (
+            <p className="mt-1.5 text-xs text-red-400">
+              Inserisci un dominio valido tipo <span className="font-bold">tuo-negozio.myshopify.com</span>
+            </p>
+          )}
         </div>
       ) : !available ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">

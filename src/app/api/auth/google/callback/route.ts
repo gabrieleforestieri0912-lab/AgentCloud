@@ -8,7 +8,11 @@ import {
   GOOGLE_STATE_COOKIE,
   GOOGLE_RETURN_COOKIE,
 } from "@/lib/google/oauth";
-import { TENANT_GOOGLE_ID, upsertGoogleConnection } from "@/lib/google/connections";
+import {
+  TENANT_GOOGLE_ID,
+  getGoogleConnection,
+  upsertGoogleConnection,
+} from "@/lib/google/connections";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveIsAdmin } from "@/lib/admin-access";
 import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
@@ -127,9 +131,22 @@ export async function GET(req: NextRequest) {
   }
 
   const accessToken = tokenData.access_token;
-  const refreshToken = tokenData.refresh_token;
-  if (!accessToken || !refreshToken) {
+  let refreshToken = tokenData.refresh_token;
+  if (!accessToken) {
     return fail("no_token");
+  }
+  // Connessione precedente: serve come riserva quando Google omette il
+  // refresh_token (concessione già valida) o quando un campo non viene
+  // restituito, così una riconnessione non degrada i dati salvati.
+  const existing = await getGoogleConnection(payload.userId).catch(() => null);
+  if (!refreshToken) {
+    // Google omette il refresh_token quando l'utente ha già concesso gli
+    // stessi scope. In quel caso riusiamo il refresh token già salvato
+    // invece di fallire la riconnessione.
+    refreshToken = existing?.refreshToken ?? "";
+    if (!refreshToken) {
+      return fail("no_token");
+    }
   }
 
   // 3. Email dell'account Google collegato (solo per display — non fatale in
@@ -169,15 +186,20 @@ export async function GET(req: NextRequest) {
 
   // 4. Cripta e salva (una riga per utente).
   try {
+    const scopes = tokenData.scope
+      ? tokenData.scope.split(" ").filter(Boolean)
+      : (existing?.scopes ?? []);
     await upsertGoogleConnection({
       userId: payload.userId,
-      googleEmail,
+      // Non degradare l'email salvata se userinfo non risponde. Regola
+      // privacy: per gli admin l'email non viene mai persistita.
+      googleEmail: isAdmin ? null : googleEmail ?? existing?.googleEmail ?? null,
       accessToken,
       refreshToken,
-      scopes: (tokenData.scope ?? "").split(" ").filter(Boolean),
+      scopes,
       expiresAt: tokenData.expires_in
         ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
-        : null,
+        : (existing?.expiresAt ?? null),
     });
   } catch {
     return fail("store");
