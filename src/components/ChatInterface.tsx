@@ -36,6 +36,7 @@ import {
   Archive,
   RotateCcw,
   MoreVertical,
+  Square,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -72,6 +73,14 @@ import {
 } from "./HeroSection";
 import ExportReportButton from "./ExportReportButton";
 import SubscribePaywallModal from "./SubscribePaywallModal";
+import { ActivityFeed, AgentErrorCard, WorkingIndicator } from "./agent/AgentActivity";
+import {
+  completeStep,
+  createConnectionStep,
+  createToolStep,
+  type AgentStatus,
+  type AgentStep,
+} from "@/lib/agent-activity";
 import {
   chatTextZoom,
   readChatTextSize,
@@ -94,6 +103,9 @@ type LocalMessage = {
   // serve a mostrare avatar e nome corretti anche dopo un reload.
   agentSlug?: string;
   agentName?: string;
+  // Traccia operativa dell'esecuzione (task, strumenti, approvazioni):
+  // deriva dagli eventi SSE, mai dal ragionamento del modello.
+  activity?: AgentStep[];
 };
 
 type LocalConversation = {
@@ -225,6 +237,22 @@ export default function ChatInterface({
   // premuto mentre la chat genera) va processata alla fine dello stream, dove
   // lo stato React del render corrente non è ancora aggiornato.
   const streamingRef = useRef<Set<string>>(new Set());
+  // Controller per fermare la generazione (pulsante Stop): uno per
+  // conversazione, così lo stop non tocca mai gli altri stream.
+  const abortControllers = useRef<Map<string, AbortController>>(new Map());
+  // Conversazioni fermate dall'utente: l'AbortError in volo non deve
+  // diventare una bolla di errore.
+  const stopRequested = useRef<Set<string>>(new Set());
+
+  /** Ferma la generazione in corso senza errori e senza perdere il parziale. */
+  function stopStreaming(convId: string) {
+    stopRequested.current.add(convId);
+    try {
+      abortControllers.current.get(convId)?.abort();
+    } catch {
+      // nessuno stream attivo: niente da fermare
+    }
+  }
   // Messaggi in atteso per conversazione: la bolla è già visibile, l'invio
   // all'API parte appena la generazione in corso termina.
   const queueRef = useRef<Record<string, { text: string; pending: ChatAttachment[]; msgId: string }[]>>({});
@@ -696,7 +724,22 @@ export default function ChatInterface({
       if (raw) {
         const parsed = JSON.parse(raw) as LocalConversation[];
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setConversations((prev) => (prev.length === 0 ? parsed : prev));
+          // Dopo un reload nessuno step può essere ancora "in corso": i
+          // running diventano completed così il feed resta coerente.
+          const normalized = parsed.map((c) => ({
+            ...c,
+            messages: (c.messages ?? []).map((m) =>
+              m.activity?.some((s) => s.status === "running")
+                ? {
+                    ...m,
+                    activity: m.activity.map((s) =>
+                      s.status === "running" ? { ...s, status: "completed" as const } : s,
+                    ),
+                  }
+                : m,
+            ),
+          }));
+          setConversations((prev) => (prev.length === 0 ? normalized : prev));
           const first = parsed[0] as LocalConversation | undefined;
           if (first?.id) {
             setActiveId((prev) => prev ?? first.id);
@@ -1090,6 +1133,9 @@ export default function ChatInterface({
     // Usa sempre il backend AI reale — nessuna risposta preimpostata. In caso
     // di errore si mostra una chiara bolla di errore con link di contatto.
     let responseText = "";
+    // True se almeno un agente ha prodotto attività operativa (anche senza
+    // testo): evita falsi "Empty response" nei turni fatti di soli tool.
+    let convActivityProduced = false;
     // Messaggio di errore lato server (localizzato) catturato dallo stream SSE.
     let streamErrorMessage: string | null = null;
     let streamErrorCode: string | null = null;
@@ -1134,81 +1180,205 @@ export default function ChatInterface({
         body: Record<string, unknown>,
         agent?: { slug: string; name: string },
       ) {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) {
-          let serverMessage: string | null = null;
-          let code: string | null = null;
-          try {
-            const data = (await res.json()) as { error?: string; code?: string };
-            if (data && typeof data.error === "string" && data.error.trim()) {
-              serverMessage = data.error;
-            }
-            if (data && typeof data.code === "string") code = data.code;
-          } catch {}
-          if (serverMessage) streamErrorMessage = serverMessage;
-          if (code) streamErrorCode = code;
-          // propagate paywall immediately
-          if (code === "FREE_LIMIT_REACHED" && agent) setPaywallSlug(agent.slug);
-          else if (code === "FREE_LIMIT_REACHED") setPaywallSlug(targetSlugs[0] ?? null);
-          throw new Error("AI backend error");
-        }
-        if (!res.body) throw new Error("AI backend unavailable");
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let assistantId = "";
-        let localText = "";
-        const prefix = agent ? `**${agent.name}:**\n\n` : "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            let json: { type?: string; content?: string; message?: string };
+        // Abort dedicato a questo stream: il pulsante Stop chiude fetch +
+        // reader senza toccare le altre conversazioni e senza bolla di errore.
+        const controller = new AbortController();
+        abortControllers.current.set(convId, controller);
+        const markSteps = (from: AgentStatus, to: AgentStatus) => {
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === convId
+                ? {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.activity?.some((s) => s.status === from)
+                        ? {
+                            ...m,
+                            activity: m.activity.map((s) =>
+                              s.status === from ? { ...s, status: to, endedAt: Date.now() } : s,
+                            ),
+                          }
+                        : m,
+                    ),
+                  }
+                : c,
+            ),
+          );
+        };
+        const patchSteps = (assistantId: string, updater: (steps: AgentStep[]) => AgentStep[]) => {
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === convId
+                ? {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.id === assistantId ? { ...m, activity: updater(m.activity ?? []) } : m,
+                    ),
+                  }
+                : c,
+            ),
+          );
+        };
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+          if (!res.ok) {
+            let serverMessage: string | null = null;
+            let code: string | null = null;
             try {
-              json = JSON.parse(line.slice(6));
-            } catch {
-              continue;
-            }
-            if (json.type === "text" && typeof json.content === "string") {
-              localText += json.content;
-              responseText += json.content;
-              if (!assistantId) {
-                assistantId = generateId();
-                setPartialConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
+              const data = (await res.json()) as { error?: string; code?: string };
+              if (data && typeof data.error === "string" && data.error.trim()) {
+                serverMessage = data.error;
               }
-              patchAssistant(assistantId, prefix + localText, false, agent);
-            }
-            if ((json as unknown as { type?: string; provider?: string }).type === "connection" && typeof (json as unknown as { provider?: string }).provider === "string") {
-              const prov = (json as unknown as { provider: string }).provider;
-              const marker = `[[CONNECT:${prov}]]`;
-              // evita duplicati
-              if (!localText.includes(marker)) {
-                localText += (localText ? "\n\n" : "") + marker;
-                responseText += marker;
-                if (!assistantId) {
-                  assistantId = generateId();
-                  setPartialConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
-                }
-                patchAssistant(assistantId, prefix + localText, false, agent);
-              }
-            }
-            if (json.type === "error") {
-              streamErrorMessage =
-                typeof json.message === "string" && json.message.trim() ? json.message : null;
-              throw new Error("AI backend error");
-            }
-            if (json.type === "done") break;
+              if (data && typeof data.code === "string") code = data.code;
+            } catch {}
+            if (serverMessage) streamErrorMessage = serverMessage;
+            if (code) streamErrorCode = code;
+            // propagate paywall immediately
+            if (code === "FREE_LIMIT_REACHED" && agent) setPaywallSlug(agent.slug);
+            else if (code === "FREE_LIMIT_REACHED") setPaywallSlug(targetSlugs[0] ?? null);
+            throw new Error("AI backend error");
           }
+          if (!res.body) throw new Error("AI backend unavailable");
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let assistantId = "";
+          let localText = "";
+          // Batching a frame: patchAssistant riscrive l'intera cronologia a ogni
+          // token e blocca il main thread. Si accumula il testo e si riversa al
+          // massimo una volta per frame — la chat non si blocca più in generazione.
+          let rafId = 0;
+          let pendingText: string | null = null;
+          const flushText = () => {
+            rafId = 0;
+            if (assistantId && pendingText !== null) {
+              patchAssistant(assistantId, prefix + pendingText, false, agent);
+              pendingText = null;
+            }
+          };
+          const scheduleText = () => {
+            pendingText = localText;
+            if (!rafId) rafId = requestAnimationFrame(flushText);
+          };
+          const ensureAssistant = () => {
+            if (!assistantId) {
+              assistantId = generateId();
+              setPartialConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
+            }
+          };
+          const prefix = agent ? `**${agent.name}:**\n\n` : "";
+          try {
+            let streamDone = false;
+            while (!streamDone) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
+              for (const line of lines) {
+                if (!line.startsWith("data: ")) continue;
+                let json: { type?: string; content?: string; message?: string };
+                try {
+                  json = JSON.parse(line.slice(6));
+                } catch {
+                  continue;
+                }
+                if (json.type === "text" && typeof json.content === "string") {
+                  localText += json.content;
+                  responseText += json.content;
+                  ensureAssistant();
+                  scheduleText();
+                }
+                if (json.type === "tool_start") {
+                  const evt = json as unknown as { toolName?: string; toolInput?: unknown };
+                  if (typeof evt.toolName === "string") {
+                    ensureAssistant();
+                    scheduleText();
+                    const step = createToolStep(evt.toolName, evt.toolInput, locale);
+                    convActivityProduced = true;
+                    patchSteps(assistantId, (steps) => [...steps, step]);
+                  }
+                }
+                if (json.type === "tool_done") {
+                  const evt = json as unknown as { toolName?: string };
+                  patchSteps(assistantId, (steps) => {
+                    for (let i = steps.length - 1; i >= 0; i--) {
+                      if (steps[i].tool === evt.toolName && steps[i].status === "running") {
+                        const next = [...steps];
+                        next[i] = completeStep(steps[i]);
+                        return next;
+                      }
+                    }
+                    return steps;
+                  });
+                }
+                if ((json as unknown as { type?: string; provider?: string }).type === "connection" && typeof (json as unknown as { provider?: string }).provider === "string") {
+                  const prov = (json as unknown as { provider: string }).provider;
+                  const marker = `[[CONNECT:${prov}]]`;
+                  // evita duplicati
+                  if (!localText.includes(marker)) {
+                    localText += (localText ? "\n\n" : "") + marker;
+                    responseText += marker;
+                    ensureAssistant();
+                    scheduleText();
+                    convActivityProduced = true;
+                    patchSteps(assistantId, (steps) => [...steps, createConnectionStep(prov)]);
+                  }
+                }
+                if (json.type === "error") {
+                  streamErrorMessage =
+                    typeof json.message === "string" && json.message.trim() ? json.message : null;
+                  markSteps("running", "failed");
+                  throw new Error("AI backend error");
+                }
+                // `done` chiude anche il while: prima usciva solo dal for e il
+                // reader restava appeso fino alla chiusura del server.
+                if (json.type === "done") {
+                  streamDone = true;
+                  break;
+                }
+              }
+            }
+          } catch (e) {
+            // Stop dell'utente: i passi restano "in pausa", il testo parziale
+            // resta dov'è, nessuna bolla di errore.
+            if (controller.signal.aborted) {
+              markSteps("running", "paused");
+            } else {
+              throw e;
+            }
+          } finally {
+            if (rafId) {
+              cancelAnimationFrame(rafId);
+              rafId = 0;
+            }
+            if (pendingText !== null && assistantId) {
+              patchAssistant(assistantId, prefix + pendingText, false, agent);
+              pendingText = null;
+            }
+            // Rilascia sempre il lock: prima un errore a metà stream lasciava
+            // il reader aperto e il fetch appeso in background.
+            try {
+              await reader.cancel().catch(() => {});
+            } catch {
+              // già chiuso
+            }
+            try {
+              reader.releaseLock();
+            } catch {}
+          }
+          markSteps("running", "completed");
+          // Un turno fatto di soli tool (senza testo) è comunque una risposta
+          // valida: l'ActivityFeed mostra cosa ha fatto l'agente.
+          if (!localText.trim() && !convActivityProduced) throw new Error("Empty response");
+        } finally {
+          abortControllers.current.delete(convId);
         }
-        if (!localText.trim()) throw new Error("Empty response");
       }
 
       if (targetSlugs.length === 0) {
@@ -1236,27 +1406,36 @@ export default function ChatInterface({
               agentMeta(slug),
             );
           } catch (e) {
+            // Stop dell'utente: non passare agli altri agenti.
+            if (stopRequested.current.has(convId)) break;
             // Continua con gli altri agenti anche se uno fallisce
             console.error(`Agent ${slug} failed`, e);
           }
         }
-        if (!responseText.trim()) throw new Error("Empty response");
+        if (!responseText.trim() && !convActivityProduced) throw new Error("Empty response");
       }
     } catch {
-      // Niente risposte preimpostate: mostra l'errore reale con un link di contatto.
+      // Stop dell'utente (anche prima del reader): nessuna bolla di errore,
+      // il testo parziale resta dov'è.
+      if (stopRequested.current.has(convId)) {
+        stopRequested.current.delete(convId);
+      } else {
+        // Niente risposte preimpostate: mostra l'errore reale con un link di contatto.
 
-      const message =
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore — streamErrorMessage è string | null ma TS lo inferisce never per control flow
-        (streamErrorMessage as unknown as string | null)?.trim()
-          ? (streamErrorMessage as unknown as string)
-          : dict.common.aiUnavailable;
-      const assistantId = generateId();
-      setPartialConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
-      patchAssistant(assistantId, message, true);
+        const message =
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore — streamErrorMessage è string | null ma TS lo inferisce never per control flow
+          (streamErrorMessage as unknown as string | null)?.trim()
+            ? (streamErrorMessage as unknown as string)
+            : dict.common.aiUnavailable;
+        const assistantId = generateId();
+        setPartialConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
+        patchAssistant(assistantId, message, true);
+      }
     }
 
     streamingRef.current.delete(convId);
+    stopRequested.current.delete(convId);
     setStreamingConvs((prev) => prev.filter((id) => id !== convId));
     // Notifica alla campanella che potrebbero esserci nuove notifiche agente
     try {
@@ -2054,20 +2233,28 @@ export default function ChatInterface({
                       (() => {
                         const providers = extractConnectProviders(msg.content);
                         const cleanText = stripConnectMarkers(msg.content);
+                        // Errore di generazione: card azionabile invece del testo tecnico.
+                        if (msg.error) {
+                          return (
+                            <AgentErrorCard
+                              message={cleanText || dict.common.aiUnavailable}
+                              supportEmail={PUBLIC_SUPPORT_EMAIL}
+                            />
+                          );
+                        }
+                        const steps = msg.activity ?? [];
+                        const runningStep = steps.find((s) => s.status === "running");
+                        const isLive =
+                          runningStep !== undefined &&
+                          streamingConvs.includes(activeId ?? "");
                         return (
                           <>
+                            {isLive && <WorkingIndicator label={runningStep.label} />}
                             {cleanText && <MarkdownText text={cleanText} onReply={handleReplyToPhrase} />}
+                            {steps.length > 0 && <ActivityFeed steps={steps} />}
                             {providers.map((p) => (
                               <InlineConnectCard key={p} provider={p} />
                             ))}
-                            {msg.error && (
-                              <a
-                                href={`mailto:${PUBLIC_SUPPORT_EMAIL}`}
-                                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 underline decoration-brand-400/40 underline-offset-2 hover:text-brand-300 transition-colors"
-                              >
-                                {dict.common.contactSupport}
-                              </a>
-                            )}
                           </>
                         );
                       })()
@@ -2254,15 +2441,26 @@ export default function ChatInterface({
                 style={{ fieldSizing: "content" } as React.CSSProperties}
               />
               <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
-              <button
-                onClick={handleSend}
-                disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
-                aria-label={dict.chat.sendMessage}
-                title={dict.chat.sendMessage}
-                className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
-              >
-                <Send size={16} />
-              </button>
+              {isTyping ? (
+                <button
+                  onClick={() => activeId && stopStreaming(activeId)}
+                  aria-label={dict.chat.activity.stopGeneration}
+                  title={dict.chat.activity.stopGeneration}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center bg-neutral-700 text-white hover:bg-neutral-600 transition-all shrink-0 shadow-lg shadow-black/20"
+                >
+                  <Square size={14} fill="currentColor" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSend}
+                  disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
+                  aria-label={dict.chat.sendMessage}
+                  title={dict.chat.sendMessage}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
+                >
+                  <Send size={16} />
+                </button>
+              )}
             </div>
           </div>
           <p className="text-[10px] text-neutral-600 text-center mt-2">{dict.chat.disclaimer}</p>
