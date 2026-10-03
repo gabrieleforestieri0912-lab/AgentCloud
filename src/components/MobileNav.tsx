@@ -127,6 +127,39 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
     },
   ];
 
+  // Azioni rapide come elenco organizzato: stessa voce ovunque, con badge
+  // sul carrello e icona coerente per riga (niente più griglie di bottoni).
+  const quickLinks = [
+    {
+      id: "cart",
+      label: dict.navbar.ariaCart,
+      href: "/cart",
+      Icon: ShoppingCart,
+      badge: cartCount > 0 ? cartCount : null,
+    },
+    {
+      id: "chat",
+      label: dict.chat.aiChat,
+      href: "/chat",
+      Icon: MessageSquare,
+      badge: null,
+    },
+    {
+      id: "dashboard",
+      label: dict.navbar.dashboardLabel,
+      href: "/dashboard",
+      Icon: LayoutDashboard,
+      badge: null,
+    },
+    {
+      id: "account",
+      label: dict.navbar.accountLabel,
+      href: "/account",
+      Icon: User,
+      badge: null,
+    },
+  ];
+
   const toggleSection = (id: string) => {
     setActiveSection(activeSection === id ? null : id);
   };
@@ -276,29 +309,40 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                 ))}
               </div>
 
-              {/* Azioni rapide — niente eliminato su mobile, tutto a portata */}
+              {/* Azioni rapide — elenco organizzato: carrello, chat, dashboard, account */}
+              <nav className="border-t border-white/10 p-4">
+                <ul className="space-y-1">
+                  {quickLinks.map(({ id, label, href, Icon, badge }) => (
+                    <li key={id}>
+                      <Link
+                        href={href}
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-white transition-colors hover:bg-white/5"
+                      >
+                        <span
+                          className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                            id === "chat"
+                              ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
+                              : "bg-white/5 text-neutral-300"
+                          }`}
+                        >
+                          <Icon size={16} />
+                          {badge != null && (
+                            <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white shadow-sm">
+                              {badge}
+                            </span>
+                          )}
+                        </span>
+                        <span className="flex-1">{label}</span>
+                        <ChevronRight size={16} className="text-neutral-600" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+
+              {/* Account — elenco: info utente + esci/accedi */}
               <div className="border-t border-white/10 p-4 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <Link href="/cart" onClick={() => setIsOpen(false)} className="relative flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-white hover:bg-white/10">
-                    <ShoppingCart size={16} />
-                    Carrello
-                    {cartCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">{cartCount}</span>}
-                  </Link>
-                  <Link href="/chat" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-3 py-3 text-sm font-bold text-white hover:bg-brand-400">
-                    <MessageSquare size={16} />
-                    Chat AI
-                  </Link>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Link href="/dashboard" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm font-bold text-white hover:bg-neutral-700">
-                    <LayoutDashboard size={14} />
-                    Dashboard
-                  </Link>
-                  <Link href="/account" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-neutral-800 px-3 py-2.5 text-sm font-bold text-white hover:bg-neutral-700">
-                    <User size={14} />
-                    Account
-                  </Link>
-                </div>
                 {isSignedIn ? (
                   <>
                     {/* User info */}
@@ -314,7 +358,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold text-white">{userEmail || "..."}</p>
-                        <p className="text-[10px] text-neutral-500 font-medium">Account</p>
+                        <p className="text-[10px] text-neutral-500 font-medium">{dict.navbar.accountLabel}</p>
                       </div>
                     </div>
                     {/* Sign out */}
@@ -326,7 +370,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                       className="flex w-full items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300 hover:bg-red-500/15 transition-all"
                     >
                       <LogOut size={16} />
-                      Esci
+                      {dict.navbar.logOut}
                     </button>
                   </>
                 ) : (

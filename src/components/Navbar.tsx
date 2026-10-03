@@ -421,19 +421,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
             </nav>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              {/* Mobile: cart sempre visibile, poi gruppo desktop */}
-              <Link
-                href="/cart"
-                aria-label={dict.navbar.ariaCart}
-                className="relative flex h-11 w-11 items-center justify-center text-neutral-400 transition-colors hover:text-white lg:hidden"
-              >
-                <ShoppingCart size={18} strokeWidth={1.75} />
-                {cartCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
+              {/* Su mobile resta solo il menu a tre trattini: carrello e azioni
+                  rapide vivono dentro MobileNav come elenco organizzato. */}
               <div className="flex items-center gap-2 lg:gap-3">
                 <div className="hidden items-center gap-3 lg:flex">
                 {authLoaded ? (
