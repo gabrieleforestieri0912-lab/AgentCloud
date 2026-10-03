@@ -10,6 +10,7 @@ import { BRANDS } from "@/lib/brands";
  * monocolore ufficiale (che ha già il colore corretto del brand).
  */
 const MULTICOLOR = new Set([
+  "clickup",
   "google",
   "googledrive",
   "gmail",
