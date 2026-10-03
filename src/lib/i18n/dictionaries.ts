@@ -668,7 +668,6 @@ const it = {
       },
     ],
     browseAll: "Sfoglia tutti gli agenti",
-    browseAgents: "Sfoglia i {count} agenti",
     customTitle: "Ti serve un agente su misura?",
     customText:
       "Raccontaci il tuo workflow. Progettiamo l'agente, colleghiamo i tuoi strumenti e consegniamo l'automazione.",
@@ -1565,7 +1564,6 @@ const it = {
     title: "Mettiti in contatto",
     subtitle:
       "Hai una domanda su AgentCloud, ti serve aiuto con la configurazione o vuoi esplorare una partnership? Ci piacerebbe sentirti.",
-    emailUs: "Scrivici",
     responseTime: "Tempi di risposta",
     reply24: "Rispondiamo entro 24 ore",
     weekdays: "Nei giorni feriali: in genere 2-4 ore",
@@ -3085,7 +3083,6 @@ export const en: Dictionary = {
       },
     ],
     browseAll: "Browse all agents",
-    browseAgents: "Browse the {count} agents",
     customTitle: "Need a custom agent?",
     customText:
       "Tell us the workflow. We design the agent, connect your tools, and ship the automation.",
@@ -3973,7 +3970,6 @@ export const en: Dictionary = {
     title: "Get in touch",
     subtitle:
       "Have a question about AgentCloud, need help with setup, or want to explore a partnership? We'd love to hear from you.",
-    emailUs: "Email us",
     responseTime: "Response time",
     reply24: "We reply within 24 hours",
     weekdays: "Weekdays: typically 2-4 hours",
@@ -5486,7 +5482,6 @@ export const es: Dictionary = {
       },
     ],
     browseAll: "Ver todos los agentes",
-    browseAgents: "Ver los {count} agentes",
     customTitle: "¿Necesitas un agente a medida?",
     customText:
       "Cuéntanos tu flujo de trabajo. Diseñamos el agente, conectamos tus herramientas y entregamos la automatización.",
@@ -6371,7 +6366,6 @@ agentsPage: {
     title: "Hablemos",
     subtitle:
       "¿Tienes alguna pregunta sobre AgentCloud, necesitas ayuda con la configuración o quieres explorar una colaboración? Nos encantará escucharte.",
-    emailUs: "Escríbenos",
     responseTime: "Tiempo de respuesta",
     reply24: "Respondemos en menos de 24 horas",
     weekdays: "Entre semana: normalmente 2-4 horas",
@@ -7883,8 +7877,7 @@ export const de: Dictionary = {
         description: "Kontakte automatisch anreichern und qualifizieren",
       },
     ],
-browseAll: "Alle Agenten ansehen",
-    browseAgents: "Die {count} Agenten ansehen",
+    browseAll: "Alle Agenten ansehen",
     customTitle: "Brauchst du einen individuellen Agenten?",
     customText:
       "Erzähl uns deinen Workflow. Wir entwerfen den Agenten, verbinden deine Tools und liefern die Automatisierung.",
@@ -8769,7 +8762,6 @@ browseAll: "Alle Agenten ansehen",
     title: "Kontakt aufnehmen",
     subtitle:
       "Hast du eine Frage zu AgentCloud, brauchst du Hilfe bei der Einrichtung oder möchtest du eine Partnerschaft besprechen? Wir freuen uns auf dich.",
-    emailUs: "Schreib uns",
     responseTime: "Antwortzeit",
     reply24: "Wir antworten innerhalb von 24 Stunden",
     weekdays: "Werktags: normalerweise 2-4 Stunden",
@@ -10282,7 +10274,6 @@ export const fr: Dictionary = {
       },
     ],
     browseAll: "Voir tous les agents",
-    browseAgents: "Voir les {count} agents",
     customTitle: "Besoin d'un agent sur mesure ?",
     customText:
       "Décrivez votre workflow. Nous concevons l'agent, connectons vos outils et livrons l'automatisation.",
@@ -11167,7 +11158,6 @@ export const fr: Dictionary = {
     title: "Parlons-nous",
     subtitle:
       "Une question sur AgentCloud, besoin d'aide pour la configuration ou envie d'explorer un partenariat ? Nous serions ravis d'échanger avec vous.",
-    emailUs: "Écrivez-nous",
     responseTime: "Temps de réponse",
     reply24: "Nous répondons sous 24 heures",
     weekdays: "En semaine : généralement 2 à 4 heures",
