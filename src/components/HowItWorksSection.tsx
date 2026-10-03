@@ -13,7 +13,7 @@ const STEPS = [
     n: "01",
     icon: Bot,
     title: "Scegli l’agente",
-    desc: "15 agenti in 6 categorie: E-commerce, Marketing, Customer Service, Business Ops, Design e Finanza. Prezzi chiari (€9,99/€14,99 al mese) e attivazione in giornata.",
+    desc: "15 agenti in 6 categorie: E-commerce, Marketing, Customer Service, Business Ops, Design e Finanza. Prezzi chiari (€4,99–€14,99 al mese) e attivazione in giornata.",
   },
   {
     n: "02",

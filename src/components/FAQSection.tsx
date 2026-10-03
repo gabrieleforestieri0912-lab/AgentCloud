@@ -23,7 +23,7 @@ export default function FAQSection() {
     },
     {
       q: "Cosa significa “4 messaggi gratis per agente”?",
-      a: "Ogni agente si può provare con 4 messaggi gratuiti, senza impegno. Per continuare a usarlo puoi sbloccarlo con l’abbonamento (€9,99–€14,99 al mese).",
+      a: "Ogni agente si può provare con 4 messaggi gratuiti, senza impegno. Per continuare a usarlo puoi sbloccarlo con l’abbonamento (€4,99–€14,99 al mese).",
     },
     {
       q: "I miei dati sono al sicuro?",

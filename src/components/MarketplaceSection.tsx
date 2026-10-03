@@ -96,7 +96,7 @@ export default function MarketplaceSection() {
         >
           <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">15 agenti • 6 categorie • da €9,99/mese</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">15 agenti • 6 categorie • da €4,99/mese</p>
               <h3 className="mt-1 text-2xl font-bold tracking-tight text-white">Anteprima del marketplace</h3>
               <p className="mt-1 max-w-xl text-sm font-semibold leading-5 text-neutral-400">Prezzi chiari, attivazione in giornata e integrazioni incluse. Provali gratis prima di decidere.</p>
             </div>
