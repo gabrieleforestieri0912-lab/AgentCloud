@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ShoppingCart, Check, Loader2, MessageSquare } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useLanguage } from "./LanguageProvider";
 import { useOwned } from "@/hooks/useOwned";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AddToCartButton({
   slug,
@@ -21,6 +23,7 @@ export default function AddToCartButton({
   const { isOwned } = useOwned();
   const { isAdmin } = useIsAdmin();
   const { dict } = useLanguage();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   // Admin: accesso a tutti gli agenti — mostra sempre "Apri in chat",
@@ -42,6 +45,21 @@ export default function AddToCartButton({
 
   async function handle() {
     if (inCart) return;
+    // Utenti non loggati: rimanda al login invece di aggiungere al carrello
+    // anonimo. Il `next` riporta l'utente alla pagina da cui è partito.
+    try {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        const next =
+          typeof window !== "undefined" ? window.location.pathname + window.location.search : "/agents";
+        router.push(`/login?next=${encodeURIComponent(next)}`);
+        return;
+      }
+    } catch {
+      router.push("/login");
+      return;
+    }
     setLoading(true);
     const res = await add(slug);
     setLoading(false);

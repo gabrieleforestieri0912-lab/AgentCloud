@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ShoppingCart, Check, Loader2, MessageSquare } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useLanguage } from "./LanguageProvider";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { createClient } from "@/lib/supabase/client";
 import type { BundlePeriod } from "@/lib/bundles";
 
 export default function AddBundleToCartButton({
@@ -20,6 +22,7 @@ export default function AddBundleToCartButton({
   const { addBundle, isBundleInCart } = useCart();
   const { dict } = useLanguage();
   const { isAdmin } = useIsAdmin();
+  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -41,6 +44,21 @@ export default function AddBundleToCartButton({
 
   async function handle() {
     if (inCart) return;
+    // Utenti non loggati: rimanda al login invece di aggiungere al carrello
+    // anonimo. Il `next` riporta l'utente alla pagina da cui è partito.
+    try {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        const next =
+          typeof window !== "undefined" ? window.location.pathname + window.location.search : "/bundles";
+        router.push(`/login?next=${encodeURIComponent(next)}`);
+        return;
+      }
+    } catch {
+      router.push("/login");
+      return;
+    }
     setLoading(true);
     const res = await addBundle(bundleSlug, period);
     setLoading(false);
