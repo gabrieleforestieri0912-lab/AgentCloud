@@ -4,7 +4,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MarketplaceGrid from "@/components/MarketplaceGrid";
 import FloatingBrandBubbles from "@/components/FloatingBrandBubbles";
-import CouponBanner from "@/components/CouponBanner";
 import { BUNDLES } from "@/lib/bundles";
 import BundleCard from "@/components/BundleCard";
 import { Sparkles } from "lucide-react";
@@ -22,11 +21,9 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { pageSeo } from "@/lib/seo";
 import { getSessionUser } from "@/lib/supabase/server";
-import { getCouponLimit } from "@/lib/coupon";
 import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
 
 export const dynamic = "force-dynamic";
-import { isCouponActive } from "@/lib/coupon";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -62,12 +59,6 @@ export default async function AgentsPage() {
   const navAgents = (true ? AGENTS : AVAILABLE_AGENTS).map((a) =>
     localizeAgent(a, locale),
   );
-
-  // Coupon promozionale 50%-off (AGENTCLOUD50), max 20 utilizzi, valido su
-  // agenti 0,99€–4,99€. È una promo client-side: il codice è liberamente
-  // scaricabile, ma il consumo avviene solo server-side (API
-  // `/api/coupon`), quindi due utenti contemporanei non possono oversellare.
-  const activeCoupon = isCouponActive();
 
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-neutral-950">
@@ -106,8 +97,10 @@ export default async function AgentsPage() {
         ]}
       />
 
+      <Navbar marketplaceAgents={navAgents} />
+
       <section className="relative z-10 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
+        <div className="mx-auto w-full max-w-6xl 3xl:max-w-[1400px]">
           <div className="mb-12 max-w-xl">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">
               {dict.agentsPage.badge}
@@ -133,13 +126,6 @@ export default async function AgentsPage() {
                </Link>
             </div>
           </div>
-        </div>
-
-      {activeCoupon && (
-        <CouponBanner coupon={activeCoupon} locale={locale} dict={dict} />
-      )}
-
-      <Navbar marketplaceAgents={navAgents} />
 
           {/* Griglia marketplace con filtri per categoria */}
           <OwnedProvider initialOwned={initialOwned}>
@@ -218,6 +204,7 @@ export default async function AgentsPage() {
               </div>
             </div>
           </div>
+        </div>
       </section>
 
       <Footer />
