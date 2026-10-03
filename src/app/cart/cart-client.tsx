@@ -9,7 +9,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import AgentIcon from "@/components/AgentIcon";
 import { t as interpolate } from "@/lib/i18n/dictionaries";
 import { getBundleBySlug, getBundleAgents } from "@/lib/bundles";
-import { COUPON_CODE, couponIsApplicable, couponDiscountCents } from "@/lib/coupon";
+import { COUPON_CODE, couponIsApplicable, couponDiscountCents, couponRawDiscountCents } from "@/lib/coupon";
 
 const CLAIMED_KEY = "coupon_agentcloud50_claimed";
 
@@ -34,7 +34,8 @@ function bundleSavings(item: CartItem): number | null {
 
 /**
  * Calcola lo sconto coupon per gli elementi idonei nel carrello.
- * Il coupon dà 50% su agenti con prezzo 4,99€-14,99€.
+ * Il coupon dà 50% su agenti con prezzo 4,99€-14,99€ e 50% sui bundle
+ * (totali fuori fascia, sconto sempre applicabile).
  */
 function calculateCouponDiscount(items: CartItem[]): { discountCents: number; eligibleItems: CartItem[] } {
   let claimed = false;
@@ -46,10 +47,17 @@ function calculateCouponDiscount(items: CartItem[]): { discountCents: number; el
   if (!claimed) return { discountCents: 0, eligibleItems: [] };
 
   const eligibleItems = items.filter(
-    (item) => item.type === "agent" && couponIsApplicable(item.priceCents)
+    (item) =>
+      (item.type === "agent" && couponIsApplicable(item.priceCents)) ||
+      item.type === "bundle"
   );
   const discountCents = eligibleItems.reduce(
-    (sum, item) => sum + couponDiscountCents(item.priceCents) * item.quantity,
+    (sum, item) =>
+      sum +
+      (item.type === "bundle"
+        ? couponRawDiscountCents(item.priceCents)
+        : couponDiscountCents(item.priceCents)) *
+        item.quantity,
     0
   );
   return { discountCents, eligibleItems };

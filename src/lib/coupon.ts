@@ -3,7 +3,9 @@
  *
  * Regola di prodotto:
  * - codice fisso: `AGENTCLOUD50`
- * - sconto: 50% sul prezzo dell'agente (applicabile a tutti gli agenti 4,99€–14,99€)
+ * - sconto: 50% sul prezzo dell'agente (tutti gli agenti 4,99€–14,99€) e
+ *   50% sui bundle (qualsiasi importo: i totali trimestrali/annuali superano
+ *   comunque il tetto pensato per i singoli agenti)
  * - utilizzi massimi: 20 (consumati dal server al momento della creazione
  *   del checkout Stripe, non al claim del banner)
  * - lo sconto è applicato server-side nello Stripe Checkout come prezzo già
@@ -23,6 +25,16 @@ export function couponIsApplicable(priceCents: number): boolean {
 
 export function couponDiscountCents(priceCents: number): number {
   if (!couponIsApplicable(priceCents)) return 0;
+  return couponRawDiscountCents(priceCents);
+}
+
+/**
+ * Sconto 50% senza vincoli di fascia (per i bundle, i cui totali superano
+ * il tetto pensato per i singoli agenti). Chiamare solo dopo aver validato
+ * il codice coupon.
+ */
+export function couponRawDiscountCents(priceCents: number): number {
+  if (!Number.isFinite(priceCents) || priceCents <= 0) return 0;
   return Math.round((priceCents * COUPON_PERCENT) / 100);
 }
 

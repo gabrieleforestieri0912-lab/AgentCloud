@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/supabase/server";
 import { resolveIsAdmin } from "@/lib/admin-access";
 import { getSiteUrl } from "@/lib/site-url";
 import { getEnrichedCart } from "@/lib/cart";
-import { couponDiscountCents, couponIsApplicable, COUPON_CODE } from "@/lib/coupon";
+import { couponDiscountCents, couponIsApplicable, couponRawDiscountCents, COUPON_CODE } from "@/lib/coupon";
 import { tryConsumeCoupon } from "@/lib/coupon-server";
 
 function getStripe(): Stripe | null {
@@ -19,8 +19,8 @@ function getStripe(): Stripe | null {
  * attiva gli abbonamenti e il carrello viene svuotato (gestito dal webhook o al ritorno).
  *
  * Body opzionale: { couponCode?: string } — se valido, 50% su ogni riga
- * agente idonea come prezzo già scontato (niente campo coupon su Stripe),
- * un solo uso consumato per checkout.
+ * agente idonea e su ogni bundle come prezzo già scontato (niente campo
+ * coupon su Stripe), un solo uso consumato per checkout.
  *
  * ADMIN: gli admin hanno accesso a tutti gli agenti e non devono pagare —
  * la route rifiuta con 403 `admin_no_checkout` (la UI nasconde già il bottone).
@@ -83,10 +83,14 @@ export async function POST(req: Request) {
   const couponCode = typeof body.couponCode === "string" ? body.couponCode.trim().toUpperCase() : null;
 
   // Coupon (validazione + un solo uso consumato per checkout).
-  // Sconto solo sulle righe agente idonee, mai sui bundle.
+  // Sconto sulle righe agente idonee e su tutti i bundle.
   let couponApplied: string | null = null;
   if (couponCode) {
-    const eligible = items.some((i) => i.type === "agent" && couponIsApplicable(i.priceCents));
+    const eligible = items.some(
+      (i) =>
+        (i.type === "agent" && couponIsApplicable(i.priceCents)) ||
+        i.type === "bundle",
+    );
     if (couponCode !== COUPON_CODE || !eligible) {
       return NextResponse.json({ error: "coupon_invalid" }, { status: 400 });
     }
@@ -106,10 +110,14 @@ export async function POST(req: Request) {
   // Ogni line_item ha price_data dinamico. Metadata contiene lista agenti.
   const agentSlugs = items.map((i) => i.agent_slug).join(",");
   const lineItems = items.map((item) => {
-    const discountedUnit =
-      couponApplied && item.type === "agent" && couponIsApplicable(item.priceCents)
-        ? item.priceCents - couponDiscountCents(item.priceCents)
-        : item.priceCents;
+    // Agenti: sconto solo se in fascia; bundle: sempre 50% (totali fuori fascia).
+    const discountedUnit = !couponApplied
+      ? item.priceCents
+      : item.type === "bundle"
+        ? item.priceCents - couponRawDiscountCents(item.priceCents)
+        : couponIsApplicable(item.priceCents)
+          ? item.priceCents - couponDiscountCents(item.priceCents)
+          : item.priceCents;
     // Bundle: interval dipende dal periodo
     if (item.type === "bundle") {
       const period = (item as unknown as { period?: string }).period as string;
