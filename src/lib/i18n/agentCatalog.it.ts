@@ -340,4 +340,158 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Genera bozza ordine fornitore",
     ],
   },
+  "email-agent": {
+    name: "Email Agent",
+    shortName: "Email Agent",
+    category: "Business & Operations",
+    description:
+      "Legge, classifica e gestisce le email operative: risposte AI, bozze ed escalation di ciò che conta.",
+    longDescription:
+      "L'Email Agent azzera la casella senza lavoro manuale. Classifica ogni messaggio in arrivo, genera risposte AI per le richieste di routine, estrae richieste e task, prepara bozze pronte all'invio e scala solo le email importanti che richiedono una decisione umana. Collegato a Gmail e Outlook, impara tono e priorità settimana dopo settimana.",
+    industry: "Qualsiasi azienda sommersa dalle email",
+    tasks: [
+      "Classificazione automatica email",
+      "Risposte generate dall'AI",
+      "Estrazione richieste e task",
+      "Bozze ed escalation intelligente",
+    ],
+    workflow: [
+      "Legge la posta in arrivo",
+      "Classifica per intento",
+      "Redige o risponde in automatico",
+      "Scala ciò che conta",
+    ],
+  },
+  "whatsapp-agent": {
+    name: "WhatsApp Agent",
+    shortName: "WhatsApp Agent",
+    category: "Customer Service",
+    description:
+      "Gestisce in automatico le conversazioni WhatsApp: risponde, qualifica lead e prenota appuntamenti.",
+    longDescription:
+      "Il WhatsApp Agent incontra i clienti dove già sono. Risponde subito alle domande frequenti, qualifica i nuovi lead con follow-up naturali, raccoglie le informazioni che servono al team, prenota appuntamenti sul calendario e passa la conversazione a un operatore umano quando conta — salvando ogni lead direttamente nel CRM.",
+    industry: "Attività locali, cliniche, negozi e servizi",
+    tasks: [
+      "Risposte immediate ai clienti",
+      "Qualifica lead in chat",
+      "Prenotazione appuntamenti",
+      "Passaggio a operatori umani",
+    ],
+    workflow: [
+      "Risponde al primo messaggio",
+      "Qualifica l'esigenza",
+      "Prenota o raccoglie dettagli",
+      "Passa di mano o salva nel CRM",
+    ],
+  },
+  "invoice-agent": {
+    name: "Invoice Agent",
+    shortName: "Invoice Agent",
+    category: "E-commerce & Finance",
+    description:
+      "Automatizza l'intero ciclo fatture: generazione, estrazione dati, invio e solleciti.",
+    longDescription:
+      "L'Invoice Agent chiude il cerchio dal lavoro fatto ai soldi incassati. Genera fatture pulite dai tuoi documenti, controlla totali e dati fiscali, le invia ai clienti, monitora lo stato dei pagamenti e sollecita le fatture scadute con promemoria automatici e gentili — così nulla si perde e il cash flow resta sano.",
+    industry: "Freelance, PMI e agenzie",
+    tasks: [
+      "Generazione fatture",
+      "Estrazione dati dai documenti",
+      "Invio e monitoraggio clienti",
+      "Solleciti per scaduti",
+    ],
+    workflow: [
+      "Estrae i dati di fatturazione",
+      "Genera la fattura",
+      "Invia al cliente",
+      "Traccia e sollecita",
+    ],
+  },
+  "analytics-agent": {
+    name: "Analytics Agent",
+    shortName: "Analytics Agent",
+    category: "AI & Data",
+    description:
+      "Trasforma i dati aziendali in decisioni: report KPI, anomalie e raccomandazioni in chiaro.",
+    longDescription:
+      "L'Analytics Agent osserva i tuoi numeri al posto tuo. Collegato a Google Analytics, Sheets, Shopify e CRM, produce report giornalieri e settimanali con KPI, variazioni e anomalie — spiegati in linguaggio chiaro con prossimi passi concreti. Il briefing del lunedì si scrive da solo.",
+    industry: "E-commerce, team marketing e founder",
+    tasks: [
+      "Report KPI giornalieri e settimanali",
+      "Rilevazione anomalie e trend",
+      "Confronto col periodo precedente",
+      "Raccomandazioni in linguaggio chiaro",
+    ],
+    workflow: [
+      "Sincronizza le sorgenti dati",
+      "Calcola KPI e variazioni",
+      "Segnala anomalie",
+      "Scrive il briefing",
+    ],
+  },
+  "crm-agent": {
+    name: "CRM Agent",
+    shortName: "CRM Agent",
+    category: "Marketing & Sales",
+    description:
+      "Tiene aggiornato il CRM da solo: lead, contatti, deal e suggerimenti di follow-up.",
+    longDescription:
+      "Il CRM Agent mette fine alle pipeline ferme. Crea lead da ogni canale, aggiorna contatti e deal man mano che si muovono, assegna punteggi e instrada i lead ai commerciali giusti, registra ogni attività e ti segnala i lead dormienti con follow-up suggeriti. Perfetto col Lead Capture Agent per una pipeline del tutto automatica.",
+    industry: "Team vendite e agenzie",
+    tasks: [
+      "Creazione e instradamento lead",
+      "Aggiornamento contatti e deal",
+      "Registrazione attività",
+      "Follow-up su lead dormienti",
+    ],
+    workflow: [
+      "Cattura ogni segnale",
+      "Aggiorna i record",
+      "Assegna punteggi e proprietari",
+      "Suggerisce la prossima mossa",
+    ],
+  },
+  "document-agent": {
+    name: "Document Agent",
+    shortName: "Document Agent",
+    category: "AI & Data",
+    description:
+      "Capisce ogni documento: legge PDF, estrae dati, riassume e risponde alle domande.",
+    longDescription:
+      "Il Document Agent è il tuo lettore per preventivi, contratti, fatture e manuali. Carica un PDF e ottieni dati strutturati, confronti fianco a fianco, riassunti in chiaro e risposte fondate sul documento — per poi generare un nuovo documento pronto all'invio. Carica, analizza, agisci.",
+    industry: "Agenzie, studi e PMI con contratti",
+    tasks: [
+      "Lettura e riassunto PDF",
+      "Estrazione dati strutturati",
+      "Confronto documenti",
+      "Domande e risposte sui file",
+    ],
+    workflow: [
+      "Carica il documento",
+      "Estrae i dati chiave",
+      "Riassume e confronta",
+      "Genera il risultato",
+    ],
+  },
+  "research-agent": {
+    name: "Research Agent",
+    shortName: "Research Agent",
+    category: "AI & Data",
+    description:
+      "Ricerca qualsiasi cosa, in automatico: cerca, confronta e verifica con report citati.",
+    longDescription:
+      "Il Research Agent fa il lavoro profondo al posto tuo. Chiedi i principali competitor di un mercato e lui cerca sul web, apre e legge le fonti, estrae prezzi, servizi e recensioni, confronta tutto fianco a fianco, verifica le affermazioni e consegna un report strutturato con fonti — pronto per la tua prossima decisione.",
+    industry: "Founder, marketer e analisti",
+    tasks: [
+      "Ricerca competitor sul web",
+      "Confronto prezzi e recensioni",
+      "Verifica delle fonti",
+      "Report strutturati con citazioni",
+    ],
+    workflow: [
+      "Cerca sul web",
+      "Apre e legge le fonti",
+      "Confronta e verifica",
+      "Consegna il report",
+    ],
+  },
 };
