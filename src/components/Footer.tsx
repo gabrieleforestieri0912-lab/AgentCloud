@@ -32,7 +32,21 @@ export default function Footer() {
   const SocialGlyph = ({ brand, size }: { brand: string; size: number }) => {
     const def = BRANDS[brand];
     if (!def) return null;
-    return (
+  const companyLinks = [
+    { label: dict.footer.about, href: "/about" },
+    { label: dict.footer.faq, href: "/#faq" },
+    { label: dict.footer.contact, href: "/contact" },
+  ];
+
+  const productLinks = [
+    { label: dict.navbar.marketplace, href: "/agents" },
+    { label: dict.marketplacePage.bundlesAndSave, href: "/bundles" },
+    { label: dict.navbar.integrations, href: "/integrations" },
+    { label: dict.chat.aiChat, href: "/chat" },
+    { label: dict.mobile.badge, href: "/mobile" },
+  ];
+
+  return (
       <BrandIcon
         brand={def}
         size={size}
@@ -54,9 +68,9 @@ export default function Footer() {
       />
 
       <div className="relative mx-auto max-w-7xl 3xl:max-w-[1720px] px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-8 py-20 border-b border-white/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8 py-20 border-b border-white/10">
           {/* Colonna brand */}
-          <div className="flex flex-col items-start gap-4">
+          <div className="flex flex-col items-start gap-4 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="relative h-8 w-8">
                 <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="32px" />
@@ -64,6 +78,34 @@ export default function Footer() {
               <span className="text-xl font-bold tracking-tight text-white">AgentCloud</span>
             </Link>
             <p className="text-sm font-semibold text-neutral-400 select-none">{dict.footer.tagline}</p>
+          </div>
+
+          {/* Colonna prodotto — pagine della piattaforma */}
+          <div className="flex flex-col gap-3.5">
+            <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.navbar.marketplace}</span>
+            <ul className="flex flex-col gap-3">
+              {productLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <Link href={href} className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Colonna azienda */}
+          <div className="flex flex-col gap-3.5">
+            <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.footer.company}</span>
+            <ul className="flex flex-col gap-3">
+              {companyLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <Link href={href} className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Colonna contatti — solo link di contatto */}

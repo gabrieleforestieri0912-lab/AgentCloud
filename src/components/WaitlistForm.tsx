@@ -38,6 +38,7 @@ import BrandLogo from "@/components/BrandLogo";
 import BrandIcon from "@/components/BrandIcon";
 import { BRANDS } from "@/lib/brands";
 import Footer from "@/components/Footer";
+import LanguageToggle from "@/components/LanguageToggle";
 import InstagramFollowCard from "@/components/InstagramFollowCard";
 import { AVAILABLE_AGENTS } from "@/lib/agents";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -516,6 +517,9 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
             <span className="text-base font-bold tracking-tight text-white">AgentCloud</span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Selettore lingua IT/EN/ES/DE/FR: la pagina è usabile anche come
+                manutenzione/offerte speciali in qualsiasi lingua */}
+            <LanguageToggle />
             <button
               onClick={openForm}
               className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black shadow-lg shadow-white/10 transition hover:bg-neutral-100"
