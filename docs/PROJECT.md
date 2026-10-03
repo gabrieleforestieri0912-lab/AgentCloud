@@ -1,6 +1,6 @@
 # AgentCloud
 
-**v0.6.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing **Stripe + PayPal** (Klarna/Amazon Pay) con overage, **41 integrazioni** (10 disponibili + 31 Prossimamente), backend Claude (Anthropic), **Shopify + Google OAuth multi-tenant + generic integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/ClickUp/Asana)**, account unificato e i miei abbonamenti, i18n IT/EN.
+**v0.5.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing **Stripe + PayPal** (Klarna/Amazon Pay) con overage, **41 integrazioni** (10 disponibili + 31 Prossimamente), backend Claude (Anthropic), **Shopify + Google OAuth multi-tenant + generic integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/ClickUp/Asana)**, account unificato e i miei abbonamenti, i18n IT/EN/ES/DE/FR.
 
 ---
 
@@ -129,14 +129,16 @@ src/
 
 Regola: una stringa in `es`/`de`/`fr` è **solo** nella sua lingua. Ammessi unicamente prestiti e nomi propri che nelle altre lingue si scrivono davvero così (`Dashboard`, `Marketplace`, `Starter`, `Gmail`, i nomi degli agenti demo) e i segnaposto (`{n} min`).
 
-`src/lib/i18n/dictionaries.test.ts` lo verifica da solo, e fallisce in quattro modi: chiavi mancanti/in più, stringhe lunghe copiate da `it` o `en`, **parole inglesi isolate** rimaste tali (`Password`, `Tools`, `Custom`), e frasi quasi identiche alla fonte (l'inglese con una parola cambiata, come era `es.dashboard.googleConnectDesc` al 86% di parole in comune). Aggiungendo una stringa tradotta non serve toccare il test; se invece è un prestito legittimo, va aggiunto a `LOANWORDS`.
+Regola (da verificare in review, nessun test automatico presente): una stringa in `es`/`de`/`fr` è **solo** nella sua lingua. Ammessi unicamente prestiti e nomi propri che nelle altre lingue si scrivono davvero così (`Dashboard`, `Marketplace`, `Starter`, `Gmail`, i nomi degli agenti demo) e i segnaposto (`{n} min`).
+
+La regola prevede quattro casi da controllare: chiavi mancanti/in più, stringhe lunghe copiate da `it` o `en`, **parole inglesi isolate** rimaste tali (`Password`, `Tools`, `Custom`), e frasi quasi identiche alla fonte (l'inglese con una parola cambiata, come era `es.dashboard.googleConnectDesc` al 86% di parole in comune). Aggiungendo una stringa tradotta non serve toccare altro; se invece è un prestito legittimo, va aggiunto a `LOANWORDS`.
 
 ### Lingua delle risposte degli agenti
 
 - L'agente risponde nella lingua **dell'ultimo messaggio dell'utente** e, quando quel messaggio non ne indica una (una parola sola, un nome proprio, un numero, un'emoji), nella lingua della **piattaforma** (cookie `agentcloud_locale`).
 - La lingua la decide il codice in `src/lib/agents/language.ts` (`replyLanguage` → `detectLanguage`) e viene scritta in chiaro nel system prompt (`withLanguageDirective`), **non** lasciata al modello: i prompt degli agenti e i risultati dei tool contengono molto testo in italiano, e senza un ordine esplicito la risposta seguiva quel materiale (piattaforma tedesca + messaggio in inglese ⇒ risposta in italiano).
 - Vale per tutte le chiamate al modello: `/api/chat` (agenti e chat di piattaforma, quest'ultima costruita già nella lingua della risposta) e `/api/agent/run`.
-- `src/lib/agents/language.test.ts` copre rilevamento, default e direttive.
+- Rilevamento, default e direttive sono implementati in `src/lib/agents/language.ts` (`replyLanguage` → `detectLanguage`, nessun test automatico presente).
 
 ## Autenticazione
 
@@ -310,7 +312,6 @@ npm run dev       # sviluppo
 npm run build     # build produzione (con typecheck)
 npm run start     # avvio produzione
 npm run lint      # ESLint
-npm run test      # Vitest (162 test)
 npm run typecheck # tsc --noEmit
 ```
 

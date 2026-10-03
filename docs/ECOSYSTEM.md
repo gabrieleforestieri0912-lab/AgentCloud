@@ -31,7 +31,7 @@ AgentCloud è progettato come un ecosistema modulare e interconnesso di strument
 
 ### 1. Web Platform (`src/`)
 La piattaforma centrale accessibile da qualsiasi browser.
-- **Tecnologie**: Next.js 15, React 19, Tailwind CSS v4, TypeScript.
+- **Tecnologie**: Next.js 16, React 19, Tailwind CSS v4, TypeScript.
 - **Funzionalità**: Marketplace agenti, fatturazione abbonamenti Stripe con overage billing, gestione permessi e chiavi API, visualizzazione metriche di consumo token, live preview chat.
 
 ### 2. Mobile App (`mobile/`)
