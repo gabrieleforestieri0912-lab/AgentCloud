@@ -32,6 +32,16 @@ export default function Footer() {
   const SocialGlyph = ({ brand, size }: { brand: string; size: number }) => {
     const def = BRANDS[brand];
     if (!def) return null;
+    return (
+      <BrandIcon
+        brand={def}
+        size={size}
+        color="currentColor"
+        className="opacity-70 group-hover:opacity-100 transition-opacity"
+      />
+    );
+  };
+
   const companyLinks = [
     { label: dict.footer.about, href: "/about" },
     { label: dict.footer.faq, href: "/#faq" },
@@ -45,16 +55,6 @@ export default function Footer() {
     { label: dict.chat.aiChat, href: "/chat" },
     { label: dict.mobile.badge, href: "/mobile" },
   ];
-
-  return (
-      <BrandIcon
-        brand={def}
-        size={size}
-        color="currentColor"
-        className="opacity-70 group-hover:opacity-100 transition-opacity"
-      />
-    );
-  };
 
   return (
     <footer className="relative border-t border-white/5 pb-[env(safe-area-inset-bottom)] text-white">
