@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getAgentBySlug, isAvailable } from "@/lib/agents";
+import { couponDiscountCents, couponIsApplicable, COUPON_CODE } from "@/lib/coupon";
+import { tryConsumeCoupon } from "@/lib/coupon-server";
 import { getSessionUser } from "@/lib/supabase/server";
 import { resolveIsAdmin } from "@/lib/admin-access";
 import { getSiteUrl } from "@/lib/site-url";
@@ -15,17 +17,23 @@ function getStripe(): Stripe | null {
 /**
  * POST /api/checkout
  *
- * Body: { agentId: string }
+ * Body: { agentId: string, couponCode?: string }
  *
  * Crea una Stripe Checkout Session (modalità subscription) con un prezzo
  * dinamico ricavato dal priceCents dell'agente — nessun prodotto Stripe
  * pre-creato. La sessione porta i metadati così il webhook di billing può
  * attivare l'abbonamento in automatico.
+ *
+ * Coupon: se `couponCode` è presente e valido, lo sconto 50% è applicato
+ * server-side come prezzo già scontato (`unit_amount` ridotto) e l'uso viene
+ * consumato qui — su Stripe non compare alcun campo coupon. Senza coupon
+ * (o se esaurito/non valido) la sessione usa il prezzo pieno.
  */
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const agentId = body.agentId as string | undefined;
+    const couponCode = typeof body.couponCode === "string" ? body.couponCode.trim().toUpperCase() : null;
 
     if (!agentId) {
       return NextResponse.json(
@@ -101,6 +109,25 @@ export async function POST(req: Request) {
 
     const baseUrl = getSiteUrl();
 
+    // Coupon (validazione + consumo server-side, un uso per checkout).
+    // Prezzo già scontato in sessione: niente campo coupon su Stripe.
+    let unitAmount = agent.priceCents;
+    let couponApplied: string | null = null;
+    if (couponCode) {
+      if (couponCode !== COUPON_CODE || !couponIsApplicable(agent.priceCents)) {
+        return NextResponse.json({ error: "coupon_invalid" }, { status: 400 });
+      }
+      const consumed = tryConsumeCoupon(couponCode);
+      if (!consumed.ok) {
+        return NextResponse.json(
+          { error: consumed.error === "INVALID_CODE" ? "coupon_invalid" : "coupon_exhausted" },
+          { status: consumed.error === "INVALID_CODE" ? 400 : 409 },
+        );
+      }
+      unitAmount = agent.priceCents - couponDiscountCents(agent.priceCents);
+      couponApplied = COUPON_CODE;
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       // Managed Payments (attivo di default sull'account Stripe) rifiuta il
@@ -115,7 +142,7 @@ export async function POST(req: Request) {
         {
           price_data: {
             currency: "eur",
-            unit_amount: agent.priceCents,
+            unit_amount: unitAmount,
             recurring: { interval: "month" },
             product_data: {
               name: `AgentCloud — ${agent.shortName}`,
@@ -130,12 +157,14 @@ export async function POST(req: Request) {
           agent_id: agentId,
           user_id: userId ?? "",
           source: "agentcloud",
+          ...(couponApplied ? { coupon: couponApplied } : {}),
         },
       },
       metadata: {
         agent_id: agentId,
         user_id: userId ?? "",
         source: "agentcloud",
+        ...(couponApplied ? { coupon: couponApplied } : {}),
       },
       // Passa lo user id così il webhook può risolvere l'account.
       ...(userId ? { client_reference_id: userId } : {}),

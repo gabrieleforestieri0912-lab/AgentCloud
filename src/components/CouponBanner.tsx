@@ -87,21 +87,9 @@ export default function CouponBanner({ coupon, locale, dict }: Props) {
         return;
       }
 
-      // Decrementa server-side: se ci sono 20 usi già consumati
-      // (due client contemporanei), il server risponde 409 e il coupon non passa.
-      const decrement = await fetch("/api/coupon/decrement", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: COUPON_CODE }),
-      });
-
-      if (!decrement.ok) {
-        // 409 = 20 usi già consumati, 400 = codice errato: stesso messaggio.
-        setStatus("error");
-        return;
-      }
-
-      // Marca il coupon come reclamato localmente (notifica anche questa tab)
+      // Solo validazione: gli usi NON si consumano qui ma server-side al
+      // momento del checkout Stripe (così un claim senza acquisto non brucia
+      // uno dei 20 usi). Il codice viene inviato al checkout dai client.
       writeClaimed(true);
       setInput("");
       setStatus("ok");

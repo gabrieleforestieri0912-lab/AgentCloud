@@ -9,7 +9,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import AgentIcon from "@/components/AgentIcon";
 import { t as interpolate } from "@/lib/i18n/dictionaries";
 import { getBundleBySlug, getBundleAgents } from "@/lib/bundles";
-import { COUPON_CODE, COUPON_PERCENT, COUPON_APPLIES_TO_LOW_PRICE, COUPON_MAX_PRICE, couponIsApplicable, couponDiscountCents } from "@/lib/coupon";
+import { COUPON_CODE, couponIsApplicable, couponDiscountCents } from "@/lib/coupon";
 
 const CLAIMED_KEY = "coupon_agentcloud50_claimed";
 
@@ -34,7 +34,7 @@ function bundleSavings(item: CartItem): number | null {
 
 /**
  * Calcola lo sconto coupon per gli elementi idonei nel carrello.
- * Il coupon dà 50% su agenti con prezzo 9,99€-14,99€.
+ * Il coupon dà 50% su agenti con prezzo 4,99€-14,99€.
  */
 function calculateCouponDiscount(items: CartItem[]): { discountCents: number; eligibleItems: CartItem[] } {
   let claimed = false;
@@ -75,8 +75,21 @@ export default function CartPageClient() {
     if (isAdmin) return;
     setCheckingOut(true);
     try {
-      // Se carrello contiene agenti, usa checkout multiplo; altrimenti errore
-      const res = await fetch("/api/cart/checkout", { method: "POST" });
+      // Se carrello contiene agenti, usa checkout multiplo; altrimenti errore.
+      // Coupon già reclamato dal banner → sconto server-side come prezzo
+      // già scontato (niente UI coupon su Stripe).
+      let claimedCoupon: string | null = null;
+      try {
+        claimedCoupon =
+          localStorage.getItem(CLAIMED_KEY) === "true" ? COUPON_CODE : null;
+      } catch {
+        claimedCoupon = null;
+      }
+      const res = await fetch("/api/cart/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(claimedCoupon ? { couponCode: claimedCoupon } : {}),
+      });
       const data = await res.json().catch(() => ({}));
       if (data.url) {
         window.location.href = data.url;

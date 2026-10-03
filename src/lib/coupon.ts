@@ -1,18 +1,19 @@
 /**
- * Coupon 50%-OFF per la prima season (fascia 9,99€–14,99€).
+ * Coupon 50%-OFF per la prima season (tutte le fasce 4,99€–14,99€).
  *
  * Regola di prodotto:
  * - codice fisso: `AGENTCLOUD50`
- * - sconto: 50% sul prezzo dell'agente (applicabile solo su agenti 9,99€–14,99€)
- * - utilizzi massimi: 20 (rimanenti decritti a server)
- * - consumo: un'unica chiamata server per applicarlo e decrementarlo, così due
- *   client contemporanei non possono oversellare.
+ * - sconto: 50% sul prezzo dell'agente (applicabile a tutti gli agenti 4,99€–14,99€)
+ * - utilizzi massimi: 20 (consumati dal server al momento della creazione
+ *   del checkout Stripe, non al claim del banner)
+ * - lo sconto è applicato server-side nello Stripe Checkout come prezzo già
+ *   scontato: su Stripe non compare alcun campo coupon.
  */
 
 export const COUPON_CODE = "AGENTCLOUD50";
 export const COUPON_PERCENT = 50; // 50%
 export const COUPON_MAX_USES = 20;
-export const COUPON_APPLIES_TO_LOW_PRICE = 999; // in centesimi: 9,99€
+export const COUPON_APPLIES_TO_LOW_PRICE = 499; // in centesimi: 4,99€
 export const COUPON_MAX_PRICE = 1499; // in centesimi: 14,99€
 
 export function couponIsApplicable(priceCents: number): boolean {

@@ -4,6 +4,8 @@ import { getSessionUser } from "@/lib/supabase/server";
 import { resolveIsAdmin } from "@/lib/admin-access";
 import { getSiteUrl } from "@/lib/site-url";
 import { getEnrichedCart } from "@/lib/cart";
+import { couponDiscountCents, couponIsApplicable, COUPON_CODE } from "@/lib/coupon";
+import { tryConsumeCoupon } from "@/lib/coupon-server";
 
 function getStripe(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -16,10 +18,14 @@ function getStripe(): Stripe | null {
  * Se il carrello è vuoto → 400. Dopo il pagamento, il webhook checkout.session.completed
  * attiva gli abbonamenti e il carrello viene svuotato (gestito dal webhook o al ritorno).
  *
+ * Body opzionale: { couponCode?: string } — se valido, 50% su ogni riga
+ * agente idonea come prezzo già scontato (niente campo coupon su Stripe),
+ * un solo uso consumato per checkout.
+ *
  * ADMIN: gli admin hanno accesso a tutti gli agenti e non devono pagare —
  * la route rifiuta con 403 `admin_no_checkout` (la UI nasconde già il bottone).
  */
-export async function POST() {
+export async function POST(req: Request) {
   const user = await getSessionUser();
   const effectiveUserId = user?.id ?? null;
   const effectiveEmail = user?.email ?? null;
@@ -73,12 +79,37 @@ export async function POST() {
     return NextResponse.json({ error: "cart_empty" }, { status: 400 });
   }
 
+  const body = await req.json().catch(() => ({}));
+  const couponCode = typeof body.couponCode === "string" ? body.couponCode.trim().toUpperCase() : null;
+
+  // Coupon (validazione + un solo uso consumato per checkout).
+  // Sconto solo sulle righe agente idonee, mai sui bundle.
+  let couponApplied: string | null = null;
+  if (couponCode) {
+    const eligible = items.some((i) => i.type === "agent" && couponIsApplicable(i.priceCents));
+    if (couponCode !== COUPON_CODE || !eligible) {
+      return NextResponse.json({ error: "coupon_invalid" }, { status: 400 });
+    }
+    const consumed = tryConsumeCoupon(couponCode);
+    if (!consumed.ok) {
+      return NextResponse.json(
+        { error: consumed.error === "INVALID_CODE" ? "coupon_invalid" : "coupon_exhausted" },
+        { status: consumed.error === "INVALID_CODE" ? 400 : 409 },
+      );
+    }
+    couponApplied = COUPON_CODE;
+  }
+
   const baseUrl = getSiteUrl();
 
   // Stripe Checkout: una session subscription con N line_items (uno per agente/bundle).
   // Ogni line_item ha price_data dinamico. Metadata contiene lista agenti.
   const agentSlugs = items.map((i) => i.agent_slug).join(",");
   const lineItems = items.map((item) => {
+    const discountedUnit =
+      couponApplied && item.type === "agent" && couponIsApplicable(item.priceCents)
+        ? item.priceCents - couponDiscountCents(item.priceCents)
+        : item.priceCents;
     // Bundle: interval dipende dal periodo
     if (item.type === "bundle") {
       const period = (item as unknown as { period?: string }).period as string;
@@ -86,7 +117,7 @@ export async function POST() {
         return {
           price_data: {
             currency: "eur",
-            unit_amount: item.priceCents,
+            unit_amount: discountedUnit,
             recurring: { interval: "month" as const, interval_count: 3 },
             product_data: {
               name: `AgentCloud — ${item.shortName} (Trimestrale)`,
@@ -100,7 +131,7 @@ export async function POST() {
         return {
           price_data: {
             currency: "eur",
-            unit_amount: item.priceCents,
+            unit_amount: discountedUnit,
             recurring: { interval: "year" as const },
             product_data: {
               name: `AgentCloud — ${item.shortName} (Annuale)`,
@@ -114,7 +145,7 @@ export async function POST() {
     return {
       price_data: {
         currency: "eur",
-        unit_amount: item.priceCents,
+        unit_amount: discountedUnit,
         recurring: { interval: "month" as const },
         product_data: {
           name: `AgentCloud — ${item.shortName}`,
@@ -140,6 +171,7 @@ export async function POST() {
         user_id: effectiveUserId,
         source: "agentcloud_cart",
         cart_id: cart.id,
+        ...(couponApplied ? { coupon: couponApplied } : {}),
       },
     },
     metadata: {
@@ -147,6 +179,7 @@ export async function POST() {
       user_id: effectiveUserId,
       source: "agentcloud_cart",
       cart_id: cart.id,
+      ...(couponApplied ? { coupon: couponApplied } : {}),
     },
     client_reference_id: effectiveUserId,
     customer_email: effectiveEmail ?? undefined,

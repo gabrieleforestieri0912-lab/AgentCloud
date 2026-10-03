@@ -23,6 +23,7 @@ import AgentIcon from "@/components/AgentIcon";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { getAgentBySlug, localizeAgent, type Agent } from "@/lib/agents";
+import { COUPON_CODE } from "@/lib/coupon";
 import { getSiteUrl } from "@/lib/site-url";
 import { t } from "@/lib/i18n/dictionaries";
 import { readableConnectReason } from "@/lib/connect-errors";
@@ -684,10 +685,24 @@ export default function DeployAgentClient({
                     onClick={async () => {
                       setIsCheckingOut(true);
                       try {
+                        // Coupon già reclamato dal banner → il server applica
+                        // lo sconto come prezzo già scontato (niente UI coupon su Stripe).
+                        let claimedCoupon: string | null = null;
+                        try {
+                          claimedCoupon =
+                            localStorage.getItem("coupon_agentcloud50_claimed") === "true"
+                              ? COUPON_CODE
+                              : null;
+                        } catch {
+                          claimedCoupon = null;
+                        }
                         const res = await fetch("/api/checkout", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ agentId: agent.slug }),
+                          body: JSON.stringify({
+                            agentId: agent.slug,
+                            ...(claimedCoupon ? { couponCode: claimedCoupon } : {}),
+                          }),
                         });
                         const data = await res.json();
                         if (data.url) {
