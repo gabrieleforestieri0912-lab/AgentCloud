@@ -50,7 +50,6 @@ const extError = document.getElementById("extError");
 const extSuccess = document.getElementById("extSuccess");
 const extSubmit = document.getElementById("extSubmit");
 const extSubmitText = document.getElementById("extSubmitText");
-const extSubmitIcon = document.getElementById("extSubmitIcon");
 const extForgotBtn = document.getElementById("extForgotBtn");
 const extGoogleBtn = document.getElementById("extGoogleBtn");
 const extSwitchBtn = document.getElementById("extSwitchBtn");
@@ -78,7 +77,6 @@ function extUpdateMode(mode) {
   if (extHint) extHint.textContent = isSignup ? "Registrati con email e password o con Google" : "Accedi con email e password o con Google";
   if (extNameLabel) extNameLabel.classList.toggle("hidden", !isSignup);
   if (extSubmitText) extSubmitText.textContent = isSignup ? "Crea account" : "Accedi";
-  if (extSubmitIcon) extSubmitIcon.textContent = isSignup ? "＋" : "✉";
   if (extSwitchPrompt) extSwitchPrompt.textContent = isSignup ? "Hai già un account?" : "Non hai ancora un account?";
   if (extSwitchBtn) extSwitchBtn.textContent = isSignup ? "Accedi" : "Registrati";
   if (extPassword) extPassword.placeholder = isSignup ? "Minimo 8 caratteri" : "La tua password";
@@ -254,7 +252,7 @@ function renderAgents(state) {
     const agent = getAgent(slug) || { slug, name: slug, category: "Agent", description: "Agente AgentCloud" };
     const item = document.createElement("article");
     item.className = "agent-card";
-    item.innerHTML = `<span class="agent-symbol">✦</span><div><strong>${escapeHtml(agent.name)}</strong><small>${escapeHtml(agent.category)} · Attivo</small></div><button class="open-agent">Usa</button>`;
+    item.innerHTML = `<div><strong>${escapeHtml(agent.name)}</strong><small>${escapeHtml(agent.category)} · Attivo</small></div><button class="open-agent">Usa</button>`;
     item.querySelector(".open-agent").addEventListener("click", () => selectAgent(slug));
     ownedAgents.appendChild(item);
   });

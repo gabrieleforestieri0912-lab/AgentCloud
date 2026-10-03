@@ -41,7 +41,7 @@ class _WaitlistScreenState extends State<WaitlistScreen> {
     setState(() { _loading = true; _error = null; _success = null; });
     try {
       final data = await _svc.join(email: email);
-      setState(() { _joined = true; _success = 'Sei in lista! 🎉'; if (data['total'] is int) _total = data['total']; final code = data['referralCode'] ?? data['referral_code']; if (code != null) _referralLink = 'https://agentcloud.agency/waitlist/join?ref=$code'; });
+      setState(() { _joined = true; _success = 'Sei in lista!'; if (data['total'] is int) _total = data['total']; final code = data['referralCode'] ?? data['referral_code']; if (code != null) _referralLink = 'https://agentcloud.agency/waitlist/join?ref=$code'; });
       final nameInfo = await _svc.getName();
       final hasName = nameInfo != null && (nameInfo['full_name'] ?? nameInfo['fullName']) != null;
       if (!hasName && mounted) {
@@ -119,7 +119,7 @@ class _WaitlistScreenState extends State<WaitlistScreen> {
                       children: [
                         const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 32),
                         const SizedBox(height: 8),
-                        const Text('Sei in lista! ✓', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        const Text('Sei in lista!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         if (_success != null) Text(_success!, style: const TextStyle(color: Color(0xFF9CA3AF))),
                         if (_referralLink != null) ...[
                           const SizedBox(height: 12),

@@ -34,8 +34,8 @@ import {
 } from "@/lib/agent-activity";
 
 /* ─── Status system ───────────────────────────────────────────────
-   ○ pending · ● running · ✓ completed · ⚠ attention · ✕ failed ·
-   ⏸ paused · 🔐 approval — stessi stati ovunque. */
+   Stati: pending, running, completed, attention, failed, paused, approval.
+   Gli stessi stati sono usati in tutta l'interfaccia. */
 
 export function StatusDot({ status, size = 14 }: { status: AgentStatus; size?: number }) {
   switch (status) {

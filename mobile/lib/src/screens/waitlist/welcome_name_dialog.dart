@@ -45,7 +45,7 @@ class _WelcomeNameDialogState extends State<WelcomeNameDialog> {
             child: const Icon(Icons.auto_awesome, color: Colors.white),
           ),
           const SizedBox(height: 12),
-          const Text('Benvenuto in AgentCloud! 🎉', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+          const Text('Benvenuto in AgentCloud!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
         ],
       ),
       content: _done

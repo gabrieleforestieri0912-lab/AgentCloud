@@ -561,7 +561,7 @@ async function runAgent({ agentId, messages, context, requestId, tabId: requeste
 
   emit({ type: "done" });
   if (cursorTabId != null) {
-    sendCursor(cursorTabId, "AC_CURSOR_LABEL", { label: "Operazione completata ✓" }).catch(() => {});
+    sendCursor(cursorTabId, "AC_CURSOR_LABEL", { label: "Operazione completata" }).catch(() => {});
     setTimeout(() => sendCursor(cursorTabId, "AC_CURSOR_HIDE", {}).catch(() => {}), 1400);
   }
   return { output: answer };

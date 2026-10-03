@@ -722,31 +722,31 @@ const TRANSCRIPTS: Record<
   "lead-capture": {
     it: [
       { role: "user", text: "Nuovo lead dal sito: Giulia Bianchi, giulia@acme.it, Acme Srl — chiede demo Shopify" },
-      { role: "agent", text: "Lead validato ✓ — **Acme Srl** arricchita (50–100 dip., Retail). Score: **Alto**. Notifico le vendite su Slack con contesto e prossimo passo.", meta: "lead_capture_submit → enrich → notify_sales" },
+      { role: "agent", text: "Lead validato — **Acme Srl** arricchita (50–100 dip., Retail). Score: **Alto**. Notifico le vendite su Slack con contesto e prossimo passo.", meta: "lead_capture_submit → enrich → notify_sales" },
       { role: "user", text: "Perfetto, avvisa il team" },
       { role: "agent", text: "Notifica inviata su #sales: *Giulia Bianchi (Acme) — demo Shopify, alto fit, fonte: chat sito. Azione: contatta entro 1h.*", meta: "Slack webhook · write_file lead-giulia.json" },
     ],
     en: [
       { role: "user", text: "New site lead: Giulia Bianchi, giulia@acme.it — asks for Shopify demo" },
-      { role: "agent", text: "Validated ✓ — **Acme Srl** enriched (50–100, Retail). Score: **High**. Notifying sales on Slack.", meta: "submit → enrich → notify" },
+      { role: "agent", text: "Validated — **Acme Srl** enriched (50–100, Retail). Score: **High**. Notifying sales on Slack.", meta: "submit → enrich → notify" },
       { role: "user", text: "Go ahead" },
       { role: "agent", text: "Posted to #sales: *Giulia Bianchi (Acme) — Shopify demo, high fit. Action: contact within 1h.*", meta: "Slack · lead-giulia.json" },
     ],
     es: [
       { role: "user", text: "Nuevo lead del sitio: Giulia Bianchi, giulia@acme.es, Acme Srl — pide demo de Shopify" },
-      { role: "agent", text: "Lead validado ✓ — **Acme Srl** enriquecida (50–100, Retail). Puntuación: **Alta**. Aviso al equipo comercial en Slack con contexto y siguiente paso.", meta: "lead_capture_submit → enrich → notify_sales" },
+      { role: "agent", text: "Lead validado — **Acme Srl** enriquecida (50–100, Retail). Puntuación: **Alta**. Aviso al equipo comercial en Slack con contexto y siguiente paso.", meta: "lead_capture_submit → enrich → notify_sales" },
       { role: "user", text: "Perfecto, avisa al equipo" },
       { role: "agent", text: "Aviso enviado a #sales: *Giulia Bianchi (Acme) — demo Shopify, encaje alto, origen: chat del sitio. Acción: contactar en 1h.*", meta: "Slack webhook · write_file lead-giulia.json" },
     ],
     de: [
       { role: "user", text: "Neuer Lead von der Website: Giulia Bianchi, giulia@acme.de, Acme GmbH — bittet um Shopify-Demo" },
-      { role: "agent", text: "Lead validiert ✓ — **Acme GmbH** angereichert (50–100, Retail). Score: **Hoch**. Ich benachrichtige den Vertrieb in Slack mit Kontext und nächsten Schritt.", meta: "lead_capture_submit → enrich → notify_sales" },
+      { role: "agent", text: "Lead validiert — **Acme GmbH** angereichert (50–100, Retail). Score: **Hoch**. Ich benachrichtige den Vertrieb in Slack mit Kontext und nächsten Schritt.", meta: "lead_capture_submit → enrich → notify_sales" },
       { role: "user", text: "Perfekt, informiere das Team" },
       { role: "agent", text: "Nachricht an #sales: *Giulia Bianchi (Acme) — Shopify-Demo, hoher Fit, Quelle: Website-Chat. Aktion: innerhalb 1h kontaktieren.*", meta: "Slack-Webhook · write_file lead-giulia.json" },
     ],
     fr: [
       { role: "user", text: "Nouveau lead depuis le site : Giulia Bianchi, giulia@acme.fr, Acme SARL — demande une démo Shopify" },
-      { role: "agent", text: "Lead validé ✓ — **Acme SARL** enrichie (50–100, retail). Score : **Élevé**. J’alerte l’équipe commerciale sur Slack avec le contexte et la prochaine étape.", meta: "lead_capture_submit → enrich → notify_sales" },
+      { role: "agent", text: "Lead validé — **Acme SARL** enrichie (50–100, retail). Score : **Élevé**. J’alerte l’équipe commerciale sur Slack avec le contexte et la prochaine étape.", meta: "lead_capture_submit → enrich → notify_sales" },
       { role: "user", text: "Parfait, préviens l’équipe" },
       { role: "agent", text: "Message posté dans #sales : *Giulia Bianchi (Acme) — démo Shopify, bon fit, source : chat du site. Action : contacter sous 1h.*", meta: "Slack webhook · write_file lead-giulia.json" },
     ],

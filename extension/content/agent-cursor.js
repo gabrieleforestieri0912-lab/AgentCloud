@@ -105,7 +105,7 @@
     el.id = CURSOR_ID;
     el.innerHTML = `
       <div class="ac-cursor-ring"></div>
-      <div class="ac-cursor-dot">✦</div>
+      <div class="ac-cursor-dot"></div>
       <div class="ac-cursor-label">AgentCloud</div>
     `;
     document.documentElement.appendChild(el);
