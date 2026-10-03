@@ -40,6 +40,14 @@ class AgentDetailScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Text(agent.description, style: const TextStyle(color: AgentCloudTheme.textSecondary, fontSize: 14, height: 1.5)),
             const SizedBox(height: 12),
+            if (!agent.active)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
+                child: const Text('Presto — ti avvisiamo al lancio', textAlign: TextAlign.center, style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+              ),
+            if (!agent.active) const SizedBox(height: 12),
             const Text('Cosa automatizza', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, children: agent.capabilities.map((c) => Chip(label: Text(c, style: const TextStyle(fontSize: 12)), backgroundColor: const Color(0xFF064E3B).withValues(alpha: 0.4), labelStyle: const TextStyle(color: Color(0xFF6EE7B7)))).toList()),
@@ -47,9 +55,9 @@ class AgentDetailScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: inCart ? null : () { context.read<CartService>().add(agent.slug); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Aggiunto al carrello'))); },
+                onPressed: !agent.active || inCart ? null : () { context.read<CartService>().add(agent.slug); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Aggiunto al carrello'))); },
                 icon: Icon(inCart ? Icons.check : Icons.shopping_cart, size: 18),
-                label: Text(inCart ? 'Nel carrello' : 'Aggiungi al carrello — ${agent.displayPrice}'),
+                label: Text(!agent.active ? 'Prossimamente' : inCart ? 'Nel carrello' : 'Aggiungi al carrello — ${agent.displayPrice}'),
                 style: ElevatedButton.styleFrom(backgroundColor: AgentCloudTheme.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               ),
             ),
@@ -57,7 +65,7 @@ class AgentDetailScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(agentSlug: agent.slug))),
+                onPressed: !agent.active ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(agentSlug: agent.slug))),
                 icon: const Icon(Icons.chat_bubble_outline, size: 18),
                 label: const Text('Prova in chat'),
                 style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: AgentCloudTheme.surfaceBorder), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),

@@ -18,6 +18,13 @@ const AGENT_CATALOG = [
   { slug: "hr-recruiter", name: "HR & Recruiter Agent", category: "Business & Operations", price: "€14,99/mese", description: "Analizza CV e supporta la selezione dei candidati." },
   { slug: "social-media-agent", name: "Social Media Agent", category: "Design & Content", price: "€7,99/mese", description: "Pianifica il calendario social e crea caption." },
   { slug: "inventory-logistics", name: "Inventory & Logistics Agent", category: "E-commerce & Finance", price: "€14,99/mese", description: "Monitora stock, riordini e spedizioni." },
+  { slug: "email-agent", name: "Email Agent", category: "Business & Operations", price: "Prossimamente", description: "Legge, classifica e gestisce le email operative." },
+  { slug: "whatsapp-agent", name: "WhatsApp Agent", category: "Customer Service", price: "Prossimamente", description: "Conversazioni WhatsApp automatiche per clienti e lead." },
+  { slug: "invoice-agent", name: "Invoice Agent", category: "E-commerce & Finance", price: "Prossimamente", description: "Fatture automatiche: generazione, invio e solleciti." },
+  { slug: "analytics-agent", name: "Analytics Agent", category: "AI & Data", price: "Prossimamente", description: "Dai dati alle decisioni: KPI e report automatici." },
+  { slug: "crm-agent", name: "CRM Agent", category: "Business & Operations", price: "Prossimamente", description: "CRM sempre aggiornato: lead, deal e follow-up." },
+  { slug: "document-agent", name: "Document Agent", category: "AI & Data", price: "Prossimamente", description: "Legge PDF ed estrae dati e risposte." },
+  { slug: "research-agent", name: "Research Agent", category: "AI & Data", price: "Prossimamente", description: "Ricerche automatiche con fonti verificate." },
 ];
 
 function getAgent(slug) {

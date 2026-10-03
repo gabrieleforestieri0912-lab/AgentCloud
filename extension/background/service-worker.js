@@ -545,6 +545,9 @@ async function runAgent({ agentId, messages, context, requestId, tabId: requeste
           emit({ type: "tool_done", toolName: data.toolName });
           cursorClickRandom();
         } else if (data.type === "file") emit({ type: "file", filename: data.filename });
+        else if (data.type === "connection" && typeof data.provider === "string") {
+          emit({ type: "connection", provider: data.provider });
+        }
         else if (data.type === "error") throw new Error(data.message || data.error || "Errore dell'agente");
         else if (data.type === "done") {
           // continuerà fino a done del reader

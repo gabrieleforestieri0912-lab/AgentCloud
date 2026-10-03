@@ -442,6 +442,9 @@ api.runtime.onMessage.addListener((message) => {
     addMessage("tool", `Uso ${message.toolName || "uno strumento"}…`);
   } else if (message.type === "tool_done") {
     addMessage("tool", `Completato ${message.toolName || "strumento"}.`);
+  } else if (message.type === "connection" && message.provider) {
+    // La connessione OAuth si completa sul sito: qui solo l'avviso operativo.
+    addMessage("tool", `Connessione richiesta (${message.provider}): completala dal sito per sbloccare le azioni reali.`);
   } else if (message.type === "error") {
     addMessage("assistant", message.message || message.error || "Errore dell'agente.");
     if (typingEl) typingEl.classList.add("hidden");
