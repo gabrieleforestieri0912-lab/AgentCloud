@@ -297,6 +297,19 @@ async function selectAgent(slug) {
   agentId = slug;
   await api.storage.local.set({ [SELECTED_AGENT_KEY]: slug });
   openChat();
+  // L'agente scelto apre una NUOVA scheda operativa dove il cursore reattivo
+  // attua davvero le operazioni (click/input/scroll su elementi reali).
+  setNotice("Apro la pagina operativa dove l'agente lavorerà…");
+  try {
+    const res = await send({ action: "OPEN_OPERATING_PAGE", payload: { agentId: slug } });
+    if (res?.success) {
+      setNotice("Pagina operativa pronta: il cursore mostra dal vivo ogni azione dell'agente.");
+    } else {
+      setNotice(res?.error || "Impossibile aprire la pagina operativa: l'agente userà la scheda attiva.");
+    }
+  } catch (e) {
+    setNotice("Impossibile aprire la pagina operativa: l'agente userà la scheda attiva.");
+  }
 }
 
 async function loadSession(force = false) {

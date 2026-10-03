@@ -206,6 +206,7 @@
       el = document.querySelector("input:not([type='hidden']), textarea, [contenteditable='true']");
     }
     if (el) {
+      try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
       highlight(el);
       el.focus();
       // simula digitazione
@@ -255,7 +256,10 @@
               setTimeout(() => {
                 let target = null;
                 try { target = document.querySelector(msg.selector); } catch {}
-                if (target) target.click();
+                if (target) {
+                  try { target.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
+                  setTimeout(() => { try { target.focus({ preventScroll: true }); } catch {} try { target.click(); } catch {} }, 250);
+                }
               }, 220);
             }
             break;

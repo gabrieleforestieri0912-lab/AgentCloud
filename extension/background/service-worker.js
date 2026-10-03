@@ -302,6 +302,8 @@ async function openSignup() {
 
 // ─── Cursore AgentCloud reattivo sulla pagina affianco ───────────────────────
 
+const OPERATING_TAB_KEY = "ac_operating_tab_id";
+
 async function getActiveTab() {
   try {
     const tabs = await api.tabs.query({ active: true, currentWindow: true });
@@ -309,17 +311,78 @@ async function getActiveTab() {
   } catch { return null; }
 }
 
-async function ensureAgentPage() {
-  let tab = await getActiveTab();
-  const isUsable = tab && tab.url && /^https?:/.test(tab.url) && !tab.url.startsWith(API_BASE);
-  if (isUsable) return tab;
-  // Se la pagina affianco non è apribile (chrome://, vuota, o assente), aprine una nuova
+// Pagina operativa: quando l'utente sceglie un agente, apriamo una NUOVA scheda
+// dedicata dove l'agente opera (dettaglio agente sul sito, pagina reale e
+// scriptabile — mai about:blank/chrome:// che non accettano content script).
+function operatingPageUrl(agentId) {
+  const slug = typeof agentId === "string" && /^[a-z0-9-]+$/i.test(agentId) ? agentId : null;
+  return slug ? `${API_BASE}/agents/${encodeURIComponent(slug)}` : `${API_BASE}/agents`;
+}
+
+async function getOperatingTab() {
   try {
-    const created = await api.tabs.create({ url: "about:blank", active: true });
-    return created;
-  } catch {
+    const stored = await api.storage.local.get(OPERATING_TAB_KEY);
+    const tabId = stored?.[OPERATING_TAB_KEY];
+    if (typeof tabId !== "number") return null;
+    const tab = await api.tabs.get(tabId).catch(() => null);
+    if (!tab || !tab.url || !/^https?:/.test(tab.url)) return null;
+    return tab;
+  } catch { return null; }
+}
+
+async function openOperatingPage(agentId) {
+  const url = operatingPageUrl(agentId);
+  const existing = await getOperatingTab();
+  // Se esiste già una pagina operativa, riusala navigandola all'agente scelto.
+  if (existing && existing.id != null) {
+    try {
+      await api.tabs.update(existing.id, { url, active: true });
+      await api.windows.update(existing.windowId, { focused: true }).catch(() => {});
+      const tab = await api.tabs.get(existing.id).catch(() => null);
+      if (tab) {
+        await waitForTabReady(tab.id);
+        await injectCursor(tab.id).catch(() => {});
+        await sendCursor(tab.id, "AC_CURSOR_SHOW", { label: "Agente pronto a operare su questa pagina" }).catch(() => {});
+      }
+      return tab || existing;
+    } catch {}
+  }
+  const created = await api.tabs.create({ url, active: true });
+  if (created && created.id != null) {
+    await api.storage.local.set({ [OPERATING_TAB_KEY]: created.id }).catch(() => {});
+    await waitForTabReady(created.id);
+    const tab = await api.tabs.get(created.id).catch(() => created);
+    await injectCursor(tab.id).catch(() => {});
+    await sendCursor(tab.id, "AC_CURSOR_SHOW", { label: "Agente pronto a operare su questa pagina" }).catch(() => {});
     return tab;
   }
+  return created;
+}
+
+function waitForTabReady(tabId) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => { if (!done) { done = true; resolve(); } };
+    const timer = setTimeout(finish, 8000);
+    const listener = (updatedId, info) => {
+      if (updatedId === tabId && info.status === "complete") {
+        clearTimeout(timer);
+        try { api.tabs.onUpdated.removeListener(listener); } catch {}
+        // piccola attesa per idratazione Next.js prima di iniettare
+        setTimeout(finish, 600);
+      }
+    };
+    try {
+      api.tabs.onUpdated.addListener(listener);
+      api.tabs.get(tabId).then((t) => {
+        if (t && t.status === "complete") {
+          clearTimeout(timer);
+          try { api.tabs.onUpdated.removeListener(listener); } catch {}
+          setTimeout(finish, 600);
+        }
+      }).catch(() => {});
+    } catch { finish(); }
+  });
 }
 
 async function injectCursor(tabId) {
@@ -384,6 +447,117 @@ function cursorMoveForTool(toolName) {
   return labels[toolName] || `Uso ${toolName}…`;
 }
 
+// ─── Target reali sulla pagina operativa (niente coordinate casuali) ─────────
+// Raccoglie gli elementi azionabili visibili e restituisce selettore + centro.
+async function findOperableTargets(tabId, limit = 30) {
+  if (tabId == null) return [];
+  try {
+    const results = await api.scripting.executeScript({
+      target: { tabId },
+      func: (max) => {
+        const els = Array.from(document.querySelectorAll(
+          "button, a[href], input, textarea, select, [role='button'], [data-testid]",
+        )).filter((el) => {
+          try {
+            const r = el.getBoundingClientRect();
+            if (r.width < 8 || r.height < 8) return false;
+            if (r.bottom < 0 || r.top > window.innerHeight + 200) return false;
+            const cs = getComputedStyle(el);
+            if (cs.display === "none" || cs.visibility === "hidden" || cs.opacity === "0") return false;
+            return true;
+          } catch { return false; }
+        }).slice(0, max);
+        const selFor = (el, idx) => {
+          try {
+            if (el.id) return `#${CSS.escape(el.id)}`;
+            const testid = el.getAttribute && el.getAttribute("data-testid");
+            if (testid) return `[data-testid="${testid}"]`;
+            const parts = [];
+            let node = el;
+            for (let d = 0; d < 3 && node && node !== document.body; d++) {
+              const tag = node.tagName.toLowerCase();
+              const parent = node.parentElement;
+              let part = tag;
+              if (parent) {
+                const same = Array.from(parent.children).filter((c) => c.tagName === node.tagName);
+                if (same.length > 1) part += `:nth-of-type(${same.indexOf(node) + 1})`;
+              }
+              parts.unshift(part);
+              node = parent;
+            }
+            return parts.join(" > ") || `${el.tagName.toLowerCase()}:nth-of-type(${idx + 1})`;
+          } catch { return `${el.tagName.toLowerCase()}:nth-of-type(${idx + 1})`; }
+        };
+        return els.map((el, idx) => {
+          const r = el.getBoundingClientRect();
+          const text = (el.innerText || el.value || el.getAttribute("aria-label") || el.getAttribute("placeholder") || "").trim().slice(0, 80);
+          return {
+            selector: selFor(el, idx),
+            x: Math.round(r.left + r.width / 2),
+            y: Math.round(Math.min(window.innerHeight - 60, Math.max(60, r.top + r.height / 2))),
+            tag: el.tagName.toLowerCase(),
+            type: (el.getAttribute && el.getAttribute("type")) || "",
+            text,
+          };
+        });
+      },
+      args: [limit],
+    });
+    return results?.[0]?.result || [];
+  } catch { return []; }
+}
+
+function pickTargetForTool(targets, toolName, toolInput) {
+  if (!targets.length) return null;
+  const t = String(toolName || "");
+  const inputText = JSON.stringify(toolInput || {}).toLowerCase();
+  const has = (...words) => (c) => words.some((w) => c.text.toLowerCase().includes(w));
+  if (t.includes("search") || t.includes("scrape")) {
+    return targets.find((c) => (c.tag === "input" || c.tag === "textarea") && /search|cerca|query|keyword/i.test(c.text + c.type)) ||
+      targets.find((c) => c.tag === "input" || c.tag === "textarea") ||
+      targets.find(has("cerca", "search", "trova")) || targets[0];
+  }
+  if (t.includes("gmail") || t.includes("email") || t.includes("calendar") || t.includes("book")) {
+    return targets.find(has("invia", "send", "prenota", "book", "conferma", "salva", "save")) ||
+      targets.find((c) => c.tag === "input" || c.tag === "textarea") || targets[0];
+  }
+  if (t.includes("shopify") || t.includes("product") || t.includes("write") || t.includes("create")) {
+    return targets.find(has("crea", "create", "aggiungi", "add", "salva", "save", "pubblica", "conferma")) ||
+      targets.find((c) => c.tag === "button" || c.tag === "a") || targets[0];
+  }
+  if (/input|query|prompt|text/i.test(inputText)) {
+    return targets.find((c) => c.tag === "input" || c.tag === "textarea") || targets[0];
+  }
+  return targets.find((c) => c.tag === "button") || targets[0];
+}
+
+// Esegue DAVVERO l'operazione: evidenzia, sposta il cursore sul centro
+// dell'elemento, scrolla e clicca (il content script fa el.click()).
+async function operateOnTarget(tabId, target, label) {
+  if (tabId == null || !target) return false;
+  await sendCursor(tabId, "AC_CURSOR_HIGHLIGHT", { selector: target.selector }).catch(() => {});
+  await sendCursor(tabId, "AC_CURSOR_MOVE", { x: target.x, y: target.y, label }).catch(() => {});
+  await new Promise((r) => setTimeout(r, 350));
+  await sendCursor(tabId, "AC_CURSOR_CLICK", { x: target.x, y: target.y, selector: target.selector, label }).catch(() => {});
+  return true;
+}
+
+// Compila DAVVERO un input/textarea con il testo dato (digitazione simulata).
+async function typeIntoTarget(tabId, target, text, label) {
+  if (tabId == null || !target || !text) return false;
+  const clean = String(text).slice(0, 300);
+  await sendCursor(tabId, "AC_CURSOR_HIGHLIGHT", { selector: target.selector }).catch(() => {});
+  await sendCursor(tabId, "AC_CURSOR_MOVE", { x: target.x, y: target.y, label }).catch(() => {});
+  await new Promise((r) => setTimeout(r, 300));
+  await sendCursor(tabId, "AC_CURSOR_TYPE", { selector: target.selector, text: clean }).catch(() => {});
+  return true;
+}
+
+async function scrollPage(tabId, y) {
+  if (tabId == null) return;
+  await sendCursor(tabId, "AC_CURSOR_SCROLL", { y }).catch(() => {});
+}
+
 // ─── Contesto pagina (solo su richiesta esplicita dell'utente) ──────────────
 
 async function getPageContext(tabId) {
@@ -419,45 +593,53 @@ async function runAgent({ agentId, messages, context, requestId, tabId: requeste
     throw new Error("Messaggio mancante: scrivi qualcosa nel pannello prima di inviare.");
   }
 
-  // ——— Cursore AgentCloud sulla pagina affianco (apre se non è aperta) ———
+  // ——— Cursore AgentCloud sulla pagina operativa dedicata ———
+  // Priorità: tab richiesta dal pannello > pagina operativa memorizzata >
+  // scheda attiva > apertura di una nuova pagina operativa per l'agente.
   let cursorTabId = requestedTabId ?? null;
+  const isUsableTab = async (id) => {
+    if (id == null) return false;
+    try {
+      const t = await api.tabs.get(id);
+      return !!(t && t.url && /^https?:/.test(t.url));
+    } catch { return false; }
+  };
+  if (cursorTabId && !(await isUsableTab(cursorTabId))) cursorTabId = null;
+  if (!cursorTabId) {
+    const stored = await getOperatingTab();
+    if (stored && stored.id != null) cursorTabId = stored.id;
+  }
   if (!cursorTabId) {
     const active = await getActiveTab();
-    if (active && active.id != null) cursorTabId = active.id;
-    else {
-      const ensured = await ensureAgentPage();
-      if (ensured && ensured.id != null) cursorTabId = ensured.id;
-    }
-  } else {
-    // verifica che la tab esista e sia http, altrimenti apri
-    try {
-      const t = await api.tabs.get(cursorTabId);
-      if (!t || !t.url || !/^https?:/.test(t.url)) {
-        const ensured = await ensureAgentPage();
-        if (ensured && ensured.id != null) cursorTabId = ensured.id;
-      }
-    } catch {
-      const ensured = await ensureAgentPage();
-      if (ensured && ensured.id != null) cursorTabId = ensured.id;
+    if (active && active.id != null && active.url && /^https?:/.test(active.url)) {
+      cursorTabId = active.id;
+    } else {
+      const opened = await openOperatingPage(agentId).catch(() => null);
+      if (opened && opened.id != null) cursorTabId = opened.id;
     }
   }
-  // Inietta e mostra il cursore personalizzato reattivo
+  // Porta in primo piano la pagina dove l'agente opera e mostra il cursore.
   if (cursorTabId != null) {
+    try {
+      const t = await api.tabs.get(cursorTabId);
+      if (t && t.windowId != null) {
+        await api.tabs.update(cursorTabId, { active: true }).catch(() => {});
+        await api.windows.update(t.windowId, { focused: true }).catch(() => {});
+      }
+    } catch {}
     await injectCursor(cursorTabId).catch(() => {});
     await sendCursor(cursorTabId, "AC_CURSOR_SHOW", { label: "AgentCloud sta operando…" }).catch(() => {});
   }
-  const cursorMoveRandom = () => {
-    if (cursorTabId == null) return;
-    const x = 120 + Math.random() * Math.max(200, (typeof screen !== "undefined" ? screen.width : 800) * 0.35);
-    const y = 120 + Math.random() * 260;
-    sendCursor(cursorTabId, "AC_CURSOR_MOVE", { x, y }).catch(() => {});
+  let cachedTargets = [];
+  let targetsAt = 0;
+  const getTargets = async () => {
+    if (cursorTabId == null) return [];
+    if (Date.now() - targetsAt < 4000 && cachedTargets.length) return cachedTargets;
+    cachedTargets = await findOperableTargets(cursorTabId, 30);
+    targetsAt = Date.now();
+    return cachedTargets;
   };
-  const cursorClickRandom = () => {
-    if (cursorTabId == null) return;
-    const x = 180 + Math.random() * 320;
-    const y = 160 + Math.random() * 220;
-    sendCursor(cursorTabId, "AC_CURSOR_CLICK", { x, y }).catch(() => {});
-  };
+  let scrollY = 0;
 
   let answer = "";
   try {
@@ -534,16 +716,38 @@ async function runAgent({ agentId, messages, context, requestId, tabId: requeste
         if (data.type === "text" && typeof data.content === "string") {
           answer += data.content;
           emit({ type: "text", content: data.content });
-          // micro-movimento reattivo durante la generazione
-          if (answer.length % 42 === 0) cursorMoveRandom();
+          // Durante la generazione scorri piano la pagina operativa così il
+          // cursore resta su contenuto reale invece di muoversi a caso.
+          if (answer.length % 160 === 0 && cursorTabId != null) {
+            scrollY += 220;
+            scrollPage(cursorTabId, scrollY).catch(() => {});
+            const targets = await getTargets().catch(() => []);
+            const first = targets.find((c) => c.tag === "button" || c.tag === "a") || targets[0];
+            if (first) sendCursor(cursorTabId, "AC_CURSOR_MOVE", { x: first.x, y: first.y }).catch(() => {});
+          }
         } else if (data.type === "tool_start") {
           emit({ type: "tool_start", toolName: data.toolName });
           const label = cursorMoveForTool(data.toolName);
-          if (cursorTabId != null) sendCursor(cursorTabId, "AC_CURSOR_LABEL", { label }).catch(() => {});
-          cursorMoveRandom();
+          if (cursorTabId != null) {
+            const targets = await getTargets().catch(() => []);
+            const target = pickTargetForTool(targets, data.toolName, data.toolInput);
+            if (target && /search|scrape|write|create|input/i.test(`${data.toolName} ${JSON.stringify(data.toolInput || {})}`) &&
+                (target.tag === "input" || target.tag === "textarea")) {
+              const q = data.toolInput?.query || data.toolInput?.text || data.toolInput?.input || messages[messages.length - 1]?.content || "";
+              await typeIntoTarget(cursorTabId, target, String(q).slice(0, 200), label).catch(() => {});
+            } else if (target) {
+              await operateOnTarget(cursorTabId, target, label).catch(() => {});
+            } else {
+              sendCursor(cursorTabId, "AC_CURSOR_LABEL", { label }).catch(() => {});
+            }
+          }
         } else if (data.type === "tool_done") {
           emit({ type: "tool_done", toolName: data.toolName });
-          cursorClickRandom();
+          if (cursorTabId != null) {
+            const targets = await getTargets().catch(() => []);
+            const target = pickTargetForTool(targets, data.toolName, null);
+            if (target) operateOnTarget(cursorTabId, target, "Operazione completata").catch(() => {});
+          }
         } else if (data.type === "file") emit({ type: "file", filename: data.filename });
         else if (data.type === "connection" && typeof data.provider === "string") {
           emit({ type: "connection", provider: data.provider });
@@ -603,6 +807,11 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       if (message.action === "RUN_AGENT") {
         sendResponse({ success: true, data: await runAgent(message.payload) });
+        return;
+      }
+      if (message.action === "OPEN_OPERATING_PAGE") {
+        const tab = await openOperatingPage(message.payload?.agentId);
+        sendResponse({ success: true, data: { tabId: tab?.id ?? null, url: tab?.url ?? null } });
         return;
       }
       if (message.action === "LOGIN_WITH_PASSWORD") {
