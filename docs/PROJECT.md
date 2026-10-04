@@ -357,6 +357,31 @@ il token cifrato e lo revocano su 401 (APP_UNINSTALLED / shop/redact). La tabell
 `shopify_connections` è creata da `supabase/schema-shopify-oauth.sql`
 (rieseguire dopo il deploy).
 
+### Webhook di conformità Shopify (GDPR) + `app/uninstalled` dedicato
+
+- `POST /api/webhooks/shopify/compliance` — i 3 topic GDPR:
+  `customers/data_request` e `customers/redact` → audit + 200 (nessuna PII
+  clienti persistita fuori da Shopify); `shop/redact` → hard delete di
+  `shopify_connections` per `shop_domain` (l'account AgentCloud resta).
+- `POST /api/webhooks/shopify/app-uninstalled` — stessa verifica HMAC;
+  marca `uninstalled_at` (token revocato di fatto), dati conservati fino a
+  `shop/redact`.
+- Firma: HMAC-SHA256 in base64 sul body grezzo (`await req.text()`, mai
+  `req.json()` prima), `timingSafeEqual` con length-check
+  (`src/lib/shopify/verify-webhook.ts`): 401 se mancante/errata, 400 se topic
+  sconosciuto. Nessuna PII nei log (solo topic, `shop_domain`, esito).
+- Audit/idempotenza in `shopify_compliance_events` (migrazione
+  `supabase/schema-shopify-compliance.sql`, RLS attiva senza policy: solo
+  service role lato server). Senza tabella, audit degradato ma conformità
+  intatta.
+- URL da incollare nel Partner Dashboard (host canonico **www**): i 3 campi
+  compliance → `https://www.agentcloud.agency/api/webhooks/shopify/compliance`,
+  uninstall → `https://www.agentcloud.agency/api/webhooks/shopify/app-uninstalled`
+  (versione webhook `2026-07`). Il vecchio `/api/shopify/webhooks` registrato
+  via API resta attivo: non duplicare le sottoscrizioni.
+- Test locale: `npm run dev` + `node scripts/test-shopify-webhook.mjs`
+  (attesi 200/401/400; `SKIP` sull'idempotenza = tabella non applicata).
+
 ### Troubleshooting "Shopify non si collega"
 
 Il ritorno a `/api/shopify/callback` (o alla pagina di partenza) include
