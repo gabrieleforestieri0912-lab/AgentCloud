@@ -70,6 +70,8 @@ export const PUBLIC_PATHS = [
   "/api/shopify/webhooks",
   "/api/shopify/install",
   "/api/shopify/status",
+  // Webhook di conformità Shopify (chiamati da Shopify, senza sessione)
+  "/api/webhooks/shopify",
 ];
 
 // Match con prefisso stretto: un path è pubblico quando è uguale a un prefisso
