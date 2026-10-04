@@ -258,6 +258,8 @@ export default function HeroSection() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // La demo hero usa SEMPRE la chiave economica xKiro, mai Claude.
+          provider: "xt",
           messages: [{ role: "user", content: apiContent as unknown }],
         }),
         signal: controller.signal,

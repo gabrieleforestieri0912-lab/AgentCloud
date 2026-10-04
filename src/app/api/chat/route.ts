@@ -23,8 +23,13 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
  * Endpoint chat indipendente dal provider, usato dalla demo hero e dalla UI
  * chat completa.
  *
- * Body: { messages, model?, agentId? }
+ * Body: { messages, model?, agentId?, provider? }
  *
+ * `provider` è un override esplicito ("xt" | "anthropic") usato da UNA sola
+ * superficie: la demo hero invia `provider: "xt"` così usa sempre la chiave
+ * economica xKiro. Tutto il resto (chat con agente, agent/run) usa il default
+ * di configurazione (Anthropic in produzione). Valori non riconosciuti
+ * vengono ignorati.
  * Il backend del modello è risolto con `getLLMProvider()` — quello Anthropic
  * (Claude) quando `ANTHROPIC_API_KEY` è configurata. Il modello predefinito è
  * `claude-sonnet-5` (sovrascrivibile con `AGENT_LLM_MODEL`).
@@ -34,7 +39,7 @@ import { apiErrorMessage } from "@/lib/i18n/api-errors";
  */
 export async function POST(req: Request) {
   try {
-    const { messages, model, agentId } = await req.json();
+    const { messages, model, agentId, provider: providerOverride } = await req.json();
 
     if (!Array.isArray(messages)) {
       return Response.json(
@@ -85,7 +90,11 @@ export async function POST(req: Request) {
       lastUserText(conversationMessages),
     );
 
-    const provider = getLLMProvider();
+    // Override esplicito solo dalla hero (provider: "xt"); tutto il resto
+    // usa il default di configurazione. La allowlist vive in getLLMProvider.
+    const provider = getLLMProvider(
+      typeof providerOverride === "string" ? providerOverride : undefined,
+    );
     const encoder = new TextEncoder();
     const streamErrorMessage = await apiErrorMessage("aiStreamError");
 
