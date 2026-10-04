@@ -147,7 +147,10 @@ export async function POST(req: Request) {
               system: systemPrompt,
               messages: conversationMessages,
               tools: [],
-              maxTokens: Number(process.env.AGENT_MAX_TOKENS || 1024),
+              // Budget di output: i prompt specializzati producono risposte
+              // strutturate (tabelle, deliverable, checklist) — 1024 token le
+              // troncavano a metà. Override sempre possibile via env.
+              maxTokens: Number(process.env.AGENT_MAX_TOKENS || 2048),
             },
             (delta) => emitter.push(delta),
           );
