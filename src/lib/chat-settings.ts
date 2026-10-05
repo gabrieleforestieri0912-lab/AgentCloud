@@ -13,6 +13,14 @@ export const CHAT_TEXT_SIZES: readonly ChatTextSize[] = ["sm", "md", "lg"];
 
 export const CHAT_DEFAULT_AGENT_KEY = "agentcloud_chat_default_agent";
 export const CHAT_TEXT_SIZE_KEY = "agentcloud_chat_text_size";
+/**
+ * Sidebar della chat aperta/chiusa su desktop. È una preferenza e non stato
+ * effimero: senza persistenza la sidebar richiusa al reload si riaprirebbe
+ * sempre, e l'utente che l'ha chiusa per guadagnare spazio perderebbe la
+ * scelta a ogni visita. `localStorage` come il resto delle preferenze chat:
+ * niente scrittura su DB.
+ */
+export const CHAT_SIDEBAR_OPEN_KEY = "agentcloud_chat_sidebar_open";
 
 /**
  * Zoom applicato all'area della chat: scala insieme testo, bolle e anteprime,
@@ -58,6 +66,26 @@ export function readChatTextSize(): ChatTextSize {
 export function saveChatTextSize(size: ChatTextSize): void {
   try {
     localStorage.setItem(CHAT_TEXT_SIZE_KEY, size);
+  } catch {
+    // Storage non disponibile: la preferenza resta valida per la sessione.
+  }
+}
+
+/**
+ * Sidebar aperta su desktop. Default `true`: una sidebar già ristretta è una
+ * scelta dell'utente, una sidebar vuota all'ingresso è solo una sorpresa.
+ */
+export function readSidebarOpen(): boolean {
+  try {
+    return localStorage.getItem(CHAT_SIDEBAR_OPEN_KEY) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+export function saveSidebarOpen(open: boolean): void {
+  try {
+    localStorage.setItem(CHAT_SIDEBAR_OPEN_KEY, open ? "true" : "false");
   } catch {
     // Storage non disponibile: la preferenza resta valida per la sessione.
   }

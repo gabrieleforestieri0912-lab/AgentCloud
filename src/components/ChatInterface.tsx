@@ -20,6 +20,7 @@ import {
   Plus,
   Trash2,
   PanelLeftClose,
+  PanelLeftOpen,
   Send,
   Home,
   ChevronDown,
@@ -85,8 +86,10 @@ import {
   chatTextZoom,
   readChatTextSize,
   readDefaultAgent,
+  readSidebarOpen,
   saveChatTextSize,
   saveDefaultAgent,
+  saveSidebarOpen,
   type ChatTextSize,
 } from "@/lib/chat-settings";
 
@@ -764,6 +767,7 @@ export default function ChatInterface({
   useEffect(() => {
     setDefaultAgentSlug(readDefaultAgent());
     setChatTextSize(readChatTextSize());
+    setSidebarOpen(readSidebarOpen());
   }, []);
 
   function handleDefaultAgentChange(slug: string) {
@@ -775,6 +779,32 @@ export default function ChatInterface({
     setChatTextSize(size);
     saveChatTextSize(size);
   }
+
+  // Sidebar: un unico setter per restringere e allargare, con persistenza.
+  // Sparso in più posti lasciava la preferenza senza persistenza e senza un
+  // modo per riaprire: qui passa tutto da qui.
+  function setSidebar(open: boolean) {
+    setSidebarOpen(open);
+    saveSidebarOpen(open);
+  }
+
+  // Ctrl/Cmd+B alterna la sidebar. Scorciatoia da solo: si lascia passare
+  // quando il focus è in un campo di testo (l'utente potrebbe voler digitare
+  // quel tasto) o quando un tasto modificatore è premuto.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key.toLowerCase() !== "b" || !(e.metaKey || e.ctrlKey) || e.altKey) return;
+      const el = document.activeElement;
+      const tag = el?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || (el as HTMLElement | null)?.isContentEditable) {
+        return;
+      }
+      e.preventDefault();
+      setSidebar(!sidebarOpen);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [sidebarOpen]);
 
   // Salvataggio della cronologia. In streaming le conversazioni cambiano a
   // ogni token: serializzare l'intero storico (immagini incluse, come data URL)
@@ -1638,10 +1668,14 @@ export default function ChatInterface({
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <button
             onClick={() => {
+              // Su mobile il bottone chiude il drawer; su desktop restringe la
+              // sidebar. Il nuovo toggle la riapre (vedi il bottone in testata
+              // della chat, mostrato solo quando è ristretta).
               setMobileSidebarOpen(false);
-              setSidebarOpen(false);
+              setSidebar(false);
             }}
             aria-label={dict.chat.closeSidebar}
+            title={dict.chat.closeSidebar}
             className="w-11 h-11 lg:w-9 lg:h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
           >
             <PanelLeftClose size={16} />
@@ -1953,6 +1987,21 @@ export default function ChatInterface({
           >
             <MessageSquare size={18} className="text-white" />
           </button>
+
+          {/* Riapertura sidebar su desktop: senza questo, una volta ristretta la
+              sidebar restava chiusa fino al reload (era il difetto: esisteva
+              solo `setSidebarOpen(false)`).(hidden sotto lg: il mobile usa il
+              drawer e il FAB sopra) */}
+          {!sidebarOpen && (
+            <button
+              onClick={() => setSidebar(true)}
+              aria-label={dict.chat.openSidebar}
+              title={`${dict.chat.openSidebar} (Ctrl+B)`}
+              className="hidden lg:flex absolute left-3 top-3 z-10 w-9 h-9 items-center justify-center rounded-full border border-white/10 bg-neutral-900/90 text-neutral-400 backdrop-blur-sm hover:text-white hover:bg-white/10 transition-all"
+            >
+              <PanelLeftOpen size={16} />
+            </button>
+          )}
 
           {/* Area chat principale */}
           <main
