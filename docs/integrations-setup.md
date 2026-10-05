@@ -44,8 +44,8 @@ dove `<provider>` ∈ `notion | slack | hubspot | google_sheets | github | click
 | Creazione app | Public integration su <https://www.notion.so/my-integrations> |
 | Scope | Configurati nell'integrazione (read/insert/update), nessun parametro `scope` nell'authorize |
 | Token | Non scade → nessun refresh |
-| Tool agente | Nessuno (OAuth-only). |
-| Note | L'utente deve condividere le pagine con l'integrazione, altrimenti non le vede. |
+| Tool agente | `notion_search`, `notion_read_page`, `notion_create_page`, `notion_append_blocks` — Notion API `https://api.notion.com/v1` (versione `2022-06-28`, override `NOTION_API_VERSION`) via `lib/integrations/api-proxy.ts`. |
+| Note | L'utente deve condividere le pagine con l'integrazione, altrimenti non le vede. `notion_create_page` usa la property `title`: se il parent è un database con una property dal nome diverso, l'errore di Notion lo segnala e va usata quella property. |
 
 ### Slack
 | | |
@@ -54,7 +54,8 @@ dove `<provider>` ∈ `notion | slack | hubspot | google_sheets | github | click
 | Opzionali | `SLACK_BOT_SCOPES` (default `chat:write,channels:read`), `SLACK_USER_SCOPES` (default vuoto) |
 | Creazione app | <https://api.slack.com/apps> → OAuth & Permissions → Redirect URLs |
 | Token | Bot token `xoxb-…` di norma non scade → nessun refresh |
-| Tool agente | Nessuno (OAuth-only). |
+| Tool agente | `slack_list_channels`, `slack_post_message`, `slack_read_channel` — Slack Web API `https://slack.com/api` via `lib/integrations/api-proxy.ts`. |
+| Note | `slack_post_message` e `slack_list_channels` funzionano con gli scope di default. **`slack_read_channel` richiede `channels:history`**: senza, Slack risponde `missing_scope` e il tool riporta l'errore (non riprovare). Il bot vede solo i canali di cui è membro: se l'utente deve postare in un canale, deve prima invitare l'app (`/invite @AgentCloud`). |
 
 ### HubSpot
 | | |
@@ -62,8 +63,9 @@ dove `<provider>` ∈ `notion | slack | hubspot | google_sheets | github | click
 | Env | `HUBSPOT_CLIENT_ID`, `HUBSPOT_CLIENT_SECRET` |
 | Opzionali | `HUBSPOT_SCOPES` (default `crm.objects.contacts.read crm.objects.contacts.write`) |
 | Creazione app | Developer app su <https://developers.hubspot.com> → Auth → Redirect URLs |
-| Token | access token ~6h + `refresh_token` → refresh on demand |
-| Tool agente | Nessuno (OAuth-only). |
+| Token | access token ~6h + `refresh_token` → **auto-refresh** via l'hook `refreshToken` dell'adapter (`lib/integrations/api-proxy.ts`) |
+| Tool agente | `hubspot_search_contacts`, `hubspot_get_contact`, `hubspot_create_contact`, `hubspot_update_contact`, `hubspot_list_companies` — CRM v3 `https://api.hubapi.com` via `lib/integrations/api-proxy.ts`. |
+| Note | Un contatto non esiste senza email: `hubspot_create_contact` senza email valida rifiuta, e un 409 (email già presente) viene tradotto in "leggi il contatto, non creare un duplicato". `hubspot_update_contact` / `create_contact` ricevono le proprietà come `key=value;key=value` (`values`), non come JSON. |
 
 ### Google Sheets
 | | |
@@ -117,7 +119,7 @@ provider in ('notion','slack','hubspot','google_sheets','github','clickup','asan
 Definizioni e handler vivono in **`src/lib/agents/integration-tools.ts`** (estratti da `lib/agents/tools.ts`, che contiene solo uno spread + un dispatch). Gli handler risolvono il tenant (utente autenticato o tenant condiviso per admin via codice) e chiamano **`src/lib/integrations/api-proxy.ts`**, che:
 
 1. legge la riga `tenant_integrations` (service client);
-2. decripta l'access token e lo **rinfresca** se scaduto (Asana);
+2. decripta l'access token e lo **rinfresca** se scaduto, usando l'hook `refreshToken` dell'adapter del provider (`getProvider(p).refreshToken`): va detto perché ogni provider scade diversamente — HubSpot ~6h, Asana ~1h, Google ~1h, mentre GitHub/ClickUp/Notion/Slack non scadono e non hanno refresh token;
 3. chiama l'API del provider (REST o GraphQL) e restituisce testo compatto.
 
 Nessun JWT dell'utente viene inoltrato: l'autorizzazione verso il provider usa il token OAuth salvato. Tool disponibili:
@@ -134,8 +136,22 @@ Nessun JWT dell'utente viene inoltrato: l'autorizzazione verso il provider usa i
 | `asana_list_projects` | Asana | Lista progetti (`workspaceId`) |
 | `asana_list_tasks` | Asana | Lista task (`projectId`) |
 | `asana_create_task` | Asana | Crea task (`taskName` + `projectId` o `workspaceId`) |
+| `notion_search` | Notion | Cerca pagine per titolo (`query`) |
+| `notion_read_page` | Notion | Legge il testo di una pagina (`pageId`) |
+| `notion_create_page` | Notion | Crea pagina figlia (`pageId`, `title`, `content`) |
+| `notion_append_blocks` | Notion | Aggiunge paragrafi a una pagina (`pageId`, `content`) |
+| `slack_list_channels` | Slack | Lista i canali visibili al bot (per ottenere il channel id) |
+| `slack_post_message` | Slack | Invia messaggio (`channel`, `text`, `threadTs` opzionale) |
+| `slack_read_channel` | Slack | Legge gli ultimi messaggi (`channel`) — richiede `channels:history` |
+| `hubspot_search_contacts` | HubSpot | Cerca contatti (`query` matcha l'email) |
+| `hubspot_get_contact` | HubSpot | Legge un contatto (`contactId` o `email`) |
+| `hubspot_create_contact` | HubSpot | Crea contatto (`email` + `values`) |
+| `hubspot_update_contact` | HubSpot | Aggiorna un contatto (`contactId`/`email` + `values`) |
+| `hubspot_list_companies` | HubSpot | Lista aziende del portal |
 
-I tool sono in `ALL_TOOLS_LIST` (`lib/agents/feature-flags.ts`) e abilitati come `optionalTools` su `personal-assistant`, `business-manager` e `support-agent` (`lib/agents/registry.ts`). Se il provider non è collegato, il tool invita a connetterlo dalla dashboard.
+I tool sono in `ALL_TOOLS_LIST` (`lib/agents/feature-flags.ts`) e abilitati come `optionalTools` su **tutti e 15 gli agenti** tramite la costante `NOTION_SLACK_HUBSPOT_TOOLS` (`lib/agents/registry.ts`). Ogni agente che ne ha almeno uno riceve in coda al system prompt la direttiva `INTEGRATION_TOOLS_DIRECTIVE`, che fissa la sequenza corretta (search → id → azione), la conferma prima delle scritture esterne e il divieto di ripetere un'azione già fallita. Se il provider non è collegato, il tool invita a connetterlo dalla dashboard con il marker `[[CONNECT:<provider>]]`.
+
+Test: `node scripts/test-integration-tools.mjs` (registro e dispatch) e `node scripts/test-integrations.mjs` (flusso OAuth dei 7 provider con un account di test).
 
 ## UI
 
@@ -151,4 +167,7 @@ I tool sono in `ALL_TOOLS_LIST` (`lib/agents/feature-flags.ts`) e abilitati come
 | `redirect_uri_mismatch` sul **login Google** | Client di Supabase Auth non configurato: crea un client OAuth dedicato (separato da Gmail/Calendar) e registra `https://<project-ref>.supabase.co/auth/v1/callback`. |
 | `state_mismatch` / `state_provider_mismatch` | Cookie di stato scaduto o provider diverso: riparti da Connetti. |
 | "No … account connected" dal tool | Riga assente o `status <> 'connected'` in `tenant_integrations`. |
-| Asana scade e fallisce | `ASANA_CLIENT_ID`/`ASANA_CLIENT_SECRET` mancanti lato server. |
+| Tool scadono con errore 401 | Refresh fallito: le env `<PROVIDER>_CLIENT_ID`/`_SECRET` mancano lato server, oppure il refresh token è stato revocato → va riconnesso dalla dashboard. |
+| `slack_read_channel` → `missing_scope` | Manca lo scope OAuth `channels:history` sull'app Slack. |
+| `slack_post_message` → `channel_not_found` | Il bot non è nel canale: l'utente deve invitare l'app (`/invite @AgentCloud`). |
+| `hubspot_create_contact` → 409 | Email già presente: usare `hubspot_get_contact` invece di creare un duplicato. |

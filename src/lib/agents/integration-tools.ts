@@ -4,16 +4,20 @@ import {
   githubApiProxy,
   clickupApiProxy,
   asanaApiProxy,
+  notionApiProxy,
+  slackApiProxy,
+  hubspotApiProxy,
 } from "@/lib/integrations/api-proxy";
 
 /**
- * Tool agente per le integrazioni GitHub / ClickUp / Asana.
+ * Tool agente per le integrazioni: GitHub / ClickUp / Asana / Notion / Slack /
+ * HubSpot.
  *
  * Perché un modulo dedicato: tiene `lib/agents/tools.ts` focalizzato sugli
- * strumenti core e raccoglie qui definizioni + handler delle integrazioni
- * generiche. Gli handler risolvono il tenant e chiamano `lib/integrations/api-proxy`,
- * che decripta il token salvato in `tenant_integrations`, lo rinfresca se serve
- * (Asana) e parla direttamente con l'API del provider. Nessuna Edge Function.
+ * strumenti core e raccoglie qui definizioni + handler delle integrazioni.
+ * Gli handler risolvono il tenant e chiamano `lib/integrations/api-proxy`, che
+ * decripta il token salvato in `tenant_integrations`, lo rinfresca se serve e
+ * parla direttamente con l'API del provider. Nessuna Edge Function.
  */
 
 const INTEGRATION_TOOL_NAMES = [
@@ -27,6 +31,18 @@ const INTEGRATION_TOOL_NAMES = [
   "asana_list_projects",
   "asana_list_tasks",
   "asana_create_task",
+  "notion_search",
+  "notion_read_page",
+  "notion_create_page",
+  "notion_append_blocks",
+  "slack_list_channels",
+  "slack_post_message",
+  "slack_read_channel",
+  "hubspot_search_contacts",
+  "hubspot_get_contact",
+  "hubspot_create_contact",
+  "hubspot_update_contact",
+  "hubspot_list_companies",
 ] as const;
 
 export function isIntegrationTool(name: string): boolean {
@@ -165,10 +181,10 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
       required: ["projectId"],
     },
   },
-
   asana_create_task: {
     name: "asana_create_task",
-    description: "Create a task in Asana. Provide a projectId (preferred) or a workspaceId.",
+    description:
+      "Create a task in Asana. Provide a projectId (preferred) or a workspaceId.",
     input_schema: {
       type: "object",
       properties: {
@@ -178,6 +194,179 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
         notes: { type: "string", description: "Task notes/description (optional)" },
       },
       required: ["taskName"],
+    },
+  },
+
+  // ── Notion ────────────────────────────────────────────────────────────────
+  notion_search: {
+    name: "notion_search",
+    description:
+      "Search pages in the connected Notion workspace by title keyword. Returns page ids needed by the other Notion tools.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Words to look for in page titles" },
+        limit: { type: "integer", description: "Max pages to return (default 20, max 50)" },
+      },
+      required: ["query"],
+    },
+  },
+
+  notion_read_page: {
+    name: "notion_read_page",
+    description:
+      "Read the text content of a Notion page (id from notion_search or given by the user).",
+    input_schema: {
+      type: "object",
+      properties: {
+        pageId: { type: "string", description: "Notion page id (with or without dashes)" },
+      },
+      required: ["pageId"],
+    },
+  },
+
+  notion_create_page: {
+    name: "notion_create_page",
+    description:
+      "Create a child page under an existing Notion page, with optional body text. Get the parent pageId from notion_search first.",
+    input_schema: {
+      type: "object",
+      properties: {
+        pageId: { type: "string", description: "Parent Notion page id" },
+        title: { type: "string", description: "Title of the new page" },
+        content: { type: "string", description: "Body text (optional, paragraphs)" },
+      },
+      required: ["pageId", "title"],
+    },
+  },
+
+  notion_append_blocks: {
+    name: "notion_append_blocks",
+    description:
+      "Append paragraphs to an existing Notion page, keeping the current content (use this to add a section to an existing page).",
+    input_schema: {
+      type: "object",
+      properties: {
+        pageId: { type: "string", description: "Notion page id" },
+        content: { type: "string", description: "Text to append" },
+      },
+      required: ["pageId", "content"],
+    },
+  },
+
+  // ── Slack ─────────────────────────────────────────────────────────────────
+  slack_list_channels: {
+    name: "slack_list_channels",
+    description:
+      "List the Slack channels the AgentCloud app can post in. Call this first when the user names a channel by name, to get the channel id.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", description: "Max channels to return (default 30, max 50)" },
+      },
+    },
+  },
+
+  slack_post_message: {
+    name: "slack_post_message",
+    description:
+      "Post a message in a Slack channel, or reply in a thread when threadTs is given. This is a real send: confirm the text with the user before calling it unless they already asked for exactly this message.",
+    input_schema: {
+      type: "object",
+      properties: {
+        channel: { type: "string", description: "Channel id (from slack_list_channels)" },
+        text: { type: "string", description: "Message text" },
+        threadTs: { type: "string", description: "Timestamp of the parent message to reply in a thread (optional)" },
+      },
+      required: ["channel", "text"],
+    },
+  },
+
+  slack_read_channel: {
+    name: "slack_read_channel",
+    description:
+      "Read the most recent messages of a Slack channel. Requires the channels:history scope on the Slack app; if Slack answers missing_scope, tell the user which scope to add instead of retrying.",
+    input_schema: {
+      type: "object",
+      properties: {
+        channel: { type: "string", description: "Channel id (from slack_list_channels)" },
+        limit: { type: "integer", description: "Max messages to return (default 30, max 50)" },
+      },
+      required: ["channel"],
+    },
+  },
+
+  // ── HubSpot ───────────────────────────────────────────────────────────────
+  hubspot_search_contacts: {
+    name: "hubspot_search_contacts",
+    description:
+      "Search HubSpot contacts (query matches the email). Returns email, name, company, phone and lifecycle stage.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Text to search in the contact email (optional: omit to list recent contacts)" },
+        limit: { type: "integer", description: "Max contacts to return (default 20, max 50)" },
+      },
+    },
+  },
+
+  hubspot_get_contact: {
+    name: "hubspot_get_contact",
+    description: "Read one HubSpot contact by contactId or by email.",
+    input_schema: {
+      type: "object",
+      properties: {
+        contactId: { type: "string", description: "HubSpot contact id" },
+        email: { type: "string", description: "Contact email (alternative to contactId)" },
+      },
+    },
+  },
+
+  hubspot_create_contact: {
+    name: "hubspot_create_contact",
+    description:
+      "Create a HubSpot contact. An email is mandatory (HubSpot has no contact without email). Confirm with the user before creating, since it writes to their CRM.",
+    input_schema: {
+      type: "object",
+      properties: {
+        email: { type: "string", description: "Contact email (required)" },
+        values: {
+          type: "string",
+          description:
+            'Other properties as key=value pairs separated by ";" (e.g. firstname=Mario;lastname=Rossi;company=Acme;phone=+39...). Supported: firstname, lastname, company, phone, jobtitle, lifecyclestage',
+        },
+      },
+      required: ["email"],
+    },
+  },
+
+  hubspot_update_contact: {
+    name: "hubspot_update_contact",
+    description:
+      "Update properties of an existing HubSpot contact, by contactId or email. Show the user what will change before calling it.",
+    input_schema: {
+      type: "object",
+      properties: {
+        contactId: { type: "string", description: "HubSpot contact id" },
+        email: { type: "string", description: "Contact email (alternative to contactId)" },
+        values: {
+          type: "string",
+          description:
+            'Properties to update as key=value pairs separated by ";" (e.g. lifecyclestage=qualified;company=Acme)',
+        },
+      },
+      required: ["values"],
+    },
+  },
+
+  hubspot_list_companies: {
+    name: "hubspot_list_companies",
+    description: "List companies in the connected HubSpot portal (name, domain, industry, city).",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", description: "Max companies to return (default 20, max 50)" },
+      },
     },
   },
 };
@@ -292,6 +481,116 @@ export async function executeIntegrationTool(
           workspaceId,
           notes: input.notes ? clean(input.notes, 8000) : undefined,
         },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    // ── Notion ──────────────────────────────────────────────────────────────
+    case "notion_search": {
+      const query = clean(input.query, 200);
+      if (!query) return "notion_search requires a query.";
+      const r = await notionApiProxy("search", { query, limit: parseLimit(input.limit) }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "notion_read_page": {
+      const pageId = clean(input.pageId, 100);
+      if (!pageId) return "notion_read_page requires pageId.";
+      const r = await notionApiProxy("readPage", { pageId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "notion_create_page": {
+      const pageId = clean(input.pageId, 100);
+      const title = clean(input.title, 200);
+      if (!pageId) return "notion_create_page requires pageId (the parent page).";
+      if (!title) return "notion_create_page requires a title.";
+      const r = await notionApiProxy(
+        "createPage",
+        { pageId, title, content: input.content ? clean(input.content, 10000) : undefined },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "notion_append_blocks": {
+      const pageId = clean(input.pageId, 100);
+      const content = clean(input.content, 10000);
+      if (!pageId) return "notion_append_blocks requires pageId.";
+      if (!content) return "notion_append_blocks requires content.";
+      const r = await notionApiProxy("appendBlocks", { pageId, content }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    // ── Slack ───────────────────────────────────────────────────────────────
+    case "slack_list_channels": {
+      const r = await slackApiProxy("listChannels", { limit: parseLimit(input.limit) }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "slack_post_message": {
+      const channel = clean(input.channel, 100);
+      const text = clean(input.text, 3800);
+      if (!channel) return "slack_post_message requires channel (call slack_list_channels to get the id).";
+      if (!text) return "slack_post_message requires text.";
+      const threadTs = input.threadTs ? clean(input.threadTs, 40) : undefined;
+      const r = await slackApiProxy("postMessage", { channel, text, threadTs }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "slack_read_channel": {
+      const channel = clean(input.channel, 100);
+      if (!channel) return "slack_read_channel requires channel (call slack_list_channels to get the id).";
+      const r = await slackApiProxy(
+        "readChannel",
+        { channel, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    // ── HubSpot ─────────────────────────────────────────────────────────────
+    case "hubspot_search_contacts": {
+      const query = clean(input.query, 200);
+      const r = await hubspotApiProxy(
+        "searchContacts",
+        { query: query || undefined, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "hubspot_get_contact": {
+      const contactId = input.contactId ? clean(input.contactId, 100) : undefined;
+      const email = input.email ? clean(input.email, 200) : undefined;
+      if (!contactId && !email) return "hubspot_get_contact requires contactId or email.";
+      const r = await hubspotApiProxy("getContact", { contactId, email }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "hubspot_create_contact": {
+      const email = clean(input.email, 200);
+      const values = input.values ? clean(input.values, 1000) : undefined;
+      if (!email && !values) return "hubspot_create_contact requires an email.";
+      const r = await hubspotApiProxy("createContact", { email, values }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "hubspot_update_contact": {
+      const values = input.values ? clean(input.values, 1000) : undefined;
+      if (!values) return "hubspot_update_contact requires values (key=value;key=value).";
+      const contactId = input.contactId ? clean(input.contactId, 100) : undefined;
+      const email = input.email ? clean(input.email, 200) : undefined;
+      if (!contactId && !email) return "hubspot_update_contact requires contactId or email.";
+      const r = await hubspotApiProxy("updateContact", { contactId, email, values }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "hubspot_list_companies": {
+      const r = await hubspotApiProxy(
+        "listCompanies",
+        { limit: parseLimit(input.limit) },
         tenantId,
       );
       return r.ok ? r.data : r.error;

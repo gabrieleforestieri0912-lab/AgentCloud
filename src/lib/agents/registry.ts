@@ -32,7 +32,31 @@ export type AgentRuntimeConfig = {
   optionalTools?: string[];
 };
 
-export const AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
+/**
+ * Tool Notion / Slack / HubSpot condivisi da tutti gli agenti.
+ *
+ * Prima questi tre provider avevano OAuth e UI ma nessun tool che li leggesse:
+ * un utente li collegava, vedeva "Connesso" e gli agenti non potevano farci
+ * nulla. La lista è definita una volta e iniettata negli optionalTools di ogni
+ * agente, così ogni agente può usare Notion (appunti e deliverable), Slack
+ * (notifiche al team) e HubSpot (contatti CRM) senza duplicare i nomi.
+ */
+const NOTION_SLACK_HUBSPOT_TOOLS = [
+  "notion_search",
+  "notion_read_page",
+  "notion_create_page",
+  "notion_append_blocks",
+  "slack_list_channels",
+  "slack_post_message",
+  "slack_read_channel",
+  "hubspot_search_contacts",
+  "hubspot_get_contact",
+  "hubspot_create_contact",
+  "hubspot_update_contact",
+  "hubspot_list_companies",
+];
+
+const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
     name: "SEO Content Agent",
@@ -44,7 +68,11 @@ export const AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
     model: "claude-sonnet-5",
     tools: ["web_search", "scrape_page", "read_file", "write_file"],
     defaultTools: ["read_file", "write_file"],
-    optionalTools: ["web_search", "scrape_page"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "web_search",
+      "scrape_page",
+    ],
     systemPrompt: `You are an expert SEO content writer and strategist who ships articles ready to rank — not generic drafts.
 
 For every request:
@@ -94,6 +122,7 @@ Guidelines:
       "sheets_append_row",
     ],
     optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
       "web_search",
       "scrape_page",
       "run_python",
@@ -153,6 +182,7 @@ Guidelines:
     ],
     defaultTools: ["read_file", "write_file", "calendar_book_event"],
     optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
       "web_search",
       "scrape_page",
       "calendar_search_availability",
@@ -202,7 +232,13 @@ Guidelines:
     model: "claude-sonnet-5",
     tools: ["list_emails", "gmail_send", "gmail_trash", "web_search", "scrape_page", "read_file", "write_file"],
     defaultTools: ["list_emails", "gmail_send", "gmail_trash", "read_file", "write_file"],
-    optionalTools: ["web_search", "scrape_page", "gmail_send", "gmail_trash"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "web_search",
+      "scrape_page",
+      "gmail_send",
+      "gmail_trash",
+    ],
     systemPrompt: `You are a meticulous email manager with FULL Gmail write access — you can read, send, and delete emails.
 
 For every request:
@@ -245,7 +281,11 @@ Guidelines:
       "finance_create_invoice",
       "finance_send_reminder",
     ],
-    optionalTools: ["web_search", "scrape_page"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "web_search",
+      "scrape_page",
+    ],
     systemPrompt: `You are a meticulous finance manager assistant who gives the owner control of cash — in, out, due, and the 3 moves that matter this week.
 
 For every request:
@@ -308,7 +348,15 @@ Guidelines:
       "shopify_manage_collection",
       "shopify_update_inventory",
     ],
-    optionalTools: ["shopify_setup_store", "shopify_create_store", "web_search", "scrape_page", "read_file", "write_file"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "shopify_setup_store",
+      "shopify_create_store",
+      "web_search",
+      "scrape_page",
+      "read_file",
+      "write_file",
+    ],
     systemPrompt: `You are an expert Shopify commerce agent. Your goal is to help the customer MAXIMIZE REVENUE and GROW their business.
 
 ## HOW YOU KNOW WHICH MODE YOU ARE IN
@@ -422,7 +470,14 @@ Guidelines:
       "calendar_delete_event",
       "calendar_set_reminder",
     ],
-    optionalTools: ["web_search", "read_file", "write_file", "calendar_delete_event", "calendar_set_reminder"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "web_search",
+      "read_file",
+      "write_file",
+      "calendar_delete_event",
+      "calendar_set_reminder",
+    ],
     systemPrompt: `You are a calendar booking specialist with FULL write access — you can read, create, delete events and set reminders.
 
 For every request:
@@ -461,7 +516,12 @@ Guidelines:
       "write_file",
     ],
     defaultTools: ["lead_capture_submit", "lead_capture_enrich", "lead_capture_notify_sales", "read_file", "write_file"],
-    optionalTools: ["web_search", "scrape_page", "lead_capture_enrich"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "web_search",
+      "scrape_page",
+      "lead_capture_enrich",
+    ],
     systemPrompt: `You are a lead capture and qualification specialist who handles REAL leads — not placeholders.
 
 For every request:
@@ -494,6 +554,7 @@ Guidelines:
     tools: ["web_search", "scrape_page", "read_file", "write_file", "lead_capture_notify_sales"],
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
       "web_search",
       "scrape_page",
       "lead_capture_notify_sales",
@@ -543,7 +604,11 @@ Guidelines:
     model: "claude-sonnet-5",
     tools: ["web_search", "scrape_page", "read_file", "write_file"],
     defaultTools: ["read_file", "write_file"],
-    optionalTools: ["web_search", "scrape_page"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "web_search",
+      "scrape_page",
+    ],
     systemPrompt: `You are a senior conversion copywriter who delivers REAL, testable copy — not placeholders.
 
 For every request:
@@ -592,7 +657,10 @@ Guidelines:
       "read_file",
       "write_file",
     ],
-    optionalTools: ["lead_capture_submit"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "lead_capture_submit",
+    ],
     systemPrompt: `You are an expert sales quotation and proposal agent who closes deals: requirements in, formal quote out, sent to the customer — never a loose price in chat.
 
 For every request:
@@ -639,7 +707,10 @@ Guidelines:
       "read_file",
       "write_file",
     ],
-    optionalTools: ["web_search"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "web_search",
+    ],
     systemPrompt: `You are a reputation and customer feedback specialist for Google Business Profile who protects the brand publicly — every reply is written as if the next 100 customers will read it.
 
 For every request:
@@ -681,7 +752,11 @@ Guidelines:
       "hr_score_candidate",
     ],
     defaultTools: ["read_file", "write_file", "hr_parse_cv", "hr_score_candidate"],
-    optionalTools: ["web_search", "calendar_book_event"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "web_search",
+      "calendar_book_event",
+    ],
     systemPrompt: `You are an HR and talent acquisition specialist who gives hiring managers a decision-ready shortlist — structured screening, evidence-based scoring, zero bias.
 
 For every request:
@@ -729,7 +804,11 @@ Guidelines:
       "social_generate_calendar",
       "social_schedule_post",
     ],
-    optionalTools: ["web_search", "scrape_page"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "web_search",
+      "scrape_page",
+    ],
     systemPrompt: `You are an expert social media strategist and content creator who ships a ready-to-post week — hooks, captions, hashtags, schedule — not vague advice.
 
 For every request:
@@ -777,7 +856,10 @@ Guidelines:
       "read_file",
       "write_file",
     ],
-    optionalTools: ["shopify_update_inventory"],
+    optionalTools: [
+      ...NOTION_SLACK_HUBSPOT_TOOLS,
+      "shopify_update_inventory",
+    ],
     systemPrompt: `You are a logistics and inventory management specialist who prevents stockouts and dead stock — with numbers, thresholds and purchase orders, not generic monitoring talk.
 
 For every request:
@@ -801,6 +883,55 @@ Guidelines:
 - If the store is not connected, say what you cannot see, offer [[CONNECT:shopify]], and meanwhile give the method + thresholds the user can apply manually`,
   },
 };
+
+/**
+ * Direttiva d'uso dei tool Notion / Slack / HubSpot, in inglese come tutti i
+ * system prompt (la lingua della risposta la decide `withLanguageDirective`).
+ *
+ * Perché esiste: gli strumenti disponibili non bastano — senza una regola che
+ * dica *quando* e *come* usarli, il modello preferisce rispondere in chat. La
+ * direttiva fissa tre cose: la sequenza corretta (search → id → azione), la
+ * richiesta di conferma prima delle scritture esterne, e il divieto di
+ * ripetere un'azione già andata a buon fine quando l'API ha risposto no.
+ */
+const INTEGRATION_TOOLS_DIRECTIVE = `## CONNECTED APPS (Notion, Slack, HubSpot)
+When the user's task touches their real workspace, CRM or team channel, USE the tool — do not draft a message and call it done.
+- Notion: notion_search to find the page id, then notion_read_page to read it, notion_append_blocks to add to an existing page, notion_create_page for a new child page. Never guess a page id: search first.
+- Slack: slack_list_channels to resolve a channel name to its id, then slack_post_message to send (threadTs replies in a thread). This is a real send: show the final text and get an explicit go-ahead the first time, unless the user already dictated that exact text.
+- HubSpot: hubspot_search_contacts / hubspot_get_contact to read, hubspot_create_contact and hubspot_update_contact to write. A contact needs a valid email: if the user did not give one, ask, and never invent one.
+- Notion, Slack and HubSpot are three different systems. Never claim you wrote to one when you only wrote to another.
+- If a tool returns an error, read it and act on it (missing scope, wrong id, not in channel): tell the user exactly what is missing and what to do. Do not retry the same call unchanged, and do not claim success you did not get.
+- If a tool reports that the app is not connected, say which app, then offer the connection with the inline [[CONNECT:notion]] / [[CONNECT:slack]] / [[CONNECT:hubspot]] marker — and still deliver the work in chat.`;
+
+type IntegrationToolName =
+  | "notion_create_page"
+  | "slack_post_message"
+  | "hubspot_create_contact";
+
+const INTEGRATION_PROBE_TOOLS: IntegrationToolName[] = [
+  "notion_create_page",
+  "slack_post_message",
+  "hubspot_create_contact",
+];
+
+/**
+ * Aggiunge la direttiva d'uso agli agenti che hanno almeno uno dei tool
+ * Notion/Slack/HubSpot. Chi non li ha (nessuno al momento, ma la lista resta
+ * la fonte di verità) non riceve testo inutile.
+ */
+function withIntegrationDirective(config: AgentRuntimeConfig): AgentRuntimeConfig {
+  const available = new Set([...config.defaultTools, ...(config.optionalTools ?? [])]);
+  const hasAny = INTEGRATION_PROBE_TOOLS.some((t) => available.has(t));
+  if (!hasAny) return config;
+  return {
+    ...config,
+    systemPrompt: `${config.systemPrompt.trimEnd()}\n\n${INTEGRATION_TOOLS_DIRECTIVE}`,
+  };
+}
+
+export const AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = Object.fromEntries(
+  Object.entries(RAW_AGENT_RUNTIME).map(([slug, config]) => [slug, withIntegrationDirective(config)]),
+);
 
 export function getAgentRuntimeConfig(
   id: string,
