@@ -1,17 +1,30 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import { decryptMaybe, encryptToken } from "@/lib/integrations/encryption";
-
 /**
- * Integrations API proxy — GitHub / ClickUp / Asana (chiamate dirette, no Edge).
+ * Integrations API proxy — provider con token usati dagli agenti.
  *
  * Perché esiste: gli agenti non devono mai toccare OAuth o token. Questo modulo
  * è il gemello di `lib/google/api-proxy.ts` e `lib/google/sheets.ts` per il
  * layer `tenant_integrations`: decripta l'access token del tenant, lo rinfresca
- * se scaduto (solo Asana, gli altri non scadono) e chiama l'API del provider
- * restituendo testo compatto e leggibile per il modello.
+ * se scaduto (tramite l'hook `refreshToken` dell'adapter, vedi `getProvider`) e
+ * chiama l'API del provider restituendo testo compatto e leggibile per il
+ * modello.
+ *
+ * Attenzione: il refresh NON è hardcoded per provider. Ogni adapter espone il
+ * proprio `refreshToken` (HubSpot dura 6h, Asana 1h, Google 1h) e questo proxy
+ * lo usa. Prima esisteva solo `refreshAsana`: le connessioni HubSpot si
+ * rompevano in silenzio dopo 6 ore con un 401 incomprensibile per il modello.
  */
 
-export type GenericProvider = "github" | "clickup" | "asana";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { decryptMaybe, encryptToken } from "@/lib/integrations/encryption";
+import { getProvider } from "./registry";
+
+export type GenericProvider =
+  | "github"
+  | "clickup"
+  | "asana"
+  | "notion"
+  | "slack"
+  | "hubspot";
 
 export type IntegrationApiResult =
   | { ok: true; data: string }
@@ -48,6 +61,9 @@ const PROVIDER_LABEL: Record<GenericProvider, string> = {
   github: "GitHub",
   clickup: "ClickUp",
   asana: "Asana",
+  notion: "Notion",
+  slack: "Slack",
+  hubspot: "HubSpot",
 };
 
 /** True se un token con questa scadenza va rinfrescato ora (null = non scade). */
@@ -62,38 +78,27 @@ function clampLimit(limit: number | undefined, fallback = 20): number {
   return Math.min(MAX_ITEMS, Math.max(1, limit ?? fallback));
 }
 
-/** Rinfresca l'access token Asana (unico provider con token a scadenza tra questi). */
-async function refreshAsana(
+/**
+ * Rinfresca l'access token tramite l'adapter del provider. Restituisce null se il
+ * provider non espone `refreshToken` (GitHub / ClickUp / Notion / Slack: token
+ * senza scadenza) o se le credenziali OAuth mancano.
+ */
+async function refreshViaAdapter(
+  provider: GenericProvider,
   refreshToken: string,
-): Promise<{ accessToken: string; refreshToken: string | null; expiresAt: string | null } | null> {
-  const clientId = process.env.ASANA_CLIENT_ID;
-  const clientSecret = process.env.ASANA_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
-
+): Promise<{
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: string | null;
+} | null> {
+  const adapter = getProvider(provider);
+  if (!adapter?.refreshToken) return null;
   try {
-    const res = await fetch("https://app.asana.com/-/oauth_token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "refresh_token",
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-      }).toString(),
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as {
-      access_token?: string;
-      refresh_token?: string;
-      expires_in?: number;
-    };
-    if (!json.access_token) return null;
+    const r = await adapter.refreshToken({ refreshToken });
     return {
-      accessToken: json.access_token,
-      refreshToken: json.refresh_token ?? null,
-      expiresAt: json.expires_in
-        ? new Date(Date.now() + json.expires_in * 1000).toISOString()
-        : null,
+      accessToken: r.accessToken,
+      refreshToken: r.refreshToken ?? null,
+      expiresAt: r.expiresAt ?? null,
     };
   } catch {
     return null;
@@ -130,9 +135,12 @@ export async function resolveIntegrationToken(
   const accessToken = decryptMaybe(row.access_token);
   if (!accessToken) return none();
 
+  // Refresh solo se il token scade E c'è un refresh token salvato: i provider
+  // senza scadenza (GitHub, ClickUp, Notion, Slack) hanno expires_at e
+  // refresh_token null, quindi qui non vengono toccati.
   const refreshToken = decryptMaybe(row.refresh_token);
-  if (provider === "asana" && refreshToken && shouldRefresh(row.expires_at)) {
-    const refreshed = await refreshAsana(refreshToken);
+  if (refreshToken && shouldRefresh(row.expires_at)) {
+    const refreshed = await refreshViaAdapter(provider, refreshToken);
     // Rinnovo fallito (refresh token revocato o scaduto): riusare il token vecchio
     // darebbe solo un 401 oscuro, quindi chiediamo di riconnettere l'account.
     if (!refreshed?.accessToken) {
@@ -655,6 +663,561 @@ export async function asanaApiProxy(
     return {
       ok: false,
       error: `Asana network error: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Notion
+// ---------------------------------------------------------------------------
+
+const NOTION_API = "https://api.notion.com/v1";
+// 2022-06-28 è la versione stabile e ampiamente supportata: non introduce
+// cambiamenti di schema che romperebbero i blocchi (code/heading/paragraph).
+const NOTION_VERSION = process.env.NOTION_API_VERSION || "2022-06-28";
+
+export type NotionAction = "search" | "readPage" | "createPage" | "appendBlocks";
+
+export type NotionParams = {
+  query?: string;
+  pageId?: string;
+  title?: string;
+  content?: string;
+  limit?: number;
+};
+
+type NotionRichText = { plain_text?: string; text?: { content?: string } };
+
+/** Testo di un blocco Notion: `rich_text` (parola) o `title` (heading), entrambi come array. */
+function notionBlockText(block: Record<string, unknown>): string {
+  const type = typeof block.type === "string" ? block.type : "";
+  const payload = type
+    ? (block[type] as { rich_text?: NotionRichText[]; title?: NotionRichText[] } | undefined)
+    : undefined;
+  const parts = payload?.rich_text ?? payload?.title ?? [];
+  return parts.map((p) => p?.plain_text ?? p?.text?.content ?? "").join("").trim();
+}
+
+/** Estrae il titolo di una pagina Notion dalla property `title` (nome varia per database). */
+function notionPageTitle(page: Record<string, unknown>): string {
+  const props = (page.properties ?? {}) as Record<string, Record<string, unknown>>;
+  for (const key of ["title", "Name", "Nome"]) {
+    const prop = props[key];
+    const t = prop?.title as NotionRichText[] | undefined;
+    if (Array.isArray(t) && t.length > 0) {
+      return t.map((p) => p?.plain_text ?? p?.text?.content ?? "").join("").trim();
+    }
+  }
+  // Database con property title chiamata diversamente: prendo la prima che contiene testo.
+  for (const prop of Object.values(props)) {
+    const t = prop?.title as NotionRichText[] | undefined;
+    if (Array.isArray(t) && t.length > 0) {
+      return t.map((p) => p?.plain_text ?? p?.text?.content ?? "").join("").trim();
+    }
+  }
+  return "";
+}
+
+/** Spezza il testo in paragrafi Notion (limite 2000 caratteri per rich_text). */
+function notionParagraphs(text: string, max = 100): unknown[] {
+  const chunks = text
+    .split(/\n{2,}|\n/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .slice(0, max);
+  return chunks.map((c) => {
+    const content = c.slice(0, 2000);
+    return {
+      object: "block",
+      type: "paragraph",
+      paragraph: { rich_text: [{ type: "text", text: { content } }] },
+    };
+  });
+}
+
+export async function notionApiProxy(
+  action: NotionAction,
+  params: NotionParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "notion");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const limit = clampLimit(params.limit);
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${resolved.token.accessToken}`,
+    "Notion-Version": NOTION_VERSION,
+    "Content-Type": "application/json",
+  };
+
+  const call = async (method: string, path: string, body?: unknown) => {
+    const res = await fetch(`${NOTION_API}${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { res, json };
+  };
+
+  const errorOf = (json: Record<string, unknown>, status: number, statusText: string) => {
+    const j = json as { message?: string; code?: string };
+    return `Notion API error: ${j.message || j.code || `${status} ${statusText}`}`;
+  };
+
+  try {
+    if (action === "search") {
+      const q = (params.query ?? "").trim();
+      if (!q) return { ok: false, error: "notion_search requires a query." };
+      const { res, json } = await call("POST", "/search", {
+        query: q,
+        page_size: limit,
+        filter: { property: "object", value: "page" },
+      });
+      if (!res.ok) return { ok: false, error: errorOf(json, res.status, res.statusText) };
+      const results = (json.results ?? []) as Record<string, unknown>[];
+      if (results.length === 0) return { ok: true, data: `No Notion pages matching "${q}".` };
+      return {
+        ok: true,
+        data: results
+          .map((p) => {
+            const title = notionPageTitle(p) || "(senza titolo)";
+            const url = (p.url as string) || "";
+            const edited = (p.last_edited_time as string) || "";
+            return `- ${title} (id: ${p.id ?? "?"})${edited ? ` — aggiornata ${edited.slice(0, 10)}` : ""}${url ? `\n  ${url}` : ""}`;
+          })
+          .join("\n"),
+      };
+    }
+
+    if (action === "readPage") {
+      if (!params.pageId) return { ok: false, error: "notion_read_page requires pageId." };
+      const pageId = params.pageId.replace(/-/g, "");
+      const pageRes = await call("GET", `/pages/${pageId}`);
+      if (!pageRes.res.ok) {
+        return { ok: false, error: errorOf(pageRes.json, pageRes.res.status, pageRes.res.statusText) };
+      }
+      const title = notionPageTitle(pageRes.json) || "(senza titolo)";
+      // I blocchi figli paginano: due richieste bastano per ~200 blocchi.
+      let cursor: string | undefined;
+      const lines: string[] = [];
+      for (let page = 0; page < 2; page++) {
+        const qs = new URLSearchParams({ page_size: "100" });
+        if (cursor) qs.set("start_cursor", cursor);
+        const childRes = await call("GET", `/blocks/${pageId}/children?${qs.toString()}`);
+        if (!childRes.res.ok) break;
+        const blocks = (childRes.json.results ?? []) as Record<string, unknown>[];
+        for (const b of blocks) {
+          const t = notionBlockText(b);
+          if (t) lines.push(t);
+        }
+        cursor = childRes.json.next_cursor as string | undefined;
+        if (!cursor || !childRes.json.has_more) break;
+      }
+      const body = lines.length > 0 ? lines.join("\n") : "(pagina vuota o solo blocchi non testuali)";
+      const capped = body.length > 12000 ? `${body.slice(0, 12000)}\n… (contenuto troncato)` : body;
+      const url = (pageRes.json.url as string) || "";
+      return {
+        ok: true,
+        data: `Notion page: ${title}\n${url ? `${url}\n` : ""}\n${capped}`,
+      };
+    }
+
+    if (action === "createPage") {
+      if (!params.pageId) {
+        return { ok: false, error: "notion_create_page requires pageId (the parent page)." };
+      }
+      if (!params.title?.trim()) {
+        return { ok: false, error: "notion_create_page requires a title." };
+      }
+      const parentId = params.pageId.replace(/-/g, "");
+      const title = params.title.trim().slice(0, 200);
+      const { res, json } = await call("POST", "/pages", {
+        parent: { type: "page_id", page_id: parentId },
+        properties: { title: { title: [{ type: "text", text: { content: title } }] } },
+        icon: { type: "emoji", emoji: "📄" },
+        ...(params.content ? { children: notionParagraphs(params.content) } : {}),
+      });
+      if (!res.ok) {
+        // Se il parent è un database, la property del titolo non si chiama
+        // "title": l'errore di Notion lo dice, e va riportato al modello così
+        // usa la property giusta invece di riprovare alla cieca.
+        return { ok: false, error: errorOf(json, res.status, res.statusText) };
+      }
+      const url = (json.url as string) || "";
+      return {
+        ok: true,
+        data: `Created Notion page: ${title} (id: ${json.id ?? "?"})${url ? ` — ${url}` : ""}`,
+      };
+    }
+
+    // appendBlocks
+    if (!params.pageId) return { ok: false, error: "notion_append_blocks requires pageId." };
+    if (!params.content?.trim()) {
+      return { ok: false, error: "notion_append_blocks requires content." };
+    }
+    const targetId = params.pageId.replace(/-/g, "");
+    const { res, json } = await call("PATCH", `/blocks/${targetId}/children`, {
+      children: notionParagraphs(params.content),
+    });
+    if (!res.ok) return { ok: false, error: errorOf(json, res.status, res.statusText) };
+    return { ok: true, data: `Appended content to Notion block ${targetId}.` };
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Notion network error: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Slack (Web API, bot token xoxb-)
+// ---------------------------------------------------------------------------
+
+const SLACK_API = "https://slack.com/api";
+
+export type SlackAction = "listChannels" | "postMessage" | "readChannel";
+
+export type SlackParams = {
+  channel?: string;
+  text?: string;
+  threadTs?: string;
+  limit?: number;
+};
+
+/**
+ * Slack risponde sempre HTTP 200: il vero esito è in `ok:false` + `error`.
+ * Riportare l'errore Slack verbatim è il modo più onesto — `missing_scope` e
+ * `channel_not_found` spiegano esattamente cosa sistemare.
+ */
+function slackErrorMessage(json: Record<string, unknown>): string {
+  const j = json as { error?: string; needed?: string; provided?: string };
+  let msg = `Slack API error: ${j.error || "unknown_error"}`;
+  if (j.needed) msg += ` (needed scope: ${j.needed}, provided: ${j.provided ?? "none"})`;
+  if (j.error === "channel_not_found") {
+    msg += " — the bot is not in that channel. Ask the user to invite the AgentCloud app to the channel, then retry.";
+  }
+  return msg;
+}
+
+export async function slackApiProxy(
+  action: SlackAction,
+  params: SlackParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "slack");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const limit = clampLimit(params.limit, 30);
+
+  const call = async (method: "GET" | "POST", path: string, body?: URLSearchParams) => {
+    const url = method === "GET" ? `${SLACK_API}${path}` : `${SLACK_API}${path}`;
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${resolved.token.accessToken}`,
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+      },
+      body: body?.toString(),
+    });
+    const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { res, json };
+  };
+
+  try {
+    if (action === "listChannels") {
+      const { res, json } = await call(
+        "GET",
+        `/conversations.list?types=public_channel,private_channel&exclude_archived=true&limit=${limit}`,
+      );
+      if (!res.ok) return { ok: false, error: slackErrorMessage(json) };
+      if (json.ok === false) return { ok: false, error: slackErrorMessage(json) };
+      const channels = (json.channels ?? []) as Array<{ id?: string; name?: string; is_private?: boolean; num_members?: number }>;
+      if (channels.length === 0) {
+        return {
+          ok: true,
+          data: "No Slack channels visible to the AgentCloud app. Ask the user to invite the app to a channel (e.g. /invite @AgentCloud), then retry.",
+        };
+      }
+      return {
+        ok: true,
+        data: channels
+          .map(
+            (c) =>
+              `- #${c.name ?? "?"} (id: ${c.id ?? "?"})${c.is_private ? " [private]" : ""}${c.num_members ? ` — ${c.num_members} membri` : ""}`,
+          )
+          .join("\n"),
+      };
+    }
+
+    if (action === "postMessage") {
+      if (!params.channel) return { ok: false, error: "slack_post_message requires channel." };
+      if (!params.text?.trim()) return { ok: false, error: "slack_post_message requires text." };
+      const body = new URLSearchParams({
+        channel: params.channel,
+        text: params.text.slice(0, 3800),
+      });
+      if (params.threadTs) body.set("thread_ts", params.threadTs);
+      const { res, json } = await call("POST", "/chat.postMessage", body);
+      if (!res.ok) return { ok: false, error: slackErrorMessage(json) };
+      if (json.ok === false) return { ok: false, error: slackErrorMessage(json) };
+      const permalink = (json as { message?: { permalink?: string } }).message?.permalink;
+      const ts = (json as { ts?: string }).ts;
+      return {
+        ok: true,
+        data: `Message sent to Slack channel ${params.channel}${ts ? ` (ts ${ts})` : ""}${permalink ? ` — ${permalink}` : ""}`,
+      };
+    }
+
+    // readChannel
+    if (!params.channel) return { ok: false, error: "slack_read_channel requires channel." };
+    const { res, json } = await call(
+      "GET",
+      `/conversations.history?channel=${encodeURIComponent(params.channel)}&limit=${limit}`,
+    );
+    if (!res.ok) return { ok: false, error: slackErrorMessage(json) };
+    if (json.ok === false) return { ok: false, error: slackErrorMessage(json) };
+    const messages = (json.messages ?? []) as Array<{
+      text?: string;
+      user?: string;
+      ts?: string;
+      bot_id?: string;
+    }>;
+    if (messages.length === 0) return { ok: true, data: "No messages found in that channel." };
+    return {
+      ok: true,
+      data: messages
+        .map((m) => {
+          const who = m.bot_id ? "bot" : m.user ?? "?";
+          return `- [${who}] ${(m.text ?? "").replace(/\s+/g, " ").slice(0, 400)}`;
+        })
+        .join("\n"),
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Slack network error: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// HubSpot (CRM v3)
+// ---------------------------------------------------------------------------
+
+const HUBSPOT_API = "https://api.hubapi.com";
+
+export type HubspotAction =
+  | "searchContacts"
+  | "getContact"
+  | "createContact"
+  | "updateContact"
+  | "listCompanies";
+
+export type HubspotParams = {
+  query?: string;
+  email?: string;
+  contactId?: string;
+  properties?: string;
+  values?: string;
+  limit?: number;
+};
+
+/** Proprietà contatto restituite quando il modello non ne specifica: il minimo per capire un lead. */
+const DEFAULT_CONTACT_PROPS = [
+  "email",
+  "firstname",
+  "lastname",
+  "company",
+  "phone",
+  "lifecyclestage",
+  "hs_lead_status",
+  "createdate",
+];
+
+const HUBSPOT_STATUS_LABEL: Record<string, string> = {
+  new: "new",
+  open: "open (non contattato)",
+  in_progress: "in progress",
+  open_deal: "open deal",
+  connected: "connected",
+  bad_timing: "bad timing",
+  unqualified: "unqualified",
+  attempt_to_contact: "attempt to contact",
+  connected_to_sales: "connected to sales",
+};
+
+function hubspotErrorMessage(json: unknown, status: number, statusText: string): string {
+  const j = json as { message?: string; category?: string; errors?: Array<{ message?: string }> };
+  const detail = j.errors?.map((e) => e.message).filter(Boolean).join("; ") || j.message;
+  return `HubSpot API error: ${detail || `${status} ${statusText}`}`;
+}
+
+/** `values` è una lista `chiave=valore` (separate da `;`) per non far passare JSON grezzo dal modello. */
+function parseHubspotValues(raw: string | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const pair of (raw ?? "").split(";")) {
+    const i = pair.indexOf("=");
+    if (i <= 0) continue;
+    const k = pair.slice(0, i).trim();
+    const v = pair.slice(i + 1).trim();
+    if (k && v) out[k] = v;
+  }
+  return out;
+}
+
+function formatHubspotContact(props: Record<string, unknown>): string {
+  const g = (k: string) => {
+    const v = props[k];
+    return v === null || v === undefined || v === "" ? "-" : String(v);
+  };
+  const name = [g("firstname"), g("lastname")].filter((x) => x !== "-").join(" ") || "-";
+  const stage = g("lifecyclestage");
+  const stageLabel = HUBSPOT_STATUS_LABEL[stage] ?? stage;
+  return `- ${g("email")} | ${name} | company: ${g("company")} | phone: ${g("phone")} | stage: ${stageLabel}${g("id") ? ` | id: ${g("id")}` : ""}`;
+}
+
+export async function hubspotApiProxy(
+  action: HubspotAction,
+  params: HubspotParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "hubspot");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const limit = clampLimit(params.limit, 20);
+  const props = (params.properties?.trim() || DEFAULT_CONTACT_PROPS.join(","))
+    .split(/[,\s]+/)
+    .filter(Boolean);
+
+  const call = async (method: "GET" | "POST" | "PATCH", path: string, body?: unknown) => {
+    const res = await fetch(`${HUBSPOT_API}${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${resolved.token.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const json = (await res.json().catch(() => ({}))) as unknown;
+    return { res, json };
+  };
+
+  try {
+    if (action === "searchContacts") {
+      const q = (params.query ?? "").trim();
+      // Senza query: filtro esplicito per non far fallire la ricerca (HubSpot
+      // rifiuta un filterGroups vuoto con 400).
+      const filterGroups = q
+        ? [
+            {
+              filters: [
+                {
+                  propertyName: "email",
+                  operator: "CONTAINS_TOKEN",
+                  value: q,
+                },
+              ],
+            },
+          ]
+        : [{ filters: [] }];
+      const { res, json } = await call("POST", "/crm/v3/objects/contacts/search", {
+        filterGroups,
+        properties: props,
+        limit,
+      });
+      if (!res.ok) return { ok: false, error: hubspotErrorMessage(json, res.status, res.statusText) };
+      const results = (json as { results?: Array<{ id?: string; properties?: Record<string, unknown> }> }).results ?? [];
+      if (results.length === 0) {
+        return { ok: true, data: `No HubSpot contacts matching "${q}".` };
+      }
+      return {
+        ok: true,
+        data: results
+          .map((c) => formatHubspotContact({ ...(c.properties ?? {}), id: c.id }))
+          .join("\n"),
+      };
+    }
+
+    if (action === "getContact") {
+      const id = params.contactId?.trim() || params.email?.trim();
+      if (!id) return { ok: false, error: "hubspot_get_contact requires contactId or email." };
+      const path = id.includes("@")
+        ? `/crm/v3/objects/contacts/${encodeURIComponent(id)}?idProperty=email&properties=${props.join(",")}`
+        : `/crm/v3/objects/contacts/${encodeURIComponent(id)}?properties=${props.join(",")}`;
+      const { res, json } = await call("GET", path);
+      if (!res.ok) return { ok: false, error: hubspotErrorMessage(json, res.status, res.statusText) };
+      const c = json as { id?: string; properties?: Record<string, unknown> };
+      return { ok: true, data: formatHubspotContact({ ...(c.properties ?? {}), id: c.id }) };
+    }
+
+    if (action === "createContact") {
+      const values = parseHubspotValues(params.values);
+      const email = params.email?.trim() || values.email;
+      if (!email) {
+        return { ok: false, error: "hubspot_create_contact requires an email (use values=email=...;firstname=...)." };
+      }
+      if (!email.includes("@")) {
+        return { ok: false, error: `Invalid email "${email}": a contact cannot be created without a valid email.` };
+      }
+      const properties: Record<string, string> = { ...values, email };
+      const { res, json } = await call("POST", "/crm/v3/objects/contacts", { properties });
+      if (!res.ok) {
+        // Conflict su email: il modello deve saperlo e non creare duplicati.
+        const msg = hubspotErrorMessage(json, res.status, res.statusText);
+        if (res.status === 409) {
+          return {
+            ok: false,
+            error: `${msg} — a contact with this email already exists. Use hubspot_get_contact (email) to read it instead of creating a duplicate.`,
+          };
+        }
+        return { ok: false, error: msg };
+      }
+      const c = json as { id?: string; properties?: Record<string, unknown> };
+      return {
+        ok: true,
+        data: `Created HubSpot contact: ${formatHubspotContact({ ...(c.properties ?? {}), id: c.id })}`,
+      };
+    }
+
+    if (action === "updateContact") {
+      const id = params.contactId?.trim() || params.email?.trim();
+      if (!id) return { ok: false, error: "hubspot_update_contact requires contactId or email." };
+      const values = parseHubspotValues(params.values);
+      if (Object.keys(values).length === 0) {
+        return { ok: false, error: "hubspot_update_contact requires values (key=value;key=value)." };
+      }
+      const path = id.includes("@")
+        ? `/crm/v3/objects/contacts/${encodeURIComponent(id)}?idProperty=email`
+        : `/crm/v3/objects/contacts/${encodeURIComponent(id)}`;
+      const { res, json } = await call("PATCH", path, { properties: values });
+      if (!res.ok) return { ok: false, error: hubspotErrorMessage(json, res.status, res.statusText) };
+      const c = json as { id?: string; properties?: Record<string, unknown> };
+      return {
+        ok: true,
+        data: `Updated HubSpot contact: ${formatHubspotContact({ ...(c.properties ?? {}), id: c.id })}`,
+      };
+    }
+
+    // listCompanies
+    const { res, json } = await call(
+      "GET",
+      `/crm/v3/objects/companies?limit=${limit}&properties=name,domain,industry,city,country`,
+    );
+    if (!res.ok) return { ok: false, error: hubspotErrorMessage(json, res.status, res.statusText) };
+    const results = (json as { results?: Array<{ id?: string; properties?: Record<string, unknown> }> }).results ?? [];
+    if (results.length === 0) return { ok: true, data: "No HubSpot companies found." };
+    return {
+      ok: true,
+      data: results
+        .map((c) => {
+          const p = c.properties ?? {};
+          return `- ${p.name ?? p.domain ?? "?"}${p.domain ? ` (${p.domain})` : ""}${p.industry ? ` — ${p.industry}` : ""}${p.city ? `, ${p.city}` : ""}${c.id ? ` | id: ${c.id}` : ""}`;
+        })
+        .join("\n"),
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: `HubSpot network error: ${e instanceof Error ? e.message : String(e)}`,
     };
   }
 }

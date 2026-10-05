@@ -107,6 +107,20 @@ export const ALL_TOOLS_LIST = [
   "hr_score_candidate",
   "social_generate_calendar",
   "social_schedule_post",
+  // Notion / Slack / HubSpot: tool che rendono usabili le tre integrazioni
+  // che altrimenti resterebbero "collegate" ma inerti per gli agenti.
+  "notion_search",
+  "notion_read_page",
+  "notion_create_page",
+  "notion_append_blocks",
+  "slack_list_channels",
+  "slack_post_message",
+  "slack_read_channel",
+  "hubspot_search_contacts",
+  "hubspot_get_contact",
+  "hubspot_create_contact",
+  "hubspot_update_contact",
+  "hubspot_list_companies",
   "request_integration_connect",
 ];
 
