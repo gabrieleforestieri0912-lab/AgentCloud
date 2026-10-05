@@ -5,7 +5,10 @@
 # 100 MB per singolo file, facendo fallire il deploy con
 # "Error: File size limit exceeded (100 MB)". I loghi davvero serviti dall'app
 # vivono in `public/`, quindi il build funziona senza questa cartella.
-brand/
+# I pattern sono ancorati alla root con `/`: senza, la sintassi gitignore
+# escluderebbe anche `src/app/mobile/` e `src/app/cli/` (le pagine web
+# /mobile e /cli/auth), che devono invece essere deployate.
+/brand/
 
 # Le variabili d'ambiente arrivano dalla dashboard/CLI di Vercel: il file .env
 # locale può contenere chiavi di sviluppo e non deve entrare nel deployment.
@@ -13,7 +16,8 @@ brand/
 .env.*
 !.env.example
 
-# Sottoprogetti dell'ecosistema esclusi dal deploy web di Vercel
-mobile/
-cli/
+# Sottoprogetti dell'ecosistema esclusi dal deploy web di Vercel.
+# Ancorati alla root per non tagliare le pagine web /mobile e /cli/auth.
+/mobile/
+/cli/
 
