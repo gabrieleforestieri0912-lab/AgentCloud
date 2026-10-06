@@ -176,9 +176,9 @@ export const INTEGRATIONS: Integration[] = [
   {
     name: "Airtable",
     brand: "airtable",
-    category: "Productivity",
-    available: false,
-    description: "Database e workflow",
+    category: "Database",
+    available: true,
+    description: "Basi, tabelle e record",
   },
   {
     name: "ClickUp",
@@ -339,6 +339,7 @@ const CONNECTABLE_PROVIDERS: { id: string; names: string[] }[] = [
   { id: "calendar", names: ["google calendar", "calendario", "calendar"] },
   { id: "sheets", names: ["google sheets", "spreadsheet", "fogli", "sheets"] },
   { id: "drive", names: ["google drive", "drive"] },
+  { id: "airtable", names: ["airtable"] },
   { id: "slack", names: ["slack"] },
   { id: "notion", names: ["notion"] },
   { id: "hubspot", names: ["hubspot"] },

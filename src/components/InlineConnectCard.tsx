@@ -22,6 +22,7 @@ const PROVIDER_META: Record<string, { name: string; brand: string; desc: string 
   clickup: { name: "ClickUp", brand: "clickup", desc: "Connetti ClickUp per task e progetti" },
   asana: { name: "Asana", brand: "asana", desc: "Connetti Asana per task e progetti" },
   googledrive: { name: "Google Drive", brand: "googledrive", desc: "Connetti Google Drive per cercare e leggere i tuoi file" },
+  airtable: { name: "Airtable", brand: "airtable", desc: "Connetti Airtable per leggere basi, tabelle e record" },
   whatsapp: { name: "WhatsApp", brand: "whatsapp", desc: "Connetti WhatsApp per messaggistica" },
 };
 
@@ -34,6 +35,7 @@ function getMeta(provider: Provider) {
   // "google_drive" e "googledrive" si normalizzano entrambi a "googledrive",
   // quindi qui basta il prefisso per coprire i due alias emessi dal modello.
   if (key.includes("drive")) return PROVIDER_META.googledrive;
+  if (key.includes("airtable")) return PROVIDER_META.airtable;
   if (key.includes("shopify")) return PROVIDER_META.shopify;
   return PROVIDER_META[key] || { name: provider.charAt(0).toUpperCase() + provider.slice(1), brand: key, desc: `Connetti ${provider} per sbloccare le automazioni` };
 }

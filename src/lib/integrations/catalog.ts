@@ -230,6 +230,7 @@ export const IMPLEMENTED_PROVIDERS = [
   "clickup",
   "asana",
   "google_drive",
+  "airtable",
 ] as const;
 
 export type ImplementedProvider = (typeof IMPLEMENTED_PROVIDERS)[number];

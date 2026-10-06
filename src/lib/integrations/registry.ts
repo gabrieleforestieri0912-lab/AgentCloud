@@ -7,6 +7,7 @@ import { githubProvider } from "./providers/github";
 import { clickupProvider } from "./providers/clickup";
 import { asanaProvider } from "./providers/asana";
 import { googleDriveProvider } from "./providers/googleDrive";
+import { airtableProvider } from "./providers/airtable";
 
 /**
  * Mappa adapter: `Record<ImplementedProvider, IntegrationProvider>` è
@@ -27,6 +28,7 @@ const registry: Record<ImplementedProvider, IntegrationProvider> = {
   clickup: clickupProvider,
   asana: asanaProvider,
   google_drive: googleDriveProvider,
+  airtable: airtableProvider,
 };
 
 export function getProvider(provider: string): IntegrationProvider | null {

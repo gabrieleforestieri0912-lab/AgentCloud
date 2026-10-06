@@ -72,6 +72,20 @@ const GOOGLE_DRIVE_TOOLS = [
   "drive_list_folder",
 ];
 
+/**
+ * Tool Airtable (batch 2), sola lettura.
+ *
+ * Iniettati dove ha senso: gli agenti che lavorano su listoni e pipeline
+ * (CRM/lead/feedback). Diversamente da Drive, che serve a tutti, qui la
+ * utility è concentrata: il tool su una base non condivisa semplicemente non
+ * restituisce nulla e sposta solo peso nel contesto del modello.
+ */
+const AIRTABLE_TOOLS = [
+  "airtable_list_bases",
+  "airtable_list_tables",
+  "airtable_list_records",
+];
+
 const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
@@ -141,6 +155,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
+      ...AIRTABLE_TOOLS,
       "web_search",
       "scrape_page",
       "run_python",
@@ -542,6 +557,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
+      ...AIRTABLE_TOOLS,
       "web_search",
       "scrape_page",
       "lead_capture_enrich",
@@ -737,6 +753,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
+      ...AIRTABLE_TOOLS,
       "web_search",
     ],
     systemPrompt: `You are a reputation and customer feedback specialist for Google Business Profile who protects the brand publicly — every reply is written as if the next 100 customers will read it.

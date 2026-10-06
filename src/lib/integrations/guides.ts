@@ -133,6 +133,17 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
     ],
     needHelp: "Se un file non compare, controlla che non sia nel cestino e che l'agente abbia il permesso di lettura.",
   },
+  airtable: {
+    provider: "airtable",
+    whatItDoes: "Collega Airtable: l'agente legge le tue basi, le tabelle e i record.",
+    time: "2 min",
+    steps: [
+      { title: "Prepara", desc: "Account Airtable. Almeno una base deve essere condivisa con l'integrazione." },
+      { title: "Collega", desc: "Clicca Connetti → autorizza su Airtable → scegli le basi da condividere." },
+      { title: "Prova", desc: "Connesso. Chiedi: quante tabelle ha la mia base CRM? Poi: elenca i record con Status: Open." },
+    ],
+    needHelp: "Se una base non appare, ricorda che va condivisa con l'integrazione: apri la base → Share → aggiungi l'integrazione.",
+  },
 };
 
 export function getGuideForBrand(brand: string): IntegrationGuide | null {

@@ -995,6 +995,7 @@ export const CONNECT_PROVIDERS = [
   "clickup",
   "asana",
   "drive",
+  "airtable",
   "whatsapp",
 ] as const;
 
@@ -1016,6 +1017,7 @@ export function normalizeConnectProvider(raw: string | undefined): string | null
   // Va dopo sheets/calendar: "googledrive" contiene "drive" e nient'altro che
   // li confligga, ma l'ordine resta leggibile rispetto agli altri alias.
   if (key.includes("drive")) return "drive";
+  if (key.includes("airtable")) return "airtable";
   if (key.includes("whatsapp")) return "whatsapp";
   return (CONNECT_PROVIDERS as readonly string[]).includes(key) ? key : null;
 }

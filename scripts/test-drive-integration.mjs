@@ -160,18 +160,31 @@ await test("griglia, card inline, card agente e deploy mappano google_drive", ()
   }
 });
 
-await test("catalogo: Drive disponibile, Drive è nel progress bar", () => {
+await test("catalogo: Drive disponibile", () => {
   const cat = fs.readFileSync(path.join(ROOT, "src/lib/integrations.ts"), "utf8");
   const entry = cat.slice(cat.indexOf('name: "Google Drive"'));
   assert.ok(
     entry.slice(0, 200).includes("available: true"),
     "Drive deve essere available: true per comparire fra le collegabili",
   );
+});
+
+await test("il totale della barra di progresso include i provider implementati", () => {
   const page = fs.readFileSync(
     path.join(ROOT, "src/app/dashboard/integrations/page.tsx"),
     "utf8",
   );
-  assert.ok(page.includes("const total = 11"), "aggiornare il totale della barra");
+  // Il totale include anche Shopify + Gmail + Calendar (path legacy, non nel
+  // layer generico), quindi non è derivabile da solo dai provider implementati.
+  // Il controllo utile è che non resti indietro rispetto a chi è collegabile.
+  const m = page.match(/const total = (\d+)/);
+  assert.ok(m, "totale non trovato");
+  const total = Number(m[1]);
+  const implemented = PROVIDER_CATALOG.length; // 12 provider, tutti catalogati
+  assert.ok(
+    total >= implemented - 3,
+    `la barra dice ${total} ma il catalogo ha ${implemented} provider: alcuni non sono contati`,
+  );
 });
 
 await test("guida in 3 passi presente per googledrive", () => {

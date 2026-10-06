@@ -125,6 +125,10 @@ export const ALL_TOOLS_LIST = [
   "drive_search_files",
   "drive_read_file",
   "drive_list_folder",
+  // Airtable (batch 2): sola lettura, vedi Open Decision 14.
+  "airtable_list_bases",
+  "airtable_list_tables",
+  "airtable_list_records",
   "request_integration_connect",
 ];
 

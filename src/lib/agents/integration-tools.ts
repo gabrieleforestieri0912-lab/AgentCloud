@@ -8,11 +8,12 @@ import {
   slackApiProxy,
   hubspotApiProxy,
   driveApiProxy,
+  airtableApiProxy,
 } from "@/lib/integrations/api-proxy";
 
 /**
  * Tool agente per le integrazioni: GitHub / ClickUp / Asana / Notion / Slack /
- * HubSpot / Google Drive.
+ * HubSpot / Google Drive / Airtable.
  *
  * Perché un modulo dedicato: tiene `lib/agents/tools.ts` focalizzato sugli
  * strumenti core e raccoglie qui definizioni + handler delle integrazioni.
@@ -47,6 +48,9 @@ const INTEGRATION_TOOL_NAMES = [
   "drive_search_files",
   "drive_read_file",
   "drive_list_folder",
+  "airtable_list_bases",
+  "airtable_list_tables",
+  "airtable_list_records",
 ] as const;
 
 export function isIntegrationTool(name: string): boolean {
@@ -428,6 +432,59 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
       },
     },
   },
+
+  // --- Airtable ------------------------------------------------------------
+  // Sola lettura: create/update esclusi per Open Decision 14 (manca il
+  // meccanismo di conferma fra handler e UI).
+
+  airtable_list_bases: {
+    name: "airtable_list_bases",
+    description:
+      "List the Airtable bases shared with the connected account, with their base ids and permission level. Use the returned id with airtable_list_tables.",
+    input_schema: {
+      type: "object",
+      properties: {},
+    },
+  },
+
+  airtable_list_tables: {
+    name: "airtable_list_tables",
+    description:
+      "List the tables (and views) inside an Airtable base, with their table ids. Use the returned id with airtable_list_records.",
+    input_schema: {
+      type: "object",
+      properties: {
+        baseId: {
+          type: "string",
+          description: "Airtable base id, e.g. appXXXXXXXXXXXXXX (from airtable_list_bases)",
+        },
+      },
+      required: ["baseId"],
+    },
+  },
+
+  airtable_list_records: {
+    name: "airtable_list_records",
+    description:
+      "List records of an Airtable table. The filter accepts plain language: 'Status: Open' filters a field by value, a bare word searches across the record. Returns record ids and the first fields, so ids can be reused.",
+    input_schema: {
+      type: "object",
+      properties: {
+        baseId: { type: "string", description: "Airtable base id (app...)" },
+        tableId: {
+          type: "string",
+          description: "Airtable table id (tbl...)",
+        },
+        filter: {
+          type: "string",
+          description:
+            'Optional filter in plain language: "Status: Open", "Stage = Won", or a bare word to search across the record',
+        },
+        limit: { type: "integer", description: "Max records to return (default 20, max 50)" },
+      },
+      required: ["baseId", "tableId"],
+    },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -679,6 +736,31 @@ export async function executeIntegrationTool(
       const r = await driveApiProxy(
         "listFolder",
         { folderId, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "airtable_list_bases": {
+      const r = await airtableApiProxy("listBases", {}, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "airtable_list_tables": {
+      const baseId = clean(input.baseId, 60);
+      if (!baseId) return "airtable_list_tables requires baseId.";
+      const r = await airtableApiProxy("listTables", { baseId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "airtable_list_records": {
+      const baseId = clean(input.baseId, 60);
+      const tableId = clean(input.tableId, 60);
+      if (!baseId || !tableId) return "airtable_list_records requires baseId and tableId.";
+      const filter = input.filter ? clean(input.filter, 300) : undefined;
+      const r = await airtableApiProxy(
+        "listRecords",
+        { baseId, tableId, filter, limit: parseLimit(input.limit) },
         tenantId,
       );
       return r.ok ? r.data : r.error;

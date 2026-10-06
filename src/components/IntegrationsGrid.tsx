@@ -28,6 +28,7 @@ const BRAND_TO_PROVIDER: Record<string, string> = {
   clickup: "clickup",
   asana: "asana",
   googledrive: "google_drive",
+  airtable: "airtable",
 };
 
 function metaLabel(row: Row | undefined): string | null {

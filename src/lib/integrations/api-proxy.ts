@@ -1478,3 +1478,141 @@ type DriveFile = {
   webViewLink?: string;
   parents?: string[];
 };
+
+// ---------------------------------------------------------------------------
+// Airtable
+// ---------------------------------------------------------------------------
+
+export type AirtableAction = "listBases" | "listTables" | "listRecords";
+
+export type AirtableParams = {
+  /** baseId (app...) per listTables/listRecords. */
+  baseId?: string;
+  /** tableId (tbl...) per listRecords. */
+  tableId?: string;
+  /** Filtro in linguaggio naturale per listRecords. */
+  filter?: string;
+  limit?: number;
+};
+
+const AIRTABLE_API = "https://api.airtable.com/v0";
+
+/** Escape per i valori dentro una formula Airtable (stringa con apici singoli). */
+function airtableFormulaString(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+/**
+ * Traduce un filtro in linguaggio naturale in una `filterByFormula` di Airtable.
+ *
+ * Airtable non ha una sintassi di query tipo Drive: accetta solo formule. Senza
+ * questa traduzione il modello dovrebbe comporre formule a ogni chiamata, ed è
+ * la sorgente numero uno di query sbagliate (virgolette, nomi di campo con
+ * spazi). Qui si coprono i casi realmente frequenti:
+ *   "stato: aperto"        → {stato}="aperto"
+ *   "stato = chiuso"       → {stato}="chiuso"
+ *   "priorità alta"        → contiene "alta" in un campo qualsiasi
+ *   "cliente Acme"         → SEARCH("acme", {cliente})
+ * Se non si riconosce nulla, si passa la stringa come SEARCH su un campo
+ * esplicito, che è il fallback più onesto.
+ */
+function buildAirtableFormula(filter: string): string {
+  const raw = filter.trim();
+  if (!raw) return "";
+
+  // forma "campo: valore" o "campo = valore"
+  const kv = raw.match(/^([^:=]+?)\s*[:=]\s*(.+)$/);
+  if (kv) {
+    const field = kv[1].replace(/^["']|["']$/g, "").trim();
+    const value = kv[2].trim();
+    return `{${field}}=${airtableFormulaString(value)}`;
+  }
+
+  // singolo termine: lo cerchiamo ovunque nel record
+  const term = raw.replace(/^["']|["']$/g, "").trim();
+  if (term) return `SEARCH(${airtableFormulaString(term.toLowerCase())}, LOWER({Name} & " " & {Notes} & " " & {Email}))`;
+  return "";
+}
+
+function formatAirtableRecord(r: {
+  id?: string;
+  fields?: Record<string, unknown>;
+  createdTime?: string;
+}): string {
+  const fields = r.fields ?? {};
+  const body = Object.entries(fields)
+    .filter(([, v]) => v !== null && v !== undefined && v !== "")
+    .slice(0, 6)
+    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
+    .join(" | ");
+  const more = Object.keys(fields).length > 6 ? " | …" : "";
+  return `- ${r.id ?? "?"}: ${body}${more}`;
+}
+
+export async function airtableApiProxy(
+  action: AirtableAction,
+  params: AirtableParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "airtable");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+  const headers = { Authorization: integrationAuth(token), Accept: "application/json" };
+  const limit = clampLimit(params.limit);
+
+  if (action === "listBases") {
+    const res = await providerRequest(`${AIRTABLE_API}/meta/bases`, {
+      headers,
+      providerLabel: "Airtable",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+    const bases = (res.json as { bases?: Array<{ id?: string; name?: string; permissionLevel?: string }> } | undefined)?.bases ?? [];
+    if (bases.length === 0) return { ok: true, data: "No Airtable bases shared with this account." };
+    return {
+      ok: true,
+      data: bases
+        .map((b) => `- ${b.name ?? "?"} | id: ${b.id ?? "?"}${b.permissionLevel ? ` (${b.permissionLevel})` : ""}`)
+        .join("\n"),
+    };
+  }
+
+  const baseId = (params.baseId ?? "").trim();
+  if (!baseId) return { ok: false, error: "airtable tool requires baseId." };
+
+  if (action === "listTables") {
+    const res = await providerRequest(
+      `${AIRTABLE_API}/meta/bases/${encodeURIComponent(baseId)}/tables`,
+      { headers, providerLabel: "Airtable" },
+    );
+    if (!res.ok) return { ok: false, error: res.error! };
+    const tables = (res.json as { tables?: Array<{ id?: string; name?: string; primaryFieldId?: string }> } | undefined)?.tables ?? [];
+    if (tables.length === 0) return { ok: true, data: "The Airtable base has no tables, or the token cannot see them." };
+    return {
+      ok: true,
+      data: tables
+        .map((t) => `- ${t.name ?? "?"} | id: ${t.id ?? "?"}`)
+        .join("\n"),
+    };
+  }
+
+  // listRecords
+  const tableId = (params.tableId ?? "").trim();
+  if (!tableId) return { ok: false, error: "airtable_list_records requires tableId." };
+  const url = new URL(`${AIRTABLE_API}/${encodeURIComponent(baseId)}/${encodeURIComponent(tableId)}`);
+  url.searchParams.set("maxRecords", String(limit));
+  const formula = buildAirtableFormula(params.filter ?? "");
+  if (formula) url.searchParams.set("filterByFormula", formula);
+
+  const res = await providerRequest(url.toString(), { headers, providerLabel: "Airtable" });
+  if (!res.ok) return { ok: false, error: res.error! };
+  const records = (res.json as { records?: Array<{ id?: string; fields?: Record<string, unknown> }> } | undefined)?.records ?? [];
+  if (records.length === 0) {
+    return {
+      ok: true,
+      data: params.filter
+        ? `No Airtable records matched "${params.filter}".`
+        : "No records in this table.",
+    };
+  }
+  return { ok: true, data: records.map(formatAirtableRecord).join("\n") };
+}
