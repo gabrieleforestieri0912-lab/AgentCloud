@@ -12,16 +12,14 @@ import type { IntegrationProvider, TokenExchangeResult } from "../types";
  * verifier non transita mai dalla barra degli indirizzi, quindi un state
  * intercettato non basta a completare lo scambio.
  *
- * Scope (cfr. PROVIDER_CATALOG): data.records:read, data.records:write,
- * schema.bases:read. `data.records:write` è dichiarato perché i tool
- * airtable_create_record / update_record sono previsti; in questa versione i
- * tool esposti sono read-only (Open Decision 14).
+ * Scope (cfr. PROVIDER_CATALOG): data.records:read, schema.bases:read.
+ * `data.records:write` NON è dichiarato: i tool airtable_create_record /
+ * update_record sono previsti, ma in questa versione i tool esposti sono
+ * read-only e manca ancora il meccanismo di conferma utente fra handler e UI
+ * (Open Decision 14). Uno scope di scrittura che nessun tool usa va
+ * reintrodotto solo insieme al tool che lo richiede, non prima.
  */
-const DEFAULT_SCOPES = [
-  "data.records:read",
-  "data.records:write",
-  "schema.bases:read",
-];
+const DEFAULT_SCOPES = ["data.records:read", "schema.bases:read"];
 
 function scopes(): string {
   return (process.env.AIRTABLE_SCOPES || DEFAULT_SCOPES.join(" "))

@@ -167,11 +167,11 @@ export const PROVIDER_CATALOG = [
     brand: "airtable",
     category: "Database",
     authType: "oauth2_pkce",
-    scopes: [
-      "data.records:read",
-      "data.records:write",
-      "schema.bases:read",
-    ],
+    // Sola lettura: i tool esposti sono read-only. `data.records:write` resta
+    // fuori finché non esiste il meccanismo di conferma delle scritture fra
+    // handler e UI (Open Decision 14) e il tool che lo usa: uno scope di
+    // scrittura richiesto e mai usato allarga l'autorizzazione senza motivo.
+    scopes: ["data.records:read", "schema.bases:read"],
     hasApiProxy: true,
   },
   {

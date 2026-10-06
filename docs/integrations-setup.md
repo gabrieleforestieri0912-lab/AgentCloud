@@ -161,14 +161,14 @@ basta quindi a completare lo scambio. Oggi serve solo ad **Airtable**.
 | | |
 |---|---|
 | Env | `AIRTABLE_CLIENT_ID`, `AIRTABLE_CLIENT_SECRET` |
-| Opzionali | `AIRTABLE_SCOPES` (default `data.records:read data.records:write schema.bases:read`) |
+| Opzionali | `AIRTABLE_SCOPES` (default `data.records:read schema.bases:read`) |
 | Creazione app | <https://airtable.com/develop> → OAuth integration → "Add OAuth Integration" |
 | Redirect | `${SITE}/api/integrations/airtable/callback` |
 | PKCE | **Obbligatorio** (S256). Il `code_verifier` resta nel cookie httpOnly. |
 | Token | access token ~1h + `refresh_token` → **auto-refresh**. Anche i refresh token scadono (`refresh_expires_in`, di solito 60 giorni): scaduto quello, va riconnesso. |
 | Tool agente | `airtable_list_bases`, `airtable_list_tables`, `airtable_list_records` — REST `https://api.airtable.com/v0`. |
 | Note | Airtable non ha una sintassi di query: accetta solo formule. Il filtro accetta linguaggio naturale (`"Status: Open"`, `"Stage = Won"`, o una parola sola cercata nel record) e viene tradotto in `filterByFormula` con le stringhe escaped. I record sono troncati ai primi 6 campi. |
-| Scope | `data.records:write` è dichiarato per i tool futuri ma **non è ancora usato**: i tool esposti sono read-only. Restringere gli scope a sola lettura finché non si aggiunge `airtable_create_record` è la scelta più prudente per la review dell'integrazione. |
+| Scope | **Sola lettura**: `data.records:read` + `schema.bases:read`. `data.records:write` non è più richiesto: i tool esposti sono read-only e il meccanismo di conferma delle scritture non esiste ancora (Open Decision 14). Va reintrodotto insieme al tool che lo usa (`airtable_create_record`), non prima. |
 
 ### Trello
 | | |
@@ -290,7 +290,10 @@ Nessun JWT dell'utente viene inoltrato: l'autorizzazione verso il provider usa i
 `woo_update_order_status`, `mailchimp_add_subscriber`) sono esclusi di proposito:
 manca il meccanismo di conferma fra handler e UI (Open Decision 14). Finché non
 esiste, esporre un tool che scrive significherebbe eseguire senza chiedere — che è
-esattamente il problema da risolvere. I 5 provider del batch 2 sono iniettati solo
+esattamente il problema da risolvere. Corollario sugli scope: si dichiara solo ciò
+che i tool usano. `data.records:write` di Airtable era l'unico permesso di
+scrittura richiesto e non sfruttato, ed è stato rimosso (vedi la riga Scope di
+Airtable). I 5 provider del batch 2 sono iniettati solo
 negli agenti dove servono (`GOOGLE_DRIVE_TOOLS` a tutti quelli che hanno le altre
 integrazioni, `AIRTABLE_TOOLS`/`TRELLO_TOOLS`/`WOOCOMMERCE_TOOLS`/`MAILCHIMP_TOOLS`
 solo dove hanno senso): un tool su un provider non collegato non restituisce nulla

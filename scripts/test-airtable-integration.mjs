@@ -43,11 +43,15 @@ await test("provider presente, PKCE, scope attesi", () => {
   assert.equal(a.category, "Database");
   assert.equal(a.authType, "oauth2_pkce", "Airtable deve dichiarare PKCE");
   assert.equal(a.hasApiProxy, true);
-  assert.deepEqual([...a.scopes], [
-    "data.records:read",
-    "data.records:write",
-    "schema.bases:read",
-  ]);
+  // Sola lettura: `data.records:write` non deve rientrare in catalogo senza il
+  // meccanismo di conferma e il tool che lo usa (Open Decision 14). Se un domani
+  // si aggiunge airtable_create_record, questo test va aggiornato insieme allo
+  // scope, non prima.
+  assert.deepEqual(
+    [...a.scopes],
+    ["data.records:read", "schema.bases:read"],
+    "Airtable deve restare a sola lettura finché le scritture non hanno conferma",
+  );
 });
 
 await test("è fra i provider implementati", () => {
