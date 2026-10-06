@@ -54,9 +54,17 @@ await test("è fra i provider implementati", () => {
   assert.equal(isImplementedProvider("airtable"), true);
 });
 
-await test("gli altri 3 del batch non sono ancora implementati", () => {
-  for (const id of ["trello", "woocommerce", "mailchimp"]) {
-    assert.equal(isImplementedProvider(id), false, `${id} non deve essere ancora implementato`);
+await test("i provider del batch sono implementati in ordine", () => {
+  // Ogni connettore del batch entra in IMPLEMENTED_PROVIDERS nel proprio commit,
+  // in quest'ordine. I test dei connettori già fatti non devono più asserire
+  // "il prossimo non è ancora implementato": diventano fragili a ogni fase.
+  const done = ["google_drive", "airtable", "trello"];
+  for (const id of done) {
+    assert.equal(isImplementedProvider(id), true, `${id} dovrebbe essere implementato`);
+  }
+  // Chi viene dopo nel piano di Fase 3.
+  for (const todo of ["woocommerce", "mailchimp"]) {
+    assert.equal(isImplementedProvider(todo), false, `${todo} non è ancora implementato`);
   }
 });
 

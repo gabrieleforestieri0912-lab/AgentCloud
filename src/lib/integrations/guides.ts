@@ -144,6 +144,17 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
     ],
     needHelp: "Se una base non appare, ricorda che va condivisa con l'integrazione: apri la base → Share → aggiungi l'integrazione.",
   },
+  trello: {
+    provider: "trello",
+    whatItDoes: "Collega Trello: l'agente legge le tue board e le card, con scadenze.",
+    time: "1 min",
+    steps: [
+      { title: "Prepara", desc: "Account Trello. Nessuna preparazione: autorizzi e basta." },
+      { title: "Collega", desc: "Clicca Connetti → autorizza su Trello → Allow. Il collegamento dura 30 giorni." },
+      { title: "Prova", desc: "Connesso. Chiedi: quali board ho? Poi: elenca le card in scadenza questa settimana." },
+    ],
+    needHelp: "Il token Trello scade dopo 30 giorni e non si rinnova da solo: quando l'agente ti dice che la connessione è scaduta, clicca di nuovo Connetti.",
+  },
 };
 
 export function getGuideForBrand(brand: string): IntegrationGuide | null {

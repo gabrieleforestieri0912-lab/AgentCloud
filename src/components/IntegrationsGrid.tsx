@@ -29,6 +29,7 @@ const BRAND_TO_PROVIDER: Record<string, string> = {
   asana: "asana",
   googledrive: "google_drive",
   airtable: "airtable",
+  trello: "trello",
 };
 
 function metaLabel(row: Row | undefined): string | null {

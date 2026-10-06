@@ -162,9 +162,9 @@ export const INTEGRATIONS: Integration[] = [
   {
     name: "Trello",
     brand: "trello",
-    category: "Productivity",
-    available: false,
-    description: "Board Kanban e task",
+    category: "Project Management",
+    available: true,
+    description: "Board, liste e card",
   },
   {
     name: "Asana",
@@ -340,6 +340,7 @@ const CONNECTABLE_PROVIDERS: { id: string; names: string[] }[] = [
   { id: "sheets", names: ["google sheets", "spreadsheet", "fogli", "sheets"] },
   { id: "drive", names: ["google drive", "drive"] },
   { id: "airtable", names: ["airtable"] },
+  { id: "trello", names: ["trello", "kanban"] },
   { id: "slack", names: ["slack"] },
   { id: "notion", names: ["notion"] },
   { id: "hubspot", names: ["hubspot"] },

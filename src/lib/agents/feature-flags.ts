@@ -129,6 +129,9 @@ export const ALL_TOOLS_LIST = [
   "airtable_list_bases",
   "airtable_list_tables",
   "airtable_list_records",
+  // Trello (batch 2): sola lettura, vedi Open Decision 14.
+  "trello_list_boards",
+  "trello_list_cards",
   "request_integration_connect",
 ];
 

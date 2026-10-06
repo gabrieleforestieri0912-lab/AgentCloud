@@ -11,7 +11,8 @@
     "test:integrations": "node --experimental-strip-types scripts/test-integration-foundations.mjs",
     "test:drive": "node --experimental-strip-types scripts/test-drive-integration.mjs",
     "test:airtable": "node --experimental-strip-types scripts/test-airtable-integration.mjs",
-    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
+    "test:trello": "node --experimental-strip-types scripts/test-trello-integration.mjs",
+    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && npm run test:trello && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

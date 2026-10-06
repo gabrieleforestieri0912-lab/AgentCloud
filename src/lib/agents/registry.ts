@@ -86,6 +86,19 @@ const AIRTABLE_TOOLS = [
   "airtable_list_records",
 ];
 
+/**
+ * Tool Trello (batch 2), sola lettura.
+ *
+ * Iniettati negli agenti che guardano task e flussi: inventory-logistics e
+ * business-manager. Trello è il provider meno "universale" del batch — un
+ * tenant senza board non ha nulla su cui lavorare — quindi non viene dato a
+ * tutti.
+ */
+const TRELLO_TOOLS = [
+  "trello_list_boards",
+  "trello_list_cards",
+];
+
 const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
@@ -156,6 +169,7 @@ Guidelines:
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...AIRTABLE_TOOLS,
+      ...TRELLO_TOOLS,
       "web_search",
       "scrape_page",
       "run_python",
@@ -906,6 +920,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
+      ...TRELLO_TOOLS,
       "shopify_update_inventory",
     ],
     systemPrompt: `You are a logistics and inventory management specialist who prevents stockouts and dead stock — with numbers, thresholds and purchase orders, not generic monitoring talk.

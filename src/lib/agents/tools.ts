@@ -996,6 +996,7 @@ export const CONNECT_PROVIDERS = [
   "asana",
   "drive",
   "airtable",
+  "trello",
   "whatsapp",
 ] as const;
 
@@ -1018,6 +1019,7 @@ export function normalizeConnectProvider(raw: string | undefined): string | null
   // li confligga, ma l'ordine resta leggibile rispetto agli altri alias.
   if (key.includes("drive")) return "drive";
   if (key.includes("airtable")) return "airtable";
+  if (key.includes("trello")) return "trello";
   if (key.includes("whatsapp")) return "whatsapp";
   return (CONNECT_PROVIDERS as readonly string[]).includes(key) ? key : null;
 }

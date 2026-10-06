@@ -9,11 +9,12 @@ import {
   hubspotApiProxy,
   driveApiProxy,
   airtableApiProxy,
+  trelloApiProxy,
 } from "@/lib/integrations/api-proxy";
 
 /**
  * Tool agente per le integrazioni: GitHub / ClickUp / Asana / Notion / Slack /
- * HubSpot / Google Drive / Airtable.
+ * HubSpot / Google Drive / Airtable / Trello.
  *
  * Perché un modulo dedicato: tiene `lib/agents/tools.ts` focalizzato sugli
  * strumenti core e raccoglie qui definizioni + handler delle integrazioni.
@@ -51,6 +52,8 @@ const INTEGRATION_TOOL_NAMES = [
   "airtable_list_bases",
   "airtable_list_tables",
   "airtable_list_records",
+  "trello_list_boards",
+  "trello_list_cards",
 ] as const;
 
 export function isIntegrationTool(name: string): boolean {
@@ -485,6 +488,36 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
       required: ["baseId", "tableId"],
     },
   },
+
+  // --- Trello --------------------------------------------------------------
+  // Sola lettura: create/move/comment esclusi per Open Decision 14.
+
+  trello_list_boards: {
+    name: "trello_list_boards",
+    description:
+      "List the open Trello boards of the connected account, with board ids. Use the returned id with trello_list_cards.",
+    input_schema: {
+      type: "object",
+      properties: {},
+    },
+  },
+
+  trello_list_cards: {
+    name: "trello_list_cards",
+    description:
+      "List Trello cards. Give boardId to list every card of a board, or listId to list only one list. Returns card names, due dates, ids and links.",
+    input_schema: {
+      type: "object",
+      properties: {
+        boardId: { type: "string", description: "Trello board id (from trello_list_boards)" },
+        listId: {
+          type: "string",
+          description: "Trello list id, to restrict to one list (optional)",
+        },
+        limit: { type: "integer", description: "Max cards to return (default 20, max 50)" },
+      },
+    },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -761,6 +794,22 @@ export async function executeIntegrationTool(
       const r = await airtableApiProxy(
         "listRecords",
         { baseId, tableId, filter, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "trello_list_boards": {
+      const r = await trelloApiProxy("listBoards", {}, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "trello_list_cards": {
+      const boardId = input.boardId ? clean(input.boardId, 60) : undefined;
+      const listId = input.listId ? clean(input.listId, 60) : undefined;
+      const r = await trelloApiProxy(
+        "listCards",
+        { boardId, listId, limit: parseLimit(input.limit) },
         tenantId,
       );
       return r.ok ? r.data : r.error;

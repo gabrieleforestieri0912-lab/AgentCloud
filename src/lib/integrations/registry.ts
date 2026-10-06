@@ -8,6 +8,7 @@ import { clickupProvider } from "./providers/clickup";
 import { asanaProvider } from "./providers/asana";
 import { googleDriveProvider } from "./providers/googleDrive";
 import { airtableProvider } from "./providers/airtable";
+import { trelloProvider } from "./providers/trello";
 
 /**
  * Mappa adapter: `Record<ImplementedProvider, IntegrationProvider>` è
@@ -29,6 +30,7 @@ const registry: Record<ImplementedProvider, IntegrationProvider> = {
   asana: asanaProvider,
   google_drive: googleDriveProvider,
   airtable: airtableProvider,
+  trello: trelloProvider,
 };
 
 export function getProvider(provider: string): IntegrationProvider | null {

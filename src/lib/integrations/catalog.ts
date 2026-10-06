@@ -231,6 +231,7 @@ export const IMPLEMENTED_PROVIDERS = [
   "asana",
   "google_drive",
   "airtable",
+  "trello",
 ] as const;
 
 export type ImplementedProvider = (typeof IMPLEMENTED_PROVIDERS)[number];

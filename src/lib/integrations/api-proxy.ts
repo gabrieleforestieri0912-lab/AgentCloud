@@ -65,6 +65,8 @@ type ResolvedToken = {
   secretToken: string | null;
   usage: TokenUsage;
   metadata: Record<string, unknown>;
+  /** Scadenza salvata, null se il token non scade. Utile per i provider senza rinnovo. */
+  expiresAt: string | null;
 };
 
 /**
@@ -91,6 +93,12 @@ function shouldRefresh(expiresAt: string | null): boolean {
   const expiry = new Date(expiresAt).getTime();
   if (Number.isNaN(expiry)) return false;
   return expiry - Date.now() <= REFRESH_MARGIN_MS;
+}
+
+/** True se la scadenza è nel passato. Usata per i provider senza refresh token. */
+function isPast(iso: string): boolean {
+  const t = new Date(iso).getTime();
+  return !Number.isNaN(t) && t <= Date.now();
 }
 
 function clampLimit(limit: number | undefined, fallback = 20): number {
@@ -195,7 +203,22 @@ export async function resolveIntegrationToken(
         secretToken: null,
         usage,
         metadata,
+        expiresAt: row.expires_at,
       },
+    };
+  }
+
+  // Token scaduto e NIENTE con cui rinnovarlo: alcuni provider non emettono
+  // refresh token (Trello scade dopo 30 giorni e non ha rinnovo). Prima si
+  // restituiva `ok` con il token morto e il proxy mandava la richiesta,
+  // arrivando a un 401 che il modello non può spiegare all'utente. Qui si
+  // dice subito cosa fare, che è la stessa forma del messaggio già usata
+  // quando il refresh fallisce.
+  if (!refreshToken && row.expires_at && isPast(row.expires_at)) {
+    const when = new Date(row.expires_at).toISOString().slice(0, 10);
+    return {
+      ok: false,
+      error: `The ${label} connection expired on ${when} and ${label} does not issue refresh tokens. Ask the user to reconnect ${label} from the dashboard (Integrations), then retry.`,
     };
   }
 
@@ -207,6 +230,7 @@ export async function resolveIntegrationToken(
       secretToken: refreshToken,
       usage,
       metadata,
+      expiresAt: row.expires_at,
     },
   };
 }
@@ -1615,4 +1639,108 @@ export async function airtableApiProxy(
     };
   }
   return { ok: true, data: records.map(formatAirtableRecord).join("\n") };
+}
+
+// ---------------------------------------------------------------------------
+// Trello
+// ---------------------------------------------------------------------------
+
+export type TrelloAction = "listBoards" | "listCards";
+
+export type TrelloParams = {
+  boardId?: string;
+  listId?: string;
+  limit?: number;
+};
+
+const TRELLO_API = "https://api.trello.com/1";
+
+/**
+ * Trello non accetta l'header Authorization su quasi tutti gli endpoint: la
+ * key dell'app e il token dell'utente vanno come query param `key` e `token`.
+ *
+ * Nota di sicurezza: il token finisce quindi nell'URL. È il protocollo di
+ * Trello, non una scelta. Per questo providerRequest non logga mai la URL e i
+ * suoi errori riportano solo status + estratto del corpo, mai la richiesta.
+ */
+function trelloUrl(path: string, token: ResolvedToken, extra?: Record<string, string>): URL {
+  const appKey = process.env.TRELLO_API_KEY || "";
+  const url = new URL(`${TRELLO_API}${path}`);
+  url.searchParams.set("key", appKey);
+  url.searchParams.set("token", token.accessToken);
+  for (const [k, v] of Object.entries(extra ?? {})) url.searchParams.set(k, v);
+  return url;
+}
+
+function formatTrelloCard(c: {
+  id?: string;
+  name?: string;
+  desc?: string;
+  due?: string | null;
+  closed?: boolean;
+  url?: string;
+  idList?: string;
+}): string {
+  const bits = [`- ${c.name ?? "?"}`];
+  if (c.due) bits.push(`due: ${c.due}`);
+  if (c.closed) bits.push("(archived)");
+  if (c.desc) bits.push(`- ${c.desc.replace(/\s+/g, " ").slice(0, 120)}`);
+  if (c.id) bits.push(`| id: ${c.id}`);
+  if (c.idList) bits.push(`| list: ${c.idList}`);
+  if (c.url) bits.push(`| ${c.url}`);
+  return bits.join(" ");
+}
+
+export async function trelloApiProxy(
+  action: TrelloAction,
+  params: TrelloParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "trello");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+  const limit = clampLimit(params.limit);
+
+  if (action === "listBoards") {
+    const url = trelloUrl("/members/me/boards", token, {
+      fields: "id,name,url,closed",
+      filter: "open",
+    });
+    const res = await providerRequest(url.toString(), {
+      headers: { Accept: "application/json" },
+      providerLabel: "Trello",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+    const boards = (res.json as Array<{ id?: string; name?: string; url?: string }> | undefined) ?? [];
+    if (boards.length === 0) return { ok: true, data: "No Trello boards for this account." };
+    return {
+      ok: true,
+      data: boards.map((b) => `- ${b.name ?? "?"} | id: ${b.id ?? "?"}${b.url ? ` | ${b.url}` : ""}`).join("\n"),
+    };
+  }
+
+  // listCards: o per board o per list. Un board senza listId restituisce tutte
+  // le card del board, che è il comportamento atteso da "elenca le card".
+  const boardId = (params.boardId ?? "").trim();
+  const listId = (params.listId ?? "").trim();
+  if (!boardId && !listId) {
+    return { ok: false, error: "trello_list_cards requires boardId or listId." };
+  }
+  const path = listId
+    ? `/lists/${encodeURIComponent(listId)}/cards`
+    : `/boards/${encodeURIComponent(boardId)}/cards`;
+  const url = trelloUrl(path, token, {
+    fields: "id,name,desc,due,closed,url,idList",
+    limit: String(limit),
+  });
+  const res = await providerRequest(url.toString(), {
+    headers: { Accept: "application/json" },
+    providerLabel: "Trello",
+  });
+  if (!res.ok) return { ok: false, error: res.error! };
+  const cards = (res.json as Array<Parameters<typeof formatTrelloCard>[0]> | undefined) ?? [];
+  if (cards.length === 0) {
+    return { ok: true, data: "No Trello cards found." };
+  }
+  return { ok: true, data: cards.map(formatTrelloCard).join("\n") };
 }

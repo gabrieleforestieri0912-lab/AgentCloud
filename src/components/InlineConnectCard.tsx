@@ -23,6 +23,7 @@ const PROVIDER_META: Record<string, { name: string; brand: string; desc: string 
   asana: { name: "Asana", brand: "asana", desc: "Connetti Asana per task e progetti" },
   googledrive: { name: "Google Drive", brand: "googledrive", desc: "Connetti Google Drive per cercare e leggere i tuoi file" },
   airtable: { name: "Airtable", brand: "airtable", desc: "Connetti Airtable per leggere basi, tabelle e record" },
+  trello: { name: "Trello", brand: "trello", desc: "Connetti Trello per leggere board, liste e card" },
   whatsapp: { name: "WhatsApp", brand: "whatsapp", desc: "Connetti WhatsApp per messaggistica" },
 };
 
@@ -36,6 +37,7 @@ function getMeta(provider: Provider) {
   // quindi qui basta il prefisso per coprire i due alias emessi dal modello.
   if (key.includes("drive")) return PROVIDER_META.googledrive;
   if (key.includes("airtable")) return PROVIDER_META.airtable;
+  if (key.includes("trello")) return PROVIDER_META.trello;
   if (key.includes("shopify")) return PROVIDER_META.shopify;
   return PROVIDER_META[key] || { name: provider.charAt(0).toUpperCase() + provider.slice(1), brand: key, desc: `Connetti ${provider} per sbloccare le automazioni` };
 }
