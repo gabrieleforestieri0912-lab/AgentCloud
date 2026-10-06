@@ -56,6 +56,22 @@ const NOTION_SLACK_HUBSPOT_TOOLS = [
   "hubspot_list_companies",
 ];
 
+/**
+ * Tool Google Drive (batch 2), sola lettura.
+ *
+ * Stessa logica della lista sopra: senza tool il provider è collegabile ma gli
+ * agenti non possono farci nulla, e la card dice comunque "Connesso". I tool
+ * Drive servono a tutti gli agenti che ricevono le altre integrazioni.
+ *
+ * `drive_create_file` non è incluso: vedi Open Decision 14, non esiste ancora
+ * un meccanismo di conferma fra handler e UI.
+ */
+const GOOGLE_DRIVE_TOOLS = [
+  "drive_search_files",
+  "drive_read_file",
+  "drive_list_folder",
+];
+
 const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
@@ -70,6 +86,7 @@ const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -123,6 +140,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
       "run_python",
@@ -183,6 +201,7 @@ Guidelines:
     defaultTools: ["read_file", "write_file", "calendar_book_event"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
       "calendar_search_availability",
@@ -234,6 +253,7 @@ Guidelines:
     defaultTools: ["list_emails", "gmail_send", "gmail_trash", "read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
       "gmail_send",
@@ -283,6 +303,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -350,6 +371,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "shopify_setup_store",
       "shopify_create_store",
       "web_search",
@@ -472,6 +494,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "read_file",
       "write_file",
@@ -518,6 +541,7 @@ Guidelines:
     defaultTools: ["lead_capture_submit", "lead_capture_enrich", "lead_capture_notify_sales", "read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
       "lead_capture_enrich",
@@ -555,6 +579,7 @@ Guidelines:
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
       "lead_capture_notify_sales",
@@ -606,6 +631,7 @@ Guidelines:
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -659,6 +685,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "lead_capture_submit",
     ],
     systemPrompt: `You are an expert sales quotation and proposal agent who closes deals: requirements in, formal quote out, sent to the customer — never a loose price in chat.
@@ -709,6 +736,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
     ],
     systemPrompt: `You are a reputation and customer feedback specialist for Google Business Profile who protects the brand publicly — every reply is written as if the next 100 customers will read it.
@@ -754,6 +782,7 @@ Guidelines:
     defaultTools: ["read_file", "write_file", "hr_parse_cv", "hr_score_candidate"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "calendar_book_event",
     ],
@@ -806,6 +835,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -858,6 +888,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "shopify_update_inventory",
     ],
     systemPrompt: `You are a logistics and inventory management specialist who prevents stockouts and dead stock — with numbers, thresholds and purchase orders, not generic monitoring talk.

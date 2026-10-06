@@ -62,7 +62,16 @@ export type ProviderCatalogEntry = {
   };
 };
 
-export const PROVIDER_CATALOG: readonly ProviderCatalogEntry[] = [
+/**
+ * Rifiutiamo l'annotazione esplicita `: readonly ProviderCatalogEntry[]` qui:
+ * allargherebbe `hasApiProxy` da `true | false` a `boolean` e in api-proxy.ts
+ * `Extract<..., { hasApiProxy: true }>` darebbe `never`. `as const` sotto
+ * preserva i literal, che è ciò che rende derivabile GenericProvider.
+ *
+ * `ProviderCatalogEntry` resta esportata come forma documentale: la usano le
+ * firme delle funzioni helper, dove i literal non servono.
+ */
+export const PROVIDER_CATALOG = [
   // --- Già esistenti (non toccare il comportamento) -------------------------
   {
     id: "notion",
@@ -200,15 +209,50 @@ export const PROVIDER_CATALOG: readonly ProviderCatalogEntry[] = [
   },
 ] as const;
 
-const BY_ID = new Map(PROVIDER_CATALOG.map((p) => [p.id, p]));
+/**
+ * Provider IMPLEMENTATI, in ordine di arrivo. Il catalogo sopra li dichiara
+ * tutti in anticipo (ci sono le scope, i brand, le guide), ma un provider non
+ * entra qui finché non ha adapter, proxy e tool: le route OAuth rispondono
+ * "unsupported provider" e la card resta in "Prossimamente".
+ *
+ * È una lista separata dal catalogo di proposito: `Record<SupportedProvider,
+ * IntegrationProvider>` in registry.ts non tollererebbe provider dichiarati ma
+ * non ancora scritti, e la build si romperebbe a ogni connettore mancante.
+ * L'unico limite garantito è che un implementato senza adapter fallisce il
+ * typecheck, che è il vincolo che conta.
+ */
+export const IMPLEMENTED_PROVIDERS = [
+  "notion",
+  "slack",
+  "hubspot",
+  "google_sheets",
+  "github",
+  "clickup",
+  "asana",
+  "google_drive",
+] as const;
+
+export type ImplementedProvider = (typeof IMPLEMENTED_PROVIDERS)[number];
+
+/** True se il provider è pronto all'uso (adapter + proxy + tool). */
+export function isImplementedProvider(id: string): id is ImplementedProvider {
+  return (IMPLEMENTED_PROVIDERS as readonly string[]).includes(id);
+}
+
+const BY_ID = new Map<string, ProviderCatalogEntry>(
+  PROVIDER_CATALOG.map((p) => [p.id, p as ProviderCatalogEntry]),
+);
 
 export function getCatalogEntry(id: string): ProviderCatalogEntry | undefined {
   return BY_ID.get(id?.toLowerCase() ?? "");
 }
 
-/** Provider che hanno un proxy condiviso in api-proxy.ts. */
+/**
+ * Provider che hanno un proxy condiviso in api-proxy.ts. Usato dai test per
+ * verificare che ogni provider dichiarato `hasApiProxy` abbia il proxy scritto.
+ */
 export function apiProxyProviderIds(): string[] {
-  return PROVIDER_CATALOG.filter((p) => p.hasApiProxy).map((p) => p.id);
+  return PROVIDER_CATALOG.filter((p) => p.hasApiProxy).map((p) => p.id as string);
 }
 
 /** Categorie usate dalla pagina integrazioni, nell'ordine in cui mostrarle. */

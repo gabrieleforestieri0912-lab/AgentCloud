@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:integrations": "node --experimental-strip-types scripts/test-integration-foundations.mjs",
-    "test": "node --experimental-strip-types scripts/test-integration-foundations.mjs && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
+    "test:drive": "node --experimental-strip-types scripts/test-drive-integration.mjs",
+    "test": "npm run test:integrations && npm run test:drive && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

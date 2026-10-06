@@ -121,6 +121,10 @@ export const ALL_TOOLS_LIST = [
   "hubspot_create_contact",
   "hubspot_update_contact",
   "hubspot_list_companies",
+  // Google Drive (batch 2): sola lettura, vedi Open Decision 14.
+  "drive_search_files",
+  "drive_read_file",
+  "drive_list_folder",
   "request_integration_connect",
 ];
 

@@ -17,25 +17,26 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptMaybe, encryptToken } from "@/lib/integrations/encryption";
 import { getProvider } from "./registry";
-import { getCatalogEntry, PROVIDER_CATALOG, type ProviderCatalogEntry } from "./catalog";
-import { authHeader } from "./http";
-import type { SupportedProvider, TokenUsage } from "./types";
+import { getCatalogEntry, PROVIDER_CATALOG } from "./catalog";
+import { authHeader, providerRequest } from "./http";
+import type { TokenUsage } from "./types";
 
 /**
  * Provider serviti dal proxy condiviso. `google_sheets` è escluso di proposito:
  * ha un modulo dedicato (src/lib/google/sheets.ts) e le sue tool stanno in
  * tools.ts, non in integration-tools.ts.
  *
- * Derivato dal catalogo invece che scritto a mano: aggiungere un provider con
- * `hasApiProxy: true` senza scrivere il proxy non passa il typecheck.
+ * Derivato dal catalogo invece che scritto a mano, così aggiungere un provider
+ * con `hasApiProxy: true` senza scrivere il proxy non passa il typecheck.
+ *
+ * Nota: funziona perché `PROVIDER_CATALOG` è `as const` e NON ha
+ * l'annotazione `: readonly ProviderCatalogEntry[]`: quell'annotazione
+ * allargherebbe `hasApiProxy` a `boolean` e `Extract` darebbe `never`.
  */
-type WithApiProxy = ProviderCatalogEntry & { readonly hasApiProxy: true };
-
-const API_PROXY_ENTRIES: readonly WithApiProxy[] = PROVIDER_CATALOG.filter(
-  (p): p is WithApiProxy => p.hasApiProxy,
-);
-
-export type GenericProvider = (typeof API_PROXY_ENTRIES)[number]["id"];
+export type GenericProvider = Extract<
+  (typeof PROVIDER_CATALOG)[number],
+  { hasApiProxy: true }
+>["id"];
 
 export type IntegrationApiResult =
   | { ok: true; data: string }
@@ -1270,3 +1271,210 @@ export async function hubspotApiProxy(
     };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Google Drive
+// ---------------------------------------------------------------------------
+
+export type DriveAction = "searchFiles" | "readFile" | "listFolder";
+
+export type DriveParams = {
+  /** Testo libero per drive.files.list (q) o contenuto da cercare. */
+  query?: string;
+  /** ID del file/cartella. */
+  fileId?: string;
+  /** ID della cartella per listFolder. */
+  folderId?: string;
+  limit?: number;
+};
+
+const DRIVE_API = "https://www.googleapis.com/drive/v3";
+/** I campi minimi per descrivere un file. `webViewLink` è il link "apri in Drive". */
+const DRIVE_FIELDS = "files(id,name,mimeType,size,modifiedTime,webViewLink,parents)";
+
+/** Limite di caratteri per un file letto: il modello non deve ricevere 5 MB di testo. */
+const MAX_READ_CHARS = 20_000;
+
+/**
+ * I Google Docs/Sheets/Slides non si scaricano: `files.get?alt=media` restituisce
+ * il binario. Per quelli va usato `export`, che converte in testo/CSV/PDF.
+ */
+function exportMimeType(mimeType: string): string | null {
+  if (mimeType === "application/vnd.google-apps.document") {
+    return "text/plain";
+  }
+  if (mimeType === "application/vnd.google-apps.spreadsheet") {
+    // export di uno Sheet: la prima scheda in CSV è la forma più leggibile
+    return "text/csv";
+  }
+  if (mimeType === "application/vnd.google-apps.presentation") {
+    return "text/plain";
+  }
+  return null;
+}
+
+/** File che non ha senso restituire come testo (immagini, video, archivi). */
+function isBinaryMimeType(mimeType: string): boolean {
+  return (
+    mimeType.startsWith("image/") ||
+    mimeType.startsWith("video/") ||
+    mimeType.startsWith("audio/") ||
+    mimeType.includes("zip") ||
+    mimeType.includes("compressed") ||
+    mimeType.includes("application/x-")
+  );
+}
+
+function formatDriveFile(f: {
+  id?: string;
+  name?: string;
+  mimeType?: string;
+  size?: string;
+  modifiedTime?: string;
+  webViewLink?: string;
+}): string {
+  const kind = f.mimeType === "application/vnd.google-apps.folder" ? "folder" : f.mimeType;
+  return [
+    `- ${f.name ?? "?"} (${kind})`,
+    f.id ? `  id: ${f.id}` : "",
+    f.size ? `  size: ${f.size}B` : "",
+    f.modifiedTime ? `  modified: ${f.modifiedTime}` : "",
+    f.webViewLink ? `  ${f.webViewLink}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * Traduce una ricerca in linguaggio naturale nella sintassi di Drive (`q`).
+ * Senza questo il modello dovrebbe ricordarsi la sintassi (`name contains 'x'`,
+ * `mimeType = '...'`) a ogni chiamata: è fragile e produce query sbagliate.
+ * Con contiene solo AND di termini, che è il 90% delle richieste reali.
+ */
+function buildDriveQuery(query: string, folderId?: string): string {
+  const parts: string[] = ["trashed = false"];
+  const terms = query
+    .split(/\s+/)
+    .map((t) => t.replace(/["\\]/g, " ").trim())
+    .filter(Boolean);
+  for (const t of terms) parts.push(`name contains '${t}'`);
+  // Se il tenant ha indicato una cartella, restringiamo la ricerca a quella.
+  if (folderId) parts.push(`'${folderId}' in parents`);
+  return parts.join(" and ");
+}
+
+export async function driveApiProxy(
+  action: DriveAction,
+  params: DriveParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "google_drive");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+
+  const limit = clampLimit(params.limit);
+  const headers = {
+    Authorization: integrationAuth(token),
+    Accept: "application/json",
+  };
+
+  if (action === "searchFiles" || action === "listFolder") {
+    // listFolder senza cartella = ricerca in "My Drive" (assenti i parent).
+    const q = action === "listFolder"
+      ? `trashed = false${params.folderId ? ` and '${params.folderId}' in parents` : ""}`
+      : buildDriveQuery(params.query ?? "", params.folderId);
+    const url = new URL(`${DRIVE_API}/files`);
+    url.searchParams.set("q", q);
+    url.searchParams.set("fields", `files(${DRIVE_FIELDS}),nextPageToken`);
+    url.searchParams.set("pageSize", String(limit));
+    url.searchParams.set("orderBy", "modifiedTime desc");
+    // Coroutine: i risultati senza padroni non appaiono nel riquadro sinistro e
+    // sono quasi sempre ciò che l'utente sta cercando ("i miei documenti").
+    url.searchParams.set("corpora", "user");
+    url.searchParams.set("supportsAllDrives", "true");
+    url.searchParams.set("includeItemsFromAllDrives", "true");
+
+    const res = await providerRequest(url.toString(), {
+      headers,
+      providerLabel: "Google Drive",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+
+    const files = (res.json as { files?: DriveFile[] } | undefined)?.files ?? [];
+    if (files.length === 0) {
+      return {
+        ok: true,
+        data: action === "listFolder"
+          ? "The folder is empty (or not accessible with this account)."
+          : "No Google Drive files matched.",
+      };
+    }
+    const header =
+      action === "listFolder"
+        ? `${files.length} item(s) in the folder:`
+        : `${files.length} file(s) matching "${params.query ?? ""}":`;
+    return { ok: true, data: `${header}\n${files.map(formatDriveFile).join("\n")}` };
+  }
+
+  // readFile
+  const fileId = (params.fileId ?? "").trim();
+  if (!fileId) return { ok: false, error: "drive_read_file requires fileId." };
+
+  // 1. Metadati: servono nome, mimeType (per scegliere export vs download) e link.
+  const metaRes = await providerRequest(
+    `${DRIVE_API}/files/${encodeURIComponent(fileId)}?fields=${encodeURIComponent(DRIVE_FIELDS)}`,
+    { headers, providerLabel: "Google Drive" },
+  );
+  if (!metaRes.ok) return { ok: false, error: metaRes.error! };
+
+  const meta = metaRes.json as DriveFile | undefined;
+  const mimeType = meta?.mimeType ?? "";
+  const name = meta?.name ?? fileId;
+
+  if (isBinaryMimeType(mimeType)) {
+    return {
+      ok: true,
+      data: `"${name}" is a ${mimeType} file, not text — its content cannot be read as text. Link: ${meta?.webViewLink ?? "n/a"}`,
+    };
+  }
+
+  // 2. Contenuto: export per i Google-native, download diretto per il resto.
+  const exportType = exportMimeType(mimeType);
+  const contentUrl = exportType
+    ? `${DRIVE_API}/files/${encodeURIComponent(fileId)}/export?mimeType=${encodeURIComponent(exportType)}`
+    : `${DRIVE_API}/files/${encodeURIComponent(fileId)}?alt=media`;
+
+  const contentRes = await providerRequest(contentUrl, {
+    headers: { Authorization: integrationAuth(token) },
+    providerLabel: "Google Drive",
+  });
+  if (!contentRes.ok) return { ok: false, error: contentRes.error! };
+
+  const text = contentRes.text;
+  if (!text.trim()) {
+    return { ok: true, data: `"${name}" is empty.` };
+  }
+
+  // 3. Troncamento esplicito: il modello deve sapere che sta leggendo un estratto,
+  //    altrimenti risponderebbe con la certezza di aver letto tutto il file.
+  const truncated = text.length > MAX_READ_CHARS;
+  const body = truncated ? text.slice(0, MAX_READ_CHARS) : text;
+  const notice = truncated
+    ? `\n\n[Content truncated at ${MAX_READ_CHARS} characters of ${text.length} total. Ask for a specific section to read further.]`
+    : "";
+
+  return {
+    ok: true,
+    data: `"${name}" (${mimeType || "unknown"})${meta?.webViewLink ? ` — ${meta.webViewLink}` : ""}\n\n${body}${notice}`,
+  };
+}
+
+type DriveFile = {
+  id?: string;
+  name?: string;
+  mimeType?: string;
+  size?: string;
+  modifiedTime?: string;
+  webViewLink?: string;
+  parents?: string[];
+};

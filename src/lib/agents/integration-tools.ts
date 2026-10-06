@@ -7,11 +7,12 @@ import {
   notionApiProxy,
   slackApiProxy,
   hubspotApiProxy,
+  driveApiProxy,
 } from "@/lib/integrations/api-proxy";
 
 /**
  * Tool agente per le integrazioni: GitHub / ClickUp / Asana / Notion / Slack /
- * HubSpot.
+ * HubSpot / Google Drive.
  *
  * Perché un modulo dedicato: tiene `lib/agents/tools.ts` focalizzato sugli
  * strumenti core e raccoglie qui definizioni + handler delle integrazioni.
@@ -43,6 +44,9 @@ const INTEGRATION_TOOL_NAMES = [
   "hubspot_create_contact",
   "hubspot_update_contact",
   "hubspot_list_companies",
+  "drive_search_files",
+  "drive_read_file",
+  "drive_list_folder",
 ] as const;
 
 export function isIntegrationTool(name: string): boolean {
@@ -369,6 +373,61 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
       },
     },
   },
+
+  // --- Google Drive --------------------------------------------------------
+  // Solo lettura: `drive_create_file` è escluso di proposito in questo batch,
+  // vedi Open Decision 14 (non esiste ancora un meccanismo di conferma utente
+  // fra handler e UI).
+
+  drive_search_files: {
+    name: "drive_search_files",
+    description:
+      "Search files by name in the connected Google Drive. Use plain words, not Drive query syntax. Returns name, type, id, modified date and link. Use the returned id with drive_read_file.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Words to look for in file names (e.g. 'budget 2026'). All must match.",
+        },
+        folderId: {
+          type: "string",
+          description: "Optional folder id to restrict the search to that folder",
+        },
+        limit: { type: "integer", description: "Max files to return (default 20, max 50)" },
+      },
+      required: ["query"],
+    },
+  },
+
+  drive_read_file: {
+    name: "drive_read_file",
+    description:
+      "Read the text content of a Google Drive file by its id. Handles Google Docs, Sheets, Slides and plain text/CSV/PDF files. Long files are truncated, and the output says so. Use drive_search_files or drive_list_folder to find the id.",
+    input_schema: {
+      type: "object",
+      properties: {
+        fileId: { type: "string", description: "The Drive file id (from search/list output)" },
+      },
+      required: ["fileId"],
+    },
+  },
+
+  drive_list_folder: {
+    name: "drive_list_folder",
+    description:
+      "List files and subfolders inside a Google Drive folder. Returns names, types, ids and links, so ids can be passed to drive_read_file or used to walk into a subfolder.",
+    input_schema: {
+      type: "object",
+      properties: {
+        folderId: {
+          type: "string",
+          description: "Folder id. Omit to list the top level of 'My Drive'.",
+        },
+        limit: { type: "integer", description: "Max items to return (default 20, max 50)" },
+      },
+    },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -591,6 +650,35 @@ export async function executeIntegrationTool(
       const r = await hubspotApiProxy(
         "listCompanies",
         { limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "drive_search_files": {
+      const query = clean(input.query, 300);
+      if (!query) return "drive_search_files requires query.";
+      const folderId = input.folderId ? clean(input.folderId, 200) : undefined;
+      const r = await driveApiProxy(
+        "searchFiles",
+        { query, folderId, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "drive_read_file": {
+      const fileId = clean(input.fileId, 200);
+      if (!fileId) return "drive_read_file requires fileId.";
+      const r = await driveApiProxy("readFile", { fileId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "drive_list_folder": {
+      const folderId = input.folderId ? clean(input.folderId, 200) : undefined;
+      const r = await driveApiProxy(
+        "listFolder",
+        { folderId, limit: parseLimit(input.limit) },
         tenantId,
       );
       return r.ok ? r.data : r.error;

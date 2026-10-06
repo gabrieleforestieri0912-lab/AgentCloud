@@ -8,15 +8,24 @@
  * adapter manca, il typecheck fallisce (vedi registry.ts).
  */
 
-import { PROVIDER_CATALOG } from "./catalog";
+import { PROVIDER_CATALOG, IMPLEMENTED_PROVIDERS } from "./catalog";
 
+/** Ogni provider previsto dal batch, dichiarato in anticipo nel catalogo. */
 export type SupportedProvider = (typeof PROVIDER_CATALOG)[number]["id"];
+
+/** Provider con adapter, proxy e tool: quelli che le route OAuth accettano. */
+export type ImplementedProvider = (typeof IMPLEMENTED_PROVIDERS)[number];
 
 export const SUPPORTED_PROVIDERS: readonly SupportedProvider[] =
   PROVIDER_CATALOG.map((p) => p.id);
 
-export function isSupportedProvider(v: string): v is SupportedProvider {
-  return (SUPPORTED_PROVIDERS as readonly string[]).includes(v);
+/**
+ * Usata dalle route OAuth: accetta solo i provider implementati. Un provider
+ * ancora in costruzione risponde 400 "unsupported provider" invece di
+ * costruire un authorize URL che si romperebbe al primo passo.
+ */
+export function isSupportedProvider(v: string): v is ImplementedProvider {
+  return (IMPLEMENTED_PROVIDERS as readonly string[]).includes(v);
 }
 
 export type TokenExchangeResult = {

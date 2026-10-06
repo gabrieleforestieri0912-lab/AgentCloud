@@ -24,6 +24,9 @@ function providerForIntegration(label: string): string | null {
   if (k === "slack" || k.includes("slack")) return "slack";
   if (k === "hubspot" || k.includes("hubspot")) return "hubspot";
   if (k === "google sheets" || k.includes("sheets")) return "google_sheets";
+  // Va PRIMA del catch-all `includes("google")` sotto: Drive sta nel layer
+  // generico (tenant_integrations), non in google_connections.
+  if (k.includes("drive")) return "google_drive";
   if (k.includes("google")) return "google";
   return null;
 }
@@ -61,7 +64,7 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
         {integrations.map((label) => {
           const prov = providerForIntegration(label);
           const soon = !isIntegrationAvailable(label);
-          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "github", "clickup", "asana"].includes(prov);
+          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "google_drive", "github", "clickup", "asana"].includes(prov);
           const connected = isGeneric
             ? !!genericConnected[prov!]
             : prov === "shopify"

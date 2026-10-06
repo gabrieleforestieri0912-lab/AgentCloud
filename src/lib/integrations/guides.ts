@@ -122,6 +122,17 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
       { title: "Prova", desc: "Connesso. Chiedi: avvisa il team su Slack del nuovo lead." },
     ],
   },
+  googledrive: {
+    provider: "googledrive",
+    whatItDoes: "Collega Google Drive: l'agente cerca i tuoi file e ne legge il contenuto.",
+    time: "1 min",
+    steps: [
+      { title: "Prepara", desc: "Account Google. Nessun file da caricare." },
+      { title: "Collega", desc: "Clicca Connetti → autorizza Google Drive. Vedrai due voci: lettura dei file e creazione di file." },
+      { title: "Prova", desc: "Connesso. Chiedi: trova il mio documento budget e riassumilo." },
+    ],
+    needHelp: "Se un file non compare, controlla che non sia nel cestino e che l'agente abbia il permesso di lettura.",
+  },
 };
 
 export function getGuideForBrand(brand: string): IntegrationGuide | null {

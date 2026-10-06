@@ -212,8 +212,8 @@ export const INTEGRATIONS: Integration[] = [
     name: "Google Drive",
     brand: "googledrive",
     category: "Storage",
-    available: false,
-    description: "File e drive condivisi",
+    available: true,
+    description: "Cerca e leggi i tuoi file",
   },
   {
     name: "Dropbox",
@@ -338,6 +338,7 @@ const CONNECTABLE_PROVIDERS: { id: string; names: string[] }[] = [
   { id: "gmail", names: ["gmail", "google mail"] },
   { id: "calendar", names: ["google calendar", "calendario", "calendar"] },
   { id: "sheets", names: ["google sheets", "spreadsheet", "fogli", "sheets"] },
+  { id: "drive", names: ["google drive", "drive"] },
   { id: "slack", names: ["slack"] },
   { id: "notion", names: ["notion"] },
   { id: "hubspot", names: ["hubspot"] },

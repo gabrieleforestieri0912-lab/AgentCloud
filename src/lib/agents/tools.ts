@@ -994,6 +994,7 @@ export const CONNECT_PROVIDERS = [
   "github",
   "clickup",
   "asana",
+  "drive",
   "whatsapp",
 ] as const;
 
@@ -1012,6 +1013,9 @@ export function normalizeConnectProvider(raw: string | undefined): string | null
   if (key.includes("gmail") || key === "email" || key === "mail" || key === "google" || key === "googlemail") return "gmail";
   if (key.includes("calendar") || key.includes("agenda")) return "calendar";
   if (key.includes("sheet") || key.includes("fogli")) return "sheets";
+  // Va dopo sheets/calendar: "googledrive" contiene "drive" e nient'altro che
+  // li confligga, ma l'ordine resta leggibile rispetto agli altri alias.
+  if (key.includes("drive")) return "drive";
   if (key.includes("whatsapp")) return "whatsapp";
   return (CONNECT_PROVIDERS as readonly string[]).includes(key) ? key : null;
 }
