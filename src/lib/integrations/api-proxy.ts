@@ -17,14 +17,25 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptMaybe, encryptToken } from "@/lib/integrations/encryption";
 import { getProvider } from "./registry";
+import { getCatalogEntry, PROVIDER_CATALOG, type ProviderCatalogEntry } from "./catalog";
+import { authHeader } from "./http";
+import type { SupportedProvider, TokenUsage } from "./types";
 
-export type GenericProvider =
-  | "github"
-  | "clickup"
-  | "asana"
-  | "notion"
-  | "slack"
-  | "hubspot";
+/**
+ * Provider serviti dal proxy condiviso. `google_sheets` è escluso di proposito:
+ * ha un modulo dedicato (src/lib/google/sheets.ts) e le sue tool stanno in
+ * tools.ts, non in integration-tools.ts.
+ *
+ * Derivato dal catalogo invece che scritto a mano: aggiungere un provider con
+ * `hasApiProxy: true` senza scrivere il proxy non passa il typecheck.
+ */
+type WithApiProxy = ProviderCatalogEntry & { readonly hasApiProxy: true };
+
+const API_PROXY_ENTRIES: readonly WithApiProxy[] = PROVIDER_CATALOG.filter(
+  (p): p is WithApiProxy => p.hasApiProxy,
+);
+
+export type GenericProvider = (typeof API_PROXY_ENTRIES)[number]["id"];
 
 export type IntegrationApiResult =
   | { ok: true; data: string }
@@ -39,9 +50,21 @@ type IntegrationRow = {
   refresh_token: string | null;
   expires_at: string | null;
   external_account_id: string | null;
+  metadata: Record<string, unknown> | null;
 };
 
-type ResolvedToken = { accessToken: string; account: string | null };
+/**
+ * Credenziali pronte per una chiamata. `secretToken` serve solo ai provider
+ * `keypair` (WooCommerce: Consumer Secret accanto alla Consumer Key); per gli
+ * altri è sempre null.
+ */
+type ResolvedToken = {
+  accessToken: string;
+  account: string | null;
+  secretToken: string | null;
+  usage: TokenUsage;
+  metadata: Record<string, unknown>;
+};
 
 /**
  * Esito della risoluzione del token. `ok: false` porta già il messaggio d'errore
@@ -56,15 +79,10 @@ function notConnectedError(name: string): string {
   return `No ${name} account connected. Ask the user to connect ${name} from the dashboard (Integrations), then retry.`;
 }
 
-/** Etichetta umana del provider, usata nei messaggi che il modello riporta all'utente. */
-const PROVIDER_LABEL: Record<GenericProvider, string> = {
-  github: "GitHub",
-  clickup: "ClickUp",
-  asana: "Asana",
-  notion: "Notion",
-  slack: "Slack",
-  hubspot: "HubSpot",
-};
+/** Etichetta umana del provider, presa dal catalogo (usata nei messaggi al modello). */
+function providerLabel(provider: GenericProvider): string {
+  return getCatalogEntry(provider)?.label ?? provider;
+}
 
 /** True se un token con questa scadenza va rinfrescato ora (null = non scade). */
 function shouldRefresh(expiresAt: string | null): boolean {
@@ -114,7 +132,7 @@ export async function resolveIntegrationToken(
   tenantId: string,
   provider: GenericProvider,
 ): Promise<ResolvedIntegration> {
-  const label = PROVIDER_LABEL[provider];
+  const label = providerLabel(provider);
   const none = (): ResolvedIntegration => ({ ok: false, error: notConnectedError(label) });
 
   if (!tenantId) return none();
@@ -123,7 +141,7 @@ export async function resolveIntegrationToken(
 
   const { data, error } = await admin
     .from("tenant_integrations")
-    .select("status, access_token, refresh_token, expires_at, external_account_id")
+    .select("status, access_token, refresh_token, expires_at, external_account_id, metadata")
     .eq("tenant_id", tenantId)
     .eq("provider", provider)
     .maybeSingle();
@@ -135,9 +153,16 @@ export async function resolveIntegrationToken(
   const accessToken = decryptMaybe(row.access_token);
   if (!accessToken) return none();
 
+  const metadata = row.metadata ?? {};
+  const usage = getCatalogEntry(provider)?.authType === "keypair" ? "keypair" : "bearer";
+
   // Refresh solo se il token scade E c'è un refresh token salvato: i provider
   // senza scadenza (GitHub, ClickUp, Notion, Slack) hanno expires_at e
   // refresh_token null, quindi qui non vengono toccati.
+  //
+  // Per i provider `keypair` (WooCommerce) NON è un refresh: refresh_token è la
+  // seconda credenziale (Consumer Secret) e expires_at è null, quindi `shouldRefresh`
+  // è false e la coppia va semplicemente consegnata.
   const refreshToken = decryptMaybe(row.refresh_token);
   if (refreshToken && shouldRefresh(row.expires_at)) {
     const refreshed = await refreshViaAdapter(provider, refreshToken);
@@ -163,11 +188,35 @@ export async function resolveIntegrationToken(
       .eq("provider", provider);
     return {
       ok: true,
-      token: { accessToken: refreshed.accessToken, account: row.external_account_id },
+      token: {
+        accessToken: refreshed.accessToken,
+        account: row.external_account_id,
+        secretToken: null,
+        usage,
+        metadata,
+      },
     };
   }
 
-  return { ok: true, token: { accessToken, account: row.external_account_id } };
+  return {
+    ok: true,
+    token: {
+      accessToken,
+      account: row.external_account_id,
+      secretToken: refreshToken,
+      usage,
+      metadata,
+    },
+  };
+}
+
+/**
+ * Header Authorization per un provider. Centralizza i due formati supportati:
+ * Bearer (default) e Basic base64(key:secret) per i provider `keypair`
+ * (WooCommerce), dove la seconda credenziale arriva in `secretToken`.
+ */
+export function integrationAuth(token: ResolvedToken): string {
+  return authHeader(token.usage, token.accessToken, token.secretToken);
 }
 
 // ---------------------------------------------------------------------------

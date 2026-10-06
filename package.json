@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:integrations": "node --experimental-strip-types scripts/test-integration-foundations.mjs",
+    "test": "node --experimental-strip-types scripts/test-integration-foundations.mjs && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

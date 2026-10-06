@@ -1,0 +1,225 @@
+/**
+ * Registro unico dei provider d'integrazione (Phase 2, decisione 3).
+ *
+ * Perché esiste: prima ogni provider era registrato a mano in 8+ liste
+ * indipendenti (union TS, mappa adapter, union del proxy, nomi dei tool, mappe
+ * UI, catalogo, guide, SQL). Aggiungerne uno dimenticandone una rompeva in
+ * silenzio la card, il badge di stato o il redirect di connessione.
+ *
+ * Qui c'è la sola fonte di verità: `SupportedProvider`, la mappa degli adapter,
+ * l'union del proxy e i metadati per la UI derivano da questo file.
+ *
+ * Aggiungere un connettore = 1 riga in PROVIDER_CATALOG + 1 adapter in
+ * providers/ + 1 voce in registry.ts. `npm run typecheck` segnala se manca
+ * qualcosa, perché le union sono derivate da questo array.
+ *
+ * ATTENZIONE: `supabase/schema-*.sql` duplica la lista dei provider (check
+ * constraint). Non può derivarla da qui: va aggiornato insieme. Il vincolo
+ * hard-delete le righe dei provider fuori dal set, quindi un provider nuovo
+ * senza il relativo SQL verrebbe cancellato alla riesecuzione dello schema.
+ */
+
+export type AuthType =
+  /** OAuth 2.0 authorization_code, senza PKCE. */
+  | "oauth2"
+  /** OAuth 2.0 authorization_code + PKCE (S256). Richiede code_verifier persistito. */
+  | "oauth2_pkce"
+  /**
+   * Non è OAuth: l'utente inserisce un dato (URL store) e il provider
+   * restituisce una coppia di credenziali. Serve `tenantInput`.
+   */
+  | "keypair";
+
+export type ProviderCatalogEntry = {
+  /** Chiave usata in tenant_integrations.provider e nelle route /api/integrations/<provider>. */
+  readonly id: string;
+  /** Etichetta leggibile: usata nei messaggi all'utente e in `PROVIDER_LABEL`. */
+  readonly label: string;
+  /** Brand slug: deve combaciare con src/lib/brands.ts e public/brand-logos/. */
+  readonly brand: string;
+  /** Categoria per il filtro nella pagina integrazioni (stringa libera, vedi INTEGRATION_CATEGORIES). */
+  readonly category: string;
+  readonly authType: AuthType;
+  /** Scope OAuth dichiarati dal provider. Documentale: il codice li passa dove serve. */
+  readonly scopes: readonly string[];
+  /**
+   * True se il provider è passato dal proxy condiviso in api-proxy.ts.
+   * `google_sheets` è false perché ha un modulo dedicato (src/lib/google/sheets.ts)
+   * e le sue tool stanno in tools.ts, non in integration-tools.ts.
+   */
+  readonly hasApiProxy: boolean;
+  /**
+   * Campo che il provider pretende dall'utente prima di autorizzare
+   * (per es. l'URL dello store WooCommerce). Se presente, la UI deve raccoglierlo
+   * e mandarlo come `tenantInput` ad authorize/callback.
+   */
+  readonly tenantInput?: {
+    readonly key: string;
+    readonly label: string;
+    readonly placeholder: string;
+    /** Se true il valore viene validato lato server (obbligatorio per URL). */
+    readonly validateAsUrl?: boolean;
+  };
+};
+
+export const PROVIDER_CATALOG: readonly ProviderCatalogEntry[] = [
+  // --- Già esistenti (non toccare il comportamento) -------------------------
+  {
+    id: "notion",
+    label: "Notion",
+    brand: "notion",
+    category: "Productivity",
+    authType: "oauth2",
+    scopes: [],
+    hasApiProxy: true,
+  },
+  {
+    id: "slack",
+    label: "Slack",
+    brand: "slack",
+    category: "Messaging",
+    authType: "oauth2",
+    scopes: ["channels:read", "chat:write"],
+    hasApiProxy: true,
+  },
+  {
+    id: "hubspot",
+    label: "HubSpot",
+    brand: "hubspot",
+    category: "CRM",
+    authType: "oauth2",
+    scopes: [],
+    hasApiProxy: true,
+  },
+  {
+    id: "google_sheets",
+    label: "Google Sheets",
+    brand: "googlesheets",
+    category: "Storage",
+    authType: "oauth2",
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    hasApiProxy: false,
+  },
+  {
+    id: "github",
+    label: "GitHub",
+    brand: "github",
+    category: "Developer",
+    authType: "oauth2",
+    scopes: ["repo", "read:user", "user:email"],
+    hasApiProxy: true,
+  },
+  {
+    id: "clickup",
+    label: "ClickUp",
+    brand: "clickup",
+    category: "Productivity",
+    authType: "oauth2",
+    scopes: [],
+    hasApiProxy: true,
+  },
+  {
+    id: "asana",
+    label: "Asana",
+    brand: "asana",
+    category: "Productivity",
+    authType: "oauth2",
+    scopes: [],
+    hasApiProxy: true,
+  },
+
+  // --- Batch 2 (Fase 3) ----------------------------------------------------
+  {
+    id: "google_drive",
+    label: "Google Drive",
+    brand: "googledrive",
+    category: "Storage",
+    authType: "oauth2",
+    // drive.file = solo i file creati dall'app; drive.readonly = lettura dei
+    // file dell'utente. Insieme coprono il caso d'uso senza chiedere l'accesso
+    // completo al Drive, che è la versione che Google sottopone a verifica
+    // manuale per le app "sensitive"/non verificate.
+    scopes: [
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/drive.readonly",
+    ],
+    hasApiProxy: true,
+  },
+  {
+    id: "airtable",
+    label: "Airtable",
+    brand: "airtable",
+    category: "Database",
+    authType: "oauth2_pkce",
+    scopes: [
+      "data.records:read",
+      "data.records:write",
+      "schema.bases:read",
+    ],
+    hasApiProxy: true,
+  },
+  {
+    id: "trello",
+    label: "Trello",
+    brand: "trello",
+    category: "Project Management",
+    authType: "oauth2",
+    // Trello non è un authorization_code flow "classico": restituisce il token
+    // nell'URL di redirect. `expiration=30days` tiene il token a 30 giorni
+    // invece che a 157 (massimo consentito) per non costringere il tenant a
+    // riconnettersi ogni 5 mesi.
+    scopes: ["read", "write"],
+    hasApiProxy: true,
+  },
+  {
+    id: "woocommerce",
+    label: "WooCommerce",
+    brand: "woocommerce",
+    category: "E-commerce",
+    authType: "keypair",
+    scopes: ["read_write"],
+    hasApiProxy: true,
+    tenantInput: {
+      key: "store_url",
+      label: "URL del tuo store WooCommerce",
+      placeholder: "https://tuo-store.com",
+      validateAsUrl: true,
+    },
+  },
+  {
+    id: "mailchimp",
+    label: "Mailchimp",
+    brand: "mailchimp",
+    category: "Marketing",
+    authType: "oauth2",
+    // Mailchimp non usa scope OAuth: l'accesso è per-account. I permessi
+    // effettivi sono read/write sull'audience; va registrata una sola
+    // integrazione "Read-Write" sulla piattaforma Mailchimp.
+    scopes: [],
+    hasApiProxy: true,
+  },
+] as const;
+
+const BY_ID = new Map(PROVIDER_CATALOG.map((p) => [p.id, p]));
+
+export function getCatalogEntry(id: string): ProviderCatalogEntry | undefined {
+  return BY_ID.get(id?.toLowerCase() ?? "");
+}
+
+/** Provider che hanno un proxy condiviso in api-proxy.ts. */
+export function apiProxyProviderIds(): string[] {
+  return PROVIDER_CATALOG.filter((p) => p.hasApiProxy).map((p) => p.id);
+}
+
+/** Categorie usate dalla pagina integrazioni, nell'ordine in cui mostrarle. */
+export const INTEGRATION_CATEGORIES: readonly string[] = [
+  "Storage",
+  "Database",
+  "Project Management",
+  "E-commerce",
+  "Marketing",
+  "Productivity",
+  "CRM",
+  "Messaging",
+  "Developer",
+];
