@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { INTEGRATIONS } from "../src/lib/integrations.ts";
 import {
   PROVIDER_CATALOG,
+  IMPLEMENTED_PROVIDERS,
   INTEGRATION_CATEGORIES,
 } from "../src/lib/integrations/catalog.ts";
 
@@ -273,6 +274,80 @@ await test("le nuove chiavi esistono in tutte e 5 le lingue", () => {
   for (const [i, b] of blocks.entries()) {
     for (const k of keys) {
       assert.ok(b.includes(`${k}:`), `chiave ${k} mancante nel dizionario ${i + 1}`);
+    }
+  }
+});
+
+console.log("\nSQL · allineamento con il catalogo");
+
+await test("il CHECK constraint elenca esattamente i provider implementati", () => {
+  // La lista dei provider è duplicata in SQL e non può derivare dal TS. Questo
+  // test è l'unico legame fra le due: senza, una riga dimenticata in SQL fa
+  // fallire ogni tentativo di connessione con un errore di vincolo, e una riga
+  // in più lo fa silenziosamente.
+  const sql = read("supabase/schema-integrations.sql");
+  const m = sql.match(
+    /add constraint tenant_integrations_provider_check\s+check \(provider in \(([\s\S]*?)\)\);/,
+  );
+  assert.ok(m, "non trovo il CHECK constraint sui provider");
+
+  const inSql = [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]);
+  const inCode = [...IMPLEMENTED_PROVIDERS].sort();
+
+  assert.deepEqual(
+    inSql.sort(),
+    inCode,
+    `SQL e codice divergono.\n  solo in SQL: ${inSql.filter((p) => !inCode.includes(p)).join(", ") || "-"}\n  solo in codice: ${inCode.filter((p) => !inSql.includes(p)).join(", ") || "-"}`,
+  );
+});
+
+await test("il batch 2 elenca gli stessi provider del file principale", () => {
+  const batch = read("supabase/schema-integrations-batch2.sql");
+  const m = batch.match(/check \(provider in \(([\s\S]*?)\)\);/);
+  assert.ok(m, "non trovo il CHECK constraint nel file batch 2");
+  const inBatch = [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]);
+  const inCode = [...IMPLEMENTED_PROVIDERS].sort();
+  assert.deepEqual(
+    inBatch.sort(),
+    inCode,
+    "i due file SQL non elencano gli stessi provider",
+  );
+});
+
+await test("nessuna delete distruttiva per allow-list negli schema", () => {
+  // `delete ... where provider not in (...)` cancella silenziosamente i provider
+  // che un file non conosce. Se qualcuno lo riaggiunge, un tenant perde la
+  // connessione senza che nessun errore lo segnali. Le rimozioni devono essere
+  // esplicite e nominate.
+  for (const f of ["supabase/schema-integrations.sql", "supabase/schema-integrations-batch2.sql"]) {
+    const sql = read(f);
+    // Tolgo i commenti: la menzione "provider not in" può stare nella spiegazione.
+    const code = sql.replace(/--[^\n]*/g, "");
+    assert.ok(
+      !/delete\s+from\s+[\s\S]{0,200}?not\s+in\s*\(/i.test(code),
+      `${f} contiene una delete per allow-list: cancella connessioni in silenzio`,
+    );
+  }
+});
+
+await test("gli schema dichiarano RLS e le policy per tenant", () => {
+  for (const f of ["supabase/schema-integrations.sql", "supabase/schema-integrations-batch2.sql"]) {
+    const sql = read(f);
+    if (f.endsWith("batch2.sql")) continue; // il batch non tocca le policy
+    assert.ok(
+      sql.includes("enable row level security"),
+      `${f} non abilita RLS`,
+    );
+    // Le policy devono legare tenant_id all'utente autenticato.
+    const policies = [...sql.matchAll(/create policy[\s\S]*?using \(([^)]*)\)/g)].map((x) => x[1]);
+    assert.ok(policies.length >= 4, `solo ${policies.length} policy trovate`);
+    for (const p of policies) {
+      if (p.includes("auth.uid()")) {
+        assert.ok(
+          p.includes("tenant_id") || p.includes("user_id"),
+          `policy che usa auth.uid() ma non lega il tenant: ${p}`,
+        );
+      }
     }
   }
 });

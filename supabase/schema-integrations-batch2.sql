@@ -5,12 +5,17 @@
 -- Da eseguire DOPO schema-integrations.sql.
 -- Idempotente: puoi rieseguirlo quante volte vuoi.
 --
--- Perché un file nuovo invece di modificare schema-integrations.sql:
--- quel file contiene una `delete ... where provider not in (...)` che cancella
--- le righe dei provider non ancora nel suo allow-list. Se i 5 provider nuovi
--- fossero aggiunti lì, ogni sua riesecuzione prima che il batch fosse
--- applicato avrebbe cancellato le connessioni degli utenti. Qui si allarga
--- solo il vincolo, senza toccare dati.
+-- NOTA: schema-integrations.sql è ora già aggiornato con tutti e 12 i provider,
+-- quindi i due file possono essere applicati in QUALSIASI ordine. Questo file
+-- resta utile per due motivi: documenta il caso WooCommerce (chiavi per store,
+-- cifrate in tenant_integrations e non env) e conserva lo storico del batch.
+--
+-- Perché originariamente era un file nuovo invece di una modifica a
+-- schema-integrations.sql: quel file aveva una `delete ... where provider not in
+-- (...)` che cancellava i provider fuori allow-list. Aggiungervi i provider
+-- nuovi avrebbe fatto perdere connessioni a ogni sua riesecuzione. La delete è
+-- stata rimossa: ora quel file ha solo rimozioni esplicite e nominate, quindi
+-- rieseguirlo non distrugge nulla.
 --
 -- provider supportati (allineati a src/lib/integrations/catalog.ts):
 --   notion, slack, hubspot, google_sheets, github, clickup, asana,

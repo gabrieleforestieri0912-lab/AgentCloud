@@ -1,13 +1,21 @@
 -- -----------------------------------------------------------------------------
 -- AgentCloud · Integrazioni OAuth dei tenant (tenant_integrations)
 -- -----------------------------------------------------------------------------
--- Provider supportati (devono restare allineati a src/lib/integrations/types.ts):
---   notion, slack, hubspot, google_sheets, github, clickup, asana
+-- Provider supportati (devono restare allineati a IMPLEMENTED_PROVIDERS in
+-- src/lib/integrations/catalog.ts — il test lo verifica):
+--   notion, slack, hubspot, google_sheets, github, clickup, asana,
+--   google_drive, airtable, trello, woocommerce, mailchimp
 --
 -- Redirect URI da registrare su ciascun provider:
 --   https://www.agentcloud.agency/api/integrations/<provider>/callback
 --
--- Script idempotente: puoi rieseguirlo quante volte vuoi.
+-- Script idempotente: puoi rieseguirlo quante volte vuoi. Rieseguirlo NON
+-- cancella connessioni: vedi la sezione 2.
+--
+-- Per il batch 2 vedi anche schema-integrations-batch2.sql, che allarga il
+-- vincolo e documenta il caso WooCommerce (chiavi per store, non env).
+-- Questo file è già aggiornato con tutti i 12 provider, quindi applicare i due
+-- file in qualsiasi ordine dà lo stesso risultato.
 -- -----------------------------------------------------------------------------
 
 create extension if not exists pgcrypto;
@@ -48,12 +56,25 @@ create table if not exists public.tenant_integrations (
 
 
 -- -----------------------------------------------------------------------------
--- 2. Migrazione dei provider storici → set supportato
+-- 2. Vincolo sui provider supportati
 -- -----------------------------------------------------------------------------
--- La tabella può essere stata creata con un set di provider diverso: si toglie
--- prima il vincolo, si eliminano le righe non più supportate e lo si ricrea.
+-- La lista dei provider qui dentro DEVE restare allineata a
+-- IMPLEMENTED_PROVIDERS in src/lib/integrations/catalog.ts: scripts/
+-- test-integrations-ui.mjs verifica che le due liste coincidano e fallisce se
+-- divergono. Il SQL non può derivare dal TS, quindi la sincronizzazione è
+-- controllata da un test.
+--
+-- Provider: notion, slack, hubspot, google_sheets, github, clickup, asana,
+--           google_drive, airtable, trello, woocommerce, mailchimp
 alter table public.tenant_integrations
   drop constraint if exists tenant_integrations_provider_check;
+
+-- Rimozioni ESPLICITE e nominative dei provider usati in passato. Non usare una
+-- `delete where provider not in (...)`: è una bomba a orologeria. Se questo
+-- file viene rieseguito prima di schema-integrations-batch2.sql, quella delete
+-- cancella le connessioni dei provider che ancora non stanno in questo elenco —
+-- e lo fa senza avvisare nessuno. Un errore del genere si scopre solo quando un
+-- cliente torna dicendo che la connessione è sparita.
 
 -- stripe: provider rimosso dal catalogo.
 delete from public.tenant_integrations where provider = 'stripe';
@@ -61,13 +82,16 @@ delete from public.tenant_integrations where provider = 'stripe';
 -- linear: sostituito da clickup (Linear OAuth richiede un piano a pagamento).
 delete from public.tenant_integrations where provider = 'linear';
 
--- Qualsiasi altro provider fuori dal set supportato.
-delete from public.tenant_integrations
- where provider not in ('notion','slack','hubspot','google_sheets','github','clickup','asana');
+-- Se qui sotto ci fosse un provider inatteso che viola il vincolo, l'ALTER
+-- fallisce con un errore esplicito: è il comportamento voluto. Meglio un
+-- deploy che si ferma che dati cancellati in silenzio.
 
 alter table public.tenant_integrations
   add constraint tenant_integrations_provider_check
-  check (provider in ('notion','slack','hubspot','google_sheets','github','clickup','asana'));
+  check (provider in (
+    'notion','slack','hubspot','google_sheets','github','clickup','asana',
+    'google_drive','airtable','trello','woocommerce','mailchimp'
+  ));
 
 
 -- -----------------------------------------------------------------------------

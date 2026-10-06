@@ -128,7 +128,9 @@ export const airtableProvider: IntegrationProvider = {
         granted_scopes: who.scopes ?? null,
         refresh_expires_at: refreshExpiresAt,
       },
-      raw: json,
+      // Come per googleDrive: `raw` non viene persistito, ma non tenere il token
+      // in chiaro in memoria evita che un futuro log lo bruci.
+      raw: { ...json, access_token: undefined, refresh_token: undefined },
     };
   },
 
@@ -165,7 +167,7 @@ export const airtableProvider: IntegrationProvider = {
       refreshToken: newRefresh,
       expiresAt,
       scope: (json.scope as string | undefined) ?? scopes(),
-      raw: json,
+      raw: { ...json, access_token: undefined, refresh_token: undefined },
     };
   },
 };

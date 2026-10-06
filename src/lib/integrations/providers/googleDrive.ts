@@ -146,7 +146,10 @@ export const googleDriveProvider: IntegrationProvider = {
         storage_limit: storage.limit ?? null,
         storage_used: storage.used ?? null,
       },
-      raw: json,
+      // `raw` non viene mai persistito né loggato (vedi store.ts), ma non
+      // serve tenere in memoria il token in chiaro: il giorno in cui qualcuno
+      // stringify questo oggetto in un log, la connessione è bruciata.
+      raw: { ...json, access_token: undefined, refresh_token: undefined },
     };
   },
 
@@ -182,7 +185,7 @@ export const googleDriveProvider: IntegrationProvider = {
       refreshToken,
       expiresAt,
       scope: (json.scope as string | undefined) ?? scopes(),
-      raw: json,
+      raw: { ...json, access_token: undefined, refresh_token: undefined },
     };
   },
 
