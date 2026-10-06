@@ -6,6 +6,7 @@ import { TENANT_SHOPIFY_ID, listShopifyConnections } from "@/lib/shopify/connect
 import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/connections";
 import DashboardShell from "@/components/DashboardShell";
 import IntegrationsGrid from "@/components/IntegrationsGrid";
+import { INTEGRATIONS } from "@/lib/integrations";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -62,12 +63,19 @@ export default async function DashboardIntegrationsPage({
             {/* Progress integrato — non un bottone guida a parte, ma il flusso stesso ti guida */}
             {(() => {
               const connectedCount = rows.filter((r) => r.status === "connected").length + (shopifyConnections.some((c) => c.connected) ? 1 : 0) + (googleConnection?.connected ? 1 : 0);
-              const total = 15; // Shopify, Gmail, Calendar, HubSpot, Notion, Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce, Mailchimp
-              const pct = Math.round((connectedCount / total) * 100);
+              // Derivato, non scritto a mano: era un numero fisso che ogni
+              // connettore aggiunto dimenticava di aggiornare, e la barra
+              // mostrava "12/15" con 13 app disponibili.
+              const total = INTEGRATIONS.filter((a) => a.available).length;
               return (
                 <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
                   <div className="hidden h-2 flex-1 overflow-hidden rounded-full bg-white/10 sm:block">
-                    <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+                    {/* Solo transform: animare `width` su una barra provoca
+                        layout, quindi non è animabile via GPU. */}
+                    <div
+                      className="h-full origin-left bg-emerald-500 transition-transform duration-300"
+                      style={{ transform: `scaleX(${Math.min(1, Math.max(0, connectedCount / total))})` }}
+                    />
                   </div>
                   <p className="text-sm font-semibold text-white">
                     {connectedCount === 0 ? "Inizia dal primo: scegli un'app qui sotto e clicca Connetti — 2 minuti, senza codice." : connectedCount < total ? `${connectedCount} di ${total} connesse · prossimo: clicca Connetti sulla prossima card` : "Tutte connesse — prova gli agenti in chat."}

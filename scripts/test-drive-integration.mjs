@@ -169,22 +169,18 @@ await test("catalogo: Drive disponibile", () => {
   );
 });
 
-await test("il totale della barra di progresso include i provider implementati", () => {
+await test("il totale della barra di progresso è derivato dalle app disponibili", () => {
   const page = fs.readFileSync(
     path.join(ROOT, "src/app/dashboard/integrations/page.tsx"),
     "utf8",
   );
-  // Il totale include anche Shopify + Gmail + Calendar (path legacy, non nel
-  // layer generico), quindi non è derivabile da solo dai provider implementati.
-  // Il controllo utile è che non resti indietro rispetto a chi è collegabile.
-  const m = page.match(/const total = (\d+)/);
-  assert.ok(m, "totale non trovato");
-  const total = Number(m[1]);
-  const implemented = PROVIDER_CATALOG.length; // 12 provider, tutti catalogati
+  // Prima era un numero scritto a mano: ogni connettore aggiunto lo
+  // dimenticava di aggiornare e la barra mostrava 12/15 con 13 app disponibili.
   assert.ok(
-    total >= implemented - 3,
-    `la barra dice ${total} ma il catalogo ha ${implemented} provider: alcuni non sono contati`,
+    page.includes("INTEGRATIONS.filter((a) => a.available).length"),
+    "il totale deve derivare dalle app disponibili",
   );
+  assert.ok(!/const total = \d+/.test(page), "c'è ancora un totale numerico a mano");
 });
 
 await test("guida in 3 passi presente per googledrive", () => {
