@@ -9,6 +9,7 @@ import { asanaProvider } from "./providers/asana";
 import { googleDriveProvider } from "./providers/googleDrive";
 import { airtableProvider } from "./providers/airtable";
 import { trelloProvider } from "./providers/trello";
+import { woocommerceProvider } from "./providers/woocommerce";
 
 /**
  * Mappa adapter: `Record<ImplementedProvider, IntegrationProvider>` è
@@ -31,6 +32,7 @@ const registry: Record<ImplementedProvider, IntegrationProvider> = {
   google_drive: googleDriveProvider,
   airtable: airtableProvider,
   trello: trelloProvider,
+  woocommerce: woocommerceProvider,
 };
 
 export function getProvider(provider: string): IntegrationProvider | null {

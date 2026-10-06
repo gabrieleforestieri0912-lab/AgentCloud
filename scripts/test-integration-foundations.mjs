@@ -288,11 +288,15 @@ await test("google_sheets è escluso dal proxy condiviso", () => {
   assert.equal(getCatalogEntry("google_sheets").hasApiProxy, false);
 });
 
-await test("woocommerce dichiara tenantInput URL", () => {
+await test("woocommerce dichiara i campi che l'utente deve fornire", () => {
   const woo = getCatalogEntry("woocommerce");
   assert.equal(woo.authType, "keypair");
-  assert.equal(woo.tenantInput.key, "store_url");
-  assert.equal(woo.tenantInput.validateAsUrl, true);
+  const fields = woo.tenantInput.fields;
+  // WooCommerce pretende URL dello store E WordPress User ID: il secondo non è
+  // deducibile, la UI deve chiederlo.
+  const keys = fields.map((f) => f.key);
+  assert.deepEqual(keys, ["store_url", "user_id"]);
+  assert.equal(fields[0].validateAsUrl, true, "store_url va validato come URL");
 });
 
 await test("airtable dichiara PKCE", () => {

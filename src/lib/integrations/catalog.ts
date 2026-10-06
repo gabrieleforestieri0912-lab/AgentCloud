@@ -30,6 +30,16 @@ export type AuthType =
    */
   | "keypair";
 
+export type TenantInputField = {
+  readonly key: string;
+  readonly label: string;
+  readonly placeholder: string;
+  /** Se true il valore viene validato come URL pubblico (obbligatorio per host). */
+  readonly validateAsUrl?: boolean;
+  /** Aiuto mostrato sotto il campo: quasi sempre serve spiegare come trovarlo. */
+  readonly hint?: string;
+};
+
 export type ProviderCatalogEntry = {
   /** Chiave usata in tenant_integrations.provider e nelle route /api/integrations/<provider>. */
   readonly id: string;
@@ -49,16 +59,13 @@ export type ProviderCatalogEntry = {
    */
   readonly hasApiProxy: boolean;
   /**
-   * Campo che il provider pretende dall'utente prima di autorizzare
-   * (per es. l'URL dello store WooCommerce). Se presente, la UI deve raccoglierlo
-   * e mandarlo come `tenantInput` ad authorize/callback.
+   * Campi che il provider pretende dall'utente prima di autorizzare. WooCommerce
+   * ne ha due (URL dello store + WordPress User ID). La UI li raccoglie con un
+   * form GET verso /api/integrations/<provider>/authorize, che li valida server
+   * side e li firma dentro lo `state`.
    */
   readonly tenantInput?: {
-    readonly key: string;
-    readonly label: string;
-    readonly placeholder: string;
-    /** Se true il valore viene validato lato server (obbligatorio per URL). */
-    readonly validateAsUrl?: boolean;
+    readonly fields: readonly TenantInputField[];
   };
 };
 
@@ -189,10 +196,21 @@ export const PROVIDER_CATALOG = [
     scopes: ["read_write"],
     hasApiProxy: true,
     tenantInput: {
-      key: "store_url",
-      label: "URL del tuo store WooCommerce",
-      placeholder: "https://tuo-store.com",
-      validateAsUrl: true,
+      fields: [
+        {
+          key: "store_url",
+          label: "URL del tuo store WooCommerce",
+          placeholder: "https://tuo-store.com",
+          validateAsUrl: true,
+          hint: "Il dominio del tuo shop WordPress, senza /wp-admin.",
+        },
+        {
+          key: "user_id",
+          label: "Il tuo WordPress User ID",
+          placeholder: "1",
+          hint: "In WP: Utenti → passa il mouse su Modifica → l'URL finisce con user_id=1.",
+        },
+      ],
     },
   },
   {
@@ -232,6 +250,7 @@ export const IMPLEMENTED_PROVIDERS = [
   "google_drive",
   "airtable",
   "trello",
+  "woocommerce",
 ] as const;
 
 export type ImplementedProvider = (typeof IMPLEMENTED_PROVIDERS)[number];

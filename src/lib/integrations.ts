@@ -85,8 +85,8 @@ export const INTEGRATIONS: Integration[] = [
     name: "WooCommerce",
     brand: "woocommerce",
     category: "E-commerce",
-    available: false,
-    description: "Store WooCommerce",
+    available: true,
+    description: "Prodotti, ordini e clienti",
   },
   {
     name: "PayPal",
@@ -341,6 +341,7 @@ const CONNECTABLE_PROVIDERS: { id: string; names: string[] }[] = [
   { id: "drive", names: ["google drive", "drive"] },
   { id: "airtable", names: ["airtable"] },
   { id: "trello", names: ["trello", "kanban"] },
+  { id: "woocommerce", names: ["woocommerce", "woo", "store wordpress"] },
   { id: "slack", names: ["slack"] },
   { id: "notion", names: ["notion"] },
   { id: "hubspot", names: ["hubspot"] },

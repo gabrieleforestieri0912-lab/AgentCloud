@@ -38,6 +38,12 @@ export async function GET(
   const adapter = getProvider(provider);
   const authParam = adapter?.authParam ?? "code";
   const code = paramsUrl.get(authParam);
+  // Seconda credenziale, se l'adapter la dichiara (WooCommerce: consumer_secret).
+  // `get` restituisce null quando il parametro manca: per keypair è un errore
+  // ("nessuna Consumer Secret"), ma lo decide l'adapter, non questa route.
+  const codeSecret = adapter?.secretParam
+    ? (paramsUrl.get(adapter.secretParam) ?? undefined)
+    : undefined;
   const state = paramsUrl.get("state");
   const error = paramsUrl.get("error");
   const errorDesc = paramsUrl.get("error_description");
@@ -96,6 +102,7 @@ export async function GET(
       redirectUri,
       tenantInput: payload.x,
       codeVerifier,
+      codeSecret,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "token_exchange";

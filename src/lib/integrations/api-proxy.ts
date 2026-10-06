@@ -19,7 +19,15 @@ import { decryptMaybe, encryptToken } from "@/lib/integrations/encryption";
 import { getProvider } from "./registry";
 import { getCatalogEntry, PROVIDER_CATALOG } from "./catalog";
 import { authHeader, providerRequest } from "./http";
+import { normalizeTenantUrl, assertPublicHost, type UrlValidation } from "./safe-url";
 import type { TokenUsage } from "./types";
+import {
+  formatOrder,
+  formatProduct,
+  fromWooOrder,
+  fromWooProduct,
+  parseAmount,
+} from "@/lib/commerce/normalize";
 
 /**
  * Provider serviti dal proxy condiviso. `google_sheets` è escluso di proposito:
@@ -1743,4 +1751,161 @@ export async function trelloApiProxy(
     return { ok: true, data: "No Trello cards found." };
   }
   return { ok: true, data: cards.map(formatTrelloCard).join("\n") };
+}
+
+// ---------------------------------------------------------------------------
+// WooCommerce
+// ---------------------------------------------------------------------------
+
+export type WooAction =
+  | "listProducts"
+  | "getProduct"
+  | "listOrders"
+  | "getOrder"
+  | "getCustomer";
+
+export type WooParams = {
+  productId?: string;
+  orderId?: string;
+  /** WooCommerce: customer id (numero) o email. */
+  customer?: string;
+  search?: string;
+  status?: string;
+  limit?: number;
+};
+
+/**
+ * Base URL dello store, già validata e firmata dentro lo `state` al momento della
+ * connessione. Non si rifa la validazione sintattica a ogni chiamata, ma il
+ * controllo SSRF sul DNS (assertPublicHost) va ripetuto: il DNS può cambiare fra
+ * il momento della connessione e la chiamata di adesso, e un host che al
+ * momento della connessione risolveva a un IP pubblico potrebbe oggi risolvere a
+ * 169.254.169.254. Per questo la risoluzione avviene qui, subito prima del fetch.
+ */
+async function wooStoreBase(token: ResolvedToken): Promise<UrlValidation> {
+  const raw = typeof token.metadata.store_url === "string" ? token.metadata.store_url : "";
+  if (!raw) return { ok: false, error: "WooCommerce: store URL mancante nella connessione" };
+  const normalized = normalizeTenantUrl(raw);
+  if (!normalized.ok) {
+    return { ok: false, error: `WooCommerce: store URL non valido (${normalized.error})` };
+  }
+  return assertPublicHost(normalized.url.hostname);
+}
+
+export async function wooApiProxy(
+  action: WooAction,
+  params: WooParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "woocommerce");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+
+  // Controllo SSRF immediato, prima di qualunque chiamata verso l'host del tenant.
+  const base = await wooStoreBase(token);
+  if (!base.ok) return { ok: false, error: `WooCommerce: ${base.error}. Reconnect the store.` };
+
+  const limit = clampLimit(params.limit);
+  // Authorization Basic: la coppia key:secret. Va nell'header e NON nella query
+  // string, così non finisce nei log né nell'errore (a differenza di Trello, dove
+  // il protocollo non lascia scelta).
+  const headers = {
+    Authorization: integrationAuth(token),
+    Accept: "application/json",
+  };
+
+  const get = async (path: string, query?: Record<string, string>) => {
+    const url = new URL(`${base.url.origin}/wp-json/wc/v3${path}`);
+    for (const [k, v] of Object.entries(query ?? {})) url.searchParams.set(k, v);
+    return providerRequest(url.toString(), {
+      headers,
+      providerLabel: "WooCommerce",
+    });
+  };
+
+  if (action === "listProducts") {
+    const q: Record<string, string> = {
+      per_page: String(limit),
+      status: "publish",
+      orderby: "date",
+      order: "desc",
+    };
+    if (params.search) q.search = params.search;
+    const res = await get("/products", q);
+    if (!res.ok) return { ok: false, error: res.error! };
+    const items = (res.json as unknown[] | undefined) ?? [];
+    if (items.length === 0) return { ok: true, data: "No WooCommerce products found." };
+    return {
+      ok: true,
+      data: items.map((p) => formatProduct(fromWooProduct(p as never))).join("\n"),
+    };
+  }
+
+  if (action === "getProduct") {
+    const id = (params.productId ?? "").trim();
+    if (!id) return { ok: false, error: "woo_get_product requires productId." };
+    const res = await get(`/products/${encodeURIComponent(id)}`);
+    if (!res.ok) return { ok: false, error: res.error! };
+    return { ok: true, data: formatProduct(fromWooProduct(res.json as never)) };
+  }
+
+  if (action === "listOrders") {
+    const q: Record<string, string> = {
+      per_page: String(limit),
+      orderby: "date",
+      order: "desc",
+    };
+    if (params.status) q.status = params.status;
+    const res = await get("/orders", q);
+    if (!res.ok) return { ok: false, error: res.error! };
+    const items = (res.json as unknown[] | undefined) ?? [];
+    if (items.length === 0) {
+      return { ok: true, data: params.status ? `No WooCommerce orders with status "${params.status}".` : "No WooCommerce orders found." };
+    }
+    return {
+      ok: true,
+      data: items.map((o) => formatOrder(fromWooOrder(o as never))).join("\n\n"),
+    };
+  }
+
+  if (action === "getOrder") {
+    const id = (params.orderId ?? "").trim();
+    if (!id) return { ok: false, error: "woo_get_order requires orderId." };
+    const res = await get(`/orders/${encodeURIComponent(id)}`);
+    if (!res.ok) return { ok: false, error: res.error! };
+    return { ok: true, data: formatOrder(fromWooOrder(res.json as never)) };
+  }
+
+  // getCustomer
+  const customer = (params.customer ?? "").trim();
+  if (!customer) {
+    return { ok: false, error: "woo_get_customer requires customer (id or email)." };
+  }
+  const path = customer.includes("@")
+    ? `/customers?search=${encodeURIComponent(customer)}&per_page=1`
+    : `/customers/${encodeURIComponent(customer)}`;
+  const res = await get(path);
+  if (!res.ok) return { ok: false, error: res.error! };
+
+  const raw = customer.includes("@")
+    ? ((res.json as unknown[] | undefined)?.[0] as Record<string, unknown> | undefined)
+    : (res.json as Record<string, unknown> | undefined);
+  if (!raw) return { ok: true, data: `No WooCommerce customer matched "${customer}".` };
+
+  const first = (raw.first_name as string) || "";
+  const last = (raw.last_name as string) || "";
+  const spend = parseAmount(raw.total_spent);
+  return {
+    ok: true,
+    data: [
+      `- ${[first, last].filter(Boolean).join(" ") || "(senza nome)"}`,
+      raw.email ? `  email: ${raw.email}` : "",
+      raw.username ? `  username: ${raw.username}` : "",
+      spend !== null && spend > 0 ? `  totale speso: ${spend.toFixed(2)} ${(raw.currency as string) || "EUR"}` : "",
+      raw.date_created ? `  cliente dal: ${raw.date_created}` : "",
+      raw.id ? `  id: ${raw.id}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
 }

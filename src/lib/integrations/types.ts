@@ -74,6 +74,12 @@ export type ExchangeCodeOptions = {
   tenantInput?: TenantInput;
   /** Solo per `authType: "oauth2_pkce"`. */
   codeVerifier?: string;
+  /**
+   * Seconda credenziale dai query param del redirect (WooCommerce rimanda
+   * sia `consumer_key` sia `consumer_secret`). Popolata dal callback a partire
+   * da `secretParam`.
+   */
+  codeSecret?: string;
 };
 
 export type IntegrationProvider = {
@@ -104,4 +110,11 @@ export type IntegrationProvider = {
    * `exchangeCode` riceve quel valore come `code` senza effettuare chiamate.
    */
   readonly tokenInRedirect?: boolean;
+  /**
+   * Nome del query param che porta una SECONDA credenziale (WooCommerce:
+   * `consumer_secret`, che accompagna `consumer_key`).
+   * Se dichiarato, il callback la passa come `codeSecret` a `exchangeCode`, che
+   * la salva in `refresh_token` per il formato `keypair`.
+   */
+  readonly secretParam?: string;
 };

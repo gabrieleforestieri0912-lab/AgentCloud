@@ -29,6 +29,8 @@ function providerForIntegration(label: string): string | null {
   if (k.includes("drive")) return "google_drive";
   if (k.includes("airtable")) return "airtable";
   if (k.includes("trello")) return "trello";
+  // WooCommerce sta nel layer generico: NON è la connessione Shopify legacy.
+  if (k.includes("woocommerce")) return "woocommerce";
   if (k.includes("google")) return "google";
   return null;
 }
@@ -66,7 +68,7 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
         {integrations.map((label) => {
           const prov = providerForIntegration(label);
           const soon = !isIntegrationAvailable(label);
-          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "google_drive", "github", "clickup", "asana", "airtable", "trello"].includes(prov);
+          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "google_drive", "github", "clickup", "asana", "airtable", "trello", "woocommerce"].includes(prov);
           const connected = isGeneric
             ? !!genericConnected[prov!]
             : prov === "shopify"

@@ -997,6 +997,7 @@ export const CONNECT_PROVIDERS = [
   "drive",
   "airtable",
   "trello",
+  "woocommerce",
   "whatsapp",
 ] as const;
 
@@ -1020,6 +1021,7 @@ export function normalizeConnectProvider(raw: string | undefined): string | null
   if (key.includes("drive")) return "drive";
   if (key.includes("airtable")) return "airtable";
   if (key.includes("trello")) return "trello";
+  if (key.includes("woocommerce")) return "woocommerce";
   if (key.includes("whatsapp")) return "whatsapp";
   return (CONNECT_PROVIDERS as readonly string[]).includes(key) ? key : null;
 }

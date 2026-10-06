@@ -132,6 +132,12 @@ export const ALL_TOOLS_LIST = [
   // Trello (batch 2): sola lettura, vedi Open Decision 14.
   "trello_list_boards",
   "trello_list_cards",
+  // WooCommerce (batch 2): sola lettura, vedi Open Decision 14.
+  "woo_list_products",
+  "woo_get_product",
+  "woo_list_orders",
+  "woo_get_order",
+  "woo_get_customer",
   "request_integration_connect",
 ];
 

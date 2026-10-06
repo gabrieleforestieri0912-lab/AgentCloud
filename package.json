@@ -8,11 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:integrations": "node --experimental-strip-types scripts/test-integration-foundations.mjs",
-    "test:drive": "node --experimental-strip-types scripts/test-drive-integration.mjs",
-    "test:airtable": "node --experimental-strip-types scripts/test-airtable-integration.mjs",
-    "test:trello": "node --experimental-strip-types scripts/test-trello-integration.mjs",
-    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && npm run test:trello && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
+    "test:integrations": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-integration-foundations.mjs",
+    "test:drive": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-drive-integration.mjs",
+    "test:airtable": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-airtable-integration.mjs",
+    "test:trello": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-trello-integration.mjs",
+    "test:woocommerce": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-woocommerce-integration.mjs",
+    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && npm run test:trello && npm run test:woocommerce && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

@@ -47,13 +47,13 @@ await test("presente, implementato, senza PKCE (Trello non lo supporta)", () => 
   assert.equal(isImplementedProvider("trello"), true);
 });
 
-await test("manca solo WooCommerce fra i 5 del batch", () => {
-  for (const done of ["google_drive", "airtable", "trello"]) {
-    assert.equal(isImplementedProvider(done), true, `${done} dovrebbe essere implementato`);
-  }
-  for (const todo of ["woocommerce", "mailchimp"]) {
-    assert.equal(isImplementedProvider(todo), false, `${todo} non è ancora implementato`);
-  }
+await test("Trello è implementato, Mailchimp è l'ultimo del batch", async () => {
+  const { IMPLEMENTED_PROVIDERS } = await import("../src/lib/integrations/catalog.ts");
+  assert.ok(IMPLEMENTED_PROVIDERS.includes("google_drive"));
+  assert.ok(IMPLEMENTED_PROVIDERS.includes("airtable"));
+  assert.ok(IMPLEMENTED_PROVIDERS.includes("trello"));
+  // Mailchimp chiude il batch: deve arrivare nel suo commit.
+  assert.equal(isImplementedProvider("mailchimp"), false);
 });
 
 console.log("\nAdapter · il flusso non-standard di Trello");

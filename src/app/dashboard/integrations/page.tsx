@@ -62,7 +62,7 @@ export default async function DashboardIntegrationsPage({
             {/* Progress integrato — non un bottone guida a parte, ma il flusso stesso ti guida */}
             {(() => {
               const connectedCount = rows.filter((r) => r.status === "connected").length + (shopifyConnections.some((c) => c.connected) ? 1 : 0) + (googleConnection?.connected ? 1 : 0);
-              const total = 13; // Shopify, Gmail, Calendar, HubSpot, Notion, Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello
+              const total = 14; // Shopify, Gmail, Calendar, HubSpot, Notion, Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce
               const pct = Math.round((connectedCount / total) * 100);
               return (
                 <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">

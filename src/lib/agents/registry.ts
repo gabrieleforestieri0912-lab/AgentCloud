@@ -99,6 +99,24 @@ const TRELLO_TOOLS = [
   "trello_list_cards",
 ];
 
+/**
+ * Tool WooCommerce (batch 2), sola lettura.
+ *
+ * Iniettati dove serve davvero: lo Shopify Commerce Agent (che gestisce
+ * e-commerce e ora può leggere anche un store WooCommerce, non solo Shopify) e
+ * inventory-logistics.
+ *
+ * La coppia di credenziali per store NON è una variabile d'ambiente: sono dati
+ * del tenant, cifrate in Supabase e mai lette dal client.
+ */
+const WOOCOMMERCE_TOOLS = [
+  "woo_list_products",
+  "woo_get_product",
+  "woo_list_orders",
+  "woo_get_order",
+  "woo_get_customer",
+];
+
 const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
@@ -401,6 +419,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
+      ...WOOCOMMERCE_TOOLS,
       "shopify_setup_store",
       "shopify_create_store",
       "web_search",
@@ -921,6 +940,7 @@ Guidelines:
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...TRELLO_TOOLS,
+      ...WOOCOMMERCE_TOOLS,
       "shopify_update_inventory",
     ],
     systemPrompt: `You are a logistics and inventory management specialist who prevents stockouts and dead stock — with numbers, thresholds and purchase orders, not generic monitoring talk.

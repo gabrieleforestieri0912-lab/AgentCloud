@@ -155,6 +155,23 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
     ],
     needHelp: "Il token Trello scade dopo 30 giorni e non si rinnova da solo: quando l'agente ti dice che la connessione è scaduta, clicca di nuovo Connetti.",
   },
+  woocommerce: {
+    provider: "woocommerce",
+    whatItDoes: "Collega WooCommerce: l'agente legge prodotti, ordini e clienti del tuo store.",
+    time: "3 min",
+    steps: [
+      {
+        title: "Prepara",
+        desc: "Nel wp-admin apri WooCommerce → Impostazioni → Avanzate → REST API e annota il tuo User ID (lo trovi anche in Utenti → Modifica, nell'URL finisce con user_id=N).",
+      },
+      {
+        title: "Collega",
+        desc: "Compila qui sotto URL del tuo store e User ID. Verrai portato nel wp-admin del tuo store, dove trovi AgentCloud fra le app e clicchi Approva.",
+      },
+      { title: "Prova", desc: "Connesso. Chiedi: quali sono gli ordini in lavorazione? Poi: elenca i prodotti esauriti." },
+    ],
+    needHelp: "Se l'approvazione non parte, controlla che l'URL sia il dominio del tuo shop (senza /wp-admin) e che REST API sia attivo in WooCommerce → Impostazioni → Avanzate.",
+  },
 };
 
 export function getGuideForBrand(brand: string): IntegrationGuide | null {

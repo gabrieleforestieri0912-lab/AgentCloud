@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Locale } from "@/lib/i18n/constants";
 import { INTEGRATIONS } from "@/lib/integrations";
+import { getCatalogEntry } from "@/lib/integrations/catalog";
 import { useLanguage } from "./LanguageProvider";
 import IntegrationSteps from "./IntegrationSteps";
 
@@ -30,6 +31,7 @@ const BRAND_TO_PROVIDER: Record<string, string> = {
   googledrive: "google_drive",
   airtable: "airtable",
   trello: "trello",
+  woocommerce: "woocommerce",
 };
 
 function metaLabel(row: Row | undefined): string | null {
@@ -120,6 +122,7 @@ export default function IntegrationsGrid({
                 workspace={workspace}
                 busy={busy === genericProvider}
                 onConnectHref={hrefForConnect}
+                tenantFields={getCatalogEntry(app.brand)?.tenantInput?.fields}
                 onDisconnect={isGeneric && connected ? () => onDisconnect(genericProvider!) : undefined}
               />
             );

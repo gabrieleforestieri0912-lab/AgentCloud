@@ -4,6 +4,7 @@ import { CheckCircle2, Circle, Clock3, AlertCircle, Plug, Unplug, Loader2, Arrow
 import BrandLogo from "./BrandLogo";
 import Link from "next/link";
 import { getGuideForBrand, type IntegrationGuide } from "@/lib/integrations/guides";
+import type { TenantInputField } from "@/lib/integrations/catalog";
 
 type Props = {
   brand: string;
@@ -19,6 +20,13 @@ type Props = {
   onConnectHref?: string;
   onDisconnect?: () => void;
   variant?: "card" | "compact";
+  /**
+   * Campi che l'utente deve inserire prima di autorizzare (WooCommerce: URL dello
+   * store + WordPress User ID). Quando presenti il CTA diventa un form GET verso
+   * la route authorize invece di un link: nessuno stato client, nessun segreto
+   * esposto al browser oltre i dati che l'utente sta scrivendo.
+   */
+  tenantFields?: readonly TenantInputField[];
 };
 
 export default function IntegrationSteps({
@@ -33,6 +41,7 @@ export default function IntegrationSteps({
   onConnectHref,
   onDisconnect,
   busy,
+  tenantFields,
 }: Props) {
   const guide: IntegrationGuide | null = getGuideForBrand(brand);
 
@@ -130,6 +139,38 @@ export default function IntegrationSteps({
               <CheckCircle2 size={14} /> Collegato — pronto all’uso
             </span>
           )
+        ) : tenantFields && onConnectHref?.startsWith("/api/") ? (
+          /* GET verso la route authorize: la validazione dei dati avviene server
+             side e i valori finiscono nello state firmato, non nel browser. */
+          <form action={onConnectHref} method="get" className="space-y-3">
+            {tenantFields.map((f) => (
+              <div key={f.key} className="text-left">
+                <label
+                  htmlFor={`${brand}-${f.key}`}
+                  className="block text-xs font-bold uppercase tracking-widest text-neutral-400"
+                >
+                  {f.label}
+                </label>
+                <input
+                  id={`${brand}-${f.key}`}
+                  name={f.key}
+                  type={f.validateAsUrl ? "url" : "text"}
+                  required
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder={f.placeholder}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+                {f.hint && <p className="mt-1 text-[11px] leading-4 text-neutral-500">{f.hint}</p>}
+              </div>
+            ))}
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-400 shadow-lg shadow-brand-500/20"
+            >
+              <Plug size={14} /> Collega in {guide?.time ?? "2 minuti"} <ArrowRight size={14} />
+            </button>
+          </form>
         ) : onConnectHref ? (
           onConnectHref.startsWith("/api/") ? (
             <a

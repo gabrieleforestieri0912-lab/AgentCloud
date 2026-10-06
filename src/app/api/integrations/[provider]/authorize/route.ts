@@ -4,7 +4,7 @@ import { isSafeRedirectPath } from "@/lib/safe-redirect-path";
 import { isSupportedProvider } from "@/lib/integrations/types";
 import { getProvider, getRedirectUri } from "@/lib/integrations/registry";
 import { getCatalogEntry } from "@/lib/integrations/catalog";
-import { normalizeTenantUrl } from "@/lib/integrations/safe-url";
+import { assertPublicHost, normalizeTenantUrl } from "@/lib/integrations/safe-url";
 import {
   buildState,
   createPkcePair,
@@ -24,28 +24,48 @@ const cookieOpts = {
 };
 
 /**
- * Raccoglie e valida il dato che il provider pretende dall'utente (per ora solo
- * `store_url` di WooCommerce). La validazione resta qui e non nell'adapter: se
- * l'host non è pubblico non deve neppure arrivare a costruire l'URL di
- * autorizzazione, e il controllo non deve essere ripetuto con regole diverse.
+ * Raccoglie e valida i dati che il provider pretende dall'utente (per WooCommerce
+ * l'URL dello store e il WordPress User ID).
+ *
+ * La validazione sta qui e non nell'adapter, per due motivi: se l'host non è
+ * pubblico non deve neppure arrivare a costruire l'URL di autorizzazione, e la
+ * regola non deve essere ripetuta con criteri diversi.
+ *
+ * `assertPublicHost` risolve il DNS anche qui, non solo al momento del fetch:
+ * fallire subito con "questo indirizzo non è ammesso" è comprensibile, mentre
+ * fallire dopo che l'utente ha già autorizzato sul suo store no. Il controllo
+ * viene comunque ripetuto subito prima di ogni chiamata, perché il DNS può
+ * cambiare nel frattempo.
  */
-function readTenantInput(
+async function readTenantInput(
   provider: string,
   req: NextRequest,
-): { ok: true; value: Record<string, string> } | { ok: false; error: string } {
+): Promise<{ ok: true; value: Record<string, string> } | { ok: false; error: string }> {
   const entry = getCatalogEntry(provider);
-  const spec = entry?.tenantInput;
-  if (!spec) return { ok: true, value: {} };
+  const fields = entry?.tenantInput?.fields;
+  if (!fields?.length) return { ok: true, value: {} };
 
-  const raw = String(req.nextUrl.searchParams.get(spec.key) ?? "").trim();
-  if (!raw) {
-    return { ok: false, error: `${entry!.label}: missing ${spec.key}` };
+  const value: Record<string, string> = {};
+  for (const f of fields) {
+    const raw = String(req.nextUrl.searchParams.get(f.key) ?? "").trim();
+    if (!raw) return { ok: false, error: `${entry!.label}: campo "${f.label}" mancante` };
+
+    if (!f.validateAsUrl) {
+      value[f.key] = raw;
+      continue;
+    }
+
+    const checked = normalizeTenantUrl(raw);
+    if (!checked.ok) return { ok: false, error: `${entry!.label}: ${checked.error}` };
+
+    const resolved = await assertPublicHost(checked.url.hostname);
+    if (!resolved.ok) {
+      return { ok: false, error: `${entry!.label}: indirizzo non ammesso` };
+    }
+    // Si tiene solo l'origine: niente path, query o credenziali.
+    value[f.key] = checked.url.origin;
   }
-  if (!spec.validateAsUrl) return { ok: true, value: { [spec.key]: raw } };
-
-  const checked = normalizeTenantUrl(raw);
-  if (!checked.ok) return { ok: false, error: `${entry!.label}: ${checked.error}` };
-  return { ok: true, value: { [spec.key]: checked.url.origin } };
+  return { ok: true, value };
 }
 
 /**
@@ -88,7 +108,7 @@ export async function GET(
     return NextResponse.redirect(new URL(`${returnTo}${sep}integration=${provider}&status=error&reason=${encodeURIComponent(reason)}`, req.url));
   };
 
-  const tenantInput = readTenantInput(provider, req);
+  const tenantInput = await readTenantInput(provider, req);
   if (!tenantInput.ok) return fail(tenantInput.error);
 
   const { state, cookieValue } = buildState(tenantId, provider, tenantInput.value);

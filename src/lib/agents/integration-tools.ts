@@ -10,11 +10,12 @@ import {
   driveApiProxy,
   airtableApiProxy,
   trelloApiProxy,
+  wooApiProxy,
 } from "@/lib/integrations/api-proxy";
 
 /**
  * Tool agente per le integrazioni: GitHub / ClickUp / Asana / Notion / Slack /
- * HubSpot / Google Drive / Airtable / Trello.
+ * HubSpot / Google Drive / Airtable / Trello / WooCommerce.
  *
  * Perché un modulo dedicato: tiene `lib/agents/tools.ts` focalizzato sugli
  * strumenti core e raccoglie qui definizioni + handler delle integrazioni.
@@ -54,6 +55,11 @@ const INTEGRATION_TOOL_NAMES = [
   "airtable_list_records",
   "trello_list_boards",
   "trello_list_cards",
+  "woo_list_products",
+  "woo_get_product",
+  "woo_list_orders",
+  "woo_get_order",
+  "woo_get_customer",
 ] as const;
 
 export function isIntegrationTool(name: string): boolean {
@@ -518,6 +524,82 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
       },
     },
   },
+
+  // --- WooCommerce ---------------------------------------------------------
+  // Sola lettura. Restano esclusi woo_update_stock e woo_update_order_status:
+  // Open Decision 14 (manca il meccanismo di conferma fra handler e UI). Sono
+  // le due azioni più sensibili del batch: modificano giacenza e stato ordine.
+
+  woo_list_products: {
+    name: "woo_list_products",
+    description:
+      "List products of the connected WooCommerce store, most recent first, with title, price, availability, SKU and id. Use the returned id with woo_get_product.",
+    input_schema: {
+      type: "object",
+      properties: {
+        search: { type: "string", description: "Optional text to match in product name" },
+        limit: { type: "integer", description: "Max products to return (default 20, max 50)" },
+      },
+    },
+  },
+
+  woo_get_product: {
+    name: "woo_get_product",
+    description:
+      "Read one WooCommerce product by id, with full description, stock status and price. Use the id from woo_list_products.",
+    input_schema: {
+      type: "object",
+      properties: {
+        productId: { type: "string", description: "WooCommerce product id (a number)" },
+      },
+      required: ["productId"],
+    },
+  },
+
+  woo_list_orders: {
+    name: "woo_list_orders",
+    description:
+      "List recent WooCommerce orders, most recent first: number, status, total, customer and lines. Optionally filter by status (processing, completed, on-hold, cancelled...).",
+    input_schema: {
+      type: "object",
+      properties: {
+        status: {
+          type: "string",
+          description: "Optional WooCommerce order status, e.g. processing or completed",
+        },
+        limit: { type: "integer", description: "Max orders to return (default 20, max 50)" },
+      },
+    },
+  },
+
+  woo_get_order: {
+    name: "woo_get_order",
+    description:
+      "Read one WooCommerce order by id, with status, total, customer billing details and every line. Use the id from woo_list_orders.",
+    input_schema: {
+      type: "object",
+      properties: {
+        orderId: { type: "string", description: "WooCommerce order id (a number)" },
+      },
+      required: ["orderId"],
+    },
+  },
+
+  woo_get_customer: {
+    name: "woo_get_customer",
+    description:
+      "Read a WooCommerce customer by email or by customer id: name, email, total spent and signup date.",
+    input_schema: {
+      type: "object",
+      properties: {
+        customer: {
+          type: "string",
+          description: "Customer email (searched) or customer id (a number)",
+        },
+      },
+      required: ["customer"],
+    },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -812,6 +894,45 @@ export async function executeIntegrationTool(
         { boardId, listId, limit: parseLimit(input.limit) },
         tenantId,
       );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_list_products": {
+      const r = await wooApiProxy(
+        "listProducts",
+        { search: input.search ? clean(input.search, 200) : undefined, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_get_product": {
+      const productId = clean(input.productId, 40);
+      if (!productId) return "woo_get_product requires productId.";
+      const r = await wooApiProxy("getProduct", { productId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_list_orders": {
+      const r = await wooApiProxy(
+        "listOrders",
+        { status: input.status ? clean(input.status, 40) : undefined, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_get_order": {
+      const orderId = clean(input.orderId, 40);
+      if (!orderId) return "woo_get_order requires orderId.";
+      const r = await wooApiProxy("getOrder", { orderId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_get_customer": {
+      const customer = clean(input.customer, 200);
+      if (!customer) return "woo_get_customer requires customer (id or email).";
+      const r = await wooApiProxy("getCustomer", { customer }, tenantId);
       return r.ok ? r.data : r.error;
     }
 
