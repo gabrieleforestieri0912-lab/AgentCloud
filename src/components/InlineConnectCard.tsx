@@ -25,6 +25,7 @@ const PROVIDER_META: Record<string, { name: string; brand: string; desc: string 
   airtable: { name: "Airtable", brand: "airtable", desc: "Connetti Airtable per leggere basi, tabelle e record" },
   trello: { name: "Trello", brand: "trello", desc: "Connetti Trello per leggere board, liste e card" },
   woocommerce: { name: "WooCommerce", brand: "woocommerce", desc: "Connetti WooCommerce per leggere prodotti, ordini e clienti" },
+  mailchimp: { name: "Mailchimp", brand: "mailchimp", desc: "Connetti Mailchimp per leggere audience, statistiche e campagne" },
   whatsapp: { name: "WhatsApp", brand: "whatsapp", desc: "Connetti WhatsApp per messaggistica" },
 };
 
@@ -40,6 +41,7 @@ function getMeta(provider: Provider) {
   if (key.includes("airtable")) return PROVIDER_META.airtable;
   if (key.includes("trello")) return PROVIDER_META.trello;
   if (key.includes("woocommerce")) return PROVIDER_META.woocommerce;
+  if (key.includes("mailchimp")) return PROVIDER_META.mailchimp;
   if (key.includes("shopify")) return PROVIDER_META.shopify;
   return PROVIDER_META[key] || { name: provider.charAt(0).toUpperCase() + provider.slice(1), brand: key, desc: `Connetti ${provider} per sbloccare le automazioni` };
 }

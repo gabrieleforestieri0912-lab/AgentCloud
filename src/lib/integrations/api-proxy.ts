@@ -117,10 +117,15 @@ function clampLimit(limit: number | undefined, fallback = 20): number {
  * Rinfresca l'access token tramite l'adapter del provider. Restituisce null se il
  * provider non espone `refreshToken` (GitHub / ClickUp / Notion / Slack: token
  * senza scadenza) o se le credenziali OAuth mancano.
+ *
+ * `metadata` viene passato all'adapter: alcuni provider rinnovano su un endpoint
+ * che dipende da un dato noto solo al momento dell'autorizzazione (Mailchimp
+ * usa il data center nella URL del refresh).
  */
 async function refreshViaAdapter(
   provider: GenericProvider,
   refreshToken: string,
+  metadata: Record<string, unknown>,
 ): Promise<{
   accessToken: string;
   refreshToken: string | null;
@@ -129,7 +134,7 @@ async function refreshViaAdapter(
   const adapter = getProvider(provider);
   if (!adapter?.refreshToken) return null;
   try {
-    const r = await adapter.refreshToken({ refreshToken });
+    const r = await adapter.refreshToken({ refreshToken, metadata });
     return {
       accessToken: r.accessToken,
       refreshToken: r.refreshToken ?? null,
@@ -182,7 +187,7 @@ export async function resolveIntegrationToken(
   // è false e la coppia va semplicemente consegnata.
   const refreshToken = decryptMaybe(row.refresh_token);
   if (refreshToken && shouldRefresh(row.expires_at)) {
-    const refreshed = await refreshViaAdapter(provider, refreshToken);
+    const refreshed = await refreshViaAdapter(provider, refreshToken, metadata);
     // Rinnovo fallito (refresh token revocato o scaduto): riusare il token vecchio
     // darebbe solo un 401 oscuro, quindi chiediamo di riconnettere l'account.
     if (!refreshed?.accessToken) {
@@ -1906,6 +1911,153 @@ export async function wooApiProxy(
       raw.id ? `  id: ${raw.id}` : "",
     ]
       .filter(Boolean)
+      .join("\n"),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Mailchimp
+// ---------------------------------------------------------------------------
+
+export type MailchimpAction = "listAudiences" | "getAudienceStats" | "listCampaigns";
+
+export type MailchimpParams = {
+  /** id della lista/audience. */
+  listId?: string;
+  limit?: number;
+};
+
+/**
+ * Base API del datacenter dell'account. Viene dai metadata salvati al momento
+ * dello scambio del token: Mailchimp non ha un host unico, e `dc` non è
+ * deducibile dal dominio con cui l'utente ha autorizzato.
+ *
+ * Se manca, si tenta la ricostruzione da `api_url`; senza nessuno dei due non
+ * c'è un endpoint noto, quindi si dice di riconnettersi invece di colpire un
+ * host generico che potrebbe essere il datacenter sbagliato.
+ */
+function mailchimpBase(token: ResolvedToken): string | null {
+  const apiUrl = typeof token.metadata.api_url === "string" ? token.metadata.api_url : "";
+  if (apiUrl && /^https:\/\/[a-z0-9-]+\.api\.mailchimp\.com\//i.test(apiUrl)) {
+    return apiUrl.replace(/\/+$/, "");
+  }
+  const dc = typeof token.metadata.dc === "string" ? token.metadata.dc : "";
+  if (dc && /^[a-z0-9-]+$/i.test(dc)) return `https://${dc}.api.mailchimp.com/3.0`;
+  return null;
+}
+
+/**
+ * Mailchimp autentica con HTTP Basic dove lo username è una stringa qualsiasi
+ * (`anystring`) e la password è l'access token. Non è Bearer, quindi qui non si
+ * usa integrationAuth.
+ */
+function mailchimpAuth(token: ResolvedToken): string {
+  const user = typeof token.metadata.basic_username === "string"
+    ? token.metadata.basic_username
+    : "anystring";
+  return `Basic ${Buffer.from(`${user}:${token.accessToken}`, "utf8").toString("base64")}`;
+}
+
+function formatMailchimpStats(s: Record<string, unknown> | undefined): string {
+  if (!s) return "";
+  const num = (v: unknown, digits = 2) =>
+    typeof v === "number" ? v.toFixed(digits) : "n/d";
+  return [
+    `  iscritti: ${s.member_count ?? "n/d"}`,
+    `  iscritti attivi: ${s.open_rate !== undefined ? s.open_rate : "n/d"}`,
+    typeof s.open_rate === "number" ? `  open rate: ${num((s.open_rate as number) * 100, 1)}%` : "",
+    typeof s.click_rate === "number" ? `  click rate: ${num((s.click_rate as number) * 100, 1)}%` : "",
+    `  nuovi iscritti questo mese: ${s.unsubscribe_count !== undefined ? `unsubscribe ${s.unsubscribe_count}` : "n/d"}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export async function mailchimpApiProxy(
+  action: MailchimpAction,
+  params: MailchimpParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "mailchimp");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+
+  const base = mailchimpBase(token);
+  if (!base) {
+    return {
+      ok: false,
+      error: "Mailchimp: data center sconosciuto. Ask the user to reconnect Mailchimp from the dashboard (Integrations), then retry.",
+    };
+  }
+
+  const headers = { Authorization: mailchimpAuth(token), Accept: "application/json" };
+  const limit = clampLimit(params.limit);
+
+  if (action === "listAudiences") {
+    const res = await providerRequest(`${base}/lists?count=${limit}&fields=lists.id,lists.name,lists.stats`, {
+      headers,
+      providerLabel: "Mailchimp",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+    const lists =
+      (res.json as { lists?: Array<{ id?: string; name?: string; stats?: Record<string, unknown> }> } | undefined)?.lists ?? [];
+    if (lists.length === 0) return { ok: true, data: "No Mailchimp audiences found." };
+    return {
+      ok: true,
+      data: lists
+        .map((l) => `- ${l.name ?? "?"} | id: ${l.id ?? "?"}\n${formatMailchimpStats(l.stats)}`)
+        .join("\n"),
+    };
+  }
+
+  const listId = (params.listId ?? "").trim();
+  if (!listId) return { ok: false, error: "Mailchimp tool requires listId." };
+
+  if (action === "getAudienceStats") {
+    const res = await providerRequest(`${base}/lists/${encodeURIComponent(listId)}`, {
+      headers,
+      providerLabel: "Mailchimp",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+    const l = res.json as { id?: string; name?: string; stats?: Record<string, unknown> } | undefined;
+    if (!l) return { ok: true, data: `No Mailchimp audience matched "${listId}".` };
+    return {
+      ok: true,
+      data: `${l.name ?? "?"} (id: ${l.id ?? listId})\n${formatMailchimpStats(l.stats)}`,
+    };
+  }
+
+  // listCampaigns
+  const res = await providerRequest(
+    `${base}/campaigns?count=${limit}&sort_field=send_time&sort_dir=DESC&fields=campaigns.id,campaigns.settings.title,campaigns.status,campaigns.send_time,campaigns.emails_sent,campaigns.open_rate,campaigns.click_rate`,
+    { headers, providerLabel: "Mailchimp" },
+  );
+  if (!res.ok) return { ok: false, error: res.error! };
+  const campaigns =
+    (res.json as {
+      campaigns?: Array<{
+        id?: string;
+        status?: string;
+        send_time?: string;
+        emails_sent?: number;
+        open_rate?: number;
+        click_rate?: number;
+        settings?: { title?: string };
+      }>;
+    } | undefined)?.campaigns ?? [];
+  if (campaigns.length === 0) return { ok: true, data: "No Mailchimp campaigns found." };
+  return {
+    ok: true,
+    data: campaigns
+      .map((c) => {
+        const bits = [`- ${c.settings?.title ?? "(senza titolo)"} | ${c.status ?? "?"}`];
+        if (c.send_time) bits.push(`| inviata: ${c.send_time}`);
+        if (typeof c.emails_sent === "number") bits.push(`| inviati: ${c.emails_sent}`);
+        if (typeof c.open_rate === "number") bits.push(`| open: ${(c.open_rate * 100).toFixed(1)}%`);
+        if (typeof c.click_rate === "number") bits.push(`| click: ${(c.click_rate * 100).toFixed(1)}%`);
+        if (c.id) bits.push(`| id: ${c.id}`);
+        return bits.join(" ");
+      })
       .join("\n"),
   };
 }

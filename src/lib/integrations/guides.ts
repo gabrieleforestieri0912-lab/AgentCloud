@@ -172,6 +172,20 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
     ],
     needHelp: "Se l'approvazione non parte, controlla che l'URL sia il dominio del tuo shop (senza /wp-admin) e che REST API sia attivo in WooCommerce → Impostazioni → Avanzate.",
   },
+  mailchimp: {
+    provider: "mailchimp",
+    whatItDoes: "Collega Mailchimp: l'agente legge le tue audience, le statistiche e le campagne.",
+    time: "2 min",
+    steps: [
+      {
+        title: "Prepara",
+        desc: "In Mailchimp apri Account → Extra → OAuth2 → registra un'integrazione. Copia API Key e Client Secret.",
+      },
+      { title: "Collega", desc: "Clicca Connetti → autorizza su Mailchimp. Nessun piano a pagamento serve." },
+      { title: "Prova", desc: "Connesso. Chiedi: quante persone ho nella mia audience? Poi: com'è andata l'ultima campagna?" },
+    ],
+    needHelp: "Se un audience non compare, l'integrazione OAuth2 deve avere permessi Read-Write. In questa versione l'agente legge solo: non invia campagne e non aggiunge iscritti.",
+  },
 };
 
 export function getGuideForBrand(brand: string): IntegrationGuide | null {

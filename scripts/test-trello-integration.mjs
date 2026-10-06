@@ -47,13 +47,9 @@ await test("presente, implementato, senza PKCE (Trello non lo supporta)", () => 
   assert.equal(isImplementedProvider("trello"), true);
 });
 
-await test("Trello è implementato, Mailchimp è l'ultimo del batch", async () => {
-  const { IMPLEMENTED_PROVIDERS } = await import("../src/lib/integrations/catalog.ts");
-  assert.ok(IMPLEMENTED_PROVIDERS.includes("google_drive"));
-  assert.ok(IMPLEMENTED_PROVIDERS.includes("airtable"));
-  assert.ok(IMPLEMENTED_PROVIDERS.includes("trello"));
-  // Mailchimp chiude il batch: deve arrivare nel suo commit.
-  assert.equal(isImplementedProvider("mailchimp"), false);
+await test("Trello è implementato", () => {
+  // Come in test-airtable: niente asserzioni sullo stato degli altri provider.
+  assert.equal(isImplementedProvider("trello"), true);
 });
 
 console.log("\nAdapter · il flusso non-standard di Trello");

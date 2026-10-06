@@ -138,6 +138,11 @@ export const ALL_TOOLS_LIST = [
   "woo_list_orders",
   "woo_get_order",
   "woo_get_customer",
+  // Mailchimp (batch 2): sola lettura, vedi Open Decision 14. Nessun invio
+  // campagna e nessun iscritto aggiunto.
+  "mailchimp_list_audiences",
+  "mailchimp_get_audience_stats",
+  "mailchimp_list_campaigns",
   "request_integration_connect",
 ];
 

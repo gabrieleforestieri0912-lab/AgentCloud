@@ -89,8 +89,19 @@ export type IntegrationProvider = {
   getAuthUrl(opts: AuthUrlOptions): string;
   /** Exchange authorization_code for tokens (server-side only). */
   exchangeCode(opts: ExchangeCodeOptions): Promise<TokenExchangeResult>;
-  /** Optional refresh hook (usato dal refresh lato server in lib/integrations/api-proxy.ts). */
-  refreshToken?(opts: { refreshToken: string }): Promise<TokenExchangeResult>;
+  /**
+   * Optional refresh hook (usato dal refresh lato server in lib/integrations/api-proxy.ts).
+   *
+   * `metadata` è la riga `tenant_integrations.metadata` del tenant: serve ai
+   * provider il cui endpoint di refresh dipende da un dato salvato al momento
+   * dell'autorizzazione. Mailchimp, per esempio, rinnova su
+   * `https://<dc>.api.mailchimp.com/oauth2/token`, e `dc` si conosce solo dalla
+   * risposta del primo scambio.
+   */
+  refreshToken?(opts: {
+    refreshToken: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<TokenExchangeResult>;
   /** Optional revoke hook (disconnect). */
   revokeToken?(opts: { accessToken: string }): Promise<void>;
   /**

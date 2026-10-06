@@ -11,11 +11,12 @@ import {
   airtableApiProxy,
   trelloApiProxy,
   wooApiProxy,
+  mailchimpApiProxy,
 } from "@/lib/integrations/api-proxy";
 
 /**
  * Tool agente per le integrazioni: GitHub / ClickUp / Asana / Notion / Slack /
- * HubSpot / Google Drive / Airtable / Trello / WooCommerce.
+ * HubSpot / Google Drive / Airtable / Trello / WooCommerce / Mailchimp.
  *
  * Perché un modulo dedicato: tiene `lib/agents/tools.ts` focalizzato sugli
  * strumenti core e raccoglie qui definizioni + handler delle integrazioni.
@@ -60,6 +61,9 @@ const INTEGRATION_TOOL_NAMES = [
   "woo_list_orders",
   "woo_get_order",
   "woo_get_customer",
+  "mailchimp_list_audiences",
+  "mailchimp_get_audience_stats",
+  "mailchimp_list_campaigns",
 ] as const;
 
 export function isIntegrationTool(name: string): boolean {
@@ -600,6 +604,48 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
       required: ["customer"],
     },
   },
+
+  // --- Mailchimp ------------------------------------------------------------
+  // Solo lettura. Nessun invio di campagna e nessun iscritto aggiunto in questo
+  // batch: vedi Open Decision 14. mailchimp_add_subscriber è una scrittura su dati
+  // personali, e non c'è ancora il meccanismo di conferma fra handler e UI.
+
+  mailchimp_list_audiences: {
+    name: "mailchimp_list_audiences",
+    description:
+      "List the Mailchimp audiences (lists) of the connected account with their ids and key stats: subscribers, open rate, click rate. Use the returned id with mailchimp_get_audience_stats.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", description: "Max audiences to return (default 20, max 50)" },
+      },
+    },
+  },
+
+  mailchimp_get_audience_stats: {
+    name: "mailchimp_get_audience_stats",
+    description:
+      "Read the detailed stats of one Mailchimp audience: total subscribers, unsubscribes, open rate, click rate. Use the id from mailchimp_list_audiences.",
+    input_schema: {
+      type: "object",
+      properties: {
+        listId: { type: "string", description: "Mailchimp audience (list) id" },
+      },
+      required: ["listId"],
+    },
+  },
+
+  mailchimp_list_campaigns: {
+    name: "mailchimp_list_campaigns",
+    description:
+      "List recent Mailchimp campaigns, newest first: title, status, send date, emails sent, open and click rate. Read-only: this cannot send or schedule a campaign.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", description: "Max campaigns to return (default 20, max 50)" },
+      },
+    },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -933,6 +979,31 @@ export async function executeIntegrationTool(
       const customer = clean(input.customer, 200);
       if (!customer) return "woo_get_customer requires customer (id or email).";
       const r = await wooApiProxy("getCustomer", { customer }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_list_audiences": {
+      const r = await mailchimpApiProxy(
+        "listAudiences",
+        { limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_get_audience_stats": {
+      const listId = clean(input.listId, 40);
+      if (!listId) return "mailchimp_get_audience_stats requires listId.";
+      const r = await mailchimpApiProxy("getAudienceStats", { listId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_list_campaigns": {
+      const r = await mailchimpApiProxy(
+        "listCampaigns",
+        { limit: parseLimit(input.limit) },
+        tenantId,
+      );
       return r.ok ? r.data : r.error;
     }
 

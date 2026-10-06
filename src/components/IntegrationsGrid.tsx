@@ -32,6 +32,7 @@ const BRAND_TO_PROVIDER: Record<string, string> = {
   airtable: "airtable",
   trello: "trello",
   woocommerce: "woocommerce",
+  mailchimp: "mailchimp",
 };
 
 function metaLabel(row: Row | undefined): string | null {

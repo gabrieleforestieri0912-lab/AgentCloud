@@ -251,6 +251,7 @@ export const IMPLEMENTED_PROVIDERS = [
   "airtable",
   "trello",
   "woocommerce",
+  "mailchimp",
 ] as const;
 
 export type ImplementedProvider = (typeof IMPLEMENTED_PROVIDERS)[number];

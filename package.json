@@ -13,7 +13,8 @@
     "test:airtable": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-airtable-integration.mjs",
     "test:trello": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-trello-integration.mjs",
     "test:woocommerce": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-woocommerce-integration.mjs",
-    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && npm run test:trello && npm run test:woocommerce && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
+    "test:mailchimp": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-mailchimp-integration.mjs",
+    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && npm run test:trello && npm run test:woocommerce && npm run test:mailchimp && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

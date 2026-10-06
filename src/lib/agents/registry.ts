@@ -117,6 +117,19 @@ const WOOCOMMERCE_TOOLS = [
   "woo_get_customer",
 ];
 
+/**
+ * Tool Mailchimp (batch 2), sola lettura.
+ *
+ * Iniettati dove serve: social-media-agent (le campagne sono il suo oggetto) e
+ * business-manager (numeri di audience e performance). Nessun invio e nessuna
+ * scrittura su contatti: vedi Open Decision 14.
+ */
+const MAILCHIMP_TOOLS = [
+  "mailchimp_list_audiences",
+  "mailchimp_get_audience_stats",
+  "mailchimp_list_campaigns",
+];
+
 const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
@@ -188,6 +201,7 @@ Guidelines:
       ...GOOGLE_DRIVE_TOOLS,
       ...AIRTABLE_TOOLS,
       ...TRELLO_TOOLS,
+      ...MAILCHIMP_TOOLS,
       "web_search",
       "scrape_page",
       "run_python",
@@ -886,6 +900,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
+      ...MAILCHIMP_TOOLS,
       "web_search",
       "scrape_page",
     ],

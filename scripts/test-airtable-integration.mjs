@@ -54,18 +54,14 @@ await test("è fra i provider implementati", () => {
   assert.equal(isImplementedProvider("airtable"), true);
 });
 
-await test("i provider del batch sono implementati in ordine", async () => {
-  // I test dei connettori non asseriscono mai "il prossimo non è ancora
-  // implementato": quel tipo di asserzione è fallito tre volte di fila (Airtable
-  // quando ha aggiunto Trello, poi WooCommerce). L'ordine del batch è un fatto
-  // del piano, non una proprietà che i test debbano sorvegliare; qui basta
-  // verificare che chi è dichiarato implementato lo sia davvero.
-  const { IMPLEMENTED_PROVIDERS } = await import("../src/lib/integrations/catalog.ts");
-  assert.ok(IMPLEMENTED_PROVIDERS.includes("google_drive"));
-  assert.ok(IMPLEMENTED_PROVIDERS.includes("airtable"));
-  assert.ok(IMPLEMENTED_PROVIDERS.includes("trello"));
-  // Mailchimp è l'ultimo del batch: deve arrivare nel suo commit, non prima.
-  assert.equal(isImplementedProvider("mailchimp"), false);
+await test("Airtable è implementato", () => {
+  // Nota: i test di un connettore non asseriscono MAI "gli altri provider del
+  // batch non sono ancora implementati". Quella forma è fallita quattro volte di
+  // fila (ogni connettore rompeva il test del precedente) e non dava alcuna
+  // sicurezza: il fatto che gli altri siano implementati è già garantito dal
+  // typecheck su Record<ImplementedProvider, IntegrationProvider> e dai test del
+  // rispettivo connettore.
+  assert.equal(isImplementedProvider("airtable"), true);
 });
 
 console.log("\nPKCE · il verifier non deve mai finire nella URL");

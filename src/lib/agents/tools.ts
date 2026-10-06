@@ -998,6 +998,7 @@ export const CONNECT_PROVIDERS = [
   "airtable",
   "trello",
   "woocommerce",
+  "mailchimp",
   "whatsapp",
 ] as const;
 
@@ -1022,6 +1023,7 @@ export function normalizeConnectProvider(raw: string | undefined): string | null
   if (key.includes("airtable")) return "airtable";
   if (key.includes("trello")) return "trello";
   if (key.includes("woocommerce")) return "woocommerce";
+  if (key.includes("mailchimp")) return "mailchimp";
   if (key.includes("whatsapp")) return "whatsapp";
   return (CONNECT_PROVIDERS as readonly string[]).includes(key) ? key : null;
 }

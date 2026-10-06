@@ -140,9 +140,9 @@ export const INTEGRATIONS: Integration[] = [
   {
     name: "Mailchimp",
     brand: "mailchimp",
-    category: "Email Marketing",
-    available: false,
-    description: "Newsletter",
+    category: "Marketing",
+    available: true,
+    description: "Audience, statistiche e campagne",
   },
   {
     name: "Calendly",
@@ -342,6 +342,7 @@ const CONNECTABLE_PROVIDERS: { id: string; names: string[] }[] = [
   { id: "airtable", names: ["airtable"] },
   { id: "trello", names: ["trello", "kanban"] },
   { id: "woocommerce", names: ["woocommerce", "woo", "store wordpress"] },
+  { id: "mailchimp", names: ["mailchimp", "newsletter", "email marketing"] },
   { id: "slack", names: ["slack"] },
   { id: "notion", names: ["notion"] },
   { id: "hubspot", names: ["hubspot"] },

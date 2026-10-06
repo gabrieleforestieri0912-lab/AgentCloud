@@ -10,6 +10,7 @@ import { googleDriveProvider } from "./providers/googleDrive";
 import { airtableProvider } from "./providers/airtable";
 import { trelloProvider } from "./providers/trello";
 import { woocommerceProvider } from "./providers/woocommerce";
+import { mailchimpProvider } from "./providers/mailchimp";
 
 /**
  * Mappa adapter: `Record<ImplementedProvider, IntegrationProvider>` è
@@ -33,6 +34,7 @@ const registry: Record<ImplementedProvider, IntegrationProvider> = {
   airtable: airtableProvider,
   trello: trelloProvider,
   woocommerce: woocommerceProvider,
+  mailchimp: mailchimpProvider,
 };
 
 export function getProvider(provider: string): IntegrationProvider | null {
