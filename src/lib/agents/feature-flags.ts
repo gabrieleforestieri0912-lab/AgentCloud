@@ -143,6 +143,20 @@ export const ALL_TOOLS_LIST = [
   "mailchimp_list_audiences",
   "mailchimp_get_audience_stats",
   "mailchimp_list_campaigns",
+  // Microsoft 365 (Word/Excel/PowerPoint/OneNote): una connessione abilita i
+  // quattro documenti. Le scritture su contenuto esistente richiedono conferma
+  // (vedi lib/agents/tool-confirmation.ts).
+  "word_create",
+  "word_append",
+  "word_read",
+  "excel_create",
+  "excel_read_range",
+  "excel_write_range",
+  "powerpoint_create",
+  "onenote_list",
+  "onenote_create_page",
+  "onenote_append",
+  "onenote_read",
   "request_integration_connect",
 ];
 

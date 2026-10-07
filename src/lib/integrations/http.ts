@@ -26,7 +26,17 @@ export type ProviderRequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   /** Authorization già pronto. */
   headers?: Record<string, string>;
-  body?: string;
+  /**
+   * Corpo della richiesta. Accetta anche byte oltre alla stringa: Graph carica
+   * i file generati (docx/xlsx/pptx) come binario, non come testo.
+   */
+  body?: string | Uint8Array;
+  /**
+   * True quando la risposta è un file (download da Graph). In quel caso il corpo
+   * viene letto come byte e finisce in `bytes`, non in `text`: `res.text()`
+   * corromperebbe un binario.
+   */
+  binary?: boolean;
   timeoutMs?: number;
   maxRetries?: number;
   /** Etichetta per gli errori, es. "WooCommerce". */
@@ -66,6 +76,8 @@ export type ProviderResponse = {
   status: number;
   /** Corpo come testo (i provider restituiscono quasi sempre JSON). */
   text: string;
+  /** Byte del corpo, presenti solo con `binary: true`. */
+  bytes?: Uint8Array;
   /** Corpo parsato come JSON, o `undefined` se non è JSON valido. */
   json?: unknown;
   /** Messaggio d'errore già pronto per il modello. */
@@ -105,7 +117,10 @@ export async function providerRequest(
       res = await fetch(url, {
         method,
         headers,
-        body,
+        // `BodyInit` non accetta il `Uint8Array<ArrayBufferLike>` di Node per
+        // via della generic del buffer, ma `fetch` lo gestisce a runtime: è il
+        // caso dell'upload binario su Graph.
+        body: body as BodyInit | undefined,
         signal: controller.signal,
         cache: "no-store",
       });
@@ -127,7 +142,16 @@ export async function providerRequest(
     }
     clearTimeout(timer);
 
-    const text = await res.text().catch(() => "");
+    // Con `binary` il corpo è un file: leggiamo byte e, solo in caso di errore,
+    // lo decodifichiamo come testo perché Graph risponde JSON anche sui 4xx/5xx.
+    let bytes: Uint8Array | undefined;
+    let text: string;
+    if (opts.binary) {
+      bytes = new Uint8Array(await res.arrayBuffer().catch(() => new ArrayBuffer(0)));
+      text = res.ok ? "" : new TextDecoder().decode(bytes.subarray(0, 500));
+    } else {
+      text = await res.text().catch(() => "");
+    }
     let json: unknown;
     try {
       json = text ? JSON.parse(text) : undefined;
@@ -142,7 +166,7 @@ export async function providerRequest(
       continue;
     }
 
-    last = { ok: res.ok, status: res.status, text, json };
+    last = { ok: res.ok, status: res.status, text, bytes, json };
     if (!res.ok) {
       // 429 esaurito: il messaggio dice al modello che è un rate limit, non un bug.
       const detail = extractProviderMessage(json) || truncate(text) || res.statusText;

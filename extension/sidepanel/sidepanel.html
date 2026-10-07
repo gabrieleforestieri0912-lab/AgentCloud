@@ -126,6 +126,13 @@
       <div id="messages" class="messages"></div>
       <div id="typing" class="typing hidden">L’agente sta lavorando…</div>
       <div id="contextCard" class="context-card hidden"></div>
+      <div id="approvalCard" class="approval-card hidden" role="alertdialog" aria-label="Conferma operazione">
+        <p id="approvalText" class="approval-text"></p>
+        <div class="approval-actions">
+          <button type="button" id="approveBtn" class="btn-primary">Approva</button>
+          <button type="button" id="denyBtn" class="btn-link">Annulla</button>
+        </div>
+      </div>
       <form id="composer" class="composer">
         <textarea id="prompt" rows="3" placeholder="Chiedi al tuo agente…"></textarea>
         <div class="composer-actions">

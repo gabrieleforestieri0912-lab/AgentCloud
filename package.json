@@ -14,9 +14,14 @@
     "test:trello": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-trello-integration.mjs",
     "test:woocommerce": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-woocommerce-integration.mjs",
     "test:mailchimp": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-mailchimp-integration.mjs",
+    "test:microsoft": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-microsoft-integration.mjs",
+    "test:microsoft-graph": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-microsoft-graph.mjs",
+    "test:microsoft-documents": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-microsoft-documents.mjs",
+    "test:microsoft-tools": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-microsoft-tools.mjs",
     "test:ui": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-integrations-ui.mjs",
     "test:security": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-integrations-security.mjs",
-    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && npm run test:trello && npm run test:woocommerce && npm run test:mailchimp && npm run test:ui && npm run test:security && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
+    "test:clients": "node scripts/test-clients-alignment.mjs",
+    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && npm run test:trello && npm run test:woocommerce && npm run test:mailchimp && npm run test:microsoft && npm run test:microsoft-graph && npm run test:microsoft-documents && npm run test:microsoft-tools && npm run test:ui && npm run test:security && npm run test:clients && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
@@ -24,19 +29,25 @@
     "@supabase/supabase-js": "^2.108.2",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
+    "docx": "^9.8.1",
+    "exceljs": "^4.4.0",
     "framer-motion": "^12.41.0",
     "highlight.js": "^11.12.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
+    "jszip": "^3.10.2",
     "lucide-react": "^1.17.0",
+    "mammoth": "^1.13.0",
     "next": "16.2.9",
+    "pptxgenjs": "^4.0.1",
     "puppeteer-core": "^25.10.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.10.1",
     "resend": "^6.12.4",
     "simple-icons": "^16.28.0",
-    "stripe": "^22.3.0"
+    "stripe": "^22.3.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

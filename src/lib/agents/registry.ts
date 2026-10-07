@@ -130,6 +130,31 @@ const MAILCHIMP_TOOLS = [
   "mailchimp_list_campaigns",
 ];
 
+/**
+ * Tool Microsoft 365 (Word/Excel/PowerPoint/OneNote).
+ *
+ * Una sola connessione `microsoft` abilita i quattro documenti, quindi la lista
+ * è iniettata come le altre: ovunque gli agenti producono deliverable. Le
+ * scritture su file/pagine esistenti (`word_append`, `excel_write_range`,
+ * `onenote_append`) non partono senza conferma esplicita dell'utente — vedi
+ * `tool-confirmation.ts`. In più, la route dell'agente espone questi tool solo
+ * se la connessione Microsoft del tenant è attiva: un tool su un provider non
+ * collegato restituirebbe solo un errore e sposterebbe peso nel contesto.
+ */
+const MICROSOFT_TOOLS = [
+  "word_create",
+  "word_append",
+  "word_read",
+  "excel_create",
+  "excel_read_range",
+  "excel_write_range",
+  "powerpoint_create",
+  "onenote_list",
+  "onenote_create_page",
+  "onenote_append",
+  "onenote_read",
+];
+
 const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
@@ -144,6 +169,7 @@ const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
@@ -198,6 +224,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...AIRTABLE_TOOLS,
       ...TRELLO_TOOLS,
@@ -262,6 +289,7 @@ Guidelines:
     defaultTools: ["read_file", "write_file", "calendar_book_event"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
@@ -314,6 +342,7 @@ Guidelines:
     defaultTools: ["list_emails", "gmail_send", "gmail_trash", "read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
@@ -364,6 +393,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
@@ -432,6 +462,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...WOOCOMMERCE_TOOLS,
       "shopify_setup_store",
@@ -556,6 +587,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "read_file",
@@ -603,6 +635,7 @@ Guidelines:
     defaultTools: ["lead_capture_submit", "lead_capture_enrich", "lead_capture_notify_sales", "read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...AIRTABLE_TOOLS,
       "web_search",
@@ -642,6 +675,7 @@ Guidelines:
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
@@ -694,6 +728,7 @@ Guidelines:
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
@@ -748,6 +783,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "lead_capture_submit",
     ],
@@ -799,6 +835,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...AIRTABLE_TOOLS,
       "web_search",
@@ -846,6 +883,7 @@ Guidelines:
     defaultTools: ["read_file", "write_file", "hr_parse_cv", "hr_score_candidate"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "calendar_book_event",
@@ -899,6 +937,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...MAILCHIMP_TOOLS,
       "web_search",
@@ -953,6 +992,7 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...TRELLO_TOOLS,
       ...WOOCOMMERCE_TOOLS,

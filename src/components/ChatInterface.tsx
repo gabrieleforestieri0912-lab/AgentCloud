@@ -246,6 +246,38 @@ export default function ChatInterface({
   // Conversazioni fermate dall'utente: l'AbortError in volo non deve
   // diventare una bolla di errore.
   const stopRequested = useRef<Set<string>>(new Set());
+  /**
+   * Conferma umana dei tool che modificano documenti esistenti. Quando il server
+   * manda `tool_confirm`, salviamo il token (firmato lato server: il client non
+   * può cambiare tool o argomenti) e la funzione che riprende la stessa
+   * richiesta con l'approvazione.
+   */
+  const resumeRef = useRef<((token: string) => Promise<void>) | null>(null);
+  const [pendingApproval, setPendingApproval] = useState<{
+    convId: string;
+    toolName: string;
+    token: string;
+  } | null>(null);
+
+  /** Approva il tool in attesa e riprende la generazione. */
+  async function approvePending() {
+    const pending = pendingApproval;
+    const resume = resumeRef.current;
+    if (!pending || !resume) return;
+    setPendingApproval(null);
+    resumeRef.current = null;
+    try {
+      await resume(pending.token);
+    } catch {
+      // La ripresa riporta gli errori nell'ActivityFeed come ogni altra run.
+    }
+  }
+
+  /** Annulla: nessun tool eseguito, la chat torna disponibile. */
+  function denyPending() {
+    setPendingApproval(null);
+    resumeRef.current = null;
+  }
 
   /** Ferma la generazione in corso senza errori e senza perdere il parziale. */
   function stopStreaming(convId: string) {
@@ -1346,6 +1378,23 @@ export default function ChatInterface({
                     }
                     return steps;
                   });
+                }
+                if (json.type === "tool_confirm") {
+                  const evt = json as unknown as { toolName?: string; token?: string };
+                  if (typeof evt.token === "string") {
+                    // Il server ha messo in pausa la run: salviamo come riprenderla
+                    // e mostriamo la conferma. Non è un errore, quindi lo stream
+                    // può chiudersi senza bolla rossa.
+                    convActivityProduced = true;
+                    const resumeBody = { ...body, approval: { token: evt.token } };
+                    resumeRef.current = (token: string) =>
+                      streamOne(url, { ...resumeBody, approval: { token } }, agent);
+                    setPendingApproval({
+                      convId,
+                      toolName: String(evt.toolName ?? "tool"),
+                      token: evt.token,
+                    });
+                  }
                 }
                 if ((json as unknown as { type?: string; provider?: string }).type === "connection" && typeof (json as unknown as { provider?: string }).provider === "string") {
                   const prov = (json as unknown as { provider: string }).provider;
@@ -2476,6 +2525,36 @@ export default function ChatInterface({
               removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
             />
             {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
+            {pendingApproval && pendingApproval.convId === activeId && (
+              <div
+                role="alertdialog"
+                aria-label={dict.chat.activity.toolApprovalTitle}
+                className="mb-3 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2.5"
+              >
+                <p className="text-xs font-bold text-amber-200">
+                  {dict.chat.activity.toolApprovalTitle}
+                </p>
+                <p className="mt-1 font-mono text-[11px] text-amber-100/80">
+                  {pendingApproval.toolName}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={approvePending}
+                    className="rounded-full bg-amber-500 px-3 py-1 text-xs font-bold text-white hover:bg-amber-400"
+                  >
+                    {dict.chat.activity.toolApprovalApprove}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={denyPending}
+                    className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-neutral-200 hover:bg-white/20"
+                  >
+                    {dict.chat.activity.toolApprovalDeny}
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-1.5 bg-neutral-800 rounded-2xl border border-white/10 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
               <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
               <textarea

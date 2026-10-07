@@ -30,6 +30,14 @@ import {
   incrementAnonymousFreeCount,
 } from "@/lib/billing/free-limit";
 import { detectConnectProviders } from "@/lib/integrations";
+import { isMicrosoftTool as isMicrosoftToolName } from "@/lib/agents/microsoft-tools";
+import { isMicrosoftConnected } from "@/lib/integrations/microsoft/tenant";
+import {
+  buildApprovalToken,
+  toolRequiresConfirmation,
+  verifyApprovalToken,
+} from "@/lib/agents/tool-confirmation";
+import { logAudit } from "@/lib/audit";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -74,7 +82,13 @@ function isAnonRateLimited(ip: string): boolean {
 export async function POST(req: Request) {
   const locale = await getLocale();
 
-  let body: { agentId?: string; messages?: unknown; files?: unknown };
+  let body: {
+    agentId?: string;
+    messages?: unknown;
+    files?: unknown;
+    /** Ripresa dopo la conferma di un tool che modifica contenuto esistente. */
+    approval?: { token?: string };
+  };
   try {
     body = await req.json();
   } catch {
@@ -84,7 +98,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { agentId, messages, files } = body;
+  const { agentId, messages, files, approval } = body;
 
   if (!agentId || !Array.isArray(messages)) {
     return Response.json(
@@ -202,8 +216,18 @@ export async function POST(req: Request) {
     }
   }
 
+  // Tenant effettivo per i tool: stessa regola di `resolveTenant` in
+  // integration-tools (utente autenticato, altrimenti tenant condiviso).
+  const effectiveTenant = userId !== "anonymous" ? userId : (tenantId ?? "");
+
   // Rispetta i feature flag: espone solo gli strumenti abilitati per l'agente.
-  const enabledToolNames = getEnabledToolsForAgent(agentId);
+  let enabledToolNames = getEnabledToolsForAgent(agentId);
+  // I tool Microsoft si espongono solo con la connessione attiva: su un provider
+  // non collegato restituirebbero solo un errore e sposterebbero peso nel
+  // contesto del modello (stessa logica delle liste per agente).
+  if (!(await isMicrosoftConnected(effectiveTenant))) {
+    enabledToolNames = enabledToolNames.filter((t) => !isMicrosoftToolName(t));
+  }
   const enabledTools = enabledToolNames
     .map((tool) => TOOL_DEFINITIONS[tool])
     .filter(Boolean);
@@ -243,6 +267,9 @@ export async function POST(req: Request) {
   );
   let inputTokens = 0;
   let outputTokens = 0;
+  // Chiamate ai tool della run: contate per il billing (tool_calls in agent_runs)
+  // e loggate in modo strutturato, senza mai il contenuto dei documenti.
+  let toolCalls = 0;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -278,6 +305,51 @@ export async function POST(req: Request) {
 
       try {
         let conversationMessages = [...initialMessages];
+
+        // Ripresa dopo una conferma: il token firmato porta il batch di tool_use
+        // approvato (firmato, quindi il client non può cambiarne tool o input).
+        // Eseguiamo i tool e iniettiamo assistant(tool_use) + user(results), così
+        // il loop continua come se la conferma non fosse esistita.
+        if (approval?.token) {
+          const pending = verifyApprovalToken(approval.token);
+          const confirmed = pending ? pending.u[pending.c] : undefined;
+          if (
+            !pending ||
+            pending.t !== effectiveTenant ||
+            pending.a !== agentId ||
+            !confirmed ||
+            !toolRequiresConfirmation(confirmed.name)
+          ) {
+            emitter.stop();
+            send({ type: "error", message: executionErrorMessage });
+            return;
+          }
+          const results: LLMToolResult[] = [];
+          for (const use of pending.u) {
+            const startedAt = Date.now();
+            const result = await executeTool(
+              use.name,
+              use.input as Record<string, string>,
+              { userId, tenantId, files: files as Record<string, string> | undefined },
+            );
+            results.push({ id: use.id, content: result });
+            toolCalls++;
+            logAudit("tool_exec", {
+              userId,
+              agent: agentId,
+              tool: use.name,
+              durationMs: Date.now() - startedAt,
+              resultBytes: result.length,
+              resumed: true,
+            });
+          }
+          conversationMessages = [
+            ...conversationMessages,
+            { role: "assistant", content: pending.u },
+            { role: "user", content: results },
+          ];
+        }
+
         let iterations = 0;
 
         while (iterations < MAX_ITERATIONS) {
@@ -314,6 +386,34 @@ export async function POST(req: Request) {
           }
 
           if (response.stopReason === "tool_use" && response.toolUses.length > 0) {
+            // Conferma umana (Open Decision 14): se il batch contiene un tool che
+            // modifica contenuto esistente, non eseguiamo NULLA e mettiamo in
+            // pausa. Eseguire i tool "sicuri" dello stesso batch e fermarsi dopo
+            // li farebbe rieseguire alla ripresa, con effetti duplicati (es. due
+            // file creati). Il client approva e riprende con il token.
+            const confirmIndex = response.toolUses.findIndex((u) =>
+              toolRequiresConfirmation(u.name),
+            );
+            if (confirmIndex >= 0) {
+              await emitter.flush();
+              const token = buildApprovalToken({
+                t: effectiveTenant,
+                a: agentId,
+                u: response.toolUses.map((u) => ({ id: u.id, name: u.name, input: u.input })),
+                c: confirmIndex,
+              });
+              const pendingUse = response.toolUses[confirmIndex];
+              send({
+                type: "tool_confirm",
+                toolName: pendingUse.name,
+                toolInput: pendingUse.input,
+                toolUseId: pendingUse.id,
+                token,
+              });
+              send({ type: "awaiting_confirmation" });
+              break;
+            }
+
             const toolResults: LLMToolResult[] = [];
 
             for (const use of response.toolUses) {
@@ -322,6 +422,7 @@ export async function POST(req: Request) {
                 toolName: use.name,
                 toolInput: use.input,
               });
+              const toolStartedAt = Date.now();
 
               // Inline connect card: emit immediately so UI can render without waiting
               // for the next LLM turn. Solo per provider supportati: la card punta a
@@ -376,6 +477,17 @@ export async function POST(req: Request) {
                 }
               }
 
+              toolCalls++;
+              // Log strutturato: user, tool, esito (durata/byte), MAI il contenuto
+              // dei documenti: l'audit non deve diventare una copia dei file.
+              logAudit("tool_exec", {
+                userId,
+                agent: agentId,
+                tool: use.name,
+                durationMs: Date.now() - toolStartedAt,
+                resultBytes: result.length,
+              });
+
               send({ type: "tool_done", toolName: use.name });
 
               if (result.startsWith('{"type":"file_created"')) {
@@ -421,6 +533,7 @@ export async function POST(req: Request) {
             conversation_id: conversationId,
             tokens_input: inputTokens,
             tokens_output: outputTokens,
+            tool_calls: toolCalls,
           });
         } else if (userId === "anonymous") {
           // Anonimo in freemium: incrementa il contatore distribuito

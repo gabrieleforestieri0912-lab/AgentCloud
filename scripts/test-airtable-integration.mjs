@@ -250,8 +250,15 @@ await test("catalog, griglia, card e deploy mappano airtable", () => {
     "src/lib/agents/tools.ts",
   ]) {
     const src = fs.readFileSync(path.join(ROOT, f), "utf8");
-    assert.ok(src.includes("airtable"), `${f} non menziona airtable`);
+    // La mappa brand→provider è condivisa in @/lib/integrations (le quattro app
+    // Microsoft usano un solo provider): chi la importa non ripete la stringa.
+    assert.ok(
+      src.includes("airtable") || src.includes("BRAND_TO_PROVIDER"),
+      `${f} non menziona airtable`,
+    );
   }
+  const shared = fs.readFileSync(path.join(ROOT, "src/lib/integrations.ts"), "utf8");
+  assert.ok(shared.includes('airtable: "airtable"'), "la mappa condivisa non mappa airtable");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

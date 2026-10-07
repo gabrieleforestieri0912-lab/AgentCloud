@@ -74,7 +74,8 @@ npm run typecheck
 ## Contratti backend
 
 - `GET /api/extension/session` → `401 { authenticated:false, owned:[] }` oppure `200 { authenticated:true, owned:string[], email, name }`.
-- `POST /api/agent/run` → `{ agentId, messages, files? }`, risposta `text/event-stream` con eventi `text`, `tool_start`, `tool_done`, `done` o `error`.
+- `POST /api/agent/run` → `{ agentId, messages, files? }`, risposta `text/event-stream` con eventi `text`, `tool_start`, `tool_done`, `file`, `connection`, `tool_confirm`, `awaiting_confirmation`, `done` o `error`.
+- **Conferma umana**: quando un'azione modifica contenuto esistente (es. `word_append`) il server mette in pausa la run con `tool_confirm` + `awaiting_confirmation` e un `token` firmato. Il pannello mostra Approva/Annulla e, se approvi, ripete la stessa richiesta con `approval: { token }`. Il token è firmato lato server: l'estensione non può cambiare tool né argomenti.
 - Autenticazione API → cookie di sessione AgentCloud inviati con `credentials: include`.
 
 Nessuna chiave Anthropic, Stripe, Supabase service role o password deve essere inserita nel bundle dell'estensione.

@@ -27,6 +27,10 @@ const promptEl = document.getElementById("prompt");
 const sendBtn = document.getElementById("sendBtn");
 const selectionBtn = document.getElementById("selectionBtn");
 const typingEl = document.getElementById("typing");
+const approvalCard = document.getElementById("approvalCard");
+const approvalText = document.getElementById("approvalText");
+const approveBtn = document.getElementById("approveBtn");
+const denyBtn = document.getElementById("denyBtn");
 
 let session = null;
 let agentId = null;
@@ -34,6 +38,11 @@ let context = null;
 let messages = [];
 let requestId = null;
 let loading = false;
+// Conferma umana: il server mette in pausa la run (`tool_confirm`) quando un tool
+// modifica contenuto esistente. `lastRequest` è il body originale da rimandare
+// con il token firmato per riprendere (stessa semantica della chat web).
+let pendingApproval = null;
+let lastRequest = null;
 let extMode = "login";
 let extThrottleUntil = 0;
 let extAttempts = 0;
@@ -267,7 +276,8 @@ function renderCatalog() {
   AGENT_CATALOG.forEach((agent) => {
     const card = document.createElement("article");
     card.className = "catalog-card";
-    card.innerHTML = `<a href="${SITE}/agents/${encodeURIComponent(agent.slug)}" target="_blank" rel="noreferrer"><strong>${escapeHtml(agent.name)}</strong></a><small>${escapeHtml(agent.category)}<br>${escapeHtml(agent.description)}</small><span class="price">${escapeHtml(agent.price)}</span>`;
+    const priceLabel = agent.comingSoon ? `${agent.price} · Prossimamente` : agent.price;
+    card.innerHTML = `<a href="${SITE}/agents/${encodeURIComponent(agent.slug)}" target="_blank" rel="noreferrer"><strong>${escapeHtml(agent.name)}</strong></a><small>${escapeHtml(agent.category)}<br>${escapeHtml(agent.description)}</small><span class="price">${escapeHtml(priceLabel)}</span>`;
     catalog.appendChild(card);
   });
 }
@@ -289,6 +299,9 @@ function openChat() {
   resetContext();
   messages = [];
   requestId = null;
+  pendingApproval = null;
+  lastRequest = null;
+  if (approvalCard) approvalCard.classList.add("hidden");
   renderWelcome();
   showOnly("chat");
 }
@@ -402,11 +415,6 @@ if (composerEl) composerEl.addEventListener("submit", async (event) => {
   messages.push({ role: "user", content: text });
   addMessage("user", text);
 
-  const bubble = addMessage("assistant", "");
-  requestId = crypto.randomUUID();
-  setBusy(true);
-  setNotice("");
-
   // Recupera tab attiva per far operare il cursore AgentCloud sulla pagina affianco (la apre se non è aperta)
   let tabId = null;
   try {
@@ -414,7 +422,23 @@ if (composerEl) composerEl.addEventListener("submit", async (event) => {
     tabId = tabs[0]?.id ?? null;
   } catch {}
 
-  const response = await send({ action: "RUN_AGENT", payload: { agentId, messages: history, context, requestId, tabId } });
+  // La cronologia pre-run viene conservata in `lastRequest`: alla ripresa dopo
+  // una conferma va rimandato lo stesso body più il token firmato.
+  lastRequest = { agentId, messages: history, context, tabId };
+  await startRun(lastRequest);
+});
+
+/**
+ * Esegue una run nel pannello (nuovo prompt o ripresa dopo conferma).
+ * Apre una bolla assistant e lascia che gli eventi AGENT_STREAM la riempiano.
+ */
+async function startRun(request) {
+  requestId = crypto.randomUUID();
+  setBusy(true);
+  setNotice("");
+  const bubble = addMessage("assistant", "");
+
+  const response = await send({ action: "RUN_AGENT", payload: { ...request, requestId } });
 
   if (!response?.success) {
     bubble.textContent = response?.error || "Impossibile completare la richiesta.";
@@ -434,7 +458,28 @@ if (composerEl) composerEl.addEventListener("submit", async (event) => {
   requestId = null;
   setBusy(false);
   resetContext();
-});
+}
+
+/** Approva il tool in attesa e riprende la run con il token firmato. */
+async function approvePendingRun() {
+  const pending = pendingApproval;
+  if (!pending || !lastRequest) return;
+  pendingApproval = null;
+  if (approvalCard) approvalCard.classList.add("hidden");
+  await startRun({ ...lastRequest, approvalToken: pending.token });
+}
+
+/** Annulla: nessun tool eseguito, la chat torna disponibile. */
+function denyPendingRun() {
+  if (!pendingApproval) return;
+  pendingApproval = null;
+  if (approvalCard) approvalCard.classList.add("hidden");
+  addMessage("assistant", "Operazione annullata: nessuna modifica è stata applicata.");
+  setBusy(false);
+}
+
+if (approveBtn) approveBtn.addEventListener("click", () => { approvePendingRun(); });
+if (denyBtn) denyBtn.addEventListener("click", denyPendingRun);
 
 // ─── Messaggi dal service worker ───────────────────────────────────────────
 
@@ -458,6 +503,17 @@ api.runtime.onMessage.addListener((message) => {
   } else if (message.type === "connection" && message.provider) {
     // La connessione OAuth si completa sul sito: qui solo l'avviso operativo.
     addMessage("tool", `Connessione richiesta (${message.provider}): completala dal sito per sbloccare le azioni reali.`);
+  } else if (message.type === "tool_confirm" && typeof message.token === "string" && message.token) {
+    // Il server ha messo in pausa la run: mostriamo la conferma. Il token è
+    // firmato, quindi il pannello può solo approvare o annullare.
+    pendingApproval = { token: message.token, toolName: String(message.toolName || "l'operazione") };
+    if (approvalText) {
+      approvalText.textContent = `"${pendingApproval.toolName}" modifica un contenuto esistente. Approvare l'operazione?`;
+    }
+    if (approvalCard) approvalCard.classList.remove("hidden");
+    if (typingEl) typingEl.classList.add("hidden");
+  } else if (message.type === "awaiting_confirmation") {
+    if (typingEl) typingEl.classList.add("hidden");
   } else if (message.type === "error") {
     addMessage("assistant", message.message || message.error || "Errore dell'agente.");
     if (typingEl) typingEl.classList.add("hidden");

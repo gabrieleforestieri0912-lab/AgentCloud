@@ -402,8 +402,15 @@ await test("catalog, griglia e card mappano woocommerce", () => {
     "src/lib/integrations/guides.ts",
   ]) {
     const src = fs.readFileSync(path.join(ROOT, f), "utf8");
-    assert.ok(src.includes("woocommerce"), `${f} non menziona woocommerce`);
+    // Mappa brand→provider condivisa in @/lib/integrations: chi la importa non
+    // ripete la stringa del provider.
+    assert.ok(
+      src.includes("woocommerce") || src.includes("BRAND_TO_PROVIDER"),
+      `${f} non menziona woocommerce`,
+    );
   }
+  const shared = fs.readFileSync(path.join(ROOT, "src/lib/integrations.ts"), "utf8");
+  assert.ok(shared.includes('woocommerce: "woocommerce"'), "la mappa condivisa non mappa woocommerce");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -121,10 +121,13 @@ console.log("\nConteggio della barra di progresso");
 
 await test("il totale è derivato, non scritto a mano", () => {
   const src = read("src/app/dashboard/integrations/page.tsx");
-  assert.ok(
-    src.includes("INTEGRATIONS.filter((a) => a.available).length"),
-    "il totale deve derivare dalle app disponibili",
-  );
+  // Il totale deriva dalle app disponibili: inline oppure da una variabile
+  // `availableApps` (usata anche per contare le card connesse quando più app
+  // condividono un provider, come Microsoft 365).
+  const derived =
+    src.includes("INTEGRATIONS.filter((a) => a.available).length") ||
+    src.includes("const availableApps = INTEGRATIONS.filter((a) => a.available)");
+  assert.ok(derived, "il totale deve derivare dalle app disponibili");
   assert.ok(
     !/const total = \d+/.test(src),
     "c'è ancora un totale numerico scritto a mano",

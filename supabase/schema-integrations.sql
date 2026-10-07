@@ -4,7 +4,7 @@
 -- Provider supportati (devono restare allineati a IMPLEMENTED_PROVIDERS in
 -- src/lib/integrations/catalog.ts — il test lo verifica):
 --   notion, slack, hubspot, google_sheets, github, clickup, asana,
---   google_drive, airtable, trello, woocommerce, mailchimp
+--   google_drive, airtable, trello, woocommerce, mailchimp, microsoft
 --
 -- Redirect URI da registrare su ciascun provider:
 --   https://www.agentcloud.agency/api/integrations/<provider>/callback
@@ -65,7 +65,7 @@ create table if not exists public.tenant_integrations (
 -- controllata da un test.
 --
 -- Provider: notion, slack, hubspot, google_sheets, github, clickup, asana,
---           google_drive, airtable, trello, woocommerce, mailchimp
+--           google_drive, airtable, trello, woocommerce, mailchimp, microsoft
 alter table public.tenant_integrations
   drop constraint if exists tenant_integrations_provider_check;
 
@@ -90,7 +90,7 @@ alter table public.tenant_integrations
   add constraint tenant_integrations_provider_check
   check (provider in (
     'notion','slack','hubspot','google_sheets','github','clickup','asana',
-    'google_drive','airtable','trello','woocommerce','mailchimp'
+    'google_drive','airtable','trello','woocommerce','mailchimp','microsoft'
   ));
 
 

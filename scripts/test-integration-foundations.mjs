@@ -265,9 +265,9 @@ await test("ogni coppia PKCE è unica", () => {
 // ---------------------------------------------------------------------------
 section("Catalogo · coerenza");
 
-await test("12 provider, id univoci", () => {
+await test("13 provider, id univoci", () => {
   const ids = PROVIDER_CATALOG.map((p) => p.id);
-  assert.equal(ids.length, 12);
+  assert.equal(ids.length, 13);
   assert.equal(new Set(ids).size, ids.length, "id duplicati");
 });
 

@@ -19,6 +19,8 @@ export type UsageRecord = {
   conversation_id?: string;
   tokens_input: number;
   tokens_output: number;
+  /** Chiamate ai tool della run. Opzionale per i chiamanti che non le contano. */
+  tool_calls?: number;
   created_at?: string;
 };
 
@@ -194,6 +196,7 @@ export async function recordUsage(usage: UsageRecord): Promise<void> {
     status: "completed",
     input_tokens: usage.tokens_input,
     output_tokens: usage.tokens_output,
+    tool_calls: usage.tool_calls ?? 0,
     started_at: new Date().toISOString(),
     finished_at: new Date().toISOString(),
   });

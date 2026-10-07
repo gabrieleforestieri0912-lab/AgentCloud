@@ -153,11 +153,23 @@ await test("griglia, card inline, card agente e deploy mappano google_drive", ()
   ];
   for (const f of files) {
     const src = fs.readFileSync(path.join(ROOT, f), "utf8");
+    // La mappa brand→provider è centralizzata in @/lib/integrations da quando le
+    // quattro app Microsoft condividono un solo provider `microsoft`: chi la
+    // importa non ripete la stringa del provider. Entrambe le forme valgono,
+    // purché la voce esista (verificata sotto).
+    const mapsDirectly = src.includes("google_drive");
+    const usesSharedMap = src.includes("BRAND_TO_PROVIDER");
     assert.ok(
-      src.includes("google_drive"),
+      mapsDirectly || usesSharedMap,
       `${f} non mappa google_drive: la card o il badge resterebbero spenti`,
     );
   }
+  // L'invariante vera: la voce deve esistere nella mappa condivisa.
+  const shared = fs.readFileSync(path.join(ROOT, "src/lib/integrations.ts"), "utf8");
+  assert.ok(
+    shared.includes('googledrive: "google_drive"'),
+    "la mappa condivisa BRAND_TO_PROVIDER non mappa googledrive → google_drive",
+  );
 });
 
 await test("catalogo: Drive disponibile", () => {
@@ -176,10 +188,13 @@ await test("il totale della barra di progresso è derivato dalle app disponibili
   );
   // Prima era un numero scritto a mano: ogni connettore aggiunto lo
   // dimenticava di aggiornare e la barra mostrava 12/15 con 13 app disponibili.
-  assert.ok(
-    page.includes("INTEGRATIONS.filter((a) => a.available).length"),
-    "il totale deve derivare dalle app disponibili",
-  );
+  // Il totale deve derivare dalle app disponibili, in una delle due forme:
+  // inline, oppure da una variabile `availableApps` (usata anche per contare le
+  // card connesse quando più app condividono un provider, come Microsoft).
+  const derived =
+    page.includes("INTEGRATIONS.filter((a) => a.available).length") ||
+    page.includes("const availableApps = INTEGRATIONS.filter((a) => a.available)");
+  assert.ok(derived, "il totale deve derivare dalle app disponibili");
   assert.ok(!/const total = \d+/.test(page), "c'è ancora un totale numerico a mano");
 });
 

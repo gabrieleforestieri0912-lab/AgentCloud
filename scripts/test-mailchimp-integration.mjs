@@ -49,8 +49,8 @@ await test("tutti e 5 i provider del batch sono implementati", () => {
   }
 });
 
-await test("il catalogo ha esattamente i 12 provider attesi", () => {
-  assert.equal(PROVIDER_CATALOG.length, 12);
+await test("il catalogo ha esattamente i 13 provider attesi", () => {
+  assert.equal(PROVIDER_CATALOG.length, 13);
   const ids = PROVIDER_CATALOG.map((p) => p.id);
   assert.equal(new Set(ids).size, ids.length, "id duplicati");
 });
@@ -276,11 +276,22 @@ await test("catalog, griglia, card e deploy mappano i 5 nuovi", () => {
   for (const f of files) {
     const src = fs.readFileSync(path.join(ROOT, f), "utf8");
     for (const [brand, id] of pairs) {
+      // La mappa brand→provider è condivisa in @/lib/integrations: chi la
+      // importa non ripete la stringa, quindi la presenza della mappa vale come
+      // la presenza del brand.
       const found = id
-        ? src.includes(brand) || src.includes(id)
-        : src.includes(brand);
+        ? src.includes(brand) || src.includes(id) || src.includes("BRAND_TO_PROVIDER")
+        : src.includes(brand) || src.includes("BRAND_TO_PROVIDER");
       assert.ok(found, `${f} non mappa ${id ?? brand}`);
     }
+  }
+  // L'invariante vera: le voci devono esistere nella mappa condivisa.
+  const shared = fs.readFileSync(path.join(ROOT, "src/lib/integrations.ts"), "utf8");
+  for (const [brand, id] of pairs) {
+    assert.ok(
+      shared.includes(`${brand}: "${id ?? brand}"`),
+      `la mappa condivisa non mappa ${brand} → ${id ?? brand}`,
+    );
   }
 });
 

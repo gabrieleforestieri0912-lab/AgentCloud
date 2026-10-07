@@ -1,4 +1,4 @@
-# Generic Integrations — Setup (12 provider)
+# Generic Integrations — Setup (13 provider)
 
 Layer di integrazioni generiche multi-tenant, separato da Shopify. Ogni provider ha:
 
@@ -8,8 +8,8 @@ Layer di integrazioni generiche multi-tenant, separato da Shopify. Ogni provider
 - una voce in `IMPLEMENTED_PROVIDERS` (`src/lib/integrations/catalog.ts`);
 - una voce nel catalogo `src/lib/integrations.ts` con `available: true`.
 
-Provider disponibili (12): **Notion, Slack, HubSpot, Google Sheets, GitHub, ClickUp,
-Asana, Google Drive, Airtable, Trello, WooCommerce, Mailchimp**.
+Provider disponibili (13): **Notion, Slack, HubSpot, Google Sheets, GitHub, ClickUp,
+Asana, Google Drive, Airtable, Trello, WooCommerce, Mailchimp, Microsoft 365**.
 
 Le chiamate alle API dei provider con tool agente sono **dirette**, fatte lato server
 con il token del tenant (`lib/integrations/api-proxy.ts`, `lib/google/sheets.ts`).
@@ -56,7 +56,7 @@ ${SITE}/api/integrations/<provider>/callback
 ```
 
 dove `<provider>` ∈ `notion | slack | hubspot | google_sheets | github | clickup |
-asana | google_drive | airtable | trello | woocommerce | mailchimp`.
+asana | google_drive | airtable | trello | woocommerce | mailchimp | microsoft`.
 
 Per ambiente locale il dominio è `http://localhost:3000`; su Vercel preview cambia a
 ogni deploy, quindi conviene registrare anche i domini di produzione stabili.
@@ -207,6 +207,22 @@ basta quindi a completare lo scambio. Oggi serve solo ad **Airtable**.
 | Autenticazione API | HTTP Basic con una stringa qualsiasi come username (`anystring`) e l'access token come password. **Non** è `Bearer`. |
 | Tool agente | `mailchimp_list_audiences`, `mailchimp_get_audience_stats`, `mailchimp_list_campaigns`. Solo lettura: **nessun invio di campagna e nessun iscritto aggiunto** in questa versione. |
 
+### Microsoft 365 (Word, Excel, PowerPoint, OneNote)
+| | |
+|---|---|
+| Env | `MS_CLIENT_ID`, `MS_CLIENT_SECRET`; `MS_TENANT_ID` (default `common`), `MS_REDIRECT_URI` (opzionale) |
+| Opzionali | `MS_SCOPES` (override), `MS_SHAREPOINT=1` (aggiunge `Sites.ReadWrite.All`) |
+| Creazione app | Entra ID → **App registrations** → la tua app → **Certificates & secrets**. Piattaforma **Web**. |
+| Redirect | `${SITE}/api/integrations/microsoft/callback` (o il valore di `MS_REDIRECT_URI`: deve coincidere con quello registrato) |
+| PKCE | **Obbligatorio** (S256). Permessi **delegati**, mai app-only: l'API OneNote non supporta più l'autenticazione app-only. |
+| Tenant | `common | organizations | consumers | <dominio\|GUID>`. Validato prima di entrare nella URL: un env malformato viene rifiutato con un errore, non interpolato. |
+| Scope | `offline_access User.Read Files.ReadWrite Notes.ReadWrite`. `Sites.ReadWrite.All` **solo** con `MS_SHAREPOINT=1`: apre SharePoint oltre al OneDrive personale, quindi è una scelta dell'utente e non un default silenzioso. |
+| Token | access token ~1h + `refresh_token` → **auto-refresh**. Il refresh richiede `offline_access`, altrimenti Microsoft non emette un nuovo refresh token; se non arriva, si conserva il precedente (azzerarlo renderebbe la riga irrecuperabile al rinnovo dopo). |
+| Una connessione | Word, Excel, PowerPoint e OneNote condividono la stessa riga `tenant_integrations` (`provider = 'microsoft'`): una sola connessione li abilita tutti. |
+| Revoca | Microsoft non espone un endpoint di revoca per i token v2: `Disconnetti` cancella la riga locale (i token diventano inutilizzabili) e l'utente può revocare l'app dalle impostazioni dell'account Microsoft. |
+| File | Tutti i file vanno nella cartella dedicata `AgentCloud` nel OneDrive dell'utente; ogni funzione restituisce `{ id, name, webUrl }` per linkare il risultato. |
+| Graph | Excel usa le API `/workbook` (range, append, tabelle). Word/PowerPoint non hanno API per modificare il contenuto: si **genera** il file in JS (`docx`/`pptxgenjs`) e si carica via Graph; la modifica di un file esistente è download → parse → ricostruzione → upload. |
+
 ## Database
 
 Esegui `supabase/schema-integrations.sql` (idempotente). Rimuove i provider `stripe` e
@@ -214,7 +230,7 @@ Esegui `supabase/schema-integrations.sql` (idempotente). Rimuove i provider `str
 
 ```sql
 provider in ('notion','slack','hubspot','google_sheets','github','clickup','asana',
-             'google_drive','airtable','trello','woocommerce','mailchimp')
+             'google_drive','airtable','trello','woocommerce','mailchimp','microsoft')
 ```
 
 `supabase/schema-integrations-batch2.sql` allarga lo stesso vincolo e documenta il
@@ -326,6 +342,7 @@ Test: `node scripts/test-integration-tools.mjs` (registro e dispatch) e `node sc
 | `npm run test:trello` | Flusso non-standard, scadenza senza refresh, token non nei log |
 | `npm run test:woocommerce` | SSRF, coppia di credenziali, normalizzazione prodotti/ordini |
 | `npm run test:mailchimp` | Data center nel refresh, header Basic, stato finale del batch |
+| `npm run test:microsoft` | PKCE a runtime, validazione `MS_TENANT_ID`, scope minimi (SharePoint opt-in), refresh con `offline_access` |
 | `npm run test:ui` | Filtri, stati vuoti, accessibilità, palette, i18n in 5 lingue, allineamento SQL↔TS |
 | `npm run test:security` | Token non persistiti/loggati, SSRF, tenant binding, PKCE, segreti |
 | `npm test` | Tutti i precedenti + `test-integrations.mjs` e `test-integration-tools.mjs` |
@@ -355,3 +372,6 @@ I test dei provider che richiedono una connessione reale non sono automatici:
 | `hubspot_create_contact` → 409 | Email già presente: usare `hubspot_get_contact` invece di creare un duplicato. |
 | **Airtable: nessuna base** | Le basi vanno condivise con l'integrazione: apri la base → Share → aggiungi l'integrazione. |
 | **Mailchimp: audience non visibile** | L'integrazione OAuth2 registrata è "Read Only" ma servono più permessi, oppure non è autorizzata per quell'account. |
+| **Microsoft `AADSTS50011`** | Il `redirect_uri` non è registrato su Entra, oppure `MS_REDIRECT_URI` differisce da quello registrato → registra `${SITE}/api/integrations/microsoft/callback`. |
+| **Microsoft `AADSTS65001` / consenso negato** | L'utente ha rifiutato il consenso o servono permessi che l'admin del tenant deve approvare → riprova o chiedi l'approvazione admin. |
+| **OneDrive pieno (quota)** | La quota OneDrive dell'utente è esaurita: Graph risponde 507 → libera spazio o salva altrove. |

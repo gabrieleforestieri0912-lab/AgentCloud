@@ -37,7 +37,7 @@ class Agent {
     Agent(
       slug: 'shopify-agent',
       name: 'Shopify Agent',
-      shortName: 'Shopify',
+      shortName: 'Shopify Agent',
       category: 'E-commerce & Finance',
       description: 'Cerca prodotti, crea carrelli e verifica ordini e spedizioni 24/7.',
       icon: Icons.shopping_bag_rounded,
@@ -64,7 +64,7 @@ class Agent {
     Agent(
       slug: 'support-agent',
       name: 'Support Agent',
-      shortName: 'Support',
+      shortName: 'Support Agent',
       category: 'Customer Service',
       description: 'Risponde a domande su prodotti e ordini 24/7 con FAQ automatiche.',
       icon: Icons.support_agent_rounded,
@@ -76,7 +76,7 @@ class Agent {
     ),
     Agent(
       slug: 'lead-capture',
-      name: 'Lead Capture',
+      name: 'Lead Capture Agent',
       shortName: 'Lead Capture',
       category: 'Marketing & Sales',
       description: 'Cattura lead dal sito, arricchisce e avvisa Slack/HubSpot.',
@@ -89,8 +89,8 @@ class Agent {
     ),
     Agent(
       slug: 'calendar-booking',
-      name: 'Calendar Booking',
-      shortName: 'Calendar',
+      name: 'Calendar Booking Agent',
+      shortName: 'Calendar Booking',
       category: 'Business & Operations',
       description: 'Propone slot, prenota e invia inviti con reminder automatici.',
       icon: Icons.calendar_month_rounded,
@@ -102,8 +102,8 @@ class Agent {
     ),
     Agent(
       slug: 'finance-manager',
-      name: 'Finance Manager',
-      shortName: 'Finance',
+      name: 'Finance Manager Agent',
+      shortName: 'Finance Manager',
       category: 'E-commerce & Finance',
       description: 'Fatture, cashflow da CSV/Stripe e solleciti gentili automatici.',
       icon: Icons.receipt_long_rounded,
@@ -115,8 +115,8 @@ class Agent {
     ),
     Agent(
       slug: 'seo-agent',
-      name: 'SEO Content',
-      shortName: 'SEO',
+      name: 'SEO Content Agent',
+      shortName: 'SEO Content',
       category: 'Marketing & Sales',
       description: 'Genera contenuti ottimizzati SEO e pianifica il calendario editoriale.',
       icon: Icons.search_rounded,
@@ -128,7 +128,7 @@ class Agent {
     ),
     Agent(
       slug: 'copywriter',
-      name: 'Copywriter',
+      name: 'Copywriter Agent',
       shortName: 'Copywriter',
       category: 'Design & Content',
       description: 'Copy per landing, DEM e social con tono personalizzabile.',
@@ -141,8 +141,8 @@ class Agent {
     ),
     Agent(
       slug: 'quote-agent',
-      name: 'Preventivi Agent',
-      shortName: 'Preventivi',
+      name: 'Quotes & Estimates Agent',
+      shortName: 'Quotes Agent',
       category: 'E-commerce & Finance',
       description: 'Raccoglie requisiti e prepara preventivi dettagliati via email.',
       icon: Icons.receipt_long_rounded,
@@ -154,8 +154,8 @@ class Agent {
     ),
     Agent(
       slug: 'reviews-agent',
-      name: 'Reviews Agent',
-      shortName: 'Reviews',
+      name: 'Reviews & Reputation Agent',
+      shortName: 'Reviews Agent',
       category: 'Customer Service',
       description: 'Monitora le recensioni Google e prepara risposte professionali.',
       icon: Icons.rate_review_rounded,
@@ -167,8 +167,8 @@ class Agent {
     ),
     Agent(
       slug: 'business-manager',
-      name: 'Business Manager',
-      shortName: 'Business',
+      name: 'Business Manager Agent',
+      shortName: 'Business Manager',
       category: 'Business & Operations',
       description: 'Report operativi, KPI e supporto alle decisioni strategiche.',
       icon: Icons.business_center_rounded,
@@ -180,8 +180,8 @@ class Agent {
     ),
     Agent(
       slug: 'personal-assistant',
-      name: 'Personal Assistant',
-      shortName: 'Assistente',
+      name: 'Personal Assistant Agent',
+      shortName: 'Personal Assistant',
       category: 'Business & Operations',
       description: 'Pianifica le giornate e riassume meeting e note.',
       icon: Icons.person_rounded,
@@ -193,7 +193,7 @@ class Agent {
     ),
     Agent(
       slug: 'hr-recruiter',
-      name: 'HR & Recruiter',
+      name: 'HR & Recruiter Agent',
       shortName: 'HR Recruiter',
       category: 'Business & Operations',
       description: 'Screening CV e pianificazione colloqui in automatico.',
@@ -206,8 +206,8 @@ class Agent {
     ),
     Agent(
       slug: 'social-media-agent',
-      name: 'Social Media',
-      shortName: 'Social',
+      name: 'Social Media Agent',
+      shortName: 'Social Media',
       category: 'Design & Content',
       description: 'Piano editoriale e caption per Instagram, LinkedIn e TikTok.',
       icon: Icons.campaign_rounded,
@@ -219,8 +219,8 @@ class Agent {
     ),
     Agent(
       slug: 'inventory-logistics',
-      name: 'Logistics Agent',
-      shortName: 'Logistica',
+      name: 'Inventory & Logistics Agent',
+      shortName: 'Logistics Agent',
       category: 'E-commerce & Finance',
       description: 'Scorte, riordini e spedizioni sotto controllo.',
       icon: Icons.inventory_2_rounded,

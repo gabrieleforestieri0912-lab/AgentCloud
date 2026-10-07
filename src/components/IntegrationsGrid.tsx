@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import type { Locale } from "@/lib/i18n/constants";
-import { INTEGRATIONS } from "@/lib/integrations";
+import { INTEGRATIONS, BRAND_TO_PROVIDER } from "@/lib/integrations";
 import { getCatalogEntry, INTEGRATION_CATEGORIES } from "@/lib/integrations/catalog";
 import { useLanguage } from "./LanguageProvider";
 import IntegrationSteps from "./IntegrationSteps";
@@ -20,21 +20,8 @@ type Row = {
 type ShopifyConn = { shopDomain: string; connected: boolean };
 type GoogleConn = { googleEmail: string | null; connected: boolean; connectedAt: string | null } | null;
 
-// Map catalog brand -> generic provider id (where OAuth is via /api/integrations)
-const BRAND_TO_PROVIDER: Record<string, string> = {
-  notion: "notion",
-  slack: "slack",
-  hubspot: "hubspot",
-  googlesheets: "google_sheets",
-  github: "github",
-  clickup: "clickup",
-  asana: "asana",
-  googledrive: "google_drive",
-  airtable: "airtable",
-  trello: "trello",
-  woocommerce: "woocommerce",
-  mailchimp: "mailchimp",
-};
+// BRAND_TO_PROVIDER è importato da @/lib/integrations: la stessa mappa serve
+// anche al conteggio di avanzamento nella pagina dashboard.
 
 function metaLabel(row: Row | undefined): string | null {
   if (!row?.metadata) return row?.external_account_id ?? null;
@@ -47,6 +34,7 @@ function metaLabel(row: Row | undefined): string | null {
     (m.airtable_email as string) ||
     (m.trello_username as string) ||
     (m.google_email as string) ||
+    (m.microsoft_email as string) ||
     (m.store_url as string) ||
     (m.asana_user as { email?: string })?.email ||
     row.external_account_id

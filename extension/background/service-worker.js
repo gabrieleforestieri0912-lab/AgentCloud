@@ -585,7 +585,7 @@ async function getPageContext(tabId) {
 
 // ─── Esecuzione agente in streaming (SSE) ──────────────────────────────────
 
-async function runAgent({ agentId, messages, context, requestId, tabId: requestedTabId }) {
+async function runAgent({ agentId, messages, context, requestId, tabId: requestedTabId, approvalToken }) {
   if (!agentId || typeof agentId !== "string") {
     throw new Error("Nessun agente selezionato: scegli un agente dal pannello laterale e riprova.");
   }
@@ -654,6 +654,9 @@ async function runAgent({ agentId, messages, context, requestId, tabId: requeste
             content: `${messages[messages.length - 1]?.content || ""}\n\nContesto pagina (fornito dall'utente):\nTitolo: ${context.title}\nURL: ${context.url}\nSelezione: ${context.selection || "(nessuna selezione)"}`,
           }]
         : messages,
+      // Ripresa dopo la conferma umana: il token è firmato dal server, quindi
+      // l'estensione non può cambiare tool né argomenti (solo approvare/annullare).
+      ...(approvalToken ? { approval: { token: approvalToken } } : {}),
     }),
   });
 
@@ -751,6 +754,20 @@ async function runAgent({ agentId, messages, context, requestId, tabId: requeste
         } else if (data.type === "file") emit({ type: "file", filename: data.filename });
         else if (data.type === "connection" && typeof data.provider === "string") {
           emit({ type: "connection", provider: data.provider });
+        }
+        else if (data.type === "tool_confirm") {
+          // Il server ha messo in pausa la run: l'azione modifica contenuto
+          // esistente. Il token firmato torna al pannello, che mostra la
+          // conferma; lo stream si chiude con `awaiting_confirmation`.
+          emit({
+            type: "tool_confirm",
+            toolName: data.toolName,
+            toolInput: data.toolInput,
+            token: data.token,
+          });
+        }
+        else if (data.type === "awaiting_confirmation") {
+          emit({ type: "awaiting_confirmation" });
         }
         else if (data.type === "error") throw new Error(data.message || data.error || "Errore dell'agente");
         else if (data.type === "done") {

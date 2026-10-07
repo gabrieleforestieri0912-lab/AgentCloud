@@ -90,12 +90,26 @@ export async function adminRequest<T>(path: string, init: RequestInit = {}): Pro
   return await response.json() as T;
 }
 
-export async function streamAgent(agentId: string, messages: Array<{ role: "user" | "assistant"; content: string }>, onEvent: (event: Record<string, unknown>) => void) {
+/**
+ * Esegue un agente in streaming SSE.
+ *
+ * `options.approvalToken` riprende una run messa in pausa dal meccanismo di
+ * conferma umana (evento `tool_confirm`): il server firma il token, quindi la
+ * CLI non può cambiare tool né argomenti — può solo approvare o annullare.
+ */
+export async function streamAgent(
+  agentId: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  onEvent: (event: Record<string, unknown>) => void,
+  options: { approvalToken?: string } = {},
+) {
   const token = await getValidUserToken();
+  const body: Record<string, unknown> = { agentId, messages };
+  if (options.approvalToken) body.approval = { token: options.approvalToken };
   const response = await fetch(`${baseUrl()}/api/agent/run`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "text/event-stream" },
-    body: JSON.stringify({ agentId, messages }),
+    body: JSON.stringify(body),
   });
   if (!response.ok) throw new ApiError(response.status, await parseError(response));
   if (!response.body) throw new Error("Lo stream dell'agente non è disponibile.");

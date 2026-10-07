@@ -225,6 +225,20 @@ export const PROVIDER_CATALOG = [
     scopes: [],
     hasApiProxy: true,
   },
+  {
+    id: "microsoft",
+    label: "Microsoft 365",
+    brand: "microsoft",
+    category: "Productivity",
+    // PKCE obbligatorio e permessi delegati: l'API OneNote non supporta più
+    // l'autenticazione app-only, quindi un flusso client_credentials non basterebbe.
+    authType: "oauth2_pkce",
+    // Una sola connessione abilita Word, Excel, PowerPoint e OneNote. Gli scope
+    // sono quelli minimi delegati; Sites.ReadWrite.All (SharePoint) è un opt-in
+    // esplicito via MS_SHAREPOINT, non un default silenzioso nel consenso.
+    scopes: ["offline_access", "User.Read", "Files.ReadWrite", "Notes.ReadWrite"],
+    hasApiProxy: true,
+  },
 ] as const;
 
 /**
@@ -252,6 +266,7 @@ export const IMPLEMENTED_PROVIDERS = [
   "trello",
   "woocommerce",
   "mailchimp",
+  "microsoft",
 ] as const;
 
 export type ImplementedProvider = (typeof IMPLEMENTED_PROVIDERS)[number];

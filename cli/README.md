@@ -64,6 +64,18 @@ agentcloud config --url http://localhost:3000
 
 Il catalogo e i prezzi rimandano sempre al marketplace web: la CLI non esegue checkout.
 
+### Conferma umana delle azioni che modificano documenti
+
+Quando un agente vuole modificare contenuto esistente (es. appendere testo a un documento Word), la run si mette in pausa e la CLI chiede conferma:
+
+```bash
+agentcloud run email-manager "Aggiungi il riepilogo al report"
+# ...
+# Confermi l'esecuzione di "word_append"? [y/N]
+```
+
+Il token di ripresa è firmato dal server: la CLI non può cambiare tool né argomenti, può solo approvare o annullare. In pipeline non interattive passa `--yes` per approvare automaticamente; senza terminale interattivo e senza `--yes` la conferma è negata per non bloccare gli script.
+
 ## Comandi admin
 
 I comandi admin hanno un'autenticazione separata e non usano mai il token utente:

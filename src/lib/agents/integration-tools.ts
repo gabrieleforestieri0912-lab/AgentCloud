@@ -13,6 +13,12 @@ import {
   wooApiProxy,
   mailchimpApiProxy,
 } from "@/lib/integrations/api-proxy";
+import {
+  MICROSOFT_TOOL_NAMES,
+  MICROSOFT_TOOL_DEFINITIONS,
+  isMicrosoftTool,
+  executeMicrosoftTool,
+} from "./microsoft-tools";
 
 /**
  * Tool agente per le integrazioni: GitHub / ClickUp / Asana / Notion / Slack /
@@ -64,6 +70,10 @@ const INTEGRATION_TOOL_NAMES = [
   "mailchimp_list_audiences",
   "mailchimp_get_audience_stats",
   "mailchimp_list_campaigns",
+  // Microsoft 365 (Word/Excel/PowerPoint/OneNote). Le definizioni e gli handler
+  // vivono in ./microsoft-tools: qui resta solo il nome, così `isIntegrationTool`
+  // continua a essere l'unico punto che decide il dispatch.
+  ...MICROSOFT_TOOL_NAMES,
 ] as const;
 
 export function isIntegrationTool(name: string): boolean {
@@ -646,6 +656,7 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
       },
     },
   },
+  ...MICROSOFT_TOOL_DEFINITIONS,
 };
 
 // ---------------------------------------------------------------------------
@@ -658,6 +669,13 @@ export async function executeIntegrationTool(
   context: ToolContext,
 ): Promise<string> {
   const tenantId = resolveTenant(context);
+
+  // Microsoft: i tool vivono in ./microsoft-tools. L'input arriva come JSON dal
+  // modello (array/oggetti), quindi il tipo `Record<string,string>` qui è solo la
+  // firma del dispatcher: la conversione difensiva sta di là.
+  if (isMicrosoftTool(name)) {
+    return executeMicrosoftTool(name, input as unknown as Record<string, unknown>, tenantId);
+  }
 
   switch (name) {
     case "github_list_repos": {

@@ -17,12 +17,15 @@ export type Integration = {
 };
 
 export const INTEGRATIONS: Integration[] = [
+  // Shopify è temporaneamente in "Prossimamente": l'integrazione non è
+  // collegabile per il momento. `available: false` è l'unico interruttore:
+  // pagina pubblica, dashboard, card agente e bottone Connetti derivano da qui.
   {
     name: "Shopify",
     brand: "shopify",
     category: "E-commerce",
     agentSlug: "shopify-agent",
-    available: true,
+    available: false,
     description: "Sincronizza prodotti, ordini e carrello",
   },
   {
@@ -272,7 +275,8 @@ export const INTEGRATIONS: Integration[] = [
     available: false,
     description: "Infrastruttura e API",
   },
-  // Microsoft suite — tutte come Prossimamente
+  // Microsoft suite — le restanti app restano come Prossimamente (Teams,
+  // Outlook, OneDrive, SharePoint: quest'ultimo è l'opt-in Sites.ReadWrite.All).
   {
     name: "Microsoft Teams",
     brand: "microsoftteams",
@@ -301,14 +305,67 @@ export const INTEGRATIONS: Integration[] = [
     available: false,
     description: "Intranet e documenti",
   },
+  // Microsoft 365 — una sola connessione (provider `microsoft`) abilita Word,
+  // Excel, PowerPoint e OneNote: le quattro card condividono lo stesso stato di
+  // connessione. La connettività Microsoft è quindi provider-based, non
+  // brand-based (vedi BRAND_TO_PROVIDER).
+  {
+    name: "Microsoft Word",
+    brand: "microsoftword",
+    category: "Productivity",
+    available: true,
+    description: "Documenti Word: crea, leggi, modifica",
+  },
   {
     name: "Microsoft Excel",
     brand: "microsoftexcel",
     category: "Productivity",
-    available: false,
-    description: "Fogli Excel online",
+    available: true,
+    description: "Fogli di calcolo e range",
+  },
+  {
+    name: "Microsoft PowerPoint",
+    brand: "microsoftpowerpoint",
+    category: "Productivity",
+    available: true,
+    description: "Presentazioni con slide e note",
+  },
+  {
+    name: "Microsoft OneNote",
+    brand: "microsoftonenote",
+    category: "Productivity",
+    available: true,
+    description: "Note e pagine OneNote",
   },
 ];
+
+/**
+ * Brand della UI → id del provider OAuth. È la mappa che unisce il catalogo
+ * statico delle app (brand) alle righe `tenant_integrations` (provider).
+ *
+ * Perché è esportata e non locale al componente: le quattro app Microsoft
+ * condividono UNA sola connessione (`microsoft`), quindi sia la griglia sia il
+ * conteggio di avanzamento devono risolvere brand→provider allo stesso modo,
+ * altrimenti la barra conta 1 connessione mentre quattro card risultano attive.
+ */
+export const BRAND_TO_PROVIDER: Record<string, string> = {
+  notion: "notion",
+  slack: "slack",
+  hubspot: "hubspot",
+  googlesheets: "google_sheets",
+  github: "github",
+  clickup: "clickup",
+  asana: "asana",
+  googledrive: "google_drive",
+  airtable: "airtable",
+  trello: "trello",
+  woocommerce: "woocommerce",
+  mailchimp: "mailchimp",
+  microsoftword: "microsoft",
+  microsoftexcel: "microsoft",
+  microsoftpowerpoint: "microsoft",
+  microsoftonenote: "microsoft",
+};
 
 /**
  * True se l'app citata nelle integrazioni di un agente (es. "Salesforce",
