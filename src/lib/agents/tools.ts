@@ -612,7 +612,8 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
 
   calendar_book_event: {
     name: "calendar_book_event",
-    description: "Book an event in the configured calendar (also supports reminders via overrides).",
+    description:
+      "Book an event in the configured calendar (also supports reminders via overrides). Pass add_meet_link:true to auto-generate a real Google Meet link (for riunioni/meetings/calls) — the link is created by Google at booking time and returned in the result.",
     input_schema: {
       type: "object",
       properties: {
@@ -640,6 +641,11 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
         reminder_minutes: {
           type: "integer",
           description: "Optional reminder minutes before event (e.g. 10 for popup 10 min before)",
+        },
+        add_meet_link: {
+          type: "boolean",
+          description:
+            "Set true to auto-generate a real Google Meet link via conferenceData (for riunioni/meetings/video calls). The Meet URL comes back from Google in the tool result — never invent it.",
         },
       },
       required: ["title", "start_time", "end_time"],
@@ -2467,9 +2473,31 @@ export async function executeTool(
           return `Invalid attendee email: ${email}`;
         }
         attendeeObjects.push({ email });
-      }      try {
+      }
+      // Meet automatico: location="Google Meet" da sola NON crea alcun link reale.
+      // Il link vero si genera solo con conferenceData.createRequest + ?conferenceDataVersion=1.
+      // Default: true per riunioni/meeting/call/video (titolo o location lo suggeriscono),
+      // oppure quando add_meet_link è esplicitamente true. Mai inventare URL Meet a mano.
+      const rawMeet: unknown = (input as Record<string, unknown>).add_meet_link;
+      const meetHint = `${title} ${location}`.toLowerCase();
+      const wantsMeet =
+        rawMeet === true ||
+        rawMeet === 1 ||
+        rawMeet === "true" ||
+        rawMeet === "1" ||
+        (rawMeet !== false &&
+          rawMeet !== 0 &&
+          rawMeet !== "false" &&
+          rawMeet !== "0" &&
+          rawMeet !== "" &&
+          (/\b(meet|meeting|riunione|call|video|zoom|teams)\b/i.test(meetHint) ||
+            location.trim().toLowerCase() === "google meet"));
+      const requestId =
+        `meet-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`.slice(0, 64);
+      try {
+        const qs = wantsMeet ? "?conferenceDataVersion=1&sendUpdates=all" : "?sendUpdates=all";
         const res = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events${qs}`,
           {
             method: "POST",
             headers: {
@@ -2491,6 +2519,16 @@ export async function executeTool(
                     },
                   }
                 : {}),
+              ...(wantsMeet
+                ? {
+                    conferenceData: {
+                      createRequest: {
+                        requestId,
+                        conferenceSolutionKey: { type: "hangoutsMeet" },
+                      },
+                    },
+                  }
+                : {}),
             }),
           },
         );
@@ -2501,7 +2539,13 @@ export async function executeTool(
         }
 
         const event = await res.json();
-        return `Event booked: ${event.summary || title}\nStart: ${event.start?.dateTime || start.toISOString()}\nEnd: ${event.end?.dateTime || end.toISOString()}\nLocation: ${event.location || location}\nGoogle Calendar event link: ${event.htmlLink || "none"}`;
+        const videoLink =
+          event.hangoutLink ||
+          event.conferenceData?.entryPoints?.find(
+            (e: { entryPointType?: string; uri?: string }) => e.entryPointType === "video" && e.uri,
+          )?.uri ||
+          "";
+        return `Event booked: ${event.summary || title}\nStart: ${event.start?.dateTime || start.toISOString()}\nEnd: ${event.end?.dateTime || end.toISOString()}\nLocation: ${event.location || location}\nGoogle Calendar event link: ${event.htmlLink || "none"}${wantsMeet ? `\nGoogle Meet link: ${videoLink || "non generato da Google (riprova o verifica la configurazione del calendario)"}` : ""}`;
       } catch (e) {
         return `Calendar booking network error: ${e instanceof Error ? e.message : String(e)}`;
       }
