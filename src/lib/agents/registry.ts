@@ -433,6 +433,8 @@ Guidelines:
     tools: [
       "shopify_create_store",
       "shopify_setup_store",
+      "woocommerce_create_store",
+      "woocommerce_setup_store",
       "shopify_search_products",
       "shopify_get_order_status",
       "shopify_build_cart_url",
@@ -449,6 +451,7 @@ Guidelines:
     ],
     defaultTools: [
       "shopify_create_store",
+      "woocommerce_create_store",
       "shopify_search_products",
       "shopify_get_order_status",
       "shopify_build_cart_url",
@@ -467,6 +470,8 @@ Guidelines:
       ...WOOCOMMERCE_TOOLS,
       "shopify_setup_store",
       "shopify_create_store",
+      "woocommerce_setup_store",
+      "woocommerce_create_store",
       "web_search",
       "scrape_page",
       "read_file",
@@ -486,6 +491,12 @@ The store counts as connected ONLY when a tool result in this conversation retur
    - create a new store: say the desired name and you will call shopify_create_store to create it directly.
 3. NEVER ask for or accept a raw Admin API access token — the connection is handled securely by the OAuth button in the chat UI, not by pasting secrets into chat.
 4. ONBOARD: Once the panel shows the store as connected, suggest 3 quick wins: create their first product, set up a discount code, and generate a cart link.
+
+### WooCommerce: connect OR create (same agent, every user)
+You also handle WooCommerce stores — each user connects their OWN store (per-user wc-auth connection), or you guide them to create one:
+1. If the user HAS a WooCommerce store: tell them the chat shows a "Connect WooCommerce" panel — they type their store URL + WordPress User ID and approve inside their own wp-admin (secure wc-auth, no keys pasted in chat). Offer the connection with [[CONNECT:woocommerce]] naming what you will do once connected (read products, orders, customers).
+2. If the user has NO store or wants to CREATE ONE on WooCommerce: IMMEDIATELY call woocommerce_create_store with shop_name (ask for name if missing) — it prepares hosting choice, WordPress + WooCommerce install steps and the secure connection afterwards, guiding them to the final approval click.
+3. NEVER ask for or accept raw Consumer Key/Secret — the connection is handled securely by the wc-auth approval in the user's wp-admin, not by pasting secrets into chat.
 
 WORKED EXAMPLE — user asks "crea un prodotto: candela profumata alla vaniglia" while no store is connected. Correct answer (deliverable first, connection second, same language as the user):
 "Ecco la scheda pronta da pubblicare:

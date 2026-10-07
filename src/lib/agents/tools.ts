@@ -250,6 +250,60 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
     },
   },
 
+  woocommerce_setup_store: {
+    name: "woocommerce_setup_store",
+    description:
+      "Connect a WooCommerce store by saving the store URL and WordPress user ID. Use this when the user does NOT yet have a store connected or wants to change their store. (Secure wc-auth panel in chat UI is preferred — never accept raw Consumer Key/Secret in chat)",
+    input_schema: {
+      type: "object",
+      properties: {
+        store_url: {
+          type: "string",
+          description:
+            "The WooCommerce store URL (e.g. https://my-store.com)",
+        },
+        user_id: {
+          type: "string",
+          description:
+            "The WordPress User ID that will own the API keys (number, e.g. '1')",
+        },
+      },
+      required: ["store_url", "user_id"],
+    },
+  },
+
+  woocommerce_create_store: {
+    name: "woocommerce_create_store",
+    description:
+      "Create a new WooCommerce store for the user and guide them to connect it. Use when the user says they have no store, want to start from scratch, or asks to create/open a new e-commerce store on WooCommerce. WooCommerce stores live on the user's own WordPress hosting (no API can provision one), so this prepares everything: hosting choice, install steps, and the secure connection afterwards.",
+    input_schema: {
+      type: "object",
+      properties: {
+        shop_name: {
+          type: "string",
+          description:
+            "Desired store name (e.g. 'Acme Studio'). Used for hosting suggestions and onboarding.",
+        },
+        email: {
+          type: "string",
+          description:
+            "Owner email for the new store (optional, used for hosting signup).",
+        },
+        country: {
+          type: "string",
+          description:
+            "Country code for the store (e.g. IT, US, DE) — optional, defaults to user's locale.",
+        },
+        business_type: {
+          type: "string",
+          description:
+            "Type of business/products (e.g. fashion, electronics, food) — optional, helps tailor onboarding.",
+        },
+      },
+      required: ["shop_name"],
+    },
+  },
+
   shopify_list_customers: {
     name: "shopify_list_customers",
     description:
@@ -1706,6 +1760,44 @@ export async function executeTool(
         `4. Appena connesso, posso creare prodotti, collezioni, sconti e analizzare vendite *direttamente* sulla piattaforma`,
         ``,
         `Vuoi che prepari già i primi 3 prodotti per ${shopNameRaw} mentre crei lo store? Dimmi cosa vendi!`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    case "woocommerce_setup_store": {
+      // Come per Shopify: niente Consumer Key/Secret grezze in chat (finirebbero
+      // nella cronologia e aggirerebbero lo store cifrato). La connessione passa
+      // dal pannello sicuro: URL store + WordPress User ID, poi approvazione
+      // wc-auth dentro il wp-admin dell'utente.
+      return "La connessione allo store WooCommerce avviene in modo sicuro dal pannello 'Connetti WooCommerce' nella chat (URL del tuo store + WordPress User ID, poi Approva nel tuo wp-admin), senza incollare chiavi in chat. Apri il pannello, inserisci i due dati e autorizza, poi riprova.";
+    }
+
+    case "woocommerce_create_store": {
+      const shopNameRaw = sanitizeText(input.shop_name || "", 100);
+      if (!shopNameRaw) return "Per creare lo store serve un nome (shop_name). Es: 'Acme Studio'.";
+      const email = sanitizeText(input.email || "", 100);
+      const country = sanitizeText(input.country || "", 10);
+      const businessType = sanitizeText(input.business_type || "", 100);
+
+      // Gli store WooCommerce vivono sull'hosting WordPress dell'utente: nessuna
+      // API può crearne uno al posto suo. L'agente prepara tutto e lo guida fino
+      // alla connessione sicura (wc-auth), che resta a un click.
+      return [
+        `Perfetto — creiamo il tuo store WooCommerce "${shopNameRaw}"!`,
+        ``,
+        country ? `Paese: ${country}` : null,
+        businessType ? `Settore: ${businessType}` : null,
+        ``,
+        `Ti guido io, passo passo (10 minuti circa):`,
+        `1. HOSTING: attiva un hosting WordPress gestito (es. SiteGround, Kinsta, Aruba)${email && isValidEmail(email) ? ` con la tua email ${email}` : ""} — quasi tutti hanno installazione WordPress in 1 click`,
+        `2. WORDPRESS: completa l'installazione e accedi al wp-admin del tuo nuovo sito`,
+        `3. WOOCOMMERCE: nel wp-admin vai su Plugin → Aggiungi nuovo → cerca "WooCommerce" → Installa e attiva → segui il wizard (valuta, pagamenti, spedizioni)`,
+        `4. REST API: WooCommerce → Impostazioni → Avanzate → REST API (attivo di default) e annota il tuo User ID da Utenti → Modifica (l'URL finisce con user_id=N)`,
+        `5. COLLEGAMENTO: torna in questa chat — vedrai il pannello "Connetti WooCommerce": inserisci l'URL del tuo store e lo User ID, poi clicca Approva nel tuo wp-admin`,
+        `6. Appena connesso, leggo prodotti, ordini e clienti *direttamente* dal tuo store e ti aiuto a venderli`,
+        ``,
+        `Dimmi pure quando hai finito il passo 3 (o se vuoi che ti suggerisca l'hosting migliore per ${shopNameRaw}): intanto vuoi che prepari già i primi 3 prodotti? Dimmi cosa vendi!`,
       ]
         .filter(Boolean)
         .join("\n");

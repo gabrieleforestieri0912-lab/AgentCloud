@@ -66,6 +66,8 @@ export const ALL_TOOLS_LIST = [
   "google_reviews_reply",
   "shopify_create_store",
   "shopify_setup_store",
+  "woocommerce_create_store",
+  "woocommerce_setup_store",
   "shopify_search_products",
   "shopify_get_order_status",
   "shopify_build_cart_url",
