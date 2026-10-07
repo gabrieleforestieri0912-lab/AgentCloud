@@ -373,7 +373,7 @@ export default async function DashboardPage({
                     return (
                       <div
                         key={slug}
-                        className="grid gap-4 p-5 lg:grid-cols-[1fr_120px_120px_120px_110px] lg:items-center max-md:rounded-lg max-md:border max-md:border-white/5 max-md:bg-neutral-900/50"
+                        className="grid gap-4 p-5 lg:grid-cols-[1fr_120px_100px_100px_110px_190px] lg:items-center max-md:rounded-lg max-md:border max-md:border-white/5 max-md:bg-neutral-900/50"
                       >
                         <div className="flex items-center gap-3">
                           <div
@@ -429,6 +429,21 @@ export default async function DashboardPage({
                         <div className="flex items-center gap-2 text-sm text-neutral-400">
                           <Clock3 size={15} />
                           {timeAgo(lastRun, dict)}
+                        </div>
+                        {/* Gestione agente: apri in chat + gestisci abbonamento */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link
+                            href={`/chat?agent=${slug}`}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-brand-400"
+                          >
+                            {dict.dashboard.openInChat}
+                          </Link>
+                          <Link
+                            href="/dashboard/subscriptions"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-bold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
+                          >
+                            {dict.dashboard.manage}
+                          </Link>
                         </div>
                       </div>
                     );
