@@ -3,16 +3,15 @@
 /**
  * Header dell'area applicativa (chat/dashboard/impostazioni).
  *
- * Mostra logo, titolo di contesto (es. nome agente attivo o email utente) e
- * controlli condivisi: passaggio dashboard/chat e campanella notifiche.
- * La variante cambia i link di ritorno (back to home/area).
- * Nella variante "chat" l'header è trasparente (nessuno sfondo/bordo) e
- * espone la rotella delle impostazioni in alto a destra.
+ * Mostra logo (che torna alla home), titolo di contesto (es. nome agente
+ * attivo o email utente) e controlli condivisi: campanella notifiche e, in
+ * chat, la rotella delle impostazioni rapide. La navigazione tra dashboard,
+ * chat e home vive già nella sidebar, quindi l'header non duplica quei link.
  */
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, LayoutDashboard, MessageSquare, Monitor, Moon, Settings, Sun } from "lucide-react";
+import { ArrowRight, Check, Monitor, Moon, Settings, Sun } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { useTheme, type Theme } from "./ThemeProvider";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/constants";
@@ -47,9 +46,6 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const { dict, locale, setLocale } = useLanguage();
   const { theme, setTheme } = useTheme();
-  const homeLabel = dict.appHeader.backHome;
-  const dashboardLabel = dict.appHeader.dashboard;
-  const chatLabel = dict.appHeader.chat;
   const settingsLabel = dict.navbar.settings;
   // In chat l'header è sovrapposto al contenuto: niente sfondo né bordo, così
   // resta trasparente sul fondo della pagina.
@@ -83,8 +79,8 @@ export default function AppHeader({
 
   const defaultTitle =
     variant === "dashboard"
-      ? dashboardLabel
-      : (agentLabel ?? chatLabel);
+      ? dict.appHeader.dashboard
+      : (agentLabel ?? dict.appHeader.chat);
 
   const displayTitle = title ?? defaultTitle;
 
@@ -114,46 +110,9 @@ export default function AppHeader({
           </div>
         </div>
 
-        {/* Destra */}
+        {/* Destra: solo controlli (notifiche + rotella in chat). I link a
+            dashboard, chat e home vivono già nella sidebar: non duplicarli qui. */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Passaggio dashboard/chat. In chat il link alla chat è inutile (ci
-              si trova già): resta solo quello alla dashboard. */}
-          <nav className="hidden items-center gap-1 sm:flex">
-            <Link
-              href="/dashboard"
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-                variant === "dashboard"
-                  ? "bg-white text-neutral-900"
-                  : "border border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <LayoutDashboard size={14} />
-              {dashboardLabel}
-            </Link>
-            {variant !== "chat" && (
-              <Link
-                href="/chat"
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <MessageSquare size={14} />
-                {chatLabel}
-              </Link>
-            )}
-          </nav>
-
-          <span className="hidden h-4 w-px bg-white/10 sm:block" aria-hidden />
-
-          {variant === "dashboard" && (
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <ArrowLeft size={14} />
-              <span className="hidden sm:inline">{homeLabel}</span>
-              <span className="sm:hidden">Home</span>
-            </Link>
-          )}
-
           {variant === "chat" && (
             <div className="relative" ref={quickRef}>
               <button
