@@ -144,7 +144,7 @@ export const INTEGRATIONS: Integration[] = [
     name: "Mailchimp",
     brand: "mailchimp",
     category: "Marketing",
-    available: true,
+    available: false,
     description: "Audience, statistiche e campagne",
   },
   {

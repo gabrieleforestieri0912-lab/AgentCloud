@@ -760,11 +760,22 @@ export default function HeroSection() {
                     onClick={handleSend}
                     disabled={(!input.trim() && attach.attachments.length === 0) || isTyping}
                     aria-label={dict.hero.sendMessage}
-                    className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-brand-500 text-white hover:bg-brand-400 transition-all disabled:bg-neutral-800 disabled:text-neutral-600 disabled:cursor-not-allowed shadow-lg shadow-brand-500/25"
+                    className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-white transition-all duration-200 disabled:cursor-not-allowed"
+                    style={{
+                      background: (!input.trim() && attach.attachments.length === 0) || isTyping
+                        ? "rgb(38 38 38)"
+                        : "linear-gradient(135deg, #038bfe 0%, #0066cc 100%)",
+                      boxShadow: (!input.trim() && attach.attachments.length === 0) || isTyping
+                        ? "none"
+                        : "0 0 16px rgba(3,139,254,0.45), 0 4px 12px rgba(0,0,0,0.3)",
+                      color: (!input.trim() && attach.attachments.length === 0) || isTyping
+                        ? "rgb(82 82 82)"
+                        : "#fff",
+                    }}
                   >
                     <svg
-                      width="16"
-                      height="16"
+                      width="18"
+                      height="18"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -772,7 +783,7 @@ export default function HeroSection() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     >
-                      <path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z" />
+                      <path d="M12 19V5M5 12l7-7 7 7" />
                     </svg>
                   </button>
                 </div>
@@ -841,20 +852,7 @@ export default function HeroSection() {
 
 
 
-          {/* Micro-CTA coerente */}
-          {!hasMessages && (
-            <motion.div
-              className="mt-6 flex justify-center"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Link href="/agents" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10 transition-colors">
-                Sfoglia i 15 agenti <span aria-hidden>→</span>
-              </Link>
-            </motion.div>
-          )}
+
         </motion.div>
       </div>
 
