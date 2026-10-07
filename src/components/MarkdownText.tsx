@@ -123,7 +123,7 @@ function CodeBlock({ lang, value }: { lang: string; value: string }) {
         <button
           type="button"
           onClick={() => void handleCopy()}
-          aria-label="Copy code"
+          aria-label={dict.common.copy}
           className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-bold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
         >
           {copied ? (

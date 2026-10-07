@@ -42,6 +42,7 @@ import {
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import MarkdownText from "./MarkdownText";
 import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
@@ -226,6 +227,42 @@ export default function ChatInterface({
   const [conversationMenuId, setConversationMenuId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
+  // Freemium giornaliero: il blocco autoritativo arriva dal server (402) — vedi banner limite sopra l'input
+  type DailyLimitInfo =
+    | { unlimited: true }
+    | { unlimited: false; remaining: number; limit: number; resetAt: string };
+  const [dailyLimit, setDailyLimit] = useState<DailyLimitInfo | null>(null);
+  // Bump per ricaricare il contatore dopo ogni risposta completata.
+  const [limitTick, setLimitTick] = useState(0);
+  const limitSlug = selectedAgentSlugs.length === 1 && selectedAgentSlugs[0] ? selectedAgentSlugs[0] : null;
+
+  // Budget giornaliero freemium (5/giorno per agente, reset a mezzanotte UTC):
+  // mostrato sopra l'input con l'ora locale del reset.
+  useEffect(() => {
+    if (!limitSlug) {
+      setDailyLimit(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/agent/limit?agent=${encodeURIComponent(limitSlug)}`, { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (data.unlimited) setDailyLimit({ unlimited: true });
+        else if (typeof data.remaining === "number") {
+          setDailyLimit({
+            unlimited: false,
+            remaining: data.remaining,
+            limit: data.limit ?? 5,
+            resetAt: data.resetAt,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [limitSlug, limitTick]);
   const [paywallSlug, setPaywallSlug] = useState<string | null>(null);
   // Id dell'ultimo messaggio utente inviato: la sua bolla entra con
   // l'animazione `animate-msg-send` (si azzera da sola dopo l'animazione).
@@ -316,7 +353,9 @@ export default function ChatInterface({
   const activeConv = conversations.find((c) => c.id === activeId);
   const messages = useMemo(() => activeConv?.messages ?? [], [activeConv]);
 
-  // Suggerimenti dinamici basati sugli agenti posseduti dall'utente
+  // Suggerimenti dinamici basati sugli agenti posseduti dall'utente.
+  // I task sono localizzati (localizeAgent): con lingua italiana i chip escono
+  // in italiano, non in inglese dal catalogo canonico.
   const dynamicSuggestions = useMemo(() => {
     const owned = availableAgents.filter((a) => a.slug !== "");
     if (owned.length > 0) {
@@ -324,8 +363,8 @@ export default function ChatInterface({
       const tasks: string[] = [];
       for (const agent of owned) {
         const agentData = AGENTS.find((a) => a.slug === agent.slug);
-        if (agentData?.tasks) {
-          for (const task of agentData.tasks) {
+        if (agentData) {
+          for (const task of localizeAgent(agentData, locale).tasks) {
             if (tasks.length < 4 && !tasks.includes(task)) tasks.push(task);
           }
         }
@@ -350,7 +389,7 @@ export default function ChatInterface({
       dict.chat.suggestion3,
       dict.chat.suggestion4,
     ];
-  }, [availableAgents, dict.chat]);
+  }, [availableAgents, dict.chat, locale]);
 
   // Titolo dell'intestazione: il nome dell'agente attivo quando ne è selezionato
   // uno (CTA marketplace o selettore in sidebar), altrimenti il nome generico
@@ -387,7 +426,7 @@ export default function ChatInterface({
           agentsBySlug.get(selectedAgentSlugs[0])?.name ??
           (agentLabel && selectedAgentSlugs[0] ? agentLabel : undefined) ??
           dict.chat.assistantName
-        : `${selectedAgentSlugs.length} agenti`;
+        : t(dict.chat.multiAgents, { count: selectedAgentSlugs.length });
 
   /** Agente che ha prodotto una bolla (null per l'assistente generico). */
   const agentForMessage = useCallback(
@@ -1081,7 +1120,7 @@ export default function ChatInterface({
   // durante la generazione è visibile da subito e non sembra mai perduto.
   function appendUserMessage(text: string, convId: string, pending: ChatAttachment[]): LocalMessage {
     // Nel fumetto utente non mostrare mai il filename: usa testo digitato o placeholder generico
-    const displayText = text.trim() || (pending.length > 0 ? (pending.some((a) => a.kind === "image") ? "Immagine allegata" : "File allegato") : "");
+    const displayText = text.trim() || (pending.length > 0 ? (pending.some((a) => a.kind === "image") ? dict.common.imageAttached : dict.common.fileAttached) : "");
     const userMsg: LocalMessage = {
       id: generateId(),
       role: "user",
@@ -1532,31 +1571,9 @@ export default function ChatInterface({
       await new Promise((r) => setTimeout(r, 0));
       await sendMessage(next.text, convId, next.pending, next.msgId);
     }
+    // Risposta completata: ricarica il budget giornaliero mostrato sopra l'input.
+    setLimitTick((n) => n + 1);
   }
-
-  // Freemium: 4 messaggi per agente non posseduto
-  const ownedSet = useMemo(() => new Set(availableAgents.map((a) => a.slug)), [availableAgents]);
-  const nonOwnedSelected = useMemo(
-    () => selectedAgentSlugs.filter((s) => !ownedSet.has(s)),
-    [selectedAgentSlugs, ownedSet],
-  );
-  const freeLimitHitSlug = useMemo(() => {
-    if (nonOwnedSelected.length === 0) return null;
-    // conta i messaggi assistant per agente (ogni user message genera 1 reply)
-    const counts = new Map<string, number>();
-    for (const m of messages) {
-      if (m.role === "assistant" && m.agentSlug) {
-        counts.set(m.agentSlug, (counts.get(m.agentSlug) ?? 0) + 1);
-      }
-    }
-    // fallback: se i messaggi non hanno agentSlug (vecchia cronologia), usa conteggio totale user messages
-    const userCount = messages.filter((m) => m.role === "user").length;
-    for (const slug of nonOwnedSelected) {
-      const c = counts.get(slug) ?? (nonOwnedSelected.length === 1 ? userCount : 0);
-      if (c >= 4) return slug;
-    }
-    return null;
-  }, [messages, nonOwnedSelected]);
 
   async function handleSend() {
     const text = input.trim();
@@ -1594,7 +1611,7 @@ export default function ChatInterface({
   // Selettore agente: vive sopra l'input (allineato a destra, sulla stessa riga
   // dei comandi di esportazione) sia nella chat vuota che durante la conversazione.
   const agentPicker = (
-    <div className="relative shrink-0">
+    <div className="relative shrink-0" data-onboard="agent-picker">
       <button
         type="button"
         onClick={() => setShowAgentPicker((v) => !v)}
@@ -2207,6 +2224,7 @@ export default function ChatInterface({
                       items={attach.attachments}
                       onRemove={attach.remove}
                       removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
+                      imageAlt={dict.common.imageAttached}
                     />
                     {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
                     <div className="flex items-center gap-1.5 bg-neutral-800 rounded-2xl border border-white/10 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
@@ -2367,7 +2385,7 @@ export default function ChatInterface({
                                 <img
                                   key={file.id}
                                   src={file.previewUrl}
-                                  alt={file.name || "Immagine allegata"}
+                                  alt={file.name || dict.common.imageAttached}
                                   className="max-h-36 max-w-[180px] rounded-lg object-cover border border-white/10"
                                   loading="lazy"
                                 />
@@ -2399,8 +2417,22 @@ export default function ChatInterface({
                     title={accountTooltip ?? undefined}
                     aria-label={accountTooltip ?? undefined}
                   >
-                    {/* Fallback iniziale: resta visibile se l'avatar non carica. */}
-                    <span className="text-white text-xs font-bold">U</span>
+                    {/* Fallback iniziale: icona persona, resta visibile se l'avatar non carica. */}
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-white"
+                      aria-hidden="true"
+                    >
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
                     {accountAvatarUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -2482,6 +2514,21 @@ export default function ChatInterface({
           onDrop={attach.makeDrop(attachLabels)}
         >
           <div className="relative mx-auto max-w-3xl">
+            {/* Budget giornaliero freemium sopra l'input, con ora locale del reset */}
+            {dailyLimit && !dailyLimit.unlimited && limitSlug && (
+              <p className="mb-2 text-center text-[11px] font-semibold text-neutral-500">
+                {t(dict.chat.dailyLimit, {
+                  remaining: dailyLimit.remaining,
+                  limit: dailyLimit.limit,
+                  time: dailyLimit.resetAt
+                    ? new Date(dailyLimit.resetAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "—",
+                })}
+              </p>
+            )}
             {/* Riga sopra l'input: comandi (PDF / Looker Studio) a sinistra, selettore agente a destra */}
             <div className="mb-2 flex items-start justify-between gap-2">
               <div className="flex items-center gap-1.5">
@@ -2508,7 +2555,7 @@ export default function ChatInterface({
             {paywallSlug && (
               <div className="mb-3 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
                 <p className="text-xs font-semibold text-amber-300">
-                  {dict.paywallModal.limitReached} — 4/4
+                  {dict.paywallModal.limitReached} — 5/5
                 </p>
                 <button
                   onClick={() => setPaywallSlug(paywallSlug)}
@@ -2523,6 +2570,7 @@ export default function ChatInterface({
               items={attach.attachments}
               onRemove={attach.remove}
               removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
+              imageAlt={dict.common.imageAttached}
             />
             {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
             {pendingApproval && pendingApproval.convId === activeId && (

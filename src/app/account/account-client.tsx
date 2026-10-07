@@ -59,7 +59,7 @@ export default function AccountClient({
       if (error) throw error;
       setMsg({ kind: "ok", text: dict.chat.accountNameUpdated });
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : dict.common.genericError });
     } finally {
       setSaving(false);
     }
@@ -86,7 +86,7 @@ export default function AccountClient({
       setNewEmail("");
       setMsg({ kind: "ok", text: dict.chat.accountEmailUpdateSent });
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : dict.common.genericError });
     } finally {
       setUpdatingEmail(false);
     }
@@ -102,7 +102,7 @@ export default function AccountClient({
       setGoogle(null);
       setMsg({ kind: "ok", text: dict.chat.accountSaved });
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : dict.common.genericError });
     } finally {
       setDisconnecting(false);
     }
@@ -121,7 +121,7 @@ export default function AccountClient({
       // Account cancellato — reindirizza alla home
       window.location.href = "/";
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Errore" });
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : dict.common.genericError });
       setDeleting(false);
     }
   }
@@ -171,7 +171,7 @@ export default function AccountClient({
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder={dict.chat.accountNamePlaceholder} className="w-full rounded-xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500/50" />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-neutral-300">Email</span>
+            <span className="mb-1.5 block text-sm font-semibold text-neutral-300">{dict.auth.login.email}</span>
             <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-neutral-800 px-4 py-2.5 text-sm text-neutral-400">
               <Mail size={14} />
               {initialEmail}
@@ -276,7 +276,7 @@ export default function AccountClient({
             {dict.chat.accountChangePassword}
           </Link>
           <Link href="/privacy" className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
-            Privacy
+            {dict.footer.privacy}
           </Link>
         </div>
       </div>

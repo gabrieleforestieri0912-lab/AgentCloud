@@ -196,10 +196,12 @@ export function AttachmentChips({
   items,
   onRemove,
   removeLabel,
+  imageAlt,
 }: {
   items: ChatAttachment[];
   onRemove: (id: string) => void;
   removeLabel: (name: string) => string;
+  imageAlt: string;
 }) {
   if (items.length === 0) return null;
 
@@ -214,7 +216,7 @@ export function AttachmentChips({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.previewUrl}
-              alt={item.name || "Immagine allegata"}
+              alt={item.name || imageAlt}
               className="h-8 w-8 rounded-lg object-cover shrink-0 border border-white/10"
             />
           ) : (

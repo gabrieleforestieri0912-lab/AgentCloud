@@ -108,7 +108,7 @@ export default function AgentChatPage() {
       : apiText;
     const filesMap = toFilesMap(pending.filter((a) => a.kind !== "image"));
     const displayContent =
-      input.trim() || (pending.some((a) => a.kind === "image") ? "Immagine allegata" : pending.map((a) => a.name).join(", ") || "File allegato");
+      input.trim() || (pending.some((a) => a.kind === "image") ? dict.common.imageAttached : pending.map((a) => a.name).join(", ") || dict.common.fileAttached);
     setInput("");
     attach.clear();
     setIsRunning(true);
@@ -343,7 +343,7 @@ export default function AgentChatPage() {
                                 <img
                                   key={file.id}
                                   src={file.previewUrl}
-                                  alt={file.name || "Immagine allegata"}
+                                  alt={file.name || dict.common.imageAttached}
                                   className="max-h-28 max-w-[140px] rounded-lg object-cover border border-white/10"
                                   loading="lazy"
                                 />
@@ -427,6 +427,7 @@ export default function AgentChatPage() {
             removeLabel={(name) =>
               dict.chat.removeAttachment.replace("{name}", name)
             }
+            imageAlt={dict.common.imageAttached}
           />
           {attach.notice && (
             <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>

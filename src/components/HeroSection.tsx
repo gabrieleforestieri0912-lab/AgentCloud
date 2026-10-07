@@ -204,7 +204,7 @@ export default function HeroSection() {
     const userMsg: HeroMessage = {
       id: heroId(),
       role: "user",
-      content: trimmed || (hasImages ? "Immagine allegata" : pending.map((a) => a.name).join(", ") || "File allegato"),
+      content: trimmed || (hasImages ? dict.common.imageAttached : pending.map((a) => a.name).join(", ") || dict.common.fileAttached),
       created_at: new Date().toISOString(),
       attachments: pending.map((a) => ({
         id: a.id,
@@ -503,7 +503,7 @@ export default function HeroSection() {
             }}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-            <span className="text-xs font-bold tracking-widest uppercase text-brand-300">{AGENTS.length} agenti pronti all’uso • {LIVE_INTEGRATIONS} integrazioni</span>
+            <span className="text-xs font-bold tracking-widest uppercase text-brand-300">{t(dict.hero.badge, { count: AGENTS.length, n: LIVE_INTEGRATIONS })}</span>
           </motion.div>
           <motion.h1
             className="text-[1.75rem] xs:text-[2rem] sm:text-5xl md:text-6xl lg:text-[76px] font-extrabold leading-[1.08] tracking-tight text-white"
@@ -615,7 +615,7 @@ export default function HeroSection() {
                                     <img
                                       key={file.id}
                                       src={file.previewUrl}
-                                      alt={file.name || "Immagine allegata"}
+                                      alt={file.name || dict.common.imageAttached}
                                       className="max-h-20 max-w-[120px] rounded-lg object-cover border border-white/10"
                                       loading="lazy"
                                     />
@@ -639,8 +639,22 @@ export default function HeroSection() {
                           title={accountTooltip ?? undefined}
                           aria-label={accountTooltip ?? undefined}
                         >
-                          {/* Fallback iniziale: resta visibile se l'avatar non carica. */}
-                          <span className="text-neutral-300 text-[10px] font-bold">U</span>
+                          {/* Fallback iniziale: icona persona, resta visibile se l'avatar non carica. */}
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-neutral-300"
+                            aria-hidden="true"
+                          >
+                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
                           {accountAvatarUrl && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -701,6 +715,7 @@ export default function HeroSection() {
                       removeLabel={(name) =>
                         dict.chat.removeAttachment.replace("{name}", name)
                       }
+                      imageAlt={dict.common.imageAttached}
                     />
                   </div>
                 )}
@@ -827,7 +842,7 @@ export default function HeroSection() {
 
           {/* ── Pulsanti a pillola (suggerimenti) ── */}
           {!hasMessages && (
-            <div className="mt-8 flex flex-col items-center gap-3.5">
+            <div className="mt-8 flex flex-col items-center gap-3.5 pb-10 sm:pb-14">
               <div className="flex flex-wrap justify-center gap-3">
                 {chips.slice(0, 3).map((chip) => (
                   <button
@@ -855,8 +870,8 @@ export default function HeroSection() {
           {hasMessages && !isAuthed && (
             <p className="mt-3 text-center text-xs font-semibold text-neutral-500">
               {remaining > 0
-                ? `${remaining} / ${DEMO_LIMIT} messaggi demo rimasti`
-                : `Limite demo raggiunto — accedi per continuare`}
+                ? t(dict.hero.demoRemaining, { remaining, limit: DEMO_LIMIT })
+                : dict.hero.demoLimitReached}
             </p>
           )}
         </motion.div>

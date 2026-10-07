@@ -9,6 +9,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Languages, Check } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/constants";
 
 export default function LanguageToggle({
@@ -16,7 +17,7 @@ export default function LanguageToggle({
 }: {
   variant?: "desktop" | "mobile";
 }) {
-  const { locale, setLocale } = useLanguage();
+  const { locale, setLocale, dict } = useLanguage();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -44,7 +45,7 @@ export default function LanguageToggle({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={`Language: ${active.long} — choose language`}
+        aria-label={t(dict.common.chooseLanguage, { lang: active.long })}
         title={active.long}
         className={`${base} ${size}`}
       >

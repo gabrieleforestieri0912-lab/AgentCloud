@@ -10,6 +10,7 @@
  */
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Mic, MicOff, Volume2, Loader2 } from "lucide-react";
+import { useLanguage } from "./LanguageProvider";
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
@@ -28,6 +29,9 @@ export default function VoiceInput({
   const [isSupported, setIsSupported] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState("");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const { dict } = useLanguage();
+  const dictationLabel = isRecording ? dict.common.voiceStop : dict.common.voiceStart;
+  const voiceModeLabel = isVoiceMode ? dict.common.voiceModeOff : dict.common.voiceModeOn;
 
   useEffect(() => {
     const SpeechRecognition =
@@ -123,8 +127,8 @@ export default function VoiceInput({
             ? "bg-red-500/20 text-red-400 animate-pulse"
             : "text-neutral-400 hover:text-white hover:bg-white/5"
         } disabled:opacity-50 disabled:cursor-not-allowed`}
-        title={isRecording ? "Ferma dettatura" : "Dettatura vocale"}
-        aria-label={isRecording ? "Ferma dettatura" : "Dettatura vocale"}
+        title={dictationLabel}
+        aria-label={dictationLabel}
       >
         {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
       </button>
@@ -140,8 +144,8 @@ export default function VoiceInput({
               ? "bg-brand-500/20 text-brand-400"
               : "text-neutral-400 hover:text-white hover:bg-white/5"
           } disabled:opacity-50 disabled:cursor-not-allowed`}
-          title={isVoiceMode ? "Disattiva modalità vocale" : "Attiva modalità vocale"}
-          aria-label={isVoiceMode ? "Disattiva modalità vocale" : "Attiva modalità vocale"}
+          title={voiceModeLabel}
+          aria-label={voiceModeLabel}
         >
           <Volume2 size={16} />
         </button>
