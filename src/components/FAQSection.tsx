@@ -31,7 +31,7 @@ export default function FAQSection() {
     },
     {
       q: "Quali integrazioni sono disponibili?",
-      a: "Già disponibili: Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce, Mailchimp e Microsoft 365 (Word, Excel, PowerPoint, OneNote). Shopify e altre app sono in arrivo — vedi /integrations.",
+      a: "Già disponibili: Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce e Microsoft 365 (Word, Excel, PowerPoint, OneNote). Shopify, Mailchimp e altre app sono in arrivo — vedi /integrations.",
     },
   ];
   const allFaqs = [...faqs, ...extraFaqs];

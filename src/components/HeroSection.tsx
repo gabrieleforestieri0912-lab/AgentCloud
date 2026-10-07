@@ -14,7 +14,6 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
-import Link from "next/link";
 import HeroBubbles from "./HeroBubbles";
 import MarkdownText from "./MarkdownText";
 import DemoLimitModal from "./DemoLimitModal";
@@ -760,31 +759,42 @@ export default function HeroSection() {
                     onClick={handleSend}
                     disabled={(!input.trim() && attach.attachments.length === 0) || isTyping}
                     aria-label={dict.hero.sendMessage}
-                    className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-white transition-all duration-200 disabled:cursor-not-allowed"
-                    style={{
-                      background: (!input.trim() && attach.attachments.length === 0) || isTyping
-                        ? "rgb(38 38 38)"
-                        : "linear-gradient(135deg, #038bfe 0%, #0066cc 100%)",
-                      boxShadow: (!input.trim() && attach.attachments.length === 0) || isTyping
-                        ? "none"
-                        : "0 0 16px rgba(3,139,254,0.45), 0 4px 12px rgba(0,0,0,0.3)",
-                      color: (!input.trim() && attach.attachments.length === 0) || isTyping
-                        ? "rgb(82 82 82)"
-                        : "#fff",
-                    }}
+                    title={dict.hero.sendMessage}
+                    className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
+                      (!input.trim() && attach.attachments.length === 0) || isTyping
+                        ? "bg-neutral-800 text-neutral-600 shadow-none"
+                        : "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_16px_rgba(3,139,254,0.45),0_4px_12px_rgba(0,0,0,0.3)] hover:brightness-110 hover:scale-105 hover:shadow-[0_0_22px_rgba(3,139,254,0.6),0_4px_12px_rgba(0,0,0,0.3)] active:scale-95"
+                    }`}
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 19V5M5 12l7-7 7 7" />
-                    </svg>
+                    {isTyping ? (
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        className="animate-spin"
+                        aria-hidden="true"
+                      >
+                        <path d="M21 12a9 9 0 1 1-6.2-8.56" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 19V5M5 12l7-7 7 7" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
@@ -849,10 +859,6 @@ export default function HeroSection() {
                 : `Limite demo raggiunto — accedi per continuare`}
             </p>
           )}
-
-
-
-
         </motion.div>
       </div>
 

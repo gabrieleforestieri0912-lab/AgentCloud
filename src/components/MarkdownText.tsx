@@ -15,7 +15,7 @@ import {
 
 /**
  * Renderizza il markdown leggero prodotto dall'AI (grassetto, corsivo, codice
- * inline, titoli ed elenchi) dentro le bolle della chat. Usato da ogni chat
+ * inline, titoli, elenchi e tabelle GFM) dentro le bolle della chat. Usato da ogni chat
  * così `**grassetto**` e `• elenchi` vengono visualizzati formattati invece
  * che come testo grezzo. Il parsing arriva da src/lib/markdown.ts.
  */
@@ -162,6 +162,46 @@ function CodeBlock({ lang, value }: { lang: string; value: string }) {
 function Block({ block }: { block: MarkdownBlock }) {
   if (block.type === "code") {
     return <CodeBlock lang={block.lang} value={block.value} />;
+  }
+
+  if (block.type === "table") {
+    const { headers, aligns, rows } = block.table;
+    const alignCls = (a: "left" | "center" | "right") =>
+      a === "center" ? "text-center" : a === "right" ? "text-right" : "text-left";
+    return (
+      <div className="my-2 -mx-1 overflow-x-auto px-1 pb-1">
+        <table className="w-full min-w-[320px] border-collapse overflow-hidden rounded-xl border border-white/10 text-sm">
+          <thead>
+            <tr className="bg-white/5">
+              {headers.map((cell, i) => (
+                <th
+                  key={i}
+                  style={{ textAlign: aligns[i] ?? "left" }}
+                  className={`border-b border-white/10 px-3 py-2 font-bold text-white ${alignCls(aligns[i] ?? "left")}`}
+                >
+                  <Inline segments={cell} />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, r) => (
+              <tr key={r} className={r % 2 === 1 ? "bg-white/[0.02]" : undefined}>
+                {row.map((cell, c) => (
+                  <td
+                    key={c}
+                    style={{ textAlign: aligns[c] ?? "left" }}
+                    className={`border-b border-white/5 px-3 py-2 text-neutral-200 last:border-b-0 ${alignCls(aligns[c] ?? "left")}`}
+                  >
+                    <Inline segments={cell} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   }
 
   if (block.type === "heading") {
