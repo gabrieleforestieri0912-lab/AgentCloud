@@ -45,7 +45,7 @@ export default function SubscribePaywallModal({
         <h3 className="text-lg font-bold text-white">{title}</h3>
         <p className="mt-2 text-sm leading-6 text-neutral-400">{desc}</p>
         <p className="mt-3 text-xs font-semibold text-amber-300">
-          {dict.paywallModal.limitReached} • 4/4
+          {dict.paywallModal.limitReached} • 5/5
         </p>
         <div className="mt-6 flex flex-col gap-3">
           <Link

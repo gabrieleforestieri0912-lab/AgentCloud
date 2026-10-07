@@ -90,7 +90,7 @@ export default function CTASection() {
           }}
         >
           {[
-            { icon: Zap, t: "4 messaggi gratis", d: "per ogni agente, prima di decidere" },
+            { icon: Zap, t: "5 messaggi gratis al giorno", d: "per ogni agente, prima di decidere" },
             { icon: ShieldCheck, t: "Dati al sicuro", d: "connessioni cifrate e account separati" },
             { icon: Clock3, t: "Pronto in giornata", d: "colleghi tutto in 2 click" },
           ].map((b) => (

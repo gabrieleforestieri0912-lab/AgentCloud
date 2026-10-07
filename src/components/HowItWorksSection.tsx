@@ -25,7 +25,7 @@ const STEPS = [
     n: "03",
     icon: MessageSquare,
     title: "L’agente lavora per te",
-    desc: "Chiedi in chat e l’agente esegue: cerca prodotti, crea link al carrello, prenota appuntamenti, invia email. Provalo gratis con 4 messaggi.",
+    desc: "Chiedi in chat e l’agente esegue: cerca prodotti, crea link al carrello, prenota appuntamenti, invia email. Provalo gratis con 5 messaggi al giorno.",
   },
   {
     n: "04",

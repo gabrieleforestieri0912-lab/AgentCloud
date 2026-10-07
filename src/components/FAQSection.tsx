@@ -22,8 +22,8 @@ export default function FAQSection() {
       a: "L’integrazione Shopify è temporaneamente in “Prossimamente”: non è ancora collegabile. Stiamo completando il connettore — nel frattempo puoi usare tutte le altre integrazioni già disponibili.",
     },
     {
-      q: "Cosa significa “4 messaggi gratis per agente”?",
-      a: "Ogni agente si può provare con 4 messaggi gratuiti, senza impegno. Per continuare a usarlo puoi sbloccarlo con l’abbonamento (€4,99–€14,99 al mese).",
+      q: "Cosa significa “5 messaggi gratis al giorno per agente”?",
+      a: "Ogni agente si può provare con 5 messaggi gratuiti al giorno, senza impegno: il contatore si azzera a mezzanotte. Per conversazioni illimitate puoi sbloccarlo con l’abbonamento (€4,99–€14,99 al mese).",
     },
     {
       q: "I miei dati sono al sicuro?",

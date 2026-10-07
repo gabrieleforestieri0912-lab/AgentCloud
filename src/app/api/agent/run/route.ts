@@ -150,7 +150,7 @@ export async function POST(req: Request) {
   const check = await assertRunAllowed(userId, agentId, locale, isAdmin);
   const ipForFree = getClientIp(req);
 
-  // Freemium: 4 messaggi gratuiti per agente per chi non ha abbonamento attivo.
+  // Freemium: 5 messaggi gratuiti AL GIORNO per agente per chi non ha abbonamento attivo.
   // Admin e beta bypassano. Gli abbonati attivi non passano da qui.
   if (!isAdmin && !isBeta) {
     let enforceFree = false;

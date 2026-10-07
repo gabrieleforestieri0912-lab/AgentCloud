@@ -1,25 +1,38 @@
 /**
- * Limite freemium: 4 messaggi gratuiti per agente.
+ * Limite freemium: 5 messaggi gratuiti AL GIORNO per agente.
  *
  * Chi è abbonato (user_agents.status = 'active') non ha limiti.
  * Admin e beta_tester/internal_qa bypassano.
- * Per gli altri: 4 messaggi totali per coppia (utente, agente).
- *  - Utente autenticato: conteggio su `agent_runs` per user_id + agent_slug.
+ * Per gli altri: 5 messaggi al giorno per coppia (utente, agente), con reset
+ * alla mezzanotte UTC. La UI mostra l'ora locale del reset (vedi getNextResetAt).
+ *  - Utente autenticato: conteggio su `agent_runs` per user_id + agent_slug
+ *    con `started_at` dentro il giorno UTC corrente.
  *  - Anonimo: conteggio distribuito su `rate_limits` con bucket `free-chat`
- *    chiave `${ip}:${agentSlug}` (vale tra tutte le istanze). Fallback in-memory
- *    se Supabase non è configurato.
+ *    chiave `${ip}:${agentSlug}` e window_start = inizio giorno UTC. Fallback
+ *    in-memory se Supabase non è configurato.
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export const FREE_MESSAGES_PER_AGENT = 4;
+export const FREE_MESSAGES_PER_AGENT = 5;
 
-// Fallback in-memory per anonimi quando Supabase non è disponibile
+// Fallback in-memory per anonimi quando Supabase non è disponibile.
+// Chiave con giorno UTC così il reset giornaliero vale anche in-memory.
 const anonMemory = new Map<string, number>();
 
 function anonKey(ip: string, agentSlug: string) {
-  return `${ip}::${agentSlug}`;
+  return `${dayStartUTC().toISOString()}::${ip}::${agentSlug}`;
+}
+
+/** Mezzanotte UTC del giorno corrente (inizio finestra giornaliera). */
+export function dayStartUTC(now = new Date()): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+/** Istante del prossimo reset (mezzanotte UTC successiva). La UI lo mostra in ora locale. */
+export function getNextResetAt(now = new Date()): Date {
+  return new Date(dayStartUTC(now).getTime() + 24 * 60 * 60 * 1000);
 }
 
 async function getDb() {
@@ -27,7 +40,7 @@ async function getDb() {
 }
 
 /**
- * Conta i messaggi gratuiti già usati per (userId, agentSlug).
+ * Conta i messaggi gratuiti già usati OGGI per (userId, agentSlug).
  * Per anonimi usa ip.
  */
 export async function getFreeMessagesUsed(
@@ -36,20 +49,21 @@ export async function getFreeMessagesUsed(
   ip?: string,
 ): Promise<number> {
   const db = await getDb();
+  const dayStart = dayStartUTC().toISOString();
 
-  // Utente autenticato: conta le runs su agent_runs
+  // Utente autenticato: conta le runs di oggi su agent_runs
   if (userId && userId !== "anonymous") {
     if (!db) return 0;
     const { count } = await db
       .from("agent_runs")
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("agent_slug", agentSlug);
+      .eq("agent_slug", agentSlug)
+      .gte("started_at", dayStart);
     return count ?? 0;
   }
 
-  // Anonimo: prova Supabase rate_limits con window fissa (epoch)
-  // Usiamo bucket `free-chat` e window_start fissa così il contatore è cumulativo.
+  // Anonimo: rate_limits con window = giorno UTC corrente
   if (ip && db) {
     try {
       const key = `${ip}:${agentSlug}`;
@@ -58,20 +72,10 @@ export async function getFreeMessagesUsed(
         .select("count")
         .eq("bucket", "free-chat")
         .eq("key", key)
+        .eq("window_start", dayStart)
         .maybeSingle();
-      // rate_limits ha PK (bucket,key,window_start) – potremmo avere più window,
-      // quindi somma se ci sono più righe (fallback query senza window)
       if (data && typeof (data as { count: number }).count === "number") {
         return (data as { count: number }).count;
-      }
-      // Se non trovato con maybeSingle, prova somma totale per bucket+key
-      const { data: rows } = await db
-        .from("rate_limits")
-        .select("count")
-        .eq("bucket", "free-chat")
-        .eq("key", key);
-      if (rows && rows.length > 0) {
-        return rows.reduce((s, r) => s + ((r as { count: number }).count ?? 0), 0);
       }
     } catch {
       // fallback memory
@@ -83,7 +87,7 @@ export async function getFreeMessagesUsed(
 }
 
 /**
- * Incrementa il contatore anonimo dopo una run riuscita.
+ * Incrementa il contatore anonimo dopo una run riuscita (finestra = giorno UTC).
  * Per utenti autenticati il conteggio avviene via agent_runs, quindi non serve.
  */
 export async function incrementAnonymousFreeCount(ip: string, agentSlug: string): Promise<void> {
@@ -91,8 +95,8 @@ export async function incrementAnonymousFreeCount(ip: string, agentSlug: string)
   const key = `${ip}:${agentSlug}`;
   if (db) {
     try {
-      // Usa la stessa window_start fissa per rendere il conteggio cumulativo
-      const windowStart = new Date("2026-01-01T00:00:00Z").toISOString();
+      // window_start = mezzanotte UTC: il conteggio si azzera ogni giorno
+      const windowStart = dayStartUTC().toISOString();
       await db.rpc("bump_rate_limit", {
         p_bucket: "free-chat",
         p_key: key,
