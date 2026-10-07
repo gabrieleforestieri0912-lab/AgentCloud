@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   Clock3,
   ArrowRight,
+  ArrowDown,
   Pencil,
   Archive,
   RotateCcw,
@@ -629,6 +630,10 @@ export default function ChatInterface({
         pinFrame.current = null;
         const el = messagesRef.current;
         if (!el) return;
+        // L'utente può essersi staccato (rotella/touch/scroll) DOPO aver
+        // schedulato questo frame: ricontrolla prima di forzare lo scroll,
+        // altrimenti lo "strappo" verso il basso vince sullo scroll dell'utente.
+        if (!force && !stickToBottom.current) return;
         const useSmooth = pendingSmooth.current;
         pendingSmooth.current = false;
 
@@ -2366,8 +2371,8 @@ export default function ChatInterface({
                         return (
                           <>
                             {isLive && <WorkingIndicator label={runningStep.label} />}
-                            {cleanText && <MarkdownText text={cleanText} onReply={handleReplyToPhrase} />}
                             {steps.length > 0 && <ActivityFeed steps={steps} />}
+                            {cleanText && <MarkdownText text={cleanText} onReply={handleReplyToPhrase} />}
                             {providers.map((p) => (
                               <InlineConnectCard key={p} provider={p} />
                             ))}
@@ -2413,7 +2418,7 @@ export default function ChatInterface({
                 </div>
                 {msg.role === "user" && (
                   <div
-                    className="relative mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-700"
+                    className="relative mt-0.5 order-2 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-700"
                     title={accountTooltip ?? undefined}
                     aria-label={accountTooltip ?? undefined}
                   >
@@ -2503,6 +2508,26 @@ export default function ChatInterface({
 
             </div>
         </div>
+
+        {/* Torna in fondo: visibile quando l'utente è risalito a leggere
+            (anche durante la generazione). Riaggancia l'auto-scroll. */}
+        <AnimatePresence>
+          {!isAtBottom && (
+            <motion.button
+              key="go-bottom"
+              type="button"
+              onClick={() => pinToBottom(true, true)}
+              aria-label={dict.chat.goBottom}
+              title={dict.chat.goBottom}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              className="absolute bottom-36 left-1/2 z-20 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-white/10 bg-neutral-800/95 text-neutral-300 shadow-xl shadow-black/40 backdrop-blur transition-colors hover:bg-neutral-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            >
+              <ArrowDown size={16} />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {/* Input fluttuante: contenitore trasparente con fade sul contenuto */}
         <div

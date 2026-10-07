@@ -454,6 +454,7 @@ const it = {
     disclaimer:
       "L'AI di AgentCloud può produrre informazioni inaccurate. Verifica i dati critici.",
     closeSidebar: "Chiudi la sidebar",
+    goBottom: "Vai in fondo",
     openSidebar: "Apri la sidebar",
     deleteConversation: "Elimina conversazione",
     newChatTitle: "Nuova chat",
@@ -2373,6 +2374,7 @@ export const en: Dictionary = {
     disclaimer:
       "AgentCloud AI may produce inaccurate information. Verify critical data.",
     closeSidebar: "Close sidebar",
+    goBottom: "Go to bottom",
     openSidebar: "Open sidebar",
     deleteConversation: "Delete conversation",
     newChatTitle: "New Chat",
@@ -4291,6 +4293,7 @@ export const es: Dictionary = {
     disclaimer:
       "La IA de AgentCloud puede generar información inexacta. Verifica los datos críticos.",
     closeSidebar: "Cerrar barra lateral",
+    goBottom: "Ir al final",
     openSidebar: "Abrir barra lateral",
     deleteConversation: "Eliminar conversación",
     newChatTitle: "Nuevo chat",
@@ -6206,6 +6209,7 @@ browseAll: "Alle Agenten ansehen",
     disclaimer:
       "Die KI von AgentCloud kann ungenaue Informationen liefern. Prüfe kritische Daten.",
     closeSidebar: "Seitenleiste schließen",
+    goBottom: "Nach unten",
     openSidebar: "Seitenleiste öffnen",
     deleteConversation: "Gespräch löschen",
     newChatTitle: "Neuer Chat",
@@ -8121,6 +8125,7 @@ export const fr: Dictionary = {
     disclaimer:
       "L'IA d'AgentCloud peut produire des informations inexactes. Vérifiez les données critiques.",
     closeSidebar: "Fermer la barre latérale",
+    goBottom: "Aller en bas",
     openSidebar: "Ouvrir la barre latérale",
     deleteConversation: "Supprimer la conversation",
     newChatTitle: "Nouveau chat",
