@@ -17,14 +17,34 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptMaybe, encryptToken } from "@/lib/integrations/encryption";
 import { getProvider } from "./registry";
+import { getCatalogEntry, PROVIDER_CATALOG } from "./catalog";
+import { authHeader, providerRequest } from "./http";
+import { normalizeTenantUrl, assertPublicHost, type UrlValidation } from "./safe-url";
+import type { TokenUsage } from "./types";
+import {
+  formatOrder,
+  formatProduct,
+  fromWooOrder,
+  fromWooProduct,
+  parseAmount,
+} from "@/lib/commerce/normalize";
 
-export type GenericProvider =
-  | "github"
-  | "clickup"
-  | "asana"
-  | "notion"
-  | "slack"
-  | "hubspot";
+/**
+ * Provider serviti dal proxy condiviso. `google_sheets` è escluso di proposito:
+ * ha un modulo dedicato (src/lib/google/sheets.ts) e le sue tool stanno in
+ * tools.ts, non in integration-tools.ts.
+ *
+ * Derivato dal catalogo invece che scritto a mano, così aggiungere un provider
+ * con `hasApiProxy: true` senza scrivere il proxy non passa il typecheck.
+ *
+ * Nota: funziona perché `PROVIDER_CATALOG` è `as const` e NON ha
+ * l'annotazione `: readonly ProviderCatalogEntry[]`: quell'annotazione
+ * allargherebbe `hasApiProxy` a `boolean` e `Extract` darebbe `never`.
+ */
+export type GenericProvider = Extract<
+  (typeof PROVIDER_CATALOG)[number],
+  { hasApiProxy: true }
+>["id"];
 
 export type IntegrationApiResult =
   | { ok: true; data: string }
@@ -39,9 +59,23 @@ type IntegrationRow = {
   refresh_token: string | null;
   expires_at: string | null;
   external_account_id: string | null;
+  metadata: Record<string, unknown> | null;
 };
 
-type ResolvedToken = { accessToken: string; account: string | null };
+/**
+ * Credenziali pronte per una chiamata. `secretToken` serve solo ai provider
+ * `keypair` (WooCommerce: Consumer Secret accanto alla Consumer Key); per gli
+ * altri è sempre null.
+ */
+type ResolvedToken = {
+  accessToken: string;
+  account: string | null;
+  secretToken: string | null;
+  usage: TokenUsage;
+  metadata: Record<string, unknown>;
+  /** Scadenza salvata, null se il token non scade. Utile per i provider senza rinnovo. */
+  expiresAt: string | null;
+};
 
 /**
  * Esito della risoluzione del token. `ok: false` porta già il messaggio d'errore
@@ -56,15 +90,10 @@ function notConnectedError(name: string): string {
   return `No ${name} account connected. Ask the user to connect ${name} from the dashboard (Integrations), then retry.`;
 }
 
-/** Etichetta umana del provider, usata nei messaggi che il modello riporta all'utente. */
-const PROVIDER_LABEL: Record<GenericProvider, string> = {
-  github: "GitHub",
-  clickup: "ClickUp",
-  asana: "Asana",
-  notion: "Notion",
-  slack: "Slack",
-  hubspot: "HubSpot",
-};
+/** Etichetta umana del provider, presa dal catalogo (usata nei messaggi al modello). */
+function providerLabel(provider: GenericProvider): string {
+  return getCatalogEntry(provider)?.label ?? provider;
+}
 
 /** True se un token con questa scadenza va rinfrescato ora (null = non scade). */
 function shouldRefresh(expiresAt: string | null): boolean {
@@ -72,6 +101,12 @@ function shouldRefresh(expiresAt: string | null): boolean {
   const expiry = new Date(expiresAt).getTime();
   if (Number.isNaN(expiry)) return false;
   return expiry - Date.now() <= REFRESH_MARGIN_MS;
+}
+
+/** True se la scadenza è nel passato. Usata per i provider senza refresh token. */
+function isPast(iso: string): boolean {
+  const t = new Date(iso).getTime();
+  return !Number.isNaN(t) && t <= Date.now();
 }
 
 function clampLimit(limit: number | undefined, fallback = 20): number {
@@ -82,10 +117,15 @@ function clampLimit(limit: number | undefined, fallback = 20): number {
  * Rinfresca l'access token tramite l'adapter del provider. Restituisce null se il
  * provider non espone `refreshToken` (GitHub / ClickUp / Notion / Slack: token
  * senza scadenza) o se le credenziali OAuth mancano.
+ *
+ * `metadata` viene passato all'adapter: alcuni provider rinnovano su un endpoint
+ * che dipende da un dato noto solo al momento dell'autorizzazione (Mailchimp
+ * usa il data center nella URL del refresh).
  */
 async function refreshViaAdapter(
   provider: GenericProvider,
   refreshToken: string,
+  metadata: Record<string, unknown>,
 ): Promise<{
   accessToken: string;
   refreshToken: string | null;
@@ -94,7 +134,7 @@ async function refreshViaAdapter(
   const adapter = getProvider(provider);
   if (!adapter?.refreshToken) return null;
   try {
-    const r = await adapter.refreshToken({ refreshToken });
+    const r = await adapter.refreshToken({ refreshToken, metadata });
     return {
       accessToken: r.accessToken,
       refreshToken: r.refreshToken ?? null,
@@ -114,7 +154,7 @@ export async function resolveIntegrationToken(
   tenantId: string,
   provider: GenericProvider,
 ): Promise<ResolvedIntegration> {
-  const label = PROVIDER_LABEL[provider];
+  const label = providerLabel(provider);
   const none = (): ResolvedIntegration => ({ ok: false, error: notConnectedError(label) });
 
   if (!tenantId) return none();
@@ -123,7 +163,7 @@ export async function resolveIntegrationToken(
 
   const { data, error } = await admin
     .from("tenant_integrations")
-    .select("status, access_token, refresh_token, expires_at, external_account_id")
+    .select("status, access_token, refresh_token, expires_at, external_account_id, metadata")
     .eq("tenant_id", tenantId)
     .eq("provider", provider)
     .maybeSingle();
@@ -135,12 +175,19 @@ export async function resolveIntegrationToken(
   const accessToken = decryptMaybe(row.access_token);
   if (!accessToken) return none();
 
+  const metadata = row.metadata ?? {};
+  const usage = getCatalogEntry(provider)?.authType === "keypair" ? "keypair" : "bearer";
+
   // Refresh solo se il token scade E c'è un refresh token salvato: i provider
   // senza scadenza (GitHub, ClickUp, Notion, Slack) hanno expires_at e
   // refresh_token null, quindi qui non vengono toccati.
+  //
+  // Per i provider `keypair` (WooCommerce) NON è un refresh: refresh_token è la
+  // seconda credenziale (Consumer Secret) e expires_at è null, quindi `shouldRefresh`
+  // è false e la coppia va semplicemente consegnata.
   const refreshToken = decryptMaybe(row.refresh_token);
   if (refreshToken && shouldRefresh(row.expires_at)) {
-    const refreshed = await refreshViaAdapter(provider, refreshToken);
+    const refreshed = await refreshViaAdapter(provider, refreshToken, metadata);
     // Rinnovo fallito (refresh token revocato o scaduto): riusare il token vecchio
     // darebbe solo un 401 oscuro, quindi chiediamo di riconnettere l'account.
     if (!refreshed?.accessToken) {
@@ -163,11 +210,51 @@ export async function resolveIntegrationToken(
       .eq("provider", provider);
     return {
       ok: true,
-      token: { accessToken: refreshed.accessToken, account: row.external_account_id },
+      token: {
+        accessToken: refreshed.accessToken,
+        account: row.external_account_id,
+        secretToken: null,
+        usage,
+        metadata,
+        expiresAt: row.expires_at,
+      },
     };
   }
 
-  return { ok: true, token: { accessToken, account: row.external_account_id } };
+  // Token scaduto e NIENTE con cui rinnovarlo: alcuni provider non emettono
+  // refresh token (Trello scade dopo 30 giorni e non ha rinnovo). Prima si
+  // restituiva `ok` con il token morto e il proxy mandava la richiesta,
+  // arrivando a un 401 che il modello non può spiegare all'utente. Qui si
+  // dice subito cosa fare, che è la stessa forma del messaggio già usata
+  // quando il refresh fallisce.
+  if (!refreshToken && row.expires_at && isPast(row.expires_at)) {
+    const when = new Date(row.expires_at).toISOString().slice(0, 10);
+    return {
+      ok: false,
+      error: `The ${label} connection expired on ${when} and ${label} does not issue refresh tokens. Ask the user to reconnect ${label} from the dashboard (Integrations), then retry.`,
+    };
+  }
+
+  return {
+    ok: true,
+    token: {
+      accessToken,
+      account: row.external_account_id,
+      secretToken: refreshToken,
+      usage,
+      metadata,
+      expiresAt: row.expires_at,
+    },
+  };
+}
+
+/**
+ * Header Authorization per un provider. Centralizza i due formati supportati:
+ * Bearer (default) e Basic base64(key:secret) per i provider `keypair`
+ * (WooCommerce), dove la seconda credenziale arriva in `secretToken`.
+ */
+export function integrationAuth(token: ResolvedToken): string {
+  return authHeader(token.usage, token.accessToken, token.secretToken);
 }
 
 // ---------------------------------------------------------------------------
@@ -1220,4 +1307,757 @@ export async function hubspotApiProxy(
       error: `HubSpot network error: ${e instanceof Error ? e.message : String(e)}`,
     };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Google Drive
+// ---------------------------------------------------------------------------
+
+export type DriveAction = "searchFiles" | "readFile" | "listFolder";
+
+export type DriveParams = {
+  /** Testo libero per drive.files.list (q) o contenuto da cercare. */
+  query?: string;
+  /** ID del file/cartella. */
+  fileId?: string;
+  /** ID della cartella per listFolder. */
+  folderId?: string;
+  limit?: number;
+};
+
+const DRIVE_API = "https://www.googleapis.com/drive/v3";
+/** I campi minimi per descrivere un file. `webViewLink` è il link "apri in Drive". */
+const DRIVE_FIELDS = "files(id,name,mimeType,size,modifiedTime,webViewLink,parents)";
+
+/** Limite di caratteri per un file letto: il modello non deve ricevere 5 MB di testo. */
+const MAX_READ_CHARS = 20_000;
+
+/**
+ * I Google Docs/Sheets/Slides non si scaricano: `files.get?alt=media` restituisce
+ * il binario. Per quelli va usato `export`, che converte in testo/CSV/PDF.
+ */
+function exportMimeType(mimeType: string): string | null {
+  if (mimeType === "application/vnd.google-apps.document") {
+    return "text/plain";
+  }
+  if (mimeType === "application/vnd.google-apps.spreadsheet") {
+    // export di uno Sheet: la prima scheda in CSV è la forma più leggibile
+    return "text/csv";
+  }
+  if (mimeType === "application/vnd.google-apps.presentation") {
+    return "text/plain";
+  }
+  return null;
+}
+
+/** File che non ha senso restituire come testo (immagini, video, archivi). */
+function isBinaryMimeType(mimeType: string): boolean {
+  return (
+    mimeType.startsWith("image/") ||
+    mimeType.startsWith("video/") ||
+    mimeType.startsWith("audio/") ||
+    mimeType.includes("zip") ||
+    mimeType.includes("compressed") ||
+    mimeType.includes("application/x-")
+  );
+}
+
+function formatDriveFile(f: {
+  id?: string;
+  name?: string;
+  mimeType?: string;
+  size?: string;
+  modifiedTime?: string;
+  webViewLink?: string;
+}): string {
+  const kind = f.mimeType === "application/vnd.google-apps.folder" ? "folder" : f.mimeType;
+  return [
+    `- ${f.name ?? "?"} (${kind})`,
+    f.id ? `  id: ${f.id}` : "",
+    f.size ? `  size: ${f.size}B` : "",
+    f.modifiedTime ? `  modified: ${f.modifiedTime}` : "",
+    f.webViewLink ? `  ${f.webViewLink}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * Traduce una ricerca in linguaggio naturale nella sintassi di Drive (`q`).
+ * Senza questo il modello dovrebbe ricordarsi la sintassi (`name contains 'x'`,
+ * `mimeType = '...'`) a ogni chiamata: è fragile e produce query sbagliate.
+ * Con contiene solo AND di termini, che è il 90% delle richieste reali.
+ */
+function buildDriveQuery(query: string, folderId?: string): string {
+  const parts: string[] = ["trashed = false"];
+  const terms = query
+    .split(/\s+/)
+    .map((t) => t.replace(/["\\]/g, " ").trim())
+    .filter(Boolean);
+  for (const t of terms) parts.push(`name contains '${t}'`);
+  // Se il tenant ha indicato una cartella, restringiamo la ricerca a quella.
+  if (folderId) parts.push(`'${folderId}' in parents`);
+  return parts.join(" and ");
+}
+
+export async function driveApiProxy(
+  action: DriveAction,
+  params: DriveParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "google_drive");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+
+  const limit = clampLimit(params.limit);
+  const headers = {
+    Authorization: integrationAuth(token),
+    Accept: "application/json",
+  };
+
+  if (action === "searchFiles" || action === "listFolder") {
+    // listFolder senza cartella = ricerca in "My Drive" (assenti i parent).
+    const q = action === "listFolder"
+      ? `trashed = false${params.folderId ? ` and '${params.folderId}' in parents` : ""}`
+      : buildDriveQuery(params.query ?? "", params.folderId);
+    const url = new URL(`${DRIVE_API}/files`);
+    url.searchParams.set("q", q);
+    url.searchParams.set("fields", `files(${DRIVE_FIELDS}),nextPageToken`);
+    url.searchParams.set("pageSize", String(limit));
+    url.searchParams.set("orderBy", "modifiedTime desc");
+    // Coroutine: i risultati senza padroni non appaiono nel riquadro sinistro e
+    // sono quasi sempre ciò che l'utente sta cercando ("i miei documenti").
+    url.searchParams.set("corpora", "user");
+    url.searchParams.set("supportsAllDrives", "true");
+    url.searchParams.set("includeItemsFromAllDrives", "true");
+
+    const res = await providerRequest(url.toString(), {
+      headers,
+      providerLabel: "Google Drive",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+
+    const files = (res.json as { files?: DriveFile[] } | undefined)?.files ?? [];
+    if (files.length === 0) {
+      return {
+        ok: true,
+        data: action === "listFolder"
+          ? "The folder is empty (or not accessible with this account)."
+          : "No Google Drive files matched.",
+      };
+    }
+    const header =
+      action === "listFolder"
+        ? `${files.length} item(s) in the folder:`
+        : `${files.length} file(s) matching "${params.query ?? ""}":`;
+    return { ok: true, data: `${header}\n${files.map(formatDriveFile).join("\n")}` };
+  }
+
+  // readFile
+  const fileId = (params.fileId ?? "").trim();
+  if (!fileId) return { ok: false, error: "drive_read_file requires fileId." };
+
+  // 1. Metadati: servono nome, mimeType (per scegliere export vs download) e link.
+  const metaRes = await providerRequest(
+    `${DRIVE_API}/files/${encodeURIComponent(fileId)}?fields=${encodeURIComponent(DRIVE_FIELDS)}`,
+    { headers, providerLabel: "Google Drive" },
+  );
+  if (!metaRes.ok) return { ok: false, error: metaRes.error! };
+
+  const meta = metaRes.json as DriveFile | undefined;
+  const mimeType = meta?.mimeType ?? "";
+  const name = meta?.name ?? fileId;
+
+  if (isBinaryMimeType(mimeType)) {
+    return {
+      ok: true,
+      data: `"${name}" is a ${mimeType} file, not text — its content cannot be read as text. Link: ${meta?.webViewLink ?? "n/a"}`,
+    };
+  }
+
+  // 2. Contenuto: export per i Google-native, download diretto per il resto.
+  const exportType = exportMimeType(mimeType);
+  const contentUrl = exportType
+    ? `${DRIVE_API}/files/${encodeURIComponent(fileId)}/export?mimeType=${encodeURIComponent(exportType)}`
+    : `${DRIVE_API}/files/${encodeURIComponent(fileId)}?alt=media`;
+
+  const contentRes = await providerRequest(contentUrl, {
+    headers: { Authorization: integrationAuth(token) },
+    providerLabel: "Google Drive",
+  });
+  if (!contentRes.ok) return { ok: false, error: contentRes.error! };
+
+  const text = contentRes.text;
+  if (!text.trim()) {
+    return { ok: true, data: `"${name}" is empty.` };
+  }
+
+  // 3. Troncamento esplicito: il modello deve sapere che sta leggendo un estratto,
+  //    altrimenti risponderebbe con la certezza di aver letto tutto il file.
+  const truncated = text.length > MAX_READ_CHARS;
+  const body = truncated ? text.slice(0, MAX_READ_CHARS) : text;
+  const notice = truncated
+    ? `\n\n[Content truncated at ${MAX_READ_CHARS} characters of ${text.length} total. Ask for a specific section to read further.]`
+    : "";
+
+  return {
+    ok: true,
+    data: `"${name}" (${mimeType || "unknown"})${meta?.webViewLink ? ` — ${meta.webViewLink}` : ""}\n\n${body}${notice}`,
+  };
+}
+
+type DriveFile = {
+  id?: string;
+  name?: string;
+  mimeType?: string;
+  size?: string;
+  modifiedTime?: string;
+  webViewLink?: string;
+  parents?: string[];
+};
+
+// ---------------------------------------------------------------------------
+// Airtable
+// ---------------------------------------------------------------------------
+
+export type AirtableAction = "listBases" | "listTables" | "listRecords";
+
+export type AirtableParams = {
+  /** baseId (app...) per listTables/listRecords. */
+  baseId?: string;
+  /** tableId (tbl...) per listRecords. */
+  tableId?: string;
+  /** Filtro in linguaggio naturale per listRecords. */
+  filter?: string;
+  limit?: number;
+};
+
+const AIRTABLE_API = "https://api.airtable.com/v0";
+
+/** Escape per i valori dentro una formula Airtable (stringa con apici singoli). */
+function airtableFormulaString(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+/**
+ * Traduce un filtro in linguaggio naturale in una `filterByFormula` di Airtable.
+ *
+ * Airtable non ha una sintassi di query tipo Drive: accetta solo formule. Senza
+ * questa traduzione il modello dovrebbe comporre formule a ogni chiamata, ed è
+ * la sorgente numero uno di query sbagliate (virgolette, nomi di campo con
+ * spazi). Qui si coprono i casi realmente frequenti:
+ *   "stato: aperto"        → {stato}="aperto"
+ *   "stato = chiuso"       → {stato}="chiuso"
+ *   "priorità alta"        → contiene "alta" in un campo qualsiasi
+ *   "cliente Acme"         → SEARCH("acme", {cliente})
+ * Se non si riconosce nulla, si passa la stringa come SEARCH su un campo
+ * esplicito, che è il fallback più onesto.
+ */
+function buildAirtableFormula(filter: string): string {
+  const raw = filter.trim();
+  if (!raw) return "";
+
+  // forma "campo: valore" o "campo = valore"
+  const kv = raw.match(/^([^:=]+?)\s*[:=]\s*(.+)$/);
+  if (kv) {
+    const field = kv[1].replace(/^["']|["']$/g, "").trim();
+    const value = kv[2].trim();
+    return `{${field}}=${airtableFormulaString(value)}`;
+  }
+
+  // singolo termine: lo cerchiamo ovunque nel record
+  const term = raw.replace(/^["']|["']$/g, "").trim();
+  if (term) return `SEARCH(${airtableFormulaString(term.toLowerCase())}, LOWER({Name} & " " & {Notes} & " " & {Email}))`;
+  return "";
+}
+
+function formatAirtableRecord(r: {
+  id?: string;
+  fields?: Record<string, unknown>;
+  createdTime?: string;
+}): string {
+  const fields = r.fields ?? {};
+  const body = Object.entries(fields)
+    .filter(([, v]) => v !== null && v !== undefined && v !== "")
+    .slice(0, 6)
+    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
+    .join(" | ");
+  const more = Object.keys(fields).length > 6 ? " | …" : "";
+  return `- ${r.id ?? "?"}: ${body}${more}`;
+}
+
+export async function airtableApiProxy(
+  action: AirtableAction,
+  params: AirtableParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "airtable");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+  const headers = { Authorization: integrationAuth(token), Accept: "application/json" };
+  const limit = clampLimit(params.limit);
+
+  if (action === "listBases") {
+    const res = await providerRequest(`${AIRTABLE_API}/meta/bases`, {
+      headers,
+      providerLabel: "Airtable",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+    const bases = (res.json as { bases?: Array<{ id?: string; name?: string; permissionLevel?: string }> } | undefined)?.bases ?? [];
+    if (bases.length === 0) return { ok: true, data: "No Airtable bases shared with this account." };
+    return {
+      ok: true,
+      data: bases
+        .map((b) => `- ${b.name ?? "?"} | id: ${b.id ?? "?"}${b.permissionLevel ? ` (${b.permissionLevel})` : ""}`)
+        .join("\n"),
+    };
+  }
+
+  const baseId = (params.baseId ?? "").trim();
+  if (!baseId) return { ok: false, error: "airtable tool requires baseId." };
+
+  if (action === "listTables") {
+    const res = await providerRequest(
+      `${AIRTABLE_API}/meta/bases/${encodeURIComponent(baseId)}/tables`,
+      { headers, providerLabel: "Airtable" },
+    );
+    if (!res.ok) return { ok: false, error: res.error! };
+    const tables = (res.json as { tables?: Array<{ id?: string; name?: string; primaryFieldId?: string }> } | undefined)?.tables ?? [];
+    if (tables.length === 0) return { ok: true, data: "The Airtable base has no tables, or the token cannot see them." };
+    return {
+      ok: true,
+      data: tables
+        .map((t) => `- ${t.name ?? "?"} | id: ${t.id ?? "?"}`)
+        .join("\n"),
+    };
+  }
+
+  // listRecords
+  const tableId = (params.tableId ?? "").trim();
+  if (!tableId) return { ok: false, error: "airtable_list_records requires tableId." };
+  const url = new URL(`${AIRTABLE_API}/${encodeURIComponent(baseId)}/${encodeURIComponent(tableId)}`);
+  url.searchParams.set("maxRecords", String(limit));
+  const formula = buildAirtableFormula(params.filter ?? "");
+  if (formula) url.searchParams.set("filterByFormula", formula);
+
+  const res = await providerRequest(url.toString(), { headers, providerLabel: "Airtable" });
+  if (!res.ok) return { ok: false, error: res.error! };
+  const records = (res.json as { records?: Array<{ id?: string; fields?: Record<string, unknown> }> } | undefined)?.records ?? [];
+  if (records.length === 0) {
+    return {
+      ok: true,
+      data: params.filter
+        ? `No Airtable records matched "${params.filter}".`
+        : "No records in this table.",
+    };
+  }
+  return { ok: true, data: records.map(formatAirtableRecord).join("\n") };
+}
+
+// ---------------------------------------------------------------------------
+// Trello
+// ---------------------------------------------------------------------------
+
+export type TrelloAction = "listBoards" | "listCards";
+
+export type TrelloParams = {
+  boardId?: string;
+  listId?: string;
+  limit?: number;
+};
+
+const TRELLO_API = "https://api.trello.com/1";
+
+/**
+ * Trello non accetta l'header Authorization su quasi tutti gli endpoint: la
+ * key dell'app e il token dell'utente vanno come query param `key` e `token`.
+ *
+ * Nota di sicurezza: il token finisce quindi nell'URL. È il protocollo di
+ * Trello, non una scelta. Per questo providerRequest non logga mai la URL e i
+ * suoi errori riportano solo status + estratto del corpo, mai la richiesta.
+ */
+function trelloUrl(path: string, token: ResolvedToken, extra?: Record<string, string>): URL {
+  const appKey = process.env.TRELLO_API_KEY || "";
+  const url = new URL(`${TRELLO_API}${path}`);
+  url.searchParams.set("key", appKey);
+  url.searchParams.set("token", token.accessToken);
+  for (const [k, v] of Object.entries(extra ?? {})) url.searchParams.set(k, v);
+  return url;
+}
+
+function formatTrelloCard(c: {
+  id?: string;
+  name?: string;
+  desc?: string;
+  due?: string | null;
+  closed?: boolean;
+  url?: string;
+  idList?: string;
+}): string {
+  const bits = [`- ${c.name ?? "?"}`];
+  if (c.due) bits.push(`due: ${c.due}`);
+  if (c.closed) bits.push("(archived)");
+  if (c.desc) bits.push(`- ${c.desc.replace(/\s+/g, " ").slice(0, 120)}`);
+  if (c.id) bits.push(`| id: ${c.id}`);
+  if (c.idList) bits.push(`| list: ${c.idList}`);
+  if (c.url) bits.push(`| ${c.url}`);
+  return bits.join(" ");
+}
+
+export async function trelloApiProxy(
+  action: TrelloAction,
+  params: TrelloParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "trello");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+  const limit = clampLimit(params.limit);
+
+  if (action === "listBoards") {
+    const url = trelloUrl("/members/me/boards", token, {
+      fields: "id,name,url,closed",
+      filter: "open",
+    });
+    const res = await providerRequest(url.toString(), {
+      headers: { Accept: "application/json" },
+      providerLabel: "Trello",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+    const boards = (res.json as Array<{ id?: string; name?: string; url?: string }> | undefined) ?? [];
+    if (boards.length === 0) return { ok: true, data: "No Trello boards for this account." };
+    return {
+      ok: true,
+      data: boards.map((b) => `- ${b.name ?? "?"} | id: ${b.id ?? "?"}${b.url ? ` | ${b.url}` : ""}`).join("\n"),
+    };
+  }
+
+  // listCards: o per board o per list. Un board senza listId restituisce tutte
+  // le card del board, che è il comportamento atteso da "elenca le card".
+  const boardId = (params.boardId ?? "").trim();
+  const listId = (params.listId ?? "").trim();
+  if (!boardId && !listId) {
+    return { ok: false, error: "trello_list_cards requires boardId or listId." };
+  }
+  const path = listId
+    ? `/lists/${encodeURIComponent(listId)}/cards`
+    : `/boards/${encodeURIComponent(boardId)}/cards`;
+  const url = trelloUrl(path, token, {
+    fields: "id,name,desc,due,closed,url,idList",
+    limit: String(limit),
+  });
+  const res = await providerRequest(url.toString(), {
+    headers: { Accept: "application/json" },
+    providerLabel: "Trello",
+  });
+  if (!res.ok) return { ok: false, error: res.error! };
+  const cards = (res.json as Array<Parameters<typeof formatTrelloCard>[0]> | undefined) ?? [];
+  if (cards.length === 0) {
+    return { ok: true, data: "No Trello cards found." };
+  }
+  return { ok: true, data: cards.map(formatTrelloCard).join("\n") };
+}
+
+// ---------------------------------------------------------------------------
+// WooCommerce
+// ---------------------------------------------------------------------------
+
+export type WooAction =
+  | "listProducts"
+  | "getProduct"
+  | "listOrders"
+  | "getOrder"
+  | "getCustomer";
+
+export type WooParams = {
+  productId?: string;
+  orderId?: string;
+  /** WooCommerce: customer id (numero) o email. */
+  customer?: string;
+  search?: string;
+  status?: string;
+  limit?: number;
+};
+
+/**
+ * Base URL dello store, già validata e firmata dentro lo `state` al momento della
+ * connessione. Non si rifa la validazione sintattica a ogni chiamata, ma il
+ * controllo SSRF sul DNS (assertPublicHost) va ripetuto: il DNS può cambiare fra
+ * il momento della connessione e la chiamata di adesso, e un host che al
+ * momento della connessione risolveva a un IP pubblico potrebbe oggi risolvere a
+ * 169.254.169.254. Per questo la risoluzione avviene qui, subito prima del fetch.
+ */
+async function wooStoreBase(token: ResolvedToken): Promise<UrlValidation> {
+  const raw = typeof token.metadata.store_url === "string" ? token.metadata.store_url : "";
+  if (!raw) return { ok: false, error: "WooCommerce: store URL mancante nella connessione" };
+  const normalized = normalizeTenantUrl(raw);
+  if (!normalized.ok) {
+    return { ok: false, error: `WooCommerce: store URL non valido (${normalized.error})` };
+  }
+  return assertPublicHost(normalized.url.hostname);
+}
+
+export async function wooApiProxy(
+  action: WooAction,
+  params: WooParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "woocommerce");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+
+  // Controllo SSRF immediato, prima di qualunque chiamata verso l'host del tenant.
+  const base = await wooStoreBase(token);
+  if (!base.ok) return { ok: false, error: `WooCommerce: ${base.error}. Reconnect the store.` };
+
+  const limit = clampLimit(params.limit);
+  // Authorization Basic: la coppia key:secret. Va nell'header e NON nella query
+  // string, così non finisce nei log né nell'errore (a differenza di Trello, dove
+  // il protocollo non lascia scelta).
+  const headers = {
+    Authorization: integrationAuth(token),
+    Accept: "application/json",
+  };
+
+  const get = async (path: string, query?: Record<string, string>) => {
+    const url = new URL(`${base.url.origin}/wp-json/wc/v3${path}`);
+    for (const [k, v] of Object.entries(query ?? {})) url.searchParams.set(k, v);
+    return providerRequest(url.toString(), {
+      headers,
+      providerLabel: "WooCommerce",
+    });
+  };
+
+  if (action === "listProducts") {
+    const q: Record<string, string> = {
+      per_page: String(limit),
+      status: "publish",
+      orderby: "date",
+      order: "desc",
+    };
+    if (params.search) q.search = params.search;
+    const res = await get("/products", q);
+    if (!res.ok) return { ok: false, error: res.error! };
+    const items = (res.json as unknown[] | undefined) ?? [];
+    if (items.length === 0) return { ok: true, data: "No WooCommerce products found." };
+    return {
+      ok: true,
+      data: items.map((p) => formatProduct(fromWooProduct(p as never))).join("\n"),
+    };
+  }
+
+  if (action === "getProduct") {
+    const id = (params.productId ?? "").trim();
+    if (!id) return { ok: false, error: "woo_get_product requires productId." };
+    const res = await get(`/products/${encodeURIComponent(id)}`);
+    if (!res.ok) return { ok: false, error: res.error! };
+    return { ok: true, data: formatProduct(fromWooProduct(res.json as never)) };
+  }
+
+  if (action === "listOrders") {
+    const q: Record<string, string> = {
+      per_page: String(limit),
+      orderby: "date",
+      order: "desc",
+    };
+    if (params.status) q.status = params.status;
+    const res = await get("/orders", q);
+    if (!res.ok) return { ok: false, error: res.error! };
+    const items = (res.json as unknown[] | undefined) ?? [];
+    if (items.length === 0) {
+      return { ok: true, data: params.status ? `No WooCommerce orders with status "${params.status}".` : "No WooCommerce orders found." };
+    }
+    return {
+      ok: true,
+      data: items.map((o) => formatOrder(fromWooOrder(o as never))).join("\n\n"),
+    };
+  }
+
+  if (action === "getOrder") {
+    const id = (params.orderId ?? "").trim();
+    if (!id) return { ok: false, error: "woo_get_order requires orderId." };
+    const res = await get(`/orders/${encodeURIComponent(id)}`);
+    if (!res.ok) return { ok: false, error: res.error! };
+    return { ok: true, data: formatOrder(fromWooOrder(res.json as never)) };
+  }
+
+  // getCustomer
+  const customer = (params.customer ?? "").trim();
+  if (!customer) {
+    return { ok: false, error: "woo_get_customer requires customer (id or email)." };
+  }
+  const path = customer.includes("@")
+    ? `/customers?search=${encodeURIComponent(customer)}&per_page=1`
+    : `/customers/${encodeURIComponent(customer)}`;
+  const res = await get(path);
+  if (!res.ok) return { ok: false, error: res.error! };
+
+  const raw = customer.includes("@")
+    ? ((res.json as unknown[] | undefined)?.[0] as Record<string, unknown> | undefined)
+    : (res.json as Record<string, unknown> | undefined);
+  if (!raw) return { ok: true, data: `No WooCommerce customer matched "${customer}".` };
+
+  const first = (raw.first_name as string) || "";
+  const last = (raw.last_name as string) || "";
+  const spend = parseAmount(raw.total_spent);
+  return {
+    ok: true,
+    data: [
+      `- ${[first, last].filter(Boolean).join(" ") || "(senza nome)"}`,
+      raw.email ? `  email: ${raw.email}` : "",
+      raw.username ? `  username: ${raw.username}` : "",
+      spend !== null && spend > 0 ? `  totale speso: ${spend.toFixed(2)} ${(raw.currency as string) || "EUR"}` : "",
+      raw.date_created ? `  cliente dal: ${raw.date_created}` : "",
+      raw.id ? `  id: ${raw.id}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Mailchimp
+// ---------------------------------------------------------------------------
+
+export type MailchimpAction = "listAudiences" | "getAudienceStats" | "listCampaigns";
+
+export type MailchimpParams = {
+  /** id della lista/audience. */
+  listId?: string;
+  limit?: number;
+};
+
+/**
+ * Base API del datacenter dell'account. Viene dai metadata salvati al momento
+ * dello scambio del token: Mailchimp non ha un host unico, e `dc` non è
+ * deducibile dal dominio con cui l'utente ha autorizzato.
+ *
+ * Se manca, si tenta la ricostruzione da `api_url`; senza nessuno dei due non
+ * c'è un endpoint noto, quindi si dice di riconnettersi invece di colpire un
+ * host generico che potrebbe essere il datacenter sbagliato.
+ */
+function mailchimpBase(token: ResolvedToken): string | null {
+  const apiUrl = typeof token.metadata.api_url === "string" ? token.metadata.api_url : "";
+  if (apiUrl && /^https:\/\/[a-z0-9-]+\.api\.mailchimp\.com\//i.test(apiUrl)) {
+    return apiUrl.replace(/\/+$/, "");
+  }
+  const dc = typeof token.metadata.dc === "string" ? token.metadata.dc : "";
+  if (dc && /^[a-z0-9-]+$/i.test(dc)) return `https://${dc}.api.mailchimp.com/3.0`;
+  return null;
+}
+
+/**
+ * Mailchimp autentica con HTTP Basic dove lo username è una stringa qualsiasi
+ * (`anystring`) e la password è l'access token. Non è Bearer, quindi qui non si
+ * usa integrationAuth.
+ */
+function mailchimpAuth(token: ResolvedToken): string {
+  const user = typeof token.metadata.basic_username === "string"
+    ? token.metadata.basic_username
+    : "anystring";
+  return `Basic ${Buffer.from(`${user}:${token.accessToken}`, "utf8").toString("base64")}`;
+}
+
+function formatMailchimpStats(s: Record<string, unknown> | undefined): string {
+  if (!s) return "";
+  const num = (v: unknown, digits = 2) =>
+    typeof v === "number" ? v.toFixed(digits) : "n/d";
+  return [
+    `  iscritti: ${s.member_count ?? "n/d"}`,
+    `  iscritti attivi: ${s.open_rate !== undefined ? s.open_rate : "n/d"}`,
+    typeof s.open_rate === "number" ? `  open rate: ${num((s.open_rate as number) * 100, 1)}%` : "",
+    typeof s.click_rate === "number" ? `  click rate: ${num((s.click_rate as number) * 100, 1)}%` : "",
+    `  nuovi iscritti questo mese: ${s.unsubscribe_count !== undefined ? `unsubscribe ${s.unsubscribe_count}` : "n/d"}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export async function mailchimpApiProxy(
+  action: MailchimpAction,
+  params: MailchimpParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "mailchimp");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+
+  const base = mailchimpBase(token);
+  if (!base) {
+    return {
+      ok: false,
+      error: "Mailchimp: data center sconosciuto. Ask the user to reconnect Mailchimp from the dashboard (Integrations), then retry.",
+    };
+  }
+
+  const headers = { Authorization: mailchimpAuth(token), Accept: "application/json" };
+  const limit = clampLimit(params.limit);
+
+  if (action === "listAudiences") {
+    const res = await providerRequest(`${base}/lists?count=${limit}&fields=lists.id,lists.name,lists.stats`, {
+      headers,
+      providerLabel: "Mailchimp",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+    const lists =
+      (res.json as { lists?: Array<{ id?: string; name?: string; stats?: Record<string, unknown> }> } | undefined)?.lists ?? [];
+    if (lists.length === 0) return { ok: true, data: "No Mailchimp audiences found." };
+    return {
+      ok: true,
+      data: lists
+        .map((l) => `- ${l.name ?? "?"} | id: ${l.id ?? "?"}\n${formatMailchimpStats(l.stats)}`)
+        .join("\n"),
+    };
+  }
+
+  const listId = (params.listId ?? "").trim();
+  if (!listId) return { ok: false, error: "Mailchimp tool requires listId." };
+
+  if (action === "getAudienceStats") {
+    const res = await providerRequest(`${base}/lists/${encodeURIComponent(listId)}`, {
+      headers,
+      providerLabel: "Mailchimp",
+    });
+    if (!res.ok) return { ok: false, error: res.error! };
+    const l = res.json as { id?: string; name?: string; stats?: Record<string, unknown> } | undefined;
+    if (!l) return { ok: true, data: `No Mailchimp audience matched "${listId}".` };
+    return {
+      ok: true,
+      data: `${l.name ?? "?"} (id: ${l.id ?? listId})\n${formatMailchimpStats(l.stats)}`,
+    };
+  }
+
+  // listCampaigns
+  const res = await providerRequest(
+    `${base}/campaigns?count=${limit}&sort_field=send_time&sort_dir=DESC&fields=campaigns.id,campaigns.settings.title,campaigns.status,campaigns.send_time,campaigns.emails_sent,campaigns.open_rate,campaigns.click_rate`,
+    { headers, providerLabel: "Mailchimp" },
+  );
+  if (!res.ok) return { ok: false, error: res.error! };
+  const campaigns =
+    (res.json as {
+      campaigns?: Array<{
+        id?: string;
+        status?: string;
+        send_time?: string;
+        emails_sent?: number;
+        open_rate?: number;
+        click_rate?: number;
+        settings?: { title?: string };
+      }>;
+    } | undefined)?.campaigns ?? [];
+  if (campaigns.length === 0) return { ok: true, data: "No Mailchimp campaigns found." };
+  return {
+    ok: true,
+    data: campaigns
+      .map((c) => {
+        const bits = [`- ${c.settings?.title ?? "(senza titolo)"} | ${c.status ?? "?"}`];
+        if (c.send_time) bits.push(`| inviata: ${c.send_time}`);
+        if (typeof c.emails_sent === "number") bits.push(`| inviati: ${c.emails_sent}`);
+        if (typeof c.open_rate === "number") bits.push(`| open: ${(c.open_rate * 100).toFixed(1)}%`);
+        if (typeof c.click_rate === "number") bits.push(`| click: ${(c.click_rate * 100).toFixed(1)}%`);
+        if (c.id) bits.push(`| id: ${c.id}`);
+        return bits.join(" ");
+      })
+      .join("\n"),
+  };
 }

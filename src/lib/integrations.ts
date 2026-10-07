@@ -17,12 +17,15 @@ export type Integration = {
 };
 
 export const INTEGRATIONS: Integration[] = [
+  // Shopify è temporaneamente in "Prossimamente": l'integrazione non è
+  // collegabile per il momento. `available: false` è l'unico interruttore:
+  // pagina pubblica, dashboard, card agente e bottone Connetti derivano da qui.
   {
     name: "Shopify",
     brand: "shopify",
     category: "E-commerce",
     agentSlug: "shopify-agent",
-    available: true,
+    available: false,
     description: "Sincronizza prodotti, ordini e carrello",
   },
   {
@@ -85,8 +88,8 @@ export const INTEGRATIONS: Integration[] = [
     name: "WooCommerce",
     brand: "woocommerce",
     category: "E-commerce",
-    available: false,
-    description: "Store WooCommerce",
+    available: true,
+    description: "Prodotti, ordini e clienti",
   },
   {
     name: "PayPal",
@@ -140,9 +143,9 @@ export const INTEGRATIONS: Integration[] = [
   {
     name: "Mailchimp",
     brand: "mailchimp",
-    category: "Email Marketing",
-    available: false,
-    description: "Newsletter",
+    category: "Marketing",
+    available: true,
+    description: "Audience, statistiche e campagne",
   },
   {
     name: "Calendly",
@@ -162,9 +165,9 @@ export const INTEGRATIONS: Integration[] = [
   {
     name: "Trello",
     brand: "trello",
-    category: "Productivity",
-    available: false,
-    description: "Board Kanban e task",
+    category: "Project Management",
+    available: true,
+    description: "Board, liste e card",
   },
   {
     name: "Asana",
@@ -176,9 +179,9 @@ export const INTEGRATIONS: Integration[] = [
   {
     name: "Airtable",
     brand: "airtable",
-    category: "Productivity",
-    available: false,
-    description: "Database e workflow",
+    category: "Database",
+    available: true,
+    description: "Basi, tabelle e record",
   },
   {
     name: "ClickUp",
@@ -212,8 +215,8 @@ export const INTEGRATIONS: Integration[] = [
     name: "Google Drive",
     brand: "googledrive",
     category: "Storage",
-    available: false,
-    description: "File e drive condivisi",
+    available: true,
+    description: "Cerca e leggi i tuoi file",
   },
   {
     name: "Dropbox",
@@ -272,7 +275,8 @@ export const INTEGRATIONS: Integration[] = [
     available: false,
     description: "Infrastruttura e API",
   },
-  // Microsoft suite — tutte come Prossimamente
+  // Microsoft suite — le restanti app restano come Prossimamente (Teams,
+  // Outlook, OneDrive, SharePoint: quest'ultimo è l'opt-in Sites.ReadWrite.All).
   {
     name: "Microsoft Teams",
     brand: "microsoftteams",
@@ -301,14 +305,67 @@ export const INTEGRATIONS: Integration[] = [
     available: false,
     description: "Intranet e documenti",
   },
+  // Microsoft 365 — una sola connessione (provider `microsoft`) abilita Word,
+  // Excel, PowerPoint e OneNote: le quattro card condividono lo stesso stato di
+  // connessione. La connettività Microsoft è quindi provider-based, non
+  // brand-based (vedi BRAND_TO_PROVIDER).
+  {
+    name: "Microsoft Word",
+    brand: "microsoftword",
+    category: "Productivity",
+    available: true,
+    description: "Documenti Word: crea, leggi, modifica",
+  },
   {
     name: "Microsoft Excel",
     brand: "microsoftexcel",
     category: "Productivity",
-    available: false,
-    description: "Fogli Excel online",
+    available: true,
+    description: "Fogli di calcolo e range",
+  },
+  {
+    name: "Microsoft PowerPoint",
+    brand: "microsoftpowerpoint",
+    category: "Productivity",
+    available: true,
+    description: "Presentazioni con slide e note",
+  },
+  {
+    name: "Microsoft OneNote",
+    brand: "microsoftonenote",
+    category: "Productivity",
+    available: true,
+    description: "Note e pagine OneNote",
   },
 ];
+
+/**
+ * Brand della UI → id del provider OAuth. È la mappa che unisce il catalogo
+ * statico delle app (brand) alle righe `tenant_integrations` (provider).
+ *
+ * Perché è esportata e non locale al componente: le quattro app Microsoft
+ * condividono UNA sola connessione (`microsoft`), quindi sia la griglia sia il
+ * conteggio di avanzamento devono risolvere brand→provider allo stesso modo,
+ * altrimenti la barra conta 1 connessione mentre quattro card risultano attive.
+ */
+export const BRAND_TO_PROVIDER: Record<string, string> = {
+  notion: "notion",
+  slack: "slack",
+  hubspot: "hubspot",
+  googlesheets: "google_sheets",
+  github: "github",
+  clickup: "clickup",
+  asana: "asana",
+  googledrive: "google_drive",
+  airtable: "airtable",
+  trello: "trello",
+  woocommerce: "woocommerce",
+  mailchimp: "mailchimp",
+  microsoftword: "microsoft",
+  microsoftexcel: "microsoft",
+  microsoftpowerpoint: "microsoft",
+  microsoftonenote: "microsoft",
+};
 
 /**
  * True se l'app citata nelle integrazioni di un agente (es. "Salesforce",
@@ -338,6 +395,11 @@ const CONNECTABLE_PROVIDERS: { id: string; names: string[] }[] = [
   { id: "gmail", names: ["gmail", "google mail"] },
   { id: "calendar", names: ["google calendar", "calendario", "calendar"] },
   { id: "sheets", names: ["google sheets", "spreadsheet", "fogli", "sheets"] },
+  { id: "drive", names: ["google drive", "drive"] },
+  { id: "airtable", names: ["airtable"] },
+  { id: "trello", names: ["trello", "kanban"] },
+  { id: "woocommerce", names: ["woocommerce", "woo", "store wordpress"] },
+  { id: "mailchimp", names: ["mailchimp", "newsletter", "email marketing"] },
   { id: "slack", names: ["slack"] },
   { id: "notion", names: ["notion"] },
   { id: "hubspot", names: ["hubspot"] },

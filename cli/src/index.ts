@@ -105,21 +105,104 @@ agents.command("list").description("Elenca gli agenti posseduti").action(async (
 });
 
 agents.command("catalog").description("Mostra il catalogo e i prezzi; il checkout avviene sul web").action(() => {
-  printTable([["NOME", "CATEGORIA", "PREZZO", "MARKETPLACE"], ...CATALOG.map((agent) => [agent.name, agent.category, agent.price, `${SITE}/agents/${agent.slug}`])]);
+  printTable([
+    ["NOME", "CATEGORIA", "PREZZO", "STATO", "MARKETPLACE"],
+    ...CATALOG.map((agent) => [
+      agent.name,
+      agent.category,
+      agent.price,
+      agent.comingSoon ? "Prossimamente" : "Disponibile",
+      `${SITE}/agents/${agent.slug}`,
+    ]),
+  ]);
 });
 
-async function runOnce(agent: string, prompt: string) {
-  let answer = "";
-  await streamAgent(agent, [{ role: "user", content: prompt }], (event) => {
-    if (event.type === "text" && typeof event.content === "string") { process.stdout.write(event.content); answer += event.content; }
-    if (event.type === "tool_start") process.stderr.write(`\n[tool: ${String(event.toolName)}] `);
-    if (event.type === "error") throw new Error(String(event.message || "Errore agente"));
-  });
-  if (!answer) console.log("Nessuna risposta ricevuta."); else console.log("\n");
+/**
+ * Stato catturato dallo stream per il flusso di conferma umana. Il server mette
+ * in pausa la run quando un tool modifica contenuto esistente (es. append su un
+ * documento Microsoft) e manda `tool_confirm` con un token firmato. La CLI può
+ * solo approvare o annullare: non può cambiare tool né argomenti.
+ */
+type StreamState = {
+  answer: string;
+  pending: { token: string; toolName: string } | null;
+};
+
+/** Gestore eventi SSE condiviso da `run` e `chat`. */
+function handleEvent(event: Record<string, unknown>, state: StreamState): void {
+  if (event.type === "text" && typeof event.content === "string") {
+    process.stdout.write(event.content);
+    state.answer += event.content;
+  } else if (event.type === "tool_start") {
+    process.stderr.write(`\n[tool: ${String(event.toolName)}] `);
+  } else if (event.type === "tool_done") {
+    process.stderr.write(`[done: ${String(event.toolName)}] `);
+  } else if (event.type === "file" && typeof event.filename === "string") {
+    process.stderr.write(`[file: ${String(event.filename)}] `);
+  } else if (event.type === "connection" && typeof event.provider === "string") {
+    // La connessione OAuth si completa sul sito: qui solo l'avviso operativo.
+    process.stderr.write(`\n[connessione richiesta: ${event.provider} → ${SITE}/dashboard/integrations] `);
+  } else if (event.type === "tool_confirm") {
+    state.pending = {
+      token: typeof event.token === "string" ? event.token : "",
+      toolName: String(event.toolName || "tool"),
+    };
+  } else if (event.type === "error") {
+    throw new Error(String(event.message || "Errore agente"));
+  }
 }
 
-program.command("run").description("Esegui un prompt con un agente posseduto").argument("<agent-slug>").argument("<messaggio>").action(async (agent: string, message: string) => {
-  try { await runOnce(agent, message); } catch (error) { printError(error); }
+/** Chiede conferma all'utente per un tool che modifica contenuto esistente. */
+async function confirmTool(toolName: string): Promise<boolean> {
+  const rl = readline.createInterface({ input, output });
+  const answer = await rl.question(`\nConfermi l'esecuzione di "${toolName}"? [y/N] `);
+  rl.close();
+  return answer.trim().toLowerCase() === "y";
+}
+
+/**
+ * Esegue una run gestendo l'eventuale pausa di conferma. `autoApprove` serve
+ * alle pipeline non interattive (`run --yes`); senza TTY e senza `--yes` la
+ * conferma viene negata con un avviso per non bloccare gli script.
+ */
+async function runWithApproval(
+  agent: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  options: { autoApprove?: boolean } = {},
+): Promise<string> {
+  const state: StreamState = { answer: "", pending: null };
+  let token: string | undefined;
+  // Limite di sicurezza: una run non deve poter chiedere conferme all'infinito.
+  for (let round = 0; round < 5; round++) {
+    state.pending = null;
+    await streamAgent(agent, messages, (event) => handleEvent(event, state), token ? { approvalToken: token } : {});
+    // `handleEvent` popola `state.pending` dentro la callback: TS non vede la
+    // mutazione e stringerebbe il tipo a `null`, quindi forziamo il tipo.
+    const pending = state.pending as { token: string; toolName: string } | null;
+    if (!pending) return state.answer;
+
+    let approved: boolean;
+    if (options.autoApprove) approved = true;
+    else if (input.isTTY) approved = await confirmTool(pending.toolName);
+    else {
+      console.error(`\nConferma richiesta per "${pending.toolName}": nessun terminale interattivo. Usa --yes per autorizzare.`);
+      approved = false;
+    }
+    if (!approved) {
+      console.error("Operazione annullata.");
+      return state.answer;
+    }
+    token = pending.token;
+  }
+  console.error("Troppe conferme richieste: interrompo la run.");
+  return state.answer;
+}
+
+program.command("run").description("Esegui un prompt con un agente posseduto").argument("<agent-slug>").argument("<messaggio>").option("--yes", "Approva automaticamente le azioni che richiedono conferma").action(async (agent: string, message: string, options: { yes?: boolean }) => {
+  try {
+    const answer = await runWithApproval(agent, [{ role: "user", content: message }], { autoApprove: Boolean(options.yes) });
+    if (!answer) console.log("Nessuna risposta ricevuta."); else console.log("\n");
+  } catch (error) { printError(error); }
 });
 
 program.command("chat").description("Avvia una chat interattiva con un agente posseduto").argument("<agent-slug>").action(async (agent: string) => {
@@ -131,10 +214,7 @@ program.command("chat").description("Avvia una chat interattiva con un agente po
       const message = (await rl.question("> ")).trim();
       if (!message || message.toLowerCase() === "exit") break;
       history.push({ role: "user", content: message });
-      let answer = "";
-      await streamAgent(agent, history, (event) => {
-        if (event.type === "text" && typeof event.content === "string") { process.stdout.write(event.content); answer += event.content; }
-      });
+      const answer = await runWithApproval(agent, history);
       console.log("\n");
       if (answer) history.push({ role: "assistant", content: answer });
     }

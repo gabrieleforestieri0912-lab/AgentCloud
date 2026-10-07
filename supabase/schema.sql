@@ -274,9 +274,16 @@ create table if not exists public.agent_runs (
   status text default 'running',
   input_tokens integer,
   output_tokens integer,
+  -- Chiamate ai tool contate per run: il consumo ha due facce (token e azioni).
+  -- Il contenuto dei documenti NON è mai salvato qui.
+  tool_calls integer default 0,
   started_at timestamptz default now(),
   finished_at timestamptz
 );
+
+-- Migrazione idempotente per database creati prima di `tool_calls`.
+alter table if exists public.agent_runs
+  add column if not exists tool_calls integer default 0;
 
 create index if not exists idx_agent_runs_user
   on public.agent_runs(user_id);

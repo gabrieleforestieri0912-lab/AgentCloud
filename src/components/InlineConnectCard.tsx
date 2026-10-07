@@ -21,6 +21,11 @@ const PROVIDER_META: Record<string, { name: string; brand: string; desc: string 
   github: { name: "GitHub", brand: "github", desc: "Connetti GitHub per repo, PR e issue" },
   clickup: { name: "ClickUp", brand: "clickup", desc: "Connetti ClickUp per task e progetti" },
   asana: { name: "Asana", brand: "asana", desc: "Connetti Asana per task e progetti" },
+  googledrive: { name: "Google Drive", brand: "googledrive", desc: "Connetti Google Drive per cercare e leggere i tuoi file" },
+  airtable: { name: "Airtable", brand: "airtable", desc: "Connetti Airtable per leggere basi, tabelle e record" },
+  trello: { name: "Trello", brand: "trello", desc: "Connetti Trello per leggere board, liste e card" },
+  woocommerce: { name: "WooCommerce", brand: "woocommerce", desc: "Connetti WooCommerce per leggere prodotti, ordini e clienti" },
+  mailchimp: { name: "Mailchimp", brand: "mailchimp", desc: "Connetti Mailchimp per leggere audience, statistiche e campagne" },
   whatsapp: { name: "WhatsApp", brand: "whatsapp", desc: "Connetti WhatsApp per messaggistica" },
 };
 
@@ -30,6 +35,13 @@ function getMeta(provider: Provider) {
   if (key.includes("gmail") || key === "email") return PROVIDER_META.gmail;
   if (key.includes("calendar")) return PROVIDER_META.google_calendar;
   if (key.includes("sheets") || key.includes("googlesheets")) return PROVIDER_META.google_sheets;
+  // "google_drive" e "googledrive" si normalizzano entrambi a "googledrive",
+  // quindi qui basta il prefisso per coprire i due alias emessi dal modello.
+  if (key.includes("drive")) return PROVIDER_META.googledrive;
+  if (key.includes("airtable")) return PROVIDER_META.airtable;
+  if (key.includes("trello")) return PROVIDER_META.trello;
+  if (key.includes("woocommerce")) return PROVIDER_META.woocommerce;
+  if (key.includes("mailchimp")) return PROVIDER_META.mailchimp;
   if (key.includes("shopify")) return PROVIDER_META.shopify;
   return PROVIDER_META[key] || { name: provider.charAt(0).toUpperCase() + provider.slice(1), brand: key, desc: `Connetti ${provider} per sbloccare le automazioni` };
 }
@@ -79,6 +91,9 @@ export default function InlineConnectCard({ provider }: { provider: string }) {
         googlesheets: "google_sheets",
         google_sheets: "google_sheets",
         sheets: "google_sheets",
+        drive: "google_drive",
+        googledrive: "google_drive",
+        google_drive: "google_drive",
       };
       const gKey = p.replace(/[^a-z0-9_]/g, "");
       const mapped = genericMap[gKey] || gKey;

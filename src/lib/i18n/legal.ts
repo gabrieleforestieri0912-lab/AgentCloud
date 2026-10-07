@@ -208,6 +208,7 @@ const IT: Record<LegalDocumentKey, LegalTranslation> = {
         paragraphs: [
           "Per usare un agente può essere necessario collegare servizi di terze parti. Collegando un'integrazione ci autorizzi ad agire su quell'account nei limiti dei permessi che approvi: i token OAuth sono cifrati a riposo e usati solo per eseguire le azioni che avvii.",
           "Dichiari di avere il diritto di collegare quegli account e accetti i termini del fornitore interessato (per esempio Shopify, Google, Slack, Notion, HubSpot, Meta/WhatsApp). I servizi di terze parti non dipendono da noi: disponibilità, prezzi e condizioni possono cambiare e la loro dismissione può limitare il Servizio.",
+          "Per Microsoft 365 (Word, Excel, PowerPoint, OneNote) accediamo ai file su cui scegli di lavorare e alle tue pagine OneNote tramite i permessi delegati che approvi (Files.ReadWrite, Notes.ReadWrite); i documenti sono trattati solo per eseguire le azioni che richiedi e non sono inviati a terzi oltre al fornitore del modello LLM già in uso. I token OAuth sono cifrati a riposo, conservati fino alla disconnessione, e cancellarli revoca il nostro accesso in qualsiasi momento.",
           "Puoi disconnettere un'integrazione in qualsiasi momento dalla dashboard, interrompendo l'accesso dell'agente.",
         ],
       },
@@ -539,6 +540,7 @@ const EN: Record<LegalDocumentKey, LegalTranslation> = {
         paragraphs: [
           "Using an agent may require connecting third-party services. When you connect an integration you authorise us to act on that account within the permissions you approve: OAuth tokens are encrypted at rest and used only to run the actions you trigger.",
           "You confirm you are entitled to connect those accounts and you accept the terms of the relevant provider (for example Shopify, Google, Slack, Notion, HubSpot, Meta/WhatsApp). Third-party services are not controlled by us: their availability, prices and terms can change, and discontinuing an integration on their side may limit the Service.",
+          "For Microsoft 365 (Word, Excel, PowerPoint, OneNote) we access the files you choose to work on and your OneNote pages through the delegated permissions you approve (Files.ReadWrite, Notes.ReadWrite); documents are processed only to perform the actions you request and are never sent to third parties beyond the LLM provider already in use. OAuth tokens are encrypted at rest, kept until you disconnect, and deleting them revokes our access at any time.",
           "You can disconnect an integration at any time from the dashboard, which stops the agent from accessing it.",
         ],
       },
@@ -870,6 +872,7 @@ const ES: Record<LegalDocumentKey, LegalTranslation> = {
         paragraphs: [
           "Usar un agente puede requerir conectar servicios de terceros. Al conectar una integración nos autorizas a actuar sobre esa cuenta dentro de los permisos que apruebes: los tokens OAuth se cifran en reposo y se usan solo para ejecutar las acciones que inicias.",
           "Confirmas que tienes derecho a conectar esas cuentas y aceptas las condiciones del proveedor correspondiente (por ejemplo Shopify, Google, Slack, Notion, HubSpot, Meta/WhatsApp). Los servicios de terceros no dependen de nosotros: su disponibilidad, precios y condiciones pueden cambiar, y su descontinuación puede limitar el Servicio.",
+          "Para Microsoft 365 (Word, Excel, PowerPoint, OneNote) accedemos a los archivos en los que eliges trabajar y a tus páginas de OneNote mediante los permisos delegados que apruebas (Files.ReadWrite, Notes.ReadWrite); los documentos se tratan solo para ejecutar las acciones que solicitas y no se envían a terceros más allá del proveedor del modelo LLM ya en uso. Los tokens OAuth están cifrados en reposo, se conservan hasta que te desconectas, y borrarlos revoca nuestro acceso en cualquier momento.",
           "Puedes desconectar una integración en cualquier momento desde el panel, lo que impide que el agente acceda a ella.",
         ],
       },
@@ -1201,6 +1204,7 @@ const DE: Record<LegalDocumentKey, LegalTranslation> = {
         paragraphs: [
           "Die Nutzung eines Agenten kann das Verbinden von Diensten Dritter erfordern. Mit dem Verbinden einer Integration ermächtigst du uns, im Rahmen der von dir freigegebenen Berechtigungen auf diesem Konto zu handeln: OAuth-Tokens sind im Ruhezustand verschlüsselt und werden nur verwendet, um die von dir ausgelösten Aktionen auszuführen.",
           "Du bestätigst, dass du berechtigt bist, diese Konten zu verbinden, und akzeptierst die Bedingungen des jeweiligen Anbieters (zum Beispiel Shopify, Google, Slack, Notion, HubSpot, Meta/WhatsApp). Dienste Dritter stehen nicht unter unserer Kontrolle: Verfügbarkeit, Preise und Bedingungen können sich ändern, und deren Einstellung kann den Dienst einschränken.",
+          "Für Microsoft 365 (Word, Excel, PowerPoint, OneNote) greifen wir über die von dir genehmigten delegierten Berechtigungen (Files.ReadWrite, Notes.ReadWrite) auf die Dateien zu, an denen du arbeiten möchtest, und auf deine OneNote-Seiten; die Dokumente werden nur verarbeitet, um die von dir angeforderten Aktionen auszuführen, und nicht an Dritte außer den bereits genutzten LLM-Anbieter gesendet. OAuth-Token werden at rest verschlüsselt, bis zur Trennung aufbewahrt, und ihr Löschen widerruft unseren Zugriff jederzeit.",
           "Du kannst eine Integration jederzeit im Dashboard trennen; damit endet der Zugriff des Agenten.",
         ],
       },
@@ -1532,6 +1536,7 @@ const FR: Record<LegalDocumentKey, LegalTranslation> = {
         paragraphs: [
           "L'utilisation d'un agent peut nécessiter la connexion de services tiers. En connectant une intégration, vous nous autorisez à agir sur ce compte dans les limites des permissions que vous approuvez : les jetons OAuth sont chiffrés au repos et utilisés uniquement pour exécuter les actions que vous déclenchez.",
           "Vous confirmez être en droit de connecter ces comptes et acceptez les conditions du fournisseur concerné (par exemple Shopify, Google, Slack, Notion, HubSpot, Meta/WhatsApp). Les services tiers ne dépendent pas de nous : leur disponibilité, leurs prix et leurs conditions peuvent changer, et leur arrêt peut limiter le Service.",
+          "Pour Microsoft 365 (Word, Excel, PowerPoint, OneNote), nous accédons aux fichiers sur lesquels tu choisis de travailler et à tes pages OneNote via les permissions déléguées que tu approuves (Files.ReadWrite, Notes.ReadWrite) ; les documents ne sont traités que pour exécuter les actions que tu demandes et ne sont jamais envoyés à des tiers au-delà du fournisseur de LLM déjà utilisé. Les jetons OAuth sont chiffrés au repos, conservés jusqu’à la déconnexion, et leur suppression révoque notre accès à tout moment.",
           "Vous pouvez déconnecter une intégration à tout moment depuis le tableau de bord, ce qui met fin à l'accès de l'agent.",
         ],
       },

@@ -43,13 +43,37 @@ Content-Type: application/json
 {"agentId":"support-agent","messages":[{"role":"user","content":"..."}]}
 ```
 
+Per riprendere una run in pausa (conferma umana, vedi sotto) si rimanda lo
+stesso body con in più il token firmato dal server:
+
+```json
+{"agentId":"support-agent","messages":[{"...":"..."}],"approval":{"token":"<token firmato HMAC>"}}
+```
+
 Risposta `text/event-stream`, con righe SSE JSON:
 
 - `type: "text", content: string`
-- `type: "tool_start", toolName: string`
+- `type: "tool_start", toolName: string, toolInput: object`
 - `type: "tool_done", toolName: string`
+- `type: "file", filename: string, content: string`
+- `type: "connection", provider: string` — card "Connetti <provider>" (OAuth dal sito)
+- `type: "tool_confirm", toolName: string, toolInput: object, toolUseId: string, token: string` — il server mette in pausa la run: un tool modifica contenuto esistente
+- `type: "awaiting_confirmation"` — fine dello stream in attesa della conferma
 - `type: "done"`
 - `type: "error", message: string`
+
+### Conferma umana dei tool che modificano documenti esistenti
+
+Quando il batch di tool include un'azione distruttiva (es. `word_append`),
+`/api/agent/run` **non esegue nulla**: manda `tool_confirm` con un `token`
+firmato lato server e chiude lo stream con `awaiting_confirmation`. La CLI
+chiede conferma all'utente e, se approva, ripete la chiamata con
+`approval: { token }`. Il token è firmato: la CLI non può cambiare né tool né
+argomenti, può solo approvare o annullare.
+
+- In terminale interattivo la CLI chiede `Confermi l'esecuzione di "<tool>"? [y/N]`.
+- In pipeline non interattive la conferma è negata (a meno di `--yes`), per non
+  bloccare gli script in attesa di input.
 
 ## Uso
 

@@ -122,6 +122,70 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
       { title: "Prova", desc: "Connesso. Chiedi: avvisa il team su Slack del nuovo lead." },
     ],
   },
+  googledrive: {
+    provider: "googledrive",
+    whatItDoes: "Collega Google Drive: l'agente cerca i tuoi file e ne legge il contenuto.",
+    time: "1 min",
+    steps: [
+      { title: "Prepara", desc: "Account Google. Nessun file da caricare." },
+      { title: "Collega", desc: "Clicca Connetti → autorizza Google Drive. Vedrai due voci: lettura dei file e creazione di file." },
+      { title: "Prova", desc: "Connesso. Chiedi: trova il mio documento budget e riassumilo." },
+    ],
+    needHelp: "Se un file non compare, controlla che non sia nel cestino e che l'agente abbia il permesso di lettura.",
+  },
+  airtable: {
+    provider: "airtable",
+    whatItDoes: "Collega Airtable: l'agente legge le tue basi, le tabelle e i record.",
+    time: "2 min",
+    steps: [
+      { title: "Prepara", desc: "Account Airtable. Almeno una base deve essere condivisa con l'integrazione." },
+      { title: "Collega", desc: "Clicca Connetti → autorizza su Airtable → scegli le basi da condividere." },
+      { title: "Prova", desc: "Connesso. Chiedi: quante tabelle ha la mia base CRM? Poi: elenca i record con Status: Open." },
+    ],
+    needHelp: "Se una base non appare, ricorda che va condivisa con l'integrazione: apri la base → Share → aggiungi l'integrazione.",
+  },
+  trello: {
+    provider: "trello",
+    whatItDoes: "Collega Trello: l'agente legge le tue board e le card, con scadenze.",
+    time: "1 min",
+    steps: [
+      { title: "Prepara", desc: "Account Trello. Nessuna preparazione: autorizzi e basta." },
+      { title: "Collega", desc: "Clicca Connetti → autorizza su Trello → Allow. Il collegamento dura 30 giorni." },
+      { title: "Prova", desc: "Connesso. Chiedi: quali board ho? Poi: elenca le card in scadenza questa settimana." },
+    ],
+    needHelp: "Il token Trello scade dopo 30 giorni e non si rinnova da solo: quando l'agente ti dice che la connessione è scaduta, clicca di nuovo Connetti.",
+  },
+  woocommerce: {
+    provider: "woocommerce",
+    whatItDoes: "Collega WooCommerce: l'agente legge prodotti, ordini e clienti del tuo store.",
+    time: "3 min",
+    steps: [
+      {
+        title: "Prepara",
+        desc: "Nel wp-admin apri WooCommerce → Impostazioni → Avanzate → REST API e annota il tuo User ID (lo trovi anche in Utenti → Modifica, nell'URL finisce con user_id=N).",
+      },
+      {
+        title: "Collega",
+        desc: "Compila qui sotto URL del tuo store e User ID. Verrai portato nel wp-admin del tuo store, dove trovi AgentCloud fra le app e clicchi Approva.",
+      },
+      { title: "Prova", desc: "Connesso. Chiedi: quali sono gli ordini in lavorazione? Poi: elenca i prodotti esauriti." },
+    ],
+    needHelp: "Se l'approvazione non parte, controlla che l'URL sia il dominio del tuo shop (senza /wp-admin) e che REST API sia attivo in WooCommerce → Impostazioni → Avanzate.",
+  },
+  mailchimp: {
+    provider: "mailchimp",
+    whatItDoes: "Collega Mailchimp: l'agente legge le tue audience, le statistiche e le campagne.",
+    time: "2 min",
+    steps: [
+      {
+        title: "Prepara",
+        desc: "In Mailchimp apri Account → Extra → OAuth2 → registra un'integrazione. Copia API Key e Client Secret.",
+      },
+      { title: "Collega", desc: "Clicca Connetti → autorizza su Mailchimp. Nessun piano a pagamento serve." },
+      { title: "Prova", desc: "Connesso. Chiedi: quante persone ho nella mia audience? Poi: com'è andata l'ultima campagna?" },
+    ],
+    needHelp: "Se un audience non compare, l'integrazione OAuth2 deve avere permessi Read-Write. In questa versione l'agente legge solo: non invia campagne e non aggiunge iscritti.",
+  },
 };
 
 export function getGuideForBrand(brand: string): IntegrationGuide | null {

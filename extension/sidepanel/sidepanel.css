@@ -66,6 +66,12 @@ body { display:flex; flex-direction:column; margin:0; min-width:260px; height:10
 .message.tool { border:1px dashed #38506a; background:#142333; color:#8ccaff; font-size:11px; }
 .typing { padding:5px 2px 8px; color:#7dc5ff; font-size:11px; }
 .context-card { margin-bottom:9px; border:1px solid #31465d; border-radius:8px; padding:8px; background:#152536; color:#a9d7ff; font-size:11px; line-height:1.4; }
+.approval-card { margin-bottom:9px; border:1px solid #6b5520; border-radius:10px; padding:10px 11px; background:#2e2712; }
+.approval-text { margin:0 0 9px; color:#f2d98a; font-size:12px; line-height:1.45; }
+.approval-text strong { color:#ffe9a8; }
+.approval-actions { display:flex; align-items:center; gap:8px; }
+.approval-actions .btn-primary { width:auto; margin-top:0; padding:8px 14px; font-size:12px; }
+.approval-actions .btn-link { padding:8px 6px; color:#d8c07a; }
 .composer { border:1px solid #303847; border-radius:11px; padding:9px; background:#181d27; }
 textarea { width:100%; resize:none; border:0; outline:0; background:transparent; color:#f8fafc; font:inherit; font-size:13px; line-height:1.45; }
 textarea::placeholder { color:#738096; }

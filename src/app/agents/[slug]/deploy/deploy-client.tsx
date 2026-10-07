@@ -53,7 +53,7 @@ const NO_CONNECTIONS: DeployConnections = {
  *               dalla pagina /dashboard/integrations — single source of truth).
  *   null      → nessun connettore attivo
  */
-type ConnectorKind = "shopify" | "google" | "notion" | "slack" | "hubspot" | "google_sheets" | "github" | "clickup" | "asana" | null;
+type ConnectorKind = "shopify" | "google" | "notion" | "slack" | "hubspot" | "google_sheets" | "google_drive" | "github" | "clickup" | "asana" | "airtable" | "trello" | "woocommerce" | "mailchimp" | null;
 
 function genericProviderForIntegration(integration: string): Exclude<ConnectorKind, "shopify" | "google" | null> | null {
   const k = integration.toLowerCase();
@@ -61,6 +61,11 @@ function genericProviderForIntegration(integration: string): Exclude<ConnectorKi
   if (k === "slack" || k.includes("slack")) return "slack";
   if (k === "hubspot" || k.includes("hubspot")) return "hubspot";
   if (k === "google sheets" || k === "googlesheets" || k.includes("sheets")) return "google_sheets";
+  if (k.includes("drive")) return "google_drive";
+  if (k.includes("airtable")) return "airtable";
+  if (k.includes("trello")) return "trello";
+  if (k.includes("woocommerce")) return "woocommerce";
+  if (k.includes("mailchimp")) return "mailchimp";
   if (k === "github" || k.includes("github")) return "github";
   if (k === "clickup" || k.includes("clickup")) return "clickup";
   if (k === "asana" || k.includes("asana")) return "asana";

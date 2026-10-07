@@ -8,14 +8,11 @@ import {
   Smartphone,
   Copy,
   Check,
-  ExternalLink,
   ShieldCheck,
   Key,
-  Download,
   Sparkles,
   ArrowRight,
   Code,
-  Laptop,
   CheckCircle2,
   Layers,
   Zap,
@@ -242,7 +239,7 @@ export default function InstallClient() {
               {/* Login Snippet */}
               <div className="mt-5">
                 <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-                  2. Autenticazione con la tua API Key
+                  2. Accesso con la tua email
                 </div>
                 <div className="flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-4 font-mono text-sm text-neutral-200">
                   <div className="flex items-center gap-3 select-all">
@@ -271,14 +268,14 @@ export default function InstallClient() {
                     <div className="w-3 h-3 rounded-full bg-green-500/80" />
                     <span className="ml-2 font-mono text-neutral-300">bash — agentcloud run</span>
                   </div>
-                  <span className="font-mono text-neutral-500">v0.1.0</span>
+                  <span className="font-mono text-neutral-500">v0.2.0</span>
                 </div>
                 <div className="p-5 font-mono text-xs md:text-sm space-y-3 leading-relaxed text-neutral-300">
                   <div className="flex items-center gap-2 text-indigo-400">
-                    <span>$ agentcloud run email-assistant --prompt &quot;Invia riassunto lead settimanali&quot;</span>
+                    <span>$ agentcloud run email-manager &quot;Prepara il riassunto dei lead settimanali&quot;</span>
                   </div>
-                  <div className="text-neutral-500">Connessione stabilita con cloud.agentcloud.agency</div>
-                  <div className="text-neutral-500">Agente &apos;email-assistant&apos; caricato con successo</div>
+                  <div className="text-neutral-500">Connessione stabilita con www.agentcloud.agency</div>
+                  <div className="text-neutral-500">Agente &apos;email-manager&apos; caricato con successo</div>
                   <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-neutral-300">
                     <span className="text-emerald-400 font-semibold">[Output Agente]:</span> Trovati 14 lead qualificati negli ultimi 7 giorni. Report generato e inoltrato al canale configurato.
                   </div>
@@ -347,7 +344,7 @@ export default function InstallClient() {
                       Aggiungi al tuo browser Chromium
                     </h3>
                     <p className="text-xs text-neutral-300 mt-2 leading-relaxed">
-                      Compatibile con Google Chrome, Microsoft Edge, Brave, Arc e qualsiasi browser basato su Chromium.
+                      Compatibile con Google Chrome, Microsoft Edge, Brave e Opera, oltre a Mozilla Firefox. Il pannello si apre accanto alla pagina attiva.
                     </p>
                   </div>
                   <div className="mt-6 flex flex-col gap-2.5">
@@ -444,7 +441,7 @@ export default function InstallClient() {
                   </p>
                 </div>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/30">
-                  iOS & Android Ready
+                  Pre-ordine · in sviluppo
                 </span>
               </div>
 
@@ -488,7 +485,7 @@ export default function InstallClient() {
                         </>
                       )}
                     </button>
-                    <span className="text-xs text-neutral-400">Build compilata: <code className="text-purple-300 font-mono">mobile/lib/main.dart</code></span>
+                    <span className="text-xs text-neutral-400">                      Codice sorgente: <code className="text-purple-300 font-mono">mobile/</code></span>
                   </div>
                 </div>
 
@@ -516,13 +513,13 @@ export default function InstallClient() {
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold">
                   <Key className="w-3.5 h-3.5" />
-                  <span>Autenticazione Unificata</span>
+                  <span>Account unificato</span>
                 </div>
                 <h3 className="text-xl font-bold text-white">
-                  Collega i tuoi strumenti con la tua API Key
+                  Un unico account per tutti i client
                 </h3>
                 <p className="text-sm text-neutral-300 max-w-xl">
-                  Usa una singola chiave per autenticare sia la CLI che l&apos;estensione Chrome e l&apos;app mobile. Generala con un clic nelle tue impostazioni.
+                  Accedi con email/password o Google: la CLI e l&apos;app mobile usano la stessa sessione via token, l&apos;estensione condivide i cookie del sito. Nessuna chiave da copiare.
                 </p>
               </div>
 
@@ -530,7 +527,7 @@ export default function InstallClient() {
                 href="/settings"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-neutral-200 text-neutral-950 font-bold text-sm transition-all shrink-0 shadow-lg shadow-white/10"
               >
-                <span>Genera API Key</span>
+                <span>Vai alle impostazioni</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

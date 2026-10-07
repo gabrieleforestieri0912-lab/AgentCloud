@@ -56,6 +56,105 @@ const NOTION_SLACK_HUBSPOT_TOOLS = [
   "hubspot_list_companies",
 ];
 
+/**
+ * Tool Google Drive (batch 2), sola lettura.
+ *
+ * Stessa logica della lista sopra: senza tool il provider è collegabile ma gli
+ * agenti non possono farci nulla, e la card dice comunque "Connesso". I tool
+ * Drive servono a tutti gli agenti che ricevono le altre integrazioni.
+ *
+ * `drive_create_file` non è incluso: vedi Open Decision 14, non esiste ancora
+ * un meccanismo di conferma fra handler e UI.
+ */
+const GOOGLE_DRIVE_TOOLS = [
+  "drive_search_files",
+  "drive_read_file",
+  "drive_list_folder",
+];
+
+/**
+ * Tool Airtable (batch 2), sola lettura.
+ *
+ * Iniettati dove ha senso: gli agenti che lavorano su listoni e pipeline
+ * (CRM/lead/feedback). Diversamente da Drive, che serve a tutti, qui la
+ * utility è concentrata: il tool su una base non condivisa semplicemente non
+ * restituisce nulla e sposta solo peso nel contesto del modello.
+ */
+const AIRTABLE_TOOLS = [
+  "airtable_list_bases",
+  "airtable_list_tables",
+  "airtable_list_records",
+];
+
+/**
+ * Tool Trello (batch 2), sola lettura.
+ *
+ * Iniettati negli agenti che guardano task e flussi: inventory-logistics e
+ * business-manager. Trello è il provider meno "universale" del batch — un
+ * tenant senza board non ha nulla su cui lavorare — quindi non viene dato a
+ * tutti.
+ */
+const TRELLO_TOOLS = [
+  "trello_list_boards",
+  "trello_list_cards",
+];
+
+/**
+ * Tool WooCommerce (batch 2), sola lettura.
+ *
+ * Iniettati dove serve davvero: lo Shopify Commerce Agent (che gestisce
+ * e-commerce e ora può leggere anche un store WooCommerce, non solo Shopify) e
+ * inventory-logistics.
+ *
+ * La coppia di credenziali per store NON è una variabile d'ambiente: sono dati
+ * del tenant, cifrate in Supabase e mai lette dal client.
+ */
+const WOOCOMMERCE_TOOLS = [
+  "woo_list_products",
+  "woo_get_product",
+  "woo_list_orders",
+  "woo_get_order",
+  "woo_get_customer",
+];
+
+/**
+ * Tool Mailchimp (batch 2), sola lettura.
+ *
+ * Iniettati dove serve: social-media-agent (le campagne sono il suo oggetto) e
+ * business-manager (numeri di audience e performance). Nessun invio e nessuna
+ * scrittura su contatti: vedi Open Decision 14.
+ */
+const MAILCHIMP_TOOLS = [
+  "mailchimp_list_audiences",
+  "mailchimp_get_audience_stats",
+  "mailchimp_list_campaigns",
+];
+
+/**
+ * Tool Microsoft 365 (Word/Excel/PowerPoint/OneNote).
+ *
+ * Una sola connessione `microsoft` abilita i quattro documenti, quindi la lista
+ * è iniettata come le altre: ovunque gli agenti producono deliverable. Le
+ * scritture su file/pagine esistenti (`word_append`, `excel_write_range`,
+ * `onenote_append`) non partono senza conferma esplicita dell'utente — vedi
+ * `tool-confirmation.ts`. In più, la route dell'agente espone questi tool solo
+ * se la connessione Microsoft del tenant è attiva: un tool su un provider non
+ * collegato restituirebbe solo un errore e sposterebbe peso nel contesto.
+ */
+const MICROSOFT_TOOLS = [
+  "word_create",
+  "word_append",
+  "word_read",
+  "excel_create",
+  "excel_read_range",
+  "excel_write_range",
+  "powerpoint_create",
+  "onenote_list",
+  "onenote_create_page",
+  "onenote_append",
+  "onenote_read",
+];
+
 const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
@@ -70,6 +169,8 @@ const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -123,6 +224,11 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
+      ...AIRTABLE_TOOLS,
+      ...TRELLO_TOOLS,
+      ...MAILCHIMP_TOOLS,
       "web_search",
       "scrape_page",
       "run_python",
@@ -183,6 +289,8 @@ Guidelines:
     defaultTools: ["read_file", "write_file", "calendar_book_event"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
       "calendar_search_availability",
@@ -234,6 +342,8 @@ Guidelines:
     defaultTools: ["list_emails", "gmail_send", "gmail_trash", "read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
       "gmail_send",
@@ -283,6 +393,8 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -350,6 +462,9 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
+      ...WOOCOMMERCE_TOOLS,
       "shopify_setup_store",
       "shopify_create_store",
       "web_search",
@@ -472,6 +587,8 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "read_file",
       "write_file",
@@ -518,6 +635,9 @@ Guidelines:
     defaultTools: ["lead_capture_submit", "lead_capture_enrich", "lead_capture_notify_sales", "read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
+      ...AIRTABLE_TOOLS,
       "web_search",
       "scrape_page",
       "lead_capture_enrich",
@@ -555,6 +675,8 @@ Guidelines:
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
       "lead_capture_notify_sales",
@@ -606,6 +728,8 @@ Guidelines:
     defaultTools: ["read_file", "write_file"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -659,6 +783,8 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "lead_capture_submit",
     ],
     systemPrompt: `You are an expert sales quotation and proposal agent who closes deals: requirements in, formal quote out, sent to the customer — never a loose price in chat.
@@ -709,6 +835,9 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
+      ...AIRTABLE_TOOLS,
       "web_search",
     ],
     systemPrompt: `You are a reputation and customer feedback specialist for Google Business Profile who protects the brand publicly — every reply is written as if the next 100 customers will read it.
@@ -754,6 +883,8 @@ Guidelines:
     defaultTools: ["read_file", "write_file", "hr_parse_cv", "hr_score_candidate"],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "calendar_book_event",
     ],
@@ -806,6 +937,9 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
+      ...MAILCHIMP_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -858,6 +992,10 @@ Guidelines:
     ],
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
+      ...MICROSOFT_TOOLS,
+      ...GOOGLE_DRIVE_TOOLS,
+      ...TRELLO_TOOLS,
+      ...WOOCOMMERCE_TOOLS,
       "shopify_update_inventory",
     ],
     systemPrompt: `You are a logistics and inventory management specialist who prevents stockouts and dead stock — with numbers, thresholds and purchase orders, not generic monitoring talk.

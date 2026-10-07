@@ -168,7 +168,19 @@ export default async function IntegrationsPage() {
                     <BrandLogo slug={app.brand} size={22} />
                   </div>
                   <h3 className="mt-3 font-bold text-white">{app.name}</h3>
-                  <p className="text-xs font-semibold text-neutral-500">{app.category}</p>
+                  <p className="flex flex-wrap items-center gap-x-1.5 text-xs font-semibold text-neutral-500">
+                    <span>{app.category}</span>
+                    {/* Requisito di Fase 4: rendere visibile che il collegamento
+                        è gratuito. Solo se non è già collegato. */}
+                    {!isConnected && (
+                      <span
+                        title={dict.integrationsGrid.freeBadgeTitle}
+                        className="inline-flex items-center rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300"
+                      >
+                        {dict.integrationsGrid.freeBadge}
+                      </span>
+                    )}
+                  </p>
                   <p className="mt-2 text-sm leading-6 text-neutral-400">{app.description}</p>
                   {/* Guida integrata nel flusso — 3 passi sempre visibili, non un bottone a parte */}
                   <ol className="mt-3 space-y-1.5 rounded-xl border border-white/5 bg-white/[0.02] p-3">

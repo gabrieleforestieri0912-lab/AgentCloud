@@ -194,4 +194,11 @@ export const BRANDS: Record<string, Brand> = {
   microsoftonedrive: { title: "Microsoft OneDrive", path: MICROSOFT_PATH, hex: "#0078D4" },
   microsoftsharepoint: { title: "Microsoft SharePoint", path: MICROSOFT_PATH, hex: "#0078D4" },
   microsoftexcel: { title: "Microsoft Excel", path: MICROSOFT_PATH, hex: "#217346" },
+  microsoftword: { title: "Microsoft Word", path: MICROSOFT_PATH, hex: "#2B579A" },
+  microsoftpowerpoint: { title: "Microsoft PowerPoint", path: MICROSOFT_PATH, hex: "#B7472A" },
+  microsoftonenote: { title: "Microsoft OneNote", path: MICROSOFT_PATH, hex: "#7719AA" },
+  // Provider generico Microsoft 365: una sola connessione abilita Word/Excel/
+  // PowerPoint/OneNote. Brand dedicato perché il catalogo provider usa `brand`
+  // come chiave di rendering del logo.
+  microsoft: { title: "Microsoft 365", path: MICROSOFT_PATH, hex: "#0078D4" },
 };

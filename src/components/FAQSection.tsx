@@ -18,8 +18,8 @@ export default function FAQSection() {
   // FAQ aggiuntive: collegamenti, prova gratuita, dati e integrazioni.
   const extraFaqs = [
     {
-      q: "Come collego il mio negozio Shopify?",
-      a: "Apri l’agente Shopify, clicca “Collega Shopify” e autorizza l’accesso in modo sicuro: non devi copiare nessuna chiave. Se non hai uno store, l’agente ti guida a crearne uno.",
+      q: "Posso collegare il mio negozio Shopify?",
+      a: "L’integrazione Shopify è temporaneamente in “Prossimamente”: non è ancora collegabile. Stiamo completando il connettore — nel frattempo puoi usare tutte le altre integrazioni già disponibili.",
     },
     {
       q: "Cosa significa “4 messaggi gratis per agente”?",
@@ -27,11 +27,11 @@ export default function FAQSection() {
     },
     {
       q: "I miei dati sono al sicuro?",
-      a: "Sì: ogni account vede solo i propri dati, le connessioni a Shopify e Google sono cifrate e revocabili in un click, e puoi esportare o cancellare tutto dalle impostazioni quando vuoi. Dettagli in /privacy e /terms.",
+      a: "Sì: ogni account vede solo i propri dati, le connessioni ai tuoi servizi (Google, Microsoft 365 e gli altri) sono cifrate e revocabili in un click, e puoi esportare o cancellare tutto dalle impostazioni quando vuoi. Dettagli in /privacy e /terms.",
     },
     {
       q: "Quali integrazioni sono disponibili?",
-      a: "Già disponibili: Shopify, Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp e Asana. Altre sono in arrivo — WhatsApp, WooCommerce, PayPal, social e Google Ads/Analytics.",
+      a: "Già disponibili: Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce, Mailchimp e Microsoft 365 (Word, Excel, PowerPoint, OneNote). Shopify e altre app sono in arrivo — vedi /integrations.",
     },
   ];
   const allFaqs = [...faqs, ...extraFaqs];

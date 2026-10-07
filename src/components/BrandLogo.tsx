@@ -48,6 +48,8 @@ export default function BrandLogo({
         alt={brand?.title ?? slug}
         className={className}
         draggable={false}
+        loading="lazy"
+        decoding="async"
       />
     );
   }

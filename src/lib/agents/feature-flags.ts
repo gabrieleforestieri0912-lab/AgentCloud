@@ -121,6 +121,42 @@ export const ALL_TOOLS_LIST = [
   "hubspot_create_contact",
   "hubspot_update_contact",
   "hubspot_list_companies",
+  // Google Drive (batch 2): sola lettura, vedi Open Decision 14.
+  "drive_search_files",
+  "drive_read_file",
+  "drive_list_folder",
+  // Airtable (batch 2): sola lettura, vedi Open Decision 14.
+  "airtable_list_bases",
+  "airtable_list_tables",
+  "airtable_list_records",
+  // Trello (batch 2): sola lettura, vedi Open Decision 14.
+  "trello_list_boards",
+  "trello_list_cards",
+  // WooCommerce (batch 2): sola lettura, vedi Open Decision 14.
+  "woo_list_products",
+  "woo_get_product",
+  "woo_list_orders",
+  "woo_get_order",
+  "woo_get_customer",
+  // Mailchimp (batch 2): sola lettura, vedi Open Decision 14. Nessun invio
+  // campagna e nessun iscritto aggiunto.
+  "mailchimp_list_audiences",
+  "mailchimp_get_audience_stats",
+  "mailchimp_list_campaigns",
+  // Microsoft 365 (Word/Excel/PowerPoint/OneNote): una connessione abilita i
+  // quattro documenti. Le scritture su contenuto esistente richiedono conferma
+  // (vedi lib/agents/tool-confirmation.ts).
+  "word_create",
+  "word_append",
+  "word_read",
+  "excel_create",
+  "excel_read_range",
+  "excel_write_range",
+  "powerpoint_create",
+  "onenote_list",
+  "onenote_create_page",
+  "onenote_append",
+  "onenote_read",
   "request_integration_connect",
 ];
 

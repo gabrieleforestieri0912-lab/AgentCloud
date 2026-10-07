@@ -7,11 +7,22 @@ import {
   notionApiProxy,
   slackApiProxy,
   hubspotApiProxy,
+  driveApiProxy,
+  airtableApiProxy,
+  trelloApiProxy,
+  wooApiProxy,
+  mailchimpApiProxy,
 } from "@/lib/integrations/api-proxy";
+import {
+  MICROSOFT_TOOL_NAMES,
+  MICROSOFT_TOOL_DEFINITIONS,
+  isMicrosoftTool,
+  executeMicrosoftTool,
+} from "./microsoft-tools";
 
 /**
  * Tool agente per le integrazioni: GitHub / ClickUp / Asana / Notion / Slack /
- * HubSpot.
+ * HubSpot / Google Drive / Airtable / Trello / WooCommerce / Mailchimp.
  *
  * Perché un modulo dedicato: tiene `lib/agents/tools.ts` focalizzato sugli
  * strumenti core e raccoglie qui definizioni + handler delle integrazioni.
@@ -43,6 +54,26 @@ const INTEGRATION_TOOL_NAMES = [
   "hubspot_create_contact",
   "hubspot_update_contact",
   "hubspot_list_companies",
+  "drive_search_files",
+  "drive_read_file",
+  "drive_list_folder",
+  "airtable_list_bases",
+  "airtable_list_tables",
+  "airtable_list_records",
+  "trello_list_boards",
+  "trello_list_cards",
+  "woo_list_products",
+  "woo_get_product",
+  "woo_list_orders",
+  "woo_get_order",
+  "woo_get_customer",
+  "mailchimp_list_audiences",
+  "mailchimp_get_audience_stats",
+  "mailchimp_list_campaigns",
+  // Microsoft 365 (Word/Excel/PowerPoint/OneNote). Le definizioni e gli handler
+  // vivono in ./microsoft-tools: qui resta solo il nome, così `isIntegrationTool`
+  // continua a essere l'unico punto che decide il dispatch.
+  ...MICROSOFT_TOOL_NAMES,
 ] as const;
 
 export function isIntegrationTool(name: string): boolean {
@@ -369,6 +400,263 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
       },
     },
   },
+
+  // --- Google Drive --------------------------------------------------------
+  // Solo lettura: `drive_create_file` è escluso di proposito in questo batch,
+  // vedi Open Decision 14 (non esiste ancora un meccanismo di conferma utente
+  // fra handler e UI).
+
+  drive_search_files: {
+    name: "drive_search_files",
+    description:
+      "Search files by name in the connected Google Drive. Use plain words, not Drive query syntax. Returns name, type, id, modified date and link. Use the returned id with drive_read_file.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Words to look for in file names (e.g. 'budget 2026'). All must match.",
+        },
+        folderId: {
+          type: "string",
+          description: "Optional folder id to restrict the search to that folder",
+        },
+        limit: { type: "integer", description: "Max files to return (default 20, max 50)" },
+      },
+      required: ["query"],
+    },
+  },
+
+  drive_read_file: {
+    name: "drive_read_file",
+    description:
+      "Read the text content of a Google Drive file by its id. Handles Google Docs, Sheets, Slides and plain text/CSV/PDF files. Long files are truncated, and the output says so. Use drive_search_files or drive_list_folder to find the id.",
+    input_schema: {
+      type: "object",
+      properties: {
+        fileId: { type: "string", description: "The Drive file id (from search/list output)" },
+      },
+      required: ["fileId"],
+    },
+  },
+
+  drive_list_folder: {
+    name: "drive_list_folder",
+    description:
+      "List files and subfolders inside a Google Drive folder. Returns names, types, ids and links, so ids can be passed to drive_read_file or used to walk into a subfolder.",
+    input_schema: {
+      type: "object",
+      properties: {
+        folderId: {
+          type: "string",
+          description: "Folder id. Omit to list the top level of 'My Drive'.",
+        },
+        limit: { type: "integer", description: "Max items to return (default 20, max 50)" },
+      },
+    },
+  },
+
+  // --- Airtable ------------------------------------------------------------
+  // Sola lettura: create/update esclusi per Open Decision 14 (manca il
+  // meccanismo di conferma fra handler e UI).
+
+  airtable_list_bases: {
+    name: "airtable_list_bases",
+    description:
+      "List the Airtable bases shared with the connected account, with their base ids and permission level. Use the returned id with airtable_list_tables.",
+    input_schema: {
+      type: "object",
+      properties: {},
+    },
+  },
+
+  airtable_list_tables: {
+    name: "airtable_list_tables",
+    description:
+      "List the tables (and views) inside an Airtable base, with their table ids. Use the returned id with airtable_list_records.",
+    input_schema: {
+      type: "object",
+      properties: {
+        baseId: {
+          type: "string",
+          description: "Airtable base id, e.g. appXXXXXXXXXXXXXX (from airtable_list_bases)",
+        },
+      },
+      required: ["baseId"],
+    },
+  },
+
+  airtable_list_records: {
+    name: "airtable_list_records",
+    description:
+      "List records of an Airtable table. The filter accepts plain language: 'Status: Open' filters a field by value, a bare word searches across the record. Returns record ids and the first fields, so ids can be reused.",
+    input_schema: {
+      type: "object",
+      properties: {
+        baseId: { type: "string", description: "Airtable base id (app...)" },
+        tableId: {
+          type: "string",
+          description: "Airtable table id (tbl...)",
+        },
+        filter: {
+          type: "string",
+          description:
+            'Optional filter in plain language: "Status: Open", "Stage = Won", or a bare word to search across the record',
+        },
+        limit: { type: "integer", description: "Max records to return (default 20, max 50)" },
+      },
+      required: ["baseId", "tableId"],
+    },
+  },
+
+  // --- Trello --------------------------------------------------------------
+  // Sola lettura: create/move/comment esclusi per Open Decision 14.
+
+  trello_list_boards: {
+    name: "trello_list_boards",
+    description:
+      "List the open Trello boards of the connected account, with board ids. Use the returned id with trello_list_cards.",
+    input_schema: {
+      type: "object",
+      properties: {},
+    },
+  },
+
+  trello_list_cards: {
+    name: "trello_list_cards",
+    description:
+      "List Trello cards. Give boardId to list every card of a board, or listId to list only one list. Returns card names, due dates, ids and links.",
+    input_schema: {
+      type: "object",
+      properties: {
+        boardId: { type: "string", description: "Trello board id (from trello_list_boards)" },
+        listId: {
+          type: "string",
+          description: "Trello list id, to restrict to one list (optional)",
+        },
+        limit: { type: "integer", description: "Max cards to return (default 20, max 50)" },
+      },
+    },
+  },
+
+  // --- WooCommerce ---------------------------------------------------------
+  // Sola lettura. Restano esclusi woo_update_stock e woo_update_order_status:
+  // Open Decision 14 (manca il meccanismo di conferma fra handler e UI). Sono
+  // le due azioni più sensibili del batch: modificano giacenza e stato ordine.
+
+  woo_list_products: {
+    name: "woo_list_products",
+    description:
+      "List products of the connected WooCommerce store, most recent first, with title, price, availability, SKU and id. Use the returned id with woo_get_product.",
+    input_schema: {
+      type: "object",
+      properties: {
+        search: { type: "string", description: "Optional text to match in product name" },
+        limit: { type: "integer", description: "Max products to return (default 20, max 50)" },
+      },
+    },
+  },
+
+  woo_get_product: {
+    name: "woo_get_product",
+    description:
+      "Read one WooCommerce product by id, with full description, stock status and price. Use the id from woo_list_products.",
+    input_schema: {
+      type: "object",
+      properties: {
+        productId: { type: "string", description: "WooCommerce product id (a number)" },
+      },
+      required: ["productId"],
+    },
+  },
+
+  woo_list_orders: {
+    name: "woo_list_orders",
+    description:
+      "List recent WooCommerce orders, most recent first: number, status, total, customer and lines. Optionally filter by status (processing, completed, on-hold, cancelled...).",
+    input_schema: {
+      type: "object",
+      properties: {
+        status: {
+          type: "string",
+          description: "Optional WooCommerce order status, e.g. processing or completed",
+        },
+        limit: { type: "integer", description: "Max orders to return (default 20, max 50)" },
+      },
+    },
+  },
+
+  woo_get_order: {
+    name: "woo_get_order",
+    description:
+      "Read one WooCommerce order by id, with status, total, customer billing details and every line. Use the id from woo_list_orders.",
+    input_schema: {
+      type: "object",
+      properties: {
+        orderId: { type: "string", description: "WooCommerce order id (a number)" },
+      },
+      required: ["orderId"],
+    },
+  },
+
+  woo_get_customer: {
+    name: "woo_get_customer",
+    description:
+      "Read a WooCommerce customer by email or by customer id: name, email, total spent and signup date.",
+    input_schema: {
+      type: "object",
+      properties: {
+        customer: {
+          type: "string",
+          description: "Customer email (searched) or customer id (a number)",
+        },
+      },
+      required: ["customer"],
+    },
+  },
+
+  // --- Mailchimp ------------------------------------------------------------
+  // Solo lettura. Nessun invio di campagna e nessun iscritto aggiunto in questo
+  // batch: vedi Open Decision 14. mailchimp_add_subscriber è una scrittura su dati
+  // personali, e non c'è ancora il meccanismo di conferma fra handler e UI.
+
+  mailchimp_list_audiences: {
+    name: "mailchimp_list_audiences",
+    description:
+      "List the Mailchimp audiences (lists) of the connected account with their ids and key stats: subscribers, open rate, click rate. Use the returned id with mailchimp_get_audience_stats.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", description: "Max audiences to return (default 20, max 50)" },
+      },
+    },
+  },
+
+  mailchimp_get_audience_stats: {
+    name: "mailchimp_get_audience_stats",
+    description:
+      "Read the detailed stats of one Mailchimp audience: total subscribers, unsubscribes, open rate, click rate. Use the id from mailchimp_list_audiences.",
+    input_schema: {
+      type: "object",
+      properties: {
+        listId: { type: "string", description: "Mailchimp audience (list) id" },
+      },
+      required: ["listId"],
+    },
+  },
+
+  mailchimp_list_campaigns: {
+    name: "mailchimp_list_campaigns",
+    description:
+      "List recent Mailchimp campaigns, newest first: title, status, send date, emails sent, open and click rate. Read-only: this cannot send or schedule a campaign.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", description: "Max campaigns to return (default 20, max 50)" },
+      },
+    },
+  },
+  ...MICROSOFT_TOOL_DEFINITIONS,
 };
 
 // ---------------------------------------------------------------------------
@@ -381,6 +669,13 @@ export async function executeIntegrationTool(
   context: ToolContext,
 ): Promise<string> {
   const tenantId = resolveTenant(context);
+
+  // Microsoft: i tool vivono in ./microsoft-tools. L'input arriva come JSON dal
+  // modello (array/oggetti), quindi il tipo `Record<string,string>` qui è solo la
+  // firma del dispatcher: la conversione difensiva sta di là.
+  if (isMicrosoftTool(name)) {
+    return executeMicrosoftTool(name, input as unknown as Record<string, unknown>, tenantId);
+  }
 
   switch (name) {
     case "github_list_repos": {
@@ -590,6 +885,140 @@ export async function executeIntegrationTool(
     case "hubspot_list_companies": {
       const r = await hubspotApiProxy(
         "listCompanies",
+        { limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "drive_search_files": {
+      const query = clean(input.query, 300);
+      if (!query) return "drive_search_files requires query.";
+      const folderId = input.folderId ? clean(input.folderId, 200) : undefined;
+      const r = await driveApiProxy(
+        "searchFiles",
+        { query, folderId, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "drive_read_file": {
+      const fileId = clean(input.fileId, 200);
+      if (!fileId) return "drive_read_file requires fileId.";
+      const r = await driveApiProxy("readFile", { fileId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "drive_list_folder": {
+      const folderId = input.folderId ? clean(input.folderId, 200) : undefined;
+      const r = await driveApiProxy(
+        "listFolder",
+        { folderId, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "airtable_list_bases": {
+      const r = await airtableApiProxy("listBases", {}, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "airtable_list_tables": {
+      const baseId = clean(input.baseId, 60);
+      if (!baseId) return "airtable_list_tables requires baseId.";
+      const r = await airtableApiProxy("listTables", { baseId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "airtable_list_records": {
+      const baseId = clean(input.baseId, 60);
+      const tableId = clean(input.tableId, 60);
+      if (!baseId || !tableId) return "airtable_list_records requires baseId and tableId.";
+      const filter = input.filter ? clean(input.filter, 300) : undefined;
+      const r = await airtableApiProxy(
+        "listRecords",
+        { baseId, tableId, filter, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "trello_list_boards": {
+      const r = await trelloApiProxy("listBoards", {}, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "trello_list_cards": {
+      const boardId = input.boardId ? clean(input.boardId, 60) : undefined;
+      const listId = input.listId ? clean(input.listId, 60) : undefined;
+      const r = await trelloApiProxy(
+        "listCards",
+        { boardId, listId, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_list_products": {
+      const r = await wooApiProxy(
+        "listProducts",
+        { search: input.search ? clean(input.search, 200) : undefined, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_get_product": {
+      const productId = clean(input.productId, 40);
+      if (!productId) return "woo_get_product requires productId.";
+      const r = await wooApiProxy("getProduct", { productId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_list_orders": {
+      const r = await wooApiProxy(
+        "listOrders",
+        { status: input.status ? clean(input.status, 40) : undefined, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_get_order": {
+      const orderId = clean(input.orderId, 40);
+      if (!orderId) return "woo_get_order requires orderId.";
+      const r = await wooApiProxy("getOrder", { orderId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "woo_get_customer": {
+      const customer = clean(input.customer, 200);
+      if (!customer) return "woo_get_customer requires customer (id or email).";
+      const r = await wooApiProxy("getCustomer", { customer }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_list_audiences": {
+      const r = await mailchimpApiProxy(
+        "listAudiences",
+        { limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_get_audience_stats": {
+      const listId = clean(input.listId, 40);
+      if (!listId) return "mailchimp_get_audience_stats requires listId.";
+      const r = await mailchimpApiProxy("getAudienceStats", { listId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_list_campaigns": {
+      const r = await mailchimpApiProxy(
+        "listCampaigns",
         { limit: parseLimit(input.limit) },
         tenantId,
       );
