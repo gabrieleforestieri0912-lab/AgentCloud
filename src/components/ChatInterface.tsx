@@ -229,6 +229,8 @@ export default function ChatInterface({
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [agentSearch, setAgentSearch] = useState("");
+  const agentDropdownRef = useRef<HTMLDivElement>(null);
+  const agentSearchRef = useRef<HTMLInputElement>(null);
   // Freemium giornaliero: il blocco autoritativo arriva dal server (402) — vedi banner limite sopra l'input
   type DailyLimitInfo =
     | { unlimited: true }
@@ -503,6 +505,37 @@ export default function ChatInterface({
     }
     return Array.from(bySlug.values());
   }, [effectiveAvailableAgents, agentsBySlug, selectedAgentSlugs]);
+
+  // Chiudi dropdown agente se si clicca fuori
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (agentDropdownRef.current && !agentDropdownRef.current.contains(e.target as Node)) {
+        setShowAgentPicker(false);
+        setAgentSearch("");
+      }
+    }
+    if (showAgentPicker) document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [showAgentPicker]);
+
+  // Focus sulla search quando si apre il dropdown
+  useEffect(() => {
+    if (showAgentPicker) {
+      setTimeout(() => agentSearchRef.current?.focus(), 50);
+    }
+  }, [showAgentPicker]);
+
+  // Agenti filtrati dalla ricerca
+  const filteredAgents = useMemo(() => {
+    if (!agentSearch.trim()) return selectableAgents;
+    const q = agentSearch.toLowerCase();
+    return selectableAgents.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        a.shortName.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q),
+    );
+  }, [agentSearch, selectableAgents]);
 
   /** Cambia gli agenti della chat: qualsiasi modifica all'insieme apre una
       NUOVA conversazione, così ogni chat resta con un solo contesto e non si
@@ -1667,42 +1700,71 @@ export default function ChatInterface({
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setShowAgentPicker(false)}
           />
-          <div className="absolute bottom-full right-0 z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl">
-            <p className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-              {dict.chat.agentsInChat}
-            </p>
-            <p className="px-2 pb-1.5 text-[11px] font-semibold leading-4 text-neutral-500">
-              {dict.chat.agentSwitchNewChat}
-            </p>
-            {selectableAgents.length === 0 ? (
-              <p className="px-2 py-2 text-xs text-neutral-500">
-                {dict.chat.noAgentsAvailable}
+          <div ref={agentDropdownRef} className="absolute bottom-full right-0 z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl shadow-black/40 backdrop-blur-xl overflow-hidden">
+            {/* Search bar */}
+            <div className="flex items-center gap-2 border-b border-white/8 px-3 py-2.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-neutral-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input
+                ref={agentSearchRef}
+                type="text"
+                value={agentSearch}
+                onChange={(e) => setAgentSearch(e.target.value)}
+                placeholder={dict.chat.searchAgents}
+                className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 outline-none"
+              />
+              {agentSearch && (
+                <button
+                  type="button"
+                  onClick={() => setAgentSearch("")}
+                  className="text-neutral-500 hover:text-white transition-colors"
+                  aria-label={dict.chat.clearSearch}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              )}
+            </div>
+
+            <div className="p-2">
+              <p className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                {dict.chat.agentsInChat}
               </p>
-            ) : (
-              <div className="max-h-72 overflow-y-auto">
-                {selectableAgents.map((a) => {
-                  const isSelected = selectedAgentSlugs.includes(a.slug);
-                  return (
-                    <button
-                      key={a.slug}
-                      type="button"
-                      onClick={() => toggleAgent(a.slug)}
-                      className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-all ${
-                        isSelected ? "bg-white/10" : "hover:bg-white/5"
-                      }`}
-                    >
-                      <AgentAvatar agent={a} size="sm" />
-                      <span className="min-w-0 flex-1 truncate text-xs font-bold text-white">
-                        {a.name}
-                      </span>
-                      {isSelected && (
-                        <CheckCircle2 size={14} className="shrink-0 text-emerald-400" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+              <p className="px-2 pb-1.5 text-[11px] font-semibold leading-4 text-neutral-500">
+                {dict.chat.agentSwitchNewChat}
+              </p>
+              {selectableAgents.length === 0 ? (
+                <p className="px-2 py-2 text-xs text-neutral-500">
+                  {dict.chat.noAgentsAvailable}
+                </p>
+              ) : (
+                <div className="max-h-72 overflow-y-auto">
+                  {filteredAgents.length === 0 ? (
+                    <p className="px-2 py-2 text-xs text-neutral-500 text-center">{dict.chat.noSearchResults}</p>
+                  ) : (
+                    filteredAgents.map((a) => {
+                      const isSelected = selectedAgentSlugs.includes(a.slug);
+                      return (
+                        <button
+                          key={a.slug}
+                          type="button"
+                          onClick={() => toggleAgent(a.slug)}
+                          className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-all ${
+                            isSelected ? "bg-white/10" : "hover:bg-white/5"
+                          }`}
+                        >
+                          <AgentAvatar agent={a} size="sm" />
+                          <span className="min-w-0 flex-1 truncate text-xs font-bold text-white">
+                            {a.name}
+                          </span>
+                          {isSelected && (
+                            <CheckCircle2 size={14} className="shrink-0 text-emerald-400" />
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
@@ -2223,8 +2285,6 @@ export default function ChatInterface({
                   onDrop={attach.makeDrop(attachLabels)}
                 >
                   <div className="relative">
-                    {/* Selettore agente sopra l'input, allineato a destra */}
-                    <div className="mb-2 flex items-center justify-end">{agentPicker}</div>
                     <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
                     <AttachmentChips
                       items={attach.attachments}
@@ -2233,8 +2293,7 @@ export default function ChatInterface({
                       imageAlt={dict.common.imageAttached}
                     />
                     {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
-                    <div className="flex items-center gap-1.5 bg-neutral-800 rounded-2xl border border-white/10 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-                      <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+                    <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all overflow-hidden">
                       <textarea
                         ref={inputRef}
                         value={input}
@@ -2242,20 +2301,27 @@ export default function ChatInterface({
                         onKeyDown={handleKeyDown}
                         onPaste={attach.makePaste(attachLabels)}
                         placeholder={dict.chat.placeholder}
-                        rows={1}
-                        className="flex-1 bg-transparent text-[13px] text-white placeholder-neutral-500 resize-none outline-none min-h-5 max-h-24 leading-relaxed"
-                        style={{ fieldSizing: "content" } as React.CSSProperties}
+                        rows={3}
+                        className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-4 pb-14 leading-relaxed"
+                        style={{ minHeight: "120px", maxHeight: "400px" } as React.CSSProperties}
                       />
-                      <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
-                      <button
-                        onClick={handleSend}
-                        disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
-                        aria-label={dict.chat.sendMessage}
-                        title={dict.chat.sendMessage}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
-                      >
-                        <Send size={16} />
-                      </button>
+                      {/* Bottom toolbar */}
+                      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 border-t border-white/5 bg-neutral-800/50 backdrop-blur-sm">
+                        <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+                        <div className="flex-1 flex items-center justify-end gap-2">
+                          {agentPicker}
+                          <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
+                          <button
+                            onClick={handleSend}
+                            disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
+                            aria-label={dict.chat.sendMessage}
+                            title={dict.chat.sendMessage}
+                            className="w-9 h-9 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
+                          >
+                            <Send size={18} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <p className="text-[10px] text-neutral-600 text-center mt-2">{dict.chat.disclaimer}</p>
@@ -2302,7 +2368,7 @@ export default function ChatInterface({
             <div
               ref={attachMessages}
               onScroll={handleMessagesScroll}
-              className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-44"
+              className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-48"
             >
             <div ref={contentRef} className="space-y-6 mx-auto max-w-4xl">
             {messages.map((msg) => (
@@ -2629,8 +2695,7 @@ export default function ChatInterface({
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-1.5 bg-neutral-800 rounded-2xl border border-white/10 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-              <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+            <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all overflow-hidden">
               <textarea
                 ref={inputRef}
                 value={input}
@@ -2638,31 +2703,38 @@ export default function ChatInterface({
                 onKeyDown={handleKeyDown}
                 onPaste={attach.makePaste(attachLabels)}
                 placeholder={dict.chat.placeholder}
-                rows={1}
-                className="flex-1 bg-transparent text-[13px] text-white placeholder-neutral-500 resize-none outline-none min-h-5 max-h-24 leading-relaxed"
-                style={{ fieldSizing: "content" } as React.CSSProperties}
+                rows={3}
+                className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-4 pb-14 leading-relaxed"
+                style={{ minHeight: "120px", maxHeight: "400px" } as React.CSSProperties}
               />
-              <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
-              {isTyping ? (
-                <button
-                  onClick={() => activeId && stopStreaming(activeId)}
-                  aria-label={dict.chat.activity.stopGeneration}
-                  title={dict.chat.activity.stopGeneration}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center bg-neutral-700 text-white hover:bg-neutral-600 transition-all shrink-0 shadow-lg shadow-black/20"
-                >
-                  <Square size={14} fill="currentColor" />
-                </button>
-              ) : (
-                <button
-                  onClick={handleSend}
-                  disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
-                  aria-label={dict.chat.sendMessage}
-                  title={dict.chat.sendMessage}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
-                >
-                  <Send size={16} />
-                </button>
-              )}
+              {/* Bottom toolbar */}
+              <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 border-t border-white/5 bg-neutral-800/50 backdrop-blur-sm">
+                <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+                <div className="flex-1 flex items-center justify-end gap-2">
+                  {agentPicker}
+                  <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
+                  {isTyping ? (
+                    <button
+                      onClick={() => activeId && stopStreaming(activeId)}
+                      aria-label={dict.chat.activity.stopGeneration}
+                      title={dict.chat.activity.stopGeneration}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center bg-neutral-700 text-white hover:bg-neutral-600 transition-all shrink-0 shadow-lg shadow-black/20"
+                    >
+                      <Square size={16} fill="currentColor" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSend}
+                      disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
+                      aria-label={dict.chat.sendMessage}
+                      title={dict.chat.sendMessage}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
+                    >
+                      <Send size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
           <p className="text-[10px] text-neutral-600 text-center mt-2">{dict.chat.disclaimer}</p>
