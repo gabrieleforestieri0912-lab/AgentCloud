@@ -83,7 +83,7 @@ export default function ShopifyConnectionPrompt() {
       <div className="mx-4 sm:mx-6 mb-3 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
         <Store size={16} className="shrink-0" />
         <span>
-          Store Shopify collegato{shops[0] ? `: ${shops[0]}` : ""}.
+          {t(dict.chat.shopifyConnectedStore, { shop: shops[0] ?? "" })}
         </span>
       </div>
     );
@@ -114,11 +114,10 @@ export default function ShopifyConnectionPrompt() {
       )}
       <div className="flex items-center gap-2 text-brand-200">
         <Store size={16} className="shrink-0" />
-        <span className="font-bold text-white">Collega il tuo store Shopify</span>
+        <span className="font-bold text-white">{dict.chat.shopifyPromptTitle}</span>
       </div>
       <p className="mt-2 text-neutral-300">
-        Per far agire l&apos;agente sul tuo store, collegalo ora. Puoi collegarne
-        uno esistente o crearne uno nuovo.
+        {dict.chat.shopifyPromptDesc}
       </p>
 
       {showInput ? (
@@ -137,7 +136,7 @@ export default function ShopifyConnectionPrompt() {
             onClick={connectExisting}
             className="rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400"
           >
-            Autorizza
+            {dict.chat.shopifyAuthorize}
           </button>
         </div>
       ) : (
@@ -148,7 +147,7 @@ export default function ShopifyConnectionPrompt() {
             className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400"
           >
             <Plus size={15} />
-            Collega store esistente
+            {dict.chat.shopifyConnectExisting}
           </button>
           <button
             type="button"
@@ -158,7 +157,7 @@ export default function ShopifyConnectionPrompt() {
             className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-neutral-800 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700"
           >
             <ExternalLink size={15} />
-            Crea un nuovo store
+            {dict.chat.shopifyCreateNew}
           </button>
         </div>
       )}

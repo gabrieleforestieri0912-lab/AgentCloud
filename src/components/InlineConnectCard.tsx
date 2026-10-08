@@ -1,32 +1,33 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ExternalLink, CheckCircle2, Plug } from "lucide-react";
+import { ExternalLink, Plug } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import { isIntegrationAvailable } from "@/lib/integrations";
 import { resolveShopDomain } from "@/lib/shopify-input";
 
 type Provider = string;
 
-const PROVIDER_META: Record<string, { name: string; brand: string; desc: string }> = {
-  shopify: { name: "Shopify", brand: "shopify", desc: "Collega il tuo store per gestire prodotti, ordini e carrello" },
-  gmail: { name: "Gmail", brand: "gmail", desc: "Connetti Gmail per leggere, inviare e gestire le email" },
-  google_calendar: { name: "Google Calendar", brand: "googlecalendar", desc: "Collega Calendar per prenotazioni e disponibilità" },
-  google_sheets: { name: "Google Sheets", brand: "googlesheets", desc: "Connetti Sheets per leggere e scrivere fogli" },
-  calendar: { name: "Google Calendar", brand: "googlecalendar", desc: "Collega Calendar per prenotazioni e disponibilità" },
-  slack: { name: "Slack", brand: "slack", desc: "Connetti Slack per notifiche e messaggi" },
-  notion: { name: "Notion", brand: "notion", desc: "Connetti Notion per documenti e knowledge base" },
-  hubspot: { name: "HubSpot", brand: "hubspot", desc: "Connetti HubSpot per CRM e pipeline" },
-  github: { name: "GitHub", brand: "github", desc: "Connetti GitHub per repo, PR e issue" },
-  clickup: { name: "ClickUp", brand: "clickup", desc: "Connetti ClickUp per task e progetti" },
-  asana: { name: "Asana", brand: "asana", desc: "Connetti Asana per task e progetti" },
-  googledrive: { name: "Google Drive", brand: "googledrive", desc: "Connetti Google Drive per cercare e leggere i tuoi file" },
-  airtable: { name: "Airtable", brand: "airtable", desc: "Connetti Airtable per leggere basi, tabelle e record" },
-  trello: { name: "Trello", brand: "trello", desc: "Connetti Trello per leggere board, liste e card" },
-  woocommerce: { name: "WooCommerce", brand: "woocommerce", desc: "Connetti WooCommerce per leggere prodotti, ordini e clienti" },
-  mailchimp: { name: "Mailchimp", brand: "mailchimp", desc: "Connetti Mailchimp per leggere audience, statistiche e campagne" },
-  whatsapp: { name: "WhatsApp", brand: "whatsapp", desc: "Connetti WhatsApp per messaggistica" },
+const PROVIDER_META: Record<string, { name: string; brand: string; descKey: string }> = {
+  shopify: { name: "Shopify", brand: "shopify", descKey: "connectShopify" },
+  gmail: { name: "Gmail", brand: "gmail", descKey: "connectGmail" },
+  google_calendar: { name: "Google Calendar", brand: "googlecalendar", descKey: "connectCalendar" },
+  google_sheets: { name: "Google Sheets", brand: "googlesheets", descKey: "connectSheets" },
+  calendar: { name: "Google Calendar", brand: "googlecalendar", descKey: "connectCalendar" },
+  slack: { name: "Slack", brand: "slack", descKey: "connectSlack" },
+  notion: { name: "Notion", brand: "notion", descKey: "connectNotion" },
+  hubspot: { name: "HubSpot", brand: "hubspot", descKey: "connectHubSpot" },
+  github: { name: "GitHub", brand: "github", descKey: "connectGithub" },
+  clickup: { name: "ClickUp", brand: "clickup", descKey: "connectClickUp" },
+  asana: { name: "Asana", brand: "asana", descKey: "connectAsana" },
+  googledrive: { name: "Google Drive", brand: "googledrive", descKey: "connectDrive" },
+  airtable: { name: "Airtable", brand: "airtable", descKey: "connectAirtable" },
+  trello: { name: "Trello", brand: "trello", descKey: "connectTrello" },
+  woocommerce: { name: "WooCommerce", brand: "woocommerce", descKey: "connectWooCommerce" },
+  mailchimp: { name: "Mailchimp", brand: "mailchimp", descKey: "connectMailchimp" },
+  whatsapp: { name: "WhatsApp", brand: "whatsapp", descKey: "connectWhatsApp" },
 };
 
 function getMeta(provider: Provider) {
@@ -43,7 +44,7 @@ function getMeta(provider: Provider) {
   if (key.includes("woocommerce")) return PROVIDER_META.woocommerce;
   if (key.includes("mailchimp")) return PROVIDER_META.mailchimp;
   if (key.includes("shopify")) return PROVIDER_META.shopify;
-  return PROVIDER_META[key] || { name: provider.charAt(0).toUpperCase() + provider.slice(1), brand: key, desc: `Connetti ${provider} per sbloccare le automazioni` };
+  return PROVIDER_META[key] || { name: provider.charAt(0).toUpperCase() + provider.slice(1), brand: key, descKey: "connectGeneric" };
 }
 
 export default function InlineConnectCard({ provider }: { provider: string }) {
@@ -122,12 +123,14 @@ export default function InlineConnectCard({ provider }: { provider: string }) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-white flex items-center gap-1.5">
             <Plug size={14} className="text-brand-400" />
-            Connetti {meta.name}
+            {t(dict.chat.connectTitle, { provider: meta.name })}
           </p>
-          <p className="text-xs text-neutral-400 leading-relaxed">{meta.desc}</p>
+          <p className="text-xs text-neutral-400 leading-relaxed">
+            {t(dict.chat[meta.descKey as keyof typeof dict.chat] as string, { provider: meta.name })}
+          </p>
         </div>
         <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-300">
-          Richiesto
+          {dict.chat.connectRequested}
         </span>
       </div>
 
@@ -141,7 +144,7 @@ export default function InlineConnectCard({ provider }: { provider: string }) {
                 setShopError(false);
               }}
               onKeyDown={(e) => { if (e.key === "Enter") confirmShop(); }}
-              placeholder="tuo-negozio.myshopify.com"
+              placeholder={dict.deploy.shopifyPlaceholder}
               aria-invalid={shopError}
               className={`flex-1 rounded-full border bg-neutral-800 px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none ${shopError ? "border-red-500/60" : "border-white/10 focus:border-brand-500"}`}
               autoFocus
@@ -151,22 +154,22 @@ export default function InlineConnectCard({ provider }: { provider: string }) {
               onClick={confirmShop}
               className="rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400"
             >
-              Autorizza
+              {dict.chat.connectAuthorize}
             </button>
           </div>
           {shopError && (
             <p className="mt-1.5 text-xs text-red-400">
-              Inserisci un dominio valido tipo <span className="font-bold">tuo-negozio.myshopify.com</span>
+              {t(dict.chat.connectInvalidDomain, { example: "tuo-negozio.myshopify.com" })}
             </p>
           )}
         </div>
       ) : !available ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-2 text-sm font-bold text-amber-300">
-            Prossimamente
+            {dict.common.comingSoon}
           </span>
           <span className="text-xs text-neutral-500">
-            Non è ancora collegabile: ti avvisiamo quando lo diventa
+            {dict.chat.connectSoonNote}
           </span>
         </div>
       ) : (
@@ -178,16 +181,16 @@ export default function InlineConnectCard({ provider }: { provider: string }) {
             className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-400 disabled:opacity-50 transition-colors"
           >
             <ExternalLink size={14} />
-            {connecting ? "Apertura..." : `Connetti ${meta.name}`}
+            {connecting ? dict.chat.connectOpening : t(dict.chat.connectButton, { provider: meta.name })}
           </button>
           <span className="text-xs text-neutral-500">
-            Si apre in OAuth sicuro — poi torni qui
+            {dict.chat.connectOAuthNote}
           </span>
         </div>
       )}
 
       <p className="mt-2 text-[11px] text-neutral-600">
-        L&apos;agente può già rispondere senza connessione. Collega quando vuoi sbloccare azioni reali su {meta.name}.
+        {t(dict.chat.connectAgentNote, { provider: meta.name })}
       </p>
     </div>
   );

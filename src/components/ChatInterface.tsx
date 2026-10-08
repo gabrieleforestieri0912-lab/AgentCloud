@@ -2303,7 +2303,7 @@ export default function ChatInterface({
               onScroll={handleMessagesScroll}
               className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-44"
             >
-            <div ref={contentRef} className="space-y-6 mx-auto max-w-3xl">
+            <div ref={contentRef} className="space-y-6 mx-auto max-w-4xl">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -2333,7 +2333,7 @@ export default function ChatInterface({
                       // La bolla utente abbraccia il contenuto (senza w-full):
                       // i messaggi corti non si allargano per tutta la riga.
                       ? "order-1 max-w-[80%] sm:max-w-[55%]"
-                      : "max-w-[78%] sm:max-w-[65%] w-full"
+                      : "max-w-[85%] sm:max-w-[75%] w-full"
                   }`}
                 >
                   {/* Chi sta parlando: nome dell'agente sopra la bolla */}
@@ -2373,9 +2373,9 @@ export default function ChatInterface({
                             {isLive && <WorkingIndicator label={runningStep.label} />}
                             {steps.length > 0 && <ActivityFeed steps={steps} />}
                             {cleanText && <MarkdownText text={cleanText} onReply={handleReplyToPhrase} />}
-                            {providers.map((p) => (
-                              <InlineConnectCard key={p} provider={p} />
-                            ))}
+                            {providers.length > 0 && (
+                              <InlineConnectCard provider={providers[0]} />
+                            )}
                           </>
                         );
                       })()
@@ -2538,7 +2538,7 @@ export default function ChatInterface({
           onDragLeave={attach.onDragLeave}
           onDrop={attach.makeDrop(attachLabels)}
         >
-          <div className="relative mx-auto max-w-3xl">
+          <div className="relative mx-auto max-w-4xl">
             {/* Budget giornaliero freemium sopra l'input, con ora locale del reset */}
             {dailyLimit && !dailyLimit.unlimited && limitSlug && (
               <p className="mb-2 text-center text-[11px] font-semibold text-neutral-500">
