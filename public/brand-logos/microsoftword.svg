@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="wg" x1="6" y1="6" x2="30" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#41a5ee"/>
+      <stop offset="1" stop-color="#185abd"/>
+    </linearGradient>
+  </defs>
+  <!-- Document back (white) -->
+  <path d="M20 6h22a2 2 0 0 1 2 2v32a2 2 0 0 1-2 2H20V6z" fill="#d6e4f7"/>
+  <!-- Horizontal lines on white doc -->
+  <rect x="25" y="14" width="14" height="2.5" rx="1.25" fill="#b3cfea"/>
+  <rect x="25" y="20" width="14" height="2.5" rx="1.25" fill="#b3cfea"/>
+  <rect x="25" y="26" width="10" height="2.5" rx="1.25" fill="#b3cfea"/>
+  <!-- Blue front panel -->
+  <rect x="4" y="6" width="20" height="36" rx="2" fill="url(#wg)"/>
+  <!-- White W letter -->
+  <text x="14" y="30" text-anchor="middle" font-family="'Segoe UI',Arial,sans-serif" font-size="17" font-weight="700" fill="white">W</text>
+</svg>

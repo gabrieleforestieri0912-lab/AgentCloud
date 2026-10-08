@@ -22,6 +22,10 @@ const MULTICOLOR = new Set([
   "instagram",
   "tiktok",
   "slack",
+  "microsoftword",
+  "microsoftexcel",
+  "microsoftpowerpoint",
+  "microsoftonenote",
 ]);
 
 type BrandLogoProps = {
