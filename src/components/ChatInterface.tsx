@@ -1673,45 +1673,37 @@ export default function ChatInterface({
   // dei comandi di esportazione) sia nella chat vuota che durante la conversazione.
   const agentPicker = (
     <div className="relative shrink-0" data-onboard="agent-picker">
+      {/* Bottone circolare con il solo avatar, accanto al "+": il nome
+          dell'agente vive nel dropdown e nelle intestazioni dei messaggi. */}
       <button
         type="button"
         onClick={() => setShowAgentPicker((v) => !v)}
         aria-expanded={showAgentPicker}
         aria-haspopup="listbox"
         title={dict.chat.changeAgent}
-        className="inline-flex max-w-[220px] items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 transition-all hover:bg-white/10"
+        aria-label={dict.chat.changeAgent}
+        className="relative flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] transition-all hover:border-white/25 hover:bg-white/10"
       >
         {selectedAgents.length > 1 ? (
-          <span className="flex items-center -space-x-2 pl-1">
-            {selectedAgents.slice(0, 3).map((a) => (
-              <AgentAvatar
-                key={a.slug}
-                agent={a}
-                size="sm"
-                className="ring-2 ring-neutral-900"
-              />
-            ))}
-          </span>
+          <>
+            <AgentAvatar agent={selectedAgents[0]} size="sm" circular />
+            <span className="absolute -bottom-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[9px] font-bold text-white">
+              {selectedAgents.length}
+            </span>
+          </>
         ) : activeAgent ? (
-          <AgentAvatar agent={activeAgent} size="sm" />
+          <AgentAvatar agent={activeAgent} size="sm" circular />
         ) : (
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20">
             <Image
               src="/agentcloud.png"
               alt="AgentCloud"
-              width={16}
-              height={16}
-              className="w-4 h-4"
+              width={14}
+              height={14}
+              className="h-3.5 w-3.5"
             />
           </span>
         )}
-        <span className="truncate text-sm font-bold text-white">
-          {activeAgentDisplayName}
-        </span>
-        <ChevronDown
-          size={14}
-          className={`shrink-0 text-neutral-400 transition-transform ${showAgentPicker ? "rotate-180" : ""}`}
-        />
       </button>
 
       {showAgentPicker && (
@@ -1722,7 +1714,7 @@ export default function ChatInterface({
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setShowAgentPicker(false)}
           />
-          <div ref={agentDropdownRef} className="absolute bottom-full right-0 z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl shadow-black/40 backdrop-blur-xl overflow-hidden">
+          <div ref={agentDropdownRef} className="absolute bottom-full left-0 z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl shadow-black/40 backdrop-blur-xl overflow-hidden">
             {/* Search bar */}
             <div className="flex items-center gap-2 border-b border-white/8 px-3 py-2.5">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-neutral-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -2327,11 +2319,11 @@ export default function ChatInterface({
                         className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-4 pb-14 leading-relaxed"
                         style={{ minHeight: "120px", maxHeight: "400px" } as React.CSSProperties}
                       />
-                      {/* Bottom toolbar */}
-                      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 border-t border-white/5 bg-neutral-800/50 backdrop-blur-sm">
+                      {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
+                      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm">
                         <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+                        {agentPicker}
                         <div className="flex-1 flex items-center justify-end gap-2">
-                          {agentPicker}
                           <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
                           <button
                             onClick={handleSend}
@@ -2647,10 +2639,11 @@ export default function ChatInterface({
                 })}
               </p>
             )}
-            {/* Riga sopra l'input: comandi (PDF / Looker Studio) a sinistra, selettore agente a destra */}
-            <div className="mb-2 flex items-start justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                {messages.length > 0 && (
+            {/* Riga sopra l'input: comandi (PDF / Looker Studio). Il selettore
+                agente vive nella toolbar accanto al "+": qui non si duplica. */}
+            {messages.length > 0 && (
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="flex items-center gap-1.5">
                   <ExportReportButton
                     variant="floating"
                     type="chat"
@@ -2666,10 +2659,9 @@ export default function ChatInterface({
                     agentName={activeAgentDisplayName || "AgentCloud"}
                     agentSlug={activeAgentId || "agent"}
                   />
-                )}
+                </div>
               </div>
-              {agentPicker}
-            </div>
+            )}
             {paywallSlug && (
               <div className="mb-3 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
                 <p className="text-xs font-semibold text-amber-300">
@@ -2733,11 +2725,11 @@ export default function ChatInterface({
                 className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-4 pb-14 leading-relaxed"
                 style={{ minHeight: "120px", maxHeight: "400px" } as React.CSSProperties}
               />
-              {/* Bottom toolbar */}
-              <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 border-t border-white/5 bg-neutral-800/50 backdrop-blur-sm">
+              {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
+              <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm">
                 <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+                {agentPicker}
                 <div className="flex-1 flex items-center justify-end gap-2">
-                  {agentPicker}
                   <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
                   {isTyping ? (
                     <button

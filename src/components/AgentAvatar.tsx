@@ -25,14 +25,23 @@ export default function AgentAvatar({
   agent,
   size = "md",
   className = "",
+  circular = false,
 }: {
   agent: Agent;
   size?: Size;
   className?: string;
+  /**
+   * Versione tonda (selettore agente nella toolbar): stesso ingombro della
+   * quadra, ma `rounded-full` invece di `rounded-lg`. Parametro esplicito e
+   * non override via className perché due classi `rounded-*` in conflitto si
+   * risolverebbero in base all'ordine del CSS generato, non a quello voluto.
+   */
+  circular?: boolean;
 }) {
+  const box = circular ? BOX[size].replace(/rounded-\w+/, "rounded-full") : BOX[size];
   return (
     <span
-      className={`flex shrink-0 items-center justify-center shadow-lg shadow-black/20 ${BOX[size]} ${agent.accent} ${className}`}
+      className={`flex shrink-0 items-center justify-center shadow-lg shadow-black/20 ${box} ${agent.accent} ${className}`}
       title={agent.name}
     >
       <AgentIcon
