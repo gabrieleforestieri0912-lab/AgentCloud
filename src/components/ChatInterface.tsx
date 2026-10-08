@@ -228,6 +228,7 @@ export default function ChatInterface({
   const [conversationMenuId, setConversationMenuId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
+  const [agentSearch, setAgentSearch] = useState("");
   // Freemium giornaliero: il blocco autoritativo arriva dal server (402) — vedi banner limite sopra l'input
   type DailyLimitInfo =
     | { unlimited: true }

@@ -9,7 +9,7 @@
  * importate da /chat alla prima apertura, così la demo prosegue nella chat
  * completa.
  */
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useLanguage } from "./LanguageProvider";
@@ -66,11 +66,6 @@ export default function HeroSection() {
   const attachLabels = chatAttachLabels(dict);
   const attach = useChatAttachments();
   const [input, setInput] = useState("");
-  const [selectedAgent, setSelectedAgent] = useState<(typeof AGENTS)[0] | null>(null);
-  const [agentSearch, setAgentSearch] = useState("");
-  const [agentDropdownOpen, setAgentDropdownOpen] = useState(false);
-  const agentDropdownRef = useRef<HTMLDivElement>(null);
-  const agentSearchRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<HeroMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   // Sessione/avatar dell'account: l'autenticazione applica il limite di 10
@@ -162,39 +157,8 @@ export default function HeroSection() {
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
+    ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
   }, [input]);
-
-  // Chiudi dropdown agente se si clicca fuori
-  useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (agentDropdownRef.current && !agentDropdownRef.current.contains(e.target as Node)) {
-        setAgentDropdownOpen(false);
-        setAgentSearch("");
-      }
-    }
-    if (agentDropdownOpen) document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [agentDropdownOpen]);
-
-  // Focus sulla search quando si apre il dropdown
-  useEffect(() => {
-    if (agentDropdownOpen) {
-      setTimeout(() => agentSearchRef.current?.focus(), 50);
-    }
-  }, [agentDropdownOpen]);
-
-  // Agenti filtrati dalla ricerca
-  const filteredAgents = useMemo(() => {
-    if (!agentSearch.trim()) return AGENTS;
-    const q = agentSearch.toLowerCase();
-    return AGENTS.filter(
-      (a) =>
-        a.name.toLowerCase().includes(q) ||
-        a.shortName.toLowerCase().includes(q) ||
-        a.category.toLowerCase().includes(q),
-    );
-  }, [agentSearch]);
 
   // Tiene in vista il messaggio più recente nell'area scrollabile della chat.
   const scrollToBottom = useCallback(() => {
@@ -738,17 +702,19 @@ export default function HeroSection() {
                 </div>
               )}
 
-              {/* ── Input area ── */}
-              <div className={`${hasMessages ? "border-t border-white/10" : ""} relative`}>
+              {/* ── Input row ── */}
+              <div
+                className={`${hasMessages ? "border-t border-white/10" : ""} relative`}
+              >
                 <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
-
-                {/* Attachments */}
                 {attach.attachments.length > 0 && (
                   <div className="px-4 pt-3">
                     <AttachmentChips
                       items={attach.attachments}
                       onRemove={attach.remove}
-                      removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
+                      removeLabel={(name) =>
+                        dict.chat.removeAttachment.replace("{name}", name)
+                      }
                       imageAlt={dict.common.imageAttached}
                     />
                   </div>
@@ -756,159 +722,29 @@ export default function HeroSection() {
                 {attach.notice && (
                   <p className="px-5 pt-2 text-xs text-amber-400 text-left">{attach.notice}</p>
                 )}
-
-                {/* Textarea multiriga */}
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onPaste={attach.makePaste(attachLabels)}
-                  placeholder={
-                    hasMessages ? dict.hero.placeholderContinued : dict.hero.placeholderEmpty
-                  }
-                  rows={3}
-                  className="w-full bg-transparent text-base text-white placeholder-neutral-500 outline-none resize-none leading-relaxed font-medium px-5 pt-4 pb-2"
-                  style={{ minHeight: "88px", maxHeight: "200px" }}
-                />
-
-                {/* Bottom toolbar */}
-                <div className="flex items-center gap-2 px-4 pb-3 pt-1">
-                  {/* + attach */}
+                <div
+                  className={`flex items-center gap-2 px-5 ${hasMessages ? "py-3" : "py-4"}`}
+                >
                   <AttachPlusButton
                     labels={attachLabels}
                     disabled={isTyping}
                     onPick={(files) => attach.addFiles(files, attachLabels)}
                   />
-
-                  {/* Agent selector pill */}
-                  <div ref={agentDropdownRef} className="relative">
-                    <button
-                      id="hero-agent-select-btn"
-                      type="button"
-                      onClick={() => {
-                        setAgentDropdownOpen((o) => !o);
-                        setAgentSearch("");
-                      }}
-                      className="flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:border-brand-500/40 hover:text-white transition-all"
-                      aria-expanded={agentDropdownOpen}
-                      aria-haspopup="listbox"
-                    >
-                      {selectedAgent ? (
-                        <>
-                          <span className="max-w-[100px] truncate">{selectedAgent.shortName}</span>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                        </>
-                      ) : (
-                        <>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l2 2"/><circle cx="19" cy="5" r="3" fill="currentColor"/></svg>
-                          <span>Agente</span>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                        </>
-                      )}
-                    </button>
-
-                    {/* Dropdown */}
-                    {agentDropdownOpen && (
-                      <div
-                        className="absolute bottom-full left-0 mb-2 w-64 rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl shadow-black/60 overflow-hidden z-50"
-                        role="listbox"
-                        aria-label="Seleziona agente"
-                      >
-                        {/* Search bar */}
-                        <div className="flex items-center gap-2 border-b border-white/8 px-3 py-2.5">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-neutral-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                          <input
-                            ref={agentSearchRef}
-                            type="text"
-                            value={agentSearch}
-                            onChange={(e) => setAgentSearch(e.target.value)}
-                            placeholder="Cerca agente…"
-                            className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 outline-none"
-                          />
-                          {agentSearch && (
-                            <button
-                              type="button"
-                              onClick={() => setAgentSearch("")}
-                              className="text-neutral-500 hover:text-white transition-colors"
-                              aria-label="Cancella ricerca"
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                            </button>
-                          )}
-                        </div>
-
-                        {/* "Nessun agente" option */}
-                        {!agentSearch && (
-                          <button
-                            type="button"
-                            role="option"
-                            aria-selected={selectedAgent === null}
-                            onClick={() => {
-                              setSelectedAgent(null);
-                              setAgentDropdownOpen(false);
-                              setAgentSearch("");
-                            }}
-                            className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left transition-colors ${
-                              selectedAgent === null
-                                ? "bg-brand-500/15 text-brand-300"
-                                : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
-                            }`}
-                          >
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-700 text-neutral-300">
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l2 2"/><circle cx="19" cy="5" r="3" fill="currentColor"/></svg>
-                            </span>
-                            <span className="font-medium">Qualsiasi agente</span>
-                          </button>
-                        )}
-
-                        {/* Agent list */}
-                        <div className="max-h-52 overflow-y-auto">
-                          {filteredAgents.length === 0 ? (
-                            <p className="px-4 py-3 text-xs text-neutral-500 text-center">Nessun risultato</p>
-                          ) : (
-                            filteredAgents.map((agent) => (
-                              <button
-                                key={agent.slug}
-                                type="button"
-                                role="option"
-                                aria-selected={selectedAgent?.slug === agent.slug}
-                                onClick={() => {
-                                  setSelectedAgent(agent);
-                                  setAgentDropdownOpen(false);
-                                  setAgentSearch("");
-                                }}
-                                className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-left transition-colors ${
-                                  selectedAgent?.slug === agent.slug
-                                    ? "bg-brand-500/15 text-brand-300"
-                                    : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
-                                }`}
-                              >
-                                <span
-                                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-                                  style={{ background: agent.accent + "33", color: agent.accent }}
-                                >
-                                  {agent.shortName.charAt(0)}
-                                </span>
-                                <span className="flex-1 min-w-0">
-                                  <span className="block truncate font-medium">{agent.shortName}</span>
-                                  <span className="block truncate text-[11px] text-neutral-500">{agent.category}</span>
-                                </span>
-                                {selectedAgent?.slug === agent.slug && (
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                )}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Spacer */}
-                  <div className="flex-1" />
-
-                  {/* Reset */}
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onPaste={attach.makePaste(attachLabels)}
+                    placeholder={
+                      hasMessages
+                        ? dict.hero.placeholderContinued
+                        : dict.hero.placeholderEmpty
+                    }
+                    rows={1}
+                    className="flex-1 min-w-0 bg-transparent text-base text-white placeholder-neutral-500 outline-none resize-none leading-relaxed font-medium py-2.5"
+                    style={{ minHeight: "44px", maxHeight: "140px" }}
+                  />
                   {hasMessages && (
                     <button
                       id="hero-reset-btn"
@@ -916,34 +752,61 @@ export default function HeroSection() {
                       onClick={handleReset}
                       aria-label={dict.hero.resetChat}
                       title={dict.hero.resetChat}
-                      className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all"
+                      className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                         <path d="M3 3v5h5" />
                       </svg>
                     </button>
                   )}
-
-                  {/* Send */}
                   <button
                     id="hero-send-btn"
                     onClick={handleSend}
                     disabled={(!input.trim() && attach.attachments.length === 0) || isTyping}
                     aria-label={dict.hero.sendMessage}
                     title={dict.hero.sendMessage}
-                    className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
+                    className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
                       (!input.trim() && attach.attachments.length === 0) || isTyping
                         ? "bg-neutral-800 text-neutral-600 shadow-none"
                         : "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_16px_rgba(3,139,254,0.45),0_4px_12px_rgba(0,0,0,0.3)] hover:brightness-110 hover:scale-105 hover:shadow-[0_0_22px_rgba(3,139,254,0.6),0_4px_12px_rgba(0,0,0,0.3)] active:scale-95"
                     }`}
                   >
                     {isTyping ? (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin" aria-hidden="true">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        className="animate-spin"
+                        aria-hidden="true"
+                      >
                         <path d="M21 12a9 9 0 1 1-6.2-8.56" />
                       </svg>
                     ) : (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M12 19V5M5 12l7-7 7 7" />
                       </svg>
                     )}
