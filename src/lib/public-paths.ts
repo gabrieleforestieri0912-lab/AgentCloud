@@ -22,6 +22,11 @@ export const PUBLIC_PATHS = [
   "/mobile",
   "/integrations",
   "/agents",
+  // Catalogo Competenze: pagina pubblica e indicizzabile come /agents.
+  "/skills",
+  // Guida "Crea la tua competenza in 10 minuti": pubblica come /skills, da cui
+  // arriva il template SKILL.md.
+  "/docs",
   "/a", // pagine chat pubbliche dell'agente
   "/agent", // pagine chat pubbliche dell'agente (stessa superficie di anteprima di /a)
   "/login",
@@ -64,6 +69,13 @@ export const PUBLIC_PATHS = [
   "/api/waitlist",
   "/api/contact",
   "/api/sitemap",
+  // Catalogo Competenze: lettura e download sono pubblici (la pagina
+  // /skills è pubblica e i link "Scarica .zip" devono funzionare senza
+  // sessione). Le skill UTENTE restano private: le API filtrano per
+  // `account_id` e rispondono 404 alle altre. Scrittura/installazione
+  // (`/api/agents/[id]/skills`) NON è in elenco e resta protetta.
+  "/api/plugins",
+  "/api/skills",
   // Integrazioni OAuth callbacks & Webhooks (accessibili senza sessione affinché terze parti possano completare l'handshake o inviare eventi)
   "/api/integrations",
   "/api/shopify/callback",
@@ -74,6 +86,27 @@ export const PUBLIC_PATHS = [
   "/api/webhooks/shopify",
 ];
 
+/**
+ * Rotte pubbliche percorse ESATTE (non prefissi).
+ *
+ * Perché servono: sotto `/api/agents` ci sono sia rotte pubbliche di
+ * catalogo (`[id]/recommended-plugins`) sia rotte che scrivono e richiedono
+ * sessione (`[id]/skills` = installa/disinstalla). Il match a prefisso
+ * aprirebbe anche le seconde, quindi queste eccezioni sono esplicite.
+ */
+const PUBLIC_EXACT_PATHS = new Set([
+  // Plugin consigliati per un agente: dato di catalogo, come /api/plugins.
+  /^\/api\/agents\/[a-z0-9-]+\/recommended-plugins$/,
+]);
+
+/** True se il path è in una delle eccezioni esatte. */
+function isPublicExactPath(pathname: string): boolean {
+  for (const pattern of PUBLIC_EXACT_PATHS) {
+    if (pattern.test(pathname)) return true;
+  }
+  return false;
+}
+
 // Match con prefisso stretto: un path è pubblico quando è uguale a un prefisso
 // o inizia con "prefisso/" (così "/contact" non fa passare mai "/contacts-admin").
 // "/" corrisponde solo a se stesso.
@@ -82,6 +115,7 @@ export function isPublicPath(pathname: string): boolean {
   if (/^\/google[a-z0-9]+\.html$/.test(pathname)) {
     return true;
   }
+  if (isPublicExactPath(pathname)) return true;
   return PUBLIC_PATHS.some((prefix) =>
     prefix === "/"
       ? pathname === "/"

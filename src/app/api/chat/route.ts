@@ -14,7 +14,7 @@ import {
   buildAgentSystemPrompt,
   sharedAgentDirectives,
 } from "@/lib/agents/system-prompt";
-import { detectConnectProviders } from "@/lib/integrations";
+import { extractConnectMarkers, requestedConnectProviders } from "@/lib/integrations";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
 /**
@@ -166,12 +166,17 @@ export async function POST(req: Request) {
 
           await emitter.flush();
 
-          // Fallback card di connessione: qui il modello non ha tool, quindi
-          // l'unico modo di mostrare la card è il marker. Se il testo dice
-          // all'utente di collegare un'app e il marker manca, si invia comunque
-          // l'evento `connection` (la UI deduplica i marker).
+          // Card di connessione solo su richiesta esplicita dell'utente in
+          // questo turno ("collega Gmail"). Qui il modello non ha tool, quindi
+          // l'unico segnale è il marker nel testo — ma se l'utente non ha
+          // chiesto di collegare nulla, nessun evento parte e nessuna card
+          // compare. La UI deduplica i marker con gli eventi.
+          const requested = new Set(
+            requestedConnectProviders(lastUserText(conversationMessages) ?? ""),
+          );
           const seenConnections = new Set<string>();
-          for (const provider of detectConnectProviders(response.text)) {
+          for (const provider of extractConnectMarkers(response.text)) {
+            if (!requested.has(provider)) continue;
             if (seenConnections.has(provider)) continue;
             seenConnections.add(provider);
             send({ type: "connection", provider });

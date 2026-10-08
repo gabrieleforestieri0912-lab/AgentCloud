@@ -65,11 +65,12 @@ import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 import { createClient } from "@/lib/supabase/client";
 import BrandLogo from "./BrandLogo";
 import AgentAvatar from "./AgentAvatar";
+import TypingDots from "./TypingDots";
 import { avatarThumbnail } from "@/lib/avatar";
 import type { AccountIdentity } from "@/lib/account-identity";
 import AgentIcon from "./AgentIcon";
 import { AGENTS, localizeAgent, type Agent } from "@/lib/agents";
-import { INTEGRATIONS } from "@/lib/integrations";
+import { INTEGRATIONS, requestedConnectProviders } from "@/lib/integrations";
 import {
   HERO_CONVERSATION_STORAGE_KEY,
   HERO_CONVERSATION_HISTORY_KEY,
@@ -200,6 +201,15 @@ export default function ChatInterface({
   const [partialConvs, setPartialConvs] = useState<string[]>([]);
   const isTyping = activeId !== null && streamingConvs.includes(activeId);
   const hasPartialReply = activeId !== null && partialConvs.includes(activeId);
+  // Id dei messaggi dell'assistente che stiano ANCORA crescendo parola per
+  // parola. Serve a una cosa sola: sostituire l'avatar con i tre puntini
+  // finché il messaggio non è finito, così l'avatar compare a fine risposta
+  // (gli id sono univoci, quindi più agenti in parallelo non si pestano).
+  const [streamingMsgIds, setStreamingMsgIds] = useState<string[]>([]);
+  const markStreamingMsg = (id: string) =>
+    setStreamingMsgIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  const clearStreamingMsg = (id: string) =>
+    setStreamingMsgIds((prev) => prev.filter((x) => x !== id));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -1215,6 +1225,10 @@ export default function ChatInterface({
     setIsAtBottom(true);
     stickToBottom.current = true;
 
+    // Ids dei messaggi che crescono durante QUESTO invio: alla fine dello
+    // stream vengono tolti da `streamingMsgIds` per riportare l'avatar.
+    const convStreamingIds: string[] = [];
+
     // Messaggio già mostrato (caso coda): recupera la bolla esistente per non
     // duplicarla. Senza id la bolla viene creata qui (invio normale).
     let userMsg: LocalMessage | null = preAddedMsgId
@@ -1408,6 +1422,10 @@ export default function ChatInterface({
           const ensureAssistant = () => {
             if (!assistantId) {
               assistantId = generateId();
+              // Finché l'id è in `streamingMsgIds` la riga mostra i puntini al
+              // posto dell'avatar: l'avatar torna a fine messaggio.
+              markStreamingMsg(assistantId);
+              convStreamingIds.push(assistantId);
               setPartialConvs((prev) => (prev.includes(convId) ? prev : [...prev, convId]));
             }
           };
@@ -1590,6 +1608,10 @@ export default function ChatInterface({
         patchAssistant(assistantId, message, true);
       }
     }
+
+    // Fine generazione: i messaggi non crescono più, quindi i puntini lasciano
+    // il posto all'avatar dell'agente.
+    for (const id of convStreamingIds) clearStreamingMsg(id);
 
     streamingRef.current.delete(convId);
     stopRequested.current.delete(convId);
@@ -2371,15 +2393,22 @@ export default function ChatInterface({
               className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-48"
             >
             <div ref={contentRef} className="space-y-6 mx-auto max-w-4xl">
-            {messages.map((msg) => (
+            {messages.map((msg, msgIndex) => (
               <div
                 key={msg.id}
                 className={`flex items-start gap-3 ${
                   msg.role === "user" ? "justify-end" : "justify-start"
                 }${msg.role === "user" && msg.id === justSentId ? " animate-msg-send" : ""}`}
               >
+                {/* Durante lo streaming l'avatar è sostituito dai tre
+                    puntini (stesso ingombro): l'avatar dell'agente torna
+                    visibile quando il messaggio è completo. */}
                 {msg.role === "assistant" &&
-                  (agentForMessage(msg) ? (
+                  (streamingMsgIds.includes(msg.id) ? (
+                    <div className="mt-0.5 shrink-0">
+                      <TypingDots size="sm" />
+                    </div>
+                  ) : agentForMessage(msg) ? (
                     <div className="mt-0.5 shrink-0">
                       <AgentAvatar agent={agentForMessage(msg)!} size="sm" />
                     </div>
@@ -2421,6 +2450,19 @@ export default function ChatInterface({
                       (() => {
                         const providers = extractConnectProviders(msg.content);
                         const cleanText = stripConnectMarkers(msg.content);
+                        // La card "Connetti" compare SOLO se l'utente l'ha chiesta
+                        // esplicitamente nel messaggio che precede questa risposta
+                        // ("collega Gmail"). Se il modello scrive il marker di sua
+                        // iniziativa, il marker resta invisibile e nessuna card
+                        // spinge alla connessione.
+                        const prevUserText = [...messages.slice(0, msgIndex)]
+                          .reverse()
+                          .find((m) => m.role === "user")?.content;
+                        const requested =
+                          typeof prevUserText === "string"
+                            ? new Set(requestedConnectProviders(prevUserText))
+                            : new Set<string>();
+                        const cardProvider = providers.find((p) => requested.has(p));
                         // Errore di generazione: card azionabile invece del testo tecnico.
                         if (msg.error) {
                           return (
@@ -2440,8 +2482,8 @@ export default function ChatInterface({
                             {isLive && <WorkingIndicator label={runningStep.label} />}
                             {steps.length > 0 && <ActivityFeed steps={steps} />}
                             {cleanText && <MarkdownText text={cleanText} onReply={handleReplyToPhrase} />}
-                            {providers.length > 0 && (
-                              <InlineConnectCard provider={providers[0]} />
+                            {cardProvider && (
+                              <InlineConnectCard provider={cardProvider} />
                             )}
                           </>
                         );
@@ -2520,22 +2562,19 @@ export default function ChatInterface({
               </div>
             ))}
 
+          {/* Indicatori di generazione.
+              I tre puntini SOSTITUISCONO l'avatar dell'agente (stesso ingombro,
+              così le righe non saltano) e l'avatar torna a comparire quando il
+              messaggio è completo: vedi `streamingMsgId` nel render dei
+              messaggi. Qui sotto restano solo le etichette di contesto
+              ("sta lavorando su", "sta pensando"), senza la bolla con i
+              puntini che sarebbe ora un duplicato. */}
           {isTyping && !hasPartialReply && (
             <div className="flex items-start gap-3">
-              {activeAgent ? (
-                <AgentAvatar agent={activeAgent} size="sm" />
-              ) : (
-                <Image
-                  src="/agentcloud.png"
-                  alt="AgentCloud"
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 shrink-0"
-                />
-              )}
-              <div className="max-w-[85%]">
+              <TypingDots size="sm" />
+              <div className="max-w-[85%] pt-1">
                 {activeWorkingApps.length > 0 ? (
-                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1.5 text-xs font-bold text-brand-300">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1.5 text-xs font-bold text-brand-300">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500/20">
                       <span className="h-2 w-2 rounded-full bg-brand-400 animate-pulse" />
                     </span>
@@ -2552,22 +2591,9 @@ export default function ChatInterface({
                     </span>
                   </div>
                 ) : (
-                  <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-bold text-brand-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-bold text-brand-300">
                     {dict.chat.thinking}
                   </div>
-                )}
-                <div className="bg-neutral-800 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3.5">
-                  <div className="flex gap-1.5 items-center h-4">
-                    <span className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse" style={{ animationDelay: "0ms" }} />
-                    <span className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse" style={{ animationDelay: "200ms" }} />
-                    <span className="w-2 h-2 bg-neutral-400 rounded-full animate-typing-pulse" style={{ animationDelay: "400ms" }} />
-                  </div>
-                </div>
-                {activeWorkingApps.length > 0 && (
-                  <p className="mt-1.5 text-xs font-medium text-neutral-500">
-                    {dict.chat.workingOnConnectedApp}
-                  </p>
                 )}
               </div>
             </div>

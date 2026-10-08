@@ -418,6 +418,16 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     )}
                 </div>
               ))}
+
+              {/* Competenze: pagina diretta, senza pannello a tendina — il
+                  catalogo è una sezione autonoma del sito, quindi non ha
+                  bisogno del menu a scomparsa delle altre voci. */}
+              <Link
+                href="/skills"
+                className="rounded-full px-4 py-2 text-sm font-bold text-neutral-400 transition-all duration-200 hover:bg-white/5 hover:text-white"
+              >
+                {dict.navbar.skills}
+              </Link>
             </nav>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">

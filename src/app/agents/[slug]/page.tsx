@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Users,
   Sparkles,
-  Zap,
   RefreshCw,
   Layers,
   Rocket,
@@ -28,7 +27,12 @@ import AgentIcon from "@/components/AgentIcon";
 import AgentCard from "@/components/AgentCard";
 import AddToCartButton from "@/components/AddToCartButton";
 import AgentIntegrationsCard from "@/components/AgentIntegrationsCard";
+import AgentDetailTabs from "@/components/skills/AgentDetailTabs";
+import AgentSkillsTab, { type AgentPlugin } from "@/components/skills/AgentSkillsTab";
 import { OwnedProvider } from "@/components/OwnedProvider";
+import { getRecommendedPlugins } from "@/lib/skills/data";
+import { getInstalledSkillsState } from "@/lib/skills/state";
+import { getSkillsDictionary } from "@/lib/i18n/skills";
 import { getSessionUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveIsAdmin } from "@/lib/admin-access";
@@ -102,6 +106,53 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   const pricingNotes = getPricingNotes(locale);
   const bundleWithAgent = BUNDLES.find((b) => b.agentSlugs.includes(agent.slug));
   const bundleTeaserAgents = bundleWithAgent ? getBundleAgents(bundleWithAgent).slice(0, 4) : [];
+
+  // ── Competenze (tab "Competenze") ─────────────────────────────────────
+  // Plugin consigliati per questo agente + stato di installazione per
+  // competenza. Le integrazioni "collegate" arrivano dalle stesse query del
+  // pannello Integrazioni, così la tab dice la verità anche su Shopify e
+  // Google, che non passano da `tenant_integrations`.
+  const recommendedPlugins = await getRecommendedPlugins(slug);
+  const installedSkills = await getInstalledSkillsState(sessionUser?.id ?? null, slug);
+  const connectedBrands: Record<string, boolean> = {};
+  for (const [provider, connected] of Object.entries(genericConnected)) {
+    // `tenant_integrations` raggruppa più brand dietro un provider solo per
+    // Microsoft (Word/Excel/PowerPoint/OneNote): la mappa brand→provider fa
+    // sì che tutte e quattro risultino collegate insieme.
+    connectedBrands[provider] = connected;
+  }
+  if (shopifyConnected) connectedBrands.shopify = true;
+  if (googleConnected) {
+    connectedBrands.gmail = true;
+    connectedBrands.googlecalendar = true;
+  }
+  const skillsDict = getSkillsDictionary(locale);
+  const agentPlugins: AgentPlugin[] = recommendedPlugins.map((plugin) => ({
+    slug: plugin.slug,
+    name: plugin.name,
+    tagline: plugin.tagline,
+    icon: plugin.icon,
+    version: plugin.version,
+    skillCount: plugin.skillCount,
+    fit: plugin.agents.find((a) => a.slug === slug)?.fit ?? "secondary",
+    rationale: plugin.agents.find((a) => a.slug === slug)?.rationale ?? null,
+    skills: plugin.skills.map((skill) => ({
+      slug: skill.slug,
+      name: skill.name,
+      description: skill.description,
+      risk_level: skill.risk,
+      permissions: skill.permissions,
+      installed: installedSkills[skill.slug]?.installed ?? false,
+      enabled: installedSkills[skill.slug]?.enabled ?? false,
+    })),
+    integrations: plugin.resolvedIntegrations.map((i) => ({
+      brand: i.brand,
+      name: i.name,
+      status: i.status,
+      availability: i.available ? ("live" as const) : ("coming_soon" as const),
+      rationale: i.rationale,
+    })),
+  }));
   return (
     <OwnedProvider initialOwned={ownedSlugs}>
       <main className="min-h-dvh bg-neutral-950">
@@ -323,6 +374,19 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
         </section>
         <section className="px-4 pb-8 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] space-y-6">
+            {/* Due tab sullo stesso contenuto server: "Panoramica" (tutto
+                quello che c'era) e "Competenze" (plugin consigliati per questo
+                agente, con installazione e toggle). I due pannelli sono
+                renderizzati lato server e passati come children al wrapper
+                client: nessun dato attraversa il confine, cambia solo quale
+                pannello è visibile. */}
+            <AgentDetailTabs
+              defaultTab={agentPlugins.length > 0 ? "skills" : "overview"}
+              overviewLabel={dict.agentDetail.tabOverview}
+              skillsLabel={skillsDict.agentTab}
+              skillsCount={agentPlugins.length}
+              overview={
+                <div className="space-y-6">
             <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-white">
@@ -512,6 +576,18 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                 ))}
               </div>
             </div>
+                </div>
+              }
+              skills={
+                <AgentSkillsTab
+                  agentSlug={agent.slug}
+                  plugins={agentPlugins}
+                  connected={connectedBrands}
+                  signedIn={Boolean(sessionUser?.id)}
+                  dict={skillsDict}
+                />
+              }
+            />
           </div>
         </section>
         {relatedAgents.length > 0 && (

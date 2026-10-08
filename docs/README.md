@@ -90,6 +90,7 @@ Tutta la documentazione del progetto è raccolta in **`docs/`**:
 - **[docs/integrations-setup.md](docs/integrations-setup.md)** — setup OAuth dei 7 provider generici, tool agente e chiamate dirette alle API (nessun Edge proxy)
 - **[docs/FEATURE_FLAGS.md](docs/FEATURE_FLAGS.md)** — verticali, configurazioni e feature flags di AgentCloud
 - **[docs/PRICING.md](docs/PRICING.md)** — modelli di prezzo, piani di abbonamento e token allowance
+- **[docs/SKILLS.md](docs/SKILLS.md)** — sistema Competenze (Skills & Plugin): architettura, runtime, sicurezza, politica prezzi
 
 ## Deploy
 

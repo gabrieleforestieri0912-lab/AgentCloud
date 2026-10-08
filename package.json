@@ -19,9 +19,12 @@
     "test:microsoft-documents": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-microsoft-documents.mjs",
     "test:microsoft-tools": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-microsoft-tools.mjs",
     "test:ui": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-integrations-ui.mjs",
+    "test:skills": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-skills.mjs",
+    "test:skills-parity": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-skills-catalog-parity.mjs",
+    "seed:skills": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/generate-skills-seed.mjs",
     "test:security": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs scripts/test-integrations-security.mjs",
     "test:clients": "node scripts/test-clients-alignment.mjs",
-    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && npm run test:trello && npm run test:woocommerce && npm run test:mailchimp && npm run test:microsoft && npm run test:microsoft-graph && npm run test:microsoft-documents && npm run test:microsoft-tools && npm run test:ui && npm run test:security && npm run test:clients && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
+    "test": "npm run test:integrations && npm run test:drive && npm run test:airtable && npm run test:trello && npm run test:woocommerce && npm run test:mailchimp && npm run test:microsoft && npm run test:microsoft-graph && npm run test:microsoft-documents && npm run test:microsoft-tools && npm run test:ui && npm run test:skills && npm run test:skills-parity && npm run test:security && npm run test:clients && node scripts/test-integrations.mjs && node scripts/test-integration-tools.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

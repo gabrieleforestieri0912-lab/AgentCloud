@@ -23,6 +23,10 @@ import {
 import { PROVIDER_CATALOG, getCatalogEntry } from "../src/lib/integrations/catalog.ts";
 import { encryptToken, decryptToken, decryptMaybe } from "../src/lib/integrations/encryption.ts";
 import { authHeader } from "../src/lib/integrations/http.ts";
+import {
+  extractConnectMarkers,
+  requestedConnectProviders,
+} from "../src/lib/integrations.ts";
 
 let passed = 0;
 let failed = 0;
@@ -363,6 +367,58 @@ await test("basic base64 per i provider keypair", () => {
 await test("keypair con secret mancante non lancia", () => {
   const h = authHeader("keypair", "ck_123", null);
   assert.equal(h, `Basic ${Buffer.from("ck_123:").toString("base64")}`);
+});
+
+// ---------------------------------------------------------------------------
+section("Connect card · solo su richiesta esplicita");
+
+await test("collega gmail → card gmail", () => {
+  assert.deepEqual(requestedConnectProviders("collega gmail per favore"), ["gmail"]);
+});
+
+await test("connetti il mio store shopify → card shopify", () => {
+  assert.deepEqual(requestedConnectProviders("connetti il mio store shopify"), ["shopify"]);
+});
+
+await test("richiesta in inglese → card calendar", () => {
+  assert.deepEqual(requestedConnectProviders("please connect my google calendar"), ["calendar"]);
+});
+
+await test("domanda sullo stato → nessuna card", () => {
+  assert.deepEqual(requestedConnectProviders("gmail non è collegato?"), []);
+});
+
+await test("menzione senza richiesta → nessuna card", () => {
+  assert.deepEqual(requestedConnectProviders("ho letto le email su gmail stamattina"), []);
+});
+
+await test("negazione esplicita → nessuna card", () => {
+  assert.deepEqual(requestedConnectProviders("non collegare whatsapp per ora"), []);
+});
+
+await test("senza connettere → nessuna card", () => {
+  assert.deepEqual(requestedConnectProviders("fammi il report senza connettere niente"), []);
+});
+
+await test("testo vuoto → nessuna card", () => {
+  assert.deepEqual(requestedConnectProviders(""), []);
+});
+
+await test("più richieste → più provider", () => {
+  const found = requestedConnectProviders("collega slack e connetti trello");
+  assert.deepEqual([...found].sort(), ["slack", "trello"]);
+});
+
+await test("marker [[CONNECT:x]] estratti dal testo", () => {
+  assert.deepEqual(extractConnectMarkers("certo [[CONNECT:gmail]] fatto"), ["gmail"]);
+});
+
+await test("marker duplicati → una sola voce", () => {
+  assert.deepEqual(extractConnectMarkers("[[CONNECT:gmail]] e ancora [[CONNECT:gmail]]"), ["gmail"]);
+});
+
+await test("testo senza marker → lista vuota", () => {
+  assert.deepEqual(extractConnectMarkers("ciao, come va?"), []);
 });
 
 // ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,7 +16,7 @@ export async function GET(
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
 
-  const { id: agentInstanceId } = params;
+  const { id: agentInstanceId } = await params;
 
   const { data, error } = await admin
     .from("installed_skills")
@@ -47,13 +47,34 @@ export async function GET(
 }
 
 /**
+ * Risolve l'identificatore di una skill in un UUID.
+ *
+ * Perché: la UI conosce gli slug (il catalogo e gli URL usano gli slug,
+ * l'uuid è un dettaglio del DB), ma `installed_skills.skill_id` è una
+ * foreign key. Accettiamo `skill_id` o `skill_slug` e risolviamo qui, così il
+ * chiamante non deve fare due query.
+ */
+async function resolveSkillId(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  skillId: string | null | undefined,
+  skillSlug: string | null | undefined,
+): Promise<{ id: string; owner: string | null; account_id: string | null } | null> {
+  const query = admin.from("skills").select("id, owner, account_id");
+  const q = skillId ? query.eq("id", skillId) : skillSlug ? query.eq("slug", skillSlug) : null;
+  if (!q) return null;
+  const { data, error } = await q.maybeSingle();
+  if (error || !data) return null;
+  return data as { id: string; owner: string | null; account_id: string | null };
+}
+
+/**
  * POST /api/agents/[id]/skills
  * Installs a skill on an agent instance.
- * Body: { skill_id: string }
+ * Body: { skill_id?: string, skill_slug?: string }
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -61,22 +82,18 @@ export async function POST(
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
 
-  const { id: agentInstanceId } = params;
-  const body = await req.json();
-  const { skill_id } = body;
+  const { id: agentInstanceId } = await params;
+  const body = await req.json().catch(() => ({}));
+  const { skill_id, skill_slug } = body ?? {};
 
-  if (!skill_id) {
-    return NextResponse.json({ error: "skill_id is required" }, { status: 400 });
+  if (!skill_id && !skill_slug) {
+    return NextResponse.json({ error: "skill_id or skill_slug is required" }, { status: 400 });
   }
 
   // Verify skill exists and is accessible
-  const { data: skill, error: skillError } = await admin
-    .from("skills")
-    .select("id, owner, account_id")
-    .eq("id", skill_id)
-    .single();
+  const skill = await resolveSkillId(admin, skill_id, skill_slug);
 
-  if (skillError || !skill) {
+  if (!skill) {
     return NextResponse.json({ error: "Skill not found" }, { status: 404 });
   }
 
@@ -85,15 +102,18 @@ export async function POST(
     return NextResponse.json({ error: "Skill not accessible" }, { status: 403 });
   }
 
-  // Install skill
+  // Install skill (idempotente sul vincolo unico: reinstallare non duplica)
   const { data, error } = await admin
     .from("installed_skills")
-    .insert({
-      account_id: user.id,
-      agent_instance_id: agentInstanceId,
-      skill_id,
-      enabled: true,
-    })
+    .upsert(
+      {
+        account_id: user.id,
+        agent_instance_id: agentInstanceId,
+        skill_id: skill.id,
+        enabled: true,
+      },
+      { onConflict: "account_id,agent_instance_id,skill_id", ignoreDuplicates: false },
+    )
     .select()
     .single();
 
@@ -108,11 +128,11 @@ export async function POST(
 /**
  * PATCH /api/agents/[id]/skills
  * Updates the enabled status of an installed skill.
- * Body: { skill_id: string, enabled: boolean }
+ * Body: { skill_id?: string, skill_slug?: string, enabled: boolean }
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -120,20 +140,26 @@ export async function PATCH(
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
 
-  const { id: agentInstanceId } = params;
-  const body = await req.json();
-  const { skill_id, enabled } = body;
+  const { id: agentInstanceId } = await params;
+  const body = await req.json().catch(() => ({}));
+  const { skill_id, skill_slug, enabled } = body ?? {};
 
-  if (!skill_id || typeof enabled !== "boolean") {
-    return NextResponse.json({ error: "skill_id and enabled are required" }, { status: 400 });
+  if ((!skill_id && !skill_slug) || typeof enabled !== "boolean") {
+    return NextResponse.json(
+      { error: "skill_id or skill_slug, and enabled are required" },
+      { status: 400 },
+    );
   }
+
+  const skill = await resolveSkillId(admin, skill_id, skill_slug);
+  if (!skill) return NextResponse.json({ error: "Skill not found" }, { status: 404 });
 
   const { data, error } = await admin
     .from("installed_skills")
     .update({ enabled })
     .eq("account_id", user.id)
     .eq("agent_instance_id", agentInstanceId)
-    .eq("skill_id", skill_id)
+    .eq("skill_id", skill.id)
     .select()
     .single();
 
@@ -148,11 +174,11 @@ export async function PATCH(
 /**
  * DELETE /api/agents/[id]/skills
  * Uninstalls a skill from an agent instance.
- * Query: ?skill_id=uuid
+ * Query: ?skill_id=uuid | ?skill_slug=kebab-case
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -160,20 +186,27 @@ export async function DELETE(
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
 
-  const { id: agentInstanceId } = params;
+  const { id: agentInstanceId } = await params;
   const { searchParams } = new URL(req.url);
-  const skill_id = searchParams.get("skill_id");
+  const skillId = searchParams.get("skill_id");
+  const skillSlug = searchParams.get("skill_slug");
 
-  if (!skill_id) {
-    return NextResponse.json({ error: "skill_id query parameter is required" }, { status: 400 });
+  if (!skillId && !skillSlug) {
+    return NextResponse.json(
+      { error: "skill_id or skill_slug query parameter is required" },
+      { status: 400 },
+    );
   }
+
+  const skill = await resolveSkillId(admin, skillId, skillSlug);
+  if (!skill) return NextResponse.json({ error: "Skill not found" }, { status: 404 });
 
   const { error } = await admin
     .from("installed_skills")
     .delete()
     .eq("account_id", user.id)
     .eq("agent_instance_id", agentInstanceId)
-    .eq("skill_id", skill_id);
+    .eq("skill_id", skill.id);
 
   if (error) {
     console.error("Error uninstalling skill:", error);

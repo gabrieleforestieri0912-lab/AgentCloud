@@ -1014,7 +1014,7 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   request_integration_connect: {
     name: "request_integration_connect",
     description:
-      "Request the user to connect an integration directly inside the chat. Use when the task requires an app that is not yet connected (e.g. Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot, GitHub, ClickUp, Asana). This renders an inline card with the app logo and a Connect button (Claude-style). The agent can still talk without the connection — use this only when the user would benefit from connecting now. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp.",
+      "Request the user to connect an integration directly inside the chat. Call ONLY when the user explicitly asked to connect an app in this turn (e.g. Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot, GitHub, ClickUp, Asana). This renders an inline card with the app logo and a Connect button (Claude-style). Never call it on your own initiative to push a connection — the agent can still talk without the connection. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp.",
     input_schema: {
       type: "object",
       properties: {

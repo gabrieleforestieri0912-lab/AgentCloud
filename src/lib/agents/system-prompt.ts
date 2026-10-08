@@ -23,10 +23,10 @@ import { withLanguageDirective } from "./language";
 import { AGENT_IDENTITY_DIRECTIVE, OUTPUT_FORMAT_DIRECTIVE } from "./output-format";
 
 /** Connect guidance per /api/agent/run, con i tool disponibili. */
-export const CONNECT_GUIDANCE = `You can fully help WITHOUT any integration connected. If the task would benefit from a real app connection (shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp), do BOTH: 1) provide immediate value without it (draft, template, analysis, mock data) and 2) offer to connect now by calling the tool request_integration_connect with provider (e.g. shopify, gmail, calendar, sheets) AND include the inline marker [[CONNECT:provider]] in your answer so the UI renders a card with app logo + Connetti button (Claude-style). Never block or say you cannot help due to missing connection. Shape of the offer, in one short sentence of its own: state what you cannot see yet, then invite the connection and name the concrete outcome ("Non vedo gli ordini del tuo store: collega Shopify qui sotto e creo il prodotto per te"). Never make the marker the object of a verb of action ("procedo ora a [[CONNECT:shopify]] per controllare l'ordine", "I'll now [[CONNECT:shopify]] to check the order"): you are not running that check in this turn, you are asking the user to connect.`;
+export const CONNECT_GUIDANCE = `You can fully help WITHOUT any integration connected. The inline connect card ([[CONNECT:provider]] marker, request_integration_connect tool) appears ONLY when the user explicitly asks to connect an app in this turn ("collega Gmail", "connect Shopify"). Never call request_integration_connect and never write a [[CONNECT:provider]] marker on your own initiative — no proactive offers, no card to push the connection. If the task would benefit from a real app connection (shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp), do BOTH: 1) provide immediate value without it (draft, template, analysis, mock data) and 2) only if the user explicitly asked to connect, call the tool request_integration_connect with provider AND include the inline marker [[CONNECT:provider]] in your answer so the UI renders a card with app logo + Connetti button (Claude-style). Never block or say you cannot help due to missing connection. When the user did ask, shape of the offer, in one short sentence of its own: state what you cannot see yet, then invite the connection and name the concrete outcome ("Non vedo gli ordini del tuo store: collega Shopify qui sotto e creo il prodotto per te"). Never make the marker the object of a verb of action ("procedo ora a [[CONNECT:shopify]] per controllare l'ordine", "I'll now [[CONNECT:shopify]] to check the order"): you are not running that check in this turn, you are asking the user to connect.`;
 
 /** Connect guidance per /api/chat, dove `request_integration_connect` non c'è. */
-export const CONNECT_GUIDANCE_CHAT = `You can help WITHOUT any integration connected. If the task would benefit from an app (shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp), provide immediate value first (draft, template, analysis) AND include an inline marker [[CONNECT:provider]] (e.g. [[CONNECT:gmail]]) so the UI renders a card with app logo + Connetti button. Never block due to missing connection. Put the marker in a sentence of its own that invites the connection and names the concrete outcome, never as the object of a verb of action ("procedo ora a [[CONNECT:gmail]] per leggere la mail"): you are asking the user to connect, not acting in this turn.`;
+export const CONNECT_GUIDANCE_CHAT = `You can help WITHOUT any integration connected. The inline connect card ([[CONNECT:provider]] marker) appears ONLY when the user explicitly asks to connect an app in this turn ("collega Gmail", "connect Shopify"). Never write a [[CONNECT:provider]] marker on your own initiative — no proactive offers, no card to push the connection. If the task would benefit from an app (shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp), provide immediate value first (draft, template, analysis); only if the user explicitly asked to connect, include the inline marker [[CONNECT:provider]] (e.g. [[CONNECT:gmail]]) so the UI renders a card with app logo + Connetti button. Never block due to missing connection. When the user did ask, put the marker in a sentence of its own that invites the connection and names the concrete outcome, never as the object of a verb of action ("procedo ora a [[CONNECT:gmail]] per leggere la mail"): you are asking the user to connect, not acting in this turn.`;
 
 /**
  * Regola di consegna: nata da un test reale — un cliente che chiedeva di creare
@@ -37,7 +37,7 @@ export const CONNECT_GUIDANCE_CHAT = `You can help WITHOUT any integration conne
  */
 export const DELIVERY_DIRECTIVE = `Delivery:
 - Never answer with only an offer to connect an app, or with a promise of future action. In the very same answer, first deliver something the user can use right now: the draft, the deliverable, the template, the checklist, or the exact next steps. Then offer the connection or ask the missing detail.
-- When the request depends on data you cannot see yet (the store's orders, sales or products, an inbox, the calendar, a spreadsheet, a CRM record) and an app connection would let you resolve it yourself, say that plainly and offer the connection with the inline [[CONNECT:provider]] marker in the same answer in which you help.
+- When the request depends on data you cannot see yet (the store's orders, sales or products, an inbox, the calendar, a spreadsheet, a CRM record) and an app connection would let you resolve it yourself, say that plainly in the same answer in which you help. Include the inline [[CONNECT:provider]] marker ONLY if the user explicitly asked to connect in this turn.
 - Never claim to have checked, read, fetched, sent, created or updated real data (orders, emails, calendar events, store products, sales, CRM records) unless a tool result in this conversation actually contains it. Say plainly what you cannot see yet, and what you need to see it.
 - Never end with only a question: give the answer first, then ask for the missing detail.
 - Never invent numbers, prices, dates, names or links for the user's real data: if the value is not available, use an explicit placeholder in a template and say it must be filled in.
@@ -66,14 +66,20 @@ export function sharedAgentDirectives(
 /**
  * System prompt completo di un agente: prompt dell'agente + direttive condivise
  * + direttiva di lingua per la lingua della risposta.
+ *
+ * `skillsBlock` è oppure e va PRIMA delle direttive condivise: l'indice delle
+ * competenze è un'informazione sul contesto (cosa l'agente sa fare), non una
+ * regola di conversazione, quindi sta vicino al prompt dell'agente. Le regole
+ * di formato e consegna restano le ultime, che è dove il modello le pesa di più.
  */
 export function buildAgentSystemPrompt(
   agentSystemPrompt: string,
   replyLocale: Locale,
   connectGuidance: string = CONNECT_GUIDANCE,
+  skillsBlock?: string,
 ): string {
-  return withLanguageDirective(
-    agentSystemPrompt.trimEnd() + sharedAgentDirectives(connectGuidance),
-    replyLocale,
-  );
+  const withSkills = skillsBlock?.trim()
+    ? agentSystemPrompt.trimEnd() + "\n\n" + skillsBlock.trim() + sharedAgentDirectives(connectGuidance)
+    : agentSystemPrompt.trimEnd() + sharedAgentDirectives(connectGuidance);
+  return withLanguageDirective(withSkills, replyLocale);
 }

@@ -1,99 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { NextResponse } from "next/server";
+import { getPlugins } from "@/lib/skills/data";
 
 /**
  * GET /api/plugins
- * Returns all plugins with optional filtering by category, agent, or integration.
- * Query params:
- * - category: filter by plugin category
- * - agent_slug: filter by agent compatibility
- * - integration_slug: filter by integration requirement
- * - availability: filter by integration availability (live | coming_soon)
+ *
+ * Lista dei plugin con skill, agenti e integrazioni. I parametri di filtro
+ * sono opzionali e non sovrappongono a quelli della pagina `/skills`, che
+ * filtra in memoria: qui filtrano lato server.
+ *
+ * `?category=`     categoria del plugin
+ * `?agent_slug=`   compatibilità con un agente del marketplace
+ * `?integration=`  integrazione richiesta o opzionale (brand)
+ * `?availability=` `live` | `coming_soon` (stato dell'integrazione)
  */
-export async function GET(req: NextRequest) {
-  const admin = createAdminClient();
-  if (!admin) return NextResponse.json({ plugins: [] }, { status: 200 });
-
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
   const agentSlug = searchParams.get("agent_slug");
-  const integrationSlug = searchParams.get("integration_slug");
+  const integration = searchParams.get("integration");
   const availability = searchParams.get("availability");
 
-  let query = admin
-    .from("plugins")
-    .select(`
-      id,
-      slug,
-      name,
-      tagline,
-      description,
-      category,
-      icon,
-      price_tier,
-      version,
-      downloads,
-      created_at,
-      plugin_skills (
-        skill_id,
-        skills (
-          id,
-          slug,
-          name,
-          description,
-          risk_level
-        )
-      ),
-      plugin_agents (
-        agent_slug,
-        fit,
-        rationale
-      ),
-      plugin_integrations (
-        integration_slug,
-        status,
-        availability,
-        rationale
-      )
-    `);
+  let plugins = await getPlugins();
 
-  // Filter by category
-  if (category) {
-    query = query.eq("category", category);
+  if (category) plugins = plugins.filter((p) => p.category === category);
+  if (agentSlug) plugins = plugins.filter((p) => p.agents.some((a) => a.slug === agentSlug));
+  if (integration) {
+    plugins = plugins.filter((p) => p.resolvedIntegrations.some((i) => i.brand === integration));
   }
-
-  // Filter by agent compatibility
-  if (agentSlug) {
-    query = query.filter("plugin_agents.agent_slug", "eq", agentSlug);
-  }
-
-  // Execute query
-  const { data, error } = await query;
-
-  if (error || !data) {
-    console.error("Error fetching plugins:", error);
-    return NextResponse.json({ plugins: [] }, { status: 200 });
-  }
-
-  // Post-process filters that need to be applied after join
-  let filteredPlugins = data;
-
-  // Filter by integration requirement
-  if (integrationSlug) {
-    filteredPlugins = filteredPlugins.filter((plugin) =>
-      plugin.plugin_integrations.some((pi: any) => pi.integration_slug === integrationSlug)
-    );
-  }
-
-  // Filter by integration availability
-  if (availability) {
-    filteredPlugins = filteredPlugins.filter((plugin) =>
-      plugin.plugin_integrations.some((pi: any) => pi.availability === availability)
-    );
+  if (availability === "live") {
+    plugins = plugins.filter((p) => p.resolvedIntegrations.some((i) => i.available));
+  } else if (availability === "coming_soon") {
+    plugins = plugins.filter((p) => p.resolvedIntegrations.some((i) => !i.available));
   }
 
   return NextResponse.json(
-    { plugins: filteredPlugins },
-    { status: 200, headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+    { plugins },
+    { status: 200, headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },
   );
 }

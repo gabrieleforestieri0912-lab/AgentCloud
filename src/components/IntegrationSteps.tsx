@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Circle, Clock3, AlertCircle, Plug, Unplug, Loader2, ArrowRight } from "lucide-react";
+import { CheckCircle2, Circle, Clock3, AlertCircle, Plug, Unplug, Loader2, ArrowRight, Sparkles } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import Link from "next/link";
 import { getGuideForBrand, type IntegrationGuide } from "@/lib/integrations/guides";
@@ -28,6 +28,14 @@ type Props = {
    * esposto al browser oltre i dati che l'utente sta scrivendo.
    */
   tenantFields?: readonly TenantInputField[];
+  /**
+   * Quante competenze del catalonto usano questa integrazione.
+   *
+   * Perché serve: la pagina integrazioni risponde a "a cosa mi serve questa
+   * app?". Il conteggio viene dal catalogo Competenze (l'unica fonte), non da
+   * una query: sono dati pubblici e statici come il resto del catalogo.
+   */
+  skillsCount?: number;
 };
 
 export default function IntegrationSteps({
@@ -43,6 +51,7 @@ export default function IntegrationSteps({
   onDisconnect,
   busy,
   tenantFields,
+  skillsCount,
 }: Props) {
   const guide: IntegrationGuide | null = getGuideForBrand(brand);
   const dict = useLanguage();
@@ -91,6 +100,21 @@ export default function IntegrationSteps({
       </div>
 
       <p className="mt-2 text-sm leading-6 text-neutral-300">{guide?.whatItDoes ?? description}</p>
+
+      {/* Usata da N competenze: collega questa card al catalogo Competenze,
+          così l'utente vede subito il valore dell'integrazione. */}
+      {skillsCount !== undefined && skillsCount > 0 && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-neutral-500">
+          <Sparkles size={11} className="shrink-0 text-brand-400" />
+          {`Usata da ${skillsCount} ${skillsCount === 1 ? "competenza" : "competenze"}`}
+          <Link
+            href={`/skills?integration=${brand}`}
+            className="font-bold text-brand-400 underline-offset-2 hover:underline"
+          >
+            scopri
+          </Link>
+        </p>
+      )}
 
       {/* 3 passi */}
       {guide ? (

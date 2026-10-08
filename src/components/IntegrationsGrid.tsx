@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import type { Locale } from "@/lib/i18n/constants";
 import { INTEGRATIONS, BRAND_TO_PROVIDER } from "@/lib/integrations";
 import { getCatalogEntry, INTEGRATION_CATEGORIES } from "@/lib/integrations/catalog";
+import { skillUsageCounts } from "@/lib/skills/catalog";
 import { useLanguage } from "./LanguageProvider";
 import IntegrationSteps from "./IntegrationSteps";
 
@@ -59,6 +60,9 @@ export default function IntegrationsGrid({
   const [category, setCategory] = useState<string | null>(null);
   const [disconnectError, setDisconnectError] = useState<string | null>(null);
   const byProvider = new Map(rows.map((r) => [r.provider, r]));
+  // Quante competenze del catalogo usano ciascuna integrazione: collega la
+  // card al valore reale ("a cosa mi serve?"), dato pubblico e statico.
+  const skillsCountByBrand = useMemo(() => skillUsageCounts(), []);
 
   const onDisconnect = async (provider: string) => {
     setBusy(provider);
@@ -282,6 +286,7 @@ export default function IntegrationsGrid({
                   busy={busy === genericProvider}
                   onConnectHref={hrefForConnect}
                   tenantFields={getCatalogEntry(app.brand)?.tenantInput?.fields}
+                  skillsCount={skillsCountByBrand[app.brand] ?? 0}
                   onDisconnect={isGeneric && connected ? () => onDisconnect(genericProvider!) : undefined}
                 />
               );

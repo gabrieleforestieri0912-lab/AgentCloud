@@ -29,7 +29,7 @@ import {
   getFreeMessagesUsed,
   incrementAnonymousFreeCount,
 } from "@/lib/billing/free-limit";
-import { detectConnectProviders } from "@/lib/integrations";
+import { extractConnectMarkers, requestedConnectProviders } from "@/lib/integrations";
 import { isMicrosoftTool as isMicrosoftToolName } from "@/lib/agents/microsoft-tools";
 import { isMicrosoftConnected } from "@/lib/integrations/microsoft/tenant";
 import {
@@ -38,6 +38,7 @@ import {
   verifyApprovalToken,
 } from "@/lib/agents/tool-confirmation";
 import { logAudit } from "@/lib/audit";
+import { logSkillActivations, prepareSkillsForRun } from "@/lib/skills/installed";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -259,6 +260,19 @@ export async function POST(req: Request) {
   // non dal modello, che ha negli strumenti e nel prompt esempi in italiano.
   const replyLocale = replyLanguage(locale, lastUserText(initialMessages));
 
+  // Competenze (progressive disclosure): nel system prompt finisce solo
+  // l'indice (nome + descrizione + rischio); il corpo della SKILL.md entra nel
+  // contesto solo se la richiesta corrisponde a una description. Vedi
+  // `lib/skills/runtime.ts` e `lib/skills/installed.ts`.
+  const skillsRun = await prepareSkillsForRun({
+    accountId: userId !== "anonymous" ? userId : null,
+    agentSlug: agentId,
+    // `lastUserText` può tornare undefined (nessun messaggio utente): in
+    // quel caso non c'è nulla su cui abbinare una skill.
+    userText: lastUserText(initialMessages) ?? "",
+  });
+  const skillsIndex = skillsRun.indexBlock;
+
   const encoder = new TextEncoder();
   const conversationId = crypto.randomUUID();
   const executionErrorMessage = apiErrorMessageForLocale(
@@ -290,21 +304,33 @@ export async function POST(req: Request) {
         send({ type: "text", content: word }),
       );
 
-      // Card di connessione garantita: se il modello spiega come collegare
-      // un'app senza emettere il marker (né chiamare il tool), l'evento `connection`
-      // va inviato comunque, altrimenti la UI non mostra nulla e l'utente legge
-      // di un "pulsante Connetti" che non esiste. Una sola card per provider.
+      // Card di connessione: compare SOLO se l'utente l'ha chiesta
+      // esplicitamente in questo turno ("collega Gmail"). Se il modello parla
+      // di collegare un'app di sua iniziativa, nessun evento parte: la card
+      // non deve mai spammare per costringere alla connessione. Una sola card
+      // per provider.
+      const userRequestedProviders = new Set(
+        requestedConnectProviders(lastUserText(initialMessages) ?? ""),
+      );
       const sentConnections = new Set<string>();
-      const emitConnectCard = (text: string) => {
-        for (const provider of detectConnectProviders(text)) {
-          if (sentConnections.has(provider)) continue;
-          sentConnections.add(provider);
-          send({ type: "connection", provider });
-        }
+      const emitConnectCard = (provider: string) => {
+        if (!userRequestedProviders.has(provider)) return;
+        if (sentConnections.has(provider)) return;
+        sentConnections.add(provider);
+        send({ type: "connection", provider });
       };
 
       try {
         let conversationMessages = [...initialMessages];
+        // Skill caricate in questo turno: precedono l'ultimo messaggio
+        // dell'utente, così l'utente non può sovrascriverle.
+        if (skillsRun.turnMessage) {
+          conversationMessages = [
+            ...conversationMessages.slice(0, -1),
+            { role: "user", content: skillsRun.turnMessage },
+            conversationMessages[conversationMessages.length - 1],
+          ];
+        }
 
         // Ripresa dopo una conferma: il token firmato porta il batch di tool_use
         // approvato (firmato, quindi il client non può cambiarne tool o input).
@@ -364,7 +390,7 @@ export async function POST(req: Request) {
               // Direttive condivise e ordine sono definiti una volta sola in
               // lib/agents/system-prompt.ts, così route e test usano lo stesso
               // prompt (connect guidance, formato, identità, consegna, lingua).
-              system: buildAgentSystemPrompt(config.systemPrompt, replyLocale),
+              system: buildAgentSystemPrompt(config.systemPrompt, replyLocale, undefined, skillsIndex),
               messages: conversationMessages,
               tools: enabledTools,
               maxTokens: MAX_TOKENS,
@@ -380,7 +406,21 @@ export async function POST(req: Request) {
           await emitter.flush();
 
           if (response.stopReason === "end_turn") {
-            emitConnectCard(response.text);
+            // Eventi `connection` solo per i marker che l'utente ha chiesto:
+            // `emitConnectCard` filtra da solo sui provider richiesti.
+            for (const provider of extractConnectMarkers(response.text)) {
+              emitConnectCard(provider);
+            }
+            // Log delle competenze attivate in questo turno (dashboard +
+            // metriche). Best-effort: non deve mai far fallire la run.
+            await logSkillActivations({
+              accountId: userId !== "anonymous" ? userId : null,
+              agentSlug: agentId,
+              runId: conversationId,
+              skills: skillsRun.skills,
+              outcome: "success",
+              tokens: inputTokens + outputTokens,
+            });
             send({ type: "done" });
             break;
           }
@@ -432,10 +472,10 @@ export async function POST(req: Request) {
                 const prov = normalizeConnectProvider(
                   String((use.input as Record<string, unknown>)?.provider ?? ""),
                 );
-                if (prov) {
-                  sentConnections.add(prov);
-                  send({ type: "connection", provider: prov });
-                }
+                // Anche il tool mostra la card solo su richiesta esplicita:
+                // se il modello lo chiama di sua iniziativa, il risultato
+                // testuale resta ma senza card che spinge alla connessione.
+                if (prov) emitConnectCard(prov);
               }
 
               const result = await executeTool(
@@ -513,7 +553,9 @@ export async function POST(req: Request) {
             ];
           } else {
             // Stop inatteso (max_tokens / length / stop): niente loop tool.
-            emitConnectCard(response.text);
+            for (const provider of extractConnectMarkers(response.text)) {
+              emitConnectCard(provider);
+            }
             send({ type: "done" });
             break;
           }

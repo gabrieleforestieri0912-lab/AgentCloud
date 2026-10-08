@@ -410,57 +410,91 @@ const CONNECTABLE_PROVIDERS: { id: string; names: string[] }[] = [
 ];
 
 /**
- * Intenzione di connessione, in italiano/inglese/spagnolo/tedesco/francese.
- * Cattura sia l'infinito ("collegare", "connect") sia il participio passato
- * ("non collegato", "not connected") che è il modo più frequente in cui un
- * agente spiega che manca un account.
+ * Verbi di richiesta di connessione in forma attiva (IT/EN/ES/DE/FR).
+ *
+ * Solo forme che chiedono un'AZIONE ("collega", "connect", "vincula"): i
+ * participi di stato ("collegato", "connected", "nessun account") sono
+ * esclusi di proposito — descrivono una situazione, non chiedono di collegare
+ * nulla, ed è proprio su quelli che la card veniva spammata.
  */
-const CONNECT_INTENT =
-  /(connett|colleg|connect|vincul|verbind|\blink (?:your|the|an)\b|\bnot linked\b|nessun account|kein konto|aucun compte)/i;
-
-/** Distanza (caratteri) entro cui l'app deve essere citata dall'intenzione. */
-const CONNECT_WINDOW = 140;
+const CONNECT_REQUEST_VERBS =
+  /\b(collega|colleghi|collego|collegare|collegalo|collegala|collegami|connetti|connetto|connettere|connettilo|connettila|connect|links?|linka|attiva|attivare|autorizza|autorizzare|authorize|associa|associare|sincronizza|vincula|vincular|verbinde|verbinden|connecte|connectez)\b/i;
 
 /**
- * Ritorna gli id delle app che il testo sta dicendo all'utente di collegare.
- *
- * Perché esiste: la card di connessione compare solo quando il modello emette
- * il marker `[[CONNECT:<id>]]` o chiama il tool `request_integration_connect`,
- * ma l'adesione a quelle istruzioni non è garantita (il testo può spiegare
- * come collegare l'app senza emettere nulla). Questa funzione è il fallback
- * lato server: se la risposta parla di collegare un'app e il marker manca, la
- * route invia comunque l'evento `connection` e la UI mostra la card.
- *
- * Restituisce solo le app davvero citate accanto a un'intenzione di
- * connessione, così una risposta che menziona "Shopify" a caso non fa apparire
- * card inutili. I marker già presenti nel testo vengono ignorati.
+ * Negazioni che annullano una richiesta ("non collegare", "senza connettere",
+ * "do not connect"): se stanno subito prima del verbo, non è una richiesta.
  */
-export function detectConnectProviders(text: string): string[] {
+const CONNECT_NEGATION =
+  /\b(non|senza|mai|neanche|nemmeno|niente|not|without|never|don't|do not|kein|keine|sans)\b/i;
+
+/** Distanza (caratteri) entro cui verbo e app devono stare vicini. */
+const CONNECT_WINDOW = 140;
+
+/** Caratteri prima del verbo in cui si cerca una negazione. */
+const NEGATION_WINDOW = 30;
+
+/**
+ * Marker `[[CONNECT:<id>]]` scritti nel testo (dal modello o dal risultato di
+ * `request_integration_connect`). La UI li trasforma nella card con logo +
+ * bottone "Connetti"; il server li usa per decidere quali eventi `connection`
+ * inviare. Condiviso tra server e client così i due non divergono mai.
+ */
+export function extractConnectMarkers(text: string): string[] {
   if (!text) return [];
-  const cleaned = text.replace(/\[\[CONNECT:[a-zA-Z0-9_\-]+\]\]/g, " ");
-  const lowered = cleaned.toLowerCase();
+  const providers: string[] = [];
+  const markerRe = /\[\[CONNECT:([a-zA-Z0-9_\-]+)\]\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = markerRe.exec(text)) !== null) {
+    const id = m[1]?.toLowerCase();
+    if (id && !providers.includes(id)) providers.push(id);
+  }
+  return providers;
+}
+
+/**
+ * Id delle app che l'UTENTE chiede esplicitamente di collegare.
+ *
+ * Regola di prodotto: la card con il bottone "Connetti" compare SOLO su
+ * richiesta esplicita dell'utente, mai perché il modello ne parla. "Collega
+ * Gmail" → `["gmail"]`; "Gmail non è collegato?" → `[]` (è una domanda sullo
+ * stato, non una richiesta); "non collegare WhatsApp" → `[]`.
+ *
+ * La funzione è pura e gira sia sul server (route chat/agent, per decidere se
+ * emettere l'evento `connection`) sia sul client (ChatInterface, per decidere
+ * se mostrare la card del marker `[[CONNECT:id]]`).
+ */
+export function requestedConnectProviders(text: string): string[] {
+  if (!text) return [];
+  const lowered = text.toLowerCase();
   const found: string[] = [];
 
-  /** True se il nome dell'app è citato accanto a un'intenzione di connessione. */
-  const mentionsWithIntent = (name: string): boolean => {
+  /** True se il nome dell'app è vicino a un verbo di richiesta non negato. */
+  const requestedNearby = (name: string): boolean => {
     let from = 0;
-    // Ogni occorrenza del nome: l'intenzione può stare prima o dopo.
+    // Ogni occorrenza del nome: la richiesta può stare prima o dopo.
     for (let hits = 0; hits < 25; hits++) {
       const idx = lowered.indexOf(name, from);
       if (idx === -1) return false;
       const start = Math.max(0, idx - CONNECT_WINDOW);
       const end = Math.min(lowered.length, idx + name.length + CONNECT_WINDOW);
-      if (CONNECT_INTENT.test(cleaned.slice(start, end))) return true;
+      const window = text.slice(start, end);
+      // Cerca il verbo nella finestra e verifica che non sia negato. Regex
+      // globale costruita dal pattern: serve l'indice di ogni match.
+      let match: RegExpExecArray | null;
+      const global = new RegExp(CONNECT_REQUEST_VERBS.source, "gi");
+      while ((match = global.exec(window)) !== null) {
+        const before = window.slice(Math.max(0, match.index - NEGATION_WINDOW), match.index);
+        if (!CONNECT_NEGATION.test(before)) return true;
+      }
       from = idx + name.length;
     }
     return false;
   };
 
-  // Una sola card per app, anche quando il nome compare più volte ("Google
-  // Calendar" è citato due volte → una card, non due).
+  // Una sola card per app, anche quando il nome compare più volte.
   for (const { id, names } of CONNECTABLE_PROVIDERS) {
     if (found.includes(id)) continue;
-    if (names.some(mentionsWithIntent)) found.push(id);
+    if (names.some(requestedNearby)) found.push(id);
   }
   return found;
 }

@@ -15,7 +15,10 @@ import {
 import DashboardShell from "@/components/DashboardShell";
 import DashboardCharts from "@/components/DashboardCharts";
 import DashboardExportBar from "@/components/DashboardExportBar";
+import DashboardSkills from "@/components/skills/DashboardSkills";
 import AgentIcon from "@/components/AgentIcon";
+import { getInstalledSkillsSummary } from "@/lib/skills/metrics";
+import { getSkillsDictionary } from "@/lib/i18n/skills";
 import { AGENTS, localizeAgent } from "@/lib/agents";
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -163,6 +166,14 @@ export default async function DashboardPage({
       }));
   }
 
+  // Competenze installate con le metriche di attivazione (stato vuoto se le
+  // tabelle non sono ancora migrate: la sezione dice "nessuna competenza",
+  // che è la verità per quell'account, non un errore).
+  const skillsSummary = userId
+    ? await getInstalledSkillsSummary(userId)
+    : { installed: [], totals: { installed: 0, enabled: 0, uses: 0, successRate: 0 } };
+  const skillsDict = getSkillsDictionary(locale);
+
   const fullName = false
     ? "Admin"
     : typeof user?.user_metadata?.full_name === "string"
@@ -298,6 +309,9 @@ export default async function DashboardPage({
               </div>
             ))}
           </div>
+
+          {/* Competenze installate: stato, ultimo uso, attivazioni, successo */}
+          <DashboardSkills summary={skillsSummary} dict={skillsDict} />
 
           {/* Grafici e costi */}
           <div className="mb-8">
