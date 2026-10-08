@@ -286,9 +286,10 @@ export function parseMarkdown(text: string): MarkdownBlock[] {
  * Inserisce un a capo dopo ogni frase (`. ` + maiuscola/numero) così le risposte
  * dell'AI spezzano le frasi su righe separate, come voleva la chat.
  *
- * Applicato SOLO fuori dai blocchi fenced e dalle tabelle GFM: dentro il codice
- * `console.log("Hi. Ok")` o dentro una riga `| ... |` non deve essere spezzato,
- * altrimenti fence e tabelle si rompono in più paragrafi.
+ * Applicato SOLO fuori dai blocchi fenced, dalle tabelle GFM e dai marcatori inline:
+ * dentro il codice `console.log("Hi. Ok")`, dentro una riga `| ... |` o dentro
+ * `**grassetto**` non deve essere spezzato, altrimenti fence, tabelle e marcatori
+ * si rompono.
  */
 export function insertSentenceBreaks(text: string): string {
   let inCode = false;
@@ -303,7 +304,66 @@ export function insertSentenceBreaks(text: string): string {
       // Righe di tabella GFM (header, delimiter, corpo): mai spezzate, altrimenti
       // `| ... |` si divide in più paragrafi e il parser non la riconosce più.
       if (isTableRow(line) || TABLE_DELIMITER_RE.test(line.trim())) return line;
-      return line.replace(/([.!?]) (?=[A-ZÀ-ÿ0-9])/g, "$1\n\n");
+
+      // Evita di spezzare dentro i marcatori inline (**, *, `)
+      let result = "";
+      let i = 0;
+      let inBold = false;
+      let inItalic = false;
+      let inInlineCode = false;
+
+      while (i < line.length) {
+        const ch = line[i];
+
+        // Traccia i marcatori inline
+        if (ch === "*" && i + 1 < line.length && line[i + 1] === "*") {
+          inBold = !inBold;
+          result += "**";
+          i += 2;
+          continue;
+        }
+        if (ch === "*") {
+          inItalic = !inItalic;
+          result += "*";
+          i += 1;
+          continue;
+        }
+        if (ch === "`") {
+          inInlineCode = !inInlineCode;
+          result += "`";
+          i += 1;
+          continue;
+        }
+
+        // Se siamo dentro un marcatore inline, non spezzare
+        if (inBold || inItalic || inInlineCode) {
+          result += ch;
+          i += 1;
+          continue;
+        }
+
+        // Altrimenti applica lo split delle frasi
+        if (ch === "." && i + 1 < line.length && line[i + 1] === " " && i + 2 < line.length && /[A-ZÀ-ÿ0-9]/.test(line[i + 2])) {
+          result += ".\n\n";
+          i += 2;
+          continue;
+        }
+        if (ch === "!" && i + 1 < line.length && line[i + 1] === " " && i + 2 < line.length && /[A-ZÀ-ÿ0-9]/.test(line[i + 2])) {
+          result += "!\n\n";
+          i += 2;
+          continue;
+        }
+        if (ch === "?" && i + 1 < line.length && line[i + 1] === " " && i + 2 < line.length && /[A-ZÀ-ÿ0-9]/.test(line[i + 2])) {
+          result += "?\n\n";
+          i += 2;
+          continue;
+        }
+
+        result += ch;
+        i += 1;
+      }
+
+      return result;
     })
     .join("\n");
 }
