@@ -205,6 +205,190 @@ const it = {
     demoLimitReached: "Limite demo raggiunto — accedi per continuare",
   },
 
+howItWorks: {
+    badge: "Come funziona",
+    titleA: "Dal primo messaggio",
+    titleB: "al risultato in 4 passi",
+    subtitle:
+      "Scegli l’agente, collega i tuoi strumenti e delega il lavoro: al resto pensa lui.",
+    cta: "Scegli un agente",
+    steps: [
+      {
+        title: "Scegli l’agente",
+        desc: "15 agenti in 6 categorie: E-commerce, Marketing, Customer Service, Business Ops, Design e Finanza. Prezzi chiari (€4,99–€14,99 al mese) e attivazione in giornata.",
+      },
+      {
+        title: "Collega i tuoi strumenti",
+        desc: "Shopify, Gmail, Calendar e gli altri tool si collegano in 2 click con accesso sicuro. Niente chiavi da copiare, niente configurazioni complicate.",
+      },
+      {
+        title: "L’agente lavora per te",
+        desc: "Chiedi in chat e l’agente esegue: cerca prodotti, crea link al carrello, prenota appuntamenti, invia email. Provalo gratis con 5 messaggi al giorno.",
+      },
+      {
+        title: "Gestisci tutto da un posto",
+        desc: "Agenti attivi, attività svolte e abbonamento sotto controllo dalla tua dashboard, in qualsiasi momento.",
+      },
+    ],
+    demoTitle: "Esempio: dal prodotto al carrello, senza uscire dalla chat",
+    demoStep1: "1. Scegli",
+    demoStep2: "2. Collega",
+    demoStep3: "3. Delega",
+    demoAgentName: "Shopify Agent",
+    demoAgentPrice: "€9,99/mese",
+    demoAgentReady: "Pronto oggi",
+    demoConnected: "Negozio Shopify collegato",
+    demoResult: "Link carrello pronto → invia al cliente",
+  },
+
+  problemSolution: {
+    badge: "Problema → Soluzione per PMI",
+    titleA: "Dove perdi tempo,",
+    titleB: "l’agente lo fa per te",
+    subtitle:
+      "Tre colli di bottiglia tipici, risolti da agenti pronti all’uso che lavorano in chat.",
+    problemLabel: "Problema",
+    solutionLabel: "Soluzione",
+    seeAgent: "Vedi agente",
+    browseAll: "Sfoglia i {count} agenti",
+    items: [
+      {
+        problem:
+          "Ore perse a copiare ordini e prodotti tra Shopify, email e fogli.",
+        solution:
+          "Shopify Agent cerca nel catalogo, genera link carrello e verifica lo stato ordine in tempo reale — in chat, senza copiare.",
+        agent: "Shopify Agent",
+        workflow: "Query catalogo → Suggerisci → Carrello rapido → Conferma",
+      },
+      {
+        problem: "Lead dai moduli che restano senza follow-up e senza contesto.",
+        solution:
+          "Lead Capture cattura, valida email, arricchisce profilo e notifica Slack/HubSpot con score High/Medium/Low.",
+        agent: "Lead Capture Agent",
+        workflow: "Cattura → Arricchisci → Score → Notifica vendite",
+      },
+      {
+        problem:
+          "Recensioni Google e ticket senza risposta rapida, perdita di fiducia.",
+        solution:
+          "Reviews Agent monitora Google Business, analizza sentiment e propone bozze empatiche da approvare; Support Agent scala solo se serve umano.",
+        agent: "Reviews & Reputation / Support",
+        workflow: "Fetch → Analizza tono → Bozza → Pubblica su approvazione",
+      },
+    ],
+  },
+
+  useCases: {
+    badge: "Casi d’uso per la tua attività",
+    titleA: "Un agente per",
+    titleB: "ogni lavoro ripetitivo",
+    subtitle:
+      "Esempi concreti di cosa puoi delegare da domani mattina, scegliendo l’agente giusto.",
+    problemPrefix: "Problema:",
+    tryAgent: "Prova l’agente",
+    items: [
+      {
+        eyebrow: "E-commerce D2C",
+        title: "Shopify: dal prodotto al carrello in chat",
+        problem: "Ordini copiati a mano, link carrello lenti, scorte non viste.",
+        agent: "Shopify Agent + Inventory & Logistics",
+        tasks: [
+          "Ricerca catalogo",
+          "Link carrello diretto",
+          "Stato ordine con email",
+          "Allerta scorte",
+        ],
+      },
+      {
+        eyebrow: "Studio / Clinica / Salone",
+        title: "Prenotazioni senza ping-pong",
+        problem: "Email avanti-indietro per trovare una data.",
+        agent: "Calendar Booking Agent",
+        tasks: [
+          "Disponibilità Google Calendar",
+          "Prenota con Meet",
+          "Promemoria",
+          "Cancellazione",
+        ],
+      },
+      {
+        eyebrow: "Agenzia & Vendite",
+        title: "Lead che non si perdono",
+        problem: "Moduli senza follow-up, contatti non arricchiti.",
+        agent: "Lead Capture Agent",
+        tasks: [
+          "Cattura da chat/modulo",
+          "Arricchimento profilo",
+          "Score",
+          "Notifica Slack/HubSpot",
+        ],
+      },
+      {
+        eyebrow: "Ristorazione & Locale",
+        title: "Reputazione Google sotto controllo",
+        problem: "Recensioni senza risposta, sentiment ignorato.",
+        agent: "Reviews & Reputation Agent",
+        tasks: [
+          "Monitoraggio Google Business",
+          "Analisi sentiment",
+          "Bozza risposta",
+          "Pubblica su approvazione",
+        ],
+      },
+    ],
+  },
+
+  security: {
+    badge: "Sicurezza e privacy",
+    titleA: "I tuoi dati",
+    titleB: "restano tuoi",
+    subtitle:
+      "Protezione di livello aziendale, senza pensieri: tu lavori, alla sicurezza pensiamo noi.",
+    diagramTitle: "Come viaggiano i tuoi dati",
+    diagramLabel: "Tu → AgentCloud protetto → I tuoi strumenti",
+    cta: "Vedi privacy & termini →",
+    points: [
+      {
+        title: "I tuoi dati, separati",
+        desc: "Ogni account vede solo i propri dati: agenti, conversazioni e acquisti restano privati e separati dagli altri.",
+      },
+      {
+        title: "Connessioni cifrate",
+        desc: "I collegamenti a Shopify, Google e gli altri servizi sono cifrati e li puoi revocare in un click, quando vuoi.",
+      },
+      {
+        title: "Pagamenti sicuri",
+        desc: "Pagamenti con Stripe e PayPal: non vediamo né salviamo i dati della tua carta.",
+      },
+      {
+        title: "Accesso protetto",
+        desc: "Accedi con email o Google, con sessioni sicure e controllo completo dal tuo account.",
+      },
+      {
+        title: "Solo gli accessi necessari",
+        desc: "Ogni agente usa solo le integrazioni che gli servono davvero, niente accessi extra.",
+      },
+      {
+        title: "Trasparenza e controllo",
+        desc: "Esporta o cancella i tuoi dati quando vuoi dalle impostazioni, in linea con il GDPR.",
+      },
+    ],
+    diagram: {
+      you: "Tu",
+      youSub: "chat sicura",
+      youFoot: "dal tuo account",
+      platform: "AgentCloud",
+      platformSub: "dati separati e cifrati",
+      platformFoot: "solo i tuoi",
+      onlyYou: "Solo tu",
+      onlyYouSub: "controllo completo",
+      onlyYouFoot: "esporta • cancella",
+      tools: "I tuoi strumenti",
+      toolsSub: "Shopify • Gmail • Stripe",
+      toolsFoot: "connessioni revocabili",
+    },
+  },
+
   features: {
     badge: "Automazioni",
     titleA: "Una piattaforma,",
@@ -246,13 +430,34 @@ const it = {
     ],
   },
 
-  integrations: {
+integrations: {
     badge: "Integrazioni",
     titleA: "Funziona con gli strumenti",
     titleB: "che il tuo team usa già",
     subtitle:
       "AgentCloud si collega alle piattaforme su cui gira la tua azienda - dagli strumenti di produttività ai CRM, dalle app di comunicazione ai workflow di automazione.",
     cta: "Esplora le integrazioni AgentCloud",
+    summary: "{live} già disponibili • si collegano in 2 click, in modo sicuro.",
+    liveBadge: "Live",
+    liveHeading: "Live — pronte all’uso",
+    comingBadge: "In arrivo",
+    comingHeading: "In arrivo — roadmap",
+    roadmapShow: "Mostra la roadmap",
+    roadmapHide: "Nascondi la roadmap",
+    points: [
+      {
+        title: "Connessione sicura",
+        desc: "Shopify, Gmail, Calendar e altri si collegano in 2 click",
+      },
+      {
+        title: "Niente password condivise",
+        desc: "Accedi con i tuoi account, senza copiare chiavi",
+      },
+      {
+        title: "I tuoi dati restano tuoi",
+        desc: "Ogni account vede solo i propri dati e collegamenti",
+      },
+    ],
     categories: {
       "E-commerce": "E-commerce",
       Payments: "Pagamenti",
@@ -298,11 +503,12 @@ const it = {
     customText:
       "Raccontaci il tuo workflow. Progettiamo l'agente, colleghiamo i tuoi strumenti e consegniamo l'automazione.",
     buildCustom: "Crea su misura",
-    previewMeta: "{count} agenti • {cats} categorie • da {price}/mese",
+previewMeta: "{count} agenti • {cats} categorie • da {price}/mese",
     previewTitle: "Anteprima del marketplace",
     previewSubtitle: "Prezzi chiari, attivazione in giornata e integrazioni incluse. Provali gratis prima di decidere.",
     viewAllLink: "Vedi tutti →",
     viewDetailsLink: "Vedi dettagli",
+    previewStats: "{count} agenti • {cats} categorie • da {price}/mese",
     priceTier0: "0,99€ – 4,99€",
     priceTier0Short: "0,99€ – 4,99€",
     priceNote: "Nuova fascia agenti a partire da 0,99€/mese",
@@ -320,21 +526,54 @@ const it = {
     },
   },
 
-  cta: {
+cta: {
     titleA: "Lancia il tuo primo",
     titleB: "workflow con agenti AI.",
     subtitle:
       "Scegli un agente, collega i tuoi strumenti e trasforma il lavoro ripetitivo in un sistema automatico.",
     browseMarketplace: "Sfoglia il marketplace",
     seeDashboard: "Vedi il dashboard",
+    customAgent: "Richiedi un agente su misura",
+    points: [
+      {
+        title: "5 messaggi gratis al giorno",
+        desc: "per ogni agente, prima di decidere",
+      },
+      {
+        title: "Dati al sicuro",
+        desc: "connessioni cifrate e account separati",
+      },
+      {
+        title: "Pronto in giornata",
+        desc: "colleghi tutto in 2 click",
+      },
+    ],
   },
 
   faq: {
     badge: "FAQ",
     titleA: "Domande",
     titleB: "frequenti",
-    stillQuestions: "Hai ancora domande?",
+stillQuestions: "Hai ancora domande?",
     contactSupport: "Contatta il supporto",
+    extra: [
+      {
+        q: "Posso collegare il mio negozio Shopify?",
+        a: "L’integrazione Shopify è temporaneamente in “Prossimamente”: non è ancora collegabile. Stiamo completando il connettore — nel frattempo puoi usare tutte le altre integrazioni già disponibili.",
+      },
+      {
+        q: "Cosa significa “5 messaggi gratis al giorno per agente”?",
+        a: "Ogni agente si può provare con 5 messaggi gratuiti al giorno, senza impegno: il contatore si azzera a mezzanotte. Per conversazioni illimitate puoi sbloccarlo con l’abbonamento (€4,99–€14,99 al mese).",
+      },
+      {
+        q: "I miei dati sono al sicuro?",
+        a: "Sì: ogni account vede solo i propri dati, le connessioni ai tuoi servizi (Google, Microsoft 365 e gli altri) sono cifrate e revocabili in un click, e puoi esportare o cancellare tutto dalle impostazioni quando vuoi. Dettagli in /privacy e /terms.",
+      },
+      {
+        q: "Quali integrazioni sono disponibili?",
+        a: "Già disponibili: Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce e Microsoft 365 (Word, Excel, PowerPoint, OneNote). Shopify, Mailchimp e altre app sono in arrivo — vedi /integrations.",
+      },
+    ],
     items: [
       {
         q: "Cos'è AgentCloud?",
@@ -380,13 +619,28 @@ const it = {
     chartTitle: "Esecuzioni negli ultimi 7 giorni",
     chartRuns: "Esecuzioni",
     chartWeek: "Questa settimana",
-    sidebar: [
+sidebar: [
       "Panoramica",
       "Agenti",
       "Integrazioni",
       "Esecuzioni",
       "Fatturazione",
     ],
+    sidebarTeam: "Team",
+    sidebarSettings: "Impostazioni",
+    sidebarHelp: "Aiuto & Docs",
+    planBadge: "Pro",
+    monthlyUsage: "Utilizzo mensile",
+    usageNote: "1.4k / 2k esecuzioni • si rinnova tra 12 giorni",
+    emptyAgentsTitle: "Nessun agente installato",
+    emptyAgentsBody: "Installa agenti dal marketplace per vederli qui",
+    emptyStatsLabels: [
+      "Agenti installati",
+      "Esecuzioni totali",
+      "Successo medio",
+      "Token",
+    ],
+    noActivity: "Nessuna attività recente",
     stats: [
       ["12", "Agenti installati"],
       ["847", "Esecuzioni questo mese"],
@@ -1200,13 +1454,18 @@ chat: {
     successText:
       "Grazie, {name}. Abbiamo ricevuto il tuo messaggio e risponderemo entro 24 ore.",
     close: "Chiudi",
-    reasons: [
+reasons: [
       "Richiesta generale",
       "Vendite",
       "Supporto",
+      "Agente su misura",
       "Partnership",
       "Altro",
     ],
+    // Tema precompilato via ?topic=custom: usato dai CTA "Richiedi un agente
+    // su misura" per far arrivare l'utente al form con la casella giusta già
+    // selezionata invece di doverla cercare nell'elenco.
+    customTopic: "Agente su misura",
     selected: "Selezionato: {subject}",
     somethingWrong: "Qualcosa è andato storto",
     failedSend: "Invio del messaggio non riuscito",
@@ -1725,6 +1984,7 @@ chat: {
     connected: "Connesso",
     disconnected: "Non connesso",
     errorPrefix: "Errore:",
+    pending: "Approvazione ricevuta: le credenziali sono in arrivo. Aggiorna tra un momento.",
     connectDesc: "Collega i tuoi strumenti per sbloccare le automazioni.",
     connectShopify: "Collega il tuo store per gestire prodotti, ordini e carrello",
     connectGmail: "Connetti Gmail per leggere, inviare e gestire le email",
@@ -2229,6 +2489,190 @@ export const en: Dictionary = {
     demoLimitReached: "Demo limit reached — sign in to continue",
   },
 
+howItWorks: {
+    badge: "How it works",
+    titleA: "From the first message",
+    titleB: "to the result in 4 steps",
+    subtitle:
+      "Pick the agent, connect your tools and delegate the work: it handles the rest.",
+    cta: "Pick an agent",
+    steps: [
+      {
+        title: "Pick an agent",
+        desc: "15 agents across 6 categories: E-commerce, Marketing, Customer Service, Business Ops, Design and Finance. Clear pricing (€4.99–€14.99 per month) and same-day activation.",
+      },
+      {
+        title: "Connect your tools",
+        desc: "Shopify, Gmail, Calendar and the other tools connect in 2 clicks with secure access. No keys to copy, no complicated setup.",
+      },
+      {
+        title: "The agent works for you",
+        desc: "Ask in chat and the agent executes: search products, build cart links, book appointments, send emails. Try it free with 5 messages a day.",
+      },
+      {
+        title: "Manage everything in one place",
+        desc: "Active agents, completed work and your subscription under control from your dashboard, at any time.",
+      },
+    ],
+    demoTitle: "Example: from product to cart, without leaving the chat",
+    demoStep1: "1. Pick",
+    demoStep2: "2. Connect",
+    demoStep3: "3. Delegate",
+    demoAgentName: "Shopify Agent",
+    demoAgentPrice: "€9.99/month",
+    demoAgentReady: "Ready today",
+    demoConnected: "Shopify store connected",
+    demoResult: "Cart link ready → send to customer",
+  },
+
+  problemSolution: {
+    badge: "Problem → Solution for SMBs",
+    titleA: "Where you lose time,",
+    titleB: "the agent does it for you",
+    subtitle:
+      "Three typical bottlenecks, solved by ready-to-use agents that work in chat.",
+    problemLabel: "Problem",
+    solutionLabel: "Solution",
+    seeAgent: "View agent",
+    browseAll: "Browse the {count} agents",
+    items: [
+      {
+        problem:
+          "Hours lost copying orders and products between Shopify, email and spreadsheets.",
+        solution:
+          "Shopify Agent searches the catalog, generates cart links and checks order status in real time — in chat, without copying.",
+        agent: "Shopify Agent",
+        workflow: "Catalog query → Suggest → Quick cart → Confirm",
+      },
+      {
+        problem: "Leads from forms with no follow-up and no context.",
+        solution:
+          "Lead Capture captures, validates the email, enriches the profile and notifies Slack/HubSpot with a High/Medium/Low score.",
+        agent: "Lead Capture Agent",
+        workflow: "Capture → Enrich → Score → Notify sales",
+      },
+      {
+        problem:
+          "Google reviews and tickets without a fast reply, losing trust.",
+        solution:
+          "Reviews Agent monitors Google Business, analyzes sentiment and drafts empathetic replies for approval; Support Agent escalates only when a human is needed.",
+        agent: "Reviews & Reputation / Support",
+        workflow: "Fetch → Tone analysis → Draft → Publish on approval",
+      },
+    ],
+  },
+
+  useCases: {
+    badge: "Use cases for your business",
+    titleA: "An agent for",
+    titleB: "every repetitive job",
+    subtitle:
+      "Concrete examples of what you can delegate first thing in the morning, by picking the right agent.",
+    problemPrefix: "Problem:",
+    tryAgent: "Try the agent",
+    items: [
+      {
+        eyebrow: "D2C E-commerce",
+        title: "Shopify: from product to cart in chat",
+        problem: "Orders copied by hand, slow cart links, stock never checked.",
+        agent: "Shopify Agent + Inventory & Logistics",
+        tasks: [
+          "Catalog search",
+          "Direct cart link",
+          "Order status with email",
+          "Stock alerts",
+        ],
+      },
+      {
+        eyebrow: "Studio / Clinic / Salon",
+        title: "Bookings without the back-and-forth",
+        problem: "Email ping-pong just to find a date.",
+        agent: "Calendar Booking Agent",
+        tasks: [
+          "Google Calendar availability",
+          "Books with Meet",
+          "Reminders",
+          "Cancellation",
+        ],
+      },
+      {
+        eyebrow: "Agency & Sales",
+        title: "Leads that never get lost",
+        problem: "Forms with no follow-up, contacts never enriched.",
+        agent: "Lead Capture Agent",
+        tasks: [
+          "Capture from chat/form",
+          "Profile enrichment",
+          "Scoring",
+          "Slack/HubSpot notification",
+        ],
+      },
+      {
+        eyebrow: "Restaurant & Local business",
+        title: "Google reputation under control",
+        problem: "Reviews with no reply, sentiment ignored.",
+        agent: "Reviews & Reputation Agent",
+        tasks: [
+          "Google Business monitoring",
+          "Sentiment analysis",
+          "Reply draft",
+          "Publish on approval",
+        ],
+      },
+    ],
+  },
+
+  security: {
+    badge: "Security and privacy",
+    titleA: "Your data",
+    titleB: "stays yours",
+    subtitle:
+      "Enterprise-grade protection, no worries: you do the work, we handle the security.",
+    diagramTitle: "How your data travels",
+    diagramLabel: "You → protected AgentCloud → your tools",
+    cta: "See privacy & terms →",
+    points: [
+      {
+        title: "Your data, separated",
+        desc: "Every account only sees its own data: agents, conversations and purchases stay private and separated from the others.",
+      },
+      {
+        title: "Encrypted connections",
+        desc: "Connections to Shopify, Google and the other services are encrypted and you can revoke them in one click, whenever you want.",
+      },
+      {
+        title: "Secure payments",
+        desc: "Payments with Stripe and PayPal: we neither see nor store your card details.",
+      },
+      {
+        title: "Protected access",
+        desc: "Sign in with email or Google, with secure sessions and full control from your account.",
+      },
+      {
+        title: "Only the access you need",
+        desc: "Each agent only uses the integrations it actually needs, no extra access.",
+      },
+      {
+        title: "Transparency and control",
+        desc: "Export or delete your data whenever you want from settings, in line with GDPR.",
+      },
+    ],
+    diagram: {
+      you: "You",
+      youSub: "secure chat",
+      youFoot: "from your account",
+      platform: "AgentCloud",
+      platformSub: "separated, encrypted data",
+      platformFoot: "yours only",
+      onlyYou: "Only you",
+      onlyYouSub: "full control",
+      onlyYouFoot: "export • delete",
+      tools: "Your tools",
+      toolsSub: "Shopify • Gmail • Stripe",
+      toolsFoot: "revocable connections",
+    },
+  },
+
   features: {
     badge: "Automations",
     titleA: "One platform,",
@@ -2276,7 +2720,28 @@ export const en: Dictionary = {
     titleB: "your team already uses",
     subtitle:
       "AgentCloud connects with the platforms your business runs on - from productivity tools to CRMs, communication apps to automation workflows.",
-    cta: "Explore AgentCloud Integrations",
+cta: "Explore AgentCloud Integrations",
+    summary: "{live} already available • they connect in 2 clicks, securely.",
+    liveBadge: "Live",
+    liveHeading: "Live — ready to use",
+    comingBadge: "Coming soon",
+    comingHeading: "Coming soon — roadmap",
+    roadmapShow: "Show the roadmap",
+    roadmapHide: "Hide the roadmap",
+    points: [
+      {
+        title: "Secure connection",
+        desc: "Shopify, Gmail, Calendar and others connect in 2 clicks",
+      },
+      {
+        title: "No shared passwords",
+        desc: "Sign in with your own accounts, without copying keys",
+      },
+      {
+        title: "Your data stays yours",
+        desc: "Every account only sees its own data and connections",
+      },
+    ],
     categories: {
       "E-commerce": "E-commerce",
       Payments: "Payments",
@@ -2325,8 +2790,9 @@ export const en: Dictionary = {
     previewMeta: "{count} agents • {cats} categories • from {price}/mo",
     previewTitle: "Marketplace preview",
     previewSubtitle: "Clear pricing, same-day activation and included integrations. Try them free before deciding.",
-    viewAllLink: "View all →",
+viewAllLink: "View all →",
     viewDetailsLink: "View details",
+    previewStats: "{count} agents • {cats} categories • from {price}/mo",
     priceTier0: "€0.99 – €4.99",
     priceTier0Short: "€0.99 – €4.99",
     priceNote: "New agent tier starting at €0.99/month",
@@ -2349,16 +2815,49 @@ export const en: Dictionary = {
     titleB: "AI agent workflow.",
     subtitle:
       "Pick an agent, connect your tools, and turn repetitive business work into an automated system.",
-    browseMarketplace: "Browse marketplace",
+browseMarketplace: "Browse marketplace",
     seeDashboard: "See dashboard",
+    customAgent: "Request a custom agent",
+    points: [
+      {
+        title: "5 free messages a day",
+        desc: "for every agent, before you decide",
+      },
+      {
+        title: "Your data is safe",
+        desc: "encrypted connections and separate accounts",
+      },
+      {
+        title: "Ready the same day",
+        desc: "you connect everything in 2 clicks",
+      },
+    ],
   },
 
   faq: {
     badge: "FAQ",
     titleA: "Frequently asked",
     titleB: "questions",
-    stillQuestions: "Still have questions?",
+stillQuestions: "Still have questions?",
     contactSupport: "Contact support",
+    extra: [
+      {
+        q: "Can I connect my Shopify store?",
+        a: "The Shopify integration is temporarily “Coming soon”: it isn't connectable yet. We're finishing the connector — meanwhile you can use all the other integrations that are already available.",
+      },
+      {
+        q: "What does “5 free messages a day per agent” mean?",
+        a: "Every agent can be tried with 5 free messages a day, no commitment: the counter resets at midnight. For unlimited conversations you can unlock it with a subscription (€4.99–€14.99 per month).",
+      },
+      {
+        q: "Is my data safe?",
+        a: "Yes: every account only sees its own data, connections to your services (Google, Microsoft 365 and the others) are encrypted and revocable in one click, and you can export or delete everything from settings whenever you want. Details in /privacy and /terms.",
+      },
+      {
+        q: "Which integrations are available?",
+        a: "Already available: Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce and Microsoft 365 (Word, Excel, PowerPoint, OneNote). Shopify, Mailchimp and other apps are coming soon — see /integrations.",
+      },
+    ],
     items: [
       {
         q: "What is AgentCloud?",
@@ -2404,7 +2903,17 @@ export const en: Dictionary = {
     chartTitle: "Runs in the last 7 days",
     chartRuns: "Runs",
     chartWeek: "This week",
-    sidebar: ["Overview", "Agents", "Integrations", "Runs", "Billing"],
+sidebar: ["Overview", "Agents", "Integrations", "Runs", "Billing"],
+    sidebarTeam: "Team",
+    sidebarSettings: "Settings",
+    sidebarHelp: "Help & Docs",
+    planBadge: "Pro",
+    monthlyUsage: "Monthly usage",
+    usageNote: "1.4k / 2k runs • renews in 12 days",
+    emptyAgentsTitle: "No agents installed yet",
+    emptyAgentsBody: "Install agents from the marketplace to see them here",
+    emptyStatsLabels: ["Installed agents", "Total runs", "Avg success", "Tokens"],
+    noActivity: "No recent activity",
     stats: [
       ["12", "Installed agents"],
       ["847", "Runs this month"],
@@ -3215,7 +3724,8 @@ chat: {
     successText:
       "Thanks, {name}. We've received your message and will reply within 24 hours.",
     close: "Close",
-    reasons: ["General inquiry", "Sales", "Support", "Partnership", "Other"],
+    reasons: ["General inquiry", "Sales", "Support", "Custom agent", "Partnership", "Other"],
+    customTopic: "Custom agent",
     selected: "Selected: {subject}",
     somethingWrong: "Something went wrong",
     failedSend: "Failed to send message",
@@ -3734,6 +4244,7 @@ chat: {
     desc: "Connect Stripe, Notion, Slack, HubSpot and Google Sheets. Tokens are never exposed to the browser.",
     connected: "Connected",
     disconnected: "Not connected",
+    pending: "Approval received: the credentials are on their way. Refresh in a moment.",
     errorPrefix: "Error:",
     connectDesc: "Connect your tools to unlock automations.",
     connectShopify: "Connect your store to manage products, orders and cart",
@@ -4236,6 +4747,190 @@ export const es: Dictionary = {
     demoLimitReached: "Límite demo alcanzado — inicia sesión para continuar",
   },
 
+howItWorks: {
+    badge: "Cómo funciona",
+    titleA: "Del primer mensaje",
+    titleB: "al resultado en 4 pasos",
+    subtitle:
+      "Elige el agente, conecta tus herramientas y delega el trabajo: el resto lo hace él.",
+    cta: "Elige un agente",
+    steps: [
+      {
+        title: "Elige el agente",
+        desc: "15 agentes en 6 categorías: E-commerce, Marketing, Customer Service, Business Ops, Design y Finanzas. Precios claros (4,99 €–14,99 € al mes) y activación el mismo día.",
+      },
+      {
+        title: "Conecta tus herramientas",
+        desc: "Shopify, Gmail, Calendar y las demás herramientas se conectan en 2 clics con acceso seguro. Sin claves que copiar ni configuraciones complicadas.",
+      },
+      {
+        title: "El agente trabaja por ti",
+        desc: "Pregunta en el chat y el agente ejecuta: busca productos, crea enlaces al carrito, reserva citas, envía emails. Pruébalo gratis con 5 mensajes al día.",
+      },
+      {
+        title: "Gestiona todo desde un sitio",
+        desc: "Agentes activos, trabajo realizado y suscripción bajo control desde tu dashboard, en cualquier momento.",
+      },
+    ],
+    demoTitle: "Ejemplo: del producto al carrito, sin salir del chat",
+    demoStep1: "1. Elige",
+    demoStep2: "2. Conecta",
+    demoStep3: "3. Delega",
+    demoAgentName: "Agente Shopify",
+    demoAgentPrice: "9,99 €/mes",
+    demoAgentReady: "Listo hoy",
+    demoConnected: "Tienda Shopify conectada",
+    demoResult: "Enlace al carrito listo → envíalo al cliente",
+  },
+
+  problemSolution: {
+    badge: "Problema → Solución para pymes",
+    titleA: "Donde pierdes tiempo,",
+    titleB: "el agente lo hace por ti",
+    subtitle:
+      "Tres cuellos de botella típicos, resueltos por agentes listos para usar que trabajan en el chat.",
+    problemLabel: "Problema",
+    solutionLabel: "Solución",
+    seeAgent: "Ver agente",
+    browseAll: "Explorar los {count} agentes",
+    items: [
+      {
+        problem:
+          "Horas perdidas copiando pedidos y productos entre Shopify, el email y las hojas de cálculo.",
+        solution:
+          "El agente de Shopify busca en el catálogo, genera enlaces al carrito y verifica el estado del pedido en tiempo real — en el chat, sin copiar.",
+        agent: "Agente Shopify",
+        workflow: "Consulta de catálogo → Sugerir → Carrito rápido → Confirmar",
+      },
+      {
+        problem: "Leads de formularios que se quedan sin seguimiento ni contexto.",
+        solution:
+          "Lead Capture captura, valida el email, enriquece el perfil y avisa a Slack/HubSpot con una puntuación High/Medium/Low.",
+        agent: "Agente Lead Capture",
+        workflow: "Capturar → Enriquecer → Puntuación → Avisar a ventas",
+      },
+      {
+        problem:
+          "Reseñas de Google y tickets sin respuesta rápida, pérdida de confianza.",
+        solution:
+          "Reviews Agent vigila Google Business, analiza el sentimiento y propone borradores empáticos para aprobar; Support Agent escala solo si hace falta una persona.",
+        agent: "Reviews & Reputation / Support",
+        workflow: "Fetch → Analizar tono → Borrador → Publicar con aprobación",
+      },
+    ],
+  },
+
+  useCases: {
+    badge: "Casos de uso para tu negocio",
+    titleA: "Un agente para",
+    titleB: "cada tarea repetitiva",
+    subtitle:
+      "Ejemplos concretos de lo que puedes delegar a primera hora, eligiendo el agente adecuado.",
+    problemPrefix: "Problema:",
+    tryAgent: "Probar el agente",
+    items: [
+      {
+        eyebrow: "E-commerce D2C",
+        title: "Shopify: del producto al carrito en el chat",
+        problem: "Pedidos copiados a mano, enlaces al carrito lentos, stock sin revisar.",
+        agent: "Agente Shopify + Inventory & Logistics",
+        tasks: [
+          "Búsqueda en catálogo",
+          "Enlace directo al carrito",
+          "Estado del pedido con email",
+          "Alertas de stock",
+        ],
+      },
+      {
+        eyebrow: "Clínica / Consulta / Salón",
+        title: "Citas sin idas y venidas",
+        problem: "Emails de ida y vuelta solo para encontrar una fecha.",
+        agent: "Agente Calendar Booking",
+        tasks: [
+          "Disponibilidad de Google Calendar",
+          "Reserva con Meet",
+          "Recordatorios",
+          "Cancelación",
+        ],
+      },
+      {
+        eyebrow: "Agencia & Ventas",
+        title: "Leads que no se pierden",
+        problem: "Formularios sin seguimiento, contactos sin enriquecer.",
+        agent: "Agente Lead Capture",
+        tasks: [
+          "Captura desde chat/formulario",
+          "Enriquecimiento del perfil",
+          "Puntuación",
+          "Aviso a Slack/HubSpot",
+        ],
+      },
+      {
+        eyebrow: "Restaurante & Local",
+        title: "Reputación en Google bajo control",
+        problem: "Reseñas sin responder, sentimiento ignorado.",
+        agent: "Agente Reviews & Reputation",
+        tasks: [
+          "Vigilancia de Google Business",
+          "Análisis de sentimiento",
+          "Borrador de respuesta",
+          "Publicar con aprobación",
+        ],
+      },
+    ],
+  },
+
+  security: {
+    badge: "Seguridad y privacidad",
+    titleA: "Tus datos",
+    titleB: "siguen siendo tuyos",
+    subtitle:
+      "Protección de nivel empresarial, sin preocupaciones: tú trabajas, de la seguridad nos ocupamos nosotros.",
+    diagramTitle: "Cómo viajan tus datos",
+    diagramLabel: "Tú → AgentCloud protegido → tus herramientas",
+    cta: "Ver privacidad y términos →",
+    points: [
+      {
+        title: "Tus datos, separados",
+        desc: "Cada cuenta solo ve sus propios datos: agentes, conversaciones y compras permanecen privados y separados de los demás.",
+      },
+      {
+        title: "Conexiones cifradas",
+        desc: "Las conexiones con Shopify, Google y los demás servicios están cifradas y puedes revocarlas en un clic, cuando quieras.",
+      },
+      {
+        title: "Pagos seguros",
+        desc: "Pagos con Stripe y PayPal: no vemos ni guardamos los datos de tu tarjeta.",
+      },
+      {
+        title: "Acceso protegido",
+        desc: "Entra con email o Google, con sesiones seguras y control completo desde tu cuenta.",
+      },
+      {
+        title: "Solo el acceso necesario",
+        desc: "Cada agente usa solo las integraciones que realmente necesita, sin accesos extra.",
+      },
+      {
+        title: "Transparencia y control",
+        desc: "Exporta o borra tus datos cuando quieras desde los ajustes, de acuerdo con el RGPD.",
+      },
+    ],
+    diagram: {
+      you: "Tú",
+      youSub: "chat seguro",
+      youFoot: "desde tu cuenta",
+      platform: "AgentCloud",
+      platformSub: "datos separados y cifrados",
+      platformFoot: "solo los tuyos",
+      onlyYou: "Solo tú",
+      onlyYouSub: "control total",
+      onlyYouFoot: "exportar • borrar",
+      tools: "Tus herramientas",
+      toolsSub: "Shopify • Gmail • Stripe",
+      toolsFoot: "conexiones revocables",
+    },
+  },
+
   features: {
     badge: "Automatizaciones",
     titleA: "Una plataforma,",
@@ -4284,6 +4979,27 @@ export const es: Dictionary = {
     subtitle:
       "AgentCloud se conecta con las plataformas en las que funciona tu empresa - desde herramientas de productividad hasta CRM, pasando por apps de comunicación y flujos de automatización.",
     cta: "Explora las integraciones de AgentCloud",
+    summary: "{live} ya disponibles • se conectan en 2 clics, de forma segura.",
+    liveBadge: "Live",
+    liveHeading: "Live — listas para usar",
+    comingBadge: "Próximamente",
+    comingHeading: "Próximamente — roadmap",
+    roadmapShow: "Mostrar el roadmap",
+    roadmapHide: "Ocultar el roadmap",
+    points: [
+      {
+        title: "Conexión segura",
+        desc: "Shopify, Gmail, Calendar y otros se conectan en 2 clics",
+      },
+      {
+        title: "Sin contraseñas compartidas",
+        desc: "Accede con tus propias cuentas, sin copiar claves",
+      },
+      {
+        title: "Tus datos siguen siendo tuyos",
+        desc: "Cada cuenta solo ve sus propios datos y conexiones",
+      },
+    ],
     categories: {
       "E-commerce": "E-commerce",
       Payments: "Pagos",
@@ -4332,22 +5048,23 @@ export const es: Dictionary = {
     previewMeta: "{count} agentes • {cats} categorías • desde {price}/mes",
     previewTitle: "Vista previa del marketplace",
     previewSubtitle: "Precios claros, activación el mismo día e integraciones incluidas. Pruébalos gratis antes de decidir.",
-    viewAllLink: "Ver todos →",
+viewAllLink: "Ver todos →",
     viewDetailsLink: "Ver detalles",
-    priceTier0: "0,99€ – 4,99€",
-    priceTier0Short: "0,99€ – 4,99€",
-    priceNote: "Nueva fascia agenti a partire da 0,99€/mese",
+    previewStats: "{count} agentes • {cats} categorías • desde {price}/mes",
+    priceTier0: "0,99 € – 4,99 €",
+    priceTier0Short: "0,99 € – 4,99 €",
+    priceNote: "Nueva gama de agentes desde 0,99 €/mes",
     couponPublic: {
-      enabled: "Sconto 50% in vigore (max 20 usi)",
-      disabled: "Coupon scadiens (max 20 usi)",
-      banner: "Sconto 50% su agenti 0,99€–4,99€ con AGENTCLOUD50",
-      inBanner: "Sconto 50% in vigore (max 20 usi)",
-      expired: "Coupon scadiens: AGENTCLOUD50",
-      applied: "Coupon applicato: AGENTCLOUD50",
-      error: "Coupon non valido o scaduto",
-      enterCode: "Inserisci codice sconto",
-      appliedSuccessfully: "Coupon applicato con successo",
-      insufficientUses: "Coupon esaurito (20 utilizzi)",
+      enabled: "Descuento del 50 % activo (máx. 20 usos)",
+      disabled: "Cupón caducado (máx. 20 usos)",
+      banner: "50 % de descuento en agentes de 0,99 €–4,99 € con AGENTCLOUD50",
+      inBanner: "Descuento del 50 % activo (máx. 20 usos)",
+      expired: "Cupón caducado: AGENTCLOUD50",
+      applied: "Cupón aplicado: AGENTCLOUD50",
+      error: "Cupón no válido o caducado",
+      enterCode: "Introduce el código de descuento",
+      appliedSuccessfully: "Cupón aplicado correctamente",
+      insufficientUses: "Cupón agotado (20 usos)",
     },
   },
 
@@ -4356,16 +5073,49 @@ export const es: Dictionary = {
     titleB: "flujo de trabajo con agentes IA.",
     subtitle:
       "Elige un agente, conecta tus herramientas y convierte el trabajo repetitivo en un sistema automático.",
-    browseMarketplace: "Ver el marketplace",
+browseMarketplace: "Ver el marketplace",
     seeDashboard: "Ver el dashboard",
+    customAgent: "Solicita un agente a medida",
+    points: [
+      {
+        title: "5 mensajes gratis al día",
+        desc: "para cada agente, antes de decidir",
+      },
+      {
+        title: "Tus datos, a salvo",
+        desc: "conexiones cifradas y cuentas separadas",
+      },
+      {
+        title: "Listo el mismo día",
+        desc: "conectas todo en 2 clics",
+      },
+    ],
   },
 
   faq: {
     badge: "FAQ",
     titleA: "Preguntas",
     titleB: "frecuentes",
-    stillQuestions: "¿Aún tienes preguntas?",
+stillQuestions: "¿Aún tienes preguntas?",
     contactSupport: "Contacta con soporte",
+    extra: [
+      {
+        q: "¿Puedo conectar mi tienda de Shopify?",
+        a: "La integración de Shopify está temporalmente en «Próximamente»: todavía no se puede conectar. Estamos terminando el conector — mientras tanto puedes usar todas las demás integraciones ya disponibles.",
+      },
+      {
+        q: "¿Qué significa «5 mensajes gratis al día por agente»?",
+        a: "Cada agente se puede probar con 5 mensajes gratuitos al día, sin compromiso: el contador se reinicia a medianoche. Para conversaciones ilimitadas puedes desbloquearlo con una suscripción (4,99 €–14,99 € al mes).",
+      },
+      {
+        q: "¿Mis datos están seguros?",
+        a: "Sí: cada cuenta solo ve sus propios datos, las conexiones a tus servicios (Google, Microsoft 365 y los demás) están cifradas y son revocables en un clic, y puedes exportar o borrar todo desde los ajustes cuando quieras. Detalles en /privacy y /terms.",
+      },
+      {
+        q: "¿Qué integraciones están disponibles?",
+        a: "Ya disponibles: Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce y Microsoft 365 (Word, Excel, PowerPoint, OneNote). Shopify, Mailchimp y otras apps están próximas — mira /integrations.",
+      },
+    ],
     items: [
       {
         q: "¿Qué es AgentCloud?",
@@ -4412,6 +5162,16 @@ export const es: Dictionary = {
     chartRuns: "Ejecuciones",
     chartWeek: "Esta semana",
     sidebar: ["Resumen", "Agentes", "Integraciones", "Ejecuciones", "Facturación"],
+    sidebarTeam: "Equipo",
+    sidebarSettings: "Ajustes",
+    sidebarHelp: "Ayuda y docs",
+    planBadge: "Pro",
+    monthlyUsage: "Uso mensual",
+    usageNote: "1,4k / 2k ejecuciones • se renueva en 12 días",
+    emptyAgentsTitle: "Aún no hay agentes instalados",
+    emptyAgentsBody: "Instala agentes desde el marketplace para verlos aquí",
+    emptyStatsLabels: ["Agentes instalados", "Ejecuciones totales", "Éxito medio", "Tokens"],
+    noActivity: "Sin actividad reciente",
     stats: [
       ["12", "Agentes instalados"],
       ["847", "Ejecuciones este mes"],
@@ -5219,7 +5979,8 @@ agentsPage: {
     successText:
       "Gracias, {name}. Hemos recibido tu mensaje y responderemos en menos de 24 horas.",
     close: "Cerrar",
-    reasons: ["Consulta general", "Ventas", "Soporte", "Colaboración", "Otro"],
+    reasons: ["Consulta general", "Ventas", "Soporte", "Agente a medida", "Colaboración", "Otro"],
+    customTopic: "Agente a medida",
     selected: "Seleccionado: {subject}",
     somethingWrong: "Algo ha salido mal",
     failedSend: "No se pudo enviar el mensaje",
@@ -5737,6 +6498,7 @@ agentsPage: {
     title: "Integraciones",
     desc: "Conecta Stripe, Notion, Slack, HubSpot y Google Sheets. Los tokens nunca se exponen al navegador.",
     connected: "Conectado",
+    pending: "Aprobación recibida: las credenciales están en camino. Actualiza en un momento.",
     disconnected: "No conectado",
     errorPrefix: "Error:",
     connectDesc: "Conecta tus herramientas para desbloquear automatizaciones.",
@@ -5871,21 +6633,21 @@ agentsPage: {
     cantFindAgent: "¿No encuentras el agente que necesitas?",
     customDesc: "Contáctanos y lo diseñamos a medida para tu negocio. Conectamos tus herramientas y entregamos la automatización lista para usar.",
     contactUs: "Contáctanos",
-    askOurAI: "Pregunta a nuestra IA",
-    priceTier0: "0,99€ – 4,99€",
-    priceTier0Short: "0,99€ – 4,99€",
-    priceNote: "Nueva fascia agenti a partire da 0,99€/mese",
+askOurAI: "Pregunta a nuestra IA",
+    priceTier0: "0,99 € - 4,99 €",
+    priceTier0Short: "0,99 € - 4,99 €",
+    priceNote: "Nueva gama de agentes desde 0,99 €/mes",
     couponPublic: {
-      enabled: "Sconto 50% in vigore (max 20 usi)",
-      disabled: "Coupon scadiens (max 20 usi)",
-      banner: "Sconto 50% su agenti 0,99€–4,99€ con AGENTCLOUD50",
-      inBanner: "Sconto 50% in vigore (max 20 usi)",
-      expired: "Coupon scadiens: AGENTCLOUD50",
-      applied: "Coupon applicato: AGENTCLOUD50",
-      error: "Coupon non valido o scaduto",
-      enterCode: "Inserisci codice sconto",
-      appliedSuccessfully: "Coupon applicato con successo",
-      insufficientUses: "Coupon esaurito (20 utilizzi)",
+      enabled: "Descuento del 50 % activo (máx. 20 usos)",
+      disabled: "Cupón caducado (máx. 20 usos)",
+      banner: "50 % de descuento en agentes de 0,99 €-4,99 € con AGENTCLOUD50",
+      inBanner: "Descuento del 50 % activo (máx. 20 usos)",
+      expired: "Cupón caducado: AGENTCLOUD50",
+      applied: "Cupón aplicado: AGENTCLOUD50",
+      error: "Cupón no válido o caducado",
+      enterCode: "Introduce el código de descuento",
+      appliedSuccessfully: "Cupón aplicado correctamente",
+      insufficientUses: "Cupón agotado (20 usos)",
     },
   },
   bundlePage: {
@@ -6240,6 +7002,190 @@ export const de: Dictionary = {
     demoLimitReached: "Demo-Limit erreicht — melde dich an, um fortzufahren",
   },
 
+howItWorks: {
+    badge: "So funktioniert’s",
+    titleA: "Von der ersten Nachricht",
+    titleB: "in 4 Schritten zum Ergebnis",
+    subtitle:
+      "Agent auswählen, Tools verbinden und die Arbeit delegieren: um den Rest kümmert er sich.",
+    cta: "Agent auswählen",
+    steps: [
+      {
+        title: "Agent auswählen",
+        desc: "15 Agenten in 6 Kategorien: E-Commerce, Marketing, Customer Service, Business Ops, Design und Finanzen. Klare Preise (4,99 €–14,99 € pro Monat) und Aktivierung am selben Tag.",
+      },
+      {
+        title: "Tools verbinden",
+        desc: "Shopify, Gmail, Calendar und die anderen Tools verbinden sich in 2 Klicks mit sicherem Zugriff. Keine Schlüssel zum Kopieren, keine komplizierte Einrichtung.",
+      },
+      {
+        title: "Der Agent arbeitet für dich",
+        desc: "Frag im Chat und der Agent führt aus: Produkte suchen, Warenkorb-Links erstellen, Termine buchen, E-Mails senden. Teste ihn gratis mit 5 Nachrichten pro Tag.",
+      },
+      {
+        title: "Alles an einem Ort verwalten",
+        desc: "Aktive Agenten, erledigte Arbeit und dein Abo jederzeit im Dashboard unter Kontrolle.",
+      },
+    ],
+    demoTitle: "Beispiel: vom Produkt in den Warenkorb, ohne den Chat zu verlassen",
+    demoStep1: "1. Wählen",
+    demoStep2: "2. Verbinden",
+    demoStep3: "3. Delegieren",
+    demoAgentName: "Shopify-Agent",
+    demoAgentPrice: "9,99 €/Monat",
+    demoAgentReady: "Heute fertig",
+    demoConnected: "Shopify-Shop verbunden",
+    demoResult: "Warenkorb-Link fertig → an den Kunden senden",
+  },
+
+  problemSolution: {
+    badge: "Problem → Lösung für KMU",
+    titleA: "Wo du Zeit verlierst,",
+    titleB: "macht der Agent für dich",
+    subtitle:
+      "Drei typische Engpässe, gelöst mit einsatzbereiten Agenten, die im Chat arbeiten.",
+    problemLabel: "Problem",
+    solutionLabel: "Lösung",
+    seeAgent: "Agent ansehen",
+    browseAll: "Die {count} Agenten durchsuchen",
+    items: [
+      {
+        problem:
+          "Stunden damit verloren, Bestellungen und Produkte zwischen Shopify, E-Mail und Tabellen zu kopieren.",
+        solution:
+          "Der Shopify-Agent durchsucht den Katalog, erstellt Warenkorb-Links und prüft den Bestellstatus in Echtzeit — im Chat, ohne Kopieren.",
+        agent: "Shopify-Agent",
+        workflow: "Katalogsuche → Vorschlag → Schnell-Warenkorb → Bestätigen",
+      },
+      {
+        problem: "Leads aus Formularen ohne Follow-up und ohne Kontext.",
+        solution:
+          "Lead Capture erfasst, validiert die E-Mail, reichert das Profil an und benachrichtigt Slack/HubSpot mit einem High/Medium/Low-Score.",
+        agent: "Lead-Capture-Agent",
+        workflow: "Erfassen → Anreichern → Score → Vertrieb informieren",
+      },
+      {
+        problem:
+          "Google-Bewertungen und Tickets ohne schnelle Antwort, Vertrauen geht verloren.",
+        solution:
+          "Der Reviews-Agent überwacht Google Business, analysiert den Ton und schlägt empathische Antworten zur Freigabe vor; der Support-Agent eskaliert nur, wenn ein Mensch nötig ist.",
+        agent: "Reviews & Reputation / Support",
+        workflow: "Abruf → Ton analysieren → Entwurf → Veröffentlichen nach Freigabe",
+      },
+    ],
+  },
+
+  useCases: {
+    badge: "Anwendungsfälle für dein Geschäft",
+    titleA: "Ein Agent für",
+    titleB: "jede wiederkehrende Aufgabe",
+    subtitle:
+      "Konkrete Beispiele, was du morgens früh delegieren kannst, wenn du den richtigen Agenten wählst.",
+    problemPrefix: "Problem:",
+    tryAgent: "Agent ausprobieren",
+    items: [
+      {
+        eyebrow: "D2C-E-Commerce",
+        title: "Shopify: vom Produkt in den Warenkorb im Chat",
+        problem: "Bestellungen von Hand kopiert, langsame Warenkorb-Links, Bestand nie geprüft.",
+        agent: "Shopify-Agent + Inventory & Logistics",
+        tasks: [
+          "Katalogsuche",
+          "Direkter Warenkorb-Link",
+          "Bestellstatus per E-Mail",
+          "Bestandswarnungen",
+        ],
+      },
+      {
+        eyebrow: "Praxis / Klinik / Salon",
+        title: "Termine ohne Hin und Her",
+        problem: "E-Mail-Pingpong, nur um einen Termin zu finden.",
+        agent: "Calendar-Booking-Agent",
+        tasks: [
+          "Verfügbarkeit im Google Kalender",
+          "Buchung mit Meet",
+          "Erinnerungen",
+          "Stornierung",
+        ],
+      },
+      {
+        eyebrow: "Agentur & Vertrieb",
+        title: "Leads, die nicht verloren gehen",
+        problem: "Formulare ohne Follow-up, Kontakte nie angereichert.",
+        agent: "Lead-Capture-Agent",
+        tasks: [
+          "Erfassen aus Chat/Formular",
+          "Profil anreichern",
+          "Scoring",
+          "Slack/HubSpot-Benachrichtigung",
+        ],
+      },
+      {
+        eyebrow: "Gastronomie & Lokal",
+        title: "Google-Reputation unter Kontrolle",
+        problem: "Bewertungen ohne Antwort, Stimmung ignoriert.",
+        agent: "Reviews-&-Reputation-Agent",
+        tasks: [
+          "Google-Business-Überwachung",
+          "Stimmungsanalyse",
+          "Antwortentwurf",
+          "Veröffentlichen nach Freigabe",
+        ],
+      },
+    ],
+  },
+
+  security: {
+    badge: "Sicherheit und Datenschutz",
+    titleA: "Deine Daten",
+    titleB: "bleiben deine",
+    subtitle:
+      "Schutz auf Enterprise-Niveau, ohne Sorgen: Du arbeitest, um die Sicherheit kümmern wir uns.",
+    diagramTitle: "So kommen deine Daten zu uns",
+    diagramLabel: "Du → geschütztes AgentCloud → deine Tools",
+    cta: "Datenschutz & Bedingungen ansehen →",
+    points: [
+      {
+        title: "Deine Daten, getrennt",
+        desc: "Jedes Konto sieht nur die eigenen Daten: Agenten, Unterhaltungen und Käufe bleiben privat und von den anderen getrennt.",
+      },
+      {
+        title: "Verschlüsselte Verbindungen",
+        desc: "Verbindungen zu Shopify, Google und den anderen Diensten sind verschlüsselt und lassen sich jederzeit mit einem Klick widerrufen.",
+      },
+      {
+        title: "Sichere Zahlungen",
+        desc: "Zahlungen mit Stripe und PayPal: Wir sehen und speichern deine Kartendaten nicht.",
+      },
+      {
+        title: "Geschützter Zugriff",
+        desc: "Anmeldung per E-Mail oder Google, mit sicheren Sitzungen und voller Kontrolle über dein Konto.",
+      },
+      {
+        title: "Nur der nötige Zugriff",
+        desc: "Jeder Agent nutzt nur die Integrationen, die er wirklich braucht, keine zusätzlichen Zugriffe.",
+      },
+      {
+        title: "Transparenz und Kontrolle",
+        desc: "Exportiere oder lösche deine Daten jederzeit in den Einstellungen, gemäß DSGVO.",
+      },
+    ],
+    diagram: {
+      you: "Du",
+      youSub: "sicherer Chat",
+      youFoot: "von deinem Konto",
+      platform: "AgentCloud",
+      platformSub: "getrennte, verschlüsselte Daten",
+      platformFoot: "nur deine",
+      onlyYou: "Nur du",
+      onlyYouSub: "volle Kontrolle",
+      onlyYouFoot: "exportieren • löschen",
+      tools: "Deine Tools",
+      toolsSub: "Shopify • Gmail • Stripe",
+      toolsFoot: "widerrufbare Verbindungen",
+    },
+  },
+
   features: {
     badge: "Automatisierungen",
     titleA: "Eine Plattform,",
@@ -6288,6 +7234,27 @@ export const de: Dictionary = {
     subtitle:
       "AgentCloud verbindet sich mit den Plattformen, auf denen dein Unternehmen läuft - von Produktivitätstools über CRMs bis zu Kommunikations-Apps und Automatisierungs-Workflows.",
     cta: "AgentCloud-Integrationen entdecken",
+    summary: "{live} bereits verfügbar • sie verbinden sich in 2 Klicks, sicher.",
+    liveBadge: "Live",
+    liveHeading: "Live — sofort einsatzbereit",
+    comingBadge: "Demnächst",
+    comingHeading: "Demnächst — Roadmap",
+    roadmapShow: "Roadmap anzeigen",
+    roadmapHide: "Roadmap ausblenden",
+    points: [
+      {
+        title: "Sichere Verbindung",
+        desc: "Shopify, Gmail, Calendar und andere verbinden sich in 2 Klicks",
+      },
+      {
+        title: "Keine geteilten Passwörter",
+        desc: "Melde dich mit deinen eigenen Konten an, ohne Schlüssel zu kopieren",
+      },
+      {
+        title: "Deine Daten bleiben deine",
+        desc: "Jedes Konto sieht nur die eigenen Daten und Verbindungen",
+      },
+    ],
     categories: {
       "E-commerce": "E-Commerce",
       Payments: "Zahlungen",
@@ -6336,8 +7303,9 @@ browseAll: "Alle Agenten ansehen",
     previewMeta: "{count} Agenten • {cats} Kategorien • ab {price}/Monat",
     previewTitle: "Marketplace-Vorschau",
     previewSubtitle: "Klare Preise, Aktivierung am selben Tag und Integrationen inklusive. Teste sie gratis vor der Entscheidung.",
-    viewAllLink: "Alle ansehen →",
+viewAllLink: "Alle ansehen →",
     viewDetailsLink: "Details ansehen",
+    previewStats: "{count} Agenten • {cats} Kategorien • ab {price}/Monat",
     priceTier0: "0,99€ – 4,99€",
     priceTier0Short: "0,99€ – 4,99€",
     priceNote: "Neue Agenten-Fascia ab 0,99€/Monat",
@@ -6360,8 +7328,23 @@ browseAll: "Alle Agenten ansehen",
     titleB: "KI-Agenten-Workflow.",
     subtitle:
       "Wähle einen Agenten, verbinde deine Tools und mach repetitive Arbeit zu einem automatischen System.",
-    browseMarketplace: "Marktplatz durchsuchen",
+browseMarketplace: "Marktplatz durchsuchen",
     seeDashboard: "Dashboard ansehen",
+    customAgent: "Maßgeschneiderten Agenten anfragen",
+    points: [
+      {
+        title: "5 Nachrichten pro Tag gratis",
+        desc: "für jeden Agenten, bevor du dich entscheidest",
+      },
+      {
+        title: "Deine Daten sind sicher",
+        desc: "verschlüsselte Verbindungen und getrennte Konten",
+      },
+      {
+        title: "Am selben Tag fertig",
+        desc: "du verbindest alles in 2 Klicks",
+      },
+    ],
   },
 
   faq: {
@@ -6370,6 +7353,24 @@ browseAll: "Alle Agenten ansehen",
     titleB: "Fragen",
     stillQuestions: "Noch Fragen?",
     contactSupport: "Support kontaktieren",
+    extra: [
+      {
+        q: "Kann ich meinen Shopify-Shop verbinden?",
+        a: "Die Shopify-Integration ist vorübergehend „Demnächst“: Sie ist noch nicht verbindbar. Wir fertigen den Connector — in der meantime kannst du alle anderen bereits verfügbaren Integrationen nutzen.",
+      },
+      {
+        q: "Was bedeutet „5 Gratis-Nachrichten pro Tag und Agent“?",
+        a: "Jeder Agent lässt sich mit 5 Gratis-Nachrichten pro Tag unverbindlich testen: Der Zähler wird um Mitternacht zurückgesetzt. Für unbegrenzte Unterhaltungen kannst du es mit einem Abo freischalten (4,99 €–14,99 € pro Monat).",
+      },
+      {
+        q: "Sind meine Daten sicher?",
+        a: "Ja: Jedes Konto sieht nur die eigenen Daten, die Verbindungen zu deinen Diensten (Google, Microsoft 365 und andere) sind verschlüsselt und mit einem Klick widerrufbar, und du kannst alles jederzeit in den Einstellungen exportieren oder löschen. Details in /privacy und /terms.",
+      },
+      {
+        q: "Welche Integrationen sind verfügbar?",
+        a: "Bereits verfügbar: Gmail, Google Kalender, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce und Microsoft 365 (Word, Excel, PowerPoint, OneNote). Shopify, Mailchimp und weitere Apps sind demnächst — siehe /integrations.",
+      },
+    ],
     items: [
       {
         q: "Was ist AgentCloud?",
@@ -6416,6 +7417,16 @@ browseAll: "Alle Agenten ansehen",
     chartRuns: "Läufe",
     chartWeek: "Diese Woche",
     sidebar: ["Übersicht", "Agenten", "Integrationen", "Läufe", "Abrechnung"],
+    sidebarTeam: "Team",
+    sidebarSettings: "Einstellungen",
+    sidebarHelp: "Hilfe & Doku",
+    planBadge: "Pro",
+    monthlyUsage: "Monatliche Nutzung",
+    usageNote: "1,4k / 2k Läufe • verlängert sich in 12 Tagen",
+    emptyAgentsTitle: "Noch keine Agenten installiert",
+    emptyAgentsBody: "Installiere Agenten aus dem Marktplatz, um sie hier zu sehen",
+    emptyStatsLabels: ["Installierte Agenten", "Läufe gesamt", "Ø Erfolgsquote", "Tokens"],
+    noActivity: "Keine aktuellen Aktivitäten",
     stats: [
       ["12", "Installierte Agenten"],
       ["847", "Ausführungen diesen Monat"],
@@ -7223,7 +8234,8 @@ chat: {
     successText:
       "Danke, {name}. Wir haben deine Nachricht erhalten und antworten innerhalb von 24 Stunden.",
     close: "Schließen",
-    reasons: ["Allgemeine Anfrage", "Vertrieb", "Support", "Partnerschaft", "Sonstiges"],
+    reasons: ["Allgemeine Anfrage", "Vertrieb", "Support", "Maßgeschneiderter Agent", "Partnerschaft", "Sonstiges"],
+    customTopic: "Maßgeschneiderter Agent",
     selected: "Ausgewählt: {subject}",
     somethingWrong: "Etwas ist schiefgelaufen",
     failedSend: "Nachricht konnte nicht gesendet werden",
@@ -7740,6 +8752,7 @@ chat: {
   dashboardIntegrations: {
     title: "Integrationen",
     desc: "Verbinde Stripe, Notion, Slack, HubSpot und Google Sheets. Tokens werden nie im Browser angezeigt.",
+    pending: "Freigabe erhalten: die Zugangsdaten sind unterwegs. Gleich aktualisieren.",
     connected: "Verbunden",
     disconnected: "Nicht verbunden",
     errorPrefix: "Fehler:",
@@ -8244,6 +9257,190 @@ export const fr: Dictionary = {
     demoLimitReached: "Limite démo atteinte — connectez-vous pour continuer",
   },
 
+howItWorks: {
+    badge: "Comment ça marche",
+    titleA: "Du premier message",
+    titleB: "au résultat en 4 étapes",
+    subtitle:
+      "Choisissez l’agent, connectez vos outils et déléguez le travail : il s’occupe du reste.",
+    cta: "Choisir un agent",
+    steps: [
+      {
+        title: "Choisissez l’agent",
+        desc: "15 agents dans 6 catégories : E-commerce, Marketing, Customer Service, Business Ops, Design et Finance. Tarifs clairs (4,99 €–14,99 € par mois) et activation le jour même.",
+      },
+      {
+        title: "Connectez vos outils",
+        desc: "Shopify, Gmail, Calendar et les autres outils se connectent en 2 clics, avec un accès sécurisé. Aucune clé à copier, aucune configuration compliquée.",
+      },
+      {
+        title: "L’agent travaille pour vous",
+        desc: "Demandez dans le chat et l’agent exécute : recherche de produits, liens panier, prise de rendez-vous, envoi d’e-mails. Essayez gratuitement avec 5 messages par jour.",
+      },
+      {
+        title: "Gérez tout au même endroit",
+        desc: "Agents actifs, travail effectué et abonnement sous contrôle depuis votre tableau de bord, à tout moment.",
+      },
+    ],
+    demoTitle: "Exemple : du produit au panier, sans quitter le chat",
+    demoStep1: "1. Choisir",
+    demoStep2: "2. Connecter",
+    demoStep3: "3. Déléguer",
+    demoAgentName: "Agent Shopify",
+    demoAgentPrice: "9,99 €/mois",
+    demoAgentReady: "Prêt aujourd’hui",
+    demoConnected: "Boutique Shopify connectée",
+    demoResult: "Lien panier prêt → envoyer au client",
+  },
+
+  problemSolution: {
+    badge: "Problème → Solution pour PME",
+    titleA: "Là où vous perdez du temps,",
+    titleB: "l’agent le fait pour vous",
+    subtitle:
+      "Trois goulots d’étranglement typiques, résolus par des agents prêts à l’emploi qui travaillent dans le chat.",
+    problemLabel: "Problème",
+    solutionLabel: "Solution",
+    seeAgent: "Voir l’agent",
+    browseAll: "Parcourir les {count} agents",
+    items: [
+      {
+        problem:
+          "Des heures perdues à copier commandes et produits entre Shopify, l’e-mail et les tableurs.",
+        solution:
+          "L’agent Shopify cherche dans le catalogue, génère des liens panier et vérifie le statut de commande en temps réel — dans le chat, sans copier.",
+        agent: "Agent Shopify",
+        workflow: "Recherche catalogue → Suggestion → Panier rapide → Confirmation",
+      },
+      {
+        problem: "Des leads venus de formulaires sans suivi ni contexte.",
+        solution:
+          "Lead Capture collecte, valide l’e-mail, enrichit le profil et notifie Slack/HubSpot avec un score High/Medium/Low.",
+        agent: "Agent Lead Capture",
+        workflow: "Collecter → Enrichir → Scorer → Prévenir les ventes",
+      },
+      {
+        problem:
+          "Des avis Google et des tickets sans réponse rapide, ce qui fait perdre la confiance.",
+        solution:
+          "Reviews Agent surveille Google Business, analyse le ton et propose des brouillons empathiques à valider ; Support Agent n’escalade que si une personne est nécessaire.",
+        agent: "Reviews & Reputation / Support",
+        workflow: "Récupérer → Analyser le ton → Brouillon → Publier après validation",
+      },
+    ],
+  },
+
+  useCases: {
+    badge: "Cas d’usage pour votre activité",
+    titleA: "Un agent pour",
+    titleB: "chaque tâche répétitive",
+    subtitle:
+      "Des exemples concrets de ce que vous pouvez déléguer dès le matin, en choisissant le bon agent.",
+    problemPrefix: "Problème :",
+    tryAgent: "Essayer l’agent",
+    items: [
+      {
+        eyebrow: "E-commerce D2C",
+        title: "Shopify : du produit au panier dans le chat",
+        problem: "Commandes copiées à la main, liens panier lents, stock jamais vérifié.",
+        agent: "Agent Shopify + Inventory & Logistics",
+        tasks: [
+          "Recherche dans le catalogue",
+          "Lien panier direct",
+          "Statut de commande par e-mail",
+          "Alertes de stock",
+        ],
+      },
+      {
+        eyebrow: "Cabinet / Clinique / Salon",
+        title: "Des rendez-vous sans ping-pong",
+        problem: "Des allers-retours par e-mail pour trouver une date.",
+        agent: "Agent Calendar Booking",
+        tasks: [
+          "Disponibilités Google Agenda",
+          "Réservation avec Meet",
+          "Rappels",
+          "Annulation",
+        ],
+      },
+      {
+        eyebrow: "Agence & Ventes",
+        title: "Des leads qui ne se perdent plus",
+        problem: "Formulaires sans suivi, contacts jamais enrichis.",
+        agent: "Agent Lead Capture",
+        tasks: [
+          "Collecte depuis le chat/formulaire",
+          "Enrichissement du profil",
+          "Scoring",
+          "Notification Slack/HubSpot",
+        ],
+      },
+      {
+        eyebrow: "Restauration & Commerce local",
+        title: "Votre réputation Google sous contrôle",
+        problem: "Avis sans réponse, sentiment ignoré.",
+        agent: "Agent Reviews & Reputation",
+        tasks: [
+          "Surveillance Google Business",
+          "Analyse de sentiment",
+          "Brouillon de réponse",
+          "Publication après validation",
+        ],
+      },
+    ],
+  },
+
+  security: {
+    badge: "Sécurité et confidentialité",
+    titleA: "Vos données",
+    titleB: "restent les vôtres",
+    subtitle:
+      "Protection de niveau entreprise, sans souci : vous travaillez, nousVeillons à la sécurité.",
+    diagramTitle: "Comment vos données circulent",
+    diagramLabel: "Vous → AgentCloud protégé → vos outils",
+    cta: "Voir confidentialité et conditions →",
+    points: [
+      {
+        title: "Vos données, séparées",
+        desc: "Chaque compte ne voit que ses propres données : agents, conversations et achats restent privés et séparés des autres.",
+      },
+      {
+        title: "Connexions chiffrées",
+        desc: "Les connexions à Shopify, Google et aux autres services sont chiffrées et révocables en un clic, quand vous le souhaitez.",
+      },
+      {
+        title: "Paiements sécurisés",
+        desc: "Paiements avec Stripe et PayPal : nous ne voyons ni ne stockons les données de votre carte.",
+      },
+      {
+        title: "Accès protégé",
+        desc: "Connectez-vous par e-mail ou Google, avec des sessions sécurisées et un contrôle complet depuis votre compte.",
+      },
+      {
+        title: "Seulement l’accès nécessaire",
+        desc: "Chaque agent n’utilise que les intégrations dont il a réellement besoin, aucun accès superflu.",
+      },
+      {
+        title: "Transparence et contrôle",
+        desc: "Exportez ou supprimez vos données quand vous le voulez dans les paramètres, conformément au RGPD.",
+      },
+    ],
+    diagram: {
+      you: "Vous",
+      youSub: "chat sécurisé",
+      youFoot: "depuis votre compte",
+      platform: "AgentCloud",
+      platformSub: "données séparées et chiffrées",
+      platformFoot: "les vôtres seulement",
+      onlyYou: "Vous seul",
+      onlyYouSub: "contrôle total",
+      onlyYouFoot: "exporter • supprimer",
+      tools: "Vos outils",
+      toolsSub: "Shopify • Gmail • Stripe",
+      toolsFoot: "connexions révocables",
+    },
+  },
+
   features: {
     badge: "Automatisations",
     titleA: "Une plateforme,",
@@ -8292,6 +9489,27 @@ export const fr: Dictionary = {
     subtitle:
       "AgentCloud se connecte aux plateformes qui font tourner votre entreprise - des outils de productivité aux CRM, des applis de communication aux workflows d'automatisation.",
     cta: "Explorer les intégrations AgentCloud",
+    summary: "{live} déjà disponibles • elles se connectent en 2 clics, en toute sécurité.",
+    liveBadge: "Live",
+    liveHeading: "Live — prêtes à l’emploi",
+    comingBadge: "Bientôt",
+    comingHeading: "Bientôt — feuille de route",
+    roadmapShow: "Afficher la feuille de route",
+    roadmapHide: "Masquer la feuille de route",
+    points: [
+      {
+        title: "Connexion sécurisée",
+        desc: "Shopify, Gmail, Calendar et autres se connectent en 2 clics",
+      },
+      {
+        title: "Aucun mot de passe partagé",
+        desc: "Connectez-vous avec vos propres comptes, sans copier de clés",
+      },
+      {
+        title: "Vos données restent les vôtres",
+        desc: "Chaque compte ne voit que ses propres données et connexions",
+      },
+    ],
     categories: {
       "E-commerce": "E-commerce",
       Payments: "Paiements",
@@ -8340,22 +9558,23 @@ export const fr: Dictionary = {
     previewMeta: "{count} agents • {cats} catégories • dès {price}/mois",
     previewTitle: "Aperçu du marketplace",
     previewSubtitle: "Tarifs clairs, activation le jour même et intégrations incluses. Testez-les gratuitement avant de décider.",
-    viewAllLink: "Tout voir →",
+viewAllLink: "Tout voir →",
     viewDetailsLink: "Voir les détails",
-    priceTier0: "0,99€ – 4,99€",
-    priceTier0Short: "0,99€ – 4,99€",
-    priceNote: "Nouvelle fascia agenti a partire da 0,99€/mese",
+    previewStats: "{count} agents • {cats} catégories • dès {price}/mois",
+    priceTier0: "0,99 € - 4,99 €",
+    priceTier0Short: "0,99 € - 4,99 €",
+    priceNote: "Nouvelle gamme d’agents dès 0,99 €/mois",
     couponPublic: {
-      enabled: "Sconto 50% in vigore (max 20 usi)",
-      disabled: "Coupon scadiens (max 20 usi)",
-      banner: "Sconto 50% su agenti 0,99€–4,99€ con AGENTCLOUD50",
-      inBanner: "Sconto 50% in vigore (max 20 usi)",
-      expired: "Coupon scadiens: AGENTCLOUD50",
-      applied: "Coupon applicato: AGENTCLOUD50",
-      error: "Coupon non valido o scaduto",
-      enterCode: "Inserisci codice sconto",
-      appliedSuccessfully: "Coupon applicato con successo",
-      insufficientUses: "Coupon esaurito (20 utilizzi)",
+      enabled: "Remise de 50 % active (20 utilisations max.)",
+      disabled: "Code promo expiré (20 utilisations max.)",
+      banner: "50 % de remise sur les agents de 0,99 €-4,99 € avec AGENTCLOUD50",
+      inBanner: "Remise de 50 % active (20 utilisations max.)",
+      expired: "Code promo expiré : AGENTCLOUD50",
+      applied: "Code promo appliqué : AGENTCLOUD50",
+      error: "Code promo invalide ou expiré",
+      enterCode: "Saisissez le code promo",
+      appliedSuccessfully: "Code promo appliqué avec succès",
+      insufficientUses: "Code promo épuisé (20 utilisations)",
     },
   },
 
@@ -8364,8 +9583,23 @@ export const fr: Dictionary = {
     titleB: "workflow d'agents IA.",
     subtitle:
       "Choisissez un agent, connectez vos outils et transformez le travail répétitif en système automatisé.",
-    browseMarketplace: "Parcourir la marketplace",
+browseMarketplace: "Parcourir la marketplace",
     seeDashboard: "Voir le tableau de bord",
+    customAgent: "Demander un agent sur mesure",
+    points: [
+      {
+        title: "5 messages gratuits par jour",
+        desc: "pour chaque agent, avant de décider",
+      },
+      {
+        title: "Vos données en sécurité",
+        desc: "connexions chiffrées et comptes séparés",
+      },
+      {
+        title: "Prêt le jour même",
+        desc: "vous connectez tout en 2 clics",
+      },
+    ],
   },
 
   faq: {
@@ -8374,6 +9608,24 @@ export const fr: Dictionary = {
     titleB: "fréquentes",
     stillQuestions: "Vous avez encore des questions ?",
     contactSupport: "Contacter le support",
+    extra: [
+      {
+        q: "Puis-je connecter ma boutique Shopify ?",
+        a: "L’intégration Shopify est temporairement « Bientôt » : elle n’est pas encore connectable. Nous finalisons le connecteur — en attendant, vous pouvez utiliser toutes les autres intégrations déjà disponibles.",
+      },
+      {
+        q: "Que signifie « 5 messages gratuits par jour et par agent » ?",
+        a: "Chaque agent peut être testé avec 5 messages gratuits par jour, sans engagement : le compteur se réinitialise à minuit. Pour des conversations illimitées, vous pouvez le débloquer avec un abonnement (4,99 €–14,99 € par mois).",
+      },
+      {
+        q: "Mes données sont-elles en sécurité ?",
+        a: "Oui : chaque compte ne voit que ses propres données, les connexions à vos services (Google, Microsoft 365 et les autres) sont chiffrées et révocables en un clic, et vous pouvez exporter ou tout supprimer depuis les paramètres à tout moment. Détails dans /privacy et /terms.",
+      },
+      {
+        q: "Quelles intégrations sont disponibles ?",
+        a: "Déjà disponibles : Gmail, Google Agenda, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce et Microsoft 365 (Word, Excel, PowerPoint, OneNote). Shopify, Mailchimp et d’autres applis arrivent bientôt — voir /integrations.",
+      },
+    ],
     items: [
       {
         q: "Qu'est-ce qu'AgentCloud ?",
@@ -8420,6 +9672,16 @@ export const fr: Dictionary = {
     chartRuns: "Exécutions",
     chartWeek: "Cette semaine",
     sidebar: ["Aperçu", "Agents", "Intégrations", "Exécutions", "Facturation"],
+    sidebarTeam: "Équipe",
+    sidebarSettings: "Paramètres",
+    sidebarHelp: "Aide & docs",
+    planBadge: "Pro",
+    monthlyUsage: "Utilisation mensuelle",
+    usageNote: "1,4k / 2k exécutions • renouvellement dans 12 jours",
+    emptyAgentsTitle: "Aucun agent installé pour l’instant",
+    emptyAgentsBody: "Installez des agents depuis la marketplace pour les voir ici",
+    emptyStatsLabels: ["Agents installés", "Exécutions totales", "Réussite moy.", "Tokens"],
+    noActivity: "Aucune activité récente",
     stats: [
       ["12", "Agents installés"],
       ["847", "Exécutions ce mois-ci"],
@@ -9227,7 +10489,8 @@ export const fr: Dictionary = {
     successText:
       "Merci, {name}. Nous avons reçu votre message et répondrons sous 24 heures.",
     close: "Fermer",
-    reasons: ["Demande générale", "Ventes", "Support", "Partenariat", "Autre"],
+    reasons: ["Demande générale", "Ventes", "Support", "Agent sur mesure", "Partenariat", "Autre"],
+    customTopic: "Agent sur mesure",
     selected: "Sélectionné : {subject}",
     somethingWrong: "Une erreur est survenue",
     failedSend: "Impossible d'envoyer le message",
@@ -9743,6 +11006,7 @@ export const fr: Dictionary = {
   },
   dashboardIntegrations: {
     title: "Intégrations",
+    pending: "Autorisation reçue : les identifiants sont en chemin. Actualisez dans un instant.",
     desc: "Connectez Stripe, Notion, Slack, HubSpot et Google Sheets. Les tokens ne sont jamais exposés au navigateur.",
     connected: "Connecté",
     disconnected: "Non connecté",
@@ -9879,21 +11143,21 @@ export const fr: Dictionary = {
     cantFindAgent: "Vous ne trouvez pas l'agent dont vous avez besoin?",
     customDesc: "Contactez-nous et nous le concevons sur mesure pour votre entreprise. Nous connectons vos outils et livrons l'automatisation prête à l'emploi.",
     contactUs: "Contactez-nous",
-    askOurAI: "Demandez à notre IA",
-    priceTier0: "0,99€ – 4,99€",
-    priceTier0Short: "0,99€ – 4,99€",
-    priceNote: "Nouvelle fascia agenti a partire da 0,99€/mese",
+askOurAI: "Demandez à notre IA",
+    priceTier0: "0,99 € - 4,99 €",
+    priceTier0Short: "0,99 € - 4,99 €",
+    priceNote: "Nouvelle gamme d’agents dès 0,99 €/mois",
     couponPublic: {
-      enabled: "Sconto 50% in vigore (max 20 usi)",
-      disabled: "Coupon scadiens (max 20 usi)",
-      banner: "Sconto 50% su agenti 0,99€–4,99€ con AGENTCLOUD50",
-      inBanner: "Sconto 50% in vigore (max 20 usi)",
-      expired: "Coupon scadiens: AGENTCLOUD50",
-      applied: "Coupon applicato: AGENTCLOUD50",
-      error: "Coupon non valido o scaduto",
-      enterCode: "Inserisci codice sconto",
-      appliedSuccessfully: "Coupon applicato con successo",
-      insufficientUses: "Coupon esaurito (20 utilizzi)",
+      enabled: "Remise de 50 % active (20 utilisations max.)",
+      disabled: "Code promo expiré (20 utilisations max.)",
+      banner: "50 % de remise sur les agents de 0,99 €-4,99 € avec AGENTCLOUD50",
+      inBanner: "Remise de 50 % active (20 utilisations max.)",
+      expired: "Code promo expiré : AGENTCLOUD50",
+      applied: "Code promo appliqué : AGENTCLOUD50",
+      error: "Code promo invalide ou expiré",
+      enterCode: "Saisissez le code promo",
+      appliedSuccessfully: "Code promo appliqué avec succès",
+      insufficientUses: "Code promo épuisé (20 utilisations)",
     },
   },
   bundlePage: {

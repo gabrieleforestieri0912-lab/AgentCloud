@@ -8,12 +8,17 @@ import Link from "next/link";
 import { Puzzle, ShoppingCart, Zap, Clock3, Tag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import { AGENTS, localizeAgent } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
 
 export default function MarketplaceSection() {
   const { dict, locale } = useLanguage();
+  const mp = dict.marketplace;
   const previewAgents = AGENTS.slice(0, 6).map((a) => localizeAgent(a, locale));
+  // Cifre derivate dal catalogo reale: né "15 agenti" né "6 categorie" scritti
+  // a mano, che invecchierebbero da soli al primo agente nuovo.
+  const categories = new Set(AGENTS.map((a) => a.category)).size;
   return (
     <section id="marketplace" className="py-24">
       <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
@@ -96,11 +101,13 @@ export default function MarketplaceSection() {
         >
           <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">15 agenti • 6 categorie • da €4,99/mese</p>
-              <h3 className="mt-1 text-2xl font-bold tracking-tight text-white">Anteprima del marketplace</h3>
-              <p className="mt-1 max-w-xl text-sm font-semibold leading-5 text-neutral-400">Prezzi chiari, attivazione in giornata e integrazioni incluse. Provali gratis prima di decidere.</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                {t(mp.previewStats, { count: AGENTS.length, cats: categories, price: mp.priceTier0Short })}
+              </p>
+              <h3 className="mt-1 text-2xl font-bold tracking-tight text-white">{mp.previewTitle}</h3>
+              <p className="mt-1 max-w-xl text-sm font-semibold leading-5 text-neutral-400">{mp.previewSubtitle}</p>
             </div>
-            <Link href="/agents" className="text-sm font-bold text-brand-400 hover:text-brand-300">Vedi tutti →</Link>
+            <Link href="/agents" className="text-sm font-bold text-brand-400 hover:text-brand-300">{mp.viewAllLink}</Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {previewAgents.map((agent) => (
@@ -126,7 +133,7 @@ export default function MarketplaceSection() {
                     <span key={i} className="rounded-full border border-white/5 bg-neutral-800 px-2 py-1 text-xs font-bold text-neutral-500">{i}</span>
                   ))}
                 </div>
-                <Link href={`/agents/${agent.slug}`} className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-brand-400 group-hover:text-brand-300">Vedi dettagli <span aria-hidden>→</span></Link>
+                <Link href={`/agents/${agent.slug}`} className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-brand-400 group-hover:text-brand-300">{mp.viewDetailsLink} <span aria-hidden>→</span></Link>
               </motion.div>
             ))}
           </div>
@@ -171,7 +178,7 @@ export default function MarketplaceSection() {
           </div>
 
           <Link
-            href="/contact"
+            href="/contact?topic=custom"
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 hover:shadow-lg hover:shadow-brand-500/30 active:scale-[0.98] sm:mt-0"
           >
             <Zap size={16} />

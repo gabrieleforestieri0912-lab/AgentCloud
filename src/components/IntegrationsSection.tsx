@@ -4,20 +4,29 @@
  * Sezione "integrazioni" della landing: loghi dei servizi collegabili
  * (Shopify, Google, Stripe...) con link alla pagina integrazioni. I loghi
  * vengono dal registry brand condiviso.
+ *
+ * Ordine di lettura pensato per la conversione: prima tutte le integrazioni
+ * già funzionanti, poi — in fondo, chiuso — quello che non è ancora
+ * disponibile. Un elenco in cui metà degli strumenti è etichettato "non
+ * ancora" legge come una lista di limiti; come roadmap in fondo legge come
+ * quello che è, senza nascondere nulla.
  */
 import Link from "next/link";
-import { Sparkles, ShieldCheck, PlugZap, Lock } from "lucide-react";
+import { Sparkles, ShieldCheck, PlugZap, Lock, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import BrandLogo from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
 import { INTEGRATIONS as REGISTRY } from "@/lib/integrations";
 
 export default function IntegrationsSection() {
   const { dict } = useLanguage();
+  const ig = dict.integrations;
   const live = REGISTRY.filter((i) => i.available);
   const coming = REGISTRY.filter((i) => !i.available);
-  const featuredLive = live.slice(0, 8);
-  const featuredComing = coming.slice(0, 8);
+  // Icone allineate per indice con `dict.integrations.points`.
+  const POINT_ICONS = [PlugZap, Lock, ShieldCheck];
+
   return (
     <section id="integrazioni" className="py-16 sm:py-20">
       <div className="max-w-7xl 3xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,49 +40,50 @@ export default function IntegrationsSection() {
           <div className="mb-4 flex items-center justify-center gap-2">
             <Sparkles size={13} className="text-brand-400" />
             <span className="text-xs font-bold uppercase tracking-[0.08em] text-brand-400">
-              {dict.integrations.badge}
+              {ig.badge}
             </span>
           </div>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-3 tracking-tight">
-            {dict.integrations.titleA}
+            {ig.titleA}
             <br />
             <span className="bg-linear-to-r from-brand-500 to-pink-500 bg-clip-text text-transparent">
-              {dict.integrations.titleB}
+              {ig.titleB}
             </span>
           </h2>
           <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
-            {dict.integrations.subtitle}
+            {ig.subtitle}
           </p>
           <p className="mx-auto mt-3 max-w-2xl text-xs font-semibold text-neutral-500">
-            {live.length} già disponibili • {coming.length} in arrivo — si collegano in 2 click, in modo sicuro.
+            {t(ig.summary, { live: live.length })}
           </p>
         </motion.div>
 
-        {/* Blocchi concreti (3) + visual */}
+        {/* Blocchi concreti (3) */}
         <div className="mx-auto mb-10 grid max-w-5xl gap-3 sm:grid-cols-3">
-          {[
-            { icon: PlugZap, t: "Connessione sicura", d: "Shopify, Gmail, Calendar e altri si collegano in 2 click" },
-            { icon: Lock, t: "Niente password condivise", d: "Accedi con i tuoi account, senza copiare chiavi" },
-            { icon: ShieldCheck, t: "I tuoi dati restano tuoi", d: "Ogni account vede solo i propri dati e collegamenti" },
-          ].map((b) => (
-            <div key={b.t} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-4">
-              <b.icon size={16} className="text-brand-400" />
-              <p className="mt-2 text-sm font-bold text-white">{b.t}</p>
-              <p className="mt-1 text-xs font-semibold leading-4 text-neutral-400">{b.d}</p>
-            </div>
-          ))}
+          {ig.points.map((b, idx) => {
+            const Icon = POINT_ICONS[idx] ?? PlugZap;
+            return (
+              <div key={b.title} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-4">
+                <Icon size={16} className="text-brand-400" />
+                <p className="mt-2 text-sm font-bold text-white">{b.title}</p>
+                <p className="mt-1 text-xs font-semibold leading-4 text-neutral-400">{b.desc}</p>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Live */}
-        <p className="mx-auto mb-3 max-w-5xl text-xs font-bold uppercase tracking-widest text-emerald-300">Live — pronte all’uso</p>
+        {/* Disponibili — elenco completo, non una selezione */}
+        <p className="mx-auto mb-3 max-w-5xl text-xs font-bold uppercase tracking-widest text-emerald-300">
+          {ig.liveHeading} · {live.length}
+        </p>
         <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-5xl 3xl:max-w-7xl mx-auto mb-6"
+          className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-5xl 3xl:max-w-7xl mx-auto mb-10"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }}
         >
-          {featuredLive.map((int) => (
+          {live.map((int) => (
             <motion.div
               key={int.name}
               className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-900 border border-emerald-500/15 hover:border-emerald-500/30 transition-colors group"
@@ -84,37 +94,51 @@ export default function IntegrationsSection() {
               </div>
               <div className="min-w-0">
                 <span className="block text-sm font-bold text-white truncate">{int.name}</span>
-                <span className="block text-xs font-semibold text-emerald-300">Live</span>
+                <span className="block text-xs font-semibold text-emerald-300">{ig.liveBadge}</span>
               </div>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* In arrivo */}
-        <p className="mx-auto mb-3 max-w-5xl text-xs font-bold uppercase tracking-widest text-amber-300">In arrivo — badge dedicato</p>
-        <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-5xl 3xl:max-w-7xl mx-auto mb-10"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }}
-        >
-          {featuredComing.map((int) => (
-            <motion.div
-              key={int.name}
-              className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-900/50 border border-white/5 opacity-90"
-              variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}
-            >
-              <div className="w-12 h-12 shrink-0 bg-neutral-900 rounded-xl border border-white/5 flex items-center justify-center">
-                <BrandLogo slug={int.brand} size={24} />
-              </div>
-              <div className="min-w-0">
-                <span className="block text-sm font-bold text-white truncate">{int.name}</span>
-                <span className="inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-300">In arrivo</span>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+        {/* Roadmap — in fondo e chiuso: niente da clic, si apre se serve */}
+        <details className="group mx-auto max-w-5xl 3xl:max-w-7xl">
+          <summary className="flex cursor-pointer list-none flex-wrap items-center justify-center gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-center transition-colors hover:border-amber-500/40 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-300">
+              {ig.comingHeading} · {coming.length}
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 group-open:hidden">
+              {ig.roadmapShow}
+              <ChevronDown size={14} aria-hidden="true" />
+            </span>
+            <span className="hidden items-center gap-1 text-xs font-semibold text-neutral-400 group-open:inline">
+              {ig.roadmapHide}
+              <ChevronDown size={14} aria-hidden="true" className="rotate-180" />
+            </span>
+          </summary>
+          <motion.div
+            className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }}
+          >
+            {coming.map((int) => (
+              <motion.div
+                key={int.name}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-900/50 border border-white/5 opacity-90"
+                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}
+              >
+                <div className="w-12 h-12 shrink-0 bg-neutral-900 rounded-xl border border-white/5 flex items-center justify-center">
+                  <BrandLogo slug={int.brand} size={24} />
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-sm font-bold text-white truncate">{int.name}</span>
+                  <span className="inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-300">{ig.comingBadge}</span>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </details>
 
         <motion.div
           className="text-center mt-8"
@@ -127,7 +151,7 @@ export default function IntegrationsSection() {
             href="/integrations"
             className="inline-flex items-center gap-2 bg-brand-500 text-white px-8 py-3.5 rounded-full font-bold hover:bg-brand-400 hover:-translate-y-0.5 transition-all"
           >
-            {dict.integrations.cta}
+            {ig.cta}
           </Link>
         </motion.div>
       </div>

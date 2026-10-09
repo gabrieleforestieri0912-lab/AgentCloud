@@ -167,7 +167,7 @@ export default function DashboardSection() {
                   <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="28px" />
                 </div>
                 <span className="text-sm font-bold text-white">AgentCloud</span>
-                <span className="ml-auto rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300">Pro</span>
+                <span className="ml-auto rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300">{ds.planBadge}</span>
               </div>
               <nav className="space-y-1">
                 {ds.sidebar.map((item, idx) => {
@@ -191,27 +191,27 @@ export default function DashboardSection() {
                 })}
                 <div className="mt-3 space-y-1 border-t border-white/5 pt-3">
                   <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-500">
-                    <Users size={15} className="shrink-0" /> Team
+                    <Users size={15} className="shrink-0" /> {ds.sidebarTeam}
                     <span className="ml-auto text-xs text-neutral-600">12</span>
                   </div>
                   <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-500">
-                    <Settings size={15} className="shrink-0" /> Impostazioni
+                    <Settings size={15} className="shrink-0" /> {ds.sidebarSettings}
                   </div>
                   <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-500">
-                    <HelpCircle size={15} className="shrink-0" /> Aiuto & Docs
+                    <HelpCircle size={15} className="shrink-0" /> {ds.sidebarHelp}
                   </div>
                 </div>
               </nav>
               <div className="mt-auto space-y-3 pt-4">
                 <div className="rounded-xl border border-white/5 bg-neutral-900/60 p-3">
                   <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wide text-neutral-500">
-                    <span>Utilizzo mensile</span>
+                    <span>{ds.monthlyUsage}</span>
                     <span className="text-white">68%</span>
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full w-[68%] rounded-full bg-linear-to-r from-brand-500 to-pink-500" />
                   </div>
-                  <p className="mt-1.5 text-[11px] text-neutral-500">1.4k / 2k esecuzioni • si rinnova tra 12 giorni</p>
+                  <p className="mt-1.5 text-[11px] text-neutral-500">{ds.usageNote}</p>
                 </div>
                 <div className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-neutral-900/40 p-2.5">
                   <div className="h-8 w-8 rounded-full bg-brand-500/20 ring-1 ring-white/10" />
@@ -245,7 +245,7 @@ export default function DashboardSection() {
                 </div>
               ) : (
                 <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-                  {["Installed agents", "Total runs", "Avg success", "Tokens"].map((label) => (
+                  {ds.emptyStatsLabels.map((label) => (
                     <div
                       key={label}
                       className="rounded-xl border border-dashed border-white/10 bg-neutral-800/40 p-3"
@@ -357,10 +357,10 @@ export default function DashboardSection() {
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Bot size={32} className="mb-3 text-neutral-700" />
                     <p className="text-sm font-semibold text-neutral-500">
-                      No agents installed yet
+                      {ds.emptyAgentsTitle}
                     </p>
                     <p className="mt-1 text-xs text-neutral-600">
-                      Install agents from the marketplace to see them here
+                      {ds.emptyAgentsBody}
                     </p>
                   </div>
                 )}
@@ -412,9 +412,9 @@ export default function DashboardSection() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <History size={24} className="mb-2 text-neutral-700" />
-                  <p className="text-sm text-neutral-500">
-                    No recent activity
-                  </p>
+<p className="text-sm text-neutral-500">
+                      {ds.noActivity}
+                    </p>
                 </div>
               )}
             </aside>

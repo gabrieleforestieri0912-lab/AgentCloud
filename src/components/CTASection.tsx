@@ -7,9 +7,12 @@
  */
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Sparkles, ShieldCheck, Clock3, Zap } from "lucide-react";
+import { ArrowRight, Sparkles, ShieldCheck, Clock3, Zap, Puzzle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
+
+// Icone allineate per indice con `dict.cta.points`.
+const POINT_ICONS = [Zap, ShieldCheck, Clock3];
 
 export default function CTASection() {
   const { dict } = useLanguage();
@@ -89,17 +92,16 @@ export default function CTASection() {
             visible: { opacity: 1, y: 0, transition: { duration: 0.4, staggerChildren: 0.06 } },
           }}
         >
-          {[
-            { icon: Zap, t: "5 messaggi gratis al giorno", d: "per ogni agente, prima di decidere" },
-            { icon: ShieldCheck, t: "Dati al sicuro", d: "connessioni cifrate e account separati" },
-            { icon: Clock3, t: "Pronto in giornata", d: "colleghi tutto in 2 click" },
-          ].map((b) => (
-            <div key={b.t} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-3.5">
-              <b.icon size={14} className="text-brand-400" />
-              <p className="mt-2 text-sm font-bold text-white">{b.t}</p>
-              <p className="mt-1 text-xs font-semibold leading-4 text-neutral-400">{b.d}</p>
-            </div>
-          ))}
+          {dict.cta.points.map((b, idx) => {
+            const Icon = POINT_ICONS[idx] ?? Zap;
+            return (
+              <div key={b.title} className="rounded-2xl border border-white/5 bg-neutral-900/60 p-3.5">
+                <Icon size={14} className="text-brand-400" />
+                <p className="mt-2 text-sm font-bold text-white">{b.title}</p>
+                <p className="mt-1 text-xs font-semibold leading-4 text-neutral-400">{b.desc}</p>
+              </div>
+            );
+          })}
         </motion.div>
 
         <motion.div
@@ -128,6 +130,16 @@ export default function CTASection() {
             className="inline-flex items-center justify-center rounded-full border border-white/10 bg-neutral-900 px-8 py-4 text-base font-bold text-white shadow-sm transition-all hover:border-white/20 hover:-translate-y-0.5"
           >
             {dict.cta.seeDashboard}
+          </Link>
+          {/* Chi ha un'esigenza non standard trova qui la strada diretta: il
+              form di contatto con l'oggetto "Agente su misura" già selezionato,
+              invece di dover cercare il pulsante dentro il marketplace. */}
+          <Link
+            href="/contact?topic=custom"
+            className="inline-flex items-center justify-center gap-2 text-sm font-bold text-brand-400 transition-colors hover:text-brand-300 sm:col-span-2 sm:mt-1"
+          >
+            <Puzzle size={16} />
+            {dict.cta.customAgent}
           </Link>
         </motion.div>
       </motion.div>

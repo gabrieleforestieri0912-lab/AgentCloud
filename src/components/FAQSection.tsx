@@ -16,24 +16,10 @@ export default function FAQSection() {
 
   const faqs = dict.faq.items;
   // FAQ aggiuntive: collegamenti, prova gratuita, dati e integrazioni.
-  const extraFaqs = [
-    {
-      q: "Posso collegare il mio negozio Shopify?",
-      a: "L’integrazione Shopify è temporaneamente in “Prossimamente”: non è ancora collegabile. Stiamo completando il connettore — nel frattempo puoi usare tutte le altre integrazioni già disponibili.",
-    },
-    {
-      q: "Cosa significa “5 messaggi gratis al giorno per agente”?",
-      a: "Ogni agente si può provare con 5 messaggi gratuiti al giorno, senza impegno: il contatore si azzera a mezzanotte. Per conversazioni illimitate puoi sbloccarlo con l’abbonamento (€4,99–€14,99 al mese).",
-    },
-    {
-      q: "I miei dati sono al sicuro?",
-      a: "Sì: ogni account vede solo i propri dati, le connessioni ai tuoi servizi (Google, Microsoft 365 e gli altri) sono cifrate e revocabili in un click, e puoi esportare o cancellare tutto dalle impostazioni quando vuoi. Dettagli in /privacy e /terms.",
-    },
-    {
-      q: "Quali integrazioni sono disponibili?",
-      a: "Già disponibili: Gmail, Google Calendar, HubSpot, Notion, Google Sheets, Slack, GitHub, ClickUp, Asana, Google Drive, Airtable, Trello, WooCommerce e Microsoft 365 (Word, Excel, PowerPoint, OneNote). Shopify, Mailchimp e altre app sono in arrivo — vedi /integrations.",
-    },
-  ];
+  // Vivono nel dizionario perché finiscono anche nel JSON-LD della pagina: un
+  // testo italiano in un blocco structured data serve ai motori di ricerca di
+  // qualsiasi lingua, non solo agli utenti italiani.
+  const extraFaqs = dict.faq.extra;
   const allFaqs = [...faqs, ...extraFaqs];
   const faqLd = {
     "@context": "https://schema.org",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Check,
   AlertCircle,
@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Sparkles,
   Send,
+  Puzzle,
 } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -17,7 +18,7 @@ import HeroBubbles from "@/components/HeroBubbles";
 import { useLanguage } from "@/components/LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 
-const CONTACT_REASON_ICONS = [MessageSquare, Sparkles, Mail, Sparkles, MessageSquare];
+const CONTACT_REASON_ICONS = [MessageSquare, Sparkles, Mail, Puzzle, Sparkles, MessageSquare];
 
 // Pagina contatti (client): invia il form a /api/contact e mostra lo stato
 // (errore localizzato / conferma). Tutte le stringhe vengono dal dizionario
@@ -30,11 +31,27 @@ export default function ContactPage() {
   }));
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("");
+  const [subjectOverride, setSubjectOverride] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // I CTA "Richiedi un agente su misura" arrivano con ?topic=custom: l'oggetto
+  // giusto viene già selezionato, così chi ha un'esigenza personalizzata non
+  // deve cercare la casella nell'elenco prima ancora di scrivere il messaggio.
+  //
+  // Va calcolato durante il render invece che in un effect: è derivato dal
+  // solo URL, quindi impostarlo a parte aggiungerebbe un render con la casella
+  // ancora vuota. `subjectOverride` (null finché l'utente non sceglie) ha la
+  // precedenza, così un click manuale sovrascrive il tema precompilato.
+  const presetTopic = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("topic") === "custom"
+      ? dict.contact.customTopic
+      : null;
+  }, [dict.contact.customTopic]);
+  const subject = subjectOverride ?? presetTopic ?? "";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -199,7 +216,7 @@ export default function ContactPage() {
                           key={r.label}
                           type="button"
                           disabled={success}
-                          onClick={() => setSubject(r.label)}
+                          onClick={() => setSubjectOverride(r.label)}
                           className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
                             selected
                               ? "bg-brand-500 text-white"
