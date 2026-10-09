@@ -24,6 +24,7 @@ import {
   Send,
   Home,
   ChevronDown,
+  FileText,
   Wrench,
   Bot,
   ShoppingCart,
@@ -95,6 +96,13 @@ import {
   saveSidebarOpen,
   type ChatTextSize,
 } from "@/lib/chat-settings";
+import FileCard from "./FileCard";
+import PreviewPanel from "./PreviewPanel";
+import {
+  mergeFileRecords,
+  parseChatFiles,
+  type ChatFileRecord,
+} from "@/lib/chat-files";
 
 type LocalMessage = {
   id: string;
@@ -105,6 +113,9 @@ type LocalMessage = {
   // risposta AI; la UI mostra allora un link di contatto sotto il messaggio.
   error?: boolean;
   attachments?: Pick<ChatAttachment, "id" | "name" | "kind" | "previewUrl">[];
+  // File prodotti dal modello (blocco <agentcloud_file>): qui vivono le
+  // versioni, così card e anteprima restano disponibili dopo il reload.
+  files?: ChatFileRecord[];
   // Agente che ha prodotto la bolla (assente per l'assistente generico):
   // serve a mostrare avatar e nome corretti anche dopo un reload.
   agentSlug?: string;
@@ -309,6 +320,11 @@ export default function ChatInterface({
     toolName: string;
     token: string;
   } | null>(null);
+  // File attualmente aperto nel pannello di anteprima (slug del blocco
+  // <agentcloud_file>). Nullo = pannello chiuso.
+  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+  // Ultimo file sincronizzato col DB: evita di ripostare a ogni token.
+  const syncedFilesRef = useRef<string>("");
 
   /** Approva il tool in attesa e riprende la generazione. */
   async function approvePending() {
@@ -366,6 +382,79 @@ export default function ChatInterface({
 
   const activeConv = conversations.find((c) => c.id === activeId);
   const messages = useMemo(() => activeConv?.messages ?? [], [activeConv]);
+  const isStreamingActive = streamingConvs.includes(activeId ?? "");
+
+  /**
+   * File di un messaggio: versioni già salvate + eventuale blocco che sta
+   * arrivando ora nello stream. `parseChatFiles` è chiamato a ogni token, ma
+   * solo per l'ultimo messaggio dell'assistente (gli altri sono immutabili).
+   */
+  const filesOfMessage = useCallback(
+    (msg: LocalMessage, isLive: boolean): ChatFileRecord[] => {
+      const blocks = isLive ? parseChatFiles(msg.content).files : [];
+      if (blocks.length === 0) return msg.files ?? [];
+      return mergeFileRecords(msg.files, blocks, activeConv?.created_at);
+    },
+    [activeConv?.created_at],
+  );
+
+  /** File della conversazione aperta, dal più recente. */
+  const conversationFiles = useMemo(() => {
+    const out: { record: ChatFileRecord; messageId: string; agentSlug?: string }[] = [];
+    for (const msg of messages) {
+      if (msg.role !== "assistant") continue;
+      const isLive = isStreamingActive && msg.id === messages[messages.length - 1]?.id;
+      for (const record of filesOfMessage(msg, isLive)) {
+        out.push({ record, messageId: msg.id, agentSlug: msg.agentSlug });
+      }
+    }
+    return out.reverse();
+  }, [messages, isStreamingActive, filesOfMessage]);
+
+  const activePreviewFile = useMemo(() => {
+    if (!previewSlug) return null;
+    for (const entry of conversationFiles) {
+      if (entry.record.slug === previewSlug) return entry.record;
+    }
+    return null;
+  }, [previewSlug, conversationFiles]);
+
+  const isPreviewStreaming =
+    !!activePreviewFile &&
+    isStreamingActive &&
+    messages[messages.length - 1]?.role === "assistant" &&
+    parseChatFiles(messages[messages.length - 1].content).files.some(
+      (f) => f.id === activePreviewFile.slug && f.status === "streaming",
+    );
+
+  /** Chiede al modello di rigenerare un file interrotto o troppo grande. */
+  const retryFile = useCallback(
+    (record: ChatFileRecord) => {
+      if (!activeId) return;
+      void handleSendWithText(
+        `Il file "${record.name}" non è stato creato correttamente. Ricrealo con lo stesso id "${record.slug}".`,
+        activeId,
+      );
+    },
+    // handleSendWithText è stabile: non richiede dipendenze per non ricreare
+    // la callback a ogni render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeId],
+  );
+
+  /** Salva il file su Drive/Notion passando dal tool dell'agente collegato. */
+  const saveFileToIntegration = useCallback(
+    (provider: "google-drive" | "notion", record: ChatFileRecord, content: string) => {
+      if (!activeId) return;
+      void handleSendWithText(
+        `Salva il contenuto del file "${record.name}" su ${provider === "google-drive" ? "Google Drive" : "Notion"}.`,
+        activeId,
+      );
+      void content;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeId],
+  );
 
   // Suggerimenti dinamici basati sugli agenti posseduti dall'utente.
   // I task sono localizzati (localizeAgent): con lingua italiana i chip escono
@@ -950,6 +1039,41 @@ export default function ChatInterface({
       window.removeEventListener("pagehide", flush);
     };
   }, [conversations]);
+
+  // Persistenza lato DB dei file generati: la chat continua a funzionare anche
+  // senza (i file vivono nel messaggio), ma così versioni e anteprime restano
+  // disponibili su un altro dispositivo e nell'export dati.
+  useEffect(() => {
+    if (conversationFiles.length === 0) return;
+    const payload = conversationFiles
+      .slice()
+      .reverse()
+      .map(({ record, messageId, agentSlug }) => ({
+        slug: record.slug,
+        name: record.name,
+        type: record.type,
+        language: record.language,
+        title: record.title,
+        messageId,
+        agentSlug,
+        content: record.versions[record.versions.length - 1]?.content ?? "",
+      }));
+    // Firma del contenuto: evita di ripostare gli stessi file a ogni render.
+    const signature = JSON.stringify(payload.map((f) => [f.slug, f.content.length, f.content.slice(-40)]));
+    if (signature === syncedFilesRef.current) return;
+    const timer = setTimeout(() => {
+      syncedFilesRef.current = signature;
+      void fetch("/api/chat/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: payload }),
+      }).catch(() => {
+        // Rete assente o API non migrata: la chat resta comunque completa.
+        syncedFilesRef.current = "";
+      });
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [conversationFiles]);
 
   useEffect(() => {
     if (initialQuery && !initializedRef.current) {
@@ -1613,6 +1737,28 @@ export default function ChatInterface({
     // il posto all'avatar dell'agente.
     for (const id of convStreamingIds) clearStreamingMsg(id);
 
+    // I file prodotti dal modello diventano parte del messaggio: senza questo
+    // le versioni precedenti si perderebbero al reload (nel `content` resta
+    // solo l'ultima versione del blocco).
+    const finishedFiles = parseChatFiles(responseText).files;
+    const lastAssistantId = convStreamingIds[convStreamingIds.length - 1];
+    if (finishedFiles.length > 0 && lastAssistantId) {
+      const createdAt = conversationsRef.current.find((c) => c.id === convId)?.created_at;
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== convId) return c;
+          const target = c.messages.find((m) => m.id === lastAssistantId);
+          if (!target) return c;
+          return {
+            ...c,
+            messages: c.messages.map((m) =>
+              m.id === lastAssistantId ? { ...m, files: mergeFileRecords(m.files, finishedFiles, createdAt) } : m,
+            ),
+          };
+        }),
+      );
+    }
+
     streamingRef.current.delete(convId);
     stopRequested.current.delete(convId);
     setStreamingConvs((prev) => prev.filter((id) => id !== convId));
@@ -2034,6 +2180,37 @@ export default function ChatInterface({
               </div>
             ))
           )}
+
+          {/* File della conversazione — click apre l'anteprima laterale. */}
+          {conversationFiles.length > 0 && (
+            <div className="px-2.5 pb-3 pt-1">
+              <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                {dict.chat.files.conversationFiles}
+              </p>
+              <div className="space-y-0.5">
+                {conversationFiles.slice(0, 12).map(({ record }) => (
+                  <button
+                    key={record.slug}
+                    type="button"
+                    onClick={() => setPreviewSlug(record.slug)}
+                    className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-all ${
+                      previewSlug === record.slug
+                        ? "bg-white/[0.06] text-white"
+                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
+                    }`}
+                  >
+                    <FileText size={12} className="shrink-0 text-neutral-500" />
+                    <span className="min-w-0 flex-1 truncate">{record.title || record.name}</span>
+                    {record.currentVersion > 1 && (
+                      <span className="shrink-0 rounded-full bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-bold text-purple-300">
+                        v{record.currentVersion}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Account section — modern pill style */}
@@ -2442,6 +2619,14 @@ export default function ChatInterface({
                       (() => {
                         const providers = extractConnectProviders(msg.content);
                         const cleanText = stripConnectMarkers(msg.content);
+                        // I blocchi <agentcloud_file> non si vedono mai come testo:
+                        // il parser li estrae e al loro posto finisce la card.
+                        const isLiveFileMessage =
+                          isStreamingActive && msg.id === messages[messages.length - 1]?.id;
+                        const parsedFiles = isLiveFileMessage
+                          ? parseChatFiles(cleanText)
+                          : { text: cleanText, files: [] };
+                        const msgFiles = filesOfMessage(msg, isLiveFileMessage);
                         // La card "Connetti" compare SOLO se l'utente l'ha chiesta
                         // esplicitamente nel messaggio che precede questa risposta
                         // ("collega Gmail"). Se il modello scrive il marker di sua
@@ -2473,10 +2658,20 @@ export default function ChatInterface({
                           <>
                             {isLive && <WorkingIndicator label={runningStep.label} />}
                             {steps.length > 0 && <ActivityFeed steps={steps} />}
-                            {cleanText && <MarkdownText text={cleanText} onReply={handleReplyToPhrase} />}
+                            {parsedFiles.text && <MarkdownText text={parsedFiles.text} onReply={handleReplyToPhrase} />}
                             {cardProvider && (
                               <InlineConnectCard provider={cardProvider} />
                             )}
+                            {msgFiles.map((record) => (
+                              <FileCard
+                                key={record.slug}
+                                record={record}
+                                streaming={isLiveFileMessage && record.versions[record.versions.length - 1]?.content !== parsedFiles.files.find((f) => f.id === record.slug)?.content}
+                                onOpen={setPreviewSlug}
+                                onRetry={retryFile}
+                                disabled={isTyping && !isLiveFileMessage}
+                              />
+                            ))}
                           </>
                         );
                       })()
@@ -2762,6 +2957,18 @@ export default function ChatInterface({
         </AnimatePresence>
         )}
         </main>
+        <AnimatePresence>
+          {activePreviewFile && (
+            <PreviewPanel
+              key={activePreviewFile.slug}
+              record={activePreviewFile}
+              streaming={isPreviewStreaming}
+              onClose={() => setPreviewSlug(null)}
+              onRetry={retryFile}
+              onSaveToIntegration={saveFileToIntegration}
+            />
+          )}
+        </AnimatePresence>
         </div>
       </div>
       {paywallSlug && (

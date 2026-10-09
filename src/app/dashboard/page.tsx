@@ -25,6 +25,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { DATE_LOCALES } from "@/lib/i18n/constants";
+import GeneratedFilesPanel from "@/components/GeneratedFilesPanel";
 
 type InstalledAgent = {
   slug: string;
@@ -467,6 +468,8 @@ export default async function DashboardPage({
             </div>
 
             <aside className="space-y-6">
+              <GeneratedFilesPanel />
+
               <div className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm">
                 <h2 className="text-xl font-bold text-white">
                   {dict.dashboard.monthlyUsage}

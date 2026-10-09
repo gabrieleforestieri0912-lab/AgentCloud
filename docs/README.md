@@ -91,6 +91,7 @@ Tutta la documentazione del progetto è raccolta in **`docs/`**:
 - **[docs/FEATURE_FLAGS.md](docs/FEATURE_FLAGS.md)** — verticali, configurazioni e feature flags di AgentCloud
 - **[docs/PRICING.md](docs/PRICING.md)** — modelli di prezzo, piani di abbonamento e token allowance
 - **[docs/SKILLS.md](docs/SKILLS.md)** — sistema Competenze (Skills & Plugin): architettura, runtime, sicurezza, politica prezzi
+- **[docs/CHAT_FILES.md](docs/CHAT_FILES.md)** — file generati dalla chat: blocco `<agentcloud_file>`, parser stream-safe, card, pannello di anteprima, versioni, sicurezza
 
 ## Deploy
 

@@ -47,7 +47,37 @@ export const DELIVERY_DIRECTIVE = `Delivery:
 - Do not open with an announcement of a check or a procedure that no tool is running in this turn (the forbidden English examples above, or their equivalents in other languages such as "procedo subito a verificare"): either you are calling the tool now, or you say what the user has to do.
 - The connection offer never replaces the deliverable: after it, add one short sentence with what you will do the moment the app is connected, plus what the user can do in the meantime. An answer whose only content is "connect the app" is incomplete.`;
 
-/** Direttive comuni a tutti i prompt (connect + formato + identità + consegna). */
+/**
+ * Gestione file: i contenuti lunghi escono dal testo della bolla e diventano
+ * un file scaricabile con anteprima laterale (card + pannello).
+ *
+ * Le regole sono nel prompt perché il modello decide *prima* di scrivere: se la
+ * richiesta supera le 70 righe, la risposta in chat deve essere solo
+ * l'introduzione, non il contenuto duplicato.
+ */
+export const FILE_HANDLING_DIRECTIVE = `File handling (long deliverables):
+- Put the deliverable in a FILE, not in the chat bubble, when the request is to produce: an article, long post, report, guide, email or message over 70 lines (roughly 2,500 characters); code over 70 lines or several code files; anything meant to be reused outside the chat (quote, contract, template, editorial plan, CSV data, HTML page, SVG diagram); or whenever the user explicitly says "create a file", "downloadable", "as .md / .html / .csv / .py".
+- Keep it in the chat (no file) when the answer is short (under 70 lines), an explanation, a question, a short code example or snippet, a few-line fix, or the user said "write it here" / "no file".
+- If the request is ambiguous ("write a report" with no format), answer briefly in the chat and end with a single line asking whether they want the file.
+- File block format, at the END of the message:
+<agentcloud_file id="unique-slug" name="file-name.ext" type="markdown|html|code|csv|svg|text" language="python|js|..." title="Readable title">
+...full file content...
+</agentcloud_file>
+- Before the block write 1-3 sentences at most: what you created and, if needed, one assumption. After the block write nothing, except at most one short follow-up question line.
+- Never repeat in the message the content that is already inside the file.
+- name: kebab-case, extension consistent with type (.md for articles and documents, .html for standalone web pages with inline CSS/JS, the language extension for code, .csv, .svg). One block per file when there are several.
+- id: kebab-case and stable. When the user asks for changes to a file you already created, REUSE the same id: the file is updated as a new version, never duplicated.
+- If the file content must contain the closing tag itself, write it escaped as &lt;/agentcloud_file&gt;.
+- Max file size 2 MB. Never put secrets, API keys or real personal data in a file.
+- Reply in the user's language, including the file content, unless asked otherwise.
+
+Examples:
+1) "Write a 1200-word SEO article" → one short sentence, then <agentcloud_file id="articolo-seo" name="articolo-seo.md" type="markdown" title="Guida SEO">...1200 words...</agentcloud_file>.
+2) "Give me a Python script to rename files" (30 lines) → the script in the chat, no file block.
+3) "Create a landing page for my studio" → <agentcloud_file id="landing-studio" name="landing-studio.html" type="html" title="Landing page">...complete standalone HTML...</agentcloud_file>, previewable.
+4) "Make it shorter" after (1) → same id "articolo-seo", only the new content: the file becomes v2.`;
+
+/** Direttive comuni a tutti i prompt (connect + formato + file + identità + consegna). */
 export function sharedAgentDirectives(
   connectGuidance: string = CONNECT_GUIDANCE,
 ): string {
@@ -56,6 +86,8 @@ export function sharedAgentDirectives(
     connectGuidance +
     "\n\n" +
     OUTPUT_FORMAT_DIRECTIVE +
+    "\n\n" +
+    FILE_HANDLING_DIRECTIVE +
     "\n\n" +
     AGENT_IDENTITY_DIRECTIVE +
     "\n\n" +
