@@ -114,14 +114,16 @@ export default function DashboardShell({
         </div>
       </aside>
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        <div className="flex items-center gap-2 border-b border-white/5 bg-neutral-950/90 px-4 py-2 lg:hidden">
+        {/* Mobile: solo il bottone menu fluttuante, senza barra né titolo —
+            stessa regola dell'header desktop trasparente. */}
+        <div className="pointer-events-none sticky top-0 z-40 -mb-[60px] flex items-start justify-start px-4 pt-3 lg:hidden">
           <button
             onClick={() => setMobileOpen(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-neutral-400 hover:text-white"
+            aria-label={dict.navbar.menu}
+            className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-neutral-900/80 text-neutral-400 backdrop-blur hover:text-white"
           >
             <Menu size={16} />
           </button>
-          <span className="text-sm font-bold text-white">{ds.mobileTitle}</span>
         </div>
         <AppHeader variant="dashboard" subtitle={email} />
         <div className="flex-1 overflow-y-auto bg-neutral-950">

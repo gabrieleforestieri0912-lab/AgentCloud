@@ -9,7 +9,6 @@
  * chat e home vive già nella sidebar, quindi l'header non duplica quei link.
  */
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, Monitor, Moon, Settings, Sun } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
@@ -39,17 +38,11 @@ type AppHeaderProps = {
 
 export default function AppHeader({
   variant,
-  title,
-  subtitle,
-  agentLabel,
   quickSettings,
 }: AppHeaderProps) {
   const { dict, locale, setLocale } = useLanguage();
   const { theme, setTheme } = useTheme();
   const settingsLabel = dict.navbar.settings;
-  // In chat l'header è sovrapposto al contenuto: niente sfondo né bordo, così
-  // resta trasparente sul fondo della pagina.
-  const transparent = variant === "chat";
 
   // Impostazioni rapide della chat: la rotella apre un pannello con le
   // preferenze usate più spesso (lingua e tema) invece di portare subito alla
@@ -77,55 +70,27 @@ export default function AppHeader({
     lg: dict.chat.quickTextSizeLarge,
   };
 
-  const defaultTitle =
-    variant === "dashboard"
-      ? dict.appHeader.dashboard
-      : (agentLabel ?? dict.appHeader.chat);
-
-  const displayTitle = title ?? defaultTitle;
-
   return (
-    <header
-      className={`sticky top-0 z-40 ${
-        transparent ? "bg-transparent" : "border-b border-white/5 bg-neutral-950/90 backdrop-blur-xl"
-      }`}
-    >
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 3xl:max-w-[1720px]">
-        {/* Sinistra */}
-        <div className="flex items-center gap-3 min-w-0">
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <span className="relative h-7 w-7 overflow-hidden rounded-lg">
-              <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="28px" />
-            </span>
-            <span className="hidden text-sm font-bold tracking-tight text-white sm:inline">
-              AgentCloud
-            </span>
-          </Link>
-          <span className="hidden h-4 w-px bg-white/10 sm:block" aria-hidden />
-          <div className="min-w-0">
-            <h1 className="truncate text-sm font-bold text-white">{displayTitle}</h1>
-            {subtitle && (
-              <p className="hidden truncate text-xs text-neutral-500 sm:block">{subtitle}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Destra: solo controlli (notifiche + rotella in chat). I link a
-            dashboard, chat e home vivono già nella sidebar: non duplicarli qui. */}
-        <div className="flex items-center gap-2 shrink-0">
-          {variant === "chat" && (
-            <div className="relative" ref={quickRef}>
-              <button
-                type="button"
-                onClick={() => setQuickSettingsOpen((v) => !v)}
-                title={settingsLabel}
-                aria-label={settingsLabel}
-                aria-haspopup="dialog"
-                aria-expanded={quickSettingsOpen}
-                className="flex h-11 w-11 lg:h-8 lg:w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white"
-              >
-                <Settings size={18} strokeWidth={1.75} />
-              </button>
+    // Header trasparente e sovrapposto: niente barra, niente logo, niente
+    // titolo — solo i bottoni fluttuanti in alto a destra. Il contenitore non
+    // intercetta i click (il contenuto scorre sotto) e il margine negativo
+    // annulla l'altezza, così non ruba spazio verticale. I link a dashboard,
+    // chat e home vivono già nella sidebar: non duplicarli qui.
+    <header className="pointer-events-none sticky top-0 z-40 -mb-14 flex h-14 items-start justify-end px-4 pt-3 sm:px-6">
+      <div className="pointer-events-auto flex items-center gap-2">
+        {variant === "chat" && (
+          <div className="relative" ref={quickRef}>
+            <button
+              type="button"
+              onClick={() => setQuickSettingsOpen((v) => !v)}
+              title={settingsLabel}
+              aria-label={settingsLabel}
+              aria-haspopup="dialog"
+              aria-expanded={quickSettingsOpen}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-neutral-900/80 text-neutral-400 backdrop-blur transition-colors hover:text-white"
+            >
+              <Settings size={17} strokeWidth={1.75} />
+            </button>
 
               {quickSettingsOpen && (
                 <>
@@ -275,9 +240,12 @@ export default function AppHeader({
             </div>
           )}
 
-          <NotificationBell />
+          {/* La campanella ha già il suo bottone: qui prende solo il guscio
+              fluttuante, coerente con la rotella. */}
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-neutral-900/80 backdrop-blur">
+            <NotificationBell />
+          </span>
         </div>
-      </div>
     </header>
   );
 }
