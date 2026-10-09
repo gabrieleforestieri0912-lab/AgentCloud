@@ -141,41 +141,39 @@ disattivare da `ALL_TOOLS_LIST` in `src/lib/agents/feature-flags.ts`.
 
 ---
 
-## 6. ⚠️ Schema da applicare
+## 6. Diagnosi di un 500 sui webhook
 
-`supabase/schema-shopify-compliance.sql` crea `shopify_compliance_events`.
-
-**Va applicato al database.** Il file era già nel repository ma non era mai
-stato eseguito: durante la verifica un `shop/redact` ha risposto `500` con
-*"Could not find the table 'public.shopify_compliance_events' in the schema
-cache"*. Con la tabella assente il webhook di cancellazione falliva e i dati
-del negozio restavano al loro posto — il difetto peggiore possibile in un
-obbligo GDPR.
-
-Applica con:
-
-```bash
-supabase db push
-```
-
-oppure incollando il file nel **SQL Editor** del progetto su Supabase.
-
-Verifica che sia applicata:
+Se un webhook di conformità risponde `500`:
 
 ```sql
 select to_regclass('public.shopify_compliance_events');
--- deve restituire la tabella, non NULL
 ```
 
-> `supabase/migrations/` è in `.gitignore`: il DDL vive nei file
-> `schema-*.sql`, che è la convenzione del repository. Se usi `supabase db
-> push`, la cartella `migrations/` deve essere presente in locale ma non è
-> tracciata.
+- **restituisce NULL** → la tabella manca davvero: applicare
+  `supabase/schema-shopify-compliance.sql`.
+- **restituisce il nome** → la tabella c'è, ed è un altro problema.
 
-Nel frattempo il codice regge: la pulizia dell'audit è best-effort, quindi
-l'assenza della tabella non impedisce più la cancellazione dei token. Ma senza
-la tabella non ci sono né audit né idempotenza, e il reviewer può chiederne
-conto.
+Il caso verificato il 2026-10-09 era il secondo. Il sintomo era:
+
+```
+Woo... 500 {"error":"processing failed"}
+Could not find the table 'public.shopify_compliance_events' in the schema cache
+```
+
+La tabella esisteva ed era corretta: era la **schema cache di PostgREST** a non
+conoscerla. Correzione:
+
+```sql
+notify pgrst, 'reload schema';
+```
+
+Dopo il reload PostgREST elenca 32 tabelle e i webhook rispondono 200
+scrivendo l'audit.
+
+**La trappola da evitare:** l'assenza di una tabella nel catalogo di PostgREST
+(`GET /rest/v1/`) non prova che manchi nel database, perché quel catalogo
+riflette la cache. Verificare sempre con `information_schema` o
+`to_regclass` prima di concludere che uno schema non è stato applicato.
 
 ---
 

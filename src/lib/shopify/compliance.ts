@@ -90,12 +90,13 @@ export async function deleteShopData(
   // filtrerebbe (NULL <> NULL è NULL in SQL), quindi il caso senza webhook_id
   // va gestito a parte: senza, le righe anonime di quel negozio resterebbero.
   //
-  // Best-effort, e NON fatale: la tabella di audit potrebbe non essere stata
-  // applicata al database, e in quel caso l'errore deve comunque lasciare
-  // passare la cancellazione dei token, che è l'obbligo vero. Se la pulizia
-  // dell'audit facesse fallire la richiesta, `shop/redact` risponderebbe 500,
-  // Shopify ritenterebbe e il negozio resterebbe con i dati: il housekeeping
-  // che blocca l'erasure è il caso peggiore.
+  // Best-effort, e NON fatale: la pulizia dell'audit non deve mai bloccare
+  // l'erasure. Sono due motivi distinti: la tabella potrebbe non essere stata
+  // creata, e — caso verificato il 2026-10-09 — può esistere ed essere corretta
+  // mentre PostgREST non la vede, perché la sua schema cache non è stata
+  // ricaricata. In entrambi i casi il token deve uscire dal database: se la
+  // housekeeping facesse fallire la richiesta, `shop/redact` risponderebbe 500,
+  // Shopify ritenterebbe e il negozio resterebbe con i dati.
   let auditRows = 0;
   if (keepWebhookId) {
     const { error: auditErr, count } = await admin

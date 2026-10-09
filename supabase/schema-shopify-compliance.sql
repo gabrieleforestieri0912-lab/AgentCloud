@@ -1,18 +1,21 @@
--- ⚠️ VERIFICATO CHE MANCA SU PRODUZIONE — applicare questo file.
+-- La tabella ESISTE già su produzione (verificato via information_schema il
+-- 2026-10-09) e la sua struttura è corretta.
 --
--- Durante la verifica dei privacy webhooks, un `shop/redact` ha risposto 500
--- con "Could not find the table 'public.shopify_compliance_events' in the
--- schema cache": questo file era nel repository ma non era mai stato eseguito
--- sul database. La conseguenza era il difetto peggiore possibile in un
--- obbligo GDPR — il webhook di cancellazione falliva e i dati del negozio
--- restavano al loro posto.
+-- Se un webhook di conformità risponde 500 con
+--   "Could not find the table 'public.shopify_compliance_events' in the schema cache"
+-- NON è questa la causa: è la **schema cache di PostgREST** che non conosce
+-- ancora la tabella, non ricaricata dopo la creazione. Il sintomo è identico
+-- a una tabella mancante, quindi la diagnosi va fatta con una query diretta e
+-- NON leggendo il catalogo di PostgREST (che riflette la cache):
 --
--- Applicare con `supabase db push`, oppure incollando questo file nel SQL
--- Editor del progetto su Supabase.
+--   select to_regclass('public.shopify_compliance_events');   -- se non è NULL, la tabella c'è
 --
--- Per verificare che sia applicata:
---   select to_regclass('public.shopify_compliance_events');
---   -- deve restituire la tabella, non NULL
+-- La correzione NON è riapplicare questo file, è ricaricare la cache:
+--
+--   notify pgrst, 'reload schema';
+--
+-- Dopo il reload PostgREST elenca 32 tabelle e i webhook di conformità
+-- rispondono 200 scrivendo l'audit correttamente.
 --
 -- Nota: `supabase/migrations/` è in .gitignore, quindi il DDL vive qui nei
 -- file `schema-*.sql`, che è la convenzione del repository.
