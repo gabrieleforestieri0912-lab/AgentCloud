@@ -7,7 +7,7 @@
  * niente segreti, niente link esterni negli script.
  *
  * Il modulo è puro (nessuna dipendenza, nessuna I/O) così è testabile in
- * isolamento: `scripts/test-skills.mjs` lo esercita senza database.
+ * isolamento: il validatore è puro e non tocca il database.
  */
 
 import type { SkillRisk } from "./catalog";

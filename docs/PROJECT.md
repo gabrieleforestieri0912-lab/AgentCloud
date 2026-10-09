@@ -379,7 +379,7 @@ il token cifrato e lo revocano su 401 (APP_UNINSTALLED / shop/redact). La tabell
   uninstall → `https://www.agentcloud.agency/api/webhooks/shopify/app-uninstalled`
   (versione webhook `2026-07`). Il vecchio `/api/shopify/webhooks` registrato
   via API resta attivo: non duplicare le sottoscrizioni.
-- Test locale: `npm run dev` + `node scripts/test-shopify-webhook.mjs`
+- Test locale: `npm run dev` e un `curl` sull'endpoint
   (attesi 200/401/400; `SKIP` sull'idempotenza = tabella non applicata).
 
 ### Troubleshooting "Shopify non si collega"

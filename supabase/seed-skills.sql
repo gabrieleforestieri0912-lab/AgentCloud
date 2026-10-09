@@ -1,8 +1,7 @@
 -- Skills & Plugins — seed del catalogo ufficiale
 --
--- GENERATO da scripts/generate-skills-seed.mjs a partire da
--- src/lib/skills/catalog.ts. Non modificarlo a mano: modifica il
--- catalogo e rilancia `npm run seed:skills`.
+-- GENERATO a partire da src/lib/skills/catalog.ts. Non modificarlo a
+-- mano: modifica il catalogo e rigenera questo file.
 --
 -- 13 plugin, 60 skill, tutte in italiano.
 --

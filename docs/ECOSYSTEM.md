@@ -11,8 +11,9 @@ I client devono restare allineati a:
 - **Integrazioni** → `src/lib/integrations.ts`
 - **Contratto API/SSE e conferma umana** → `src/app/api/agent/run/route.ts`
 
-Il test `node scripts/test-clients-alignment.mjs` fallisce quando CLI, estensione
-o mobile divergono da queste fonti.
+CLI, estensione e mobile vanno tenuti allineati a queste fonti a mano: se
+divergono, il sintomo è un client che mostra un agente o un'integrazione che
+non esistono più sulla piattaforma.
 
 ---
 

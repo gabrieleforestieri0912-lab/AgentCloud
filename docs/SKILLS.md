@@ -34,10 +34,12 @@ quando le tabelle non esistono ancora (l'istanza prod remota non le ha: il token
 CLI salvato non aveva i privilegi per il push). Quando il DB è migrato, il merge
 aggiorna i metadati dal DB ma conserva relazioni e contenuti dal catalogo.
 
-Il seed SQL non si scrive a mano: `scripts/generate-skills-seed.mjs` lo rigenera
-dal catalogo (`npm run seed:skills`). Il test `test-skills-catalog-parity` fallisce
-se qualcuno modifica il seed a mano in modo incoerente (inclusi i controlli di
-sintassi: `ON CONFLICT` nella stessa istruzione, vincoli esistenti).
+Il seed SQL non si scrive a mano: il file è generato dal catalogo TypeScript e
+va rigenerato a ogni modifica di `src/lib/skills/catalog.ts`. Modificandolo a
+mano si reintroducono slug che nessuna pagina può linkare (è successo: il seed
+conteneva `quotes-estimates` invece di `quote-agent` e 10 skill mancanti).
+Ricontrollare a mano la sintassi: `ON CONFLICT` non può comparire due volte
+nella stessa istruzione e i vincoli citati devono esistere.
 
 Validazione eseguita: schema + seed sono stati eseguiti davvero su Postgres
 (PGlite, con stub minimi di `auth.uid()`/`auth.users` che su Supabase reale
