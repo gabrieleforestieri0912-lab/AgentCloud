@@ -162,15 +162,15 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
     steps: [
       {
         title: "Prepara",
-        desc: "Controlla che WooCommerce sia attivo (wp-admin → WooCommerce → Stato) e che il negozio abbia un utente con permessi Amministratore/Manager: senza, WooCommerce risponde “non hai i permessi” e non mostra la richiesta.",
+        desc: "Due controlli, altrimenti non parte. 1) Impostazioni → Permaletti: scegli una voce diversa da “Semplice”, altrimenti l'indirizzo di autorizzazione non esiste e WooCommerce risponde 404. 2) Approva con un utente Amministratore o Manager del negozio: con un ruolo inferiore WooCommerce dice “non hai i permessi” e non mostra nulla.",
       },
       {
         title: "Collega",
-        desc: "Incolla qui sotto il dominio del tuo store e premi il pulsante. Verrai portato su WooCommerce, dove trovi «AgentCloud vuole connettersi al tuo store» con l'elenco dei permessi richiesti (sola lettura): premi Approva.",
+        desc: "Incolla qui sotto SOLO il dominio del tuo store (https://tuo-store.com, senza /wp-admin) e premi il pulsante. Verrai portato su WooCommerce, dove trovi «AgentCloud would like to connect to your store» con i permessi di sola lettura: controlla che sotto compaia il dominio www.agentcloud.agency e premi Approva. Qui non si digita nessuna chiave: le credenziali le genera WooCommerce e le manda a noi dopo l'approvazione.",
       },
-      { title: "Prova", desc: "Connesso. Chiedi: quali sono gli ordini in lavorazione? Poi: elenca i prodotti esauriti." },
+      { title: "Prova", desc: "Connesso. Chiedi: quali sono gli ordini in lavorazione? P poi: elenca i prodotti esauriti. Se la card resta su “Approvazione ricevuta”, ricarica: le credenziali arrivano con una richiesta separata." },
     ],
-    needHelp: "Se non compare la schermata di autorizzazione: il negozio deve avere i permalink attivi (Impostazioni → Permaletti, non “Semplice”), altrimenti l'endpoint va chiamato come /index.php/wc-auth/v1/authorize. Se l'approvazione parte ma la connessione resta in attesa, le credenziali non sono ancora arrivate: ricarica la pagina.",
+    needHelp: "Se non compare la schermata di autorizzazione: controlla i permaletti (Impostazioni → Permaletti, non “Semplice”) e il ruolo di chi approva (serve Amministratore o Manager). Se l'approvazione parte ma la card resta in attesa, le credenziali non sono ancora arrivate: ricarica la pagina. Guida completa in docs/woocommerce-setup.md.",
   },
   mailchimp: {
     provider: "mailchimp",
