@@ -25,7 +25,7 @@ const cookieOpts = {
 
 /**
  * Raccoglie e valida i dati che il provider pretende dall'utente (per WooCommerce
- * l'URL dello store e il WordPress User ID).
+ * l'URL del suo store).
  *
  * La validazione sta qui e non nell'adapter, per due motivi: se l'host non è
  * pubblico non deve neppure arrivare a costruire l'URL di autorizzazione, e la
@@ -36,9 +36,16 @@ const cookieOpts = {
  * fallire dopo che l'utente ha già autorizzato sul suo store no. Il controllo
  * viene comunque ripetuto subito prima di ogni chiamata, perché il DNS può
  * cambiare nel frattempo.
+ *
+ * `tenantId` serve ai provider keypair: WooCommerce pretende un `user_id` che,
+ * per sua stessa documentazione, è "l'utente nella TUA app, NON il WordPress
+ * User ID". È quindi l'id dell'utente loggato su AgentCloud, e non qualcosa da
+ * chiedere a chi collega: faresti chiedere un dato che non serve e che
+ * l'utente non ha modo di conoscere.
  */
 async function readTenantInput(
   provider: string,
+  tenantId: string,
   req: NextRequest,
 ): Promise<{ ok: true; value: Record<string, string> } | { ok: false; error: string }> {
   const entry = getCatalogEntry(provider);
@@ -64,6 +71,13 @@ async function readTenantInput(
     }
     // Si tiene solo l'origine: niente path, query o credenziali.
     value[f.key] = checked.url.origin;
+  }
+
+  // WooCommerce non ha `state` (lo scarta in build_url), quindi il tenant
+  // viaggia in un token firmato dentro return_url/callback_url. Il suo
+  // `user_id` è il nostro riferimento utente e viene aggiunto qui, non chiesto.
+  if (entry?.authType === "keypair" && !value.user_id) {
+    value.user_id = tenantId;
   }
   return { ok: true, value };
 }
@@ -108,10 +122,17 @@ export async function GET(
     return NextResponse.redirect(new URL(`${returnTo}${sep}integration=${provider}&status=error&reason=${encodeURIComponent(reason)}`, req.url));
   };
 
-  const tenantInput = await readTenantInput(provider, req);
+  const tenantInput = await readTenantInput(provider, tenantId, req);
   if (!tenantInput.ok) return fail(tenantInput.error);
 
-  const { state, cookieValue } = buildState(tenantId, provider, tenantInput.value);
+  // I provider senza `state` (WooCommerce scarta il parametro in
+  // build_url) portano il token firmato dentro la URL: la firma, non il
+  // cookie, è ciò che rende la callback verificabile quando arriva
+  // server-to-server.
+  const isKeypair = getCatalogEntry(provider)?.authType === "keypair";
+  const built = buildState(tenantId, provider, tenantInput.value);
+  const state = built.state;
+  const cookieValue = built.cookieValue;
   const redirectUri = getRedirectUri(req.url, provider);
 
   // PKCE solo dove il catalogo lo dichiara: il verifier resta nel cookie
@@ -134,10 +155,15 @@ export async function GET(
   }
 
   const res = NextResponse.redirect(authUrl);
-  res.cookies.set(INTEGRATIONS_STATE_COOKIE, cookieValue, {
-    ...cookieOpts,
-    maxAge: INTEGRATIONS_STATE_MAX_AGE,
-  });
+  // Il cookie dello state serve solo ai provider che lo rinnovano via
+  // parametro: su WooCommerce il token vive nella URL e la callback arriva
+  // senza cookie, quindi scriverlo non aggiungerebbe protezione.
+  if (!isKeypair) {
+    res.cookies.set(INTEGRATIONS_STATE_COOKIE, cookieValue, {
+      ...cookieOpts,
+      maxAge: INTEGRATIONS_STATE_MAX_AGE,
+    });
+  }
   if (pkce) {
     res.cookies.set(INTEGRATIONS_PKCE_COOKIE, pkce.codeVerifier, {
       ...cookieOpts,

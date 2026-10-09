@@ -162,15 +162,15 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
     steps: [
       {
         title: "Prepara",
-        desc: "Nel wp-admin apri WooCommerce → Impostazioni → Avanzate → REST API e annota il tuo User ID (lo trovi anche in Utenti → Modifica, nell'URL finisce con user_id=N).",
+        desc: "Controlla che WooCommerce sia attivo (wp-admin → WooCommerce → Stato) e che il negozio abbia un utente con permessi Amministratore/Manager: senza, WooCommerce risponde “non hai i permessi” e non mostra la richiesta.",
       },
       {
         title: "Collega",
-        desc: "Compila qui sotto URL del tuo store e User ID. Verrai portato nel wp-admin del tuo store, dove trovi AgentCloud fra le app e clicchi Approva.",
+        desc: "Incolla qui sotto il dominio del tuo store e premi il pulsante. Verrai portato su WooCommerce, dove trovi «AgentCloud vuole connettersi al tuo store» con l'elenco dei permessi richiesti (sola lettura): premi Approva.",
       },
       { title: "Prova", desc: "Connesso. Chiedi: quali sono gli ordini in lavorazione? Poi: elenca i prodotti esauriti." },
     ],
-    needHelp: "Se l'approvazione non parte, controlla che l'URL sia il dominio del tuo shop (senza /wp-admin) e che REST API sia attivo in WooCommerce → Impostazioni → Avanzate.",
+    needHelp: "Se non compare la schermata di autorizzazione: il negozio deve avere i permalink attivi (Impostazioni → Permaletti, non “Semplice”), altrimenti l'endpoint va chiamato come /index.php/wc-auth/v1/authorize. Se l'approvazione parte ma la connessione resta in attesa, le credenziali non sono ancora arrivate: ricarica la pagina.",
   },
   mailchimp: {
     provider: "mailchimp",

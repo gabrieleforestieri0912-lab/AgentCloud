@@ -91,6 +91,61 @@ export function readStateCookie(req: NextRequest): string | undefined {
 }
 
 // ---------------------------------------------------------------------------
+// Token firmato che viaggia NELLA URL (WooCommerce)
+// ---------------------------------------------------------------------------
+
+/**
+ * Come `buildState`, ma il token è pensato per stare dentro `return_url` /
+ * `callback_url` invece che nel parametro `state` di OAuth.
+ *
+ * Serve a WooCommerce, che NON ha un concetto di `state`: `WC_Auth::build_url()`
+ * ricostruisce ogni hop interno da una allowlist fissa di cinque parametri e
+ * scarta tutto il resto, quindi uno `state` finirebbe perso alla prima
+ * redirezione. Di conseguenza il tenant non si ricava dai cookie — la POST con
+ * le credenziali arriva dal server di WooCommerce, senza alcun cookie — e deve
+ * poter essere letto dalla sola URL.
+ *
+ * `verifySignedState` fa quindi la verifica HMAC senza confrontare nulla con un
+ * cookie: l'autenticità viene dalla firma, non dalla sessione del browser. Il
+ * payload porta già `e` (scadenza), verificata insieme all'HMAC.
+ */
+export function buildSignedUrlToken(
+  tenantId: string,
+  provider: string,
+  tenantInput?: Record<string, string>,
+): string {
+  return buildState(tenantId, provider, tenantInput).state;
+}
+
+/** Verifica un token firmato viaggiato nella URL, senza cookie. */
+export function verifySignedUrlToken(token: string | null): IntegrationsStatePayload | null {
+  if (!token) return null;
+  const [b64, sig, extra] = token.split(".");
+  if (!b64 || !sig || extra !== undefined) return null;
+  const expected = crypto.createHmac("sha256", keyForHmac()).update(b64).digest("hex");
+  // La lunghezza va controllata PRIMA di timingSafeEqual: `Buffer.from(s, "hex")`
+  // è permissivo e si ferma al primo carattere non esadecimale, quindi una firma
+  // con un suffisso spazzatura decodificherebbe negli stessi 32 byte e il confronto
+  // passerebbe. Senza questo controllo, `token + "x"` sarebbe accettato come
+  // valido. `verifyState` non ne ha bisogno perché prima confronta la lunghezza
+  // dell'intero token con quella del cookie.
+  if (sig.length !== expected.length) return null;
+  try {
+    if (!crypto.timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(expected, "hex"))) return null;
+  } catch {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(Buffer.from(b64, "base64url").toString("utf8")) as IntegrationsStatePayload;
+    if (!payload.t || !payload.p || !payload.n || typeof payload.e !== "number") return null;
+    if (Date.now() > payload.e) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // PKCE (per i provider che lo richiedono, es. Airtable)
 // ---------------------------------------------------------------------------
 

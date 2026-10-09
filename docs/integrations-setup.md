@@ -185,15 +185,18 @@ basta quindi a completare lo scambio. Oggi serve solo ad **Airtable**.
 ### WooCommerce
 | | |
 |---|---|
-| Env | Solo `WOOCOMMERCE_APP_NAME` (il nome mostrato all'utente nella schermata di autorizzazione) e `WOOCOMMERCE_SCOPE` (default `read_write`). **Nessuna chiave in env.** |
+| Env | Solo `WOOCOMMERCE_APP_NAME` (il nome mostrato all'utente nella schermata di autorizzazione) e `WOOCOMMERCE_SCOPE` (default `read`, coerente con le tool di sola lettura). **Nessuna chiave in env.** |
 | Chiavi per store | Le Consumer Key/Secret nascono sullo **store del cliente** e sono cifrate in `tenant_integrations` (`access_token` = key, `refresh_token` = secret). Una coppia diversa per ogni tenant. Nessuna colonna nuova: si riusano le due esistenti, già cifrate. |
 | Formato token | `keypair`: le chiamate usano `Authorization: Basic base64(key:secret)` — nell'header, **non** in query string come Trello. |
-| Flusso | `GET https://<store>/wp-json/wc-auth/v1/authorize` → l'utente entra nel proprio wp-admin e approva → WooCommerce redirige a `redirect_uri` con `?consumer_key=…&consumer_secret=…`. Nessuno scambio di codice (`tokenInRedirect`). |
-| Dati richiesti | **Due campi**, raccolti dalla card con un form GET: `store_url` e `user_id`. Il `user_id` (ID WordPress) è **obbligatorio** per WooCommerce e non è deducibile: si trova in wp-admin → Utenti → passando il mouse su "Modifica", nell'URL finisce con `user_id=N`. Senza, l'authorize risponde 400. |
+| Flusso | `GET https://<store>/wc-auth/v1/authorize` con `app_name`, `user_id`, `return_url`, `callback_url`, `scope` → l'utente vede «AgentCloud vuole connettersi al tuo store» e preme **Approve** → WooCommerce consegna le credenziali con una **POST server-to-server** a `callback_url` (corpo JSON `{key_id, user_id, consumer_key, consumer_secret, key_permissions}`). Nessuno scambio di codice. |
+| Dati richiesti | **Un solo campo**: `store_url`. Il `user_id` che WooCommerce pretende è, per sua documentazione, «l'utente nella **tua** app, NON il WordPress User ID»: lo imposta la route `authorize` con l'id dell'utente loggato. Chiederlo a chi collega sarebbe chiedere un dato che non gli serve. |
+| Correlazione | WooCommerce **non ha `state`**: `WC_Auth::build_url()` ricostruisce gli hop interni da una allowlist fissa e scarta ogni parametro extra. Il tenant viaggia quindi in un token firmato dentro `return_url`/`callback_url` (`?tx=…`), verificato con HMAC e senza cookie — la POST arriva dal server del negozio e non ne ha. |
+| Stato `pending` | Le due richieste (POST credenziali, GET ritorno al browser) sono separate e non ordinate. Se il GET trova la connessione ancora vuota risponde `status=pending`, non `connected`: evita di dichiarare collegato un account su cui le prime chiamate fallirebbero. |
 | Token | Le chiavi API WooCommerce non scadono per impostazione predefinita → `expires_at` null, nessun refresh. |
 | Tool agente | `woo_list_products`, `woo_get_product`, `woo_list_orders`, `woo_get_order`, `woo_get_customer` — REST v3 `https://<store>/wp-json/wc/v3`. |
 | **SSRF** | L'host viene dall'utente ed è chiamato dal server. Controllo in due tempi: `normalizeTenantUrl` in `authorize` (sintattico: https, porte diverse da 443 vietate, niente credenziali nell'URL, niente IP privati) e `assertPublicHost` in ogni fetch, che **risolve il DNS**. Sono bloccati localhost, `*.localhost`, `*.internal`, `metadata.google.internal`, 169.254/16 (metadata cloud), RFC1918, CGNAT e i TEST-NET. Il secondo controllo serve perché il DNS può cambiare fra la connessione e la chiamata (DNS rebinding). |
 | Note | I prodotti e gli ordini passano da `lib/commerce/normalize.ts`, un formato comune pensato per essere adottato anche da Shopify (non ancora: Shopify mantiene il suo output storico per non rompere i prompt). Un prodotto a prezzo variabile restituisce `price: null` e non `0`: WooCommerce manda stringa vuota, e `Number("")` è 0 — senza il controllo l'agente leggeva quei prodotti come "gratis". |
+| Requisito del negozio | L'endpoint `wc-auth` è una **rewrite rule** di WordPress, non una REST route: senza permalink attivi (Impostazioni → Permaletti, non "Semplice") va chiamato come `/index.php/wc-auth/v1/authorize`. Serve inoltre un utente con permesso `manage_woocommerce`, altrimenti WooCommerce risponde 401 "non hai i permessi" e non mostra la richiesta. |
 
 ### Mailchimp
 | | |
@@ -317,7 +320,9 @@ e sposta solo peso nel contesto del modello.
 
 I tool sono in `ALL_TOOLS_LIST` (`lib/agents/feature-flags.ts`) e abilitati come `optionalTools` su **tutti e 15 gli agenti** tramite la costante `NOTION_SLACK_HUBSPOT_TOOLS` (`lib/agents/registry.ts`). Ogni agente che ne ha almeno uno riceve in coda al system prompt la direttiva `INTEGRATION_TOOLS_DIRECTIVE`, che fissa la sequenza corretta (search → id → azione), la conferma prima delle scritture esterne e il divieto di ripetere un'azione già fallita. Se il provider non è collegato, il tool invita a connetterlo dalla dashboard con il marker `[[CONNECT:<provider>]]`.
 
-Test: `node scripts/test-integration-tools.mjs` (registro e dispatch) e `node scripts/test-integrations.mjs` (flusso OAuth dei 7 provider con un account di test).
+Verifica manuale: il flusso OAuth di ogni provider si può provare da
+`/dashboard/integrations` premendo Connetti; il dispatch dei tool si controlla
+chiedendone uno all'agente in chat.
 
 ## UI
 
@@ -364,7 +369,10 @@ I test dei provider che richiedono una connessione reale non sono automatici:
 | **"la connessione è scaduta e non emette refresh token"** | Trello (30 giorni) o un token senza rinnovo: ricollégati dalla dashboard. Il messaggio è esplicito per non lasciar arrivare un 401 al modello. |
 | **Airtable `invalid_grant`** | Il refresh token è scaduto (`refresh_expires_in`, ~60 giorni) → ricollégati. |
 | **Mailchimp "data center sconosciuto"** | `metadata.dc` vuoto in `tenant_integrations`: ricollégati. Non si può dedurre. |
-| **WooCommerce 400 in authorize** | Manca `user_id`, oppure non è numerico, oppure l'URL non è https / ha porta / è un IP privato. |
+| **WooCommerce 400 in authorize** | Manca `store_url`, oppure l'URL non è https / ha porta / è un IP privato. |
+| **WooCommerce 401 "non hai i permessi"** | L'utente che approva non ha `manage_woocommerce`, oppure non è loggato: WooCommerce non mostra proprio la schermata di autorizzazione. |
+| **WooCommerce 404 sulla schermata** | Permaletti su "Semplice": `wc-auth` è una rewrite rule, quindi serve `/index.php/wc-auth/v1/authorize`. |
+| **WooCommerce resta in "Approvazione ricevuta"** | Le credenziali non sono ancora arrivate: la POST di WooCommerce non è passata. Ricaricare la pagina; se persiste, ricollégare e controllare che il server del negozio raggiunga `callback_url`. |
 | **WooCommerce "indirizzo non ammesso"** | L'host risolve a un IP privato o riservato: è il controllo SSRF. Verifica di aver scritto il dominio del tuo shop, non un indirizzo IP. |
 | **Trello token non compare** | Trello rimanda `?token=`, non `?code=`: senza l'adapter con `authParam`/`tokenInRedirect` il callback non trova nulla. |
 | `slack_read_channel` → `missing_scope` | Manca lo scope OAuth `channels:history` sull'app Slack. |

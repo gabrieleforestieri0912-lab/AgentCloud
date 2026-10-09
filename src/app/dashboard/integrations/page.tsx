@@ -115,9 +115,11 @@ export default async function DashboardIntegrationsPage({
                 ? dict.dashboardIntegrations.connected
                 : sp.status === "disconnected"
                   ? dict.dashboardIntegrations.disconnected
-                  : sp.reason
-                    ? `${dict.dashboardIntegrations.errorPrefix} ${sp.reason}`
-                    : sp.status}
+                  : sp.status === "pending"
+                    ? dict.dashboardIntegrations.pending
+                    : sp.reason
+                      ? `${dict.dashboardIntegrations.errorPrefix} ${sp.reason}`
+                      : sp.status}
             </div>
           )}
 

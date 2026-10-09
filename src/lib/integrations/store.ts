@@ -41,3 +41,30 @@ export async function markTenantIntegration(
   if (!admin) return;
   await admin.from("tenant_integrations").update({ status, updated_at: new Date().toISOString() }).eq("tenant_id", tenantId).eq("provider", provider);
 }
+
+/**
+ * Riga della connessione limitata ai campi non sensibili.
+ *
+ * Serve a chi deve sapere solo SE la connessione c'è e in che stato è, senza
+ * decriptare nulla: la callback di WooCommerce arriva dal server del negozio e
+ * deve poter dire all'utente "approvato" o "non ancora arrivato" prima che le
+ * credenziali siano disponibili. Per questo non restituisce `access_token` né
+ * `refresh_token`: tenerli fuori da questa firma rende impossibile usarlo per
+ * sbaglio in un punto dove verrebbero scritti in un log o in una risposta.
+ */
+export async function getIntegration(
+  tenantId: string,
+  provider: string,
+): Promise<{ status: string | null; external_account_id: string | null } | null> {
+  const admin = createAdminClient();
+  if (!admin) return null;
+  const { data, error } = await admin
+    .from("tenant_integrations")
+    .select("status, external_account_id")
+    .eq("tenant_id", tenantId)
+    .eq("provider", provider)
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as { status?: string | null; external_account_id?: string | null };
+  return { status: row.status ?? null, external_account_id: row.external_account_id ?? null };
+}

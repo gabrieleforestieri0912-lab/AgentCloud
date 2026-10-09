@@ -193,7 +193,10 @@ export const PROVIDER_CATALOG = [
     brand: "woocommerce",
     category: "E-commerce",
     authType: "keypair",
-    scopes: ["read_write"],
+    // `read`: le cinque tool Woo sono di sola lettura (c'è un Open Decision
+    // aperto sulle conferme per le scritture). Si chiede a WooCommerce solo il
+    // permesso che si usa davvero.
+    scopes: ["read"],
     hasApiProxy: true,
     tenantInput: {
       fields: [
@@ -203,12 +206,6 @@ export const PROVIDER_CATALOG = [
           placeholder: "https://tuo-store.com",
           validateAsUrl: true,
           hint: "Il dominio del tuo shop WordPress, senza /wp-admin.",
-        },
-        {
-          key: "user_id",
-          label: "Il tuo WordPress User ID",
-          placeholder: "1",
-          hint: "In WP: Utenti → passa il mouse su Modifica → l'URL finisce con user_id=1.",
         },
       ],
     },
