@@ -1,3 +1,22 @@
+-- ⚠️ VERIFICATO CHE MANCA SU PRODUZIONE — applicare questo file.
+--
+-- Durante la verifica dei privacy webhooks, un `shop/redact` ha risposto 500
+-- con "Could not find the table 'public.shopify_compliance_events' in the
+-- schema cache": questo file era nel repository ma non era mai stato eseguito
+-- sul database. La conseguenza era il difetto peggiore possibile in un
+-- obbligo GDPR — il webhook di cancellazione falliva e i dati del negozio
+-- restavano al loro posto.
+--
+-- Applicare con `supabase db push`, oppure incollando questo file nel SQL
+-- Editor del progetto su Supabase.
+--
+-- Per verificare che sia applicata:
+--   select to_regclass('public.shopify_compliance_events');
+--   -- deve restituire la tabella, non NULL
+--
+-- Nota: `supabase/migrations/` è in .gitignore, quindi il DDL vive qui nei
+-- file `schema-*.sql`, che è la convenzione del repository.
+
 create table if not exists public.shopify_compliance_events (
   id uuid default gen_random_uuid() primary key,
   -- ID univoco del webhook (header X-Shopify-Webhook-Id): serve per
