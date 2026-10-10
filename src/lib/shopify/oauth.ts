@@ -5,6 +5,22 @@ import type { NextRequest } from "next/server";
  * Helper condivisi OAuth Shopify (server-only). Nessun segreto è hard-codato
  * qui: SHOPIFY_API_KEY / SHOPIFY_API_SECRET / SHOPIFY_SCOPES vengono letti
  * dall'ambiente a runtime.
+ *
+ * ⚠️ Cosa NON sta qui, e perché
+ *
+ * La verifica della firma dei **webhook** (corpo grezzo, digest base64,
+ * header `X-Shopify-Hmac-Sha256`) è in `./verify-webhook.ts`. Qui c'era
+ * `verifyShopifyWebhookHmac`, identica nella logica ma con un controllo della
+ * lunghezza diverso: due implementazioni dello stesso controllo che possono
+ * divergere è esattamente il difetto che porta a una verifica più permissiva
+ * dell'altra. È stata rimossa quando i route handler sono stati consolidati
+ * su un handler unico, che importa la versione in verify-webhook.ts.
+ *
+ * Quello che resta qui è `verifyShopifyHmac`, che NON è una duplicata: verifica
+ * una firma diversa, quella del redirect OAuth. Lì il messaggio non è il
+ * corpo ma la stringa dei query param escluso `hmac`, ordinati e uniti come
+ * `k=v&k=v`, e il digest è in esadecimale invece che in base64. Sono due
+ * protocolli distinti e non vanno uniti.
  */
 
 export const SHOPIFY_STATE_COOKIE = "ac_shopify_state";
@@ -63,28 +79,8 @@ export function getShopifyWebhookAddress(): string {
 }
 
 /**
- * Verifica l'HMAC di un webhook Shopify: Shopify invia `X-Shopify-Hmac-SHA256`,
- * la base64 dell'HMAC-SHA256 del corpo *grezzo* della richiesta calcolata con
- * il segreto dell'app. Il valore calcolato deve combaciare con l'header a
- * tempo costante.
+ * Costruisce l'URL authorize di Shopify verso cui viene rediretto l'utente.
  */
-export function verifyShopifyWebhookHmac(
-  rawBody: string,
-  hmacHeader: string,
-  secret: string,
-): boolean {
-  if (!hmacHeader) return false;
-  const computed = createHmac("sha256", secret)
-    .update(rawBody, "utf8")
-    .digest("base64");
-  try {
-    return timingSafeEqual(Buffer.from(computed), Buffer.from(hmacHeader));
-  } catch {
-    return false;
-  }
-}
-
-/** Costruisce l'URL authorize di Shopify verso cui viene rediretto l'utente. */
 export function buildAuthorizeUrl(shop: string, state: string): string {
   const params = new URLSearchParams({
     client_id: process.env.SHOPIFY_API_KEY || "",
