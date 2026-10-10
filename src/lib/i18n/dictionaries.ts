@@ -134,7 +134,7 @@ const it = {
       },
       {
         plan: "Growth",
-        price: "€14,99/mese",
+        price: "€9,99/mese",
         text: "Agente più integrazioni",
       },
       { plan: "Custom", price: "Su misura", text: "Sistemi multi-agente" },
@@ -215,7 +215,7 @@ howItWorks: {
     steps: [
       {
         title: "Scegli l’agente",
-        desc: "15 agenti in 6 categorie: E-commerce, Marketing, Customer Service, Business Ops, Design e Finanza. Prezzi chiari (€4,99–€14,99 al mese) e attivazione in giornata.",
+        desc: "15 agenti in 6 categorie: E-commerce, Marketing, Customer Service, Business Ops, Design e Finanza. Prezzi chiari (€4,99–€9,99 al mese) e attivazione in giornata.",
       },
       {
         title: "Collega i tuoi strumenti",
@@ -563,7 +563,7 @@ stillQuestions: "Hai ancora domande?",
       },
       {
         q: "Cosa significa “5 messaggi gratis al giorno per agente”?",
-        a: "Ogni agente si può provare con 5 messaggi gratuiti al giorno, senza impegno: il contatore si azzera a mezzanotte. Per conversazioni illimitate puoi sbloccarlo con l’abbonamento (€4,99–€14,99 al mese).",
+        a: "Ogni agente si può provare con 5 messaggi gratuiti al giorno, senza impegno: il contatore si azzera a mezzanotte. Per conversazioni illimitate puoi sbloccarlo con l’abbonamento (€4,99–€9,99 al mese).",
       },
       {
         q: "I miei dati sono al sicuro?",
@@ -2420,7 +2420,7 @@ export const en: Dictionary = {
     ],
     pricingItems: [
       { plan: "Starter", price: "€9.99/mo", text: "One workflow agent" },
-      { plan: "Growth", price: "€14.99/mo", text: "Agent plus integrations" },
+      { plan: "Growth", price: "€9.99/mo", text: "Agent plus integrations" },
       { plan: "Custom", price: "Custom", text: "Multi-agent systems" },
     ],
     ariaCart: "Cart",
@@ -2499,7 +2499,7 @@ howItWorks: {
     steps: [
       {
         title: "Pick an agent",
-        desc: "15 agents across 6 categories: E-commerce, Marketing, Customer Service, Business Ops, Design and Finance. Clear pricing (€4.99–€14.99 per month) and same-day activation.",
+        desc: "15 agents across 6 categories: E-commerce, Marketing, Customer Service, Business Ops, Design and Finance. Clear pricing (€4.99–€9.99 per month) and same-day activation.",
       },
       {
         title: "Connect your tools",
@@ -2847,7 +2847,7 @@ stillQuestions: "Still have questions?",
       },
       {
         q: "What does “5 free messages a day per agent” mean?",
-        a: "Every agent can be tried with 5 free messages a day, no commitment: the counter resets at midnight. For unlimited conversations you can unlock it with a subscription (€4.99–€14.99 per month).",
+        a: "Every agent can be tried with 5 free messages a day, no commitment: the counter resets at midnight. For unlimited conversations you can unlock it with a subscription (€4.99–€9.99 per month).",
       },
       {
         q: "Is my data safe?",
@@ -4678,7 +4678,7 @@ export const es: Dictionary = {
     ],
     pricingItems: [
       { plan: "Starter", price: "€9,99/mes", text: "Un agente de flujo" },
-      { plan: "Growth", price: "€14,99/mes", text: "Agente + integraciones" },
+      { plan: "Growth", price: "€9,99/mes", text: "Agente + integraciones" },
       { plan: "Personalizado", price: "Personalizado", text: "Sistemas multi-agente" },
     ],
     ariaCart: "Carrito",
@@ -4757,7 +4757,7 @@ howItWorks: {
     steps: [
       {
         title: "Elige el agente",
-        desc: "15 agentes en 6 categorías: E-commerce, Marketing, Customer Service, Business Ops, Design y Finanzas. Precios claros (4,99 €–14,99 € al mes) y activación el mismo día.",
+        desc: "15 agentes en 6 categorías: E-commerce, Marketing, Customer Service, Business Ops, Design y Finanzas. Precios claros (4,99 €–9,99 € al mes) y activación el mismo día.",
       },
       {
         title: "Conecta tus herramientas",
@@ -5105,7 +5105,7 @@ stillQuestions: "¿Aún tienes preguntas?",
       },
       {
         q: "¿Qué significa «5 mensajes gratis al día por agente»?",
-        a: "Cada agente se puede probar con 5 mensajes gratuitos al día, sin compromiso: el contador se reinicia a medianoche. Para conversaciones ilimitadas puedes desbloquearlo con una suscripción (4,99 €–14,99 € al mes).",
+        a: "Cada agente se puede probar con 5 mensajes gratuitos al día, sin compromiso: el contador se reinicia a medianoche. Para conversaciones ilimitadas puedes desbloquearlo con una suscripción (4,99 €–9,99 € al mes).",
       },
       {
         q: "¿Mis datos están seguros?",
@@ -6933,7 +6933,7 @@ export const de: Dictionary = {
     ],
     pricingItems: [
       { plan: "Starter", price: "9,99 €/Monat", text: "Ein Workflow-Agent" },
-      { plan: "Growth", price: "14,99 €/Monat", text: "Agent + Integrationen" },
+      { plan: "Growth", price: "9,99 €/Monat", text: "Agent + Integrationen" },
       { plan: "Custom", price: "Individuell", text: "Multi-Agenten-Systeme" },
     ],
     ariaCart: "Warenkorb",
@@ -7012,7 +7012,7 @@ howItWorks: {
     steps: [
       {
         title: "Agent auswählen",
-        desc: "15 Agenten in 6 Kategorien: E-Commerce, Marketing, Customer Service, Business Ops, Design und Finanzen. Klare Preise (4,99 €–14,99 € pro Monat) und Aktivierung am selben Tag.",
+        desc: "15 Agenten in 6 Kategorien: E-Commerce, Marketing, Customer Service, Business Ops, Design und Finanzen. Klare Preise (4,99 €–9,99 € pro Monat) und Aktivierung am selben Tag.",
       },
       {
         title: "Tools verbinden",
@@ -7360,7 +7360,7 @@ browseMarketplace: "Marktplatz durchsuchen",
       },
       {
         q: "Was bedeutet „5 Gratis-Nachrichten pro Tag und Agent“?",
-        a: "Jeder Agent lässt sich mit 5 Gratis-Nachrichten pro Tag unverbindlich testen: Der Zähler wird um Mitternacht zurückgesetzt. Für unbegrenzte Unterhaltungen kannst du es mit einem Abo freischalten (4,99 €–14,99 € pro Monat).",
+        a: "Jeder Agent lässt sich mit 5 Gratis-Nachrichten pro Tag unverbindlich testen: Der Zähler wird um Mitternacht zurückgesetzt. Für unbegrenzte Unterhaltungen kannst du es mit einem Abo freischalten (4,99 €–9,99 € pro Monat).",
       },
       {
         q: "Sind meine Daten sicher?",
@@ -9188,7 +9188,7 @@ export const fr: Dictionary = {
     ],
     pricingItems: [
       { plan: "Starter", price: "9,99 €/mois", text: "Un agent de workflow" },
-      { plan: "Growth", price: "14,99 €/mois", text: "Agent + intégrations" },
+      { plan: "Growth", price: "9,99 €/mois", text: "Agent + intégrations" },
       { plan: "Custom", price: "Sur mesure", text: "Systèmes multi-agents" },
     ],
     ariaCart: "Panier",
@@ -9267,7 +9267,7 @@ howItWorks: {
     steps: [
       {
         title: "Choisissez l’agent",
-        desc: "15 agents dans 6 catégories : E-commerce, Marketing, Customer Service, Business Ops, Design et Finance. Tarifs clairs (4,99 €–14,99 € par mois) et activation le jour même.",
+        desc: "15 agents dans 6 catégories : E-commerce, Marketing, Customer Service, Business Ops, Design et Finance. Tarifs clairs (4,99 €–9,99 € par mois) et activation le jour même.",
       },
       {
         title: "Connectez vos outils",
@@ -9615,7 +9615,7 @@ browseMarketplace: "Parcourir la marketplace",
       },
       {
         q: "Que signifie « 5 messages gratuits par jour et par agent » ?",
-        a: "Chaque agent peut être testé avec 5 messages gratuits par jour, sans engagement : le compteur se réinitialise à minuit. Pour des conversations illimitées, vous pouvez le débloquer avec un abonnement (4,99 €–14,99 € par mois).",
+        a: "Chaque agent peut être testé avec 5 messages gratuits par jour, sans engagement : le compteur se réinitialise à minuit. Pour des conversations illimitées, vous pouvez le débloquer avec un abonnement (4,99 €–9,99 € par mois).",
       },
       {
         q: "Mes données sont-elles en sécurité ?",

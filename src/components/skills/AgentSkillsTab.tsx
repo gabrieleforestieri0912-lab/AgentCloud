@@ -28,6 +28,7 @@ import {
   Bell,
   ArrowRight,
   AlertTriangle,
+  Search,
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { RiskBadge, type RiskDict } from "./SkillsCatalog";
@@ -83,6 +84,9 @@ type Dict = RiskDict & {
   noRecommendedBody: string;
   installSkill: string;
   removeSkill: string;
+  agentTabSearch: string;
+  agentTabSearchLabel: string;
+  agentTabNoResults: string;
   enable: string;
   disable: string;
   detail: string;
@@ -111,6 +115,32 @@ export default function AgentSkillsTab({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notified, setNotified] = useState<Record<string, boolean>>({});
+  const [query, setQuery] = useState("");
+
+  // La ricerca filtra su due livelli, perché qui le competenze sono annidate
+  // dentro i plugin: un plugin resta visibile se corrisde per nome o descrizione
+  // OPPURE se contiene una competenza che corrisce, e in quel caso dentro
+  // vengono mostrate solo le competenze che corrispondono. Filtrando solo i
+  // plugin, cercare il nome di una competenza riporterebbe il plugin giusto ma
+  // con tutte le competenze dentro, cioe non avrebbe filtrato nulla.
+  const q = query.trim().toLowerCase();
+  const visibleItems = useMemo(() => {
+    if (!q) return items;
+    return items
+      .map((p) => {
+        const pluginMatches =
+          p.name.toLowerCase().includes(q) ||
+          p.tagline.toLowerCase().includes(q);
+        if (pluginMatches) return p;
+        const skills = p.skills.filter(
+          (s) =>
+            s.name.toLowerCase().includes(q) ||
+            (s.description ?? "").toLowerCase().includes(q),
+        );
+        return skills.length > 0 ? { ...p, skills } : null;
+      })
+      .filter((p): p is AgentPlugin => p !== null);
+  }, [items, q]);
 
   const installedCount = useMemo(
     () => items.flatMap((p) => p.skills).filter((s) => s.installed).length,
@@ -239,8 +269,29 @@ export default function AgentSkillsTab({
         </p>
       )}
 
+      <div className="relative mb-5">
+        <Search
+          size={15}
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+        />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={dict.agentTabSearch}
+          aria-label={dict.agentTabSearchLabel}
+          className="w-full rounded-xl border border-white/10 bg-neutral-900 py-2.5 pl-9 pr-3 text-sm font-semibold text-white placeholder:text-neutral-600 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none"
+        />
+      </div>
+
+      {visibleItems.length === 0 ? (
+        <div className="rounded-2xl border border-white/5 bg-neutral-900 p-10 text-center">
+          <p className="text-sm font-bold text-white">{dict.agentTabNoResults}</p>
+        </div>
+      ) : (
       <div className="space-y-4">
-        {items.map((plugin) => {
+        {visibleItems.map((plugin) => {
           const missingRequired = plugin.integrations.filter(
             (i) => i.status === "required" && !connected[i.brand],
           );
@@ -464,6 +515,7 @@ export default function AgentSkillsTab({
           );
         })}
       </div>
+      )}
     </div>
   );
 }

@@ -67,8 +67,11 @@ export const SHOPIFY_PRICING: VerticalPricing = {
     growth: {
       id: "shopify-growth",
       name: "Growth",
-      price: 1499, // €14,99/mese (1499 centesimi)
-      priceDisplay: "€14,99/mese",
+      // Stesso prezzo dello Starter, con 3,3× i token: è la scala dei piani
+      // (non quella degli agenti), e un piano "superiore" non può costare meno
+      // di quello sotto. Quindi 9,99, che è anche il tetto di prezzo deciso.
+      price: 999, // €9,99/mese (999 centesimi)
+      priceDisplay: "€9,99/mese",
       tokens: 1_000_000,
       features: [
         "Fino a 1.000.000 token/mese",
@@ -119,8 +122,9 @@ export const SERVICES_PRICING: VerticalPricing = {
     growth: {
       id: "services-growth",
       name: "Growth",
-      price: 1499, // €14,99/mese (1499 centesimi)
-      priceDisplay: "€14,99/mese",
+      // Stesso criterio del Growth Shopify: sopra lo Starter, dentro il tetto.
+      price: 999, // €9,99/mese (999 centesimi)
+      priceDisplay: "€9,99/mese",
       tokens: 1_000_000,
       features: [
         "Fino a 1.000.000 token/mese",

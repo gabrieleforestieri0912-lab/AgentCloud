@@ -10,8 +10,25 @@ import AgentIcon from "@/components/AgentIcon";
 import { t as interpolate } from "@/lib/i18n/dictionaries";
 import { getBundleBySlug, getBundleAgents } from "@/lib/bundles";
 import { COUPON_CODE, couponIsApplicable, couponDiscountCents, couponRawDiscountCents } from "@/lib/coupon";
+import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
 
 const CLAIMED_KEY = "coupon_agentcloud50_claimed";
+
+/**
+ * Icone delle app che si collegano, fluttuanti come sulla landing.
+ *
+ * Stesse costellazioni del marketplace ma più rade: qui il contenuto è una
+ * colonna sola al centro, quindi le icone restano ai lati senza finire sotto
+ * le card. Sono puramente decorative.
+ */
+const CART_BUBBLES: FloatingBubble[] = [
+  { top: "8%", left: "6%", size: "w-10 h-10", brand: "shopify", delay: "0s", anim: "animate-float-gentle" },
+  { top: "22%", left: "88%", size: "w-11 h-11", brand: "slack", delay: "1.2s", anim: "animate-float-reverse" },
+  { top: "46%", left: "4%", size: "w-9 h-9", brand: "gmail", delay: "0.6s", anim: "animate-float-reverse" },
+  { top: "62%", left: "90%", size: "w-10 h-10", brand: "notion", delay: "1.8s", anim: "animate-float-gentle" },
+  { top: "80%", left: "8%", size: "w-10 h-10", brand: "googlecalendar", delay: "0.9s", anim: "animate-float-gentle" },
+  { top: "88%", left: "86%", size: "w-9 h-9", brand: "woocommerce", delay: "2.1s", anim: "animate-float-reverse" },
+];
 
 /**
  * Sconto reale del bundle rispetto all'acquisto dei singoli agenti.
@@ -34,7 +51,7 @@ function bundleSavings(item: CartItem): number | null {
 
 /**
  * Calcola lo sconto coupon per gli elementi idonei nel carrello.
- * Il coupon dà 50% su agenti con prezzo 4,99€-14,99€ e 50% sui bundle
+ * Il coupon dà 50% su agenti con prezzo 4,99 €-9,99 € e 50% sui bundle
  * (totali fuori fascia, sconto sempre applicabile).
  */
 function calculateCouponDiscount(items: CartItem[]): { discountCents: number; eligibleItems: CartItem[] } {
@@ -114,8 +131,23 @@ export default function CartPageClient() {
   }
 
   return (
-    <main className="min-h-dvh bg-neutral-950">
-      <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+    // Sfondo in tre strati, lo stesso della landing: gradiente verticale,
+    // radiali colorati e hairline in alto. Il contenuto sta su z-10 mentre
+    // gradiente e icone restano dietro (z-0, pointer-events-none).
+    <main className="relative min-h-dvh overflow-x-hidden bg-neutral-950">
+      <div className="pointer-events-none fixed inset-0" aria-hidden="true">
+        <div className="absolute inset-0 dark-gradient-main" />
+        <div
+          className="absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 15% 10%, rgba(3,139,254,.18), transparent 32%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.14), transparent 28%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.12), transparent 36%)",
+          }}
+        />
+        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
+      </div>
+      <FloatingBrandBubbles bubbles={CART_BUBBLES} />
+      <section className="relative z-10 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <Link href="/" className="mb-8 inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-500 hover:text-white transition-colors">
             <ArrowRight size={14} className="rotate-180" />

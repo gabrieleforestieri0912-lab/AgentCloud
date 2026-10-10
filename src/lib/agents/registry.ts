@@ -5,9 +5,16 @@
  * Come viene usato: `AGENT_RUNTIME` è la fonte dei dati a runtime — la chat
  * e il registry agenti ci leggono nome/modello/prompt, `/api/agent/run`
  * esegue l'agente selezionato e le feature flag decidono quali slug sono
- * davvero attivi. I prezzi sono in centesimi (per Stripe). I `systemPrompt`
+ * davvero attivi. I `systemPrompt`
  * sono istruzioni vere per il modello LLM: restano in inglese di proposito,
  * sono dati di funzionamento, non commenti.
+ *
+ * ⚠️ Il campo `price` qui NON è la fonte dei prezzi e non è letto da nessuna
+ * parte: carrello, checkout e pagine prezzano tutto da `priceCents` in
+ * `lib/agents.ts`, che è l'unico valore che finisce in Stripe (il checkout usa
+ * `price_data` dinamico, non un prodotto pre-creato). Qui è tenuto allineato
+ * solo per non trarre in inganno chi lo legge: cambiarlo non cambia il prezzo
+ * addebitato. Per modificare un prezzo si tocca `lib/agents.ts`.
  */
 export type AgentRuntimeConfig = {
   id: string;
@@ -161,8 +168,8 @@ const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
     name: "SEO Content Agent",
     description:
       "Write SEO-optimized content with keyword research and competitor analysis",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (1499 centesimi = 14,99€)
-    price: 1499,
+    // Prezzo allineato alla fascia 9,99 € (899 centesimi = 8,99 €)
+    price: 999,
     stripePriceId: "price_seo_agent",
     model: "claude-sonnet-5",
     tools: ["web_search", "scrape_page", "read_file", "write_file"],
@@ -201,8 +208,8 @@ Guidelines:
     name: "Business Manager Agent",
     description:
       "Executive assistant for reporting, scheduling, and strategic analysis",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (1499 centesimi = 14,99€)
-    price: 1499,
+    // Prezzo allineato alla fascia 9,99 € (899 centesimi = 8,99 €)
+    price: 899,
     stripePriceId: "price_business_manager",
     model: "claude-sonnet-5",
     tools: [
@@ -273,8 +280,8 @@ Guidelines:
     name: "Personal AI Assistant",
     description:
       "Personal assistant for daily tasks, research, and organization",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (999 centesimi = 9,99€)
-    price: 999,
+    // Prezzo allineato alla fascia 9,99 € (999 centesimi = 9,99 €)
+    price: 799,
     stripePriceId: "price_personal_assistant",
     model: "claude-sonnet-5",
     tools: [
@@ -334,8 +341,8 @@ Guidelines:
     name: "Email Manager",
     description:
       "Tidy your inbox, send emails, delete spam, and keep track of the commitments that matter",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (1499 centesimi = 14,99€)
-    price: 1499,
+    // Prezzo allineato alla fascia 9,99 € (899 centesimi = 8,99 €)
+    price: 999,
     stripePriceId: "price_email_manager",
     model: "claude-sonnet-5",
     tools: ["list_emails", "gmail_send", "gmail_trash", "web_search", "scrape_page", "read_file", "write_file"],
@@ -371,8 +378,8 @@ Guidelines:
     name: "Finance Manager Agent",
     description:
       "Track cash flow, prepare invoices, and keep payments under control",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (1499 centesimi = 14,99€)
-    price: 1499,
+    // Prezzo allineato alla fascia 9,99 € (899 centesimi = 8,99 €)
+    price: 899,
     stripePriceId: "price_finance_manager",
     model: "claude-sonnet-5",
     tools: [
@@ -426,7 +433,7 @@ Guidelines:
     id: "shopify-agent",
     name: "Shopify Commerce Agent",
     description: "Full Shopify store management — create your store, niche product research with sources/images, products, discounts, inventory, customers, analytics, and cart links",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (999 centesimi = 9,99€)
+    // Prezzo allineato alla fascia 9,99 € (999 centesimi = 9,99 €)
     price: 999,
     stripePriceId: "price_shopify_agent",
     model: "claude-sonnet-5",
@@ -575,8 +582,8 @@ Guidelines:
     id: "calendar-booking",
     name: "Calendar Booking Agent",
     description: "Find availability, book, delete events and set reminders on your calendar.",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (999 centesimi = 9,99€)
-    price: 999,
+    // Prezzo allineato alla fascia 9,99 € (999 centesimi = 9,99 €)
+    price: 499,
     stripePriceId: "price_calendar_booking",
     model: "claude-sonnet-5",
     tools: [
@@ -631,8 +638,8 @@ Guidelines:
     id: "lead-capture",
     name: "Lead Capture Agent",
     description: "Capture, enrich, and notify sales about new leads — with real validation, enrichment and Slack alerts",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (999 centesimi = 9,99€)
-    price: 999,
+    // Prezzo allineato alla fascia 9,99 € (999 centesimi = 9,99 €)
+    price: 499,
     stripePriceId: "price_lead_capture",
     model: "claude-sonnet-5",
     tools: [
@@ -679,8 +686,8 @@ Guidelines:
     id: "support-agent",
     name: "Support Agent",
     description: "Answer every ticket 24/7, resolve 80% automatically and escalate only what needs a human — with knowledge base and real ticket handling",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (1499 centesimi = 14,99€)
-    price: 1499,
+    // Prezzo allineato alla fascia 9,99 € (899 centesimi = 8,99 €)
+    price: 999,
     stripePriceId: "price_support_agent",
     model: "claude-sonnet-5",
     tools: ["web_search", "scrape_page", "read_file", "write_file", "lead_capture_notify_sales"],
@@ -732,8 +739,8 @@ Guidelines:
     id: "copywriter",
     name: "Copywriter",
     description: "Write copy that converts across landing pages, ads, and email — with real research and ready-to-test variants",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (1499 centesimi = 14,99€)
-    price: 1499,
+    // Prezzo allineato alla fascia 9,99 € (899 centesimi = 8,99 €)
+    price: 799,
     stripePriceId: "price_copywriter",
     model: "claude-sonnet-5",
     tools: ["web_search", "scrape_page", "read_file", "write_file"],
@@ -775,8 +782,8 @@ Guidelines:
     name: "Preventivi & Quote Agent",
     description:
       "Gathers requirements in chat, structures detailed quotes and emails them straight to the customer",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (1499 centesimi = 14,99€)
-    price: 1499,
+    // Prezzo allineato alla fascia 9,99 € (899 centesimi = 8,99 €)
+    price: 799,
     stripePriceId: "price_quote_agent",
     model: "claude-sonnet-5",
     tools: [
@@ -828,8 +835,8 @@ Guidelines:
     name: "Recensioni & Reputation Agent",
     description:
       "Monitors Google Business reviews, analyses sentiment and drafts empathetic, professional replies",
-    // Prezzo allineato alla fascia 9,99€ - 14,99€ (1499 centesimi = 14,99€)
-    price: 1499,
+    // Prezzo allineato alla fascia 9,99 € (899 centesimi = 8,99 €)
+    price: 499,
     stripePriceId: "price_reviews_agent",
     model: "claude-sonnet-5",
     tools: [
@@ -881,7 +888,7 @@ Guidelines:
     name: "HR & Recruiter Agent",
     description:
       "Automates hiring: CV screening, candidate pre-qualification and interview scheduling",
-    price: 1499,
+    price: 899,
     stripePriceId: "price_hr_recruiter",
     model: "claude-sonnet-5",
     tools: [
@@ -930,7 +937,7 @@ Guidelines:
     name: "Social Media Agent",
     description:
       "Plans the social editorial calendar, writes engaging captions, suggests hashtags and tracks trends",
-    price: 999,
+    price: 799,
     stripePriceId: "price_social_media_agent",
     model: "claude-sonnet-5",
     tools: [
@@ -985,7 +992,7 @@ Guidelines:
     name: "Inventory & Logistics Agent",
     description:
       "Monitors warehouse stock, alerts on low-stock products and tracks supplier shipments",
-    price: 1499,
+    price: 899,
     stripePriceId: "price_inventory_logistics",
     model: "claude-sonnet-5",
     tools: [

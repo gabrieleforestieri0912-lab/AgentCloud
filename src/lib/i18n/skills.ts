@@ -102,6 +102,10 @@ export type SkillsDictionary = {
   noRecommendedBody: string;
   installSkill: string;
   removeSkill: string;
+  /** Ricerca nella scheda Competenze della pagina agente (non nel catalogo). */
+  agentTabSearch: string;
+  agentTabSearchLabel: string;
+  agentTabNoResults: string;
   // --- Upload ---
   uploadTitle: string;
   uploadBody: string;
@@ -247,6 +251,9 @@ const EN: SkillsDictionary = {
   noRecommended: "No recommended skill",
   noRecommendedBody: "There are no plugins in the catalog for this agent yet.",
   installSkill: "Install",
+    agentTabSearch: "Search skills or plugins",
+    agentTabSearchLabel: "Search skills in this agent",
+    agentTabNoResults: "No skill matches your search",
   removeSkill: "Remove",
   uploadTitle: "Upload your skill",
   uploadBody: "Drop your skill .zip here (a folder with SKILL.md). We validate frontmatter, size and content on the server.",
@@ -393,6 +400,9 @@ const IT: SkillsDictionary = {
   degradedModeBody:
     "L'integrazione non è ancora disponibile: l'agente prepara comunque il lavoro e lo esporta, senza scrivere sull'app.",
   enabledSkills: "Competenze attive",
+    agentTabSearch: "Cerca competenze o plugin",
+    agentTabSearchLabel: "Cerca competenze in questo agente",
+    agentTabNoResults: "Nessuna competenza corrisponde alla ricerca",
   noRecommended: "Nessuna competenza consigliata",
   noRecommendedBody: "Per questo agente non ci sono ancora plugin nel catalogo.",
   installSkill: "Installa",
@@ -535,6 +545,9 @@ const ES: SkillsDictionary = {
   connectInTwoMinutes: "Conectar en 2 minutos",
   notifyMe: "Avísame cuando llegue",
   notifyMeDone: "Te avisaremos",
+    agentTabSearch: "Buscar competencias o plugins",
+    agentTabSearchLabel: "Buscar competencias en este agente",
+    agentTabNoResults: "Ninguna competencia coincide con la búsqueda",
   degradedMode: "Modo manual",
   degradedModeBody: "La integración aún no está disponible: el agente prepara el trabajo y lo exporta, sin escribir en la app.",
   enabledSkills: "Competencias activas",
@@ -675,6 +688,9 @@ const DE: SkillsDictionary = {
   installedBadge: "Installiert",
   missingIntegrations: "Fehlende Integrationen",
   missingIntegrationsBody: "Verbinde diese Apps, um die Kompetenz voll zu nutzen. Die Kompetenz bleibt installiert und funktioniert reduziert weiter.",
+    agentTabSearch: "Skills oder Plugins suchen",
+    agentTabSearchLabel: "Skills in diesem Agenten suchen",
+    agentTabNoResults: "Keine Skill passt zur Suche",
   connectInTwoMinutes: "In 2 Minuten verbinden",
   notifyMe: "Benachrichtige mich",
   notifyMeDone: "Wir melden uns",
@@ -815,6 +831,9 @@ const FR: SkillsDictionary = {
   installAll: "Tout installer",
   installAllDone: "Compétences installées",
   installing: "Installation…",
+    agentTabSearch: "Rechercher des compétences ou plugins",
+    agentTabSearchLabel: "Rechercher des compétences dans cet agent",
+    agentTabNoResults: "Aucune compétence ne correspond à la recherche",
   installedBadge: "Installée",
   missingIntegrations: "Intégrations manquantes",
   missingIntegrationsBody: "Connectez ces apps pour profiter pleinement de la compétence. Elle reste installée et fonctionne en mode réduit.",
