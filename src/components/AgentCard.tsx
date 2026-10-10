@@ -45,16 +45,16 @@ export default function AgentCard({
 
   return (
     <article
-      className={`relative group flex flex-col rounded-2xl border bg-neutral-900 p-6 shadow-sm transition-all duration-300 ${
+      className={`group relative flex flex-col rounded-2xl border bg-neutral-900 p-6 shadow-sm transition-all duration-300 motion-reduce:transform-none motion-reduce:transition-none ${
         isAgentAvailable
-          ? "border-white/5 hover:-translate-y-2 hover:border-brand-500/30 hover:shadow-2xl hover:shadow-brand-500/10"
+          ? "border-white/5 hover:-translate-y-2 hover:border-brand-500/30 hover:shadow-2xl hover:shadow-brand-500/10 focus-within:border-brand-500/30 focus-within:shadow-2xl focus-within:shadow-brand-500/10"
           : "border-white/5 opacity-60"
       } ${className}`}
     >
       {/* Gradiente d'accento in alto */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100" />
       {isAgentAvailable && (
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-500/[0.04] to-purple-500/[0.04] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-500/[0.04] to-purple-500/[0.04] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100" />
       )}
 
       {owned && isAgentAvailable ? (
@@ -72,7 +72,7 @@ export default function AgentCard({
       {/* Intestazione: icona + categoria + badge */}
       <div className="relative mb-4 flex items-start gap-4 pt-10">
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105 ${agent.accent}`}
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105 motion-reduce:transform-none ${agent.accent}`}
         >
           <AgentIcon icon={agent.icon} brand={agent.brand} size={24} className="text-white" />
         </div>
