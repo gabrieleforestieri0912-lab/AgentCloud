@@ -117,7 +117,7 @@ function pluginFromRow(row: PluginRow): SkillPlugin | null {
     tagline: row.tagline,
     description: row.description,
     category: row.category,
-    icon: row.icon ?? "📦",
+    icon: row.icon ?? "package",
     priceTier,
     version: row.version ?? "1.0.0",
     skills,

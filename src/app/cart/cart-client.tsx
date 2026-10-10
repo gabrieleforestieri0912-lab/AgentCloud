@@ -167,7 +167,7 @@ export default function CartPageClient() {
           </div>
 
           {items.length === 0 ? (
-            <div className="rounded-2xl border border-white/5 bg-neutral-900 p-10 text-center">
+            <div className="text-center">
               <ShoppingCart size={32} className="mx-auto text-neutral-600" />
               <p className="mt-4 text-sm font-semibold text-neutral-400">
                 {dict.cartPage.emptyCartDesc}

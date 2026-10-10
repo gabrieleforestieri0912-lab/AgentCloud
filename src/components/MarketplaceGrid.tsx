@@ -178,8 +178,7 @@ export default function MarketplaceGrid({
 
         {/* Messaggio nessun risultato */}
         {filteredAvailable.length === 0 && (
-          <div className="rounded-2xl border border-white/5 bg-neutral-900 p-12 text-center">
-            <Search size={48} className="mx-auto mb-4 text-neutral-600" />
+          <div className="py-6 text-center">
             <h3 className="text-lg font-bold text-white">
               {dict.marketplaceGrid.noAgentsFound}
             </h3>

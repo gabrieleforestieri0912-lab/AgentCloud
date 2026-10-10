@@ -218,7 +218,7 @@ export default function IntegrationsGrid({
         </h3>
 
         {filteredAvailable.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 px-6 py-12 text-center">
+          <div className="py-6 text-center">
             <p className="text-sm font-bold text-white">
               {category ? ig.noResultsCategory : ig.noResults}
             </p>

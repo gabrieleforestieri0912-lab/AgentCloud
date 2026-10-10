@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import BrandLogo from "@/components/BrandLogo";
+import SkillIcon from "./SkillIcon";
 import { Download, Sparkles, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
 import type { ResolvedPlugin } from "@/lib/skills/data";
 import { getSkillsDictionary, type SkillsDictionary } from "@/lib/i18n/skills";
@@ -217,7 +218,7 @@ export default function SkillsCatalog({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-white/5 bg-neutral-900 p-12 text-center">
+        <div className="py-6 text-center">
           <p className="font-bold text-white">{dict.noResults}</p>
           <p className="mt-2 text-sm text-neutral-500">{dict.noResultsHint}</p>
           <button
@@ -284,9 +285,9 @@ function PluginCard({
       <div className="flex items-start gap-3">
         <span
           aria-hidden
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/5 bg-white/5 text-xl"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/5 bg-white/5 text-brand-300"
         >
-          {plugin.icon}
+          <SkillIcon icon={plugin.icon} />
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="font-bold leading-tight text-white">{plugin.name}</h3>

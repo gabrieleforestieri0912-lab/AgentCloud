@@ -31,6 +31,7 @@ import {
   Search,
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
+import SkillIcon from "./SkillIcon";
 import { RiskBadge, type RiskDict } from "./SkillsCatalog";
 
 /** Plugin raccomandato, già risolto lato server. */
@@ -286,9 +287,7 @@ export default function AgentSkillsTab({
       </div>
 
       {visibleItems.length === 0 ? (
-        <div className="rounded-2xl border border-white/5 bg-neutral-900 p-10 text-center">
-          <p className="text-sm font-bold text-white">{dict.agentTabNoResults}</p>
-        </div>
+        <p className="py-6 text-center text-sm font-bold text-white">{dict.agentTabNoResults}</p>
       ) : (
       <div className="space-y-4">
         {visibleItems.map((plugin) => {
@@ -309,9 +308,9 @@ export default function AgentSkillsTab({
               <div className="flex flex-wrap items-start gap-3">
                 <span
                   aria-hidden
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/5 bg-white/5 text-xl"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/5 bg-white/5 text-brand-300"
                 >
-                  {plugin.icon}
+                  <SkillIcon icon={plugin.icon} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">

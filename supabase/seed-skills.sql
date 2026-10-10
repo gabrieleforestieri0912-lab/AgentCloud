@@ -18,7 +18,7 @@
 
 -- 🛒 Operazioni E-commerce · Gestisci catalogo, ordini e magazzino
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('ecommerce-operations', 'Operazioni E-commerce', 'Gestisci catalogo, ordini e magazzino', 'Suite completa per gestire le operazioni e-commerce: ricerca prodotti con link carrello, stato ordine e tracking, gestione sconti, allerta scorte con previsione di riordino e riepilogo vendite.', 'ecommerce', '🛒', 'included', '1.0.0')
+VALUES ('ecommerce-operations', 'Operazioni E-commerce', 'Gestisci catalogo, ordini e magazzino', 'Suite completa per gestire le operazioni e-commerce: ricerca prodotti con link carrello, stato ordine e tracking, gestione sconti, allerta scorte con previsione di riordino e riepilogo vendite.', 'ecommerce', 'shopping-cart', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -30,7 +30,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 🎯 Lead & Vendite · Cattura, qualifica e converte lead
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('lead-sales', 'Lead & Vendite', 'Cattura, qualifica e converte lead', 'Sistema per il lead management: cattura e validazione dei contatti, arricchimento del profilo, scoring High/Medium/Low, notifica al team, sequenza di follow-up e aggiornamento della pipeline.', 'sales', '🎯', 'included', '1.0.0')
+VALUES ('lead-sales', 'Lead & Vendite', 'Cattura, qualifica e converte lead', 'Sistema per il lead management: cattura e validazione dei contatti, arricchimento del profilo, scoring High/Medium/Low, notifica al team, sequenza di follow-up e aggiornamento della pipeline.', 'sales', 'target', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -42,7 +42,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 💬 Assistenza & Reputazione · Supporto clienti e gestione recensioni
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('support-reputation', 'Assistenza & Reputazione', 'Supporto clienti e gestione recensioni', 'Suite per il customer service: risposta dalla knowledge base con escalation, classificazione dell''urgenza dei ticket, bozza di risposta alle recensioni con analisi del sentiment, gestione reclami e tono di voce del brand.', 'support', '💬', 'included', '1.0.0')
+VALUES ('support-reputation', 'Assistenza & Reputazione', 'Supporto clienti e gestione recensioni', 'Suite per il customer service: risposta dalla knowledge base con escalation, classificazione dell''urgenza dei ticket, bozza di risposta alle recensioni con analisi del sentiment, gestione reclami e tono di voce del brand.', 'support', 'messages-square', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -54,7 +54,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 📅 Prenotazioni & Agenda · Gestisci appuntamenti e calendario
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('bookings-calendar', 'Prenotazioni & Agenda', 'Gestisci appuntamenti e calendario', 'Sistema per la gestione dell''agenda: verifica della disponibilità e proposta di slot, prenotazione con link video, promemoria e gestione dei no-show, riprogrammazioni e cancellazioni, pianificazione della giornata e blocchi di deep work.', 'productivity', '📅', 'included', '1.0.0')
+VALUES ('bookings-calendar', 'Prenotazioni & Agenda', 'Gestisci appuntamenti e calendario', 'Sistema per la gestione dell''agenda: verifica della disponibilità e proposta di slot, prenotazione con link video, promemoria e gestione dei no-show, riprogrammazioni e cancellazioni, pianificazione della giornata e blocchi di deep work.', 'productivity', 'calendar-days', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -66,7 +66,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 💰 Preventivi & Finanza · Genera preventivi e gestisci contabilità
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('quotes-finance', 'Preventivi & Finanza', 'Genera preventivi e gestisci contabilità', 'Suite finanziaria: raccolta dei requisiti e calcolo del preventivo con IVA, generazione del documento formale, riconciliazione di entrate e uscite, scadenzario fiscale con solleciti ed estrazione dati dalle fatture.', 'finance', '💰', 'included', '1.0.0')
+VALUES ('quotes-finance', 'Preventivi & Finanza', 'Genera preventivi e gestisci contabilità', 'Suite finanziaria: raccolta dei requisiti e calcolo del preventivo con IVA, generazione del documento formale, riconciliazione di entrate e uscite, scadenzario fiscale con solleciti ed estrazione dati dalle fatture.', 'finance', 'wallet', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -78,7 +78,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- ✍️ Contenuti & SEO · Crea contenuti ottimizzati SEO
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('content-seo', 'Contenuti & SEO', 'Crea contenuti ottimizzati SEO', 'Tool per il content marketing: keyword research con intento di ricerca, analisi dei contenuti competitor, articoli SEO strutturati, copy per landing e ads con varianti A/B, sequenze email e newsletter.', 'marketing', '✍️', 'included', '1.0.0')
+VALUES ('content-seo', 'Contenuti & SEO', 'Crea contenuti ottimizzati SEO', 'Tool per il content marketing: keyword research con intento di ricerca, analisi dei contenuti competitor, articoli SEO strutturati, copy per landing e ads con varianti A/B, sequenze email e newsletter.', 'marketing', 'pen-line', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -90,7 +90,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 📱 Social Media · Gestisci presenza sui social
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('social-media', 'Social Media', 'Gestisci presenza sui social', 'Suite social media: calendario editoriale settimanale, caption per canale (Instagram, LinkedIn, TikTok, Facebook), ricerca hashtag e trend, riuso di un contenuto su più canali e report di performance.', 'marketing', '📱', 'included', '1.0.0')
+VALUES ('social-media', 'Social Media', 'Gestisci presenza sui social', 'Suite social media: calendario editoriale settimanale, caption per canale (Instagram, LinkedIn, TikTok, Facebook), ricerca hashtag e trend, riuso di un contenuto su più canali e report di performance.', 'marketing', 'smartphone', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -102,7 +102,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 📧 Inbox & Produttività · Triage email e gestione task
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('inbox-productivity', 'Inbox & Produttività', 'Triage email e gestione task', 'Sistema di produttività: triage delle email per priorità, bozze di risposta, tracciamento di scadenze e impegni, riepilogo giornaliero, verbali di riunione e metodo inbox zero.', 'productivity', '📧', 'included', '1.0.0')
+VALUES ('inbox-productivity', 'Inbox & Produttività', 'Triage email e gestione task', 'Sistema di produttività: triage delle email per priorità, bozze di risposta, tracciamento di scadenze e impegni, riepilogo giornaliero, verbali di riunione e metodo inbox zero.', 'productivity', 'mail', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -114,7 +114,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 📊 Report & Decisioni · Analisi dati e decisioni strategiche
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('reports-bi', 'Report & Decisioni', 'Analisi dati e decisioni strategiche', 'Business intelligence: report KPI settimanali e mensili, confronto periodo su periodo, rilevamento anomalie, priorità strategiche e sintesi per il titolare in linguaggio semplice.', 'analytics', '📊', 'included', '1.0.0')
+VALUES ('reports-bi', 'Report & Decisioni', 'Analisi dati e decisioni strategiche', 'Business intelligence: report KPI settimanali e mensili, confronto periodo su periodo, rilevamento anomalie, priorità strategiche e sintesi per il titolare in linguaggio semplice.', 'analytics', 'bar-chart-3', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -126,7 +126,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 👥 HR & Selezione · Gestisci candidature e reclutamento
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('hr-recruiting', 'HR & Selezione', 'Gestisci candidature e reclutamento', 'Suite HR: screening dei CV rispetto alla job description, matching delle competenze, domande di pre-qualifica, feedback strutturato ai candidati, pianificazione dei colloqui e scheda candidato.', 'hr', '👥', 'included', '1.0.0')
+VALUES ('hr-recruiting', 'HR & Selezione', 'Gestisci candidature e reclutamento', 'Suite HR: screening dei CV rispetto alla job description, matching delle competenze, domande di pre-qualifica, feedback strutturato ai candidati, pianificazione dei colloqui e scheda candidato.', 'hr', 'users', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -138,7 +138,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 📄 Documenti & Ufficio · Gestisci documenti e ufficio
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('documents-office', 'Documenti & Ufficio', 'Gestisci documenti e ufficio', 'Suite documentale: lettura e riassunto di PDF, estrazione di dati strutturati, confronto tra versioni di contratto, creazione e modifica di documenti Word, Excel e PowerPoint, risposte a domande sul contenuto del documento.', 'productivity', '📄', 'included', '1.0.0')
+VALUES ('documents-office', 'Documenti & Ufficio', 'Gestisci documenti e ufficio', 'Suite documentale: lettura e riassunto di PDF, estrazione di dati strutturati, confronto tra versioni di contratto, creazione e modifica di documenti Word, Excel e PowerPoint, risposte a domande sul contenuto del documento.', 'productivity', 'file-text', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -150,7 +150,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- 🔍 Ricerca Competitor · Analizza mercato e competitor
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('research-competitor', 'Ricerca Competitor', 'Analizza mercato e competitor', 'Tool di market research: ricerca di mercato con fonti verificabili, confronto di prezzi e recensioni, scheda competitor completa e sintesi con citazioni e livello di confidenza.', 'research', '🔍', 'included', '1.0.0')
+VALUES ('research-competitor', 'Ricerca Competitor', 'Analizza mercato e competitor', 'Tool di market research: ricerca di mercato con fonti verificabili, confronto di prezzi e recensioni, scheda competitor completa e sintesi con citazioni e livello di confidenza.', 'research', 'search', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -162,7 +162,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- ✅ Progetti & Task · Gestisci progetti e task
 INSERT INTO plugins (slug, name, tagline, description, category, icon, price_tier, version)
-VALUES ('projects-tasks', 'Progetti & Task', 'Gestisci progetti e task', 'Project management: trasformare le richieste in task, aggiornare le board, report di avanzamento, standup automatico e promemoria delle scadenze.', 'productivity', '✅', 'included', '1.0.0')
+VALUES ('projects-tasks', 'Progetti & Task', 'Gestisci progetti e task', 'Project management: trasformare le richieste in task, aggiornare le board, report di avanzamento, standup automatico e promemoria delle scadenze.', 'productivity', 'list-checks', 'included', '1.0.0')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
@@ -618,7 +618,7 @@ UNION ALL
 UNION ALL
   SELECT p.id, 'googlesheets', 'optional', 'live', 'Sheets fa da magazzino leggero' FROM plugins p WHERE p.slug = 'ecommerce-operations'
 UNION ALL
-  SELECT p.id, 'airtable', 'optional', 'live', 'Airtable gestisce l''inventario' FROM plugins p WHERE p.slug = 'ecommerce-operations'
+  SELECT p.id, 'airtable', 'optional', 'live', 'Airtable gestisce l'inventario' FROM plugins p WHERE p.slug = 'ecommerce-operations'
 UNION ALL
   SELECT p.id, 'slack', 'optional', 'live', 'Slack notifica le scorte critiche' FROM plugins p WHERE p.slug = 'ecommerce-operations'
 UNION ALL
@@ -742,7 +742,7 @@ UNION ALL
 UNION ALL
   SELECT p.id, 'googledrive', 'optional', 'live', 'Drive ospita gli asset e i contenuti' FROM plugins p WHERE p.slug = 'social-media'
 UNION ALL
-  SELECT p.id, 'slack', 'optional', 'live', 'Slack notifica il team per l''approvazione' FROM plugins p WHERE p.slug = 'social-media'
+  SELECT p.id, 'slack', 'optional', 'live', 'Slack notifica il team per l'approvazione' FROM plugins p WHERE p.slug = 'social-media'
 UNION ALL
   SELECT p.id, 'instagram', 'optional', 'coming_soon', 'Instagram per la pubblicazione diretta' FROM plugins p WHERE p.slug = 'social-media'
 UNION ALL

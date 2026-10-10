@@ -79,7 +79,7 @@ const ECOMMERCE: SkillPlugin = {
   description:
     "Suite completa per gestire le operazioni e-commerce: ricerca prodotti con link carrello, stato ordine e tracking, gestione sconti, allerta scorte con previsione di riordino e riepilogo vendite.",
   category: "ecommerce",
-  icon: "🛒",
+  icon: "shopping-cart",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -253,7 +253,7 @@ const LEAD_SALES: SkillPlugin = {
   description:
     "Sistema per il lead management: cattura e validazione dei contatti, arricchimento del profilo, scoring High/Medium/Low, notifica al team, sequenza di follow-up e aggiornamento della pipeline.",
   category: "sales",
-  icon: "🎯",
+  icon: "target",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -428,7 +428,7 @@ const SUPPORT: SkillPlugin = {
   description:
     "Suite per il customer service: risposta dalla knowledge base con escalation, classificazione dell'urgenza dei ticket, bozza di risposta alle recensioni con analisi del sentiment, gestione reclami e tono di voce del brand.",
   category: "support",
-  icon: "💬",
+  icon: "messages-square",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -577,7 +577,7 @@ const BOOKINGS: SkillPlugin = {
   description:
     "Sistema per la gestione dell'agenda: verifica della disponibilità e proposta di slot, prenotazione con link video, promemoria e gestione dei no-show, riprogrammazioni e cancellazioni, pianificazione della giornata e blocchi di deep work.",
   category: "productivity",
-  icon: "📅",
+  icon: "calendar-days",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -752,7 +752,7 @@ const QUOTES: SkillPlugin = {
   description:
     "Suite finanziaria: raccolta dei requisiti e calcolo del preventivo con IVA, generazione del documento formale, riconciliazione di entrate e uscite, scadenzario fiscale con solleciti ed estrazione dati dalle fatture.",
   category: "finance",
-  icon: "💰",
+  icon: "wallet",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -901,7 +901,7 @@ const CONTENT_SEO: SkillPlugin = {
   description:
     "Tool per il content marketing: keyword research con intento di ricerca, analisi dei contenuti competitor, articoli SEO strutturati, copy per landing e ads con varianti A/B, sequenze email e newsletter.",
   category: "marketing",
-  icon: "✍️",
+  icon: "pen-line",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -1051,7 +1051,7 @@ const SOCIAL: SkillPlugin = {
   description:
     "Suite social media: calendario editoriale settimanale, caption per canale (Instagram, LinkedIn, TikTok, Facebook), ricerca hashtag e trend, riuso di un contenuto su più canali e report di performance.",
   category: "marketing",
-  icon: "📱",
+  icon: "smartphone",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -1225,7 +1225,7 @@ const INBOX: SkillPlugin = {
   description:
     "Sistema di produttività: triage delle email per priorità, bozze di risposta, tracciamento di scadenze e impegni, riepilogo giornaliero, verbali di riunione e metodo inbox zero.",
   category: "productivity",
-  icon: "📧",
+  icon: "mail",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -1374,7 +1374,7 @@ const REPORTS: SkillPlugin = {
   description:
     "Business intelligence: report KPI settimanali e mensili, confronto periodo su periodo, rilevamento anomalie, priorità strategiche e sintesi per il titolare in linguaggio semplice.",
   category: "analytics",
-  icon: "📊",
+  icon: "bar-chart-3",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -1551,7 +1551,7 @@ const HR: SkillPlugin = {
   description:
     "Suite HR: screening dei CV rispetto alla job description, matching delle competenze, domande di pre-qualifica, feedback strutturato ai candidati, pianificazione dei colloqui e scheda candidato.",
   category: "hr",
-  icon: "👥",
+  icon: "users",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -1728,7 +1728,7 @@ const DOCUMENTS: SkillPlugin = {
   description:
     "Suite documentale: lettura e riassunto di PDF, estrazione di dati strutturati, confronto tra versioni di contratto, creazione e modifica di documenti Word, Excel e PowerPoint, risposte a domande sul contenuto del documento.",
   category: "productivity",
-  icon: "📄",
+  icon: "file-text",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -1906,7 +1906,7 @@ const RESEARCH: SkillPlugin = {
   description:
     "Tool di market research: ricerca di mercato con fonti verificabili, confronto di prezzi e recensioni, scheda competitor completa e sintesi con citazioni e livello di confidenza.",
   category: "research",
-  icon: "🔍",
+  icon: "search",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
@@ -2053,7 +2053,7 @@ const PROJECTS: SkillPlugin = {
   description:
     "Project management: trasformare le richieste in task, aggiornare le board, report di avanzamento, standup automatico e promemoria delle scadenze.",
   category: "productivity",
-  icon: "✅",
+  icon: "list-checks",
   priceTier: "included",
   version: "1.0.0",
   changelog: [
