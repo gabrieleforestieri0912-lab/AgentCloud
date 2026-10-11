@@ -97,3 +97,45 @@ export function loadChatSession(code: string): ChatSession {
 export function resumeHint(agent: string, code: string): string {
   return `Sessione salvata. Per tornare a questa chat:\n  agentcloud chat ${agent} --resume ${code}`;
 }
+
+export type SessionSummary = {
+  code: string;
+  agent: string;
+  title?: string;
+  updatedAt: string;
+  /** Prime parole dell'ultimo messaggio utente, per riconoscere la chat. */
+  preview: string;
+};
+
+/**
+ * Elenca le sessioni salvate su questo computer, recenti prima.
+ * I file corrotti si saltano in silenzio: mai rompere `/sessions`.
+ */
+export function listSessions(): SessionSummary[] {
+  let files: string[];
+  try {
+    files = fs.readdirSync(SESSIONS_DIR).filter((f) => f.endsWith(".json"));
+  } catch {
+    return [];
+  }
+  const out: SessionSummary[] = [];
+  for (const file of files) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(path.join(SESSIONS_DIR, file), "utf8")) as ChatSession;
+      if (!parsed?.code || !parsed?.agent || !Array.isArray(parsed.messages)) continue;
+      const lastUser = [...parsed.messages].reverse().find((m) => m.role === "user");
+      const preview = lastUser ? lastUser.content.replace(/\s+/g, " ").trim().slice(0, 60) : "";
+      out.push({
+        code: parsed.code,
+        agent: parsed.agent,
+        title: typeof parsed.title === "string" ? parsed.title : undefined,
+        updatedAt: parsed.updatedAt || "",
+        preview,
+      });
+    } catch {
+      // file corrotto: saltato
+    }
+  }
+  out.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  return out;
+}

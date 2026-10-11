@@ -12,6 +12,8 @@ export type UserCredentials = {
 export type CliConfig = {
   apiUrl: string;
   defaultAgent?: string;
+  /** Nome tema TUI ("dark" | "light"), vedi tui/theme.ts. */
+  theme?: string;
 };
 
 const CONFIG_DIR = path.join(os.homedir(), ".agentcloud");
