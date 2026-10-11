@@ -34,6 +34,11 @@ agentcloud update          # installa l'ultima versione pubblicata
 agentcloud update --check  # controlla soltanto, senza installare
 ```
 
+La CLI controlla da sola gli aggiornamenti all'avvio di ogni comando (al
+massimo una volta al giorno, mai negli script): se c'è una versione nuova,
+lo dice e propone di installarla subito e ripartire con lo stesso comando.
+Per disattivare l'avviso: `AGENTCLOUD_NO_UPDATE_CHECK=1`.
+
 ## Pubblicazione di una nuova versione (manutentori)
 
 Il pacchetto non si pubblica da solo: dopo ogni modifica che deve arrivare

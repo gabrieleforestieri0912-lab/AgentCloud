@@ -4,7 +4,7 @@ import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { clearCredentials, loadConfig, loadCredentials, saveConfig } from "./config.js";
 import { loadChatSession, resumeHint, saveChatSession } from "./sessions.js";
-import { localVersion, runUpdate } from "./update.js";
+import { localVersion, maybeNotifyUpdate, runUpdate } from "./update.js";
 import { adminRequest, ApiError, loginUser, streamAgent, userRequest, userWhoAmI } from "./api.js";
 import { CATALOG } from "./catalog.js";
 
@@ -307,5 +307,9 @@ program.command("config").description("Mostra o aggiorna configurazione non sens
   console.log(`Credenziali utente: ${loadCredentials() ? "presenti" : "assenti"}`);
   console.log("Token admin: solo AGENTCLOUD_ADMIN_TOKEN, mai salvato dalla CLI.");
 });
+
+// Avviso di aggiornamento prima di eseguire il comando (mai bloccante,
+// mai negli script: vedi update.ts).
+await maybeNotifyUpdate(process.argv);
 
 program.parseAsync(process.argv).catch(printError);
