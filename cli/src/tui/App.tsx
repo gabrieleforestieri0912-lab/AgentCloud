@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Box, Text, render, useApp, useInput, useStdout } from "ink";
 import path from "node:path";
 import { ApiError, deleteAgentFile, saveAgentFiles, streamAgent } from "../api.js";
@@ -8,12 +8,22 @@ import { ChatInput, type ConfirmState } from "./Input.js";
 import { StatusBar } from "./StatusBar.js";
 import { DiffOverlay } from "./DiffOverlay.js";
 import { SIDEBAR_WIDTH, Sidebar } from "./Sidebar.js";
+import { CommandMenu } from "./CommandMenu.js";
+import { HelpOverlay } from "./HelpOverlay.js";
+import { SessionsOverlay } from "./SessionsOverlay.js";
+import {
+  filterCommands,
+  type CommandContext,
+  type CommandDef,
+} from "./commands.js";
+import { loadChatSession, listSessions } from "../sessions.js";
 import {
   applyFileEvent,
   applyTransition,
-  currentContent,
   fileTotals,
   makeTitle,
+  unifiedDiff,
+  type DiffLine,
   type FileTransition,
   type TrackedFile,
 } from "./fileChanges.js";
@@ -114,7 +124,42 @@ function App({
   const [focus, setFocus] = useState<TuiFocus>("input");
   const effectiveFocus: TuiFocus = sidebarVisible ? focus : "input";
   const [selected, setSelected] = useState(0);
-  const [diffFilename, setDiffFilename] = useState<string | null>(null);
+
+  // Overlay: un solo livello alla volta (help > sessioni > diff).
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [diffView, setDiffView] = useState<{ title: string; lines: DiffLine[] } | null>(null);
+
+  // Menu comandi "/": aperto mentre la bozza inizia per "/", filtrato dal
+  // primo token. suppressMenuRef evita la riapertura quando il testo viene
+  // impostato programmaticamente (suggerimento argomento).
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuSelected, setMenuSelected] = useState(0);
+  const [draft, setDraft] = useState("");
+  const [preset, setPreset] = useState<{ text: string; key: number } | null>(null);
+  const menuOpenRef = useRef(false);
+  menuOpenRef.current = menuOpen;
+  const suppressMenuRef = useRef(false);
+
+  const handleDraftChange = useCallback(
+    (text: string) => {
+      setDraft(text);
+      if (suppressMenuRef.current) {
+        suppressMenuRef.current = false;
+        return;
+      }
+      const opens = text.startsWith("/") && !text.includes("\n");
+      if (!opens) {
+        if (menuOpenRef.current) setMenuOpen(false);
+        return;
+      }
+      if (!menuOpenRef.current) {
+        setMenuSelected(0);
+        setMenuOpen(true);
+      }
+    },
+    [],
+  );
 
   const [streaming, setStreaming] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
@@ -167,8 +212,45 @@ function App({
       setSidebarOpen((o) => !o);
       return;
     }
-    // L'overlay diff possiede i suoi tasti: qui passa solo Ctrl+C/B.
-    if (diffFilename) return;
+    // Overlay aperti (help/sessioni/diff): possiedono i loro tasti.
+    if (helpOpen || sessionsOpen || diffView) return;
+    if (menuOpen) {
+      const { name } = parseSlash(draft);
+      const list = menuList;
+      if (key.upArrow) {
+        setMenuSelected((s) => (list.length ? (s - 1 + list.length) % list.length : 0));
+        return;
+      }
+      if (key.downArrow) {
+        setMenuSelected((s) => (list.length ? (s + 1) % list.length : 0));
+        return;
+      }
+      if (key.tab || key.return) {
+        const def = list[menuSel];
+        const { args } = parseSlash(draft);
+        if (!def) {
+          setMenuOpen(false);
+          setPreset({ text: "", key: Date.now() });
+          if (name) setNotice(`Comando sconosciuto: /${name} — /help per l'elenco.`);
+          return;
+        }
+        if (def.args.some((a) => a.required) && args.length === 0) {
+          // Suggerimento argomento: precompila e chiudi il menu.
+          suppressMenuRef.current = true;
+          setPreset({ text: `/${def.name} `, key: Date.now() });
+          setMenuOpen(false);
+          return;
+        }
+        runSlashCommand(def, args);
+        return;
+      }
+      if (key.escape) {
+        setMenuOpen(false);
+        setPreset({ text: draft.startsWith("/") ? draft.slice(1) : draft, key: Date.now() });
+        return;
+      }
+      return;
+    }
     if (key.tab && sidebarVisible) {
       setFocus((f) => (f === "input" ? "sidebar" : "input"));
       return;
@@ -189,7 +271,7 @@ function App({
     }
     if (key.return) {
       const f = files[selected];
-      if (f) setDiffFilename(f.filename);
+      if (f) openSingleDiff(f.filename);
       return;
     }
     if (input === "u") {
@@ -200,6 +282,123 @@ function App({
       void redoChange();
     }
   });
+
+  /** "​/nome args..." → nome comando + argomenti. */
+  function parseSlash(draftText: string): { name: string; args: string[] } {
+    const body = draftText.startsWith("/") ? draftText.slice(1) : draftText;
+    const space = body.indexOf(" ");
+    if (space === -1) return { name: body.toLowerCase(), args: [] };
+    return {
+      name: body.slice(0, space).toLowerCase(),
+      args: body.slice(space + 1).trim().split(/\s+/).filter(Boolean),
+    };
+  }
+
+  /** Esegue un comando del registro e pulisce l'input. */
+  function runSlashCommand(def: CommandDef, args: string[]) {
+    setMenuOpen(false);
+    setPreset({ text: "", key: Date.now() });
+    const ctx = buildCommandContext();
+    void Promise.resolve()
+      .then(() => def.handler(ctx, args))
+      .catch((error) =>
+        setNotice(`Comando /${def.name}: ${error instanceof Error ? error.message : String(error)}`),
+      );
+  }
+
+  function buildCommandContext(): CommandContext {
+    return {
+      agent,
+      agentName,
+      getMessages: () => msgsRef.current.map(({ role, content }) => ({ role, content })),
+      resetAll: () => {
+        msgsRef.current = [];
+        filesRef.current = [];
+        undoRef.current = [];
+        redoRef.current = [];
+        setSelected(0);
+        setTitle(agentName);
+        titleTouchedRef.current = false;
+        touch();
+      },
+      clearMessages: () => {
+        msgsRef.current = [];
+        touch();
+      },
+      getTitle: () => titleRef.current,
+      setTitle: (t: string) => {
+        titleTouchedRef.current = true;
+        setTitle(t);
+      },
+      undo: () => undoLastChange(),
+      redo: () => redoChange(),
+      openDiff: (filename?: string) => openDiff(filename),
+      openHelp: () => setHelpOpen(true),
+      openSessions: () => setSessionsOpen(true),
+      exit: () => finish(),
+      notice: (msg: string) => setNotice(msg),
+    };
+  }
+
+  /** Diff di un file o, senza argomento, di tutte le modifiche. */
+  function openDiff(filename?: string) {
+    const files = filesRef.current.filter((f) => f.head >= 0);
+    if (filename) {
+      const f =
+        files.find((x) => x.filename === filename) ??
+        files.find((x) => x.filename.includes(filename));
+      if (!f) {
+        setNotice(`File non trovato: ${filename}`);
+        return;
+      }
+      openSingleDiff(f.filename);
+      return;
+    }
+    const lines: DiffLine[] = [];
+    for (const f of files) {
+      const oldText = f.head > 0 ? (f.versions[f.head - 1] ?? "") : "";
+      const newText = f.versions[f.head] ?? "";
+      lines.push({ kind: "@", text: `== ${f.filename} (+${f.added} -${f.removed})` });
+      lines.push(...unifiedDiff(f.filename, oldText, newText));
+    }
+    if (lines.length === 0) {
+      setNotice("Nessuna modifica in sessione.");
+      return;
+    }
+    setDiffView({ title: `Modifiche (${files.length} file)`, lines });
+  }
+
+  function openSingleDiff(filename: string) {
+    const f = filesRef.current.find((x) => x.filename === filename);
+    if (!f || f.head < 0) return;
+    const oldText = f.head > 0 ? (f.versions[f.head - 1] ?? "") : "";
+    setDiffView({ title: filename, lines: unifiedDiff(filename, oldText, f.versions[f.head] ?? "") });
+  }
+
+  /** Ripresa da /sessions: sostituisce conversazione, file e titolo. */
+  function resumeSession(code: string) {
+    try {
+      const s = loadChatSession(code);
+      if (s.agent !== agent) {
+        setNotice(`La sessione è dell'agente "${s.agent}".`);
+        return;
+      }
+      msgsRef.current = s.messages.map((m) => ({ role: m.role, content: m.content }));
+      filesRef.current = Array.isArray(s.files) ? s.files : [];
+      undoRef.current = [];
+      redoRef.current = [];
+      if (typeof s.title === "string" && s.title) {
+        setTitle(s.title);
+        titleTouchedRef.current = true;
+      }
+      setSelected(0);
+      setSessionsOpen(false);
+      touch();
+      setNotice(`Sessione ${s.code} ripresa.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : String(error));
+    }
+  }
 
   /** Registra un evento `file` dallo stream + persistenza best-effort. */
   const recordFileEvent = (filename: string, content: string) => {
@@ -369,21 +568,39 @@ function App({
   const liveFiles = filesRef.current.filter((f) => f.head >= 0);
   const safeSelected = Math.min(selected, Math.max(0, liveFiles.length - 1));
   const totals = fileTotals(filesRef.current);
+  const menuList = filterCommands(parseSlash(draft).name);
+  const menuSel = Math.min(menuSelected, Math.max(0, menuList.length - 1));
 
   // Diff a tutto schermo: possiede i tasti, il resto resta sotto.
-  if (diffFilename) {
-    const f = filesRef.current.find((x) => x.filename === diffFilename);
-    const head = f?.head ?? 0;
-    const oldText = head > 0 ? (f?.versions[head - 1] ?? "") : "";
-    const newText = head >= 0 ? (f?.versions[head] ?? "") : "";
+  if (diffView) {
     return (
       <Box flexDirection="column" height={rows}>
         <DiffOverlay
-          filename={diffFilename}
-          oldText={oldText}
-          newText={newText}
+          title={diffView.title}
+          lines={diffView.lines}
           height={rows}
-          onClose={() => setDiffFilename(null)}
+          onClose={() => setDiffView(null)}
+        />
+      </Box>
+    );
+  }
+
+  if (helpOpen) {
+    return (
+      <Box flexDirection="column" height={rows}>
+        <HelpOverlay height={rows} onClose={() => setHelpOpen(false)} />
+      </Box>
+    );
+  }
+
+  if (sessionsOpen) {
+    return (
+      <Box flexDirection="column" height={rows}>
+        <SessionsOverlay
+          sessions={listSessions().filter((s) => s.agent === agent)}
+          height={rows}
+          onSelect={resumeSession}
+          onClose={() => setSessionsOpen(false)}
         />
       </Box>
     );
@@ -405,15 +622,21 @@ function App({
             <Text color={theme.muted}>{activity}</Text>
           </Box>
         ) : null}
+        {menuOpen ? (
+          <CommandMenu commands={menuList} selected={menuSel} width={chatWidth} />
+        ) : null}
         <ChatInput
           onSubmit={(text) => void runTurn(text)}
           streaming={streaming}
           onInterrupt={() => abortRef.current?.abort()}
           confirm={confirm}
           onConfirm={answerConfirm}
-          placeholder={`Scrivi a ${agentName}… (Invio invia)`}
+          placeholder={`Scrivi a ${agentName}… (Invio invia, / comandi)`}
           onHeightChange={setInputHeight}
           focused={effectiveFocus === "input"}
+          menuActive={menuOpen}
+          preset={preset}
+          onDraftChange={handleDraftChange}
         />
         <StatusBar agent={agent} cwd={path.basename(process.cwd()) || process.cwd()} online={online} />
       </Box>

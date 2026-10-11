@@ -37,4 +37,45 @@ export const agentCloudTheme: Theme = {
   border: "#27272A",
 };
 
-export const theme: Theme = agentCloudTheme;
+export const lightTheme: Theme = {
+  primary: "#038BFE",
+  accent: "#0E7490",
+  background: "#FFFFFF",
+  text: "#111827",
+  muted: "#6B7280",
+  success: "#059669",
+  error: "#DC2626",
+  warning: "#D97706",
+  border: "#E5E7EB",
+};
+
+/** Temi disponibili per `/theme`. L'oggetto `theme` resta l'unico import. */
+export const themes: Record<string, Theme> = {
+  dark: agentCloudTheme,
+  light: lightTheme,
+};
+
+export function themeNames(): string[] {
+  return Object.keys(themes);
+}
+
+/**
+ * Cambia tema a runtime: sovrascrive l'oggetto live, i componenti lo
+ * rileggono al render successivo (l'App forza un re-render). Ritorna false
+ * se il nome non esiste.
+ */
+export function setTheme(name: string): boolean {
+  const t = themes[name];
+  if (!t) return false;
+  Object.assign(theme, t);
+  return true;
+}
+
+export function currentThemeName(): string {
+  for (const [name, t] of Object.entries(themes)) {
+    if (t.background === theme.background) return name;
+  }
+  return "dark";
+}
+
+export const theme: Theme = { ...agentCloudTheme };

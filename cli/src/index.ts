@@ -280,6 +280,8 @@ program.command("chat").description("Avvia una chat interattiva (l'agente si sce
   // AGENTCLOUD_NO_TUI → loop readline classico, invariato.
   if (interactiveTTY && !process.env.AGENTCLOUD_NO_TUI) {
     const { runChatTui } = await import("./tui/App.js");
+    const { setTheme } = await import("./tui/theme.js");
+    setTheme(loadConfig().theme || "dark");
     const resumedSession = resumed;
     const result = await runChatTui({
       agent: slug,

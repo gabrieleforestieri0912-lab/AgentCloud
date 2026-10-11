@@ -1,28 +1,27 @@
 import React, { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { theme } from "./theme.js";
-import { unifiedDiff } from "./fileChanges.js";
+import type { DiffLine } from "./fileChanges.js";
 
 /**
  * Overlay diff a tutto schermo: Esc chiude, ↑↓ scorrono.
  *
- * Monta solo quando è aperto e possiede i suoi tasti: l'App ignora tutto
- * (tranne Ctrl+C) mentre è visibile, così non servono protocolli di focus.
+ * Riceve righe già calcolate (singolo file o tutte le modifiche): il chiamante
+ * decide il contenuto, qui solo rendering e navigazione. Monta solo quando è
+ * aperto e possiede i suoi tasti: l'App ignora tutto (tranne Ctrl+C) mentre è
+ * visibile, così non servono protocolli di focus.
  */
 export function DiffOverlay({
-  filename,
-  oldText,
-  newText,
+  title,
+  lines,
   height,
   onClose,
 }: {
-  filename: string;
-  oldText: string;
-  newText: string;
+  title: string;
+  lines: DiffLine[];
   height: number;
   onClose: () => void;
 }) {
-  const lines = unifiedDiff(filename, oldText, newText);
   const [offset, setOffset] = useState(0);
   const budget = Math.max(1, height - 4); // titolo + hint + bordi
   const maxOffset = Math.max(0, lines.length - budget);
@@ -38,7 +37,7 @@ export function DiffOverlay({
     <Box flexDirection="column" height={height}>
       <Box borderStyle="single" borderColor={theme.primary} paddingX={1} flexDirection="column" flexGrow={1}>
         <Text bold>
-          {filename} <Text color={theme.muted}>(Esc chiudi · ↑↓ scorri)</Text>
+          {title} <Text color={theme.muted}>(Esc chiudi · ↑↓ scorri)</Text>
         </Text>
         {visible.length === 0 ? (
           <Text color={theme.muted}>(nessuna differenza)</Text>

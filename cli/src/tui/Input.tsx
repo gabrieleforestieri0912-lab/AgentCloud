@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { theme } from "./theme.js";
 
@@ -23,6 +23,9 @@ export function ChatInput({
   placeholder,
   onHeightChange,
   focused,
+  menuActive,
+  preset,
+  onDraftChange,
 }: {
   onSubmit: (text: string) => void;
   streaming: boolean;
@@ -33,10 +36,32 @@ export function ChatInput({
   onHeightChange?: (height: number) => void;
   /** False quando il focus è sulla sidebar: l'editor ignora tutti i tasti. */
   focused: boolean;
+  /** Menu comandi aperto: frecce/Invio/Tab/Esc li gestisce l'App. */
+  menuActive: boolean;
+  /** Testo imposto dall'esterno (suggerimento argomento, pulizia). */
+  preset: { text: string; key: number } | null;
+  /** Bozza corrente a ogni modifica (l'App apre/filtra il menu). */
+  onDraftChange: (text: string) => void;
 }) {
   const [lines, setLines] = useState<string[]>([""]);
   const [row, setRow] = useState(0);
   const [col, setCol] = useState(0);
+  const appliedPreset = useRef(0);
+
+  // Testo imposto dall'esterno: si applica una volta sola per chiave.
+  useEffect(() => {
+    if (!preset || preset.key === appliedPreset.current) return;
+    appliedPreset.current = preset.key;
+    const parts = preset.text.split("\n");
+    setLines(parts.length > 0 ? parts : [""]);
+    setRow(parts.length - 1);
+    setCol((parts[parts.length - 1] ?? "").length);
+  }, [preset]);
+
+  // Bozza all'App a ogni modifica (menu comandi).
+  useEffect(() => {
+    onDraftChange(lines.join("\n"));
+  }, [lines, onDraftChange]);
 
   const height = confirm ? 3 : lines.length + 2;
   useEffect(() => {
@@ -62,6 +87,9 @@ export function ChatInput({
       else if (answer === "y" || key.return) onConfirm(true);
       return;
     }
+    // Menu comandi aperto: frecce/Invio/Tab/Esc li gestisce l'App, qui passa
+    // solo la digitazione (il menu si filtra mentre si scrive).
+    if (menuActive && (key.escape || key.return || key.tab || key.upArrow || key.downArrow)) return;
     if (key.escape) {
       if (streaming) {
         onInterrupt();
