@@ -627,6 +627,23 @@ html.light .text-cyan-400 { color: #0e7490 !important; }
 html.light .text-indigo-400 { color: #4f46e5 !important; }
 html.light .text-orange-400 { color: #c2410c !important; }
 html.light .text-yellow-400 { color: #a16207 !important; }
+html.light .text-amber-100,
+html.light .text-amber-500 { color: #b45309 !important; }
+html.light .text-brand-100,
+html.light .text-brand-200,
+html.light .text-brand-300,
+html.light .text-brand-400,
+html.light .text-brand-500 { color: var(--ac-azure-ink) !important; }
+html.light .text-cyan-200,
+html.light .text-cyan-300 { color: #0e7490 !important; }
+html.light .text-emerald-200 { color: #047857 !important; }
+html.light .text-indigo-200,
+html.light .text-indigo-300 { color: #4f46e5 !important; }
+html.light .text-neutral-100 { color: var(--ac-ink-2) !important; }
+html.light .text-purple-200 { color: #6d28d9 !important; }
+html.light .text-red-500 { color: #dc2626 !important; }
+html.light .text-sky-200 { color: #0265c8 !important; }
+html.light .fill-amber-400 { fill: #d97706 !important; }
 
 /* ── Placeholder dei campi ── */
 html.light .placeholder-neutral-500::placeholder,
