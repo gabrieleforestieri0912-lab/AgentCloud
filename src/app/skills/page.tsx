@@ -16,7 +16,7 @@ import {
   pluginCategories,
   totalSkillCount,
 } from "@/lib/skills/data";
-import { ArrowRight, Sparkles, Download } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 
 /**
  * Il catalogo è pubblico e cambia raramente: la pagina può essere servita
@@ -119,8 +119,7 @@ export default async function SkillsPage() {
               >
                 {dict.browseAgents} <ArrowRight size={14} />
               </Link>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white">
-                <Download size={14} />
+              <span className="text-sm font-semibold text-neutral-500">
                 {plugins.length} · {skillCount}
               </span>
             </div>

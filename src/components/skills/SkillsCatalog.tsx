@@ -43,32 +43,6 @@ type Props = {
 /** Sottoinsieme del dizionario necessario al badge di rischio. */
 export type RiskDict = Pick<SkillsDictionary, "riskLow" | "riskMedium" | "riskHigh">;
 
-/** Pillola filtro: il pattern usato da MarketplaceGrid e IntegrationsGrid. */
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
-        active
-          ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
-          : "border border-white/10 bg-neutral-900 text-neutral-400 hover:border-white/20 hover:text-white"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
 /** Badge rischio: coerente con i toni usati in tutto il sito. */
 export function RiskBadge({ risk, dict }: { risk: string; dict: RiskDict }) {
   const label = risk === "high" ? dict.riskHigh : risk === "medium" ? dict.riskMedium : dict.riskLow;
@@ -138,61 +112,75 @@ export default function SkillsCatalog({
 
   return (
     <div>
-      {/* Filtri — stessa grammatica visiva di MarketplaceGrid */}
-      <div className="mb-8 rounded-2xl border border-white/5 bg-neutral-900/60 p-4">
-        <label htmlFor="skills-search" className="sr-only">
-          {dict.searchLabel}
-        </label>
-        <input
-          id="skills-search"
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={dict.searchPlaceholder}
-          className="mb-3 w-full rounded-xl border border-white/10 bg-neutral-900 py-2.5 px-4 text-sm font-semibold text-white placeholder-neutral-500 outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
-        />
+      {/* Filtri compatti: una riga con ricerca + 3 dropdown, niente chip per
+          ogni valore (con tante categorie/agenti/integrazioni diventa illeggibile). */}
+      <div className="mb-6 rounded-2xl border border-white/5 bg-neutral-900/60 p-3">
+        <div className="flex flex-col gap-2 lg:flex-row">
+          <label htmlFor="skills-search" className="sr-only">
+            {dict.searchLabel}
+          </label>
+          <input
+            id="skills-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={dict.searchPlaceholder}
+            className="w-full flex-1 rounded-lg border border-white/10 bg-neutral-900 px-3 py-2 text-[13px] font-semibold text-white placeholder-neutral-500 outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+          />
 
-        <FilterRow label={dict.category}>
-          <Chip active={category === ""} onClick={() => setCategory("")}>
-            {dict.allCategories}
-          </Chip>
-          {categories.map((c) => (
-            <Chip key={c.value} active={category === c.value} onClick={() => setCategory(c.value)}>
-              {c.value} ({c.count})
-            </Chip>
-          ))}
-        </FilterRow>
-
-        <FilterRow label={dict.agent}>
-          <Chip active={agent === ""} onClick={() => setAgent("")}>
-            {dict.allCategories}
-          </Chip>
-          {agents.map((a) => (
-            <Chip key={a.slug} active={agent === a.slug} onClick={() => setAgent(a.slug)}>
-              {a.slug} ({a.pluginCount})
-            </Chip>
-          ))}
-        </FilterRow>
-
-        <FilterRow label={dict.integration}>
-          <Chip active={integration === ""} onClick={() => setIntegration("")}>
-            {dict.allCategories}
-          </Chip>
-          {integrations.map((i) => (
-            <Chip
-              key={i.brand}
-              active={integration === i.brand}
-              onClick={() => setIntegration(i.brand)}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:flex">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              aria-label={dict.category}
+              className="w-full rounded-lg border border-white/10 bg-neutral-900 px-2 py-2 text-xs font-bold text-neutral-300 outline-none focus:border-brand-500/50 lg:w-36"
             >
-              {i.name}
-              {!i.available && (
-                <span className="ml-1 text-amber-400/80">·</span>
-              )}
-            </Chip>
-          ))}
-        </FilterRow>
+              <option value="">
+                {dict.category}: {dict.allCategories}
+              </option>
+              {categories.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.value} ({c.count})
+                </option>
+              ))}
+            </select>
 
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+            <select
+              value={agent}
+              onChange={(e) => setAgent(e.target.value)}
+              aria-label={dict.agent}
+              className="w-full rounded-lg border border-white/10 bg-neutral-900 px-2 py-2 text-xs font-bold text-neutral-300 outline-none focus:border-brand-500/50 lg:w-36"
+            >
+              <option value="">
+                {dict.agent}: {dict.allCategories}
+              </option>
+              {agents.map((a) => (
+                <option key={a.slug} value={a.slug}>
+                  {a.slug} ({a.pluginCount})
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={integration}
+              onChange={(e) => setIntegration(e.target.value)}
+              aria-label={dict.integration}
+              className="w-full rounded-lg border border-white/10 bg-neutral-900 px-2 py-2 text-xs font-bold text-neutral-300 outline-none focus:border-brand-500/50 lg:w-36"
+            >
+              <option value="">
+                {dict.integration}: {dict.allCategories}
+              </option>
+              {integrations.map((i) => (
+                <option key={i.brand} value={i.brand}>
+                  {i.name}
+                  {!i.available ? " ·" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center gap-3">
           <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-bold text-neutral-400">
             <input
               type="checkbox"
@@ -242,18 +230,6 @@ export default function SkillsCatalog({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/** Riga di filtri con etichetta: la label rende leggibile il gruppo a colpo d'occhio. */
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-2 flex flex-wrap items-center gap-1.5 last:mb-0">
-      <span className="mr-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-        {label}
-      </span>
-      {children}
     </div>
   );
 }
