@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BrandLogo from "@/components/BrandLogo";
 import { RiskBadge } from "@/components/skills/PluginsCatalog";
+import SkillIcon from "@/components/skills/SkillIcon";
 import { getLocale } from "@/lib/i18n/locale";
 import { pageSeo } from "@/lib/seo";
 import { getSkillsDictionary } from "@/lib/i18n/skills";
@@ -224,8 +225,8 @@ export default async function SkillDetailPage({
                   className="mt-3 block rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-brand-500/30 hover:bg-white/[0.05]"
                 >
                   <span className="flex items-center gap-3">
-                    <span aria-hidden className="text-xl">
-                      {plugin.icon}
+                    <span aria-hidden className="text-brand-300">
+                      <SkillIcon icon={plugin.icon} size={20} />
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-bold text-white">{plugin.name}</span>

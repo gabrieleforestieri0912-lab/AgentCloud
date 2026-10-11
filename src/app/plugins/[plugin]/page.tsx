@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BrandLogo from "@/components/BrandLogo";
 import { RiskBadge } from "@/components/skills/PluginsCatalog";
+import SkillIcon from "@/components/skills/SkillIcon";
 import { getLocale } from "@/lib/i18n/locale";
 import { pageSeo } from "@/lib/seo";
 import { getSkillsDictionary } from "@/lib/i18n/skills";
@@ -91,9 +92,9 @@ export default async function PluginDetailPage({
             <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
               <span
                 aria-hidden
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/5 bg-white/5 text-3xl"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/5 bg-white/5 text-brand-300"
               >
-                {plugin.icon}
+                <SkillIcon icon={plugin.icon} size={28} />
               </span>
               <div className="min-w-0 flex-1">
                 <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
@@ -420,8 +421,8 @@ async function RelatedPlugins({
             className="rounded-xl border border-white/5 bg-neutral-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-500/30"
           >
             <span className="flex items-center gap-3">
-              <span aria-hidden className="text-xl">
-                {plugin.icon}
+              <span aria-hidden className="text-brand-300">
+                <SkillIcon icon={plugin.icon} size={20} />
               </span>
               <span className="min-w-0">
                 <span className="block font-bold text-white">{plugin.name}</span>
