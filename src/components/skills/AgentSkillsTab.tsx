@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import SkillIcon from "./SkillIcon";
-import { RiskBadge, type RiskDict } from "./SkillsCatalog";
+import { RiskBadge, type RiskDict } from "./PluginsCatalog";
 
 /** Plugin raccomandato, già risolto lato server. */
 export type AgentPlugin = {
@@ -335,7 +335,7 @@ export default function AgentSkillsTab({
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Link
-                    href={`/skills/${plugin.slug}`}
+                    href={`/plugins/${plugin.slug}`}
                     className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-200 transition-colors hover:bg-neutral-700 hover:text-white"
                   >
                     {dict.detail} <ArrowRight size={12} />

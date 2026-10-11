@@ -22,8 +22,10 @@ export const PUBLIC_PATHS = [
   "/mobile",
   "/integrations",
   "/agents",
-  // Catalogo Competenze: pagina pubblica e indicizzabile come /agents.
+  // Catalogo Competenze: pagine pubbliche e indicizzabili come /agents
+  // (singole skill e pacchetti sono due sezioni autonome).
   "/skills",
+  "/plugins",
   // Guida "Crea la tua competenza in 10 minuti": pubblica come /skills, da cui
   // arriva il template SKILL.md.
   "/docs",

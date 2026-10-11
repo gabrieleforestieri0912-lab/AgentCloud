@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getSiteUrl } from "@/lib/site-url";
 import { AGENTS } from "@/lib/agents";
-import { SKILL_PLUGINS } from "@/lib/skills/catalog";
+import { SKILL_PLUGINS, allCatalogSkills } from "@/lib/skills/catalog";
 import { hasLaunched } from "@/lib/waitlist-constants";
 
 const BASE_URL = getSiteUrl();
@@ -54,6 +54,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE_URL}/skills`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      // Catalogo pacchetti: sezione autonoma rispetto alle singole skill.
+      url: `${BASE_URL}/plugins`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.7,
@@ -121,7 +128,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Ogni pagina plugin è una URL autonoma: il catalogo è parte dell'offerta
   // e va indicizzato, non nascosto dietro la griglia.
   const skillPluginRoutes: MetadataRoute.Sitemap = SKILL_PLUGINS.map((plugin) => ({
-    url: `${BASE_URL}/skills/${plugin.slug}`,
+    url: `${BASE_URL}/plugins/${plugin.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  // Ogni singola competenza ha la sua pagina di dettaglio indicizzabile.
+  const skillRoutes: MetadataRoute.Sitemap = allCatalogSkills().map((skill) => ({
+    url: `${BASE_URL}/skills/${skill.slug}`,
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.6,
@@ -130,5 +145,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Le pagine agente espongono la tab Competenze: già coperte dalle rotte
   // agente qui sotto, quindi nessuna voce aggiuntiva.
 
-  return [...staticRoutes, ...agentRoutes, ...skillPluginRoutes];
+  return [...staticRoutes, ...agentRoutes, ...skillPluginRoutes, ...skillRoutes];
 }

@@ -13,7 +13,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Sparkles, TrendingUp, Activity, CheckCircle2, Power } from "lucide-react";
 import type { SkillsSummary } from "@/lib/skills/metrics";
-import { RiskBadge } from "@/components/skills/SkillsCatalog";
+import { RiskBadge } from "@/components/skills/PluginsCatalog";
 
 /**
  * Sottoinsieme del dizionario usato dalla sezione dashboard.

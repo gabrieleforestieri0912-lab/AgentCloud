@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * Griglia del catalogo Competenze con filtri lato client.
+ * Griglia del catalogo Plugin (pacchetti) con filtri lato client.
  *
- * Perché è un client component: i filtri (categoria, agente, integrazione,
+ * Questa griglia mostra SOLO i pacchetti: le singole competenze vivono in
+ * `/skills` (`SkillsList`). I filtri (categoria, agente, integrazione,
  * "solo disponibili ora", ricerca testuale) sono interattivi e non devono
- * passare dal server a ogni keystroke. I dati arrivano già risolti dalla
- * pagina server (`getPlugins()`), quindi la prima render è completa e
- * indicizzabile: la pagina non è solo uno scheletro JS.
+ * passare dal server a ogni keystroke. I dati arrivano già risolti e
+ * localizzati dalla pagina server (`getPlugins(locale)`), quindi la prima
+ * render è completa e indicizzabile: la pagina non è solo uno scheletro JS.
  */
 
 import { useMemo, useState } from "react";
@@ -63,7 +64,7 @@ export function RiskBadge({ risk, dict }: { risk: string; dict: RiskDict }) {
   );
 }
 
-export default function SkillsCatalog({
+export default function PluginsCatalog({
   plugins,
   categories,
   agents,
@@ -324,7 +325,7 @@ function PluginCard({
 
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
         <Link
-          href={`/skills/${plugin.slug}`}
+          href={`/plugins/${plugin.slug}`}
           className="inline-flex flex-1 items-center justify-center rounded-full bg-brand-500 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-400"
         >
           {dict.detail}

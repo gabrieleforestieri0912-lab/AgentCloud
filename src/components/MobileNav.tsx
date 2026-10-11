@@ -130,6 +130,11 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
       label: dict.navbar.skills,
       href: "/skills",
     },
+    {
+      id: "plugins",
+      label: dict.navbar.plugins,
+      href: "/plugins",
+    },
   ];
 
   // Azioni rapide come elenco organizzato: stessa voce ovunque, con badge

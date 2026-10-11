@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BrandLogo from "@/components/BrandLogo";
-import { RiskBadge } from "@/components/skills/SkillsCatalog";
+import { RiskBadge } from "@/components/skills/PluginsCatalog";
 import { getLocale } from "@/lib/i18n/locale";
 import { pageSeo } from "@/lib/seo";
 import { getSkillsDictionary } from "@/lib/i18n/skills";
@@ -14,7 +14,7 @@ import { ArrowLeft, ArrowRight, Check, Download, Sparkles, Info, ShieldCheck } f
 
 export const revalidate = 300;
 
-/** I 13 plugin sono noti a build time: la pagina statica li elenca tutti. */
+/** I plugin sono noti a build time: la pagina statica li elenca tutti. */
 export async function generateStaticParams() {
   const plugins = await getPlugins();
   return plugins.map((p) => ({ plugin: p.slug }));
@@ -28,12 +28,12 @@ export async function generateMetadata({
   const { plugin: slug } = await params;
   const locale = await getLocale();
   const dict = getSkillsDictionary(locale);
-  const plugin = await getPlugin(slug);
-  if (!plugin) return pageSeo({ title: dict.notFoundTitle, description: dict.notFoundBody, path: `/skills/${slug}`, locale });
+  const plugin = await getPlugin(slug, locale);
+  if (!plugin) return pageSeo({ title: dict.notFoundTitle, description: dict.notFoundBody, path: `/plugins/${slug}`, locale });
   return pageSeo({
-    title: `${plugin.name} - ${dict.label} | AgentCloud`,
+    title: `${plugin.name} - ${dict.pluginsLabel} | AgentCloud`,
     description: plugin.tagline,
-    path: `/skills/${plugin.slug}`,
+    path: `/plugins/${plugin.slug}`,
     locale,
   });
 }
@@ -46,7 +46,7 @@ export default async function PluginDetailPage({
   const { plugin: slug } = await params;
   const locale = await getLocale();
   const dict = getSkillsDictionary(locale);
-  const plugin = await getPlugin(slug);
+  const plugin = await getPlugin(slug, locale);
   if (!plugin) notFound();
 
   const primaryAgents = plugin.agents.filter((a) => a.fit === "primary");
@@ -80,10 +80,10 @@ export default async function PluginDetailPage({
       <section className="relative z-10 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
           <Link
-            href="/skills"
+            href="/plugins"
             className="mb-6 inline-flex items-center gap-1.5 text-sm font-bold text-neutral-400 transition-colors hover:text-white"
           >
-            <ArrowLeft size={14} /> {dict.backToCatalog}
+            <ArrowLeft size={14} /> {dict.backToPlugins}
           </Link>
 
           {/* Hero del plugin */}
@@ -177,7 +177,7 @@ export default async function PluginDetailPage({
 
           <div className="mt-8 grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              {/* Competenze incluse */}
+              {/* Competenze incluse: rimandano al dettaglio della singola skill */}
               <section className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
                 <h2 className="flex items-center gap-2 text-lg font-bold text-white">
                   <Sparkles size={16} className="text-brand-400" />
@@ -222,6 +222,12 @@ export default async function PluginDetailPage({
                             </p>
                           </>
                         )}
+                        <Link
+                          href={`/skills/${skill.slug}`}
+                          className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-brand-400 transition-colors hover:text-brand-300"
+                        >
+                          {dict.detail} <ArrowRight size={12} />
+                        </Link>
                       </div>
                     </details>
                   ))}
@@ -386,8 +392,9 @@ async function RelatedPlugins({
   category: string;
   agents: string[];
 }) {
-  const dict = getSkillsDictionary(await getLocale());
-  const all = await getPlugins();
+  const locale = await getLocale();
+  const dict = getSkillsDictionary(locale);
+  const all = await getPlugins(locale);
   const related = all
     .filter((p) => p.slug !== slug)
     .map((p) => ({
@@ -409,7 +416,7 @@ async function RelatedPlugins({
         {related.map(({ plugin }) => (
           <Link
             key={plugin.slug}
-            href={`/skills/${plugin.slug}`}
+            href={`/plugins/${plugin.slug}`}
             className="rounded-xl border border-white/5 bg-neutral-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-500/30"
           >
             <span className="flex items-center gap-3">

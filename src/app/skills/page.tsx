@@ -3,7 +3,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FloatingBrandBubbles from "@/components/FloatingBrandBubbles";
-import SkillsCatalog from "@/components/skills/SkillsCatalog";
+import SkillsList, { type FlatSkill } from "@/components/skills/SkillsList";
 import SkillUploader from "@/components/skills/SkillUploader";
 import { getLocale } from "@/lib/i18n/locale";
 import { getSessionUser } from "@/lib/supabase/server";
@@ -14,13 +14,16 @@ import {
   getPlugins,
   integrationOptions,
   pluginCategories,
-  totalSkillCount,
+  type ResolvedPlugin,
 } from "@/lib/skills/data";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 /**
- * Il catalogo è pubblico e cambia raramente: la pagina può essere servita
- * dalla cache per qualche minuto senza perdere nulla di utile.
+ * Catalogo delle singole competenze.
+ *
+ * Qui ci sono SOLO le skill (una card per competenza): i pacchetti vivono in
+ * `/plugins`, così le due viste non si mischiano. Pagina pubblica in cache
+ * per qualche minuto, come il resto del catalogo.
  */
 export const revalidate = 300;
 
@@ -35,6 +38,29 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
+/** Appiattisce i plugin in skill singole con il contesto del padre. */
+function flattenSkills(plugins: ResolvedPlugin[]): FlatSkill[] {
+  const liveSlugs = new Set(
+    plugins
+      .filter((p) => p.resolvedIntegrations.some((i) => i.available))
+      .map((p) => p.slug),
+  );
+  return plugins.flatMap((p) =>
+    p.skills.map((s) => ({
+      slug: s.slug,
+      name: s.name,
+      description: s.description,
+      risk: s.risk,
+      pluginSlug: p.slug,
+      pluginName: p.name,
+      category: p.category,
+      agentSlugs: p.agents.map((a) => a.slug),
+      integrationBrands: p.resolvedIntegrations.map((i) => i.brand),
+      live: liveSlugs.has(p.slug),
+    })),
+  );
+}
+
 export default async function SkillsPage() {
   const locale = await getLocale();
   const dict = getSkillsDictionary(locale);
@@ -43,20 +69,14 @@ export default async function SkillsPage() {
   const user = await getSessionUser();
   const userId = user?.id ?? null;
 
-  const plugins = await getPlugins();
+  const plugins = await getPlugins(locale);
+  const skills = flattenSkills(plugins);
+  // I filtri riusano le opzioni dei plugin (le skill ereditano categoria,
+  // agenti e integrazioni dal pacchetto padre): i conteggi restano quelli
+  // dei pacchetti, non delle skill.
   const categories = pluginCategories(plugins);
   const agents = agentOptions(plugins);
   const integrations = integrationOptions(plugins);
-  const skillCount = totalSkillCount(plugins);
-  // I due predicati dei filtri sono derivati dai dati: li calcoliamo qui e
-  // passiamo gli slug (le funzioni non possono attraversare il confine
-  // server → client).
-  const liveSlugs = plugins
-    .filter((p) => p.resolvedIntegrations.some((i) => i.available))
-    .map((p) => p.slug);
-  const comingSoonRequiredSlugs = plugins
-    .filter((p) => p.resolvedIntegrations.some((i) => i.status === "required" && !i.available))
-    .map((p) => p.slug);
 
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-neutral-950">
@@ -87,7 +107,7 @@ export default async function SkillsPage() {
           { top: "54%", left: "92%", size: "w-10 h-10", brand: "airtable", delay: "1.5s", anim: "animate-float-gentle" },
           { top: "68%", left: "5%", size: "w-11 h-11", brand: "clickup", delay: "1.6s", anim: "animate-float-gentle" },
           { top: "66%", left: "87%", size: "w-12 h-12", brand: "github", delay: "0.9s", anim: "animate-float-reverse" },
-          { top: "80%", left: "5%", size: "w-10 h-10", brand: "woocommerce", delay: "1.1s", anim: "animate-float-gentle" },
+          { top: "80%", left: "5%", size: "w-10 h-10", brand: "woocommerce", delay: "1.1s", anim: "animate-float-reverse" },
           { top: "78%", left: "91%", size: "w-11 h-11", brand: "googledrive", delay: "2.2s", anim: "animate-float-reverse" },
         ]}
       />
@@ -114,29 +134,27 @@ export default async function SkillsPage() {
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
-                href="/agents"
+                href="/plugins"
                 className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-400"
               >
-                {dict.browseAgents} <ArrowRight size={14} />
+                {dict.browsePlugins} <ArrowRight size={14} />
               </Link>
               <span className="text-sm font-semibold text-neutral-500">
-                {plugins.length} · {skillCount}
+                {plugins.length} · {skills.length}
               </span>
             </div>
           </div>
 
-          <SkillsCatalog
-            plugins={plugins}
+          <SkillsList
+            skills={skills}
             categories={categories}
             agents={agents}
             integrations={integrations}
             locale={locale}
-            liveSlugs={liveSlugs}
-            comingSoonRequiredSlugs={comingSoonRequiredSlugs}
           />
 
-          {/* Carica la tua competenza: sotto il catalogo, non dentro i filtri —
-              è un'azione per utenti autenticati, non una card del catalogo. */}
+          {/* Carica la tua competenza: sotto il catalogo — è un'azione per
+              utenti autenticati, non una card del catalogo. */}
           <div className="mt-10">
             <SkillUploader signedIn={Boolean(userId)} dict={dict} />
           </div>
