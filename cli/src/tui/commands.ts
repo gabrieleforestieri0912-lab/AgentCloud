@@ -1,6 +1,6 @@
-import { clearCredentials, loadConfig, loadCredentials, saveConfig } from "../config.js";
+import { clearCredentials, loadConfig, loadCredentials } from "../config.js";
 import { browserLogin } from "../browser-login.js";
-import { currentThemeName, setTheme, themeNames } from "./theme.js";
+import { currentThemeName } from "./theme.js";
 import type { ChatMessage } from "./Chat.js";
 
 export type CommandArg = {
@@ -127,27 +127,11 @@ export const COMMANDS: CommandDef[] = [
   },
   {
     name: "theme",
-    description: "Cambia tema (dark/light)",
-    usage: "/theme [nome]",
-    args: [{ name: "nome", placeholder: "dark o light…", required: false }],
-    handler: (ctx, args) => {
-      const names = themeNames();
-      const wanted = (args[0] || "").toLowerCase();
-      if (!wanted) {
-        // Senza argomento: passa all'altro tema.
-        const next = names.find((n) => n !== currentThemeName()) ?? names[0];
-        if (next && setTheme(next)) {
-          saveConfig({ theme: next });
-          ctx.notice(`Tema: ${next}.`);
-        }
-        return;
-      }
-      if (setTheme(wanted)) {
-        saveConfig({ theme: wanted });
-        ctx.notice(`Tema: ${wanted}.`);
-      } else {
-        ctx.notice(`Tema sconosciuto: usa ${names.join(" o ")}.`);
-      }
+    description: "Mostra il tema attivo",
+    usage: "/theme",
+    args: [],
+    handler: (ctx) => {
+      ctx.notice(`Tema attivo: ${currentThemeName()} (unico disponibile).`);
     },
   },
   {

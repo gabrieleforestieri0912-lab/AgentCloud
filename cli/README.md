@@ -131,7 +131,8 @@ Maiusc+Invio o Ctrl+J a capo, Esc interrompe), barra di stato
 
 Senza terminale interattivo (pipe, CI) o con `AGENTCLOUD_NO_TUI=1` gira il
 loop classico riga per riga. I colori si spengono da soli fuori dal
-terminale o con `NO_COLOR=1`. Tema `dark`/`light` con `/theme` (persistito).
+terminale o con `NO_COLOR=1`. Tema scuro fisso (il chiaro arriverà insieme a
+quello del sito).
 
 ### Comandi `/`
 
@@ -146,7 +147,7 @@ Digitando `/` si apre il menu filtrabile (frecce, Tab/Invio, Esc):
 | `/undo` · `/redo` | annulla/ripristina modifiche file |
 | `/diff [file]` | tutte le modifiche o un file |
 | `/clear` | pulisce la conversazione |
-| `/theme [nome]` | cambia tema |
+| `/theme` | mostra il tema attivo |
 | `/login` · `/logout` | account |
 | `/exit` | esce (salva la sessione) |
 

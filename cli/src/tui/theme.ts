@@ -37,25 +37,10 @@ export const agentCloudTheme: Theme = {
   border: "#27272A",
 };
 
-export const lightTheme: Theme = {
-  // Su fondo bianco i toni chiari del dark spariscono: qui ogni colore è
-  // scelto per un contrasto ≥ ~4.5:1 sul bianco (testo piccolo leggibile).
-  // Il primario resta in famiglia brand (600 invece di 500).
-  primary: "#026FCB",
-  accent: "#0E7490",
-  background: "#FFFFFF",
-  text: "#111827",
-  muted: "#6B7280",
-  success: "#047857",
-  error: "#DC2626",
-  warning: "#B45309",
-  border: "#D1D5DB",
-};
-
-/** Temi disponibili per `/theme`. L'oggetto `theme` resta l'unico import. */
+/** Temi disponibili per `/theme`. Oggi solo dark: il chiaro arriverà quando
+ *  anche il sito lo supporterà davvero (ora produrrebbe testo illeggibile). */
 export const themes: Record<string, Theme> = {
   dark: agentCloudTheme,
-  light: lightTheme,
 };
 
 export function themeNames(): string[] {
