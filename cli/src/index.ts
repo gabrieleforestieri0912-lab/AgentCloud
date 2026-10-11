@@ -3,10 +3,11 @@ import { Command } from "commander";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { clearCredentials, loadConfig, loadCredentials, saveConfig } from "./config.js";
-import { loadChatSession, resumeHint, saveChatSession } from "./sessions.js";
+import { loadChatSession, resumeHint, saveChatSession, type ChatSession } from "./sessions.js";
 import { localVersion, maybeNotifyUpdate, runUpdate } from "./update.js";
 import { browserLogin } from "./browser-login.js";
 import { printLoginHint, printWelcome } from "./welcome.js";
+import { bold, cyan, dim, green, hr, red, select, yellow } from "./ui.js";
 import { adminRequest, ApiError, loginUser, streamAgent, userRequest, userWhoAmI } from "./api.js";
 import { CATALOG } from "./catalog.js";
 
@@ -146,14 +147,14 @@ function handleEvent(event: Record<string, unknown>, state: StreamState): void {
     process.stdout.write(event.content);
     state.answer += event.content;
   } else if (event.type === "tool_start") {
-    process.stderr.write(`\n[tool: ${String(event.toolName)}] `);
+    process.stderr.write(yellow(`\n[tool: ${String(event.toolName)}] `));
   } else if (event.type === "tool_done") {
-    process.stderr.write(`[done: ${String(event.toolName)}] `);
+    process.stderr.write(dim(`[done: ${String(event.toolName)}] `));
   } else if (event.type === "file" && typeof event.filename === "string") {
-    process.stderr.write(`[file: ${String(event.filename)}] `);
+    process.stderr.write(cyan(`[file: ${String(event.filename)}] `));
   } else if (event.type === "connection" && typeof event.provider === "string") {
     // La connessione OAuth si completa sul sito: qui solo l'avviso operativo.
-    process.stderr.write(`\n[connessione richiesta: ${event.provider} → ${SITE}/dashboard/integrations] `);
+    process.stderr.write(yellow(`\n[connessione richiesta: ${event.provider} → ${SITE}/dashboard/integrations] `));
   } else if (event.type === "tool_confirm") {
     state.pending = {
       token: typeof event.token === "string" ? event.token : "",
@@ -217,24 +218,44 @@ program.command("run").description("Esegui un prompt con un agente posseduto").a
   } catch (error) { printError(error); }
 });
 
-program.command("chat").description("Avvia una chat interattiva con un agente posseduto").argument("<agent-slug>").option("--resume <codice>", "Riprendi una chat salvata in precedenza").action(async (agent: string, options: { resume?: string }) => {
-  const rl = readline.createInterface({ input, output });
-  const history: Array<{ role: "user" | "assistant"; content: string }> = [];
-  let sessionCode: string | undefined;
-
+program.command("chat").description("Avvia una chat interattiva (l'agente si sceglie dentro la chat)").argument("[agent-slug]").option("--resume <codice>", "Riprendi una chat salvata in precedenza").action(async (agent: string | undefined, options: { resume?: string }) => {
   // Senza login la chat non può partire: logo + istruzioni invece di un
   // secco "non autenticato".
   if (!loadCredentials()) {
     printWelcome();
     printLoginHint();
     process.exit(1);
-  }  // La cronologia vive solo in memoria finché non si esce: a quel punto si
+  }
+
+  // Senza slug si sceglie dentro la chat: solo agenti disponibili, con
+  // categoria e prezzo così la scelta è informata. Con --resume e senza slug
+  // si riprende direttamente l'agente della sessione, senza chiedere.
+  let slug = agent;
+  let resumed: ChatSession | null = null;
+  if (options.resume) {
+    resumed = loadChatSession(options.resume);
+    if (!slug) slug = resumed.agent;
+  }
+  if (!slug) {
+    const available = CATALOG.filter((a) => !a.comingSoon);
+    slug = await select(
+      "Con quale agente vuoi chattare?",
+      available.map((a) => ({ label: a.name, hint: `${a.category} · ${a.price}`, value: a.slug })),
+    );
+  }
+  const agentName = CATALOG.find((a) => a.slug === slug)?.name ?? slug;
+
+  const rl = readline.createInterface({ input, output });
+  const history: Array<{ role: "user" | "assistant"; content: string }> = [];
+  let sessionCode: string | undefined;
+
+  // La cronologia vive solo in memoria finché non si esce: a quel punto si
   // salva su disco e si stampa il codice per tornarci.
   const saveAndHint = () => {
     if (history.length === 0) return;
-    const session = saveChatSession(agent, history, sessionCode);
+    const session = saveChatSession(slug, history, sessionCode);
     sessionCode = session.code;
-    console.log(`\n${resumeHint(agent, session.code)}`);
+    console.log(`\n${green(resumeHint(slug, session.code))}`);
   };
   // Ctrl+C: la readline da sola perderebbe la cronologia, quindi si salva qui.
   const onSigint = () => {
@@ -242,26 +263,30 @@ program.command("chat").description("Avvia una chat interattiva con un agente po
   };
   process.once("SIGINT", onSigint);
   try {
-    if (options.resume) {
-      const session = loadChatSession(options.resume);
-      if (session.agent !== agent) {
-        console.error(`La sessione ${session.code} è dell'agente "${session.agent}": usa \`agentcloud chat ${session.agent} --resume ${session.code}\`.`);
+    if (resumed) {
+      const session = resumed;
+      if (session.agent !== slug) {
+        console.error(red(`La sessione ${session.code} è dell'agente "${session.agent}": usa \`agentcloud chat ${session.agent} --resume ${session.code}\`.`));
         process.exit(1);
       }
       sessionCode = session.code;
       history.push(...session.messages);
-      console.log(`Sessione ${session.code} ripristinata (${history.length} messaggi).`);
+      console.log(green(`Sessione ${session.code} ripristinata (${history.length} messaggi).`));
     }
-    console.log(`Chat con ${agent}. Digita "exit" per uscire.`);
+    console.log(hr());
+    console.log(`${bold(`Chat con ${agentName}`)} ${dim(`(${slug})`)}`);
+    console.log(dim('Scrivi e premi Invio · "exit" per uscire · all\'uscita ricevi il codice per riprendere'));
+    console.log(hr());
     while (true) {
-      const raw = (await rl.question("> ")) as unknown as string | null;
+      const raw = (await rl.question(bold(cyan("tu › ")))) as unknown as string | null;
       if (raw === null) break; // Ctrl+D / EOF
       const message = raw.trim();
       if (message.toLowerCase() === "exit") break;
       if (!message) continue;
       history.push({ role: "user", content: message });
-      const answer = await runWithApproval(agent, history);
-      console.log("\n");
+      output.write(green(`${slug} › `));
+      const answer = await runWithApproval(slug, history);
+      console.log(`\n${hr()}`);
       if (answer) history.push({ role: "assistant", content: answer });
     }
     saveAndHint();

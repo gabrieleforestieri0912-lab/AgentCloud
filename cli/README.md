@@ -106,12 +106,18 @@ Google OAuth non è gestito direttamente dalla CLI: gli account Google devono im
 agentcloud agents list
 agentcloud agents catalog
 agentcloud run support-agent "Analizza questa richiesta"
+agentcloud chat                    # scegli l'agente dentro la chat
 agentcloud chat support-agent
 agentcloud chat support-agent --resume 7c6aa8c2
 agentcloud usage
 agentcloud config
 agentcloud config --url http://localhost:3000
 ```
+
+Senza slug, `chat` mostra il selettore (frecce + Invio sul terminale,
+elenco numerato se l'input è ridiretto): solo agenti disponibili, con
+categoria e prezzo. I colori si spengono da soli fuori dal terminale
+(pipe, script) o con `NO_COLOR=1`.
 
 `run` e `chat` ricevono le risposte SSE dell'agente in streaming. `usage` mostra uso mensile e piano disponibili all'API.
 
