@@ -1,5 +1,5 @@
 {
-  "name": "@agentcloud/cli",
+  "name": "agentcloud-cli",
   "version": "0.3.0",
   "description": "AgentCloud CLI — gestisci agenti AI autonomi dal terminale (login via browser, stesso DB web/mobile)",
   "main": "dist/index.js",

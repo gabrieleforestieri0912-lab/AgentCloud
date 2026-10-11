@@ -2,7 +2,7 @@ import { execFile, spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { promisify } from "node:util";
 
-const PACKAGE = "@agentcloud/cli";
+const PACKAGE = "agentcloud-cli";
 // Su Windows `npm` è un .cmd: senza shell execFile non lo trova.
 const NPM = process.platform === "win32" ? "npm.cmd" : "npm";
 

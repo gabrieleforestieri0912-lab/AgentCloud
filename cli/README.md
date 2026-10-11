@@ -7,7 +7,7 @@ CLI unificata di AgentCloud: comandi utente e comandi admin in un unico binario 
 Node.js 18+.
 
 ```bash
-npm i -g @agentcloud/cli
+npm i -g agentcloud-cli
 agentcloud --help
 ```
 
@@ -42,7 +42,7 @@ agli utenti, aggiorna `version` in `cli/package.json`, commita e poi:
 ```bash
 cd cli
 npm login                  # solo la prima volta (account npm del team)
-npm publish                # pubblica @agentcloud/cli (access: public)
+npm publish                # pubblica agentcloud-cli
 ```
 
 `prepublishOnly` ricompila `dist/` in automatico, quindi pubblica sempre il
