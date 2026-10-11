@@ -578,7 +578,7 @@ export function App({
   // Diff a tutto schermo: possiede i tasti, il resto resta sotto.
   if (diffView) {
     return (
-      <Box flexDirection="column" height={rows}>
+      <Box flexDirection="column" height={rows} backgroundColor={theme.background}>
         <DiffOverlay
           title={diffView.title}
           lines={diffView.lines}
@@ -591,7 +591,7 @@ export function App({
 
   if (helpOpen) {
     return (
-      <Box flexDirection="column" height={rows}>
+      <Box flexDirection="column" height={rows} backgroundColor={theme.background}>
         <HelpOverlay height={rows} onClose={() => setHelpOpen(false)} />
       </Box>
     );
@@ -599,7 +599,7 @@ export function App({
 
   if (sessionsOpen) {
     return (
-      <Box flexDirection="column" height={rows}>
+      <Box flexDirection="column" height={rows} backgroundColor={theme.background}>
         <SessionsOverlay
           sessions={listSessions().filter((s) => s.agent === agent)}
           height={rows}
@@ -611,7 +611,7 @@ export function App({
   }
 
   return (
-    <Box flexDirection="row" height={rows}>
+    <Box flexDirection="row" height={rows} backgroundColor={theme.background}>
       <Box flexDirection="column" flexGrow={1}>
         <Box flexDirection="column" height={chatHeight}>
           <Chat messages={msgsRef.current} agentName={agentName} width={chatWidth} maxHeight={chatHeight} />

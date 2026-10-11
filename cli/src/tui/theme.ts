@@ -38,15 +38,18 @@ export const agentCloudTheme: Theme = {
 };
 
 export const lightTheme: Theme = {
-  primary: "#038BFE",
+  // Su fondo bianco i toni chiari del dark spariscono: qui ogni colore è
+  // scelto per un contrasto ≥ ~4.5:1 sul bianco (testo piccolo leggibile).
+  // Il primario resta in famiglia brand (600 invece di 500).
+  primary: "#026FCB",
   accent: "#0E7490",
   background: "#FFFFFF",
   text: "#111827",
   muted: "#6B7280",
-  success: "#059669",
+  success: "#047857",
   error: "#DC2626",
-  warning: "#D97706",
-  border: "#E5E7EB",
+  warning: "#B45309",
+  border: "#D1D5DB",
 };
 
 /** Temi disponibili per `/theme`. L'oggetto `theme` resta l'unico import. */
