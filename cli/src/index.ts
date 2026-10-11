@@ -252,12 +252,16 @@ program.command("chat").description("Avvia una chat interattiva (l'agente si sce
 
   const history: Array<{ role: "user" | "assistant"; content: string }> = [];
   let sessionCode: string | undefined;
+  // Ripresa: titolo e file viaggiano nel salvataggio anche dal percorso
+  // classico (che non li tocca altrimenti e li perderebbe riscrivendo).
+  const carriedTitle = resumed?.title;
+  const carriedFiles = resumed?.files;
 
   // La cronologia vive solo in memoria finché non si esce: a quel punto si
   // salva su disco e si stampa il codice per tornarci.
   const saveAndHint = () => {
     if (history.length === 0) return;
-    const session = saveChatSession(slug, history, sessionCode);
+    const session = saveChatSession(slug, history, sessionCode, { title: carriedTitle, files: carriedFiles });
     sessionCode = session.code;
     console.log(`\n${green(resumeHint(slug, session.code))}`);
   };
@@ -276,10 +280,19 @@ program.command("chat").description("Avvia una chat interattiva (l'agente si sce
   // AGENTCLOUD_NO_TUI → loop readline classico, invariato.
   if (interactiveTTY && !process.env.AGENTCLOUD_NO_TUI) {
     const { runChatTui } = await import("./tui/App.js");
-    const finalMessages = await runChatTui({ agent: slug, agentName, initial: history });
+    const resumedSession = resumed;
+    const result = await runChatTui({
+      agent: slug,
+      agentName,
+      initial: history,
+      initialTitle: resumedSession?.title,
+      initialFiles: resumedSession?.files,
+    });
     history.length = 0;
-    history.push(...finalMessages);
-    saveAndHint();
+    history.push(...result.messages);
+    const session = saveChatSession(slug, history, sessionCode, { title: result.title || undefined, files: result.files });
+    sessionCode = session.code;
+    console.log(`\n${green(resumeHint(slug, session.code))}`);
     return;
   }
 

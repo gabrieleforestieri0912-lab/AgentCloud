@@ -22,6 +22,7 @@ export function ChatInput({
   onConfirm,
   placeholder,
   onHeightChange,
+  focused,
 }: {
   onSubmit: (text: string) => void;
   streaming: boolean;
@@ -30,6 +31,8 @@ export function ChatInput({
   onConfirm: (yes: boolean) => void;
   placeholder: string;
   onHeightChange?: (height: number) => void;
+  /** False quando il focus è sulla sidebar: l'editor ignora tutti i tasti. */
+  focused: boolean;
 }) {
   const [lines, setLines] = useState<string[]>([""]);
   const [row, setRow] = useState(0);
@@ -51,6 +54,8 @@ export function ChatInput({
   };
 
   useInput((input, key) => {
+    // Focus altrove (sidebar) o overlay diff aperto: nessun tasto all'editor.
+    if (!focused) return;
     if (confirm) {
       const answer = input.toLowerCase();
       if (key.escape || answer === "n") onConfirm(false);
@@ -157,7 +162,7 @@ export function ChatInput({
 
   if (confirm) {
     return (
-      <Box borderStyle="single" borderColor={theme.warning} paddingX={1}>
+      <Box borderStyle="single" borderColor={focused ? theme.warning : theme.border} paddingX={1}>
         <Text>
           Confermi l'esecuzione di "{confirm.toolName}"? <Text color={theme.muted}>[y/N]</Text>
         </Text>
@@ -166,7 +171,7 @@ export function ChatInput({
   }
 
   return (
-    <Box borderStyle="single" borderColor={theme.primary} paddingX={1} flexDirection="column">
+    <Box borderStyle="single" borderColor={focused ? theme.primary : theme.border} paddingX={1} flexDirection="column">
       {streaming ? (
         <Text color={theme.muted}>L'agente sta rispondendo… (Esc per interrompere)</Text>
       ) : (

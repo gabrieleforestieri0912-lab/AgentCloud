@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import type { TrackedFile } from "./tui/fileChanges.js";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -10,6 +11,10 @@ export type ChatSession = {
   agent: string;
   messages: ChatMessage[];
   updatedAt: string;
+  /** Titolo della sidebar (passo 3 TUI): assente nelle sessioni vecchie. */
+  title?: string;
+  /** File tracciati con versioni (passo 3 TUI): assenti nelle sessioni vecchie. */
+  files?: TrackedFile[];
 };
 
 const SESSIONS_DIR = path.join(os.homedir(), ".agentcloud", "sessions");
@@ -37,6 +42,7 @@ export function saveChatSession(
   agent: string,
   messages: ChatMessage[],
   existingCode?: string,
+  extra?: { title?: string; files?: TrackedFile[] },
 ): ChatSession {
   ensureDir();
   const code =
@@ -46,6 +52,8 @@ export function saveChatSession(
     agent,
     messages,
     updatedAt: new Date().toISOString(),
+    ...(extra?.title ? { title: extra.title } : {}),
+    ...(extra?.files?.length ? { files: extra.files } : {}),
   };
   fs.writeFileSync(sessionFile(code), JSON.stringify(session, null, 2), "utf8");
   return session;
@@ -78,7 +86,11 @@ export function loadChatSession(code: string): ChatSession {
   ) {
     throw new Error(`Sessione "${clean}" illeggibile: file danneggiato.`);
   }
-  return parsed as ChatSession;
+  // Campi TUI opzionali: se malformati si ignorano invece di buttare tutto.
+  const session = parsed as ChatSession;
+  if (session.files !== undefined && !Array.isArray(session.files)) delete session.files;
+  if (session.title !== undefined && typeof session.title !== "string") delete session.title;
+  return session;
 }
 
 /** Frase stampata all'uscita dalla chat per tornarci dopo. */

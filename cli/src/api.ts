@@ -136,3 +136,37 @@ export async function streamAgent(
 export async function userWhoAmI() {
   return userRequest<{ authenticated: boolean; owned: string[]; email?: string | null; name?: string | null }>("/api/extension/session");
 }
+
+/**
+ * Persistenza best-effort dei file generati (stesso contratto del web client,
+ * che posta senza conversationId: upsert per slug con versioni sul server).
+ * Ritorna false invece di lanciare: un salvataggio fallito non deve mai
+ * rompere una run o un undo.
+ */
+export async function saveAgentFiles(
+  agentSlug: string,
+  files: Array<{ name: string; content: string }>,
+): Promise<boolean> {
+  try {
+    await userRequest("/api/chat/files", {
+      method: "POST",
+      body: JSON.stringify({
+        agentSlug,
+        files: files.map((f) => ({ slug: f.name, name: f.name, content: f.content })),
+      }),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Cancellazione best-effort (undo di una creazione). Vedi sopra per il perché. */
+export async function deleteAgentFile(name: string): Promise<boolean> {
+  try {
+    await userRequest(`/api/chat/files?slug=${encodeURIComponent(name)}`, { method: "DELETE" });
+    return true;
+  } catch {
+    return false;
+  }
+}
