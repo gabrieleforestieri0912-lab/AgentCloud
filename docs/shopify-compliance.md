@@ -224,6 +224,29 @@ Risposta attesa: `401 {"error":"invalid signature"}`.
 Attenzione: `printf '%s'` senza il `-n` finale aggiunge un newline che non
 farebbe parte del body reale, e la firma non corrisponderebbe.
 
+### Con PowerShell (Windows), firma valida
+
+```powershell
+$Secret = $env:SHOPIFY_API_SECRET
+$Body = '{"shop_domain":"tuo-shop.myshopify.com","customer":{"id":1},"orders_requested":[]}'
+$Hmac = New-Object Security.Cryptography.HMACSHA256
+$Hmac.Key = [Text.Encoding]::UTF8.GetBytes($Secret)
+$Sig = [Convert]::ToBase64String($Hmac.ComputeHash([Text.Encoding]::UTF8.GetBytes($Body)))
+
+Invoke-WebRequest -Method Post -Uri "https://www.agentcloud.agency/api/webhooks/shopify/compliance" `
+  -ContentType "application/json" `
+  -Headers @{
+    "X-Shopify-Topic" = "customers/redact"
+    "X-Shopify-Shop-Domain" = "tuo-shop.myshopify.com"
+    "X-Shopify-Webhook-Id" = "test-manuale-ps-1"
+    "X-Shopify-Hmac-Sha256" = $Sig
+  } `
+  -Body $Body
+```
+
+Risposta attesa: `200 {"received":true}`. Per la firma errata basta passare
+una `X-Shopify-Hmac-Sha256` a caso: risposta attesa `401`.
+
 ---
 
 ## 8. Variabili d'ambiente
@@ -258,3 +281,19 @@ Nessuna variabile nuova per i privacy webhooks: la firma usa
 Se il pannello chiede **tre URL separati** invece di uno, usa lo stesso
 endpoint tre volte: lo smistamento avviene su `X-Shopify-Topic`, quindi
 funziona in entrambi i casi.
+
+### Alternativa: `shopify.app.toml` (solo se usi la CLI)
+
+Il progetto non usa Shopify CLI, quindi questo file **non esiste nel repo**
+e non serve crearlo: basta la configurazione nel Partner Dashboard qui sopra.
+Se in futuro passerai alla CLI, il blocco da aggiungere è questo (un solo
+`uri`, i tre topic smistati dall'header):
+
+```toml
+[webhooks]
+uri = "https://www.agentcloud.agency/api/webhooks/shopify/compliance"
+compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+```
+
+Poi `shopify app deploy` per applicarlo. Non committare mai il client secret
+nel toml: resta solo in `SHOPIFY_API_SECRET` (env di Vercel + `.env.local`).
