@@ -7,7 +7,11 @@
     "agentcloud": "dist/index.js",
     "ac": "dist/index.js"
   },
-  "files": ["dist/**/*", "README.md", "LICENSE"],
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },
@@ -23,7 +27,14 @@
     "prepublishOnly": "npm run build",
     "test": "node dist/index.js --help"
   },
-  "keywords": ["agentcloud", "ai", "agents", "cli", "automation", "supabase"],
+  "keywords": [
+    "agentcloud",
+    "ai",
+    "agents",
+    "cli",
+    "automation",
+    "supabase"
+  ],
   "author": "AgentCloud Team <support@agentcloud.agency>",
   "license": "MIT",
   "homepage": "https://agentcloud.agency",
@@ -34,10 +45,13 @@
   },
   "dependencies": {
     "commander": "^12.0.0",
-    "open": "^10.1.0"
+    "ink": "^6.8.0",
+    "open": "^10.1.0",
+    "react": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@types/react": "^19.3.0",
     "typescript": "^5.4.0"
   }
 }

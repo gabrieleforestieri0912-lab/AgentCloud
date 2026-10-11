@@ -104,7 +104,7 @@ export async function streamAgent(
   agentId: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   onEvent: (event: Record<string, unknown>) => void,
-  options: { approvalToken?: string } = {},
+  options: { approvalToken?: string; signal?: AbortSignal } = {},
 ) {
   const token = await getValidUserToken();
   const body: Record<string, unknown> = { agentId, messages };
@@ -113,6 +113,7 @@ export async function streamAgent(
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "text/event-stream" },
     body: JSON.stringify(body),
+    signal: options.signal,
   });
   if (!response.ok) throw new ApiError(response.status, await parseError(response));
   if (!response.body) throw new Error("Lo stream dell'agente non è disponibile.");

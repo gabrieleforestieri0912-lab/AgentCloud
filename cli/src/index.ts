@@ -7,7 +7,8 @@ import { loadChatSession, resumeHint, saveChatSession, type ChatSession } from "
 import { localVersion, maybeNotifyUpdate, runUpdate } from "./update.js";
 import { browserLogin } from "./browser-login.js";
 import { printLoginHint, printWelcome } from "./welcome.js";
-import { bold, cyan, dim, green, hr, red, select, yellow } from "./ui.js";
+import { select } from "./tui/select.js";
+import { bold, cyan, dim, green, hr, red, yellow } from "./ui.js";
 import { adminRequest, ApiError, loginUser, streamAgent, userRequest, userWhoAmI } from "./api.js";
 import { CATALOG } from "./catalog.js";
 
@@ -227,16 +228,20 @@ program.command("chat").description("Avvia una chat interattiva (l'agente si sce
     process.exit(1);
   }
 
-  // Senza slug si sceglie dentro la chat: solo agenti disponibili, con
-  // categoria e prezzo così la scelta è informata. Con --resume e senza slug
-  // si riprende direttamente l'agente della sessione, senza chiedere.
+  // Senza slug si sceglie dentro la chat (picker con frecce). Senza
+  // terminale interattivo non si può scegliere: serve lo slug esplicito.
   let slug = agent;
   let resumed: ChatSession | null = null;
   if (options.resume) {
     resumed = loadChatSession(options.resume);
     if (!slug) slug = resumed.agent;
   }
+  const interactiveTTY = Boolean(input.isTTY && output.isTTY);
   if (!slug) {
+    if (!interactiveTTY) {
+      console.error("Specifica l'agente: `agentcloud chat <agent-slug>` (senza terminale interattivo non si può scegliere).");
+      process.exit(1);
+    }
     const available = CATALOG.filter((a) => !a.comingSoon);
     slug = await select(
       "Con quale agente vuoi chattare?",
@@ -245,7 +250,6 @@ program.command("chat").description("Avvia una chat interattiva (l'agente si sce
   }
   const agentName = CATALOG.find((a) => a.slug === slug)?.name ?? slug;
 
-  const rl = readline.createInterface({ input, output });
   const history: Array<{ role: "user" | "assistant"; content: string }> = [];
   let sessionCode: string | undefined;
 
@@ -257,21 +261,39 @@ program.command("chat").description("Avvia una chat interattiva (l'agente si sce
     sessionCode = session.code;
     console.log(`\n${green(resumeHint(slug, session.code))}`);
   };
+
+  if (resumed) {
+    const session = resumed;
+    if (session.agent !== slug) {
+      console.error(red(`La sessione ${session.code} è dell'agente "${session.agent}": usa \`agentcloud chat ${session.agent} --resume ${session.code}\`.`));
+      process.exit(1);
+    }
+    sessionCode = session.code;
+    history.push(...session.messages);
+  }
+
+  // Terminale interattivo → TUI a schermo intero. Altrimenti (pipe, CI) o con
+  // AGENTCLOUD_NO_TUI → loop readline classico, invariato.
+  if (interactiveTTY && !process.env.AGENTCLOUD_NO_TUI) {
+    const { runChatTui } = await import("./tui/App.js");
+    const finalMessages = await runChatTui({ agent: slug, agentName, initial: history });
+    history.length = 0;
+    history.push(...finalMessages);
+    saveAndHint();
+    return;
+  }
+
+  const rl = readline.createInterface({ input, output });
   // Ctrl+C: la readline da sola perderebbe la cronologia, quindi si salva qui.
+  // Solo nel percorso classico: nella TUI Ctrl+C è gestito dentro l'App,
+  // altrimenti l'handler scatterebbe con lo schermo alternativo attivo.
   const onSigint = () => {
     try { saveAndHint(); } catch { /* disco pieno? esci comunque */ } finally { process.exit(0); }
   };
   process.once("SIGINT", onSigint);
   try {
     if (resumed) {
-      const session = resumed;
-      if (session.agent !== slug) {
-        console.error(red(`La sessione ${session.code} è dell'agente "${session.agent}": usa \`agentcloud chat ${session.agent} --resume ${session.code}\`.`));
-        process.exit(1);
-      }
-      sessionCode = session.code;
-      history.push(...session.messages);
-      console.log(green(`Sessione ${session.code} ripristinata (${history.length} messaggi).`));
+      console.log(green(`Sessione ${sessionCode} ripristinata (${history.length} messaggi).`));
     }
     console.log(hr());
     console.log(`${bold(`Chat con ${agentName}`)} ${dim(`(${slug})`)}`);
