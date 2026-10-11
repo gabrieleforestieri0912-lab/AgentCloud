@@ -282,12 +282,25 @@ Se il pannello chiede **tre URL separati** invece di uno, usa lo stesso
 endpoint tre volte: lo smistamento avviene su `X-Shopify-Topic`, quindi
 funziona in entrambi i casi.
 
-### Alternativa: `shopify.app.toml` (solo se usi la CLI)
+### Via Shopify CLI (consigliato: unico modo per modificare una versione)
 
-Il progetto non usa Shopify CLI, quindi questo file **non esiste nel repo**
-e non serve crearlo: basta la configurazione nel Partner Dashboard qui sopra.
-Se in futuro passerai alla CLI, il blocco da aggiungere è questo (un solo
-`uri`, i tre topic smistati dall'header):
+La dashboard mostra la versione rilasciata in sola lettura: per cambiare URL,
+redirect o webhook serve un deploy. Il file `shopify.app.toml` è nella root
+del repo (contiene solo il client_id pubblico, mai il secret) e dichiara già
+tutto: i tre topic GDPR sullo stesso endpoint, `app/uninstalled`, redirect
+`https://www.agentcloud.agency/api/shopify/callback`, scope e api 2026-10.
+
+```powershell
+npm install -g @shopify/cli
+shopify auth login
+shopify app deploy
+```
+
+Al primo deploy la CLI chiede a quale app collegarsi: scegli l'app AgentCloud
+**esistente**, non crearne una nuova. Poi rilascia la nuova versione dalla
+dashboard e rilancia i controlli automatici.
+
+### Snippet toml di riferimento
 
 ```toml
 [webhooks]
@@ -297,3 +310,6 @@ compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"
 
 Poi `shopify app deploy` per applicarlo. Non committare mai il client secret
 nel toml: resta solo in `SHOPIFY_API_SECRET` (env di Vercel + `.env.local`).
+
+Se preferisci non usare la CLI, resta valida la configurazione manuale nel
+Partner Dashboard descritta nella checklist qui sopra.

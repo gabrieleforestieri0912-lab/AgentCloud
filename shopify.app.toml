@@ -1,0 +1,37 @@
+# Configurazione dell'app Shopify "AgentCloud" per Shopify CLI.
+#
+# A cosa serve: registra URL, redirect, scope e webhook (inclusi i tre topic
+# GDPR obbligatori) con `shopify app deploy`. Senza questo file la dashboard
+# mostra solo la versione rilasciata (sola lettura) e i webhook di conformità
+# non risultano configurati → i controlli automatici falliscono.
+#
+# NOTA: contiene solo il client_id (chiave API pubblica, non un segreto).
+# Il client secret resta SOLO in SHOPIFY_API_SECRET (env di Vercel), mai qui.
+# Al primo deploy la CLI chiede a quale app collegarsi: scegli l'app
+# AgentCloud esistente, NON crearne una nuova.
+
+client_id = "461eff50e7ece493b4ed79762975b42d"
+name = "AgentCloud"
+application_url = "https://www.agentcloud.agency"
+embedded = true
+
+[access_scopes]
+scopes = "read_products,write_products,read_orders,write_orders,read_inventory,write_inventory,read_customers,write_customers,read_content,write_content,read_themes,write_themes"
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = ["https://www.agentcloud.agency/api/shopify/callback"]
+
+[webhooks]
+api_version = "2026-10"
+
+# Un solo endpoint per i tre topic GDPR: lo smistamento avviene su
+# `X-Shopify-Topic` (vedi src/lib/shopify/compliance.ts).
+[webhooks.privacy_compliance]
+customer_data_request_url = "https://www.agentcloud.agency/api/webhooks/shopify/compliance"
+customer_redact_url = "https://www.agentcloud.agency/api/webhooks/shopify/compliance"
+shop_redact_url = "https://www.agentcloud.agency/api/webhooks/shopify/compliance"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "https://www.agentcloud.agency/api/webhooks/shopify/app-uninstalled"
