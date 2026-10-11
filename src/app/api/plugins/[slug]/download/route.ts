@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getLocale } from "@/lib/i18n/locale";
 import { getPlugin } from "@/lib/skills/data";
 import { buildPluginZip, downloadFileName } from "@/lib/skills/zip";
 
@@ -16,12 +17,14 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
-  const plugin = await getPlugin(slug);
+  // Il pacchetto segue la lingua dell'utente: testi UI e SKILL.md localizzati.
+  const locale = await getLocale();
+  const plugin = await getPlugin(slug, locale);
   if (!plugin) {
     return NextResponse.json({ error: "Plugin not found" }, { status: 404 });
   }
 
-  const zip = await buildPluginZip(plugin);
+  const zip = await buildPluginZip(plugin, locale);
   const digest = await sha256Hex(zip);
 
   return new NextResponse(Buffer.from(zip), {

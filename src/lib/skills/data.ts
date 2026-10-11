@@ -13,6 +13,8 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Locale } from "@/lib/i18n/constants";
+import { localizePlugin } from "@/lib/i18n/skillCatalog";
 import {
   SKILL_PLUGINS,
   catalogPluginsForAgent,
@@ -165,12 +167,15 @@ function mergeWithCatalog(rows: PluginRow[]): SkillPlugin[] {
 }
 
 /**
- * Tutti i plugin, dalla fonte migliore disponibile.
+ * Tutti i plugin, dalla fonte migliore disponibile, con i testi localizzati.
+ *
+ * `locale` è solo display: gli slug, i permessi e le versioni restano quelli
+ * canonici (italiani) così installazioni e download non divergono fra lingue.
  *
  * `revalidate` è basso (5 minuti): la pagina è pubblica e deve essere
  * veloce, e il catalato non cambia più di una volta al mese.
  */
-export async function getPlugins(): Promise<ResolvedPlugin[]> {
+export async function getPlugins(locale: Locale = "it"): Promise<ResolvedPlugin[]> {
   const admin = createAdminClient();
   if (admin) {
     try {
@@ -181,24 +186,32 @@ export async function getPlugins(): Promise<ResolvedPlugin[]> {
         )
         .order("name");
       if (!error && data && data.length > 0) {
-        return mergeWithCatalog(data as unknown as PluginRow[]).map(decoratePlugin);
+        return mergeWithCatalog(data as unknown as PluginRow[]).map((p) =>
+          decoratePlugin(localizePlugin(p, locale)),
+        );
       }
     } catch {
       // Nessun errore propagato: il fallback statico copre il caso.
     }
   }
-  return SKILL_PLUGINS.map(decoratePlugin);
+  return SKILL_PLUGINS.map((p) => decoratePlugin(localizePlugin(p, locale)));
 }
 
 /** Un plugin per slug, o `undefined` se lo slug non esiste. */
-export async function getPlugin(slug: string): Promise<ResolvedPlugin | undefined> {
-  const plugins = await getPlugins();
+export async function getPlugin(
+  slug: string,
+  locale: Locale = "it",
+): Promise<ResolvedPlugin | undefined> {
+  const plugins = await getPlugins(locale);
   return plugins.find((p) => p.slug === slug);
 }
 
 /** Plugin consigliati per un agente del marketplace. */
-export async function getRecommendedPlugins(agentSlug: string): Promise<ResolvedPlugin[]> {
-  const plugins = await getPlugins();
+export async function getRecommendedPlugins(
+  agentSlug: string,
+  locale: Locale = "it",
+): Promise<ResolvedPlugin[]> {
+  const plugins = await getPlugins(locale);
   return catalogPluginsForAgent(agentSlug)
     .map((p) => plugins.find((x) => x.slug === p.slug))
     .filter((p): p is ResolvedPlugin => p !== undefined);
@@ -207,8 +220,9 @@ export async function getRecommendedPlugins(agentSlug: string): Promise<Resolved
 /** Una skill per slug, con il plugin di appartenenza. */
 export async function getSkill(
   slug: string,
+  locale: Locale = "it",
 ): Promise<(SkillEntry & { pluginSlug: string; plugin: ResolvedPlugin }) | undefined> {
-  const plugins = await getPlugins();
+  const plugins = await getPlugins(locale);
   for (const plugin of plugins) {
     const skill = plugin.skills.find((s) => s.slug === slug);
     if (skill) return { ...skill, pluginSlug: plugin.slug, plugin };

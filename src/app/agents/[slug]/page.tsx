@@ -112,7 +112,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   // competenza. Le integrazioni "collegate" arrivano dalle stesse query del
   // pannello Integrazioni, così la tab dice la verità anche su Shopify e
   // Google, che non passano da `tenant_integrations`.
-  const recommendedPlugins = await getRecommendedPlugins(slug);
+  const recommendedPlugins = await getRecommendedPlugins(slug, locale);
   const installedSkills = await getInstalledSkillsState(sessionUser?.id ?? null, slug);
   const connectedBrands: Record<string, boolean> = {};
   for (const [provider, connected] of Object.entries(genericConnected)) {

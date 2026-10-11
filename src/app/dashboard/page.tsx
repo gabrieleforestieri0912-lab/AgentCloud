@@ -18,6 +18,7 @@ import DashboardExportBar from "@/components/DashboardExportBar";
 import DashboardSkills from "@/components/skills/DashboardSkills";
 import AgentIcon from "@/components/AgentIcon";
 import { getInstalledSkillsSummary } from "@/lib/skills/metrics";
+import { getLocalizedSkillInfo } from "@/lib/i18n/skillCatalog";
 import { getSkillsDictionary } from "@/lib/i18n/skills";
 import { AGENTS, localizeAgent } from "@/lib/agents";
 import { getAgentRuntimeConfig } from "@/lib/agents/registry";
@@ -174,6 +175,18 @@ export default async function DashboardPage({
     ? await getInstalledSkillsSummary(userId)
     : { installed: [], totals: { installed: 0, enabled: 0, uses: 0, successRate: 0 } };
   const skillsDict = getSkillsDictionary(locale);
+  // Nomi/descrizioni ufficiali nella lingua attiva (dal catalogo localizzato):
+  // le skill personali dell'utente restano come sono.
+  if (locale !== "it") {
+    for (const item of skillsSummary.installed) {
+      if (item.owner === "user") continue;
+      const localized = getLocalizedSkillInfo(item.slug, locale);
+      if (localized) {
+        item.name = localized.name;
+        item.description = localized.description;
+      }
+    }
+  }
 
   const fullName = false
     ? "Admin"

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getLocale } from "@/lib/i18n/locale";
 import { getSkill } from "@/lib/skills/data";
 import { buildSkillZip, downloadFileName } from "@/lib/skills/zip";
 
@@ -14,12 +15,13 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
-  const skill = await getSkill(slug);
+  const locale = await getLocale();
+  const skill = await getSkill(slug, locale);
   if (!skill) {
     return NextResponse.json({ error: "Skill not found" }, { status: 404 });
   }
 
-  const zip = await buildSkillZip(skill, skill.plugin);
+  const zip = await buildSkillZip(skill, skill.plugin, locale);
   const hash = await crypto.subtle.digest("SHA-256", zip as unknown as ArrayBuffer);
   const digest = Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))

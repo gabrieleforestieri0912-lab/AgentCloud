@@ -66,6 +66,22 @@ export type SkillsDictionary = {
   fitPrimary: string;
   fitSecondary: string;
   related: string;
+  // --- Pagina /plugins (pacchetti) ---
+  pluginsLabel: string;
+  pluginsHeroTitle: string;
+  pluginsHeroSubtitle: string;
+  pluginsMetaTitle: string;
+  pluginsMetaDescription: string;
+  browsePlugins: string;
+  backToPlugins: string;
+  // --- Dettaglio singola skill (/skills/[slug]) ---
+  parentPlugin: string;
+  viewPlugin: string;
+  downloadSkillAria: string;
+  procedureTitle: string;
+  rulesTitle: string;
+  outputTitle: string;
+  whenNotTitle: string;
   // --- Dashboard e scheda agente ---
   dashboardTitle: string;
   dashboardUses: string;
@@ -213,11 +229,27 @@ const EN: SkillsDictionary = {
   progressiveDisclosure: "How it works in chat",
   progressiveDisclosureBody:
     "The agent sees only the name and description of each enabled skill. The full instructions are loaded only when the request matches, so your context stays clean.",
-  downloadAllNote: "Download includes every SKILL.md in Italian, ready to install manually.",
+  downloadAllNote: "Download includes every SKILL.md, ready to install manually.",
   fitPrimary: "Primary",
   fitSecondary: "Secondary",
   related: "You may also like",
   browseSkills: "Browse skills",
+  pluginsLabel: "Plugins",
+  pluginsHeroTitle: "Ready-made packs for your agents",
+  pluginsHeroSubtitle:
+    "Plugins bundle multiple skills for one job: catalog, orders, quotes, content. Install the pack and the agent picks the right skill on its own.",
+  pluginsMetaTitle: "Plugins - AgentCloud",
+  pluginsMetaDescription:
+    "Plugins for AgentCloud agents: skill packs for e-commerce, sales, support, marketing and more. Download the .zip or install with one click.",
+  browsePlugins: "Browse plugins",
+  backToPlugins: "Back to all plugins",
+  parentPlugin: "Pack",
+  viewPlugin: "Open pack",
+  downloadSkillAria: "Download the skill {name} as a zip file",
+  procedureTitle: "Procedure",
+  rulesTitle: "Rules",
+  outputTitle: "Expected output",
+  whenNotTitle: "When not to use it",
   dashboardTitle: "Installed skills",
   dashboardUses: "activations",
   dashboardEmptyTitle: "No skill installed",
@@ -359,11 +391,27 @@ const IT: SkillsDictionary = {
   progressiveDisclosureBody:
     "L'agente vede solo nome e descrizione di ogni competenza abilitata. Le istruzioni complete vengono caricate solo quando la richiesta è pertinente, così il contesto resta pulito.",
   downloadAllNote:
-    "Il download include tutti i SKILL.md in italiano, pronti per l'installazione manuale.",
+    "Il download include tutti i SKILL.md, pronti per l'installazione manuale.",
   fitPrimary: "Primario",
   fitSecondary: "Secondario",
   related: "Potrebbero interessarti",
   browseSkills: "Sfoglia le competenze",
+  pluginsLabel: "Plugin",
+  pluginsHeroTitle: "Pacchetti pronti per i tuoi agenti",
+  pluginsHeroSubtitle:
+    "I plugin raccolgono più competenze su uno stesso lavoro: catalogo, ordini, preventivi, contenuti. Installi il pacchetto e l'agente usa da solo la competenza giusta.",
+  pluginsMetaTitle: "Plugin - AgentCloud",
+  pluginsMetaDescription:
+    "Plugin per gli agenti AgentCloud: pacchetti di competenze per e-commerce, vendite, assistenza, marketing e altro. Scarica il .zip o installa con un click.",
+  browsePlugins: "Vedi i plugin",
+  backToPlugins: "Torna a tutti i plugin",
+  parentPlugin: "Pacchetto",
+  viewPlugin: "Apri il pacchetto",
+  downloadSkillAria: "Scarica la competenza {name} come file zip",
+  procedureTitle: "Procedura",
+  rulesTitle: "Regole",
+  outputTitle: "Output atteso",
+  whenNotTitle: "Quando non usarla",
   // --- Dashboard e scheda agente ---
   dashboardTitle: "Competenze installate",
   dashboardUses: "attivazioni",
@@ -513,11 +561,27 @@ const ES: SkillsDictionary = {
   progressiveDisclosureBody:
     "El agente solo ve el nombre y la descripción de cada competencia activa. Las instrucciones completas se cargan cuando la petición coincide, para que el contexto quede limpio.",
   downloadAllNote:
-    "La descarga incluye todos los SKILL.md en italiano, listos para instalar manualmente.",
+    "La descarga incluye todos los SKILL.md, listos para instalar manualmente.",
   fitPrimary: "Principal",
   fitSecondary: "Secundario",
   related: "Tambien te puede interesar",
   browseSkills: "Ver las competencias",
+  pluginsLabel: "Plugins",
+  pluginsHeroTitle: "Packs listos para tus agentes",
+  pluginsHeroSubtitle:
+    "Los plugins agrupan varias competencias para un mismo trabajo: catálogo, pedidos, presupuestos, contenidos. Instala el pack y el agente elige solo la competencia adecuada.",
+  pluginsMetaTitle: "Plugins - AgentCloud",
+  pluginsMetaDescription:
+    "Plugins para los agentes de AgentCloud: packs de competencias para e-commerce, ventas, soporte, marketing y más. Descarga el .zip o instala con un clic.",
+  browsePlugins: "Ver plugins",
+  backToPlugins: "Volver a todos los plugins",
+  parentPlugin: "Pack",
+  viewPlugin: "Abrir el pack",
+  downloadSkillAria: "Descargar la competencia {name} como archivo zip",
+  procedureTitle: "Procedimiento",
+  rulesTitle: "Reglas",
+  outputTitle: "Resultado esperado",
+  whenNotTitle: "Cuándo no usarla",
   dashboardTitle: "Competencias instaladas",
   dashboardUses: "activaciones",
   dashboardEmptyTitle: "Ninguna competencia instalada",
@@ -659,11 +723,27 @@ const DE: SkillsDictionary = {
   progressiveDisclosureBody:
     "Der Agent sieht nur Name und Beschreibung der aktiven Kompetenzen. Die vollständigen Anweisungen werden erst geladen, wenn die Anfrage passt.",
   downloadAllNote:
-    "Der Download enthält alle SKILL.md auf Italienisch, bereit zur manuellen Installation.",
+    "Der Download enthält alle SKILL.md, bereit zur manuellen Installation.",
   fitPrimary: "Primär",
   fitSecondary: "Sekundär",
   related: "Das könnte dich auch interessieren",
   browseSkills: "Kompetenzen ansehen",
+  pluginsLabel: "Plugins",
+  pluginsHeroTitle: "Fertige Pakete für deine Agenten",
+  pluginsHeroSubtitle:
+    "Plugins bündeln mehrere Kompetenzen für eine Aufgabe: Katalog, Bestellungen, Angebote, Inhalte. Installiere das Paket und der Agent wählt die passende Kompetenz selbst.",
+  pluginsMetaTitle: "Plugins - AgentCloud",
+  pluginsMetaDescription:
+    "Plugins für AgentCloud-Agenten: Kompetenz-Pakete für E-Commerce, Vertrieb, Support, Marketing und mehr. .zip herunterladen oder mit einem Klick installieren.",
+  browsePlugins: "Plugins ansehen",
+  backToPlugins: "Zurück zu allen Plugins",
+  parentPlugin: "Paket",
+  viewPlugin: "Paket öffnen",
+  downloadSkillAria: "Kompetenz {name} als ZIP-Datei herunterladen",
+  procedureTitle: "Ablauf",
+  rulesTitle: "Regeln",
+  outputTitle: "Erwartetes Ergebnis",
+  whenNotTitle: "Wann sie nicht zu verwenden ist",
   dashboardTitle: "Installierte Kompetenzen",
   dashboardUses: "Aktivierungen",
   dashboardEmptyTitle: "Keine Kompetenz installiert",
@@ -805,11 +885,27 @@ const FR: SkillsDictionary = {
   progressiveDisclosureBody:
     "L'agent ne voit que le nom et la description de chaque compétence activée. Les instructions complètes ne sont chargées que si la demande correspond.",
   downloadAllNote:
-    "Le téléchargement contient tous les SKILL.md en italien, prêts à être installés manuellement.",
+    "Le téléchargement contient tous les SKILL.md, prêts à être installés manuellement.",
   fitPrimary: "Principal",
   fitSecondary: "Secondaire",
   related: "Vous aimerez aussi",
   browseSkills: "Voir les compétences",
+  pluginsLabel: "Plugins",
+  pluginsHeroTitle: "Des packs prêts pour vos agents",
+  pluginsHeroSubtitle:
+    "Les plugins regroupent plusieurs compétences pour un même travail : catalogue, commandes, devis, contenus. Installe le pack et l'agent choisit seul la bonne compétence.",
+  pluginsMetaTitle: "Plugins - AgentCloud",
+  pluginsMetaDescription:
+    "Plugins pour les agents AgentCloud : packs de compétences pour l'e-commerce, les ventes, l'assistance, le marketing et plus. Téléchargez le .zip ou installez en un clic.",
+  browsePlugins: "Voir les plugins",
+  backToPlugins: "Retour à tous les plugins",
+  parentPlugin: "Pack",
+  viewPlugin: "Ouvrir le pack",
+  downloadSkillAria: "Télécharger la compétence {name} en fichier zip",
+  procedureTitle: "Procédure",
+  rulesTitle: "Règles",
+  outputTitle: "Résultat attendu",
+  whenNotTitle: "Quand ne pas l'utiliser",
   dashboardTitle: "Compétences installées",
   dashboardUses: "activations",
   dashboardEmptyTitle: "Aucune compétence installée",
