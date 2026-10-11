@@ -22,6 +22,21 @@ agentcloud --help
 
 Il package è configurato per `npm i -g @agentcloud/cli` quando verrà pubblicato. Non contiene segreti e non è pubblicato automaticamente.
 
+## Aggiornamento
+
+```bash
+agentcloud update          # installa l'ultima versione pubblicata
+agentcloud update --check  # controlla soltanto, senza installare
+```
+
+Finché il pacchetto non è pubblicato su npm, `update` lo segnala e si
+aggiorna dai sorgenti:
+
+```bash
+git pull
+cd cli && npm install && npm run build
+```
+
 ## Autenticazione utente
 
 La CLI usa email/password Supabase e salva soltanto i token nella home dell'utente:
@@ -55,12 +70,30 @@ agentcloud agents list
 agentcloud agents catalog
 agentcloud run support-agent "Analizza questa richiesta"
 agentcloud chat support-agent
+agentcloud chat support-agent --resume 7c6aa8c2
 agentcloud usage
 agentcloud config
 agentcloud config --url http://localhost:3000
 ```
 
 `run` e `chat` ricevono le risposte SSE dell'agente in streaming. `usage` mostra uso mensile e piano disponibili all'API.
+
+### Riprendere una chat interrotta
+
+La cronologia della chat vive in memoria finché non esci. All'uscita
+(`exit`, Ctrl+D, Ctrl+C, o anche in caso di errore) la CLI salva tutto in
+`~/.agentcloud/sessions/` e stampa il codice per tornarci:
+
+```bash
+agentcloud chat support-agent
+# ...
+# Sessione salvata. Per tornare a questa chat:
+#   agentcloud chat support-agent --resume 7c6aa8c2
+```
+
+Le sessioni restano sul computer dove sono state create e non seguono
+l'account su altri PC. Se il codice è di un altro agente, la CLI indica il
+comando giusto invece di mescolare le cronologie.
 
 Il catalogo e i prezzi rimandano sempre al marketplace web: la CLI non esegue checkout.
 

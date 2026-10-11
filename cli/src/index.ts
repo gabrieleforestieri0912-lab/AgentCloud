@@ -3,6 +3,8 @@ import { Command } from "commander";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { clearCredentials, loadConfig, loadCredentials, saveConfig } from "./config.js";
+import { loadChatSession, resumeHint, saveChatSession } from "./sessions.js";
+import { localVersion, runUpdate } from "./update.js";
 import { adminRequest, ApiError, loginUser, streamAgent, userRequest, userWhoAmI } from "./api.js";
 import { CATALOG } from "./catalog.js";
 
@@ -11,7 +13,7 @@ const program = new Command();
 const agents = program.command("agents").description("Gestisci agenti posseduti e catalogo");
 const admin = program.command("admin").description("Operazioni amministrative (richiede AGENTCLOUD_ADMIN_TOKEN)");
 
-program.name("agentcloud").description("CLI AgentCloud per utenti e amministratori").version("0.1.0");
+program.name("agentcloud").description("CLI AgentCloud per utenti e amministratori").version(localVersion());
 
 function printError(error: unknown): never {
   if (error instanceof ApiError) {
@@ -205,20 +207,57 @@ program.command("run").description("Esegui un prompt con un agente posseduto").a
   } catch (error) { printError(error); }
 });
 
-program.command("chat").description("Avvia una chat interattiva con un agente posseduto").argument("<agent-slug>").action(async (agent: string) => {
+program.command("chat").description("Avvia una chat interattiva con un agente posseduto").argument("<agent-slug>").option("--resume <codice>", "Riprendi una chat salvata in precedenza").action(async (agent: string, options: { resume?: string }) => {
   const rl = readline.createInterface({ input, output });
   const history: Array<{ role: "user" | "assistant"; content: string }> = [];
-  console.log(`Chat con ${agent}. Digita "exit" per uscire.`);
+  let sessionCode: string | undefined;
+  // La cronologia vive solo in memoria finché non si esce: a quel punto si
+  // salva su disco e si stampa il codice per tornarci.
+  const saveAndHint = () => {
+    if (history.length === 0) return;
+    const session = saveChatSession(agent, history, sessionCode);
+    sessionCode = session.code;
+    console.log(`\n${resumeHint(agent, session.code)}`);
+  };
+  // Ctrl+C: la readline da sola perderebbe la cronologia, quindi si salva qui.
+  const onSigint = () => {
+    try { saveAndHint(); } catch { /* disco pieno? esci comunque */ } finally { process.exit(0); }
+  };
+  process.once("SIGINT", onSigint);
   try {
+    if (options.resume) {
+      const session = loadChatSession(options.resume);
+      if (session.agent !== agent) {
+        console.error(`La sessione ${session.code} è dell'agente "${session.agent}": usa \`agentcloud chat ${session.agent} --resume ${session.code}\`.`);
+        process.exit(1);
+      }
+      sessionCode = session.code;
+      history.push(...session.messages);
+      console.log(`Sessione ${session.code} ripristinata (${history.length} messaggi).`);
+    }
+    console.log(`Chat con ${agent}. Digita "exit" per uscire.`);
     while (true) {
-      const message = (await rl.question("> ")).trim();
-      if (!message || message.toLowerCase() === "exit") break;
+      const raw = (await rl.question("> ")) as unknown as string | null;
+      if (raw === null) break; // Ctrl+D / EOF
+      const message = raw.trim();
+      if (message.toLowerCase() === "exit") break;
+      if (!message) continue;
       history.push({ role: "user", content: message });
       const answer = await runWithApproval(agent, history);
       console.log("\n");
       if (answer) history.push({ role: "assistant", content: answer });
     }
-  } catch (error) { printError(error); } finally { rl.close(); }
+    saveAndHint();
+  } catch (error) {
+    // Anche in caso di errore la cronologia si conserva: l'utente la ritrova
+    // col codice stampato qui sotto invece di ricominciare da zero.
+    try { saveAndHint(); } catch { /* ignore */ }
+    printError(error);
+  } finally { process.removeListener("SIGINT", onSigint); rl.close(); }
+});
+
+program.command("update").description("Aggiorna la CLI all'ultima versione pubblicata su npm").option("--check", "Controlla soltanto, senza installare").action(async (options: { check?: boolean }) => {
+  try { await runUpdate(Boolean(options.check)); } catch (error) { printError(error); }
 });
 
 program.command("usage").description("Mostra uso e piano corrente").action(async () => {
