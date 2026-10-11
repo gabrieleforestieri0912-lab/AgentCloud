@@ -56,6 +56,9 @@ async function getValidUserToken() {
   const credentials = loadCredentials();
   if (!credentials) throw new ApiError(401, "Non autenticato: esegui `agentcloud login`.");
   if (Date.now() < credentials.expiresAt) return credentials.accessToken;
+  if (!credentials.refreshToken) {
+    throw new ApiError(401, "Sessione scaduta: esegui di nuovo `agentcloud login`.");
+  }
   const refreshed = await supabaseRefreshGrant(credentials.refreshToken);
   const next: UserCredentials = {
     ...credentials,

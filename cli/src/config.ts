@@ -46,8 +46,10 @@ export function saveConfig(updates: Partial<CliConfig>): CliConfig {
 export function loadCredentials(): UserCredentials | null {
   try {
     const parsed = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, "utf8")) as UserCredentials;
-    if (!parsed.accessToken || !parsed.refreshToken) return null;
-    return parsed;
+    // Basta l'access token: il refresh può mancare (login via browser su
+    // server datato) e in quel caso la sessione vale fino a scadenza.
+    if (!parsed.accessToken) return null;
+    return { ...parsed, refreshToken: parsed.refreshToken || "" };
   } catch {
     return null;
   }

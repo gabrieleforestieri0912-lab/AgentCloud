@@ -38,6 +38,7 @@ function CliAuthInner() {
   const [status, setStatus] = useState<"checking" | "redirecting" | "error" | "unauth">("checking");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string>("");
 
   const callbackBase = port ? `http://127.0.0.1:${port}/callback` : null;
   const loginHref = `/login?next=${encodeURIComponent(`/cli/auth${port ? `?port=${port}&state=${state ?? ""}` : ""}`)}`;
@@ -70,10 +71,14 @@ function CliAuthInner() {
         return;
       }
       const token = session.access_token;
+      // La CLI salva anche il refresh token: senza, la sessione morirebbe
+      // dopo ~1h e l'utente dovrebbe rifare il login dal browser ogni volta.
+      const refreshToken = session.refresh_token ?? "";
       setAccessToken(token);
+      setRefreshToken(refreshToken);
       setStatus("redirecting");
       // Reindirizza al callback locale della CLI
-      const redirectUrl = `${callbackBase}?token=${encodeURIComponent(token)}&state=${encodeURIComponent(state)}`;
+      const redirectUrl = `${callbackBase}?token=${encodeURIComponent(token)}&refresh_token=${encodeURIComponent(refreshToken)}&state=${encodeURIComponent(state)}`;
       // Breve delay per mostrare UI di conferma, poi redirect
       setTimeout(() => {
         window.location.assign(redirectUrl);
@@ -110,7 +115,7 @@ function CliAuthInner() {
   }
 
   if (status === "redirecting" && accessToken) {
-    const manualUrl = `${callbackBase}?token=${encodeURIComponent(accessToken)}&state=${encodeURIComponent(state!)}`;
+    const manualUrl = `${callbackBase}?token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}&state=${encodeURIComponent(state!)}`;
     return (
       <main className="min-h-dvh flex items-center justify-center bg-[#0A0A0F] px-4">
         <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#13131A] p-8 text-center">

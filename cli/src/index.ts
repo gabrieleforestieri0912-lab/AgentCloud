@@ -5,6 +5,8 @@ import { stdin as input, stdout as output } from "node:process";
 import { clearCredentials, loadConfig, loadCredentials, saveConfig } from "./config.js";
 import { loadChatSession, resumeHint, saveChatSession } from "./sessions.js";
 import { localVersion, maybeNotifyUpdate, runUpdate } from "./update.js";
+import { browserLogin } from "./browser-login.js";
+import { printLoginHint, printWelcome } from "./welcome.js";
 import { adminRequest, ApiError, loginUser, streamAgent, userRequest, userWhoAmI } from "./api.js";
 import { CATALOG } from "./catalog.js";
 
@@ -75,11 +77,19 @@ function printTable(rows: string[][]) {
   for (const row of rows) console.log(row.map((cell, i) => cell.padEnd(widths[i])).join("  "));
 }
 
-program.command("login").description("Accedi con email e password; non salva mai la password").action(async () => {
+program.command("login").description("Accedi dal browser (apre /cli/auth e riceve il token da solo)").option("--password", "Usa email e password invece del browser").action(async (options: { password?: boolean }) => {
   try {
-    const { email, password } = await askCredentials();
-    await loginUser(email, password);
-    console.log("✓ Login completato. Credenziali salvate in ~/.agentcloud/credentials.json");
+    if (options.password || !output.isTTY) {
+      if (!options.password && !output.isTTY) {
+        console.log("Senza terminale interattivo uso email e password (il browser non si può aprire).");
+      }
+      const { email, password } = await askCredentials();
+      await loginUser(email, password);
+      console.log("✓ Login completato. Credenziali salvate in ~/.agentcloud/credentials.json");
+      return;
+    }
+    await browserLogin(loadConfig().apiUrl.replace(/\/$/, ""));
+    console.log("✓ Login completato dal browser. Credenziali salvate in ~/.agentcloud/credentials.json");
   } catch (error) { printError(error); }
 });
 
@@ -211,7 +221,14 @@ program.command("chat").description("Avvia una chat interattiva con un agente po
   const rl = readline.createInterface({ input, output });
   const history: Array<{ role: "user" | "assistant"; content: string }> = [];
   let sessionCode: string | undefined;
-  // La cronologia vive solo in memoria finché non si esce: a quel punto si
+
+  // Senza login la chat non può partire: logo + istruzioni invece di un
+  // secco "non autenticato".
+  if (!loadCredentials()) {
+    printWelcome();
+    printLoginHint();
+    process.exit(1);
+  }  // La cronologia vive solo in memoria finché non si esce: a quel punto si
   // salva su disco e si stampa il codice per tornarci.
   const saveAndHint = () => {
     if (history.length === 0) return;
@@ -307,6 +324,14 @@ program.command("config").description("Mostra o aggiorna configurazione non sens
   console.log(`Credenziali utente: ${loadCredentials() ? "presenti" : "assenti"}`);
   console.log("Token admin: solo AGENTCLOUD_ADMIN_TOKEN, mai salvato dalla CLI.");
 });
+
+// Senza argomenti: schermata di benvenuto con logo e istruzioni,
+// poi l'help completo dei comandi.
+if (process.argv.length <= 2) {
+  printWelcome();
+  program.outputHelp();
+  process.exit(0);
+}
 
 // Avviso di aggiornamento prima di eseguire il comando (mai bloccante,
 // mai negli script: vedi update.ts).

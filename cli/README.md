@@ -57,7 +57,14 @@ codice aggiornato. Non committare mai segreti: il pacchetto contiene solo
 
 ## Autenticazione utente
 
-La CLI usa email/password Supabase e salva soltanto i token nella home dell'utente:
+Senza argomenti la CLI mostra il banner di benvenuto con la guida rapida:
+
+```bash
+agentcloud
+```
+
+Il login apre il browser e riceve il token da solo (nessuna password da
+digitare):
 
 ```bash
 agentcloud login
@@ -65,7 +72,19 @@ agentcloud whoami
 agentcloud logout
 ```
 
-Prima del login configura le chiavi pubbliche Supabase nell'ambiente:
+Come funziona: la CLI apre `/cli/auth?port=...&state=...` nel browser e resta
+in ascolto su `127.0.0.1`; la pagina rimanda access token + refresh token al
+terminale. Lo `state` casuale impedisce a un altro processo locale di
+iniettare un token.
+
+Fallback senza browser (server, email/password):
+
+```bash
+agentcloud login --password
+```
+
+Prima del login con password configura le chiavi pubbliche Supabase
+nell'ambiente:
 
 ```bash
 # PowerShell
