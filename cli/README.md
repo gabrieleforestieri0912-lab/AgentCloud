@@ -121,6 +121,38 @@ categoria e prezzo. I colori si spengono da soli fuori dal terminale
 
 `run` e `chat` ricevono le risposte SSE dell'agente in streaming. `usage` mostra uso mensile e piano disponibili all'API.
 
+## TUI a schermo intero
+
+Su terminale interattivo `agentcloud chat` apre la TUI stile OpenCode:
+conversazione con markdown e streaming, input multilinea (Invio invia,
+Maiusc+Invio o Ctrl+J a capo, Esc interrompe), barra di stato
+(agente · cartella · online), sidebar con titolo e modifiche ai file
+(Ctrl+B per mostrarla/nasconderla, sparisce sotto i 100 colonne).
+
+Senza terminale interattivo (pipe, CI) o con `AGENTCLOUD_NO_TUI=1` gira il
+loop classico riga per riga. I colori si spengono da soli fuori dal
+terminale o con `NO_COLOR=1`. Tema `dark`/`light` con `/theme` (persistito).
+
+### Comandi `/`
+
+Digitando `/` si apre il menu filtrabile (frecce, Tab/Invio, Esc):
+
+| Comando | Cosa fa |
+|---|---|
+| `/help` | comandi e scorciatoie |
+| `/new` | nuova chat (azzera tutto) |
+| `/sessions` | chat precedenti e ripresa |
+| `/rename <titolo>` | rinomina la chat |
+| `/undo` · `/redo` | annulla/ripristina modifiche file |
+| `/diff [file]` | tutte le modifiche o un file |
+| `/clear` | pulisce la conversazione |
+| `/theme [nome]` | cambia tema |
+| `/login` · `/logout` | account |
+| `/exit` | esce (salva la sessione) |
+
+Scorciatoie: Tab sposta il focus (input/sidebar), ↑↓ navigano,
+Ctrl+B sidebar, Ctrl+C esce salvando.
+
 ### Riprendere una chat interrotta
 
 La cronologia della chat vive in memoria finché non esci. All'uscita

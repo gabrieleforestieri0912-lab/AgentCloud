@@ -82,7 +82,7 @@ function stripFlags(messages: ChatMessage[]): Array<{ role: "user" | "assistant"
   return messages.map(({ role, content }) => ({ role, content }));
 }
 
-function App({
+export function App({
   agent,
   agentName,
   initial,
@@ -561,15 +561,19 @@ function App({
     );
   }
 
-  const chrome = 1 + (notice ? 1 : 0) + (activity ? 1 : 0) + inputHeight;
-  const chatHeight = Math.max(3, rows - chrome);
-  const chatWidth = sidebarVisible ? Math.max(20, columns - SIDEBAR_WIDTH - 1) : columns;
-
   const liveFiles = filesRef.current.filter((f) => f.head >= 0);
   const safeSelected = Math.min(selected, Math.max(0, liveFiles.length - 1));
   const totals = fileTotals(filesRef.current);
   const menuList = filterCommands(parseSlash(draft).name);
   const menuSel = Math.min(menuSelected, Math.max(0, menuList.length - 1));
+
+  const chrome = 1 + (notice ? 1 : 0) + (activity ? 1 : 0) + inputHeight;
+  // Il menu occupa righe fisse: va tolto dal budget della chat, altrimenti
+  // il layout sfora e Ink taglia righe a caso.
+  const menuRowsShown = menuOpen ? Math.min(menuList.length, 8) + (menuList.length > 8 ? 1 : 0) : 0;
+  const menuH = menuOpen ? menuRowsShown + 2 : 0; // +2 bordi
+  const chatHeight = Math.max(3, rows - chrome - menuH);
+  const chatWidth = sidebarVisible ? Math.max(20, columns - SIDEBAR_WIDTH - 1) : columns;
 
   // Diff a tutto schermo: possiede i tasti, il resto resta sotto.
   if (diffView) {
