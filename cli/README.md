@@ -7,20 +7,25 @@ CLI unificata di AgentCloud: comandi utente e comandi admin in un unico binario 
 Node.js 18+.
 
 ```bash
+npm i -g @agentcloud/cli
+agentcloud --help
+```
+
+In alternativa, dai sorgenti:
+
+```bash
 cd cli
 npm install
 npm run build
 node dist/index.js --help
 ```
 
-Per uso globale, dopo il build:
+Per uso globale dai sorgenti, dopo il build:
 
 ```bash
 npm link
 agentcloud --help
 ```
-
-Il package è configurato per `npm i -g @agentcloud/cli` quando verrà pubblicato. Non contiene segreti e non è pubblicato automaticamente.
 
 ## Aggiornamento
 
@@ -29,13 +34,21 @@ agentcloud update          # installa l'ultima versione pubblicata
 agentcloud update --check  # controlla soltanto, senza installare
 ```
 
-Finché il pacchetto non è pubblicato su npm, `update` lo segnala e si
-aggiorna dai sorgenti:
+## Pubblicazione di una nuova versione (manutentori)
+
+Il pacchetto non si pubblica da solo: dopo ogni modifica che deve arrivare
+agli utenti, aggiorna `version` in `cli/package.json`, commita e poi:
 
 ```bash
-git pull
-cd cli && npm install && npm run build
+cd cli
+npm login                  # solo la prima volta (account npm del team)
+npm publish                # pubblica @agentcloud/cli (access: public)
 ```
+
+`prepublishOnly` ricompila `dist/` in automatico, quindi pubblica sempre il
+codice aggiornato. Non committare mai segreti: il pacchetto contiene solo
+`dist/`, README e LICENSE. Dopo la pubblicazione, gli utenti aggiornano con
+`agentcloud update`.
 
 ## Autenticazione utente
 

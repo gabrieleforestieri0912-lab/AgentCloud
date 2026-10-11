@@ -7,7 +7,7 @@
     "agentcloud": "dist/index.js",
     "ac": "dist/index.js"
   },
-  "files": ["dist/**/*", "README.md"],
+  "files": ["dist/**/*", "README.md", "LICENSE"],
   "engines": {
     "node": ">=18.0.0"
   },
@@ -29,7 +29,8 @@
   "homepage": "https://agentcloud.agency",
   "repository": {
     "type": "git",
-    "url": "https://github.com/agentcloud/cli.git"
+    "url": "https://github.com/gabrieleforestieri0912-lab/AgentCloud.git",
+    "directory": "cli"
   },
   "dependencies": {
     "commander": "^12.0.0",
