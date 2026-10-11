@@ -36,13 +36,13 @@ export default function InstallClient() {
   const getCliInstallCommand = () => {
     switch (cliPkg) {
       case "npm":
-        return "npm install -g @agentcloud/cli";
+        return "npm install -g agentcloud-cli";
       case "pnpm":
-        return "pnpm add -g @agentcloud/cli";
+        return "pnpm add -g agentcloud-cli";
       case "yarn":
-        return "yarn global add @agentcloud/cli";
+        return "yarn global add agentcloud-cli";
       case "npx":
-        return "npx @agentcloud/cli login";
+        return "npx agentcloud-cli login";
     }
   };
 
@@ -88,12 +88,12 @@ export default function InstallClient() {
               <div className="min-w-0">
                 <div className="text-xs text-neutral-400 font-medium">Installa CLI (Globale)</div>
                 <div className="text-sm font-mono text-indigo-200 truncate mt-0.5">
-                  npm install -g @agentcloud/cli
+                  npm install -g agentcloud-cli
                 </div>
               </div>
             </div>
             <button
-              onClick={() => copyToClipboard("npm install -g @agentcloud/cli", "quick-cli")}
+              onClick={() => copyToClipboard("npm install -g agentcloud-cli", "quick-cli")}
               className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 shadow-lg shadow-indigo-600/20 cursor-pointer"
             >
               {copiedKey === "quick-cli" ? (
@@ -239,7 +239,7 @@ export default function InstallClient() {
               {/* Login Snippet */}
               <div className="mt-5">
                 <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-                  2. Accesso con la tua email
+                  2. Accedi dal browser
                 </div>
                 <div className="flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-4 font-mono text-sm text-neutral-200">
                   <div className="flex items-center gap-3 select-all">
@@ -268,7 +268,7 @@ export default function InstallClient() {
                     <div className="w-3 h-3 rounded-full bg-green-500/80" />
                     <span className="ml-2 font-mono text-neutral-300">bash — agentcloud run</span>
                   </div>
-                  <span className="font-mono text-neutral-500">v0.2.0</span>
+                  <span className="font-mono text-neutral-500">v0.6.0</span>
                 </div>
                 <div className="p-5 font-mono text-xs md:text-sm space-y-3 leading-relaxed text-neutral-300">
                   <div className="flex items-center gap-2 text-indigo-400">
@@ -295,19 +295,164 @@ export default function InstallClient() {
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="text-indigo-400 font-semibold text-sm flex items-center gap-1.5">
-                    <Code className="w-4 h-4" /> Output JSON
+                    <Code className="w-4 h-4" /> Sessioni riprendibili
                   </div>
                   <div className="mt-1 text-xs text-neutral-400">
-                    Flag <code className="text-indigo-300">--json</code> per pipe diretta con <code className="text-indigo-300">jq</code> e altri tool Unix.
+                    All&apos;uscita ricevi un codice: <code className="text-indigo-300">chat --resume</code> per continuare da dove eri.
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="text-indigo-400 font-semibold text-sm flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4" /> Zero Config
+                    <ShieldCheck className="w-4 h-4" /> Login sicuro
                   </div>
                   <div className="mt-1 text-xs text-neutral-400">
-                    Archiviazione sicura delle credenziali nel keyring di sistema o tramite variabili d&apos;ambiente.
+                    Accesso via browser con token a scadenza; niente password salvate, solo token in <code className="text-indigo-300">~/.agentcloud</code>.
                   </div>
+                </div>
+              </div>
+
+              {/* Come funziona in dettaglio */}
+              <div className="mt-10 pt-8 border-t border-white/10">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-400" />
+                  <span>Come funziona in dettaglio</span>
+                </h3>
+                <p className="mt-1 text-sm text-neutral-400">
+                  Dal primo avvio alla chat di tutti i giorni, in quattro passi.
+                </p>
+
+                <ol className="mt-6 space-y-4">
+                  {[
+                    {
+                      n: "1",
+                      title: "Installa il pacchetto",
+                      desc: "Serve Node.js 18+. Il comando installa i binari agentcloud e ac, disponibili in ogni terminale.",
+                      cmd: "npm install -g agentcloud-cli",
+                      key: "how-1",
+                    },
+                    {
+                      n: "2",
+                      title: "Accedi dal browser",
+                      desc: "Si apre il browser: accedi sul sito e il terminale riceve token e refresh da solo. Senza browser usa agentcloud login --password.",
+                      cmd: "agentcloud login",
+                      key: "how-2",
+                    },
+                    {
+                      n: "3",
+                      title: "Chatta nella TUI",
+                      desc: "Senza slug scegli l'agente dentro la chat. Markdown, sidebar con le modifiche ai file, Esc per interrompere la risposta.",
+                      cmd: "agentcloud chat",
+                      key: "how-3",
+                    },
+                    {
+                      n: "4",
+                      title: "Riprendi e aggiorna",
+                      desc: "All'uscita ricevi un codice per tornare alla stessa chat. La CLI avvisa da sola quando esce una versione nuova.",
+                      cmd: "agentcloud chat support-agent --resume 7c6aa8c2",
+                      key: "how-4",
+                    },
+                  ].map((step) => (
+                    <li key={step.key} className="flex gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600/20 border border-indigo-500/30 text-sm font-bold text-indigo-300">
+                        {step.n}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-white">{step.title}</p>
+                        <p className="mt-0.5 text-xs leading-5 text-neutral-400">{step.desc}</p>
+                        <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-black/60 border border-white/10 px-3 py-2 font-mono text-xs text-indigo-200">
+                          <span className="truncate select-all">
+                            <span className="text-neutral-600 select-none">$ </span>
+                            {step.cmd}
+                          </span>
+                          <button
+                            onClick={() => copyToClipboard(step.cmd, step.key)}
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white transition-colors cursor-pointer shrink-0"
+                            title="Copia comando"
+                          >
+                            {copiedKey === step.key ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+
+                {/* Mockup della TUI */}
+                <div className="mt-8 rounded-2xl overflow-hidden border border-white/10 bg-neutral-950 shadow-2xl">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-neutral-900 border-b border-white/10">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                    <span className="ml-2 font-mono text-xs text-neutral-300">terminale — agentcloud chat</span>
+                  </div>
+                  <div className="grid md:grid-cols-[1fr_220px] font-mono text-[11px] md:text-xs leading-relaxed">
+                    <div className="p-4 space-y-3 min-w-0">
+                      <div>
+                        <p className="font-bold text-[#038BFE]">tu</p>
+                        <p className="text-neutral-200">Preparami il report vendite di ottobre</p>
+                      </div>
+                      <div>
+                        <p className="font-bold text-emerald-400">Support Agent</p>
+                        <p className="text-neutral-300">Ecco il report, l&apos;ho salvato in report-ottobre.md:</p>
+                        <div className="mt-1 rounded-lg border border-white/10 px-2 py-1 text-neutral-400">
+                          <p className="text-neutral-500">```markdown</p>
+                          <p># Vendite ottobre</p>
+                          <p>- Totale: €12.480</p>
+                          <p>```</p>
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-[#038BFE]/50 px-2 py-1.5">
+                        <p className="text-neutral-200">/re▊</p>
+                        <div className="mt-1 border-t border-white/10 pt-1 space-y-0.5">
+                          <p><span className="text-cyan-300">/rename</span> <span className="text-neutral-500">Rinomina la chat corrente</span></p>
+                          <p><span className="text-cyan-300">/redo</span> <span className="text-neutral-500">Ripristina la modifica annullata</span></p>
+                        </div>
+                      </div>
+                      <p className="text-neutral-500">support-agent · ~/negozio · online</p>
+                    </div>
+                    <div className="border-t md:border-t-0 md:border-l border-white/10 p-4 space-y-2 min-w-0">
+                      <p className="text-neutral-500">CHAT</p>
+                      <p className="font-bold text-white truncate">Report vendite ottobre</p>
+                      <p className="text-neutral-500">MODIFICHE (1)</p>
+                      <p className="truncate"><span className="text-emerald-400">+ </span><span className="text-neutral-200">report-ottobre.md</span> <span className="text-emerald-400">+45</span> <span className="text-red-400">-3</span></p>
+                      <p className="text-neutral-300">1 file · <span className="text-emerald-400">+45</span> <span className="text-red-400">-3</span></p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Comandi slash */}
+                <h4 className="mt-8 text-sm font-bold text-white">Comandi slash nella chat</h4>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    ["/help", "comandi e scorciatoie"],
+                    ["/new", "nuova chat"],
+                    ["/sessions", "chat precedenti e ripresa"],
+                    ["/rename <titolo>", "rinomina la chat"],
+                    ["/undo · /redo", "annulla / ripristina modifiche"],
+                    ["/diff [file]", "mostra le modifiche"],
+                    ["/clear", "pulisce la conversazione"],
+                    ["/theme [nome]", "tema dark / light"],
+                    ["/login · /logout", "gestione account"],
+                    ["/exit", "esce salvando la sessione"],
+                  ].map(([cmd, desc]) => (
+                    <div key={cmd} className="flex items-baseline gap-2 rounded-xl bg-white/[0.02] border border-white/5 px-3 py-2">
+                      <code className="shrink-0 font-mono text-xs font-bold text-cyan-300">{cmd}</code>
+                      <span className="text-xs text-neutral-400">{desc}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Scorciatoie */}
+                <div className="mt-4 flex flex-wrap gap-2 text-xs text-neutral-400">
+                  {["Invio invia", "Maiusc+Invio a capo", "Tab focus", "Ctrl+B sidebar", "Esc interrompe", "Ctrl+C esce"].map((s) => (
+                    <span key={s} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono">
+                      {s}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
