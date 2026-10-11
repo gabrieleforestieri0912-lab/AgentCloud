@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Bot, PlugZap, MessageSquare, LayoutDashboard, ArrowRight, Check } from "lucide-react";
+import BrandLogo from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
 
 // Icone allineate per indice con `dict.howItWorks.steps`.
@@ -87,7 +88,9 @@ export default function HowItWorksSection() {
             <div className="rounded-xl border border-white/5 bg-neutral-950 p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">{hw.demoStep1}</p>
               <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/5 bg-neutral-900 p-2.5">
-                <span className="h-8 w-8 rounded-lg bg-green-500/20" />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20">
+                  <BrandLogo slug="shopify" size={20} />
+                </span>
                 <div>
                   <p className="text-xs font-bold text-white">{hw.demoAgentName}</p>
                   <p className="text-xs text-neutral-500">{hw.demoAgentPrice} • {hw.demoAgentReady}</p>
