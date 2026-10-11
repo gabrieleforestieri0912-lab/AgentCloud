@@ -102,11 +102,24 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
     };
   }, [isOpen]);
 
-  const menuSections = [
+  const menuSections: Array<{
+    id: string;
+    label: string;
+    href: string;
+    footerLabel?: string;
+    children?: Array<{
+      label: string;
+      href: string;
+      icon?: Agent["icon"];
+      brand?: Agent["brand"];
+      accent?: string;
+    }>;
+  }> = [
     {
       id: "marketplace",
       label: dict.navbar.marketplace,
       href: "/agents",
+      footerLabel: dict.navbar.browseAllAgents,
       children: agents.map((agent) => ({
         label: agent.shortName,
         href: `/agents/${agent.slug}`,
@@ -126,14 +139,23 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
       href: "/integrations",
     },
     {
-      id: "skills",
-      label: dict.navbar.skills,
+      id: "customization",
+      label: dict.navbar.customization,
       href: "/skills",
-    },
-    {
-      id: "plugins",
-      label: dict.navbar.plugins,
-      href: "/plugins",
+      children: [
+        {
+          label: dict.navbar.skills,
+          href: "/skills",
+          icon: "bot",
+          accent: "bg-brand-500/20",
+        },
+        {
+          label: dict.navbar.plugins,
+          href: "/plugins",
+          icon: "package",
+          accent: "bg-brand-500/20",
+        },
+      ],
     },
   ];
 
@@ -280,10 +302,10 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                                     className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-neutral-400 hover:bg-white/5 hover:text-white"
                                   >
                                     <span
-                                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${child.accent}`}
+                                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${child.accent ?? "bg-white/5"}`}
                                     >
                                       <AgentIcon
-                                        icon={child.icon}
+                                        icon={child.icon ?? "bot"}
                                         brand={child.brand}
                                         size={12}
                                         className="text-white"
@@ -292,14 +314,16 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                                     {child.label}
                                   </Link>
                                 ))}
-                                <Link
-                                  href={section.href}
-                                  onClick={() => setIsOpen(false)}
-                                  className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-brand-400 hover:text-brand-300"
-                                >
-                                  {dict.navbar.browseAllAgents}
-                                  <ChevronRight size={14} />
-                                </Link>
+                                {section.footerLabel && (
+                                  <Link
+                                    href={section.href}
+                                    onClick={() => setIsOpen(false)}
+                                    className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-brand-400 hover:text-brand-300"
+                                  >
+                                    {section.footerLabel}
+                                    <ChevronRight size={14} />
+                                  </Link>
+                                )}
                               </div>
                             </motion.div>
                           )}

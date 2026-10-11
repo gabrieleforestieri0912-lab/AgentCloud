@@ -26,6 +26,9 @@ export const PUBLIC_PATHS = [
   // (singole skill e pacchetti sono due sezioni autonome).
   "/skills",
   "/plugins",
+  // Pagina di installazione dell'ecosistema (CLI/estensione/mobile): marketing
+  // come le altre pagine pubbliche, il login serve solo dentro l'app.
+  "/install",
   // Guida "Crea la tua competenza in 10 minuti": pubblica come /skills, da cui
   // arriva il template SKILL.md.
   "/docs",
