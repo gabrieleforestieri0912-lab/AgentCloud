@@ -308,6 +308,12 @@ uri = "https://www.agentcloud.agency/api/webhooks/shopify/compliance"
 compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
 ```
 
+No: lo schema attuale vuole `compliance_topics` **dentro** un blocco
+`[[webhooks.subscriptions]]` (la vecchia tabella `[webhooks.privacy_compliance]`
+viene ignorata dal deploy). Il file `shopify.app.toml` nella root usa già lo
+schema giusto: un blocco per `app/uninstalled` e uno con i tre topic GDPR
+sullo stesso endpoint.
+
 Poi `shopify app deploy` per applicarlo. Non committare mai il client secret
 nel toml: resta solo in `SHOPIFY_API_SECRET` (env di Vercel + `.env.local`).
 

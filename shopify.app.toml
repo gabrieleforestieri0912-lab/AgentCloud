@@ -25,13 +25,12 @@ redirect_urls = ["https://www.agentcloud.agency/api/shopify/callback"]
 [webhooks]
 api_version = "2026-10"
 
-# Un solo endpoint per i tre topic GDPR: lo smistamento avviene su
-# `X-Shopify-Topic` (vedi src/lib/shopify/compliance.ts).
-[webhooks.privacy_compliance]
-customer_data_request_url = "https://www.agentcloud.agency/api/webhooks/shopify/compliance"
-customer_redact_url = "https://www.agentcloud.agency/api/webhooks/shopify/compliance"
-shop_redact_url = "https://www.agentcloud.agency/api/webhooks/shopify/compliance"
-
 [[webhooks.subscriptions]]
 topics = ["app/uninstalled"]
 uri = "https://www.agentcloud.agency/api/webhooks/shopify/app-uninstalled"
+
+# Un solo endpoint per i tre topic GDPR obbligatori: lo smistamento avviene su
+# `X-Shopify-Topic` (vedi src/lib/shopify/compliance.ts).
+[[webhooks.subscriptions]]
+uri = "https://www.agentcloud.agency/api/webhooks/shopify/compliance"
+compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
