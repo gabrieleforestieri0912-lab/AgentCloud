@@ -863,6 +863,44 @@ html.light ::selection {
 /* Campi con accento: l'azzurro resta leggibile anche da soli */
 html.light .accent-brand-500 { accent-color: var(--ac-azure); }
 
+/* ── Hover non coperti sopra: stesse tinte, nessuna sorpresa in chiaro ── */
+html.light .hover\:bg-white\/80:hover { background-color: rgba(255, 255, 255, 0.8) !important; }
+html.light .hover\:bg-neutral-600:hover { background-color: #d5dae8 !important; }
+html.light .hover\:bg-neutral-900:hover { background-color: #ffffff !important; }
+html.light .hover\:bg-neutral-900\/60:hover,
+html.light .hover\:bg-neutral-900\/80:hover,
+html.light .hover\:bg-neutral-800\/70:hover { background-color: #f2f4fa !important; }
+html.light .hover\:bg-brand-500\/20:hover,
+html.light .hover\:bg-brand-500\/25:hover { background-color: rgba(3, 139, 254, 0.16) !important; }
+html.light .hover\:bg-emerald-500\/20:hover,
+html.light .hover\:bg-emerald-500\/25:hover { background-color: rgba(5, 150, 105, 0.16) !important; }
+html.light .hover\:bg-red-500\/15:hover { background-color: rgba(220, 38, 38, 0.16) !important; }
+html.light .hover\:border-white\/15:hover { border-color: rgba(13, 14, 28, 0.14) !important; }
+html.light .hover\:border-brand-500\/20:hover,
+html.light .hover\:border-brand-500\/50:hover,
+html.light .hover\:border-brand-500\/60:hover { border-color: var(--ac-azure-line) !important; }
+html.light .hover\:border-emerald-500\/30:hover,
+html.light .hover\:border-emerald-500\/50:hover { border-color: rgba(5, 150, 105, 0.35) !important; }
+html.light .hover\:border-red-500\/30:hover { border-color: rgba(220, 38, 38, 0.35) !important; }
+html.light .hover\:border-amber-500\/40:hover { border-color: rgba(217, 119, 6, 0.4) !important; }
+html.light .hover\:text-brand-200:hover,
+html.light .hover\:text-brand-300:hover,
+html.light .hover\:text-brand-400:hover { color: var(--ac-azure-ink) !important; }
+html.light .hover\:text-amber-200:hover { color: #b45309 !important; }
+html.light .hover\:text-purple-200:hover { color: #7e22ce !important; }
+html.light .hover\:text-red-200:hover,
+html.light .hover\:text-red-300:hover,
+html.light .hover\:text-red-400:hover { color: #dc2626 !important; }
+
+/* ── Group-hover: in chiaro seguono le stesse regole degli hover ── */
+html.light .group:hover .group-hover\:bg-white\/10 { background-color: rgba(13, 14, 28, 0.06) !important; }
+html.light .group:hover .group-hover\:bg-brand-500\/15,
+html.light .group:hover .group-hover\:bg-brand-500\/20 { background-color: rgba(3, 139, 254, 0.16) !important; }
+html.light .group:hover .group-hover\:bg-emerald-500\/20 { background-color: rgba(5, 150, 105, 0.16) !important; }
+html.light .group:hover .group-hover\:text-white { color: var(--ac-ink) !important; }
+html.light .group:hover .group-hover\:text-brand-300,
+html.light .group:hover .group-hover\:text-brand-400 { color: var(--ac-azure-ink) !important; }
+
 /* ── Scrollbar ── */
 html.light ::-webkit-scrollbar-thumb { background: #c3c8d8; border-radius: 8px; }
 html.light ::-webkit-scrollbar-thumb:hover { background: #a6adc4; }
