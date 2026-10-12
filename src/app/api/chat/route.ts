@@ -14,6 +14,7 @@ import {
   buildAgentSystemPrompt,
   sharedAgentDirectives,
 } from "@/lib/agents/system-prompt";
+import { EXAMPLE_LINKS_DIRECTIVE } from "@/lib/agents/output-format";
 import { extractConnectMarkers, requestedConnectProviders } from "@/lib/integrations";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
@@ -137,7 +138,7 @@ export async function POST(req: Request) {
               : // Il prompt di piattaforma è scritto nella lingua della
                 // risposta (contiene elenchi, prezzi e regole) e chiude già
                 // con la direttiva.
-                (await buildPlatformSystemPrompt(replyLocale)) + connectGuidanceChat;
+                (await buildPlatformSystemPrompt(replyLocale)) + connectGuidanceChat + "\n\n" + EXAMPLE_LINKS_DIRECTIVE;
         } catch {
           // Mantieni il prompt generico — non far mai fallire la chat perché
           // il prompt di piattaforma non si è potuto costruire.

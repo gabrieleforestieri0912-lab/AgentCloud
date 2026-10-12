@@ -11,6 +11,7 @@
  * Sintassi supportata:
  *   - titoli `#` / `##` / `###`
  *   - `**grassetto**`, `*corsivo*`, `` `codice` `` inline
+ *   - link `[etichetta](https://…)` e URL nudi `https://…` (cliccabili nella UI)
  *   - elenchi puntati (`• `, `- `, `* `) e numerati (`1. `, `2) `)
  *   - tabelle GFM (`| a | b |` + riga `|---|---|` + righe)
  *   - paragrafi separati da righe vuote
@@ -21,7 +22,8 @@ export type InlineSegment =
   | { type: "text"; value: string }
   | { type: "bold"; value: string }
   | { type: "italic"; value: string }
-  | { type: "code"; value: string };
+  | { type: "code"; value: string }
+  | { type: "link"; label: string; url: string };
 
 export type MarkdownList = {
   marker: string;
@@ -44,10 +46,17 @@ export type MarkdownBlock =
   | { type: "code"; lang: string; value: string };
 
 /**
- * Analizza i marcatori inline (`**grassetto**`, `*corsivo*`, `` `codice` ``)
- * trasformandoli in segmenti tipizzati. I marcatori non chiusi (messaggio
- * ancora in streaming) vengono emessi come testo letterale: meglio mostrare
- * un asterisco che un bubble rotto.
+ * Analizza i marcatori inline (`**grassetto**`, `*corsivo*`, `` `codice` ``,
+ * `[etichetta](url)` e URL nudi `https://…`) trasformandoli in segmenti
+ * tipizzati.
+ *
+ * Marcatori non chiusi (messaggio ancora in streaming): il `**` di apertura
+ * non deve mai mostrarsi come asterisco letterale — durante lo streaming il
+ * `**` di chiusura arriva qualche token dopo e l'utente vedrebbe
+ * "**parola" lampeggiare. Quindi un `**` senza chiusura rende il resto
+ * grassetto (speculativo), un `*` di apertura evidente (inizio parola) rende
+ * il resto corsivo, un backtick senza chiusura rende il resto codice. Un `*`
+ * isolato tipo "5 * 3" resta invece testo letterale.
  */
 export function parseInline(text: string): InlineSegment[] {
   const segments: InlineSegment[] = [];
@@ -61,8 +70,59 @@ export function parseInline(text: string): InlineSegment[] {
     }
   };
 
+  // Chiude un URL nudo togliendo la punteggiatura finale di frase.
+  const trimUrlTail = (url: string): { url: string; tail: string } => {
+    let tail = "";
+    while (url.length > 0 && /[.,;:!?)\]}>"]/.test(url[url.length - 1])) {
+      tail = url[url.length - 1] + tail;
+      url = url.slice(0, -1);
+    }
+    return { url, tail };
+  };
+
   while (i < text.length) {
     const ch = text[i];
+
+    // Link markdown [etichetta](url) — prima del resto così i marcatori
+    // dentro l'etichetta o l'URL non vengono interpretati.
+    if (ch === "[") {
+      const closeLabel = text.indexOf("]", i + 1);
+      const openParen =
+        closeLabel !== -1 && text[closeLabel + 1] === "("
+          ? closeLabel + 1
+          : -1;
+      const closeParen =
+        openParen !== -1 ? text.indexOf(")", openParen + 1) : -1;
+      if (closeLabel !== -1 && openParen !== -1 && closeParen !== -1) {
+        const label = text.slice(i + 1, closeLabel);
+        const rawUrl = text.slice(openParen + 1, closeParen).trim();
+        if (label.length > 0 && /^https?:\/\/\S+$/.test(rawUrl)) {
+          flush();
+          segments.push({ type: "link", label, url: rawUrl });
+          i = closeParen + 1;
+          continue;
+        }
+      }
+    }
+
+    // URL nudi https://… / http://… / www.… → link cliccabile.
+    if (
+      text.startsWith("https://", i) ||
+      text.startsWith("http://", i) ||
+      text.startsWith("www.", i)
+    ) {
+      let j = i;
+      while (j < text.length && !/[\s<>"'`\]\)]/.test(text[j])) j++;
+      const { url, tail } = trimUrlTail(text.slice(i, j));
+      if (url.length > (text.startsWith("www.", i) ? 4 : 8)) {
+        flush();
+        const href = text.startsWith("www.", i) ? `https://${url}` : url;
+        segments.push({ type: "link", label: url, url: href });
+        plain += tail;
+        i = j;
+        continue;
+      }
+    }
 
     if (ch === "*") {
       const isDouble = text[i + 1] === "*";
@@ -77,7 +137,32 @@ export function parseInline(text: string): InlineSegment[] {
         i = closeIdx + marker.length;
         continue;
       }
-      // Nessun marcatore di chiusura (risposta ancora in streaming): testo letterale.
+      // Nessun marcatore di chiusura (risposta ancora in streaming):
+      // mai mostrare gli asterischi letterali.
+      const rest = text.slice(i + marker.length);
+      if (isDouble) {
+        // "**parola in arrivo" → resto grassetto, marcatori nascosti.
+        if (/^\S/.test(rest)) {
+          flush();
+          segments.push({ type: "bold", value: rest });
+          break;
+        }
+        plain += ch;
+        i += 1;
+        continue;
+      }
+      // "*" singolo: solo se sembra davvero un'apertura di corsivo
+      // (a inizio testo o dopo spazio/parantesi, seguita da lettera).
+      const prev = i === 0 ? " " : text[i - 1];
+      if (
+        /^\S/.test(rest) &&
+        /[\s\(\[{>"']/.test(prev) &&
+        /[A-Za-zÀ-ÿ0-9]/.test(rest[0])
+      ) {
+        flush();
+        segments.push({ type: "italic", value: rest });
+        break;
+      }
       plain += ch;
       i += 1;
       continue;
@@ -90,6 +175,13 @@ export function parseInline(text: string): InlineSegment[] {
         segments.push({ type: "code", value: text.slice(i + 1, closeIdx) });
         i = closeIdx + 1;
         continue;
+      }
+      // Backtick senza chiusura (streaming): resto come codice, senza mostrare `.
+      const rest = text.slice(i + 1);
+      if (rest.length > 0) {
+        flush();
+        segments.push({ type: "code", value: rest });
+        break;
       }
       plain += ch;
       i += 1;
@@ -286,10 +378,10 @@ export function parseMarkdown(text: string): MarkdownBlock[] {
  * Inserisce un a capo dopo ogni frase (`. ` + maiuscola/numero) così le risposte
  * dell'AI spezzano le frasi su righe separate, come voleva la chat.
  *
- * Applicato SOLO fuori dai blocchi fenced, dalle tabelle GFM e dai marcatori inline:
- * dentro il codice `console.log("Hi. Ok")`, dentro una riga `| ... |` o dentro
- * `**grassetto**` non deve essere spezzato, altrimenti fence, tabelle e marcatori
- * si rompono.
+ * Applicato SOLO fuori dai blocchi fenced, dalle tabelle GFM, dai marcatori
+ * inline e dai link: dentro il codice `console.log("Hi. Ok")`, dentro una
+ * riga `| ... |`, dentro `**grassetto**` o dentro un URL `https://…` non deve
+ * essere spezzato, altrimenti fence, tabelle, marcatori e link si rompono.
  */
 export function insertSentenceBreaks(text: string): string {
   let inCode = false;
@@ -314,6 +406,36 @@ export function insertSentenceBreaks(text: string): string {
 
       while (i < line.length) {
         const ch = line[i];
+
+        // Link markdown [etichetta](url): mai spezzare dentro.
+        if (ch === "[" && !inInlineCode) {
+          const closeLabel = line.indexOf("]", i + 1);
+          const openParen =
+            closeLabel !== -1 && line[closeLabel + 1] === "("
+              ? closeLabel + 1
+              : -1;
+          const closeParen =
+            openParen !== -1 ? line.indexOf(")", openParen + 1) : -1;
+          if (closeLabel !== -1 && openParen !== -1 && closeParen !== -1) {
+            result += line.slice(i, closeParen + 1);
+            i = closeParen + 1;
+            continue;
+          }
+        }
+
+        // URL nudi: mai spezzare dentro (query string con ? . !).
+        if (
+          !inInlineCode &&
+          (line.startsWith("https://", i) ||
+            line.startsWith("http://", i) ||
+            line.startsWith("www.", i))
+        ) {
+          let j = i;
+          while (j < line.length && !/[\s<>"'`\]\)]/.test(line[j])) j++;
+          result += line.slice(i, j);
+          i = j;
+          continue;
+        }
 
         // Traccia i marcatori inline
         if (ch === "*" && i + 1 < line.length && line[i + 1] === "*") {

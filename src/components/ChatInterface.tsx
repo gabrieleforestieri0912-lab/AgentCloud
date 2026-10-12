@@ -2809,10 +2809,10 @@ export default function ChatInterface({
           )}
         </AnimatePresence>
 
-        {/* Input fluttuante: contenitore trasparente con fade sul contenuto */}
+        {/* Input in basso: fondo pieno con bordo superiore, niente trasparenza */}
         <div
           data-onboard="chat-input"
-          className="absolute inset-x-0 bottom-0 z-10 px-4 sm:px-6 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent"
+          className="absolute inset-x-0 bottom-0 z-10 border-t border-white/5 bg-neutral-900 px-4 sm:px-6 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4"
           onDragEnter={attach.onDragEnter}
           onDragOver={attach.onDragOver}
           onDragLeave={attach.onDragLeave}

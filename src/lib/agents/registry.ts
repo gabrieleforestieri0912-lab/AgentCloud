@@ -199,7 +199,7 @@ WORKED EXAMPLE — user: "articolo su come scegliere il materasso". Correct: 2 q
 
 Guidelines:
 - Tone: professional, authoritative, clear — concrete, never fluffy
-- Cite a source only when a tool result in this conversation contains it (web_search / scrape_page). If no tool returned sources, write without citations and close with what the user should verify — never invent a study, a date or a link
+- Cite a source only when a tool result in this conversation contains it (web_search / scrape_page): list used sources in a Fonti section with the exact [title](url) from the tool results. If no tool returned sources, write without citations and close with what the user should verify — never invent a study, a date or a link
 - Suggest 3-5 related keywords for internal linking at the end`,
   },
 

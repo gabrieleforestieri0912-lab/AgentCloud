@@ -69,7 +69,7 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   web_search: {
     name: "web_search",
     description:
-      "Search the web in real-time for up-to-date information, news, market data, and documentation.",
+      "Search the web in real-time for up-to-date information, news, market data, and documentation. Returns titles, URLs and snippets: cite the used results at the end of your answer in a Fonti section with the exact [title](url) links.",
     input_schema: {
       type: "object",
       properties: {
@@ -90,7 +90,7 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
 
   scrape_page: {
     name: "scrape_page",
-    description: "Read the full text content of a web page",
+    description: "Read the full text content of a web page. Cite the page at the end of your answer in the Fonti section with its exact [title](url) link.",
     input_schema: {
       type: "object",
       properties: {
