@@ -1003,8 +1003,9 @@ html.light * { scrollbar-color: #c3c8d8 transparent; }
   min-width: 2.75rem;
 }
 
-/* Accessibilità: rispetta prefers-reduced-motion (le animazioni restano solo
-   transform/opacity e vengono di fatto disattivate su richiesta dell'OS). */
+/* Accessibilità: rispetta prefers-reduced-motion, ma le bolle decorative
+   della hero (float lento di 12px su 6s, pura decorazione ambientale)
+   restano animate: senza sembrano congelate. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1012,6 +1013,11 @@ html.light * { scrollbar-color: #c3c8d8 transparent; }
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  .animate-float-gentle,
+  .animate-float-reverse {
+    animation-duration: 6s !important;
+    animation-iteration-count: infinite !important;
   }
 }
 
