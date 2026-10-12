@@ -375,13 +375,153 @@ export function parseMarkdown(text: string): MarkdownBlock[] {
 }
 
 /**
+ * Rottura di frase: punto/esclamazione/interrogativo seguito da spazio e
+ * inizio di una nuova frase (maiuscola accentata inclusa, perché le risposte
+ * sono in italiano).
+ */
+const SENTENCE_END_RE = /([.!?]) (?=[A-ZÀ-ÿ0-9])/g;
+
+/** Riga che è già un blocco autonomo: non va spezzata al suo interno. */
+const LIST_LINE_RE = /^\s*(?:[•\-*]|\d+[.)])\s+/;
+const HEADING_LINE_RE = /^\s*#{1,3}\s+/;
+
+/** Intervallo [start, end) di un costrutto inline chiuso: la punteggiatura
+ *  al suo interno non è una fine frase. */
+type Span = [number, number];
+
+/**
+ * Individua i costrutti inline **chiusi** della riga: link `[etichetta](url)`,
+ * URL nudi, `` `codice` ``, `**grassetto**` e `*corsivo*`. I marcatori non
+ * chiusi non vengono considerati: durante lo streaming un `**` è ancora aperto
+ * e non deve "proteggere" nulla, altrimenti i punti successivi non verrebbero
+ * più spezzati e la frase crescerebbe su una riga sola fino alla chiusura.
+ * Un `*` singolo non è mai un marcatore da solo (`5 * 3` resta testo): il
+ * corsivo è protetto solo se ha apertura/chiusura credibili (non-spazi).
+ */
+function inlineSpans(line: string): Span[] {
+  const spans: Span[] = [];
+  let i = 0;
+  while (i < line.length) {
+    const ch = line[i];
+
+    // Escape markdown: `\*` non è un marcatore, va lasciato intatto.
+    if (ch === "\\" && i + 1 < line.length) {
+      spans.push([i, i + 2]);
+      i += 2;
+      continue;
+    }
+
+    // Link markdown [etichetta](url): mai spezzare dentro.
+    if (ch === "[") {
+      const closeLabel = line.indexOf("]", i + 1);
+      const openParen =
+        closeLabel !== -1 && line[closeLabel + 1] === "("
+          ? closeLabel + 1
+          : -1;
+      const closeParen =
+        openParen !== -1 ? line.indexOf(")", openParen + 1) : -1;
+      if (closeLabel !== -1 && openParen !== -1 && closeParen !== -1) {
+        spans.push([i, closeParen + 1]);
+        i = closeParen + 1;
+        continue;
+      }
+    }
+
+    // URL nudi: mai spezzare dentro (query string con ? . !).
+    if (
+      line.startsWith("https://", i) ||
+      line.startsWith("http://", i) ||
+      line.startsWith("www.", i)
+    ) {
+      let j = i;
+      while (j < line.length && !/[\s<>"'`\]\)]/.test(line[j])) j++;
+      spans.push([i, j]);
+      i = j;
+      continue;
+    }
+
+    if (ch === "`") {
+      const close = line.indexOf("`", i + 1);
+      if (close !== -1) {
+        spans.push([i, close + 1]);
+        i = close + 1;
+        continue;
+      }
+    }
+
+    if (ch === "*" && line[i + 1] === "*") {
+      const close = line.indexOf("**", i + 2);
+      if (close !== -1) {
+        spans.push([i, close + 2]);
+        i = close + 2;
+        continue;
+      }
+      // `**` non chiuso (streaming): testo normale, non protegge nulla.
+      i += 2;
+      continue;
+    }
+
+    if (ch === "*") {
+      const next = line[i + 1] ?? "";
+      const prev = i === 0 ? " " : line[i - 1];
+      if (/\S/.test(next) && /[\s([{\>"']/.test(prev)) {
+        const close = line.indexOf("*", i + 1);
+        if (close !== -1 && /\S/.test(line[close - 1])) {
+          spans.push([i, close + 1]);
+          i = close + 1;
+          continue;
+        }
+      }
+    }
+
+    i += 1;
+  }
+  return spans;
+}
+
+/**
+ * Applica i rottura-frase solo alle parti "libere" della riga, saltando i
+ * costrutti inline chiusi. Senza questo un punto dentro un grassetto verrebbe
+ * trattato come fine frase: `**Nota. Importante**` diventerebbe
+ * `**Nota.\n\nImportante**`, il `**` di apertura resterebbe senza chiusura e il
+ * parser mostrerebbe i marcatori come testo letterale.
+ *
+ * Il lookahead della regex guarda il carattere successivo della riga, quindi
+ * la decisione va presa per indice: si ricostruisce la riga sostituendo solo
+ * lo spazio dei match che cadono fuori dagli intervalli protetti.
+ */
+function breakOutsideInline(line: string): string {
+  const spans = inlineSpans(line);
+  const isProtected = (idx: number) => spans.some(([s, e]) => idx >= s && idx < e);
+
+  let out = "";
+  let last = 0;
+  SENTENCE_END_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = SENTENCE_END_RE.exec(line)) !== null) {
+    // m.index è l'indice del punto; lo spazio consumato è quello successivo.
+    if (isProtected(m.index)) continue;
+    const spaceIdx = m.index + 1;
+    out += line.slice(last, spaceIdx) + "\n\n";
+    last = spaceIdx + 1;
+    SENTENCE_END_RE.lastIndex = last;
+  }
+  return out + line.slice(last);
+}
+
+/**
  * Inserisce un a capo dopo ogni frase (`. ` + maiuscola/numero) così le risposte
  * dell'AI spezzano le frasi su righe separate, come voleva la chat.
  *
- * Applicato SOLO fuori dai blocchi fenced, dalle tabelle GFM, dai marcatori
- * inline e dai link: dentro il codice `console.log("Hi. Ok")`, dentro una
- * riga `| ... |`, dentro `**grassetto**` o dentro un URL `https://…` non deve
- * essere spezzato, altrimenti fence, tabelle, marcatori e link si rompono.
+ * Quattro zone sono esenti:
+ *   - i blocchi fenced: dentro il codice `console.log("Hi. Ok")` non deve essere
+ *     spezzato, altrimenti il fence si rompe in più paragrafi;
+ *   - le righe di tabella GFM (`| a | b |` + delimiter): spezzarle farebbe
+ *     perdere il riconoscimento della tabella al parser;
+ *   - le righe di elenco e i titoli, che sono già unità autonome: spezzarle
+ *     farebbe uscire `1. Ciao` dal suo elenco (il `1.` diventerebbe un
+ *     paragrafo a sé);
+ *   - i costrutti inline chiusi (link, URL nudi, **grassetto**, `codice`).
  */
 export function insertSentenceBreaks(text: string): string {
   let inCode = false;
@@ -396,96 +536,10 @@ export function insertSentenceBreaks(text: string): string {
       // Righe di tabella GFM (header, delimiter, corpo): mai spezzate, altrimenti
       // `| ... |` si divide in più paragrafi e il parser non la riconosce più.
       if (isTableRow(line) || TABLE_DELIMITER_RE.test(line.trim())) return line;
-
-      // Evita di spezzare dentro i marcatori inline (**, *, `)
-      let result = "";
-      let i = 0;
-      let inBold = false;
-      let inItalic = false;
-      let inInlineCode = false;
-
-      while (i < line.length) {
-        const ch = line[i];
-
-        // Link markdown [etichetta](url): mai spezzare dentro.
-        if (ch === "[" && !inInlineCode) {
-          const closeLabel = line.indexOf("]", i + 1);
-          const openParen =
-            closeLabel !== -1 && line[closeLabel + 1] === "("
-              ? closeLabel + 1
-              : -1;
-          const closeParen =
-            openParen !== -1 ? line.indexOf(")", openParen + 1) : -1;
-          if (closeLabel !== -1 && openParen !== -1 && closeParen !== -1) {
-            result += line.slice(i, closeParen + 1);
-            i = closeParen + 1;
-            continue;
-          }
-        }
-
-        // URL nudi: mai spezzare dentro (query string con ? . !).
-        if (
-          !inInlineCode &&
-          (line.startsWith("https://", i) ||
-            line.startsWith("http://", i) ||
-            line.startsWith("www.", i))
-        ) {
-          let j = i;
-          while (j < line.length && !/[\s<>"'`\]\)]/.test(line[j])) j++;
-          result += line.slice(i, j);
-          i = j;
-          continue;
-        }
-
-        // Traccia i marcatori inline
-        if (ch === "*" && i + 1 < line.length && line[i + 1] === "*") {
-          inBold = !inBold;
-          result += "**";
-          i += 2;
-          continue;
-        }
-        if (ch === "*") {
-          inItalic = !inItalic;
-          result += "*";
-          i += 1;
-          continue;
-        }
-        if (ch === "`") {
-          inInlineCode = !inInlineCode;
-          result += "`";
-          i += 1;
-          continue;
-        }
-
-        // Se siamo dentro un marcatore inline, non spezzare
-        if (inBold || inItalic || inInlineCode) {
-          result += ch;
-          i += 1;
-          continue;
-        }
-
-        // Altrimenti applica lo split delle frasi
-        if (ch === "." && i + 1 < line.length && line[i + 1] === " " && i + 2 < line.length && /[A-ZÀ-ÿ0-9]/.test(line[i + 2])) {
-          result += ".\n\n";
-          i += 2;
-          continue;
-        }
-        if (ch === "!" && i + 1 < line.length && line[i + 1] === " " && i + 2 < line.length && /[A-ZÀ-ÿ0-9]/.test(line[i + 2])) {
-          result += "!\n\n";
-          i += 2;
-          continue;
-        }
-        if (ch === "?" && i + 1 < line.length && line[i + 1] === " " && i + 2 < line.length && /[A-ZÀ-ÿ0-9]/.test(line[i + 2])) {
-          result += "?\n\n";
-          i += 2;
-          continue;
-        }
-
-        result += ch;
-        i += 1;
-      }
-
-      return result;
+      // Elenchi e titoli sono già unità autonome: spezzarli li distruggerebbe
+      // (`1. Ciao. Mondo` → `1.` paragrafo + frasi orfane fuori dall'elenco).
+      if (LIST_LINE_RE.test(line) || HEADING_LINE_RE.test(line)) return line;
+      return breakOutsideInline(line);
     })
     .join("\n");
 }
