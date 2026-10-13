@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Check, Copy } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
