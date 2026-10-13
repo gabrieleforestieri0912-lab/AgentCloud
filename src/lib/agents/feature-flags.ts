@@ -52,6 +52,7 @@ export const ACTIVE_15_AGENTS = [
   "hr-recruiter",
   "social-media-agent",
   "inventory-logistics",
+  "network-marketing",
 ];
 
 export const ALL_TOOLS_LIST = [
@@ -193,6 +194,7 @@ export const FULL_PLATFORM_CONFIG: FeatureFlags = {
     "hr-recruiter",
     "social-media-agent",
     "inventory-logistics",
+    "network-marketing",
   ],
   enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},

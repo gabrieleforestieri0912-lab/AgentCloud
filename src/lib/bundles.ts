@@ -65,6 +65,7 @@ function totalMonthlyPrice(slugs: string[]): number {
 const ECOMMERCE_SLUGS = ["shopify-agent", "inventory-logistics", "reviews-agent", "finance-manager"];
 const MARKETING_SLUGS = ["lead-capture", "seo-agent", "social-media-agent", "copywriter"];
 const OPERATIONS_SLUGS = ["support-agent", "calendar-booking", "email-manager", "personal-assistant"];
+const NETWORK_MARKETING_SLUGS = ["network-marketing", "lead-capture", "social-media-agent", "calendar-booking"];
 
 export const BUNDLES: Bundle[] = [
   {
@@ -110,6 +111,17 @@ export const BUNDLES: Bundle[] = [
     icon: "bot",
     badge: "Best value",
     pricing: calcPricing(totalMonthlyPrice([...ECOMMERCE_SLUGS, ...MARKETING_SLUGS, ...OPERATIONS_SLUGS])),
+  },
+  {
+    slug: "network-marketing-pro",
+    name: "Network Marketing Pro",
+    description: "Lista contatti, follow-up, presentazioni e team: 4 agenti per vendere in modo etico e conforme.",
+    longDescription: "Il bundle per incaricati alle vendite dirette e team leader. Network Marketing Agent per lista, bozze conformi e coaching; Lead Capture per moduli e arricchimento; Social Media per contenuti conformi; Calendar Booking per presentazioni e prenotazioni. Ogni invio verso terzi resta una bozza da approvare.",
+    agentSlugs: NETWORK_MARKETING_SLUGS,
+    accent: "from-fuchsia-500 to-purple-600",
+    icon: "users",
+    badge: "Most popular",
+    pricing: calcPricing(totalMonthlyPrice(NETWORK_MARKETING_SLUGS)),
   },
 ];
 

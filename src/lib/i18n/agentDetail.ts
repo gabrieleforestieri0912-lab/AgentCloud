@@ -16,12 +16,22 @@ const USE_CASE_EXAMPLES: Record<Locale, Record<string, string[]>> = {
       "Extract every commitment and deadline hidden in my inbox threads",
       "Send a morning digest with what needs my decision today",
     ],
+    "network-marketing": [
+      "Build my contact list segmented hot/warm/cold with follow-up reminders",
+      "Draft two compliant outreach variants for a contact — approved by me",
+      "Book a presentation with slots, video link and reminders",
+    ],
   },
   it: {
     "email-manager": [
       "Smista una settimana di email non lette in priorità, cartelle e bozze",
       "Estrai ogni impegno e scadenza nascosti nelle conversazioni della casella",
       "Invia un digest mattutino con ciò che richiede oggi la tua decisione",
+    ],
+    "network-marketing": [
+      "Costruisci la lista contatti segmentata caldo/tiepido/freddo con promemoria",
+      "Scrivi due varianti conformi di messaggio per un contatto — le approvo io",
+      "Prenota una presentazione con slot, link video e promemoria",
     ],
   },
   es: {
@@ -90,10 +100,11 @@ const ASSISTANT_HINT: Record<Locale, string> = {
 
 /** Le quattro FAQ della pagina di dettaglio, per locale, con `name` interpolato. */
 export function getFAQs(
-  _slug: string,
+  slug: string,
   name: string,
   locale: Locale,
 ): [string, string][] {
+  if (slug === "network-marketing") return getNetworkMarketingFAQs(name, locale);
   const sameDay = name.includes(ASSISTANT_HINT[locale]);
   switch (locale) {
     case "it":
@@ -189,6 +200,53 @@ export function getFAQs(
         [
           `Is my data secure with ${name}?`,
           `All data is encrypted in transit and at rest. The agent operates in a GDPR-compliant environment with SOC 2 controls.`,
+        ],
+      ];
+  }
+}
+
+/** FAQ specifiche del Network Marketing Agent: conformità e anti-spam al centro. */
+function getNetworkMarketingFAQs(
+  name: string,
+  locale: Locale,
+): [string, string][] {
+  switch (locale) {
+    case "it":
+      return [
+        [
+          `${name} invia messaggi automatici ai miei contatti?`,
+          `No. ${name} scrive solo bozze che approvi tu, una per una: niente invii automatici, niente messaggi massivi, niente spam. Ogni bozza mostra un semaforo di conformità (verde/giallo/rosso) e quelle rosse non sono copiabili né inviabili finché non vengono corrette.`,
+        ],
+        [
+          `Come garantite che i messaggi siano in regola?`,
+          `Ogni bozza passa un controllo di conformità automatico: niente promesse di guadagno, niente claim di salute non autorizzati, niente falsa urgenza, e sempre chiara la natura commerciale del messaggio. Alla prima attivazione prendi visione delle regole (Legge 173/2005, Codice del Consumo, GDPR, Reg. CE 1924/2006) e la presa visione è registrata con data e versione.`,
+        ],
+        [
+          `Devo collegare WhatsApp, Instagram o TikTok per usarlo?`,
+          `No, non sono obbligatorie. Finché non sono disponibili, ${name} prepara il testo e ti offre "Copia" e link wa.me precompilato per l'invio manuale. Le integrazioni principali (HubSpot, Google Calendar, Gmail, Sheets, Slack, Notion) bastano per partire lo stesso giorno.`,
+        ],
+        [
+          `I miei contatti e quelli del team sono separati e protetti?`,
+          `Sì. I dati sono separati per account, le connessioni sono cifrate e revocabili, e per ogni contatto salviamo fonte, base di liceità e consenso. La lista "Non contattare" blocca qualsiasi bozza futura, puoi esportare o cancellare i dati dalle impostazioni, e i contatti inattivi vengono segnalati per la cancellazione.`,
+        ],
+      ];
+    default:
+      return [
+        [
+          `Does ${name} send automatic messages to my contacts?`,
+          `No. ${name} only writes drafts that you approve one by one: no automatic sending, no bulk messages, no spam. Every draft shows a compliance traffic light (green/yellow/red), and red drafts cannot be copied or sent until fixed.`,
+        ],
+        [
+          `How do you keep messages compliant?`,
+          `Every draft passes an automatic compliance check: no income promises, no unauthorized health claims, no fake urgency, and the commercial nature of the message is always clear. On first launch you acknowledge the rules, recorded with date and version.`,
+        ],
+        [
+          `Do I need WhatsApp, Instagram or TikTok connected?`,
+          `No, they are optional. Until available, ${name} prepares the text with copy and a prefilled wa.me link for manual sending. The core integrations (HubSpot, Google Calendar, Gmail, Sheets, Slack, Notion) are enough to start the same day.`,
+        ],
+        [
+          `Are my contacts and my team's data separated and protected?`,
+          `Yes. Data is separated per account, connections are encrypted and revocable, and every contact stores source, lawful basis and consent. The do-not-contact list blocks any future draft, and you can export or delete data from settings.`,
         ],
       ];
   }

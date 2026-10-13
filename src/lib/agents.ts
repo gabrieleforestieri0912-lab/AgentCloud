@@ -559,6 +559,37 @@ const SEEDS: AgentSeed[] = [
     ],
     accent: "bg-amber-600",
   },
+  {
+    slug: "network-marketing",
+    name: "Network Marketing Agent",
+    shortName: "Network Marketing",
+    category: "Marketing & Sales",
+    industry: "Direct sellers, network marketers and team leaders",
+    icon: "users",
+    price: "€14,99/mo",
+    priceCents: 1499,
+    stripePriceId: "price_network_marketing",
+    setupTime: "Same day",
+    badge: "New",
+    description:
+      "Your assistant for contact lists, follow-ups, presentations and team: more real conversations, zero spam, always compliant.",
+    longDescription:
+      "The Network Marketing Agent is the coach and operations assistant for independent direct sellers and team leaders. It organizes the contact list with follow-up reminders, drafts personalized outreach and follow-up messages (always on your approval), books presentations, manages customers and reorders, onboards new distributors with 30/60/90 plans, and runs a compliance check on every draft — no income promises, no health claims, no spam.",
+    tasks: [
+      "Contact list and pipeline with follow-up reminders",
+      "Personalized outreach and follow-up drafts (on approval)",
+      "Presentation invites and booking",
+      "Onboarding and coaching for new distributors",
+    ],
+    integrations: ["HubSpot", "Google Calendar", "Gmail", "Google Sheets", "Slack", "Notion"],
+    workflow: [
+      "Build the contact list",
+      "Draft compliant outreach",
+      "Book the presentation",
+      "Follow up and grow the team",
+    ],
+    accent: "bg-fuchsia-600",
+  },
 
   // ─── Agenti futuri (coming soon) ─────────────────────────────────────────
   // Non sono inclusi nei feature flag: appaiono automaticamente nella sezione

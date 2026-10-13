@@ -494,4 +494,26 @@ export const AGENT_LOCALIZATIONS_IT: Record<string, AgentLocalization> = {
       "Consegna il report",
     ],
   },
+  "network-marketing": {
+    name: "Network Marketing Agent",
+    shortName: "Network Marketing",
+    category: "Marketing & Sales",
+    description:
+      "Il tuo assistente per lista contatti, follow-up, presentazioni e team: più conversazioni vere, zero spam, tutto in regola.",
+    longDescription:
+      "Il Network Marketing Agent è il coach e il segretario operativo dell'incaricato alle vendite dirette. Organizza la lista contatti con promemoria di follow-up, scrive bozze di approccio personalizzate (sempre da approvare), prenota presentazioni, gestisce clienti e riordini, crea piani di onboarding 30/60/90 per i nuovi incaricati e controlla ogni bozza prima che esca: niente promesse di guadagno, niente claim di salute, niente spam. Ogni invio verso terzi è una bozza che approvi tu.",
+    industry: "Incaricati alle vendite dirette, team leader, consulenti indipendenti",
+    tasks: [
+      "Lista contatti e pipeline con promemoria follow-up",
+      "Messaggi di approccio e follow-up personalizzati (su tua approvazione)",
+      "Inviti e prenotazione presentazioni",
+      "Onboarding e coaching per i nuovi incaricati",
+    ],
+    workflow: [
+      "Costruisci la lista",
+      "Scrivi bozze conformi",
+      "Prenota la presentazione",
+      "Segui e fai crescere il team",
+    ],
+  },
 };

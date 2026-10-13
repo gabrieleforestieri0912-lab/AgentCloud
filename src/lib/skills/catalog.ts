@@ -2218,6 +2218,358 @@ const PROJECTS: SkillPlugin = {
   ],
 };
 
+/* ------------------------------------------------------------------ *
+ * 14. Network Marketing
+ * ------------------------------------------------------------------ */
+const NETWORK_MARKETING: SkillPlugin = {
+  slug: "network-marketing",
+  name: "Network Marketing",
+  tagline: "Lista, follow-up, presentazioni e team — senza spam",
+  description:
+    "Suite per incaricati alle vendite dirette e team leader: lista contatti segmentata, bozze di approccio e follow-up conformi (sempre da approvare), inviti a presentazioni, onboarding 30/60/90, gestione clienti e riordini, contenuti social conformi, controllo di conformità su ogni bozza e report settimanali.",
+  category: "sales",
+  icon: "users",
+  priceTier: "included",
+  version: "1.0.0",
+  changelog: [
+    {
+      version: "1.0.0",
+      date: "2026-10-13",
+      changes: [
+        "Prima versione del plugin: 11 competenze (lista, messaggi, follow-up, obiezioni, presentazioni, onboarding, clienti, contenuti, compliance-check sempre attivo, report, coaching).",
+        "HubSpot, Sheets, Calendar, Gmail, Slack e Notion già disponibili; WhatsApp, Instagram, Facebook, TikTok, Meet, Calendly e Mailchimp in arrivo e mai richiesti (fallback copia/wa.me).",
+      ],
+    },
+  ],
+  skills: [
+    {
+      slug: "nm-lista-contatti",
+      name: "Lista Contatti e Priorità",
+      description:
+        "Costruisce la lista contatti con brainstorm guidato, segmentazione caldo/tiepido/freddo e ordine di priorità. Usare quando si parte da zero o si vuole riordinare la lista.",
+      risk: "low",
+      permissions: ["read:contacts", "create:contacts"],
+      whenNot: [
+        "Contatti senza relazione esistente o consenso: non si aggiungono alla lista attiva",
+        "Liste acquistate o da scraping: rifiutare l'import e spiegare il perché",
+        "Contatti in 'Non contattare': mai reinserirli",
+      ],
+      procedure: [
+        "Brainstorm guidato: famiglia, amici, clienti passati, conoscenti professionali, richieste ricevute",
+        "Per ogni contatto registrare: nome, relazione reale, fonte, canale preferito",
+        "Assegnare temperatura (caldo/tiepido/freddo) e stato iniziale (Nuovo)",
+        "Ordinare per priorità: caldo con esigenza nota prima di tutto",
+        "Sincronizzare su HubSpot o Sheets",
+      ],
+      rules: [
+        "Solo contatti con relazione esistente o consenso/richiesta esplicita",
+        "Nessuna importazione di liste acquistate o da scraping",
+        "La lista 'Non contattare' non si tocca mai",
+      ],
+      output: "Lista contatti (nome, relazione, fonte, temperatura, stato, canale) + sincronizzazione confermata",
+      example: "Aiutami a costruire la mia lista: da chi comincio?",
+    },
+    {
+      slug: "nm-messaggi-approccio",
+      name: "Messaggi di Approccio",
+      description:
+        "Scrive 2 varianti brevi di messaggio di approccio personalizzate sulla relazione reale col contatto. Usare solo su contatti con relazione esistente o consenso; ogni bozza passa il compliance-check ed è da approvare.",
+      risk: "high",
+      permissions: ["read:contacts", "create:drafts"],
+      whenNot: [
+        "Sconosciuti o contatti da scraping: rifiutare, non scrivere la bozza",
+        "Contatti in 'Non contattare': nessuna bozza, mai",
+        "Richieste di invio massivo o automatico: rifiutare e proporre l'alternativa manuale",
+      ],
+      procedure: [
+        "Verificare: relazione esistente o consenso? Se no, fermarsi e spiegare",
+        "Verificare: contatto in 'Non contattare' o tetto giornaliero (default 15) raggiunto? Se sì, fermarsi",
+        "Raccogliere: nome, relazione, esigenza nota, prodotto pertinente, canale, tono del profilo",
+        "Scrivere 2 varianti brevi con firma 'Incaricato indipendente di [azienda]' e natura commerciale chiara",
+        "Eseguire compliance-check: se rosso, riscrivere e spiegare in 1-2 righe cosa è cambiato",
+        "Consegnare come bozza da approvare: Approva e invia / Copia / Modifica",
+      ],
+      rules: [
+        "Mai invio automatico: ogni messaggio verso terzi è una bozza da approvare",
+        "Mai promesse di guadagno, claim di salute, falsa urgenza o pressione",
+        "Mai nascondere la natura commerciale del messaggio",
+        "Massimo giornaliero di approcci a contatti nuovi: default 15",
+      ],
+      output: "2 varianti di bozza + badge semaforo + pulsanti Approva e invia / Copia / Modifica",
+      example: "Scrivi un messaggio per Marta, mia ex collega interessata al benessere",
+    },
+    {
+      slug: "nm-followup-pipeline",
+      name: "Follow-up e Pipeline",
+      description:
+        "Gestisce la pipeline Nuovo > Contattato > Interessato > Presentazione fissata > Presentazione fatta > Follow-up > Cliente/Incaricato > Non ora > Non interessato con promemoria e cadenza. Usare ogni mattina per i follow-up del giorno e dopo ogni interazione.",
+      risk: "medium",
+      permissions: ["read:contacts", "update:contacts", "send:email"],
+      whenNot: [
+        "Contatto che ha detto 'no': si sposta in Non interessato/Non contattare, non si insiste",
+        "Dopo 3 tentativi senza risposta: si propone di chiudere, non un quarto tentativo",
+        "Invii bulk o sequenze automatiche: non previste, solo bozze approvate",
+      ],
+      procedure: [
+        "Ogni mattina proporre max N contatti con bozza di follow-up pronta",
+        "Aggiornare stato e next_followup_at dopo ogni interazione",
+        "Contare i tentativi: dopo 3 senza risposta proporre chiusura gentile",
+        "Rispettare cadenza: attesa minima 3-5 giorni tra un tentativo e l'altro",
+        "Loggare ogni bozza (creata, modificata, approvata, inviata) nell'audit log",
+      ],
+      rules: [
+        "Max 3 tentativi senza risposta, poi stop e chiusura proposta",
+        "Un 'no' è definitivo: va in Non contattare",
+        "Ogni follow-up verso terzi è una bozza da approvare",
+      ],
+      output: "Lista follow-up del giorno (contatto, stato, tentativi, bozza) + stati aggiornati",
+      example: "Chi devo seguire oggi? Preparami i follow-up",
+    },
+    {
+      slug: "nm-gestione-obiezioni",
+      name: "Gestione Obiezioni",
+      description:
+        "Prepara risposte oneste a 'non ho tempo', 'è una piramide', 'costa troppo' e simili, senza manipolazione. Usare quando un contatto esprime dubbi o resistenze.",
+      risk: "low",
+      permissions: ["read:contacts", "create:drafts"],
+      whenNot: [
+        "Obiezioni che richiedono dati ufficiali assenti dalla knowledge base: non inventarli",
+        "Pressione per forzare un 'sì': mai insistere oltre una risposta onesta",
+        "Consulenza fiscale, previdenziale o legale: rimandare al professionista",
+      ],
+      procedure: [
+        "Ascoltare l'obiezione senza sminuirla: riformularla in una riga",
+        "Rispondere con fatti verificabili: distinzione vendita diretta vs schema piramidale (Legge 173/2005), valore prodotto, recesso 14 giorni",
+        "Se manca il dato ufficiale, dirlo e non inventarlo",
+        "Offrire sempre l'uscita gentile: 'se non fa per te, nessun problema'",
+        "Consegnare come bozza da approvare con compliance-check",
+      ],
+      rules: [
+        "Nessuna manipolazione, colpevolizzazione o pressione psicologica",
+        "Nessun dato inventato: prezzi, compensi, ingredienti solo da materiali ufficiali",
+        "Niente consulenza fiscale/legale: indicare cosa chiedere al commercialista",
+      ],
+      output: "Bozza di risposta onesta (max 8 righe) + badge semaforo + uscita gentile inclusa",
+      example: "Mi ha detto che sembra una piramide: cosa rispondo?",
+    },
+    {
+      slug: "nm-inviti-presentazioni",
+      name: "Inviti e Presentazioni",
+      description:
+        "Prepara inviti, propone slot dal calendario, crea l'evento con link video e promemoria, e dopo l'incontro chiede l'esito e programma il follow-up. Usare per ogni presentazione o call di approfondimento.",
+      risk: "medium",
+      permissions: ["read:calendar", "create:events", "send:email"],
+      whenNot: [
+        "Slot proposti senza aver verificato la disponibilità reale: prima si controlla",
+        "Link video inventati: solo link reali generati dagli strumenti",
+        "Promemoria a terzi senza approvazione: solo bozze approvate",
+      ],
+      procedure: [
+        "Verificare la disponibilità reale prima di proporre gli slot",
+        "Scrivere l'invito come bozza (natura commerciale chiara, cosa aspettarsi, durata)",
+        "Creare l'evento con link video solo dopo conferma di data/ora/partecipanti",
+        "Inviare promemoria (24h e 2h prima) su approvazione",
+        "Dopo l'incontro: chiedere l'esito, aggiornare lo stato e programmare il follow-up",
+      ],
+      rules: [
+        "Mai proporre orari non verificati col calendario",
+        "Mai inventare link video",
+        "Ogni messaggio verso terzi è una bozza da approvare",
+      ],
+      output: "Bozza invito + evento creato (data, partecipanti, link) + promemoria + riepilogo post-incontro",
+      example: "Invita Luca alla presentazione di giovedì sera",
+    },
+    {
+      slug: "nm-onboarding-incaricato",
+      name: "Onboarding Nuovo Incaricato",
+      description:
+        "Crea il piano di onboarding 30/60/90 giorni con checklist del primo mese e primi passi. Usare a ogni nuovo ingresso nel team; l'output lungo esce come file scaricabile.",
+      risk: "low",
+      permissions: ["create:documents", "create:tasks"],
+      whenNot: [
+        "Promesse di guadagno nel piano: mai includerle, solo attività e competenze",
+        "Dati personali del nuovo incaricato senza consenso: solo dati forniti con consenso",
+        "Board su strumenti non collegati: produrre checklist manuale invece di fallire",
+      ],
+      procedure: [
+        "Raccogliere: nome, data ingresso, obiettivi, ore disponibili, esperienza",
+        "Generare piano 30/60/90: giorni 1-30 (prodotto, lista, primi approcci), 31-60 (presentazioni, follow-up), 61-90 (autonomia, primi clienti)",
+        "Creare checklist primo mese con 10 azioni verificabili",
+        "Creare la board su Trello/Asana/ClickUp se collegati, altrimenti checklist in file",
+        "Pianificare check-in settimanali e salvare tutto in file scaricabile",
+      ],
+      rules: [
+        "Il piano parla di attività e competenze, mai di guadagni attesi",
+        "Contenuti lunghi (70+ righe) sempre in file scaricabile con anteprima",
+        "Solo dati con consenso per le schede dei membri del team",
+      ],
+      output: "File piano 30/60/90 + checklist primo mese + board creata + check-in pianificati",
+      example: "È entrata Sara nel team: prepara il suo piano di onboarding",
+    },
+    {
+      slug: "nm-clienti-riordini",
+      name: "Clienti, Riordini e Fedeltà",
+      description:
+        "Calcola quando finisce il prodotto, prepara messaggi gentili di riordino e richieste di feedback. Usare per clienti attivi con acquisti tracciati.",
+      risk: "medium",
+      permissions: ["read:contacts", "read:orders", "create:drafts"],
+      whenNot: [
+        "Cliente che ha chiesto di non essere ricontattato: nessun messaggio",
+        "Date di riordino inventate: solo calcoli su acquisti reali tracciati",
+        "Programmi fedeltà non previsti dall'azienda: non inventarli",
+      ],
+      procedure: [
+        "Leggere ultimo ordine e frequenza d'uso per stimare la scadenza",
+        "Preparare messaggio di riordino gentile come bozza (niente urgenza falsa)",
+        "Aggiungere richiesta di feedback/recensione su approvazione separata",
+        "Ricordare il recesso di 14 giorni dove applicabile",
+        "Aggiornare reorder_due_at e satisfaction dopo l'esito",
+      ],
+      rules: [
+        "Nessuna scarsità inventata ('ultimi pezzi', 'offerta che scade') senza base reale",
+        "Nessun claim di salute sul prodotto oltre i materiali ufficiali",
+        "Ogni messaggio è una bozza da approvare",
+      ],
+      output: "Bozza riordino + richiesta feedback + scadenze aggiornate",
+      example: "Il siero di Anna dovrebbe stare per finire: scrivile",
+    },
+    {
+      slug: "nm-contenuti-conformi",
+      name: "Contenuti Social Conformi",
+      description:
+        "Crea calendario editoriale, caption, storie, hashtag e disclaimer per i social, sempre con controllo conformità. Usare per la presenza social dell'incaricato.",
+      risk: "high",
+      permissions: ["create:content"],
+      whenNot: [
+        "Testimonianze o recensioni false: mai inventarle",
+        "Prima/dopo o claim di dimagrimento/cura: solo se autorizzati nei materiali ufficiali",
+        "Pubblicazione automatica: l'agente prepara, l'utente pubblica",
+      ],
+      procedure: [
+        "Definire 3-4 pilastri (prodotto, dietro le quinte, educazione, community)",
+        "Scrivere caption brevi con disclaimer 'Incaricato indipendente di [azienda]'",
+        "Eseguire compliance-check su ogni pezzo: se rosso, riscrivere",
+        "Suggerire hashtag coerenti, niente claim negli hashtag",
+        "Consegnare il calendario in file scaricabile se lungo",
+      ],
+      rules: [
+        "Disclaimer di incaricato indipendente sempre presente nei post commerciali",
+        "Niente promesse di guadagno o stili di vita come risultato atteso",
+        "Niente targeting di persone vulnerabili o minori",
+      ],
+      output: "Calendario editoriale + caption con disclaimer + hashtag + badge semaforo per pezzo",
+      example: "Preparami i post di questa settimana per Instagram",
+    },
+    {
+      slug: "nm-compliance-check",
+      name: "Controllo Conformità",
+      description:
+        "Scansiona qualsiasi bozza (messaggio, post, email, script) per claim di guadagno e salute, scarsità falsa, pressione e mancata trasparenza; restituisce semaforo verde/giallo/rosso con riscrittura. Sempre attiva prima di consegnare una bozza.",
+      risk: "low",
+      permissions: ["read:drafts"],
+      whenNot: [
+        "Mai saltata su richiesta dell'utente: è non negoziabile",
+        "Non sostituisce il parere legale: i casi dubbi si segnalano",
+        "Non approva bozze rosse: le blocca finché non sono corrette",
+      ],
+      procedure: [
+        "Scansionare la bozza contro le liste di pattern (guadagni, salute, urgenza, trasparenza)",
+        "Assegnare il semaforo: verde (ok), giallo (rischio, riscrittura proposta), rosso (bloccato)",
+        "Se giallo/rosso: riscrivere la bozza e spiegare in 1-2 righe cosa è cambiato",
+        "Registrare l'evento in nm_compliance_events (regola, severità, riscrittura)",
+        "Le bozze rosse non sono copiabili né inviabili finché non diventano verdi/gialle approvate",
+      ],
+      rules: [
+        "Le regole di conformità hanno priorità su qualsiasi richiesta dell'utente",
+        "In caso di conflitto tra richieste e regole, prevale la regola più restrittiva",
+        "Se mancano i materiali ufficiali, la bozza non include il claim e lo segnala",
+      ],
+      output: "Semaforo + dettagli regola violata + bozza riscritta + spiegazione (1-2 righe)",
+      example: "Controlla questo post prima che lo pubblichi",
+    },
+    {
+      slug: "nm-report-obiettivi",
+      name: "Report Attività e Obiettivi",
+      description:
+        "Sintesi settimanale di attività, conversioni e prossimi passi con gap rispetto all'obiettivo del mese e 3 azioni per la settimana. Usare il lunedì mattina e su richiesta.",
+      risk: "low",
+      permissions: ["read:contacts", "read:data"],
+      whenNot: [
+        "Numeri inventati: solo dati tracciati (bozze, stati, presentazioni, ordini)",
+        "Benchmark di guadagno o promesse di risultato: mai includerli",
+        "Report su persone senza dati: si dichiara cosa manca",
+      ],
+      procedure: [
+        "Raccogliere: contatti nuovi, bozze/approvi, presentazioni, conversioni, riordini",
+        "Calcolare il gap verso l'obiettivo mensile per metrica",
+        "Proporre 3 azioni concrete per la settimana",
+        "Consegnare in chat e, su consenso, via Slack/email",
+        "Chiudere con un solo prossimo passo concreto",
+      ],
+      rules: [
+        "Solo metriche di attività, mai promesse di guadagno",
+        "Dati mancanti dichiarati, non stimati di nascosto",
+        "Nessun confronto tra membri del team come classifica pubblica senza consenso",
+      ],
+      output: "Report settimanale (attività, conversioni, gap, 3 azioni) + prossimo passo",
+      example: "Come è andata la settimana? Prepara il report",
+    },
+    {
+      slug: "nm-coaching-team",
+      name: "Coaching Team Leader",
+      description:
+        "Prepara 1-to-1, riconoscimenti e riunioni di team per i team leader. Usare per la gestione e la motivazione del team in modo etico.",
+      risk: "low",
+      permissions: ["read:team", "create:documents"],
+      whenNot: [
+        "Classifiche pubbliche basate su guadagni: mai crearle",
+        "Pressione sui membri in difficoltà: coaching, non colpevolizzazione",
+        "Dati dei membri senza consenso: solo dati forniti con consenso",
+      ],
+      procedure: [
+        "Preparare template 1-to-1: risultati, ostacoli, supporto richiesto, impegno",
+        "Suggerire riconoscimenti basati su attività e comportamento (non su guadagni)",
+        "Strutturare la riunione di team: celebrazione, formazione, obiettivi di attività",
+        "Salvare i materiali lunghi in file scaricabile",
+        "Pianificare i check-in e registrarne gli esiti",
+      ],
+      rules: [
+        "Si riconoscono comportamenti e costanza, mai cifre di guadagno",
+        "Il reclutamento non si presenta mai come guadagno indipendente dalle vendite",
+        "Nessun targeting motivazionale su vulnerabilità economiche",
+      ],
+      output: "Template 1-to-1 + piano riunione + riconoscimenti + file scaricabile",
+      example: "Prepara la riunione di team di venerdì",
+    },
+  ],
+  agents: [
+    { slug: "network-marketing", fit: "primary", rationale: "Network Marketing Agent è costruito su queste competenze" },
+    { slug: "lead-capture", fit: "secondary", rationale: "Lead Capture fornisce moduli e arricchimento contatti" },
+    { slug: "calendar-booking", fit: "secondary", rationale: "Calendar Booking chiude con presentazioni e appuntamenti" },
+    { slug: "social-media-agent", fit: "secondary", rationale: "Social Media Agent riusa i contenuti conformi" },
+    { slug: "copywriter", fit: "secondary", rationale: "Copywriter rifinisce testi e varianti" },
+    { slug: "email-manager", fit: "secondary", rationale: "Email Manager gestisce inviti e follow-up via email" },
+  ],
+  integrations: [
+    { brand: "hubspot", status: "required", rationale: "HubSpot è il CRM di contatti e pipeline" },
+    { brand: "googlesheets", status: "optional", rationale: "Sheets come lista leggera e report senza CRM" },
+    { brand: "googlecalendar", status: "optional", rationale: "Calendar per presentazioni e promemoria" },
+    { brand: "gmail", status: "optional", rationale: "Gmail per inviti e follow-up su approvazione" },
+    { brand: "slack", status: "optional", rationale: "Slack per notifiche e canale di team" },
+    { brand: "notion", status: "optional", rationale: "Notion per playbook e knowledge base" },
+    { brand: "trello", status: "optional", rationale: "Trello per le board di onboarding" },
+    { brand: "asana", status: "optional", rationale: "Asana per le board di onboarding" },
+    { brand: "clickup", status: "optional", rationale: "ClickUp per le board di onboarding" },
+    { brand: "whatsapp", status: "optional", rationale: "WhatsApp per invio su approvazione (in arrivo: copia/wa.me)" },
+    { brand: "instagram", status: "optional", rationale: "Instagram per contenuti (in arrivo: preparazione bozze)" },
+    { brand: "facebook", status: "optional", rationale: "Facebook per contenuti (in arrivo: preparazione bozze)" },
+    { brand: "tiktok", status: "optional", rationale: "TikTok per contenuti (in arrivo: preparazione bozze)" },
+    { brand: "googlemeet", status: "optional", rationale: "Meet per i link video (in arrivo)" },
+    { brand: "calendly", status: "optional", rationale: "Calendly per prenotazioni esterne (in arrivo)" },
+    { brand: "mailchimp", status: "optional", rationale: "Mailchimp per newsletter con consenso (in arrivo)" },
+  ],
+};
+
 /** Catalogo completo dei plugin ufficiali. */
 export const SKILL_PLUGINS: SkillPlugin[] = [
   ECOMMERCE,
@@ -2233,6 +2585,7 @@ export const SKILL_PLUGINS: SkillPlugin[] = [
   DOCUMENTS,
   RESEARCH,
   PROJECTS,
+  NETWORK_MARKETING,
 ];
 
 /** Tutte le skill del catalogo, con il plugin di appartenenza. */

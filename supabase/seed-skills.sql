@@ -4,6 +4,8 @@
 -- mano: modifica il catalogo e rigenera questo file.
 --
 -- 13 plugin, 60 skill, tutte in italiano.
+-- (+ plugin "network-marketing" con 11 skill in
+-- `seed-skills-network-marketing.sql`: totale 14 plugin, 71 skill.)
 --
 -- Gli slug di agenti e integrazioni sono quelli REALI del marketplace
 -- (src/lib/agents.ts) e del catalogo integrazioni (src/lib/integrations.ts):
