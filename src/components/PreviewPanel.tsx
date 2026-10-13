@@ -253,8 +253,8 @@ export interface PreviewPanelProps {
   streaming?: boolean;
   onClose: () => void;
   onRetry?: (record: ChatFileRecord) => void;
-  /** Callback per "Salva su Drive / Notion" quando l'integrazione è collegata. */
-  onSaveToIntegration?: (provider: "google-drive" | "notion", record: ChatFileRecord, content: string) => void;
+  /** Callback per "Salva su Drive / Notion / Docs" quando l'integrazione è collegata. */
+  onSaveToIntegration?: (provider: "google-drive" | "notion" | "google-docs", record: ChatFileRecord, content: string) => void;
 }
 
 export default function PreviewPanel({
@@ -343,7 +343,7 @@ export default function PreviewPanel({
     setTimeout(() => setCopied(false), 2000);
   }, [content]);
 
-  // "Salva su Drive / Notion" compare solo se l'integrazione è collegata:
+  // "Salva su Drive / Notion / Docs" compare solo se l'integrazione è collegata:
   // le integrazioni "in arrivo" (available: false) non sono proprio nel elenco.
   const [connected, setConnected] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -371,7 +371,13 @@ export default function PreviewPanel({
         (i) =>
           i.available &&
           onSaveToIntegration &&
-          (/drive/i.test(i.name) ? connected.google_drive : /notion/i.test(i.name) ? connected.notion : false),
+          (/docs/i.test(i.name)
+            ? connected.google_docs
+            : /drive/i.test(i.name)
+              ? connected.google_drive
+              : /notion/i.test(i.name)
+                ? connected.notion
+                : false),
       ),
     [connected, onSaveToIntegration],
   );
@@ -545,7 +551,11 @@ export default function PreviewPanel({
                       </button>
                     ))}
                     {saveTargets.map((integ) => {
-                      const provider = /drive/i.test(integ.name) ? "google-drive" : "notion";
+                      const provider = /docs/i.test(integ.name)
+                        ? "google-docs"
+                        : /drive/i.test(integ.name)
+                          ? "google-drive"
+                          : "notion";
                       return (
                         <button
                           key={integ.name}
@@ -561,7 +571,11 @@ export default function PreviewPanel({
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-neutral-200 transition-colors hover:bg-white/5 hover:text-white"
                         >
                           <Check size={12} className="text-neutral-500" />
-                          {provider === "google-drive" ? labels.saveDrive : labels.saveNotion}
+                          {provider === "google-drive"
+                            ? labels.saveDrive
+                            : provider === "google-docs"
+                              ? labels.saveDocs
+                              : labels.saveNotion}
                         </button>
                       );
                     })}

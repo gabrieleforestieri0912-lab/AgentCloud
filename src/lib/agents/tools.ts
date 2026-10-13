@@ -35,6 +35,7 @@ import {
 import { getValidGoogleAccessToken } from "@/lib/google/token";
 import { googleSheetsRequest } from "@/lib/google/sheets";
 import { executeWebSearch, formatWebSearchResults } from "@/lib/tools/tavily";
+import { buildQuizHtml, buildFlashcardsHtml } from "@/lib/study-cards";
 import {
   calculateQuote,
   formatQuoteMarkdown,
@@ -1031,6 +1032,44 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
     },
   },
 
+  quiz_create: {
+    name: "quiz_create",
+    description:
+      "Create an interactive multiple-choice quiz (HTML page with selectable answers, check button, score and retry). Call it with the questions, then deliver the result: reproduce the returned HTML EXACTLY inside one <agentcloud_file id=\"quiz-slug\" name=\"quiz-slug.html\" type=\"html\" title=\"...\"> block at the end of your message, with 1-2 intro sentences before it. Never paste the HTML as visible text.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Quiz title" },
+        questions: {
+          type: "array",
+          description: "2-15 questions: [{question, options: [2-6 strings], answer: 0-based index of the correct option, explanation?}]",
+          items: { type: "object" },
+        },
+        lang: { type: "string", description: "UI language: it, en, es, de, fr (default it)" },
+      },
+      required: ["questions"],
+    },
+  },
+
+  flashcards_create: {
+    name: "flashcards_create",
+    description:
+      "Create interactive flashcards (HTML page: click to flip, prev/next, shuffle, counter, keyboard arrows). Call it with the cards, then deliver the result: reproduce the returned HTML EXACTLY inside one <agentcloud_file id=\"flashcards-slug\" name=\"flashcards-slug.html\" type=\"html\" title=\"...\"> block at the end of your message, with 1-2 intro sentences before it. Never paste the HTML as visible text.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Deck title" },
+        cards: {
+          type: "array",
+          description: "2-100 cards: [{front, back}]",
+          items: { type: "object" },
+        },
+        lang: { type: "string", description: "UI language: it, en, es, de, fr (default it)" },
+      },
+      required: ["cards"],
+    },
+  },
+
   ...INTEGRATION_TOOL_DEFINITIONS,
 };
 
@@ -1059,6 +1098,10 @@ export const CONNECT_PROVIDERS = [
   "trello",
   "woocommerce",
   "mailchimp",
+  "outlook",
+  "docs",
+  "forms",
+  "analytics",
   "whatsapp",
 ] as const;
 
@@ -1084,6 +1127,15 @@ export function normalizeConnectProvider(raw: string | undefined): string | null
   if (key.includes("trello")) return "trello";
   if (key.includes("woocommerce")) return "woocommerce";
   if (key.includes("mailchimp")) return "mailchimp";
+  // Va prima di "mail": "outlook" non c'entra con le email generiche.
+  if (key.includes("outlook")) return "outlook";
+  // "docs" dopo sheets (che contiene "sheet", non "docs") e prima del
+  // catch-all: "google docs" → docs, non gmail/calendar.
+  if (key.includes("docs")) return "docs";
+  // "forms" senza conflitti: nessun altro provider contiene "forms".
+  if (key.includes("forms")) return "forms";
+  // "analytics" senza conflitti ("google ads" non contiene "analytics").
+  if (key.includes("analytics") || key === "ga4") return "analytics";
   if (key.includes("whatsapp")) return "whatsapp";
   return (CONNECT_PROVIDERS as readonly string[]).includes(key) ? key : null;
 }
@@ -1403,6 +1455,39 @@ export async function executeTool(
         content: input.content,
         downloadable: true,
       });
+    }
+
+    case "quiz_create": {
+      // L'input arriva come JSON dal modello: array nativo o stringa JSON.
+      let questions: unknown = (input as unknown as Record<string, unknown>).questions;
+      if (typeof questions === "string" && questions.trim()) {
+        try {
+          questions = JSON.parse(questions);
+        } catch {
+          return "quiz_create requires questions as [{question, options, answer, explanation?}].";
+        }
+      }
+      const title = typeof input.title === "string" ? input.title : "";
+      const lang = typeof input.lang === "string" ? input.lang : "it";
+      const r = buildQuizHtml({ title, questions, lang });
+      if (!r.ok) return r.error;
+      return r.html;
+    }
+
+    case "flashcards_create": {
+      let cards: unknown = (input as unknown as Record<string, unknown>).cards;
+      if (typeof cards === "string" && cards.trim()) {
+        try {
+          cards = JSON.parse(cards);
+        } catch {
+          return "flashcards_create requires cards as [{front, back}].";
+        }
+      }
+      const title = typeof input.title === "string" ? input.title : "";
+      const lang = typeof input.lang === "string" ? input.lang : "it";
+      const r = buildFlashcardsHtml({ title, cards, lang });
+      if (!r.ok) return r.error;
+      return r.html;
     }
 
     case "run_python": {

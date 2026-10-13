@@ -11,6 +11,7 @@ import type { LLMMessage } from "@/lib/llm";
 import { createWordEmitter } from "@/lib/stream";
 import {
   CONNECT_GUIDANCE_CHAT,
+  STUDY_DIRECTIVE,
   buildAgentSystemPrompt,
   sharedAgentDirectives,
 } from "@/lib/agents/system-prompt";
@@ -138,7 +139,7 @@ export async function POST(req: Request) {
               : // Il prompt di piattaforma è scritto nella lingua della
                 // risposta (contiene elenchi, prezzi e regole) e chiude già
                 // con la direttiva.
-                (await buildPlatformSystemPrompt(replyLocale)) + connectGuidanceChat + "\n\n" + EXAMPLE_LINKS_DIRECTIVE;
+                (await buildPlatformSystemPrompt(replyLocale)) + connectGuidanceChat + "\n\n" + EXAMPLE_LINKS_DIRECTIVE + "\n\n" + STUDY_DIRECTIVE;
         } catch {
           // Mantieni il prompt generico — non far mai fallire la chat perché
           // il prompt di piattaforma non si è potuto costruire.

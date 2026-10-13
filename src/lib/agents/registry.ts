@@ -125,16 +125,21 @@ const WOOCOMMERCE_TOOLS = [
 ];
 
 /**
- * Tool Mailchimp (batch 2), sola lettura.
- *
- * Iniettati dove serve: social-media-agent (le campagne sono il suo oggetto) e
- * business-manager (numeri di audience e performance). Nessun invio e nessuna
- * scrittura su contatti: vedi Open Decision 14.
+ * Tool Mailchimp: lettura + scritture GDPR (consenso esplicito, niente
+ * risottoscrizioni, invio bloccato se compliance rosso). Programmazione e
+ * invio richiedono conferma (vedi tool-confirmation.ts).
  */
 const MAILCHIMP_TOOLS = [
   "mailchimp_list_audiences",
   "mailchimp_get_audience_stats",
   "mailchimp_list_campaigns",
+  "mailchimp_upsert_contact",
+  "mailchimp_add_tags",
+  "mailchimp_create_campaign_draft",
+  "mailchimp_set_campaign_content",
+  "mailchimp_get_campaign_report",
+  "mailchimp_schedule_campaign",
+  "mailchimp_send_campaign",
 ];
 
 /**
@@ -162,6 +167,80 @@ const MICROSOFT_TOOLS = [
   "onenote_read",
 ];
 
+/**
+ * Tool Microsoft Outlook (email + calendario, provider `microsoft_outlook`).
+ *
+ * Connessione separata da Microsoft 365: il consenso mail/calendario è
+ * incrementale. La route dell'agente li espone solo con la connessione Outlook
+ * attiva (vedi route.ts), quindi iniettarli negli optionalTools non pesa sul
+ * contesto di chi non ha collegato Outlook.
+ */
+const OUTLOOK_TOOLS = [
+  "outlook_search_messages",
+  "outlook_read_message",
+  "outlook_list_unread",
+  "outlook_create_draft",
+  "outlook_create_reply_draft",
+  "outlook_send_message",
+  "outlook_list_events",
+  "outlook_get_free_busy",
+  "outlook_create_event",
+  "outlook_update_event",
+  "outlook_cancel_event",
+];
+
+/**
+ * Tool Google Docs (creazione, lettura, append, replace, tabelle, export PDF).
+ *
+ * Iniettati negli agenti che producono deliverable testuali: senza tool il
+ * provider sarebbe collegabile ma "Salva su Google Docs" non avrebbe effetto.
+ * Le modifiche a documenti esistenti non chiedono conferma via token (sono
+ * reversibili dalla cronologia versioni di Docs), ma le descrizioni dei tool
+ * dicono al modello di mostrare cosa cambia prima.
+ */
+const DOCS_TOOLS = [
+  "docs_create_document",
+  "docs_read_document",
+  "docs_append_to_document",
+  "docs_replace_text",
+  "docs_insert_table",
+  "docs_export_pdf",
+];
+
+/**
+ * Tool Google Forms (creazione form, domande, risposte, export su Sheets).
+ *
+ * Lead Capture e HR li usano come fonte di lead/candidature; gli altri agenti
+ * li usano per sondaggi e feedback. Il polling è on-demand (niente worker):
+ * list/get_response_summary deduplicano per responseId.
+ */
+const FORMS_TOOLS = [
+  "forms_create_form",
+  "forms_add_question",
+  "forms_update_form",
+  "forms_get_form",
+  "forms_list_responses",
+  "forms_get_response_summary",
+  "forms_export_to_sheet",
+];
+
+/**
+ * Tool Google Analytics 4 (sola lettura, metriche aggregate).
+ *
+ * Business Manager li usa per KPI e confronti; SEO/Shopify/Social/Lead per
+ * contenuti e performance. Cache 30 minuti lato proxy: nessun tetto giornaliero
+ * custom (le quote Google da 200k token/giorno/proprietà bastano con la cache).
+ */
+const GA_TOOLS = [
+  "ga_list_properties",
+  "ga_run_report",
+  "ga_traffic_summary",
+  "ga_top_pages",
+  "ga_conversions",
+  "ga_compare_periods",
+  "ga_detect_anomalies",
+];
+
 const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
   "seo-agent": {
     id: "seo-agent",
@@ -178,6 +257,9 @@ const RAW_AGENT_RUNTIME: Record<string, AgentRuntimeConfig> = {
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
+      ...DOCS_TOOLS,
+      ...GA_TOOLS,
+      ...MAILCHIMP_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -232,6 +314,10 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...MICROSOFT_TOOLS,
+      ...OUTLOOK_TOOLS,
+      ...DOCS_TOOLS,
+      ...FORMS_TOOLS,
+      ...GA_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...AIRTABLE_TOOLS,
       ...TRELLO_TOOLS,
@@ -297,6 +383,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...MICROSOFT_TOOLS,
+      ...OUTLOOK_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
@@ -350,6 +437,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...MICROSOFT_TOOLS,
+      ...OUTLOOK_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "scrape_page",
@@ -475,6 +563,8 @@ Guidelines:
       ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...WOOCOMMERCE_TOOLS,
+      ...GA_TOOLS,
+      ...MAILCHIMP_TOOLS,
       "shopify_setup_store",
       "shopify_create_store",
       "woocommerce_setup_store",
@@ -606,6 +696,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...MICROSOFT_TOOLS,
+      ...OUTLOOK_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "read_file",
@@ -657,6 +748,9 @@ Guidelines:
       ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...AIRTABLE_TOOLS,
+      ...FORMS_TOOLS,
+      ...GA_TOOLS,
+      ...MAILCHIMP_TOOLS,
       "web_search",
       "scrape_page",
       "lead_capture_enrich",
@@ -695,7 +789,9 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...MICROSOFT_TOOLS,
+      ...OUTLOOK_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
+      ...FORMS_TOOLS,
       "web_search",
       "scrape_page",
       "lead_capture_notify_sales",
@@ -749,6 +845,8 @@ Guidelines:
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
+      ...DOCS_TOOLS,
+      ...MAILCHIMP_TOOLS,
       "web_search",
       "scrape_page",
     ],
@@ -803,6 +901,7 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...MICROSOFT_TOOLS,
+      ...DOCS_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "lead_capture_submit",
     ],
@@ -857,6 +956,7 @@ Guidelines:
       ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...AIRTABLE_TOOLS,
+      ...FORMS_TOOLS,
       "web_search",
     ],
     systemPrompt: `You are a reputation and customer feedback specialist for Google Business Profile who protects the brand publicly — every reply is written as if the next 100 customers will read it.
@@ -903,6 +1003,9 @@ Guidelines:
     optionalTools: [
       ...NOTION_SLACK_HUBSPOT_TOOLS,
       ...MICROSOFT_TOOLS,
+      ...OUTLOOK_TOOLS,
+      ...DOCS_TOOLS,
+      ...FORMS_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       "web_search",
       "calendar_book_event",
@@ -959,6 +1062,7 @@ Guidelines:
       ...MICROSOFT_TOOLS,
       ...GOOGLE_DRIVE_TOOLS,
       ...MAILCHIMP_TOOLS,
+      ...GA_TOOLS,
       "web_search",
       "scrape_page",
     ],

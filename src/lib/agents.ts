@@ -238,7 +238,7 @@ const SEEDS: AgentSeed[] = [
       "Custom discount application",
       "Formal quote sent by email",
     ],
-    integrations: ["Resend", "Stripe", "Gmail", "Slack"],
+    integrations: ["Resend", "Stripe", "Gmail", "Slack", "Google Docs"],
     workflow: [
       "Collect the line items",
       "Calculate total and taxes",
@@ -300,7 +300,7 @@ const SEEDS: AgentSeed[] = [
       "Writing SEO-optimised articles",
       "Meta tag and internal link optimisation",
     ],
-    integrations: ["Ahrefs", "Google Search Console", "WordPress", "Notion"],
+    integrations: ["Ahrefs", "Google Search Console", "WordPress", "Notion", "Google Docs"],
     workflow: [
       "Research keywords",
       "Review the top competitors",
@@ -362,7 +362,7 @@ const SEEDS: AgentSeed[] = [
       "Email sequences and newsletters",
       "Microcopy for interfaces and buttons",
     ],
-    integrations: ["Webflow", "WordPress", "Mailchimp", "Notion"],
+    integrations: ["Webflow", "WordPress", "Mailchimp", "Notion", "Google Docs"],
     workflow: [
       "Analyse audience and offer",
       "Develop three persuasive angles",
@@ -393,7 +393,7 @@ const SEEDS: AgentSeed[] = [
       "Support for business decisions",
       "Operational coordination of workflows",
     ],
-    integrations: ["Google Calendar", "Gmail", "Google Sheets", "Slack"],
+    integrations: ["Google Calendar", "Gmail", "Google Sheets", "Slack", "Google Docs"],
     workflow: [
       "Sync data and metrics",
       "Spot anomalies and trends",
@@ -488,7 +488,7 @@ const SEEDS: AgentSeed[] = [
       "Candidate communication and feedback",
       "Interview scheduling",
     ],
-    integrations: ["LinkedIn", "Google Calendar", "Gmail", "Notion"],
+    integrations: ["LinkedIn", "Google Calendar", "Gmail", "Notion", "Google Docs"],
     workflow: [
       "Receive applications",
       "Extract key skills",

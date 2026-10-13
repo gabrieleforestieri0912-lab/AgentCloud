@@ -303,6 +303,31 @@ export const SKILL_LOCALIZATIONS_ES: Record<string, PluginLocalization> = {
           "Tabla de secuencia (paso, fecha, canal, asunto del email, objetivo) + textos en borrador",
         example: "Prepara el seguimiento para Bianchi: no responde desde hace 9 días",
       },
+      "modulo-lead-forms": {
+        name: "Módulo Lead Forms",
+        description:
+          "Crea un formulario de contacto con Google Forms, lee las nuevas respuestas y las lleva al CRM/Sheets. Úsala para landings, ferias y campañas.",
+        whenNot: [
+          "Formulario sin aviso de privacidad: no se publica, se añade antes",
+          "Respuestas con datos sensibles innecesarios: reduce las preguntas",
+          "Importación masiva de contactos sin consentimiento: nunca, solo respuestas espontáneas",
+        ],
+        procedure: [
+          "Crea el formulario (forms_create_form) con nombre, email, empresa, mensaje + consentimiento",
+          "Comparte el enlace y verifica con una respuesta de prueba",
+          "Lee las nuevas respuestas (forms_list_responses, deduplica por responseId)",
+          "Valida el email y lleva el lead a HubSpot/Sheets (forms_export_to_sheet)",
+          "Avisa al equipo sobre los leads hot",
+        ],
+        rules: [
+          "Cada formulario incluye aviso de privacidad y consentimiento explícito",
+          "Email mal formado: pide corrección, no registres",
+          "Las respuestas se releen por id: sin leads duplicados del mismo envío",
+        ],
+        output:
+          "Enlace del formulario + nuevas respuestas validadas + leads registrados (CRM/Sheets)",
+        example: "Crea un formulario de contacto para la feria de Milán",
+      },
     },
   },
   "support-reputation": {
@@ -843,6 +868,32 @@ export const SKILL_LOCALIZATIONS_ES: Record<string, PluginLocalization> = {
           "3 variantes completas (headline, subheadline, CTA, ángulo) con textos montados",
         example: "Escribe el texto para la landing de nuestro servicio de limpieza",
       },
+      "newsletter-mailchimp-conforme": {
+        name: "Newsletter Mailchimp Conforme",
+        description:
+          "Crea borrador, contenido y envío de newsletter vía Mailchimp con chequeo de compliance y aprobación. Úsala para newsletters y DEM.",
+        whenNot: [
+          "Audiencia sin consentimiento documentado: primero el consentimiento, luego la campaña",
+          "Borrador con compliance rojo: se arregla, no se fuerza el envío",
+          "Envío sin aprobación explícita: nunca, ni siquiera si se pide de forma vaga",
+        ],
+        procedure: [
+          "Elige audiencia y asunto con el cliente; verifica el consentimiento",
+          "Crea el borrador (mailchimp_create_campaign_draft) con remitente y reply-to",
+          "Fija el contenido (mailchimp_set_campaign_content) con baja y pie",
+          "Lee el informe (mailchimp_get_campaign_report): procede solo si compliance es VERDE",
+          "Muestra asunto, audiencia y resumen y pide aprobación explícita",
+          "Solo tras el visto bueno: mailchimp_schedule_campaign o mailchimp_send_campaign",
+        ],
+        rules: [
+          "Programación y envío requieren siempre aprobación explícita",
+          "Compliance rojo = envío bloqueado, explica qué falta",
+          "Solo clientes con consentimiento: nunca listas compradas ni importes sin base",
+        ],
+        output:
+          "Borrador + compliance (verde/rojo) + resultado de programación/envío",
+        example: "Envía la newsletter de octubre a los clientes",
+      },
     },
   },
   "social-media": {
@@ -1123,6 +1174,31 @@ export const SKILL_LOCALIZATIONS_ES: Record<string, PluginLocalization> = {
           "Acta: decisiones, acciones (qué, quién, para cuándo), puntos abiertos",
         example: "Haz el acta de la reunión de esta mañana",
       },
+      "bozza-email-outlook": {
+        name: "Borrador Email Outlook",
+        description:
+          "Lee el buzón de Outlook, prepara borradores de respuesta y propone el envío solo con aprobación. Úsala cuando el cliente usa Microsoft en lugar de Gmail.",
+        whenNot: [
+          "Buzón de Gmail: usa Borrador de Respuesta, no esta skill",
+          "Correos con compromiso económico o legal: solo borrador, con aprobación",
+          "Envío sin aprobación explícita: nunca, ni siquiera si se pide de forma vaga",
+        ],
+        procedure: [
+          "Lee los no leídos de Outlook (outlook_list_unread) o busca (outlook_search_messages)",
+          "Abre el mensaje (outlook_read_message) antes de responder",
+          "Escribe el borrador con outlook_create_draft u outlook_create_reply_draft",
+          "Muestra destinatarios, asunto y cuerpo y pide aprobación explícita",
+          "Solo tras el visto bueno: outlook_send_message",
+        ],
+        rules: [
+          "El envío siempre requiere aprobación: esta skill prepara, no envía",
+          "Si Outlook no está conectado, guía la conexión en vez de inventar correos",
+          "Máximo 150 palabras, un tema por correo",
+        ],
+        output:
+          "Borrador de Outlook (asunto, cuerpo) + estado de envío (por aprobar/enviado)",
+        example: "Responde en Outlook al correo de Rossi sobre los plazos de entrega",
+      },
     },
   },
   "reports-bi": {
@@ -1276,6 +1352,31 @@ export const SKILL_LOCALIZATIONS_ES: Record<string, PluginLocalization> = {
         output:
           "Briefing (bien / por vigilar / por resolver) + 3 decisiones solicitadas",
         example: "Escribe el briefing para el titular de esta semana",
+      },
+      "report-traffico-ga4": {
+        name: "Informe Tráfico GA4",
+        description:
+          "Lee tráfico, páginas top y conversiones de Google Analytics y los explica en lenguaje sencillo. Úsala para el punto semanal del sitio.",
+        whenNot: [
+          "Propiedad no elegida: pregunta cuál, no presumas",
+          "Datos de un solo día como tendencia: no es una tendencia",
+          "Métricas fuera de whitelist (p. ej. userId): no disponibles, solo agregados",
+        ],
+        procedure: [
+          "Enumera las propiedades (ga_list_properties) y confirma cuál usar",
+          "Lee el resumen de tráfico (ga_traffic_summary) del periodo pedido",
+          "Lee páginas top y conversiones, compara con el periodo anterior",
+          "Señala anomalías (ga_detect_anomalies) solo si se piden o son evidentes",
+          "Cierra con 3 líneas: qué crece, qué baja, qué hacer",
+        ],
+        rules: [
+          "Solo métricas agregadas: ningún identificador de usuario",
+          "Cada número lleva periodo y hora de actualización",
+          "Los informes quedan en caché 30 minutos: dilo",
+        ],
+        output:
+          "Resumen de tráfico + páginas top + conversiones + comparativa + 3 acciones",
+        example: "¿Cómo ha ido el sitio en los últimos 28 días?",
       },
     },
   },
@@ -1585,6 +1686,31 @@ export const SKILL_LOCALIZATIONS_ES: Record<string, PluginLocalization> = {
         output:
           "Lista de diferencias (sección, tipo, impacto, texto antes/después) + síntesis de los cambios sustanciales",
         example: "Compara la v2 del contrato con la v1",
+      },
+      "salva-su-google-docs": {
+        name: "Guardar en Google Docs",
+        description:
+          "Crea un documento de Google desde título y Markdown, añade contenidos y tablas. Úsala para guardar entregables del chat en Docs.",
+        whenNot: [
+          "Documento formal de Word/Excel para firmar: usa Creación de Documentos",
+          "Documento existente elegido sin Picker ni id: pregunta cuál",
+          "Contenidos con datos personales de terceros: verifica la base jurídica",
+        ],
+        procedure: [
+          "Prepara título y contenido en Markdown (títulos, listas, tablas)",
+          "Crea el documento (docs_create_document) y devuelve el enlace",
+          "Para añadidos: docs_append_to_document; para tablas: docs_insert_table",
+          "Para ediciones puntuales: muestra qué cambia, luego docs_replace_text",
+          "Cierra con el enlace al documento y la versión del archivo vinculada",
+        ],
+        rules: [
+          "Opera solo sobre documentos indicados o creados por el agente: sin rastreos de Drive",
+          "Las sustituciones se muestran antes de ejecutarlas",
+          "Devuelve siempre el enlace al documento, no solo el id",
+        ],
+        output:
+          "Enlace al documento de Google + resumen de operaciones (creado/añadido/tabla)",
+        example: "Guarda este informe en Google Docs",
       },
     },
   },

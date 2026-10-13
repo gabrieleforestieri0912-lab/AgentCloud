@@ -146,6 +146,15 @@ export const ALL_TOOLS_LIST = [
   "mailchimp_list_audiences",
   "mailchimp_get_audience_stats",
   "mailchimp_list_campaigns",
+  // Mailchimp scritture GDPR (consenso esplicito, invio con approvazione +
+  // compliance-check): programmazione e invio richiedono conferma.
+  "mailchimp_upsert_contact",
+  "mailchimp_add_tags",
+  "mailchimp_create_campaign_draft",
+  "mailchimp_set_campaign_content",
+  "mailchimp_get_campaign_report",
+  "mailchimp_schedule_campaign",
+  "mailchimp_send_campaign",
   // Microsoft 365 (Word/Excel/PowerPoint/OneNote): una connessione abilita i
   // quattro documenti. Le scritture su contenuto esistente richiedono conferma
   // (vedi lib/agents/tool-confirmation.ts).
@@ -160,6 +169,45 @@ export const ALL_TOOLS_LIST = [
   "onenote_create_page",
   "onenote_append",
   "onenote_read",
+  // Microsoft Outlook (email + calendario): invio e cancellazione con conferma.
+  "outlook_search_messages",
+  "outlook_read_message",
+  "outlook_list_unread",
+  "outlook_create_draft",
+  "outlook_create_reply_draft",
+  "outlook_send_message",
+  "outlook_list_events",
+  "outlook_get_free_busy",
+  "outlook_create_event",
+  "outlook_update_event",
+  "outlook_cancel_event",
+  // Google Docs (creazione, lettura, append, replace, tabelle, export PDF).
+  "docs_create_document",
+  "docs_read_document",
+  "docs_append_to_document",
+  "docs_replace_text",
+  "docs_insert_table",
+  "docs_export_pdf",
+  // Google Forms (creazione form, domande, risposte, export su Sheets).
+  "forms_create_form",
+  "forms_add_question",
+  "forms_update_form",
+  "forms_get_form",
+  "forms_list_responses",
+  "forms_get_response_summary",
+  "forms_export_to_sheet",
+  // Google Analytics 4 (sola lettura, metriche aggregate).
+  "ga_list_properties",
+  "ga_run_report",
+  "ga_traffic_summary",
+  "ga_top_pages",
+  "ga_conversions",
+  "ga_compare_periods",
+  "ga_detect_anomalies",
+  // Quiz e flashcard interattive (file HTML autonomi): seguono write_file,
+  // vedi getEnabledToolsForAgent. Nessuna conferma: creano file nuovi.
+  "quiz_create",
+  "flashcards_create",
   "request_integration_connect",
 ];
 
@@ -271,6 +319,14 @@ export function getEnabledToolsForAgent(agentId: string): string[] {
 
   // Connection card tool is always available (Claude-style inline connect)
   enabledTools.add("request_integration_connect");
+
+  // Quiz e flashcard seguono write_file: un agente che sa produrre file sa anche
+  // produrre quiz/flashcard interattive (stesso canale di consegna, blocco
+  // <agentcloud_file type="html">). Un punto solo invece di 15 liste da allineare.
+  if (enabledTools.has("write_file")) {
+    enabledTools.add("quiz_create");
+    enabledTools.add("flashcards_create");
+  }
 
   // Infine si filtra con l'elenco globale dei tool abilitati (se presente),
   // così un tool bandito globalmente non può essere riattivato da un agente.

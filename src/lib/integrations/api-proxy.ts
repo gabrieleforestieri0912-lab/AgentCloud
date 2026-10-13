@@ -15,6 +15,8 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import crypto from "crypto";
+import { checkUpsertConsent, checkCampaignCompliance } from "./mailchimp/compliance";
 import { decryptMaybe, encryptToken } from "@/lib/integrations/encryption";
 import { getProvider } from "./registry";
 import { getCatalogEntry, PROVIDER_CATALOG } from "./catalog";
@@ -91,7 +93,7 @@ function notConnectedError(name: string): string {
 }
 
 /** Etichetta umana del provider, presa dal catalogo (usata nei messaggi al modello). */
-function providerLabel(provider: GenericProvider): string {
+function providerLabel(provider: string): string {
   return getCatalogEntry(provider)?.label ?? provider;
 }
 
@@ -123,7 +125,7 @@ function clampLimit(limit: number | undefined, fallback = 20): number {
  * usa il data center nella URL del refresh).
  */
 async function refreshViaAdapter(
-  provider: GenericProvider,
+  provider: string,
   refreshToken: string,
   metadata: Record<string, unknown>,
 ): Promise<{
@@ -152,7 +154,11 @@ async function refreshViaAdapter(
  */
 export async function resolveIntegrationToken(
   tenantId: string,
-  provider: GenericProvider,
+  // `string` e non `GenericProvider` di proposito: anche i provider con modulo
+  // dedicato (google_sheets, microsoft_outlook) riusano decrypt/refresh da qui.
+  // `getProvider`/`getCatalogEntry` accettano già stringhe, quindi nessun
+  // controllo si perde: un provider sconosciuto dà riga assente → "non connesso".
+  provider: string,
 ): Promise<ResolvedIntegration> {
   const label = providerLabel(provider);
   const none = (): ResolvedIntegration => ({ ok: false, error: notConnectedError(label) });
@@ -1517,6 +1523,940 @@ type DriveFile = {
 };
 
 // ---------------------------------------------------------------------------
+// Google Docs
+// ---------------------------------------------------------------------------
+
+export type DocsAction =
+  | "createDocument"
+  | "readDocument"
+  | "appendContent"
+  | "replaceText"
+  | "insertTable"
+  | "exportPdf";
+
+export type DocsParams = {
+  /** Titolo per createDocument. */
+  title?: string;
+  /** Contenuto Markdown per createDocument/appendContent. */
+  markdown?: string;
+  /** ID documento (da create o comunicato dall'utente). */
+  documentId?: string;
+  /** Testo da sostituire (replaceText). */
+  find?: string;
+  /** Testo sostitutivo (replaceText). */
+  replace?: string;
+  /** Tabella: righe di celle (insertTable). */
+  rows?: string[][];
+  limit?: number;
+};
+
+const DOCS_API = "https://docs.googleapis.com/v1/documents";
+const DRIVE_FILES_API = "https://www.googleapis.com/drive/v3/files";
+
+/** Limite di caratteri restituiti al modello in lettura (come Drive). */
+const DOCS_MAX_READ_CHARS = 20_000;
+
+/**
+ * Convertitore Markdown -> richieste Docs API (modulo puro e testabile senza
+ * token: ./google/docs-markdown.ts). Qui restano import e re-export per chi
+ * importava da questo modulo.
+ */
+import {
+  parseDocsMarkdown,
+  textBlocksToDocsRequests,
+  docsBodyToText,
+  type DocsBlock,
+  type DocsTableBlock,
+  type DocsTextBlock,
+} from "./google/docs-markdown";
+import {
+  buildAddQuestionRequest,
+  summarizeResponses,
+  type FormsRequest,
+} from "./google/forms-questions";
+import {
+  sanitizeGaReportInput,
+  formatGaRows,
+  detectGaAnomalies,
+  type GaRow,
+} from "./google/analytics-report";
+
+export { parseDocsMarkdown, textBlocksToDocsRequests, docsBodyToText };
+export type { DocsBlock, DocsTableBlock, DocsTextBlock };
+
+type DocsRequest = Record<string, unknown>;
+
+function docsError(status: number, json: unknown, fallback: string): string {
+  const msg = (json as { error?: { message?: string } } | null)?.error?.message;
+  if (status === 403) {
+    return `${msg ?? fallback} — Se hai collegato solo Google Drive, collega anche Google Docs dalla dashboard Integrazioni: serve il permesso sui documenti.`;
+  }
+  return msg ?? `${fallback} (${status})`;
+}
+
+async function docsGetEndIndex(
+  documentId: string,
+  headers: Record<string, string>,
+): Promise<{ ok: true; endIndex: number } | { ok: false; error: string }> {
+  const res = await providerRequest(
+    `${DOCS_API}/${encodeURIComponent(documentId)}?fields=body.content.endIndex`,
+    { headers, providerLabel: "Google Docs" },
+  );
+  if (!res.ok) {
+    return { ok: false, error: docsError(res.status, res.json, "Google Docs: lettura documento fallita") };
+  }
+  const content = (res.json as { body?: { content?: { endIndex?: number }[] } } | undefined)?.body?.content;
+  const last = content?.[content.length - 1];
+  const endIndex = typeof last?.endIndex === "number" ? last.endIndex : 1;
+  return { ok: true, endIndex };
+}
+
+async function docsBatchUpdate(
+  documentId: string,
+  headers: Record<string, string>,
+  requests: DocsRequest[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const res = await providerRequest(`${DOCS_API}/${encodeURIComponent(documentId)}:batchUpdate`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ requests }),
+    providerLabel: "Google Docs",
+  });
+  if (!res.ok) {
+    return { ok: false, error: docsError(res.status, res.json, "Google Docs: scrittura fallita") };
+  }
+  return { ok: true };
+}
+
+function docsLink(documentId: string): string {
+  return `https://docs.google.com/document/d/${documentId}/edit`;
+}
+
+export async function docsApiProxy(
+  action: DocsAction,
+  params: DocsParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "google_docs");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+  const headers = {
+    Authorization: integrationAuth(token),
+    Accept: "application/json",
+  };
+  const label = "Google Docs";
+
+  // --- createDocument -------------------------------------------------------
+  if (action === "createDocument") {
+    const title = (params.title ?? "").trim() || "Documento senza titolo";
+    const createRes = await providerRequest(DRIVE_FILES_API, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: title.slice(0, 200),
+        mimeType: "application/vnd.google-apps.document",
+      }),
+      providerLabel: label,
+    });
+    if (!createRes.ok) {
+      return { ok: false, error: docsError(createRes.status, createRes.json, "Google Docs: creazione fallita") };
+    }
+    const documentId = (createRes.json as { id?: string } | undefined)?.id;
+    if (!documentId) return { ok: false, error: "Google Docs: risposta creazione inattesa" };
+
+    // Contenuto iniziale: i blocchi di testo in un batch, le tabelle una a una
+    // in fondo (con endIndex riletto: gli indici delle tabelle non sono
+    // calcolabili in anticipo in modo affidabile).
+    const blocks = parseDocsMarkdown(params.markdown ?? "");
+    const textBlocks = blocks.filter((b): b is DocsTextBlock => b.kind !== "table");
+    const tableBlocks = blocks.filter((b): b is DocsTableBlock => b.kind === "table");
+    if (textBlocks.length > 0) {
+      const { requests } = textBlocksToDocsRequests(textBlocks, 1);
+      const w = await docsBatchUpdate(documentId, headers, requests);
+      if (!w.ok) return { ok: false, error: w.error };
+    }
+    for (const t of tableBlocks) {
+      const w = await docsInsertTable(documentId, headers, t.rows);
+      if (!w.ok) return { ok: false, error: w.error };
+    }
+    return {
+      ok: true,
+      data: `Documento creato: "${title}"\n${docsLink(documentId)}\nid: ${documentId}`,
+    };
+  }
+
+  const documentId = (params.documentId ?? "").trim();
+  if (!documentId) return { ok: false, error: "docs tool requires documentId (create one first with docs_create_document)." };
+
+  // --- readDocument ----------------------------------------------------------
+  if (action === "readDocument") {
+    const res = await providerRequest(
+      `${DOCS_API}/${encodeURIComponent(documentId)}?fields=title,body`,
+      { headers, providerLabel: label },
+    );
+    if (!res.ok) {
+      return { ok: false, error: docsError(res.status, res.json, "Google Docs: lettura fallita") };
+    }
+    const title = (res.json as { title?: string } | undefined)?.title ?? documentId;
+    const { text, truncated } = docsBodyToText(res.json, DOCS_MAX_READ_CHARS);
+    if (!text.trim()) return { ok: true, data: `"${title}" è vuoto.` };
+    return {
+      ok: true,
+      data: `"${title}"\n${docsLink(documentId)}\n\n${text}${truncated ? `\n\n[Contenuto troncato a ${DOCS_MAX_READ_CHARS} caratteri. Chiedi una sezione specifica per continuare.]` : ""}`,
+    };
+  }
+
+  // --- appendContent ----------------------------------------------------------
+  if (action === "appendContent") {
+    const blocks = parseDocsMarkdown(params.markdown ?? "");
+    const textBlocks = blocks.filter((b): b is DocsTextBlock => b.kind !== "table");
+    const tableBlocks = blocks.filter((b): b is DocsTableBlock => b.kind === "table");
+    if (textBlocks.length === 0 && tableBlocks.length === 0) {
+      return { ok: false, error: "docs_append_to_document requires markdown content." };
+    }
+    if (textBlocks.length > 0) {
+      const end = await docsGetEndIndex(documentId, headers);
+      if (!end.ok) return { ok: false, error: end.error };
+      const { requests } = textBlocksToDocsRequests(textBlocks, Math.max(1, end.endIndex - 1));
+      const w = await docsBatchUpdate(documentId, headers, requests);
+      if (!w.ok) return { ok: false, error: w.error };
+    }
+    for (const t of tableBlocks) {
+      const w = await docsInsertTable(documentId, headers, t.rows);
+      if (!w.ok) return { ok: false, error: w.error };
+    }
+    return { ok: true, data: `Contenuto aggiunto.\n${docsLink(documentId)}` };
+  }
+
+  // --- replaceText -------------------------------------------------------------
+  if (action === "replaceText") {
+    const find = (params.find ?? "").trim();
+    const replace = params.replace ?? "";
+    if (!find) return { ok: false, error: "docs_replace_text requires find." };
+    const w = await docsBatchUpdate(documentId, headers, [
+      { replaceAllText: { containsText: { text: find, matchCase: false }, replaceText: replace } },
+    ]);
+    if (!w.ok) return { ok: false, error: w.error };
+    return { ok: true, data: `Testo sostituito ("${find.slice(0, 80)}").\n${docsLink(documentId)}` };
+  }
+
+  // --- insertTable --------------------------------------------------------------
+  if (action === "insertTable") {
+    const rows = (params.rows ?? [])
+      .map((r) => (Array.isArray(r) ? r.map((c) => String(c ?? "").slice(0, 2000)) : []))
+      .filter((r) => r.length > 0)
+      .slice(0, 30);
+    if (rows.length === 0) return { ok: false, error: "docs_insert_table requires rows (array of arrays of strings)." };
+    const cols = Math.min(10, Math.max(...rows.map((r) => r.length)));
+    const norm = rows.map((r) => [...r, ...Array(Math.max(0, cols - r.length)).fill("")].slice(0, cols));
+    const w = await docsInsertTable(documentId, headers, norm);
+    if (!w.ok) return { ok: false, error: w.error };
+    return { ok: true, data: `Tabella inserita (${norm.length}×${cols}).\n${docsLink(documentId)}` };
+  }
+
+  // --- exportPdf ------------------------------------------------------------------
+  // Il binario PDF non può transitare dal risultato testuale del tool: si
+  // restituisce il link al documento con le istruzioni di download (File >
+  // Scarica > PDF). Onesto invece di un link export che richiederebbe il token.
+  const metaRes = await providerRequest(
+    `${DRIVE_FILES_API}/${encodeURIComponent(documentId)}?fields=id,name,webViewLink`,
+    { headers, providerLabel: label },
+  );
+  if (!metaRes.ok) {
+    return { ok: false, error: docsError(metaRes.status, metaRes.json, "Google Docs: export fallito") };
+  }
+  const meta = metaRes.json as { name?: string; webViewLink?: string } | undefined;
+  return {
+    ok: true,
+    data: `Per scaricare "${meta?.name ?? documentId}" in PDF: apri ${meta?.webViewLink ?? docsLink(documentId)} → File → Scarica → PDF (.pdf).`,
+  };
+}
+
+/**
+ * Inserisce una tabella vera in fondo al documento: insertTable + testi delle
+ * celle (indirizzamento strutturale tableCellLocation, stabile nel batch) +
+ * grassetto sulla riga di intestazione. L'endIndex viene riletto perché la
+ * lunghezza occupata dalla tabella non è calcolabile in anticipo.
+ */
+async function docsInsertTable(
+  documentId: string,
+  headers: Record<string, string>,
+  rows: string[][],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const end = await docsGetEndIndex(documentId, headers);
+  if (!end.ok) return end;
+  const at = Math.max(1, end.endIndex - 1);
+  const tableStart = at;
+  const requests: DocsRequest[] = [
+    { insertTable: { location: { index: at }, rows: rows.length, columns: Math.max(...rows.map((r) => r.length)) } },
+  ];
+  rows.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      if (!cell) return;
+      requests.push({
+        insertText: {
+          text: cell,
+          tableCellLocation: {
+            tableStartLocation: { index: tableStart },
+            rowIndex: r,
+            columnIndex: c,
+          },
+        },
+      });
+    });
+  });
+  // Intestazione in grassetto (indirizzamento strutturale sulla prima riga).
+  requests.push({
+    updateTextStyle: {
+      tableRange: {
+        tableCellLocation: {
+          tableStartLocation: { index: tableStart },
+          rowIndex: 0,
+          columnIndex: 0,
+        },
+        rowSpan: 1,
+        columnSpan: Math.max(...rows.map((r) => r.length)),
+      },
+      textStyle: { bold: true },
+      fields: "bold",
+    },
+  });
+  return docsBatchUpdate(documentId, headers, requests);
+}
+
+// ---------------------------------------------------------------------------
+// Google Forms
+// ---------------------------------------------------------------------------
+
+export type FormsAction =
+  | "createForm"
+  | "addQuestion"
+  | "updateForm"
+  | "getForm"
+  | "listResponses"
+  | "getResponseSummary"
+  | "exportToSheet";
+
+export type FormsParams = {
+  /** ID form (tutte le azioni tranne createForm). */
+  formId?: string;
+  /** Titolo per createForm/updateForm. */
+  title?: string;
+  /** Descrizione per createForm/updateForm. */
+  description?: string;
+  /**
+   * Domande in forma grezza (dal modello: stringhe/array generici). La
+   * normalizzazione in FormQuestionSpec avviene dentro il proxy, così il tipo
+   * exported resta permissivo e il dispatcher non deve importare i tipi puri.
+   */
+  questions?: Array<Record<string, unknown>>;
+  /** Singola domanda per addQuestion (forma grezza, come sopra). */
+  question?: Record<string, unknown>;
+  limit?: number;
+  /** ID spreadsheet per exportToSheet (se assente, ne crea uno nuovo). */
+  spreadsheetId?: string;
+};
+
+const FORMS_API = "https://forms.googleapis.com/v1/forms";
+const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
+
+function formsError(status: number, json: unknown, fallback: string): string {
+  const msg = (json as { error?: { message?: string } } | null)?.error?.message;
+  if (status === 403) {
+    return `${msg ?? fallback} — Collega Google Forms dalla dashboard Integrazioni: servono i permessi sui moduli e sulle risposte.`;
+  }
+  return msg ?? `${fallback} (${status})`;
+}
+
+function formsLink(formId: string): string {
+  return `https://docs.google.com/forms/d/${formId}/edit`;
+}
+
+type FormsApiForm = {
+  formId?: string;
+  info?: { title?: string; description?: string };
+  items?: { itemId?: string; title?: string; questionItem?: { question?: { questionId?: string } } }[];
+  responderUri?: string;
+};
+
+async function formsGetForm(
+  formId: string,
+  headers: Record<string, string>,
+): Promise<{ ok: true; form: FormsApiForm } | { ok: false; error: string }> {
+  const res = await providerRequest(
+    `${FORMS_API}/${encodeURIComponent(formId)}`,
+    { headers, providerLabel: "Google Forms" },
+  );
+  if (!res.ok) return { ok: false, error: formsError(res.status, res.json, "Google Forms: lettura form fallita") };
+  return { ok: true, form: (res.json ?? {}) as FormsApiForm };
+}
+
+async function formsBatchUpdate(
+  formId: string,
+  headers: Record<string, string>,
+  requests: FormsRequest[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const res = await providerRequest(`${FORMS_API}/${encodeURIComponent(formId)}:batchUpdate`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ requests, includeFormInResponse: false }),
+    providerLabel: "Google Forms",
+  });
+  if (!res.ok) return { ok: false, error: formsError(res.status, res.json, "Google Forms: scrittura fallita") };
+  return { ok: true };
+}
+
+type FormsApiResponse = {
+  responseId?: string;
+  answers?: Record<string, { textAnswers?: { answers?: { value?: string }[] } }>;
+};
+
+async function formsListResponses(
+  formId: string,
+  headers: Record<string, string>,
+  limit: number,
+): Promise<{ ok: true; responses: FormsApiResponse[] } | { ok: false; error: string }> {
+  const url = new URL(`${FORMS_API}/${encodeURIComponent(formId)}/responses`);
+  url.searchParams.set("pageSize", String(Math.min(100, Math.max(1, limit))));
+  const res = await providerRequest(url.toString(), {
+    headers,
+    providerLabel: "Google Forms",
+  });
+  if (!res.ok) {
+    // Form senza risposte: la API risponde 200 con oggetto vuoto, non 404.
+    return { ok: false, error: formsError(res.status, res.json, "Google Forms: lettura risposte fallita") };
+  }
+  const list = (res.json as { responses?: FormsApiResponse[] } | undefined)?.responses ?? [];
+  return { ok: true, responses: list };
+}
+
+/** Mappa questionId → titolo domanda, per leggere le risposte in chiaro. */
+function formsQuestionTitles(form: FormsApiForm): { itemId: string; title: string }[] {
+  const out: { itemId: string; title: string }[] = [];
+  for (const item of form.items ?? []) {
+    const qid = item.questionItem?.question?.questionId;
+    if (qid) out.push({ itemId: qid, title: item.title ?? qid });
+  }
+  return out;
+}
+
+function formsResponseAnswers(r: FormsApiResponse): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [qid, ans] of Object.entries(r.answers ?? {})) {
+    const vals = (ans.textAnswers?.answers ?? [])
+      .map((a) => (typeof a.value === "string" ? a.value : ""))
+      .filter(Boolean);
+    if (vals.length > 0) out[qid] = vals;
+  }
+  return out;
+}
+
+export async function formsApiProxy(
+  action: FormsAction,
+  params: FormsParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "google_forms");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+  const headers = {
+    Authorization: integrationAuth(token),
+    Accept: "application/json",
+  };
+  const label = "Google Forms";
+
+  // --- createForm --------------------------------------------------------------
+  if (action === "createForm") {
+    const title = (params.title ?? "").trim().slice(0, 300) || "Modulo senza titolo";
+    // Ogni form creato dall'AI include l'informativa privacy di default: il
+    // titolare la adatta, ma non parte mai senza.
+    const description =
+      (params.description ?? "").trim().slice(0, 2000) ||
+      "Informativa: i dati inseriti saranno usati solo per gestire la tua richiesta. Puoi chiedere in qualsiasi momento la correzione o la cancellazione scrivendo al titolare del modulo.";
+    const createRes = await providerRequest(FORMS_API, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ info: { title, documentTitle: title } }),
+      providerLabel: label,
+    });
+    if (!createRes.ok) {
+      return { ok: false, error: formsError(createRes.status, createRes.json, "Google Forms: creazione fallita") };
+    }
+    const formId = (createRes.json as { formId?: string } | undefined)?.formId;
+    if (!formId) return { ok: false, error: "Google Forms: risposta creazione inattesa" };
+
+    const requests: FormsRequest[] = [
+      { updateFormInfo: { info: { description }, updateMask: "description" } },
+    ];
+    // Prima domanda di consenso configurabile (disattivabile con updateForm):
+    // senza un sì esplicito il flusso Lead non deve trattare il contatto.
+    const questions = (params.questions ?? []).slice(0, 30);
+    let index = 0;
+    for (const q of questions) {
+      const built = buildAddQuestionRequest(
+        {
+          title: q.title,
+          type: q.type ?? "text",
+          description: q.description,
+          required: q.required === true,
+          options: q.options,
+        },
+        index,
+      );
+      if (!built.ok) return { ok: false, error: built.error };
+      requests.push(built.request);
+      index++;
+    }
+    const w = await formsBatchUpdate(formId, headers, requests);
+    if (!w.ok) return { ok: false, error: w.error };
+    const form = await formsGetForm(formId, headers);
+    const responder = form.ok ? form.form.responderUri : undefined;
+    return {
+      ok: true,
+      data: `Form creato: "${title}" (${questions.length} domande + informativa privacy).\nModifica: ${formsLink(formId)}${responder ? `\nCompila: ${responder}` : ""}\nid: ${formId}`,
+    };
+  }
+
+  const formId = (params.formId ?? "").trim();
+  if (!formId) return { ok: false, error: "forms tool requires formId (create one first with forms_create_form)." };
+
+  // --- getForm --------------------------------------------------------------------
+  if (action === "getForm") {
+    const f = await formsGetForm(formId, headers);
+    if (!f.ok) return { ok: false, error: f.error };
+    const items = (f.form.items ?? []).map((it, i) => `${i + 1}. ${it.title ?? "(senza titolo)"}`).join("\n");
+    return {
+      ok: true,
+      data: `"${f.form.info?.title ?? formId}"${f.form.info?.description ? `\n${f.form.info.description}` : ""}\nDomande:\n${items || "(nessuna)"}\nModifica: ${formsLink(formId)}${f.form.responderUri ? `\nCompila: ${f.form.responderUri}` : ""}`,
+    };
+  }
+
+  // --- addQuestion ------------------------------------------------------------------
+  if (action === "addQuestion") {
+    if (!params.question) return { ok: false, error: "forms_add_question requires question {title, type, ...}." };
+    const f = await formsGetForm(formId, headers);
+    if (!f.ok) return { ok: false, error: f.error };
+    const q = params.question;
+    const built = buildAddQuestionRequest(
+      {
+        title: q.title,
+        type: q.type ?? "text",
+        description: q.description,
+        required: q.required === true,
+        options: q.options,
+        scaleLow: q.scaleLow,
+        scaleHigh: q.scaleHigh,
+      },
+      (f.form.items ?? []).length,
+    );
+    if (!built.ok) return { ok: false, error: built.error };
+    const w = await formsBatchUpdate(formId, headers, [built.request]);
+    if (!w.ok) return { ok: false, error: w.error };
+    return { ok: true, data: `Domanda aggiunta a "${f.form.info?.title ?? formId}".\n${formsLink(formId)}` };
+  }
+
+  // --- updateForm ---------------------------------------------------------------------
+  if (action === "updateForm") {
+    const title = (params.title ?? "").trim().slice(0, 300);
+    const description = params.description !== undefined ? params.description.trim().slice(0, 2000) : undefined;
+    if (!title && description === undefined) {
+      return { ok: false, error: "forms_update_form requires title and/or description." };
+    }
+    const info: Record<string, string> = {};
+    if (title) info.title = title;
+    if (description !== undefined) info.description = description;
+    const w = await formsBatchUpdate(formId, headers, [
+      { updateFormInfo: { info, updateMask: Object.keys(info).join(",") } },
+    ]);
+    if (!w.ok) return { ok: false, error: w.error };
+    return { ok: true, data: `Form aggiornato.\n${formsLink(formId)}` };
+  }
+
+  // --- listResponses / getResponseSummary -------------------------------------------------
+  if (action === "listResponses" || action === "getResponseSummary") {
+    const limit = clampLimit(params.limit, 20);
+    const [f, r] = await Promise.all([
+      formsGetForm(formId, headers),
+      formsListResponses(formId, headers, action === "getResponseSummary" ? 100 : limit),
+    ]);
+    if (!f.ok) return { ok: false, error: f.error };
+    if (!r.ok) return { ok: false, error: r.error };
+    const questions = formsQuestionTitles(f.form);
+    const titles = new Map(questions.map((q) => [q.itemId, q.title]));
+    if (action === "getResponseSummary") {
+      const mapped = r.responses.map((resp) => ({
+        responseId: resp.responseId ?? "",
+        answers: formsResponseAnswers(resp),
+      }));
+      return {
+        ok: true,
+        data: summarizeResponses(f.form.info?.title ?? formId, questions, mapped) + `\n${formsLink(formId)}`,
+      };
+    }
+    if (r.responses.length === 0) return { ok: true, data: "Nessuna risposta ancora." };
+    const lines = r.responses.slice(0, limit).map((resp) => {
+      const bits = Object.entries(formsResponseAnswers(resp))
+        .map(([qid, vals]) => `${titles.get(qid) ?? qid}: ${vals.join(", ").slice(0, 200)}`);
+      return `- ${resp.responseId ?? "?"}: ${bits.join(" | ").slice(0, 500) || "(vuota)"}`;
+    });
+    return { ok: true, data: `${r.responses.length} risposte (mostrate ${lines.length}):\n${lines.join("\n")}` };
+  }
+
+  // --- exportToSheet ------------------------------------------------------------------------
+  // Richiede anche Google Sheets collegato: due connessioni, due consensi
+  // separati (niente scope Sheets nel consenso Forms, per minimo privilegio).
+  const sheetToken = await resolveIntegrationToken(tenantId, "google_sheets");
+  if (!sheetToken.ok) {
+    return {
+      ok: false,
+      error: "Per esportare su Sheets collega anche Google Sheets dalla dashboard Integrazioni, poi riprova (dimmi l'id del foglio oppure ne creo uno nuovo).",
+    };
+  }
+  const sheetHeaders = {
+    Authorization: integrationAuth(sheetToken.token),
+    Accept: "application/json",
+  };
+  let spreadsheetId = (params.spreadsheetId ?? "").trim();
+  if (!spreadsheetId) {
+    const f = await formsGetForm(formId, headers);
+    const name = f.ok ? (f.form.info?.title ?? formId) : formId;
+    const created = await providerRequest(SHEETS_API, {
+      method: "POST",
+      headers: { ...sheetHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({ properties: { title: `Risposte — ${name}`.slice(0, 100) } }),
+      providerLabel: "Google Sheets",
+    });
+    if (!created.ok) {
+      return { ok: false, error: formsError(created.status, created.json, "Sheets: creazione foglio fallita") };
+    }
+    spreadsheetId = (created.json as { spreadsheetId?: string } | undefined)?.spreadsheetId ?? "";
+    if (!spreadsheetId) return { ok: false, error: "Sheets: risposta creazione inattesa" };
+  }
+  const [f, r] = await Promise.all([
+    formsGetForm(formId, headers),
+    formsListResponses(formId, headers, 100),
+  ]);
+  if (!f.ok) return { ok: false, error: f.error };
+  if (!r.ok) return { ok: false, error: r.error };
+  const questions = formsQuestionTitles(f.form);
+  const header = ["responseId", ...questions.map((q) => q.title)];
+  const values = [
+    header,
+    ...r.responses.map((resp) => {
+      const ans = formsResponseAnswers(resp);
+      return [resp.responseId ?? "", ...questions.map((q) => (ans[q.itemId] ?? []).join(", "))];
+    }),
+  ];
+  const appended = await providerRequest(
+    `${SHEETS_API}/${encodeURIComponent(spreadsheetId)}/values/Foglio1!A1:append?valueInputOption=RAW`,
+    {
+      method: "POST",
+      headers: { ...sheetHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({ values }),
+      providerLabel: "Google Sheets",
+    },
+  );
+  if (!appended.ok) {
+    return { ok: false, error: formsError(appended.status, appended.json, "Sheets: scrittura fallita") };
+  }
+  return {
+    ok: true,
+    data: `${r.responses.length} risposte esportate su https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit (foglio Foglio1).`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Google Analytics 4 (sola lettura)
+// ---------------------------------------------------------------------------
+
+export type GaAction =
+  | "listProperties"
+  | "runReport"
+  | "getTrafficSummary"
+  | "getTopPages"
+  | "getConversions"
+  | "comparePeriods"
+  | "detectAnomalies";
+
+export type GaParams = {
+  /** Proprietà come "properties/<id>" (da listProperties). */
+  property?: string;
+  dimensions?: string[];
+  metrics?: string[];
+  startDate?: string;
+  endDate?: string;
+  /** Secondo intervallo per comparePeriods. */
+  compareStartDate?: string;
+  compareEndDate?: string;
+  limit?: number;
+};
+
+const GA_DATA_API = "https://analyticsdata.googleapis.com/v1beta";
+const GA_ADMIN_API = "https://analyticsadmin.googleapis.com/v1alpha";
+
+/**
+ * Cache dei report: i dati GA4 non cambiano ogni minuto e la quota gratuita è
+ * in token/giorno per proprietà (200k/giorno standard). TTL 30 minuti per
+ * proprietà+parametri: dimezza le chiamate ripetute (es. l'agente rilegge lo
+ * stesso report nel turno dopo).
+ *
+ * Limite dichiarato: la cache è in memoria per istanza (niente store esterno,
+ * costo zero). Su istanze multiple un report può essere rifatto: al massimo un
+ * 429 di Google, gestito con backoff da providerRequest e messaggio leggibile.
+ */
+const GA_CACHE_TTL_MS = 30 * 60 * 1000;
+const gaCache = new Map<string, { at: number; data: string }>();
+
+function gaCacheGet(key: string): { data: string; cachedAt: number } | null {
+  const hit = gaCache.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at > GA_CACHE_TTL_MS) {
+    gaCache.delete(key);
+    return null;
+  }
+  return { data: hit.data, cachedAt: hit.at };
+}
+
+function gaCacheSet(key: string, data: string): void {
+  if (gaCache.size > 500) gaCache.clear();
+  gaCache.set(key, { at: Date.now(), data });
+}
+
+function gaError(status: number, json: unknown, fallback: string): string {
+  const msg = (json as { error?: { message?: string } } | null)?.error?.message;
+  if (status === 429) {
+    return "Google Analytics: quota momentaneamente esaurita, riprova tra qualche minuto (i report restano in cache 30 minuti).";
+  }
+  if (status === 403) {
+    return `${msg ?? fallback} — Collega Google Analytics dalla dashboard Integrazioni con l'account che ha accesso alla proprietà.`;
+  }
+  return msg ?? `${fallback} (${status})`;
+}
+
+function gaUpdatedNote(cachedAt: number | null): string {
+  const when = cachedAt
+    ? new Date(cachedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return `\n(Dati aggiornati alle ${when}.)`;
+}
+
+type GaApiRow = {
+  dimensionValues?: { value?: string }[];
+  metricValues?: { value?: string }[];
+};
+
+async function gaRunReport(
+  property: string,
+  headers: Record<string, string>,
+  body: Record<string, unknown>,
+): Promise<
+  | { ok: true; dimHeaders: string[]; metHeaders: string[]; rows: GaRow[] }
+  | { ok: false; error: string }
+> {
+  const res = await providerRequest(`${GA_DATA_API}/${property}:runReport`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ ...body, returnPropertyQuota: true }),
+    providerLabel: "Google Analytics",
+  });
+  if (!res.ok) return { ok: false, error: gaError(res.status, res.json, "Analytics: report fallito") };
+  const json = (res.json ?? {}) as {
+    dimensionHeaders?: { name?: string }[];
+    metricHeaders?: { name?: string; type?: string }[];
+    rows?: GaApiRow[];
+  };
+  const dimHeaders = (json.dimensionHeaders ?? []).map((h) => h.name ?? "?");
+  const metHeaders = (json.metricHeaders ?? []).map((h) => h.name ?? "?");
+  const rows = (json.rows ?? []).map((r) => ({
+    dimensions: (r.dimensionValues ?? []).map((v) => v.value ?? ""),
+    metrics: (r.metricValues ?? []).map((v) => v.value ?? ""),
+  }));
+  return { ok: true, dimHeaders, metHeaders, rows };
+}
+
+export async function gaApiProxy(
+  action: GaAction,
+  params: GaParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "google_analytics");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+  const headers = {
+    Authorization: integrationAuth(token),
+    Accept: "application/json",
+  };
+
+  // --- listProperties ------------------------------------------------------------
+  // Onboarding: l'agente mostra le proprietà e chiede all'utente quali collegare
+  // (checkbox in chat: "usa la 123 per i report"). La scelta resta nella
+  // conversazione: niente stato server aggiuntivo.
+  if (action === "listProperties") {
+    const res = await providerRequest(`${GA_ADMIN_API}/accountSummaries?pageSize=200`, {
+      headers,
+      providerLabel: "Google Analytics",
+    });
+    if (!res.ok) return { ok: false, error: gaError(res.status, res.json, "Analytics: elenco proprietà fallito") };
+    const summaries = (res.json as { accountSummaries?: { name?: string; propertySummaries?: { property?: string; displayName?: string; propertyType?: string }[] }[] } | undefined)?.accountSummaries ?? [];
+    const lines: string[] = [];
+    for (const acc of summaries) {
+      for (const p of acc.propertySummaries ?? []) {
+        if (!p.property) continue;
+        lines.push(`- ${p.displayName ?? p.property} (${acc.name ?? "?"}) — ${p.property}${p.propertyType ? ` [${p.propertyType}]` : ""}`);
+      }
+    }
+    if (lines.length === 0) {
+      return { ok: true, data: "Nessuna proprietà GA4 accessibile con questo account. Verifica l'accesso in analytics.google.com." };
+    }
+    return {
+      ok: true,
+      data: `Proprietà GA4 (usa l'id "properties/..." nei report):\n${lines.join("\n")}`,
+    };
+  }
+
+  const prop = (params.property ?? "").trim();
+  if (!/^properties\/\d+$/.test(prop)) {
+    return { ok: false, error: 'ga tool requires property as "properties/<id>" (get it from ga_list_properties).' };
+  }
+  const limit = Math.min(50, Math.max(1, Number(params.limit) || 10));
+
+  const runCached = async (
+    cacheKey: string,
+    body: Record<string, unknown>,
+  ): Promise<{ ok: true; result: string; cachedAt: number | null } | { ok: false; error: string }> => {
+    const hit = gaCacheGet(cacheKey);
+    if (hit) return { ok: true, result: hit.data, cachedAt: hit.cachedAt };
+    const r = await gaRunReport(prop, headers, body);
+    if (!r.ok) return r;
+    const text = formatGaRows(r.dimHeaders, r.metHeaders, r.rows, limit);
+    gaCacheSet(cacheKey, text);
+    return { ok: true, result: text, cachedAt: null };
+  };
+
+  // --- getTrafficSummary --------------------------------------------------------------
+  if (action === "getTrafficSummary") {
+    const startDate = (params.startDate ?? "28daysAgo").trim() || "28daysAgo";
+    const endDate = (params.endDate ?? "today").trim() || "today";
+    const key = `${tenantId}|traffic|${prop}|${startDate}|${endDate}`;
+    const r = await runCached(key, {
+      dateRanges: [{ startDate, endDate }],
+      metrics: [{ name: "sessions" }, { name: "totalUsers" }, { name: "newUsers" }, { name: "screenPageViews" }, { name: "engagementRate" }],
+    });
+    if (!r.ok) return r;
+    return { ok: true, data: `Traffico ${startDate} → ${endDate}:\n${r.result}${gaUpdatedNote(r.cachedAt)}` };
+  }
+
+  // --- getTopPages -----------------------------------------------------------------------
+  if (action === "getTopPages") {
+    const startDate = (params.startDate ?? "28daysAgo").trim() || "28daysAgo";
+    const endDate = (params.endDate ?? "today").trim() || "today";
+    const key = `${tenantId}|toppages|${prop}|${startDate}|${endDate}|${limit}`;
+    const r = await runCached(key, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "pagePath" }, { name: "pageTitle" }],
+      metrics: [{ name: "screenPageViews" }, { name: "totalUsers" }],
+      orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+      limit,
+    });
+    if (!r.ok) return r;
+    return { ok: true, data: `Pagine top ${startDate} → ${endDate}:\n${r.result}${gaUpdatedNote(r.cachedAt)}` };
+  }
+
+  // --- getConversions -----------------------------------------------------------------------
+  if (action === "getConversions") {
+    const startDate = (params.startDate ?? "28daysAgo").trim() || "28daysAgo";
+    const endDate = (params.endDate ?? "today").trim() || "today";
+    const key = `${tenantId}|conv|${prop}|${startDate}|${endDate}`;
+    const r = await runCached(key, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "conversions" }, { name: "sessions" }],
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+      limit: 100,
+    });
+    if (!r.ok) return r;
+    return { ok: true, data: `Conversioni giornaliere ${startDate} → ${endDate}:\n${r.result}${gaUpdatedNote(r.cachedAt)}` };
+  }
+
+  // --- runReport (generico, da whitelist) ---------------------------------------------------------
+  if (action === "runReport") {
+    const checked = sanitizeGaReportInput({
+      property: prop,
+      dimensions: params.dimensions,
+      metrics: params.metrics,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      limit,
+    });
+    if (!checked.ok) return { ok: false, error: checked.error };
+    const { input, dropped } = checked;
+    const key = `${tenantId}|report|${prop}|${input.dimensions.join(",")}|${input.metrics.join(",")}|${input.startDate}|${input.endDate}|${limit}`;
+    const r = await runCached(key, {
+      dateRanges: [{ startDate: input.startDate, endDate: input.endDate }],
+      dimensions: input.dimensions.map((name) => ({ name })),
+      metrics: input.metrics.map((name) => ({ name })),
+      limit,
+    });
+    if (!r.ok) return r;
+    const warn = dropped.length > 0 ? `\n(Ignorati, fuori whitelist: ${dropped.join(", ")}.)` : "";
+    return { ok: true, data: `Report ${input.startDate} → ${input.endDate}:\n${r.result}${warn}${gaUpdatedNote(r.cachedAt)}` };
+  }
+
+  // --- comparePeriods -------------------------------------------------------------------------------
+  if (action === "comparePeriods") {
+    const s1 = (params.startDate ?? "").trim();
+    const e1 = (params.endDate ?? "").trim();
+    const s2 = (params.compareStartDate ?? "").trim();
+    const e2 = (params.compareEndDate ?? "").trim();
+    if (!s1 || !e1 || !s2 || !e2) {
+      return { ok: false, error: "ga_compare_periods requires startDate, endDate, compareStartDate, compareEndDate." };
+    }
+    const body = (s: string, e: string) => ({
+      dateRanges: [{ startDate: s, endDate: e }],
+      metrics: [{ name: "sessions" }, { name: "totalUsers" }, { name: "screenPageViews" }, { name: "conversions" }],
+    });
+    const [a, b] = await Promise.all([
+      gaRunReport(prop, headers, body(s1, e1)),
+      gaRunReport(prop, headers, body(s2, e2)),
+    ]);
+    if (!a.ok) return a;
+    if (!b.ok) return b;
+    const val = (rows: GaRow[], i: number) => Number(rows[0]?.metrics[i] ?? 0) || 0;
+    const names = ["Sessioni", "Utenti", "Visualizzazioni", "Conversioni"];
+    const lines = names.map((label, i) => {
+      const cur = val(a.rows, i);
+      const prev = val(b.rows, i);
+      const delta = prev === 0 ? (cur > 0 ? "+∞" : "0%") : `${cur >= prev ? "+" : ""}${Math.round(((cur - prev) / prev) * 1000) / 10}%`;
+      return `- ${label}: ${cur} vs ${prev} (${delta})`;
+    });
+    return { ok: true, data: `Confronto ${s1}→${e1} vs ${s2}→${e2}:\n${lines.join("\n")}${gaUpdatedNote(null)}` };
+  }
+
+  // --- detectAnomalies ----------------------------------------------------------------------------------
+  // Serie giornaliera sessioni 90 giorni → z-score lato AgentCloud.
+  const r = await gaRunReport(prop, headers, {
+    dateRanges: [{ startDate: "90daysAgo", endDate: "today" }],
+    dimensions: [{ name: "date" }],
+    metrics: [{ name: "sessions" }],
+    orderBys: [{ dimension: { dimensionName: "date" } }],
+    limit: 100,
+  });
+  if (!r.ok) return r;
+  const series = r.rows.map((row) => ({
+    date: row.dimensions[0] ?? "",
+    value: Number(row.metrics[0] ?? 0) || 0,
+  }));
+  const anomalies = detectGaAnomalies(series);
+  if (anomalies.length === 0) {
+    return { ok: true, data: `Nessuna anomalia nelle sessioni giornaliere (ultimi 90 giorni).${gaUpdatedNote(null)}` };
+  }
+  return {
+    ok: true,
+    data: `Anomalie sessioni giornaliere (ultimi 90 giorni):\n${anomalies.map((a) => `- ${a.date}: ${a.value} (${a.direction}, z=${a.z})`).join("\n")}${gaUpdatedNote(null)}`,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Airtable
 // ---------------------------------------------------------------------------
 
@@ -1919,12 +2859,48 @@ export async function wooApiProxy(
 // Mailchimp
 // ---------------------------------------------------------------------------
 
-export type MailchimpAction = "listAudiences" | "getAudienceStats" | "listCampaigns";
+export type MailchimpAction =
+  | "listAudiences"
+  | "getAudienceStats"
+  | "listCampaigns"
+  | "upsertContact"
+  | "addTags"
+  | "createCampaignDraft"
+  | "setCampaignContent"
+  | "getCampaignReport"
+  | "scheduleCampaign"
+  | "sendCampaign";
 
 export type MailchimpParams = {
   /** id della lista/audience. */
   listId?: string;
   limit?: number;
+  /** Email contatto (upsertContact/addTags). */
+  email?: string;
+  /** Stato desiderato: subscribed (solo con consenso), pending, unsubscribed, transactional. */
+  status?: string;
+  /** Base del consenso esplicito (obbligatoria per subscribed). */
+  consentBasis?: string;
+  /** Data del consenso AAAA-MM-GG (obbligatoria per subscribed). */
+  consentDate?: string;
+  firstName?: string;
+  lastName?: string;
+  /** Tag da applicare (addTags). */
+  tags?: string[];
+  /** Oggetto email (createCampaignDraft). */
+  subject?: string;
+  /** Nome mittente (createCampaignDraft, obbligatorio nel footer). */
+  fromName?: string;
+  /** Reply-to (createCampaignDraft). */
+  replyTo?: string;
+  /** Titolo interno campagna (createCampaignDraft). */
+  title?: string;
+  /** ID campagna (setCampaignContent/getCampaignReport/schedule/send). */
+  campaignId?: string;
+  /** HTML contenuto (setCampaignContent). */
+  html?: string;
+  /** ISO datetime per scheduleCampaign. */
+  scheduleTime?: string;
 };
 
 /**
@@ -2011,7 +2987,9 @@ export async function mailchimpApiProxy(
   }
 
   const listId = (params.listId ?? "").trim();
-  if (!listId) return { ok: false, error: "Mailchimp tool requires listId." };
+  if (!listId && action !== "getCampaignReport" && action !== "setCampaignContent" && action !== "scheduleCampaign" && action !== "sendCampaign") {
+    return { ok: false, error: "Mailchimp tool requires listId." };
+  }
 
   if (action === "getAudienceStats") {
     const res = await providerRequest(`${base}/lists/${encodeURIComponent(listId)}`, {
@@ -2060,4 +3038,257 @@ export async function mailchimpApiProxy(
       })
       .join("\n"),
   };
+}
+
+/**
+ * Hash MD5 lowercase dell'email: è l'id del member nelle API Mailchimp.
+ * (MD5 qui è solo chiave di lookup, non sicurezza.)
+ */
+function mailchimpMemberHash(email: string): string {
+  return crypto.createHash("md5").update(email.toLowerCase()).digest("hex");
+}
+
+async function mailchimpRequest(
+  base: string,
+  headers: Record<string, string>,
+  path: string,
+  opts: { method?: string; body?: unknown } = {},
+): Promise<{ status: number; json: unknown }> {
+  const res = await providerRequest(`${base}${path}`, {
+    method: (opts.method ?? "GET") as "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+    headers: opts.body !== undefined ? { ...headers, "Content-Type": "application/json" } : headers,
+    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    providerLabel: "Mailchimp",
+  });
+  return { status: res.status, json: res.json };
+}
+
+export async function mailchimpWriteProxy(
+  action: Exclude<MailchimpAction, "listAudiences" | "getAudienceStats" | "listCampaigns">,
+  params: MailchimpParams,
+  tenantId: string,
+): Promise<IntegrationApiResult> {
+  const resolved = await resolveIntegrationToken(tenantId, "mailchimp");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  const { token } = resolved;
+  const base = mailchimpBase(token);
+  if (!base) {
+    return {
+      ok: false,
+      error: "Mailchimp: data center sconosciuto. Ask the user to reconnect Mailchimp from the dashboard (Integrations), then retry.",
+    };
+  }
+  // Coda per account (max 10 connessioni concorrenti per account Mailchimp):
+  // le scritture dello stesso tenant si accodano in serie. Best-effort per
+  // istanza (niente lock distribuito: costo zero); in più il 429 di Mailchimp
+  // resta gestito con backoff da providerRequest.
+  const headers = { Authorization: mailchimpAuth(token), Accept: "application/json" };
+
+  // --- upsertContact ---------------------------------------------------------------
+  // PUT idempotente sullo stesso member: rieseguire non duplica.
+  if (action === "upsertContact") {
+    const listId = (params.listId ?? "").trim();
+    const email = (params.email ?? "").trim().toLowerCase();
+    if (!listId) return { ok: false, error: "mailchimp_upsert_contact requires listId." };
+    // Stato corrente per rispettare unsubscribe/cleaned.
+    const existing = await mailchimpRequest(base, headers, `/lists/${encodeURIComponent(listId)}/members/${mailchimpMemberHash(email || "none")}`);
+    const currentStatus =
+      existing.status === 200
+        ? (existing.json as { status?: string } | undefined)?.status ?? null
+        : null;
+    const check = checkUpsertConsent({
+      email,
+      status: params.status ?? "pending",
+      currentStatus,
+      consentBasis: params.consentBasis,
+      consentDate: params.consentDate,
+    });
+    if (!check.ok) return { ok: false, error: check.error };
+    const body: Record<string, unknown> = {
+      email_address: email,
+      status: check.status,
+      ...(params.firstName || params.lastName
+        ? { merge_fields: { ...(params.firstName ? { FNAME: params.firstName.slice(0, 50) } : {}), ...(params.lastName ? { LNAME: params.lastName.slice(0, 50) } : {}) } }
+        : {}),
+      ...(check.status === "subscribed"
+        ? { marketing_permissions: [], notes: `Consenso: ${params.consentBasis} (${params.consentDate})` }
+        : {}),
+    };
+    if (params.tags?.length) {
+      body.tags = params.tags.slice(0, 10).map(String);
+    }
+    const put = await mailchimpRequest(base, headers, `/lists/${encodeURIComponent(listId)}/members/${mailchimpMemberHash(email)}`, {
+      method: "PUT",
+      body,
+    });
+    if (put.status >= 400) {
+      const msg = (put.json as { detail?: string; title?: string } | null)?.detail
+        ?? (put.json as { title?: string } | null)?.title
+        ?? `Mailchimp upsert failed (${put.status})`;
+      return { ok: false, error: msg };
+    }
+    return {
+      ok: true,
+      data: `Contatto ${email} registrato come "${check.status}" nella lista ${listId}.`,
+    };
+  }
+
+  // --- addTags --------------------------------------------------------------------------
+  if (action === "addTags") {
+    const listId = (params.listId ?? "").trim();
+    const email = (params.email ?? "").trim().toLowerCase();
+    const tags = (params.tags ?? []).map((t) => String(t).trim()).filter(Boolean).slice(0, 10);
+    if (!listId) return { ok: false, error: "mailchimp_add_tags requires listId." };
+    if (!email) return { ok: false, error: "mailchimp_add_tags requires email." };
+    if (tags.length === 0) return { ok: false, error: "mailchimp_add_tags requires at least one tag." };
+    const r = await mailchimpRequest(
+      base,
+      headers,
+      `/lists/${encodeURIComponent(listId)}/members/${mailchimpMemberHash(email)}/tags`,
+      { method: "POST", body: { tags: tags.map((name) => ({ name, status: "active" })) } },
+    );
+    if (r.status >= 400) {
+      const msg = (r.json as { detail?: string } | null)?.detail ?? `Mailchimp add tags failed (${r.status})`;
+      return { ok: false, error: msg };
+    }
+    return { ok: true, data: `Tag aggiunti a ${email}: ${tags.join(", ")}.` };
+  }
+
+  // --- createCampaignDraft --------------------------------------------------------------------
+  if (action === "createCampaignDraft") {
+    const listId = (params.listId ?? "").trim();
+    const subject = (params.subject ?? "").trim().slice(0, 200);
+    const fromName = (params.fromName ?? "").trim().slice(0, 100);
+    const replyTo = (params.replyTo ?? "").trim().slice(0, 100);
+    if (!listId) return { ok: false, error: "mailchimp_create_campaign_draft requires listId." };
+    if (!subject) return { ok: false, error: "mailchimp_create_campaign_draft requires subject." };
+    if (!fromName) return { ok: false, error: "mailchimp_create_campaign_draft requires fromName (identità mittente obbligatoria)." };
+    if (!replyTo) return { ok: false, error: "mailchimp_create_campaign_draft requires replyTo." };
+    const r = await mailchimpRequest(base, headers, "/campaigns", {
+      method: "POST",
+      body: {
+        type: "regular",
+        recipients: { list_id: listId },
+        settings: {
+          subject_line: subject,
+          title: (params.title ?? subject).slice(0, 200),
+          from_name: fromName,
+          reply_to: replyTo,
+        },
+      },
+    });
+    if (r.status >= 400) {
+      const msg = (r.json as { detail?: string } | null)?.detail ?? `Mailchimp create campaign failed (${r.status})`;
+      return { ok: false, error: msg };
+    }
+    const id = (r.json as { id?: string } | undefined)?.id ?? "?";
+    return { ok: true, data: `Bozza campagna creata (id: ${id}). Non inviata: imposta il contenuto con mailchimp_set_campaign_content, poi chiedi approvazione.` };
+  }
+
+  const campaignId = (params.campaignId ?? "").trim();
+  if (!campaignId) return { ok: false, error: "Mailchimp campaign tool requires campaignId." };
+
+  // --- setCampaignContent --------------------------------------------------------------------------
+  if (action === "setCampaignContent") {
+    const html = (params.html ?? "").trim();
+    if (!html) return { ok: false, error: "mailchimp_set_campaign_content requires html." };
+    const r = await mailchimpRequest(base, headers, `/campaigns/${encodeURIComponent(campaignId)}/content`, {
+      method: "PUT",
+      body: { html },
+    });
+    if (r.status >= 400) {
+      const msg = (r.json as { detail?: string } | null)?.detail ?? `Mailchimp set content failed (${r.status})`;
+      return { ok: false, error: msg };
+    }
+    return { ok: true, data: `Contenuto impostato per la campagna ${campaignId}. Verifica il compliance-check con mailchimp_get_campaign_report prima di programmare/inviare.` };
+  }
+
+  // --- getCampaignReport --------------------------------------------------------------------------------
+  if (action === "getCampaignReport") {
+    const [c, rep] = await Promise.all([
+      mailchimpRequest(base, headers, `/campaigns/${encodeURIComponent(campaignId)}?fields=id,status,send_time,emails_sent,settings,recipients`),
+      mailchimpRequest(base, headers, `/reports/${encodeURIComponent(campaignId)}`),
+    ]);
+    if (c.status >= 400) {
+      const msg = (c.json as { detail?: string } | null)?.detail ?? `Mailchimp campaign not found (${c.status})`;
+      return { ok: false, error: msg };
+    }
+    const camp = c.json as Record<string, unknown>;
+    const settings = (camp.settings ?? {}) as Record<string, unknown>;
+    const report = rep.status < 400 ? (rep.json as Record<string, unknown>) : {};
+    const opens = report.opens as Record<string, unknown> | undefined;
+    const lines = [
+      `Campagna "${String(settings.title ?? "?")}" — stato: ${String(camp.status ?? "?")}`,
+      `Oggetto: ${String(settings.subject_line ?? "?")} | Da: ${String(settings.from_name ?? "?")} <${String(settings.reply_to ?? "?")}>`,
+      typeof camp.emails_sent === "number" ? `Inviati: ${camp.emails_sent}` : "",
+      typeof opens?.open_rate === "number" ? `Open rate: ${(Number(opens.open_rate) * 100).toFixed(1)}%` : "",
+      typeof report.click_rate === "number" ? `Click rate: ${(Number(report.click_rate) * 100).toFixed(1)}%` : "",
+    ].filter(Boolean);
+    // Compliance-check live sulla bozza (stesse regole dell'invio).
+    const content = await mailchimpRequest(base, headers, `/campaigns/${encodeURIComponent(campaignId)}/content?fields=html`);
+    const html = (content.json as { html?: string } | undefined)?.html ?? "";
+    const compliance = checkCampaignCompliance({
+      settings: {
+        subject: String(settings.subject_line ?? ""),
+        title: String(settings.title ?? ""),
+        fromName: String(settings.from_name ?? ""),
+        replyTo: String(settings.reply_to ?? ""),
+      },
+      html,
+    });
+    lines.push(
+      compliance.ok
+        ? "Compliance: VERDE — pronta per programmazione/invio (con approvazione)."
+        : `Compliance: ROSSA — invio bloccato: ${compliance.issues.join("; ")}`,
+    );
+    return { ok: true, data: lines.join("\n") };
+  }
+
+  // --- scheduleCampaign / sendCampaign ---------------------------------------------------------------------------
+  // Entrambi high + approvazione (tool-confirmation.ts). L'invio è bloccato se
+  // il compliance-check è rosso: il rifiuto spiega cosa manca.
+  const content = await mailchimpRequest(base, headers, `/campaigns/${encodeURIComponent(campaignId)}/content?fields=html`);
+  const camp = await mailchimpRequest(base, headers, `/campaigns/${encodeURIComponent(campaignId)}?fields=id,status,settings`);
+  if (camp.status >= 400) {
+    return { ok: false, error: `Mailchimp campaign not found (${camp.status})` };
+  }
+  const settings = ((camp.json as Record<string, unknown>).settings ?? {}) as Record<string, unknown>;
+  const compliance = checkCampaignCompliance({
+    settings: {
+      subject: String(settings.subject_line ?? ""),
+      title: String(settings.title ?? ""),
+      fromName: String(settings.from_name ?? ""),
+      replyTo: String(settings.reply_to ?? ""),
+    },
+    html: (content.json as { html?: string } | undefined)?.html ?? "",
+  });
+  if (!compliance.ok) {
+    return {
+      ok: false,
+      error: `Invio BLOCCATO (compliance rosso): ${compliance.issues.join("; ")}. Sistema la bozza e riprova.`,
+    };
+  }
+  if (action === "scheduleCampaign") {
+    const scheduleTime = (params.scheduleTime ?? "").trim();
+    if (!scheduleTime) return { ok: false, error: "mailchimp_schedule_campaign requires scheduleTime (ISO, futuro)." };
+    const r = await mailchimpRequest(base, headers, `/campaigns/${encodeURIComponent(campaignId)}/actions/schedule`, {
+      method: "POST",
+      body: { schedule_time: scheduleTime },
+    });
+    if (r.status >= 400) {
+      const msg = (r.json as { detail?: string } | null)?.detail ?? `Mailchimp schedule failed (${r.status})`;
+      return { ok: false, error: msg };
+    }
+    return { ok: true, data: `Campagna ${campaignId} programmata per ${scheduleTime}.` };
+  }
+  // sendCampaign (l'approvazione è già avvenuta via tool_confirm prima di arrivare qui).
+  const r = await mailchimpRequest(base, headers, `/campaigns/${encodeURIComponent(campaignId)}/actions/send`, {
+    method: "POST",
+    body: {},
+  });
+  if (r.status >= 400) {
+    const msg = (r.json as { detail?: string } | null)?.detail ?? `Mailchimp send failed (${r.status})`;
+    return { ok: false, error: msg };
+  }
+  return { ok: true, data: `Campagna ${campaignId} inviata.` };
 }

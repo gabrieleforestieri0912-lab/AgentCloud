@@ -305,6 +305,31 @@ export const SKILL_LOCALIZATIONS_FR: Record<string, PluginLocalization> = {
           "Tableau de séquence (étape, date, canal, objet email, objectif) + textes en brouillon",
         example: "Prépare la relance pour Bianchi : sans réponse depuis 9 jours",
       },
+      "modulo-lead-forms": {
+        name: "Module Lead Forms",
+        description:
+          "Crée un formulaire de contact avec Google Forms, lit les nouvelles réponses et les pousse vers CRM/Sheets. À utiliser pour landings, salons et campagnes.",
+        whenNot: [
+          "Formulaire sans notice de confidentialité : ne jamais publier, l'ajouter d'abord",
+          "Réponses avec données sensibles inutiles : réduire les questions",
+          "Import massif de contacts sans consentement : jamais, que des réponses spontanées",
+        ],
+        procedure: [
+          "Créer le formulaire (forms_create_form) avec nom, email, entreprise, message + consentement",
+          "Partager le lien et vérifier avec une réponse de test",
+          "Lire les nouvelles réponses (forms_list_responses, dédupliquer par responseId)",
+          "Valider l'email et pousser le lead vers HubSpot/Sheets (forms_export_to_sheet)",
+          "Notifier l'équipe pour les leads chauds",
+        ],
+        rules: [
+          "Chaque formulaire inclut notice de confidentialité et consentement explicite",
+          "Email mal formé : demander correction, ne pas enregistrer",
+          "Les réponses se relisent par id : pas de doublons d'un même envoi",
+        ],
+        output:
+          "Lien du formulaire + nouvelles réponses validées + leads enregistrés (CRM/Sheets)",
+        example: "Crée un formulaire de contact pour le salon de Milan",
+      },
     },
   },
   "support-reputation": {
@@ -845,6 +870,32 @@ export const SKILL_LOCALIZATIONS_FR: Record<string, PluginLocalization> = {
           "3 variantes complètes (headline, subheadline, CTA, angle) avec textes assemblés",
         example: "Rédige le texte pour la landing de notre service de nettoyage",
       },
+      "newsletter-mailchimp-conforme": {
+        name: "Newsletter Mailchimp Conforme",
+        description:
+          "Crée brouillon, contenu et envoi de newsletter via Mailchimp avec contrôle de conformité et approbation. À utiliser pour newsletters et DEM.",
+        whenNot: [
+          "Audience sans consentement documenté : d'abord le consentement, puis la campagne",
+          "Brouillon à conformité rouge : on corrige, on ne force jamais l'envoi",
+          "Envoi sans approbation explicite : jamais, même si demandé vaguement",
+        ],
+        procedure: [
+          "Choisir audience et objet avec le client ; vérifier le consentement",
+          "Créer le brouillon (mailchimp_create_campaign_draft) avec expéditeur et reply-to",
+          "Fixer le contenu (mailchimp_set_campaign_content) avec désinscription et pied de page",
+          "Lire le rapport (mailchimp_get_campaign_report) : continuer seulement si conformité VERTE",
+          "Afficher objet, audience et résumé et demander une approbation explicite",
+          "Seulement après le feu vert : mailchimp_schedule_campaign ou mailchimp_send_campaign",
+        ],
+        rules: [
+          "Programmation et envoi exigent toujours une approbation explicite",
+          "Conformité rouge = envoi bloqué, expliquer ce qui manque",
+          "Que des clients consentis : jamais de listes achetées ni d'imports sans base",
+        ],
+        output:
+          "Brouillon + conformité (verte/rouge) + résultat de programmation/envoi",
+        example: "Envoie la newsletter d'octobre aux clients",
+      },
     },
   },
   "social-media": {
@@ -1125,6 +1176,31 @@ export const SKILL_LOCALIZATIONS_FR: Record<string, PluginLocalization> = {
           "Compte rendu : décisions, actions (quoi, qui, pour quand), points ouverts",
         example: "Fais le compte rendu de la réunion de ce matin",
       },
+      "bozza-email-outlook": {
+        name: "Brouillon Email Outlook",
+        description:
+          "Lit la boîte Outlook, prépare des brouillons de réponse et ne propose l'envoi qu'avec approbation. À utiliser quand le client utilise Microsoft plutôt que Gmail.",
+        whenNot: [
+          "Boîte Gmail : utiliser Brouillon de Réponse, pas ce skill",
+          "E-mails avec engagement financier ou juridique : brouillon uniquement, avec approbation",
+          "Envoi sans approbation explicite : jamais, même si demandé vaguement",
+        ],
+        procedure: [
+          "Lire les non-lus Outlook (outlook_list_unread) ou chercher (outlook_search_messages)",
+          "Ouvrir le message (outlook_read_message) avant de répondre",
+          "Écrire le brouillon avec outlook_create_draft ou outlook_create_reply_draft",
+          "Afficher destinataires, objet et corps et demander une approbation explicite",
+          "Seulement après le feu vert : outlook_send_message",
+        ],
+        rules: [
+          "L'envoi exige toujours une approbation : ce skill prépare, n'envoie pas",
+          "Si Outlook n'est pas connecté, guider vers la connexion au lieu d'inventer des e-mails",
+          "150 mots maximum, un sujet par e-mail",
+        ],
+        output:
+          "Brouillon Outlook (objet, corps) + statut d'envoi (à approuver/envoyé)",
+        example: "Réponds dans Outlook à l'e-mail de Rossi sur les délais de livraison",
+      },
     },
   },
   "reports-bi": {
@@ -1278,6 +1354,31 @@ export const SKILL_LOCALIZATIONS_FR: Record<string, PluginLocalization> = {
         output:
           "Briefing (bon / à surveiller / à résoudre) + 3 décisions demandées",
         example: "Rédige le briefing pour le dirigeant de cette semaine",
+      },
+      "report-traffico-ga4": {
+        name: "Rapport Trafic GA4",
+        description:
+          "Lit trafic, pages top et conversions depuis Google Analytics et les explique en langage simple. À utiliser pour le point hebdo du site.",
+        whenNot: [
+          "Propriété non choisie : demander laquelle, ne pas présumer",
+          "Données d'un seul jour présentées comme tendance : ce n'est pas une tendance",
+          "Métriques hors whitelist (p. ex. userId) : indisponibles, agrégats uniquement",
+        ],
+        procedure: [
+          "Lister les propriétés (ga_list_properties) et confirmer laquelle utiliser",
+          "Lire la synthèse trafic (ga_traffic_summary) sur la période demandée",
+          "Lire pages top et conversions, comparer à la période précédente",
+          "Signaler les anomalies (ga_detect_anomalies) seulement si demandé ou évident",
+          "Clore en 3 lignes : ce qui monte, ce qui baisse, quoi faire",
+        ],
+        rules: [
+          "Métriques agrégées uniquement : aucun identifiant utilisateur",
+          "Chaque chiffre porte période et heure de mise à jour",
+          "Les rapports restent en cache 30 minutes : le dire",
+        ],
+        output:
+          "Synthèse trafic + pages top + conversions + comparaison + 3 actions",
+        example: "Comment a marché le site ces 28 derniers jours ?",
       },
     },
   },
@@ -1587,6 +1688,31 @@ export const SKILL_LOCALIZATIONS_FR: Record<string, PluginLocalization> = {
         output:
           "Liste des différences (section, type, impact, texte avant/après) + synthèse des modifications substantielles",
         example: "Compare la v2 du contrat avec la v1",
+      },
+      "salva-su-google-docs": {
+        name: "Enregistrer sur Google Docs",
+        description:
+          "Crée un document Google depuis un titre et du Markdown, ajoute contenus et tableaux. À utiliser pour sauvegarder les livrables du chat sur Docs.",
+        whenNot: [
+          "Document Word/Excel formel à signer : utiliser Création de Documents",
+          "Document existant choisi sans Picker ni id : demander lequel",
+          "Contenus avec données personnelles de tiers : vérifier la base juridique",
+        ],
+        procedure: [
+          "Préparer titre et contenu Markdown (titres, listes, tableaux)",
+          "Créer le document (docs_create_document) et renvoyer le lien",
+          "Pour les ajouts : docs_append_to_document ; pour les tableaux : docs_insert_table",
+          "Pour les retouches ciblées : montrer ce qui change, puis docs_replace_text",
+          "Clore avec le lien du document et la version du fichier liée",
+        ],
+        rules: [
+          "N'opérer que sur les documents indiqués ou créés par l'agent : pas de balayage Drive",
+          "Les remplacements sont montrés avant exécution",
+          "Toujours renvoyer le lien du document, pas seulement l'id",
+        ],
+        output:
+          "Lien du document Google + résumé des opérations (créé/ajouté/tableau)",
+        example: "Enregistre ce rapport sur Google Docs",
       },
     },
   },

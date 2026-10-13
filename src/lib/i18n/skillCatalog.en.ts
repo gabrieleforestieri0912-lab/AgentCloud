@@ -305,6 +305,31 @@ export const SKILL_LOCALIZATIONS_EN: Record<string, PluginLocalization> = {
           "Sequence table (step, date, channel, email subject, goal) + draft texts",
         example: "Prepare the follow-up for Bianchi: no reply in 9 days",
       },
+      "modulo-lead-forms": {
+        name: "Lead Form Module",
+        description:
+          "Creates a contact form with Google Forms, reads new responses and pushes them to CRM/Sheets. Use for landing pages, fairs and campaigns.",
+        whenNot: [
+          "Form without privacy notice: never publish, add it first",
+          "Responses with unnecessary sensitive data: reduce the questions",
+          "Bulk contact import without consent: never, only spontaneous responses",
+        ],
+        procedure: [
+          "Create the form (forms_create_form) with name, email, company, message + consent",
+          "Share the fill link and verify with a test response",
+          "Read new responses (forms_list_responses, dedupe by responseId)",
+          "Validate the email and push the lead to HubSpot/Sheets (forms_export_to_sheet)",
+          "Notify the team about hot leads",
+        ],
+        rules: [
+          "Every form includes privacy notice and explicit consent",
+          "Malformed email: ask for correction, do not register",
+          "Responses are re-read by id: no duplicate leads from the same submission",
+        ],
+        output:
+          "Form link + validated new responses + registered leads (CRM/Sheets)",
+        example: "Create a contact form for the Milan fair",
+      },
     },
   },
   "support-reputation": {
@@ -845,6 +870,32 @@ export const SKILL_LOCALIZATIONS_EN: Record<string, PluginLocalization> = {
           "3 complete variants (headline, subheadline, CTA, angle) with assembled texts",
         example: "Write the copy for our cleaning service landing page",
       },
+      "newsletter-mailchimp-conforme": {
+        name: "Compliant Mailchimp Newsletter",
+        description:
+          "Creates newsletter draft, content and sending via Mailchimp with compliance check and approval. Use for newsletters and DEM.",
+        whenNot: [
+          "Audience without documented consent: consent first, campaign after",
+          "Draft with red compliance: fix it, never force sending",
+          "Sending without explicit approval: never, even if vaguely requested",
+        ],
+        procedure: [
+          "Choose audience and subject with the customer; verify consent",
+          "Create the draft (mailchimp_create_campaign_draft) with sender and reply-to",
+          "Set content (mailchimp_set_campaign_content) with unsubscribe and footer",
+          "Read the report (mailchimp_get_campaign_report): proceed only if compliance is GREEN",
+          "Show subject, audience and summary and ask for explicit approval",
+          "Only after approval: mailchimp_schedule_campaign or mailchimp_send_campaign",
+        ],
+        rules: [
+          "Scheduling and sending always require explicit approval",
+          "Red compliance = sending blocked, explain what is missing",
+          "Only consented customers: never purchased lists or baseless imports",
+        ],
+        output:
+          "Draft + compliance (green/red) + schedule/send outcome",
+        example: "Send the October newsletter to customers",
+      },
     },
   },
   "social-media": {
@@ -1125,6 +1176,31 @@ export const SKILL_LOCALIZATIONS_EN: Record<string, PluginLocalization> = {
           "Minutes: decisions, action items (what, who, by when), open points",
         example: "Write up this morning's meeting",
       },
+      "bozza-email-outlook": {
+        name: "Outlook Email Draft",
+        description:
+          "Reads the Outlook mailbox, prepares reply drafts and proposes sending only with approval. Use when the customer uses Microsoft instead of Gmail.",
+        whenNot: [
+          "Gmail mailbox: use Reply Draft, not this skill",
+          "Emails with financial or legal commitments: draft only, with approval",
+          "Sending without explicit approval: never, even if vaguely requested",
+        ],
+        procedure: [
+          "Read unread Outlook mail (outlook_list_unread) or search (outlook_search_messages)",
+          "Open the message (outlook_read_message) before replying",
+          "Write the draft with outlook_create_draft or outlook_create_reply_draft",
+          "Show recipients, subject and body and ask for explicit approval",
+          "Only after approval: outlook_send_message",
+        ],
+        rules: [
+          "Sending always requires approval: this skill prepares, never ships",
+          "If Outlook is not connected, guide to connect instead of inventing emails",
+          "Max 150 words, one topic per email",
+        ],
+        output:
+          "Outlook draft (subject, body) + send status (to approve/sent)",
+        example: "Reply in Outlook to Rossi's email about delivery times",
+      },
     },
   },
   "reports-bi": {
@@ -1278,6 +1354,31 @@ export const SKILL_LOCALIZATIONS_EN: Record<string, PluginLocalization> = {
         output:
           "Briefing (good / to watch / to fix) + 3 requested decisions",
         example: "Write this week's owner briefing",
+      },
+      "report-traffico-ga4": {
+        name: "GA4 Traffic Report",
+        description:
+          "Reads traffic, top pages and conversions from Google Analytics and explains them in plain language. Use for the weekly site check.",
+        whenNot: [
+          "Property not chosen: ask which one, do not assume",
+          "Single-day data presented as trend: that is not a trend",
+          "Off-whitelist metrics (e.g. userId): unavailable, aggregates only",
+        ],
+        procedure: [
+          "List properties (ga_list_properties) and confirm which to use",
+          "Read the traffic summary (ga_traffic_summary) for the requested period",
+          "Read top pages and conversions, compare with the previous period",
+          "Flag anomalies (ga_detect_anomalies) only if asked or evident",
+          "Close with 3 lines: what grows, what drops, what to do",
+        ],
+        rules: [
+          "Aggregate metrics only: no user identifiers",
+          "Every number carries period and update time",
+          "Reports stay cached 30 minutes: say so",
+        ],
+        output:
+          "Traffic summary + top pages + conversions + period comparison + 3 actions",
+        example: "How did the site do in the last 28 days?",
       },
     },
   },
@@ -1587,6 +1688,31 @@ export const SKILL_LOCALIZATIONS_EN: Record<string, PluginLocalization> = {
         output:
           "Difference list (section, type, impact, before/after text) + material-change summary",
         example: "Compare contract v2 against v1",
+      },
+      "salva-su-google-docs": {
+        name: "Save to Google Docs",
+        description:
+          "Creates a Google Doc from title and Markdown, appends content and tables. Use to save chat deliverables to Docs.",
+        whenNot: [
+          "Formal Word/Excel document to sign: use Document Creation",
+          "Existing document chosen without Picker or id: ask which document",
+          "Content with third-party personal data: check the legal basis",
+        ],
+        procedure: [
+          "Prepare title and Markdown content (headings, lists, tables)",
+          "Create the document (docs_create_document) and return the link",
+          "For additions: docs_append_to_document; for tables: docs_insert_table",
+          "For targeted edits: show what changes, then docs_replace_text",
+          "Close with the document link and the linked file version",
+        ],
+        rules: [
+          "Only operate on stated or agent-created documents: no Drive scans",
+          "Replacements are shown before running them",
+          "Always return the document link, not just the id",
+        ],
+        output:
+          "Google Doc link + operation summary (created/appended/table)",
+        example: "Save this report to Google Docs",
       },
     },
   },

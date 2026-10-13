@@ -12,6 +12,10 @@ type Provider = string;
 
 const PROVIDER_META: Record<string, { name: string; brand: string; descKey: string }> = {
   shopify: { name: "Shopify", brand: "shopify", descKey: "connectShopify" },
+  outlook: { name: "Outlook", brand: "microsoftoutlook", descKey: "connectOutlook" },
+  docs: { name: "Google Docs", brand: "googledocs", descKey: "connectDocs" },
+  forms: { name: "Google Forms", brand: "googleforms", descKey: "connectForms" },
+  analytics: { name: "Google Analytics", brand: "googleanalytics", descKey: "connectAnalytics" },
   gmail: { name: "Gmail", brand: "gmail", descKey: "connectGmail" },
   google_calendar: { name: "Google Calendar", brand: "googlecalendar", descKey: "connectCalendar" },
   google_sheets: { name: "Google Sheets", brand: "googlesheets", descKey: "connectSheets" },
@@ -33,6 +37,10 @@ const PROVIDER_META: Record<string, { name: string; brand: string; descKey: stri
 function getMeta(provider: Provider) {
   const key = provider.toLowerCase().replace(/[^a-z0-9]/g, "");
   // normalize aliases
+  if (key.includes("outlook")) return PROVIDER_META.outlook;
+  if (key.includes("analytics") || key === "ga4") return PROVIDER_META.analytics;
+  if (key.includes("forms") || key.includes("modulo") || key.includes("sondaggio")) return PROVIDER_META.forms;
+  if (key.includes("docs") || key.includes("document")) return PROVIDER_META.docs;
   if (key.includes("gmail") || key === "email") return PROVIDER_META.gmail;
   if (key.includes("calendar")) return PROVIDER_META.google_calendar;
   if (key.includes("sheets") || key.includes("googlesheets")) return PROVIDER_META.google_sheets;
@@ -81,9 +89,19 @@ export default function InlineConnectCard({ provider }: { provider: string }) {
         window.location.assign(`/api/auth/google/connect?returnTo=${returnTo}`);
         return;
       }
+      if (p.includes("outlook")) {
+        window.location.assign(`/api/integrations/microsoft_outlook/authorize?returnTo=${returnTo}`);
+        return;
+      }
       // generic integrations via tenant_integrations
       const genericMap: Record<string, string> = {
         notion: "notion",
+        docs: "google_docs",
+        googledocs: "google_docs",
+        forms: "google_forms",
+        googleforms: "google_forms",
+        analytics: "google_analytics",
+        googleanalytics: "google_analytics",
         slack: "slack",
         hubspot: "hubspot",
         github: "github",

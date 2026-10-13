@@ -23,7 +23,6 @@ import {
   PanelLeftOpen,
   Send,
   Home,
-  ChevronDown,
   FileText,
   Wrench,
   Bot,
@@ -40,6 +39,10 @@ import {
   RotateCcw,
   MoreVertical,
   Square,
+  Share2,
+  Link2,
+  Copy,
+  Check,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -49,7 +52,6 @@ import MarkdownText from "./MarkdownText";
 import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
-import GoogleConnectionPrompt from "@/components/GoogleConnectionPrompt";
 import InlineConnectCard from "@/components/InlineConnectCard";
 import ChatOnboarding from "./ChatOnboarding";
 import {
@@ -61,7 +63,7 @@ import {
 } from "@/components/ChatAttachments";
 import { buildVisionText, composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
-import { getEnabledTools, AGENT_RUNTIME } from "@/lib/agents/registry";
+import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 import { createClient } from "@/lib/supabase/client";
 import BrandLogo from "./BrandLogo";
@@ -133,6 +135,9 @@ type LocalConversation = {
   agentSlugs?: string[];
   archived_at?: string;
   deleted_at?: string;
+  // Token del link di condivisione in sola lettura (se creato): vive qui così
+  // sopravvive al reload e la revoca resta a un click dal menu conversazione.
+  shareToken?: string;
 };
 
 function formatTime(dateStr: string) {
@@ -234,7 +239,6 @@ export default function ChatInterface({
     };
   }, [mobileSidebarOpen]);
   const [sidebarSession, setSidebarSession] = useState<import("@supabase/supabase-js").Session | null>(null);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   // L'identità arriva dal server (prop `account`): la sidebar mostra subito
   // l'account reale e non i segnaposto "?"/"..." mentre la sessione del browser
   // si carica in background.
@@ -247,6 +251,13 @@ export default function ChatInterface({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   // Menù opzioni per conversazione: un solo bottone "⋯" apre le azioni.
   const [conversationMenuId, setConversationMenuId] = useState<string | null>(null);
+  // Condivisione in sola lettura: id della conversazione col modale aperto,
+  // link creato, stato di caricamento/errore/copia.
+  const [shareConvId, setShareConvId] = useState<string | null>(null);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [agentSearch, setAgentSearch] = useState("");
@@ -442,12 +453,12 @@ export default function ChatInterface({
     [activeId],
   );
 
-  /** Salva il file su Drive/Notion passando dal tool dell'agente collegato. */
+  /** Salva il file su Drive/Docs/Notion passando dal tool dell'agente collegato. */
   const saveFileToIntegration = useCallback(
-    (provider: "google-drive" | "notion", record: ChatFileRecord, content: string) => {
+    (provider: "google-drive" | "google-docs" | "notion", record: ChatFileRecord, content: string) => {
       if (!activeId) return;
       void handleSendWithText(
-        `Salva il contenuto del file "${record.name}" su ${provider === "google-drive" ? "Google Drive" : "Notion"}.`,
+        `Salva il contenuto del file "${record.name}" su ${provider === "google-drive" ? "Google Drive" : provider === "google-docs" ? "Google Docs" : "Notion"}.`,
         activeId,
       );
       void content;
@@ -677,18 +688,6 @@ export default function ChatInterface({
     attach.restore(carriedAttachments);
     setMobileSidebarOpen(false);
   }
-
-  // Gli agenti i cui tool di default leggono Gmail/Calendar richiedono una
-  // connessione Google: mostra per loro il pannello di connessione in chat
-  // (come quello di Shopify).
-  const needsGoogle = selectedAgentSlugs.some((slug) =>
-    getEnabledTools(slug).some(
-      (tool) =>
-        tool === "list_emails" ||
-        tool === "get_calendar_events" ||
-        tool.startsWith("calendar_"),
-    ),
-  );
 
   const activeWorkingApps = useMemo(() => {
     if (!isTyping || hasPartialReply || selectedAgentSlugs.length === 0) return [];
@@ -1248,6 +1247,14 @@ export default function ChatInterface({
 
   // Azioni conversazione: chiamate dal menù "⋯" (il menù chiude se stesso).
   function handleDelete(id: string) {
+    // Cancellare la conversazione revoca anche l'eventuale link condiviso: lo
+    // snapshot non deve sopravvivere alla conversazione che lo ha generato.
+    const conv = conversationsRef.current.find((c) => c.id === id);
+    if (conv?.shareToken) {
+      void fetch(`/api/chat/share?token=${encodeURIComponent(conv.shareToken)}`, {
+        method: "DELETE",
+      }).catch(() => {});
+    }
     delete draftsRef.current[id];
     delete queueRef.current[id];
     setConversations((prev) => prev.filter((c) => c.id !== id));
@@ -1266,6 +1273,85 @@ export default function ChatInterface({
       prev.map((c) => (c.id === id ? { ...c, archived_at: c.archived_at ? undefined : new Date().toISOString() } : c))
     );
     setConversationMenuId(null);
+  }
+
+  // ── Condivisione in sola lettura ──────────────────────────────────────────
+  // Il link apre uno snapshot congelato (titolo + testo dei messaggi): chi lo
+  // apre vede senza poter modificare nulla (nessun input/azione nella pagina
+  // pubblica, nessuna API di scrittura). Allegati e file non entrano nello
+  // snapshot; i marker di connessione vengono rimossi dal testo.
+
+  function openShare(id: string) {
+    setConversationMenuId(null);
+    setShareConvId(id);
+    setShareError(null);
+    setShareNotice(null);
+    setShareCopied(false);
+  }
+
+  function shareUrlFor(token: string): string {
+    return `${window.location.origin}/chat/shared/${token}`;
+  }
+
+  async function createShareLink(id: string) {
+    const conv = conversationsRef.current.find((c) => c.id === id);
+    if (!conv || conv.messages.length === 0) {
+      setShareError(dict.chat.shareEmpty);
+      return;
+    }
+    if (conv.shareToken) return;
+    setShareBusy(true);
+    setShareError(null);
+    try {
+      const res = await fetch("/api/chat/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: conv.title,
+          agentSlugs: conv.agentSlugs ?? [],
+          messages: conv.messages.map((m) => ({
+            role: m.role,
+            content: m.content.replace(/\[\[CONNECT:[a-zA-Z0-9_\-]+\]\]/g, "").trim(),
+            agentSlug: m.agentSlug,
+            agentName: m.agentName,
+            created_at: m.created_at,
+          })),
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as { token?: string } | null;
+      if (!res.ok || !data?.token) throw new Error("share_failed");
+      const token = data.token;
+      setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, shareToken: token } : c)));
+    } catch {
+      setShareError(dict.chat.shareError);
+    } finally {
+      setShareBusy(false);
+    }
+  }
+
+  async function copyShareLink(token: string) {
+    try {
+      await navigator.clipboard.writeText(shareUrlFor(token));
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      setShareError(dict.chat.shareError);
+    }
+  }
+
+  async function revokeShareLink(id: string, token: string) {
+    setShareBusy(true);
+    setShareError(null);
+    try {
+      const res = await fetch(`/api/chat/share?token=${encodeURIComponent(token)}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("revoke_failed");
+      setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, shareToken: undefined } : c)));
+      setShareNotice(dict.chat.shareRevoked);
+    } catch {
+      setShareError(dict.chat.shareError);
+    } finally {
+      setShareBusy(false);
+    }
   }
 
   function startRename(id: string, currentTitle: string) {
@@ -2015,18 +2101,6 @@ export default function ChatInterface({
           </div>
         </nav>
 
-        {/* New Chat button */}
-        <div className="px-3 pb-2">
-          <button
-            data-onboard="new-chat"
-            onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 bg-white text-neutral-900 text-sm font-bold py-2 px-3.5 rounded-full transition-all hover:bg-neutral-100 shadow-lg shadow-white/5"
-          >
-            <Plus size={14} strokeWidth={2.5} />
-            {dict.chat.newChat}
-          </button>
-        </div>
-
         {/* Conversations list */}
         <div data-onboard="conversations" className="flex-1 overflow-y-auto px-2.5 py-2 space-y-0.5">
           <div className="flex items-center justify-between px-3 py-2">
@@ -2139,6 +2213,14 @@ export default function ChatInterface({
                           </button>
                           <button
                             role="menuitem"
+                            onClick={(e) => { e.stopPropagation(); openShare(conv.id); }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-all"
+                          >
+                            <Share2 size={12} />
+                            {dict.chat.shareConversation}
+                          </button>
+                          <button
+                            role="menuitem"
                             onClick={(e) => { e.stopPropagation(); handleDelete(conv.id); }}
                             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-all"
                           >
@@ -2213,79 +2295,74 @@ export default function ChatInterface({
           )}
         </div>
 
-        {/* Account section — modern pill style */}
+        {/* Navigazione account: elenco verticale, tutti i pulsanti uguali */}
         <div data-onboard="account" className="p-3 border-t border-white/[0.06]">
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+          <div className="flex items-center gap-2.5 px-2 pb-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
+              {accountAvatarUrl ? (
+                <img src={accountAvatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
+              ) : accountLabelBase ? (
+                accountLabelBase
+                  .split(/[\s@.]+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((s: string) => s[0]?.toUpperCase())
+                  .join("") || "?"
+              ) : (
+                <span className="animate-pulse">...</span>
+              )}
+            </div>
+            <p className="min-w-0 flex-1 truncate text-xs font-bold text-white" title={accountTooltip ?? undefined}>
+              {accountEmail || "..."}
+            </p>
+          </div>
+          <div className="space-y-1">
             <button
-              onClick={() => setAccountMenuOpen((v) => !v)}
-              className="w-full flex items-center gap-3 p-3 hover:bg-white/[0.04] transition-all"
+              data-onboard="new-chat"
+              onClick={handleNewChat}
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-white px-3 text-[13px] font-bold text-neutral-900 hover:bg-neutral-100 transition-all"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
-                {accountAvatarUrl ? (
-                  <img src={accountAvatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
-                ) : accountLabelBase ? (
-                  accountLabelBase
-                    .split(/[\s@.]+/)
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((s: string) => s[0]?.toUpperCase())
-                    .join("") || "?"
-                ) : (
-                  <span className="animate-pulse">...</span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="truncate text-sm font-bold text-white">
-                  {accountEmail || "..."}
-                </p>
-                <p className="text-[10px] text-neutral-500 font-medium">Account</p>
-              </div>
-              <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform duration-200 ${accountMenuOpen ? "rotate-180" : ""}`} />
+              <Plus size={14} strokeWidth={2.5} className="shrink-0" />
+              {dict.chat.newChat}
             </button>
-            {accountMenuOpen && (
-              <div className="px-3 pb-3 space-y-1 border-t border-white/[0.06]">
-                <div className="grid grid-cols-2 gap-1.5 pt-2">
-                  <Link
-                    href="/account"
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
-                  >
-                    <User size={12} />
-                    Account
-                  </Link>
-                  <Link
-                    href="/settings"
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
-                  >
-                    <Settings size={12} />
-                    {dict.navbar.settings}
-                  </Link>
-                  <Link
-                    href="/cart"
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
-                  >
-                    <ShoppingCart size={12} />
-                    {dict.sidebarAccount.cart}
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
-                  >
-                    <Home size={12} />
-                    Dashboard
-                  </Link>
-                </div>
-                <button
-                  onClick={async () => {
-                    try { await createClient().auth.signOut(); } catch {}
-                    window.location.replace("/login");
-                  }}
-                  className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2.5 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
-                >
-                  <LogOut size={12} />
-                  {dict.sidebarAccount.signOut}
-                </button>
-              </div>
-            )}
+            <Link
+              href="/account"
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-white/5 px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+            >
+              <User size={14} className="shrink-0 text-neutral-400" />
+              Account
+            </Link>
+            <Link
+              href="/settings"
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-white/5 px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+            >
+              <Settings size={14} className="shrink-0 text-neutral-400" />
+              {dict.navbar.settings}
+            </Link>
+            <Link
+              href="/cart"
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-white/5 px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+            >
+              <ShoppingCart size={14} className="shrink-0 text-neutral-400" />
+              {dict.sidebarAccount.cart}
+            </Link>
+            <Link
+              href="/dashboard"
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-white/5 px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+            >
+              <Home size={14} className="shrink-0 text-neutral-400" />
+              Dashboard
+            </Link>
+            <button
+              onClick={async () => {
+                try { await createClient().auth.signOut(); } catch {}
+                window.location.replace("/login");
+              }}
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-red-500/10 px-3 text-[13px] font-bold text-red-300 hover:bg-red-500/15 transition-all"
+            >
+              <LogOut size={14} className="shrink-0" />
+              {dict.sidebarAccount.signOut}
+            </button>
           </div>
 
         </div>
@@ -2338,7 +2415,6 @@ export default function ChatInterface({
         onDrop={attach.makeDrop(attachLabels)}
       >
         {sidebarView === "chat" && activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
-        {sidebarView === "chat" && needsGoogle && <GoogleConnectionPrompt />}
 
         {/* ── Tools panel ────────────────────────────────────── */}
         {sidebarView === "tools" && (
@@ -2484,7 +2560,7 @@ export default function ChatInterface({
                       imageAlt={dict.common.imageAttached}
                     />
                     {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
-                    <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all overflow-hidden">
+                    <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
                       <textarea
                         ref={inputRef}
                         value={input}
@@ -2492,12 +2568,12 @@ export default function ChatInterface({
                         onKeyDown={handleKeyDown}
                         onPaste={attach.makePaste(attachLabels)}
                         placeholder={dict.chat.placeholder}
-                        rows={3}
-                        className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-4 pb-14 leading-relaxed"
-                        style={{ minHeight: "120px", maxHeight: "400px" } as React.CSSProperties}
+                        rows={2}
+                        className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-3 pb-16 leading-relaxed"
+                        style={{ minHeight: "84px", maxHeight: "280px" } as React.CSSProperties}
                       />
                       {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
-                      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm">
+                      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm rounded-b-2xl">
                         <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
                         {agentPicker}
                         <div className="flex-1 flex items-center justify-end gap-2">
@@ -2908,7 +2984,7 @@ export default function ChatInterface({
                 </div>
               </div>
             )}
-            <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all overflow-hidden">
+            <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
               <textarea
                 ref={inputRef}
                 value={input}
@@ -2916,12 +2992,12 @@ export default function ChatInterface({
                 onKeyDown={handleKeyDown}
                 onPaste={attach.makePaste(attachLabels)}
                 placeholder={dict.chat.placeholder}
-                rows={3}
-                className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-4 pb-14 leading-relaxed"
-                style={{ minHeight: "120px", maxHeight: "400px" } as React.CSSProperties}
+                rows={2}
+                className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-3 pb-16 leading-relaxed"
+                style={{ minHeight: "84px", maxHeight: "280px" } as React.CSSProperties}
               />
               {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
-              <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm">
+              <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm rounded-b-2xl">
                 <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
                 {agentPicker}
                 <div className="flex-1 flex items-center justify-end gap-2">
@@ -2971,6 +3047,88 @@ export default function ChatInterface({
         </AnimatePresence>
         </div>
       </div>
+      {/* Modale condivisione in sola lettura: crea/copia/revoca il link. */}
+      {shareConvId && (() => {
+        const conv = conversations.find((c) => c.id === shareConvId);
+        if (!conv) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={dict.chat.shareTitle}>
+            <button
+              type="button"
+              aria-label={dict.chat.close}
+              className="absolute inset-0 cursor-default bg-black/60"
+              onClick={() => setShareConvId(null)}
+            />
+            <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-neutral-900 p-5 shadow-2xl shadow-black/60">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
+                  <Share2 size={16} />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="truncate text-sm font-bold text-white">{dict.chat.shareTitle}</h2>
+                  <p className="truncate text-xs text-neutral-500">{conv.title}</p>
+                </div>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-neutral-400">{dict.chat.shareWarning}</p>
+              {shareError && (
+                <p role="alert" className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-300">
+                  {shareError}
+                </p>
+              )}
+              {shareNotice && (
+                <p role="status" className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300">
+                  {shareNotice}
+                </p>
+              )}
+              {conv.shareToken ? (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <Link2 size={14} className="shrink-0 text-neutral-500" />
+                    <span className="min-w-0 flex-1 truncate text-xs text-neutral-300">
+                      {shareUrlFor(conv.shareToken)}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => copyShareLink(conv.shareToken!)}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-bold text-neutral-900 hover:bg-neutral-100 transition-all"
+                    >
+                      {shareCopied ? <Check size={13} /> : <Copy size={13} />}
+                      {shareCopied ? dict.chat.shareCopied : dict.chat.shareCopyLink}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={shareBusy}
+                      onClick={() => revokeShareLink(conv.id, conv.shareToken!)}
+                      className="flex-1 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-300 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                    >
+                      {dict.chat.shareRevoke}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={shareBusy || conv.messages.length === 0}
+                  onClick={() => createShareLink(conv.id)}
+                  className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full bg-brand-500 px-3 py-2.5 text-sm font-bold text-white hover:bg-brand-400 transition-all disabled:opacity-50"
+                >
+                  <Link2 size={14} />
+                  {dict.chat.shareCreateLink}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShareConvId(null)}
+                className="mt-3 w-full rounded-full px-3 py-2 text-xs font-bold text-neutral-400 hover:text-white transition-all"
+              >
+                {dict.chat.close}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
       {paywallSlug && (
         <SubscribePaywallModal
           open={!!paywallSlug}

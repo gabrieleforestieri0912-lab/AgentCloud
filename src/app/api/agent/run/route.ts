@@ -31,7 +31,8 @@ import {
 } from "@/lib/billing/free-limit";
 import { extractConnectMarkers, requestedConnectProviders } from "@/lib/integrations";
 import { isMicrosoftTool as isMicrosoftToolName } from "@/lib/agents/microsoft-tools";
-import { isMicrosoftConnected } from "@/lib/integrations/microsoft/tenant";
+import { isOutlookTool as isOutlookToolName } from "@/lib/agents/outlook-tools";
+import { isMicrosoftConnected, isOutlookConnected } from "@/lib/integrations/microsoft/tenant";
 import {
   buildApprovalToken,
   toolRequiresConfirmation,
@@ -228,6 +229,10 @@ export async function POST(req: Request) {
   // contesto del modello (stessa logica delle liste per agente).
   if (!(await isMicrosoftConnected(effectiveTenant))) {
     enabledToolNames = enabledToolNames.filter((t) => !isMicrosoftToolName(t));
+  }
+  // Outlook ha connessione separata (consenso incrementale): stessi motivi sopra.
+  if (!(await isOutlookConnected(effectiveTenant))) {
+    enabledToolNames = enabledToolNames.filter((t) => !isOutlookToolName(t));
   }
   const enabledTools = enabledToolNames
     .map((tool) => TOOL_DEFINITIONS[tool])

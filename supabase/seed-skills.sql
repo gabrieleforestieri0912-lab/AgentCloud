@@ -194,13 +194,14 @@ ON CONFLICT (slug) DO UPDATE SET
   risk_level = EXCLUDED.risk_level,
   permissions = EXCLUDED.permissions;
 
--- Lead & Vendite (5 skill)
+-- Lead & Vendite (6 skill)
 INSERT INTO skills (slug, name, description, version, locale, owner, risk_level, permissions) VALUES
   ('lead-capture', 'Cattura Lead', 'Cattura e valida nuovi lead da varie fonti. Usare quando arriva una richiesta di contatto, una richiesta di preventivo o un form da compilare.', '1.0.0', 'it', 'official', 'low', ARRAY['read:contacts', 'create:contacts']),
   ('lead-enrichment', 'Arricchimento Profilo', 'Arricchisce il profilo del lead con dati aziendali e storicizza le interazioni. Usare dopo la cattura per completare la scheda.', '1.0.0', 'it', 'official', 'low', ARRAY['read:contacts', 'update:contacts']),
   ('lead-scoring', 'Scoring Lead', 'Assegna un punteggio High/Medium/Low al lead basandosi su engagement, budget e tempistiche. Usare per decidere priorità di follow-up.', '1.0.0', 'it', 'official', 'low', ARRAY['read:contacts']),
   ('team-notification', 'Notifica Team', 'Notifica il team vendite su un lead hot con sintesi e azioni suggerite. Usare quando un lead supera la soglia High.', '1.0.0', 'it', 'official', 'medium', ARRAY['send:notifications']),
-  ('followup-sequence', 'Sequenza Follow-up', 'Crea e gestisce sequenze di follow-up personalizzate basate sul punteggio del lead. Usare per chiudere trattative in sospeso.', '1.0.0', 'it', 'official', 'medium', ARRAY['read:contacts', 'update:contacts', 'send:email'])
+  ('followup-sequence', 'Sequenza Follow-up', 'Crea e gestisce sequenze di follow-up personalizzate basate sul punteggio del lead. Usare per chiudere trattative in sospeso.', '1.0.0', 'it', 'official', 'medium', ARRAY['read:contacts', 'update:contacts', 'send:email']),
+  ('modulo-lead-forms', 'Modulo Lead Forms', 'Crea un modulo di contatto con Google Forms, legge le nuove risposte e le porta in CRM/Sheets. Usare per landing, fiere e campagne.', '1.1.0', 'it', 'official', 'medium', ARRAY['create:forms', 'read:responses'])
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   description = EXCLUDED.description,
@@ -248,12 +249,13 @@ ON CONFLICT (slug) DO UPDATE SET
   risk_level = EXCLUDED.risk_level,
   permissions = EXCLUDED.permissions;
 
--- Contenuti & SEO (4 skill)
+-- Contenuti & SEO (5 skill)
 INSERT INTO skills (slug, name, description, version, locale, owner, risk_level, permissions) VALUES
   ('keyword-research', 'Keyword Research', 'Ricerca keyword con analisi di volume, difficoltà e intento di ricerca. Usare prima di scrivere qualsiasi contenuto SEO.', '1.0.0', 'it', 'official', 'low', ARRAY['read:analytics']),
   ('competitor-analysis', 'Analisi Competitor', 'Analizza i contenuti dei competitor per individuare gap e opportunità. Usare prima di definire il piano editoriale.', '1.0.0', 'it', 'official', 'low', ARRAY['read:web']),
   ('seo-article', 'Articolo SEO', 'Genera un articolo SEO strutturato con heading, meta description e ottimizzazione on-page. Usare quando la keyword è già definita.', '1.0.0', 'it', 'official', 'low', ARRAY['create:content']),
-  ('copy-ads', 'Copy per Ads', 'Crea copy per landing page e ads con varianti A/B test. Usare per campagne e pagine di destinazione.', '1.0.0', 'it', 'official', 'low', ARRAY['create:content'])
+  ('copy-ads', 'Copy per Ads', 'Crea copy per landing page e ads con varianti A/B test. Usare per campagne e pagine di destinazione.', '1.0.0', 'it', 'official', 'low', ARRAY['create:content']),
+  ('newsletter-mailchimp-conforme', 'Newsletter Mailchimp Conforme', 'Crea bozza, contenuto e invio newsletter via Mailchimp con compliance-check e approvazione. Usare per newsletter e DEM.', '1.1.0', 'it', 'official', 'high', ARRAY['create:campaigns', 'send:campaigns'])
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   description = EXCLUDED.description,
@@ -275,12 +277,13 @@ ON CONFLICT (slug) DO UPDATE SET
   risk_level = EXCLUDED.risk_level,
   permissions = EXCLUDED.permissions;
 
--- Inbox & Produttività (4 skill)
+-- Inbox & Produttività (5 skill)
 INSERT INTO skills (slug, name, description, version, locale, owner, risk_level, permissions) VALUES
   ('email-triage', 'Triage Email', 'Classifica le email per priorità (urgent, important, normal) in base a contenuto, mittente e scadenze. Usare a inizio giornata.', '1.0.0', 'it', 'official', 'low', ARRAY['read:email']),
   ('email-draft', 'Bozza Risposta', 'Genera la bozza di risposta email basandosi sul contesto e sulle preferenze del mittente. Usare su richieste che richiedono risposta.', '1.0.0', 'it', 'official', 'medium', ARRAY['read:email', 'create:email']),
   ('deadline-tracking', 'Tracciamento Scadenze', 'Traccia scadenze e impegni con notifiche a priorità. Usare per non perdere gli impegni presi nelle email.', '1.0.0', 'it', 'official', 'low', ARRAY['read:tasks', 'create:tasks']),
-  ('meeting-notes', 'Verbali Riunione', 'Genera i verbali di riunione con action item e responsabili. Usare dopo ogni riunione con note o trascrizione.', '1.0.0', 'it', 'official', 'low', ARRAY['read:meetings', 'create:documents'])
+  ('meeting-notes', 'Verbali Riunione', 'Genera i verbali di riunione con action item e responsabili. Usare dopo ogni riunione con note o trascrizione.', '1.0.0', 'it', 'official', 'low', ARRAY['read:meetings', 'create:documents']),
+  ('bozza-email-outlook', 'Bozza Email Outlook', 'Legge la casella Outlook, prepara bozze di risposta e propone l''invio solo con approvazione. Usare quando il cliente usa Microsoft invece di Gmail.', '1.1.0', 'it', 'official', 'medium', ARRAY['read:email', 'create:email'])
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   description = EXCLUDED.description,
@@ -288,13 +291,14 @@ ON CONFLICT (slug) DO UPDATE SET
   risk_level = EXCLUDED.risk_level,
   permissions = EXCLUDED.permissions;
 
--- Report & Decisioni (5 skill)
+-- Report & Decisioni (6 skill)
 INSERT INTO skills (slug, name, description, version, locale, owner, risk_level, permissions) VALUES
   ('kpi-report', 'Report KPI', 'Genera il report dei KPI settimanali o mensili con metriche chiave e trend. Usare per il ritmo settimanale o mensile.', '1.0.0', 'it', 'official', 'low', ARRAY['read:analytics', 'read:data']),
   ('period-comparison', 'Confronto Periodi', 'Confronta i dati di un periodo con il precedente analizzando variazioni e anomalie. Usare per capire cosa è cambiato.', '1.0.0', 'it', 'official', 'low', ARRAY['read:data']),
   ('anomaly-detection', 'Rilevamento Anomalie', 'Rileva anomalie nei dati e propone le verifiche. Usare quando un numero si discosta dalla norma.', '1.0.0', 'it', 'official', 'low', ARRAY['read:data']),
   ('strategic-priorities', 'Priorità Strategiche', 'Trasforma i dati in priorità strategiche con impatto e costo stimato. Usare per decidere dove investire il tempo.', '1.0.0', 'it', 'official', 'low', ARRAY['read:data']),
-  ('executive-summary', 'Sintesi Executive', 'Riassume i dati per il titolare in linguaggio semplice, senza gergo. Usare per il briefing settimanale.', '1.0.0', 'it', 'official', 'low', ARRAY['read:data', 'create:reports'])
+  ('executive-summary', 'Sintesi Executive', 'Riassume i dati per il titolare in linguaggio semplice, senza gergo. Usare per il briefing settimanale.', '1.0.0', 'it', 'official', 'low', ARRAY['read:data', 'create:reports']),
+  ('report-traffico-ga4', 'Report Traffico GA4', 'Legge traffico, pagine top e conversioni da Google Analytics e li spiega in italiano semplice. Usare per il punto settimanale sul sito.', '1.1.0', 'it', 'official', 'low', ARRAY['read:analytics'])
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   description = EXCLUDED.description,
@@ -316,13 +320,14 @@ ON CONFLICT (slug) DO UPDATE SET
   risk_level = EXCLUDED.risk_level,
   permissions = EXCLUDED.permissions;
 
--- Documenti & Ufficio (5 skill)
+-- Documenti & Ufficio (6 skill)
 INSERT INTO skills (slug, name, description, version, locale, owner, risk_level, permissions) VALUES
   ('pdf-summary', 'Riassunto PDF', 'Legge e riassume un documento PDF estraendo i punti chiave. Usare su contratti, fatture, manuali e report lunghi.', '1.0.0', 'it', 'official', 'low', ARRAY['read:documents']),
   ('data-extraction', 'Estrazione Dati', 'Estrae dati strutturati da documenti (tabelle, date, importi). Usare per popolare fogli di calcolo o report.', '1.0.0', 'it', 'official', 'low', ARRAY['read:documents']),
   ('document-qa', 'Q&A Documenti', 'Risponde a domande sul contenuto dei documenti con citazioni. Usare quando l''utente chiede informazioni su un documento caricato.', '1.0.0', 'it', 'official', 'low', ARRAY['read:documents']),
   ('document-creation', 'Creazione Documenti', 'Crea e modifica documenti Word, Excel e PowerPoint. Usare quando serve un documento nuovo o aggiornare uno esistente.', '1.0.0', 'it', 'official', 'medium', ARRAY['create:documents']),
-  ('version-comparison', 'Confronto Versioni', 'Confronta due versioni di un documento e elenca le differenze. Usare su revisioni di contratto o bozze.', '1.0.0', 'it', 'official', 'low', ARRAY['read:documents'])
+  ('version-comparison', 'Confronto Versioni', 'Confronta due versioni di un documento e elenca le differenze. Usare su revisioni di contratto o bozze.', '1.0.0', 'it', 'official', 'low', ARRAY['read:documents']),
+  ('salva-su-google-docs', 'Salva su Google Docs', 'Crea un documento Google da titolo e Markdown, aggiunge contenuti e tabelle. Usare per salvare deliverable della chat su Docs.', '1.1.0', 'it', 'official', 'medium', ARRAY['create:documents', 'read:documents'])
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   description = EXCLUDED.description,
@@ -368,7 +373,7 @@ ON CONFLICT (plugin_id, skill_id) DO NOTHING;
 -- Lead & Vendite
 INSERT INTO plugin_skills (plugin_id, skill_id)
 SELECT p.id, s.id FROM plugins p, skills s
-WHERE p.slug = 'lead-sales' AND s.slug IN ('lead-capture', 'lead-enrichment', 'lead-scoring', 'team-notification', 'followup-sequence')
+WHERE p.slug = 'lead-sales' AND s.slug IN ('lead-capture', 'lead-enrichment', 'lead-scoring', 'team-notification', 'followup-sequence', 'modulo-lead-forms')
 ON CONFLICT (plugin_id, skill_id) DO NOTHING;
 
 -- Assistenza & Reputazione
@@ -392,7 +397,7 @@ ON CONFLICT (plugin_id, skill_id) DO NOTHING;
 -- Contenuti & SEO
 INSERT INTO plugin_skills (plugin_id, skill_id)
 SELECT p.id, s.id FROM plugins p, skills s
-WHERE p.slug = 'content-seo' AND s.slug IN ('keyword-research', 'competitor-analysis', 'seo-article', 'copy-ads')
+WHERE p.slug = 'content-seo' AND s.slug IN ('keyword-research', 'competitor-analysis', 'seo-article', 'copy-ads', 'newsletter-mailchimp-conforme')
 ON CONFLICT (plugin_id, skill_id) DO NOTHING;
 
 -- Social Media
@@ -404,13 +409,13 @@ ON CONFLICT (plugin_id, skill_id) DO NOTHING;
 -- Inbox & Produttività
 INSERT INTO plugin_skills (plugin_id, skill_id)
 SELECT p.id, s.id FROM plugins p, skills s
-WHERE p.slug = 'inbox-productivity' AND s.slug IN ('email-triage', 'email-draft', 'deadline-tracking', 'meeting-notes')
+WHERE p.slug = 'inbox-productivity' AND s.slug IN ('email-triage', 'email-draft', 'deadline-tracking', 'meeting-notes', 'bozza-email-outlook')
 ON CONFLICT (plugin_id, skill_id) DO NOTHING;
 
 -- Report & Decisioni
 INSERT INTO plugin_skills (plugin_id, skill_id)
 SELECT p.id, s.id FROM plugins p, skills s
-WHERE p.slug = 'reports-bi' AND s.slug IN ('kpi-report', 'period-comparison', 'anomaly-detection', 'strategic-priorities', 'executive-summary')
+WHERE p.slug = 'reports-bi' AND s.slug IN ('kpi-report', 'period-comparison', 'anomaly-detection', 'strategic-priorities', 'executive-summary', 'report-traffico-ga4')
 ON CONFLICT (plugin_id, skill_id) DO NOTHING;
 
 -- HR & Selezione
@@ -422,7 +427,7 @@ ON CONFLICT (plugin_id, skill_id) DO NOTHING;
 -- Documenti & Ufficio
 INSERT INTO plugin_skills (plugin_id, skill_id)
 SELECT p.id, s.id FROM plugins p, skills s
-WHERE p.slug = 'documents-office' AND s.slug IN ('pdf-summary', 'data-extraction', 'document-qa', 'document-creation', 'version-comparison')
+WHERE p.slug = 'documents-office' AND s.slug IN ('pdf-summary', 'data-extraction', 'document-qa', 'document-creation', 'version-comparison', 'salva-su-google-docs')
 ON CONFLICT (plugin_id, skill_id) DO NOTHING;
 
 -- Ricerca Competitor
@@ -648,7 +653,9 @@ UNION ALL
 UNION ALL
   SELECT p.id, 'calendly', 'optional', 'coming_soon', 'Calendly prenota il meeting' FROM plugins p WHERE p.slug = 'lead-sales'
 UNION ALL
-  SELECT p.id, 'mailchimp', 'optional', 'coming_soon', 'Mailchimp gestisce le campagne email' FROM plugins p WHERE p.slug = 'lead-sales'
+  SELECT p.id, 'mailchimp', 'optional', 'live', 'Mailchimp gestisce le campagne email' FROM plugins p WHERE p.slug = 'lead-sales'
+UNION ALL
+  SELECT p.id, 'googleforms', 'optional', 'live', 'Forms raccoglie i lead dai moduli' FROM plugins p WHERE p.slug = 'lead-sales'
 ON CONFLICT (plugin_id, integration_slug) DO UPDATE SET
   status = EXCLUDED.status,
   availability = EXCLUDED.availability,
@@ -686,7 +693,7 @@ UNION ALL
 UNION ALL
   SELECT p.id, 'googlemeet', 'optional', 'coming_soon', 'Google Meet genera il link video' FROM plugins p WHERE p.slug = 'bookings-calendar'
 UNION ALL
-  SELECT p.id, 'microsoftoutlook', 'optional', 'coming_soon', 'Outlook amplia la copertura del calendario' FROM plugins p WHERE p.slug = 'bookings-calendar'
+  SELECT p.id, 'microsoftoutlook', 'optional', 'live', 'Outlook amplia la copertura del calendario' FROM plugins p WHERE p.slug = 'bookings-calendar'
 UNION ALL
   SELECT p.id, 'calendly', 'optional', 'coming_soon', 'Calendly semplifica la prenotazione' FROM plugins p WHERE p.slug = 'bookings-calendar'
 UNION ALL
@@ -724,11 +731,11 @@ UNION ALL
 UNION ALL
   SELECT p.id, 'googledrive', 'optional', 'live', 'Drive ospita i contenuti' FROM plugins p WHERE p.slug = 'content-seo'
 UNION ALL
-  SELECT p.id, 'googleanalytics', 'optional', 'coming_soon', 'Analytics misura la performance dei contenuti' FROM plugins p WHERE p.slug = 'content-seo'
+  SELECT p.id, 'googleanalytics', 'optional', 'live', 'Analytics misura la performance dei contenuti' FROM plugins p WHERE p.slug = 'content-seo'
 UNION ALL
-  SELECT p.id, 'googledocs', 'optional', 'coming_soon', 'Docs per la collaborazione sui contenuti' FROM plugins p WHERE p.slug = 'content-seo'
+  SELECT p.id, 'googledocs', 'optional', 'live', 'Docs per la collaborazione sui contenuti' FROM plugins p WHERE p.slug = 'content-seo'
 UNION ALL
-  SELECT p.id, 'mailchimp', 'optional', 'coming_soon', 'Mailchimp gestisce le campagne' FROM plugins p WHERE p.slug = 'content-seo'
+  SELECT p.id, 'mailchimp', 'optional', 'live', 'Mailchimp gestisce le campagne' FROM plugins p WHERE p.slug = 'content-seo'
 UNION ALL
   SELECT p.id, 'googleads', 'optional', 'coming_soon', 'Google Ads misura la performance delle ads' FROM plugins p WHERE p.slug = 'content-seo'
 ON CONFLICT (plugin_id, integration_slug) DO UPDATE SET
@@ -768,7 +775,7 @@ UNION ALL
 UNION ALL
   SELECT p.id, 'microsoftonenote', 'optional', 'live', 'OneNote ospita note e documenti' FROM plugins p WHERE p.slug = 'inbox-productivity'
 UNION ALL
-  SELECT p.id, 'microsoftoutlook', 'optional', 'coming_soon', 'Outlook amplia la copertura email' FROM plugins p WHERE p.slug = 'inbox-productivity'
+  SELECT p.id, 'microsoftoutlook', 'optional', 'live', 'Outlook amplia la copertura email' FROM plugins p WHERE p.slug = 'inbox-productivity'
 UNION ALL
   SELECT p.id, 'googletasks', 'optional', 'coming_soon', 'Google Tasks gestisce i task' FROM plugins p WHERE p.slug = 'inbox-productivity'
 UNION ALL
@@ -790,7 +797,7 @@ UNION ALL
 UNION ALL
   SELECT p.id, 'microsoftpowerpoint', 'optional', 'live', 'PowerPoint per il report al management' FROM plugins p WHERE p.slug = 'reports-bi'
 UNION ALL
-  SELECT p.id, 'googleanalytics', 'optional', 'coming_soon', 'Analytics per le metriche web' FROM plugins p WHERE p.slug = 'reports-bi'
+  SELECT p.id, 'googleanalytics', 'optional', 'live', 'Analytics per le metriche web' FROM plugins p WHERE p.slug = 'reports-bi'
 UNION ALL
   SELECT p.id, 'googleads', 'optional', 'coming_soon', 'Google Ads per le metriche di marketing' FROM plugins p WHERE p.slug = 'reports-bi'
 ON CONFLICT (plugin_id, integration_slug) DO UPDATE SET
@@ -814,7 +821,7 @@ UNION ALL
 UNION ALL
   SELECT p.id, 'googlemeet', 'optional', 'coming_soon', 'Google Meet per i colloqui video' FROM plugins p WHERE p.slug = 'hr-recruiting'
 UNION ALL
-  SELECT p.id, 'microsoftoutlook', 'optional', 'coming_soon', 'Outlook amplia la copertura del calendario' FROM plugins p WHERE p.slug = 'hr-recruiting'
+  SELECT p.id, 'microsoftoutlook', 'optional', 'live', 'Outlook amplia la copertura del calendario' FROM plugins p WHERE p.slug = 'hr-recruiting'
 ON CONFLICT (plugin_id, integration_slug) DO UPDATE SET
   status = EXCLUDED.status,
   availability = EXCLUDED.availability,
@@ -838,7 +845,7 @@ UNION ALL
 UNION ALL
   SELECT p.id, 'dropbox', 'optional', 'coming_soon', 'Dropbox per lo storage dei documenti' FROM plugins p WHERE p.slug = 'documents-office'
 UNION ALL
-  SELECT p.id, 'googledocs', 'optional', 'coming_soon', 'Docs per la collaborazione sui documenti' FROM plugins p WHERE p.slug = 'documents-office'
+  SELECT p.id, 'googledocs', 'optional', 'live', 'Docs per la collaborazione sui documenti' FROM plugins p WHERE p.slug = 'documents-office'
 ON CONFLICT (plugin_id, integration_slug) DO UPDATE SET
   status = EXCLUDED.status,
   availability = EXCLUDED.availability,

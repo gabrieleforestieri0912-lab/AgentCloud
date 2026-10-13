@@ -184,7 +184,51 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuide> = {
       { title: "Collega", desc: "Clicca Connetti → autorizza su Mailchimp. Nessun piano a pagamento serve." },
       { title: "Prova", desc: "Connesso. Chiedi: quante persone ho nella mia audience? Poi: com'è andata l'ultima campagna?" },
     ],
-    needHelp: "Se un audience non compare, l'integrazione OAuth2 deve avere permessi Read-Write. In questa versione l'agente legge solo: non invia campagne e non aggiunge iscritti.",
+    needHelp: "Se un audience non compare, l'integrazione OAuth2 deve avere permessi Read-Write. Contatti solo con consenso esplicito; programmazione e invio campagne chiedono sempre approvazione in chat e sono bloccati se il compliance-check è rosso.",
+  },
+  googledocs: {
+    provider: "googledocs",
+    whatItDoes: "Collega Google Docs: l'agente crea documenti, aggiunge contenuti e tabelle.",
+    time: "1 min",
+    steps: [
+      { title: "Prepara", desc: "Serve un account Google. Nessun file da caricare." },
+      { title: "Collega", desc: "Clicca Connetti → consenti Documenti (solo i file creati dall'app e quelli che apri). Nessun accesso a tutto il Drive." },
+      { title: "Prova", desc: "Connesso. Chiedi: crea un documento con il report di oggi. Dalla chat puoi anche salvare un file con “Salva su Google Docs”." },
+    ],
+    needHelp: "Se Google mostra “app non verificata”: clicca Avanzate → Vai a AgentCloud per continuare in sicurezza.",
+  },
+  googleforms: {
+    provider: "googleforms",
+    whatItDoes: "Collega Google Forms: l'agente crea moduli lead, aggiunge domande e legge le risposte.",
+    time: "1 min",
+    steps: [
+      { title: "Prepara", desc: "Serve un account Google. Pensa a titolo e domande del modulo." },
+      { title: "Collega", desc: "Clicca Connetti → consenti Moduli e Risposte (sola lettura per le risposte)." },
+      { title: "Prova", desc: "Connesso. Chiedi: crea un modulo contatti con nome, email e messaggio. Ogni form include l'informativa privacy." },
+    ],
+    needHelp: "Se Google mostra “app non verificata”: clicca Avanzate → Vai a AgentCloud per continuare in sicurezza.",
+  },
+  googleanalytics: {
+    provider: "googleanalytics",
+    whatItDoes: "Collega Google Analytics: l'agente legge traffico, pagine top e conversioni (sola lettura).",
+    time: "2 min",
+    steps: [
+      { title: "Prepara", desc: "Serve un account Google con accesso a una proprietà GA4. Apri analytics.google.com per verificare." },
+      { title: "Collega", desc: "Clicca Connetti → consenti la lettura dei dati Analytics (solo lettura, niente modifiche)." },
+      { title: "Prova", desc: "Connesso. Chiedi: quali proprietà vedi? Poi: com'è andato il traffico negli ultimi 28 giorni?" },
+    ],
+    needHelp: "Se non vedi proprietà, l'account Google collegato deve avere accesso alla proprietà in GA4 (Amministrazione → Accesso). I dati mostrati sono solo aggregati.",
+  },
+  microsoftoutlook: {
+    provider: "microsoftoutlook",
+    whatItDoes: "Collega Outlook: l'agente legge email, prepara bozze e gestisce il calendario Microsoft.",
+    time: "2 min",
+    steps: [
+      { title: "Prepara", desc: "Serve un account Microsoft (anche gratuito outlook.com). Accedi a outlook.com prima di collegare." },
+      { title: "Collega", desc: "Clicca Connetti → accedi con Microsoft → consenti Email e Calendario (solo questi, niente file). Puoi collegarlo anche se usi già Microsoft 365 per i documenti: sono due consensi separati." },
+      { title: "Prova", desc: "Connesso. Chiedi: hai email non lette? Poi: crea un evento domani alle 15. L'invio di email chiede sempre la tua approvazione in chat." },
+    ],
+    needHelp: "Se vedi un errore di permessi, collega Microsoft Outlook da questa pagina (non basta Microsoft 365 per i file). Se Microsoft chiede il consenso amministratore, il tuo tenant lo richiede: chiedi all'admin IT.",
   },
 };
 

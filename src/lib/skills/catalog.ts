@@ -255,8 +255,16 @@ const LEAD_SALES: SkillPlugin = {
   category: "sales",
   icon: "target",
   priceTier: "included",
-  version: "1.0.0",
+  version: "1.1.0",
   changelog: [
+    {
+      version: "1.1.0",
+      date: "2026-10-13",
+      changes: [
+        "Nuova skill Modulo Lead Forms: crea form di contatto con privacy, legge le risposte ed esporta su Sheets/HubSpot.",
+        "Google Forms ora live.",
+      ],
+    },
     {
       version: "1.0.0",
       date: "2026-01-15",
@@ -399,6 +407,34 @@ const LEAD_SALES: SkillPlugin = {
         "Tabella sequenza (passo, data, canale, oggetto email, obiettivo) + testi in bozza",
       example: "Prepara il follow-up per Bianchi: non risponde da 9 giorni",
     },
+    {
+      slug: "modulo-lead-forms",
+      name: "Modulo Lead Forms",
+      description:
+        "Crea un modulo di contatto con Google Forms, legge le nuove risposte e le porta in CRM/Sheets. Usare per landing, fiere e campagne.",
+      risk: "medium",
+      permissions: ["create:forms", "read:responses"],
+      whenNot: [
+        "Form senza informativa privacy: non si pubblica, si aggiunge prima",
+        "Risposte con dati sensibili non necessari: riduci le domande",
+        "Import massivo di contatti senza consenso: mai, solo risposte spontanee",
+      ],
+      procedure: [
+        "Crea il form (forms_create_form) con nome, email, azienda, messaggio + consenso",
+        "Condividi il link di compilazione e verifica una risposta di prova",
+        "Leggi le nuove risposte (forms_list_responses, deduplica per responseId)",
+        "Valida l'email e porta il lead in HubSpot/Sheets (forms_export_to_sheet)",
+        "Notifica il team per i lead hot",
+      ],
+      rules: [
+        "Ogni form include informativa privacy e consenso esplicito",
+        "Email malformata: si chiede correzione, non si registra",
+        "Le risposte si rileggono per id: niente doppi lead dallo stesso invio",
+      ],
+      output:
+        "Link form + nuove risposte validate + lead registrati (CRM/Sheets)",
+      example: "Crea un modulo contatti per la fiera di Milano",
+    },
   ],
   agents: [
     { slug: "lead-capture", fit: "primary", rationale: "Lead Capture è dedicato a cattura e gestione lead" },
@@ -415,6 +451,7 @@ const LEAD_SALES: SkillPlugin = {
     { brand: "whatsapp", status: "optional", rationale: "WhatsApp segue il lead via chat" },
     { brand: "calendly", status: "optional", rationale: "Calendly prenota il meeting" },
     { brand: "mailchimp", status: "optional", rationale: "Mailchimp gestisce le campagne email" },
+    { brand: "googleforms", status: "optional", rationale: "Forms raccoglie i lead dai moduli" },
   ],
 };
 
@@ -903,8 +940,16 @@ const CONTENT_SEO: SkillPlugin = {
   category: "marketing",
   icon: "pen-line",
   priceTier: "included",
-  version: "1.0.0",
+  version: "1.1.0",
   changelog: [
+    {
+      version: "1.1.0",
+      date: "2026-10-13",
+      changes: [
+        "Nuova skill Newsletter Mailchimp Conforme: bozza, contenuto e invio con approvazione e compliance-check.",
+        "Analytics, Docs e Mailchimp ora live; Ads in arrivo.",
+      ],
+    },
     {
       version: "1.0.0",
       date: "2026-01-15",
@@ -1021,6 +1066,35 @@ const CONTENT_SEO: SkillPlugin = {
       output:
         "3 varianti complete (headline, subheadline, CTA, angolo) con testi assemblati",
       example: "Scrivi la copy per la landing del nostro servizio di pulizie",
+    },
+    {
+      slug: "newsletter-mailchimp-conforme",
+      name: "Newsletter Mailchimp Conforme",
+      description:
+        "Crea bozza, contenuto e invio newsletter via Mailchimp con compliance-check e approvazione. Usare per newsletter e DEM.",
+      risk: "high",
+      permissions: ["create:campaigns", "send:campaigns"],
+      whenNot: [
+        "Audience senza consenso documentato: prima il consenso, poi la campagna",
+        "Bozza con compliance rosso: si sistema, non si forza l'invio",
+        "Invio senza approvazione esplicita: mai, nemmeno se chiesto in forma vaga",
+      ],
+      procedure: [
+        "Scegli audience e oggetto con il cliente; verifica il consenso",
+        "Crea la bozza (mailchimp_create_campaign_draft) con mittente e reply-to",
+        "Imposta il contenuto (mailchimp_set_campaign_content) con unsubscribe e footer",
+        "Leggi il report (mailchimp_get_campaign_report): solo se compliance VERDE si procede",
+        "Mostra oggetto, audience e riepilogo e chiedi approvazione esplicita",
+        "Solo dopo il via libera: mailchimp_schedule_campaign o mailchimp_send_campaign",
+      ],
+      rules: [
+        "Programmazione e invio richiedono sempre approvazione esplicita",
+        "Compliance rosso = invio bloccato, si spiega cosa manca",
+        "Solo clienti con consenso: mai liste acquistate o import senza base",
+      ],
+      output:
+        "Bozza + compliance (verde/rosso) + esito programmazione/invio",
+      example: "Manda la newsletter di ottobre ai clienti",
     },
   ],
   agents: [
@@ -1227,8 +1301,16 @@ const INBOX: SkillPlugin = {
   category: "productivity",
   icon: "mail",
   priceTier: "included",
-  version: "1.0.0",
+  version: "1.1.0",
   changelog: [
+    {
+      version: "1.1.0",
+      date: "2026-10-13",
+      changes: [
+        "Nuova skill Bozza Email Outlook: triage e bozze anche sulla casella Microsoft, invio sempre con approvazione.",
+        "Outlook ora live: Gmail, Calendar, Notion, OneNote e Outlook disponibili; Tasks e Keep in arrivo.",
+      ],
+    },
     {
       version: "1.0.0",
       date: "2026-01-15",
@@ -1345,6 +1427,34 @@ const INBOX: SkillPlugin = {
       output:
         "Verbale: decisioni, action item (cosa, chi, entro quando), punti aperti",
       example: "Fai il verbale della riunione di stamattina",
+    },
+    {
+      slug: "bozza-email-outlook",
+      name: "Bozza Email Outlook",
+      description:
+        "Legge la casella Outlook, prepara bozze di risposta e propone l'invio solo con approvazione. Usare quando il cliente usa Microsoft invece di Gmail.",
+      risk: "medium",
+      permissions: ["read:email", "create:email"],
+      whenNot: [
+        "Casella Gmail: usa Bozza Risposta, non questa skill",
+        "Email con impegno economico o legale: bozza solo, con approvazione",
+        "Invio senza approvazione esplicita: mai, nemmeno se chiesto in forma vaga",
+      ],
+      procedure: [
+        "Leggi le non lette Outlook (outlook_list_unread) o cerca (outlook_search_messages)",
+        "Apri il messaggio (outlook_read_message) prima di rispondere",
+        "Scrivi la bozza con outlook_create_draft o outlook_create_reply_draft",
+        "Mostra destinatari, oggetto e corpo e chiedi approvazione esplicita",
+        "Solo dopo il via libera: outlook_send_message",
+      ],
+      rules: [
+        "L'invio richiede sempre approvazione: questa skill prepara, non spedisce",
+        "Se Outlook non è collegato, guida alla connessione invece di inventare email",
+        "Massimo 150 parole, un tema per email",
+      ],
+      output:
+        "Bozza Outlook (oggetto, corpo) + stato invio (da approvare/inviata)",
+      example: "Rispondi su Outlook all'email di Rossi sui tempi di consegna",
     },
   ],
   agents: [
@@ -1522,6 +1632,34 @@ const REPORTS: SkillPlugin = {
       output:
         "Briefing (buono / da tenere d'occhio / da risolvere) + 3 decisioni richieste",
       example: "Scrivi il briefing per il titolare di questa settimana",
+    },
+    {
+      slug: "report-traffico-ga4",
+      name: "Report Traffico GA4",
+      description:
+        "Legge traffico, pagine top e conversioni da Google Analytics e li spiega in italiano semplice. Usare per il punto settimanale sul sito.",
+      risk: "low",
+      permissions: ["read:analytics"],
+      whenNot: [
+        "Proprietà non scelta: chiedi quale usare, non presumere",
+        "Dati di un solo giorno dichiarati come trend: non è un trend",
+        "Metriche fuori whitelist (es. userId): non disponibili, solo aggregate",
+      ],
+      procedure: [
+        "Elenca le proprietà (ga_list_properties) e conferma quella da usare",
+        "Leggi la sintesi traffico (ga_traffic_summary) sul periodo richiesto",
+        "Leggi pagine top e conversioni, confronta col periodo precedente",
+        "Segnala anomalie (ga_detect_anomalies) solo se richieste o evidenti",
+        "Chiudi con 3 righe: cosa cresce, cosa cala, cosa fare",
+      ],
+      rules: [
+        "Solo metriche aggregate: nessun identificativo utente",
+        "Ogni numero porta il periodo e l'ora di aggiornamento",
+        "I report restano in cache 30 minuti: lo si dice",
+      ],
+      output:
+        "Sintesi traffico + top pagine + conversioni + confronto periodo + 3 azioni",
+      example: "Com'è andato il sito negli ultimi 28 giorni?",
     },
   ],
   agents: [
@@ -1730,8 +1868,16 @@ const DOCUMENTS: SkillPlugin = {
   category: "productivity",
   icon: "file-text",
   priceTier: "included",
-  version: "1.0.0",
+  version: "1.1.0",
   changelog: [
+    {
+      version: "1.1.0",
+      date: "2026-10-13",
+      changes: [
+        "Nuova skill Salva su Google Docs: crea documenti da Markdown, aggiunge contenuti e tabelle.",
+        "Google Docs ora live: Word, Excel, PowerPoint, Drive, OneNote e Docs disponibili.",
+      ],
+    },
     {
       version: "1.0.0",
       date: "2026-01-15",
@@ -1875,6 +2021,34 @@ const DOCUMENTS: SkillPlugin = {
       output:
         "Elenco differenze (sezione, tipo, impatto, testo prima/dopo) + sintesi delle modifiche sostanziali",
       example: "Confronta la v2 del contratto con la v1",
+    },
+    {
+      slug: "salva-su-google-docs",
+      name: "Salva su Google Docs",
+      description:
+        "Crea un documento Google da titolo e Markdown, aggiunge contenuti e tabelle. Usare per salvare deliverable della chat su Docs.",
+      risk: "medium",
+      permissions: ["create:documents", "read:documents"],
+      whenNot: [
+        "Documento Word/Excel formale da firmare: usa Creazione Documenti",
+        "Documento esistente scelto senza Picker né id: chiedi quale documento",
+        "Contenuti con dati personali di terzi: verifica la base giuridica",
+      ],
+      procedure: [
+        "Prepara titolo e contenuto in Markdown (titoli, elenchi, tabelle)",
+        "Crea il documento (docs_create_document) e restituisci il link",
+        "Per aggiunte: docs_append_to_document; per tabelle: docs_insert_table",
+        "Per modifiche puntuali: mostra cosa cambia, poi docs_replace_text",
+        "Chiudi con il link al documento e la versione del file collegata",
+      ],
+      rules: [
+        "Opera solo sui documenti indicati o creati dall'agente: niente scansioni del Drive",
+        "Le sostituzioni si mostrano prima di eseguirle",
+        "Il link al documento si restituisce sempre, non solo l'id",
+      ],
+      output:
+        "Link al documento Google + riepilogo delle operazioni (creato/aggiunto/tabella)",
+      example: "Salva questo report su Google Docs",
     },
   ],
   agents: [

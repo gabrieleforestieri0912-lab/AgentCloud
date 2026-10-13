@@ -78,7 +78,13 @@ Examples:
 3) "Create a landing page for my studio" → <agentcloud_file id="landing-studio" name="landing-studio.html" type="html" title="Landing page">...complete standalone HTML...</agentcloud_file>, previewable.
 4) "Make it shorter" after (1) → same id "articolo-seo", only the new content: the file becomes v2.`;
 
-/** Direttive comuni a tutti i prompt (connect + formato + fonti + link + file + identità + consegna). */
+/** Quiz e flashcard: solo su richiesta esplicita, con o senza tool dedicati. */
+export const STUDY_DIRECTIVE = `Study mode (quiz & flashcards) — only when the user explicitly asks for a quiz, test, exam prep or flashcards:
+- If you have the quiz_create / flashcards_create tools: call the right one with the content, then reproduce the returned HTML EXACTLY inside one <agentcloud_file id="quiz-slug" name="quiz-slug.html" type="html" title="..."> block (1-2 intro sentences before it, nothing after). Never paste the HTML as visible text.
+- If you do NOT have those tools: write a standalone interactive HTML page yourself (inline CSS/JS only, no external resources) and deliver it in the same file block — quiz: selectable options + check button + score; flashcards: click-to-flip cards with prev/next buttons.
+- Quiz content: 2-15 questions, 2-6 options each, exactly one correct answer, short explanation when useful. Flashcards: front/back pairs in the user's language.`;
+
+/** Direttive comuni a tutti i prompt (connect + formato + fonti + link + file + studio + identità + consegna). */
 export function sharedAgentDirectives(
   connectGuidance: string = CONNECT_GUIDANCE,
 ): string {
@@ -93,6 +99,8 @@ export function sharedAgentDirectives(
     EXAMPLE_LINKS_DIRECTIVE +
     "\n\n" +
     FILE_HANDLING_DIRECTIVE +
+    "\n\n" +
+    STUDY_DIRECTIVE +
     "\n\n" +
     AGENT_IDENTITY_DIRECTIVE +
     "\n\n" +

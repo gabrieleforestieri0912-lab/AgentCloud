@@ -30,6 +30,15 @@ const CONFIRMATION_TOOLS = new Set<string>([
   "word_append",
   "excel_write_range",
   "onenote_append",
+  // Outlook: invio email e cancellazione eventi (high/medium con impatto sugli
+  // invitati). Le bozze e la creazione eventi non sono qui: non inviano nulla
+  // da sole e restano rivedibili prima dell'azione reale.
+  "outlook_send_message",
+  "outlook_cancel_event",
+  // Mailchimp: programmazione e invio campagne (high, impatto su migliaia di
+  // destinatari). La bozza e il contenuto non sono qui: non inviano nulla.
+  "mailchimp_schedule_campaign",
+  "mailchimp_send_campaign",
 ]);
 
 export function toolRequiresConfirmation(name: string): boolean {

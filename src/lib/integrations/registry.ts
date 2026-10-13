@@ -12,6 +12,10 @@ import { trelloProvider } from "./providers/trello";
 import { woocommerceProvider } from "./providers/woocommerce";
 import { mailchimpProvider } from "./providers/mailchimp";
 import { microsoftProvider } from "./providers/microsoft";
+import { microsoftOutlookProvider } from "./providers/microsoftOutlook";
+import { googleDocsProvider } from "./providers/googleDocs";
+import { googleFormsProvider } from "./providers/googleForms";
+import { googleAnalyticsProvider } from "./providers/googleAnalytics";
 
 /**
  * Mappa adapter: `Record<ImplementedProvider, IntegrationProvider>` è
@@ -37,6 +41,10 @@ const registry: Record<ImplementedProvider, IntegrationProvider> = {
   woocommerce: woocommerceProvider,
   mailchimp: mailchimpProvider,
   microsoft: microsoftProvider,
+  microsoft_outlook: microsoftOutlookProvider,
+  google_docs: googleDocsProvider,
+  google_forms: googleFormsProvider,
+  google_analytics: googleAnalyticsProvider,
 };
 
 export function getProvider(provider: string): IntegrationProvider | null {

@@ -32,6 +32,14 @@ function providerForIntegration(label: string): string | null {
   // WooCommerce sta nel layer generico: NON è la connessione Shopify legacy.
   if (k.includes("woocommerce")) return "woocommerce";
   if (k.includes("mailchimp")) return "mailchimp";
+  // Va prima del catch-all `includes("google")`: Outlook non è Google.
+  if (k.includes("outlook")) return "microsoft_outlook";
+  // Google Docs è generico (provider google_docs), non il login Google legacy.
+  if (k.includes("docs")) return "google_docs";
+  // Google Forms è generico (provider google_forms). Va prima del catch-all.
+  if (k.includes("forms")) return "google_forms";
+  // Google Analytics è generico (provider google_analytics), non Ads.
+  if (k.includes("analytics")) return "google_analytics";
   if (k.includes("google")) return "google";
   return null;
 }
@@ -69,7 +77,7 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
         {integrations.map((label) => {
           const prov = providerForIntegration(label);
           const soon = !isIntegrationAvailable(label);
-          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "google_drive", "github", "clickup", "asana", "airtable", "trello", "woocommerce", "mailchimp"].includes(prov);
+          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "google_drive", "google_docs", "google_forms", "google_analytics", "github", "clickup", "asana", "airtable", "trello", "woocommerce", "mailchimp", "microsoft_outlook"].includes(prov);
           const connected = isGeneric
             ? !!genericConnected[prov!]
             : prov === "shopify"

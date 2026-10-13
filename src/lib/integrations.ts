@@ -130,8 +130,9 @@ export const INTEGRATIONS: Integration[] = [
     name: "Google Analytics",
     brand: "googleanalytics",
     category: "Analytics",
-    available: false,
-    description: "Analytics sito",
+    agentSlug: "business-manager",
+    available: true,
+    description: "Traffico, pagine e conversioni",
   },
   {
     name: "Google Meet",
@@ -144,8 +145,9 @@ export const INTEGRATIONS: Integration[] = [
     name: "Mailchimp",
     brand: "mailchimp",
     category: "Marketing",
-    available: false,
-    description: "Audience, statistiche e campagne",
+    agentSlug: "copywriter",
+    available: true,
+    description: "Audience, campagne e report",
   },
   {
     name: "Calendly",
@@ -230,8 +232,9 @@ export const INTEGRATIONS: Integration[] = [
     name: "Google Docs",
     brand: "googledocs",
     category: "Productivity",
-    available: false,
-    description: "Documenti e collaborazione",
+    agentSlug: "seo-agent",
+    available: true,
+    description: "Crea e modifica documenti",
   },
   {
     name: "Google Slides",
@@ -244,8 +247,9 @@ export const INTEGRATIONS: Integration[] = [
     name: "Google Forms",
     brand: "googleforms",
     category: "Productivity",
-    available: false,
-    description: "Moduli e sondaggi",
+    agentSlug: "lead-capture",
+    available: true,
+    description: "Moduli, lead e sondaggi",
   },
   {
     name: "Google Keep",
@@ -288,8 +292,9 @@ export const INTEGRATIONS: Integration[] = [
     name: "Microsoft Outlook",
     brand: "microsoftoutlook",
     category: "Email Service",
-    available: false,
-    description: "Email e calendario",
+    agentSlug: "email-manager",
+    available: true,
+    description: "Email e calendario via Microsoft Graph",
   },
   {
     name: "OneDrive",
@@ -357,6 +362,9 @@ export const BRAND_TO_PROVIDER: Record<string, string> = {
   clickup: "clickup",
   asana: "asana",
   googledrive: "google_drive",
+  googledocs: "google_docs",
+  googleforms: "google_forms",
+  googleanalytics: "google_analytics",
   airtable: "airtable",
   trello: "trello",
   woocommerce: "woocommerce",
@@ -365,6 +373,9 @@ export const BRAND_TO_PROVIDER: Record<string, string> = {
   microsoftexcel: "microsoft",
   microsoftpowerpoint: "microsoft",
   microsoftonenote: "microsoft",
+  // Outlook ha connessione separata (consenso incrementale mail/calendario):
+  // stessa app Entra, riga tenant_integrations diversa.
+  microsoftoutlook: "microsoft_outlook",
 };
 
 /**
@@ -380,7 +391,11 @@ export function isIntegrationAvailable(label: string): boolean {
     (i) =>
       i.name.toLowerCase() === key ||
       i.brand === key ||
-      key.includes(i.name.toLowerCase()),
+      key.includes(i.name.toLowerCase()) ||
+      // "Outlook" → "Microsoft Outlook": match per parola intera del nome, così
+      // le etichette corte delle schede agente risolvono senza falsi positivi
+      // ("mail" non deve matchare "Mailchimp").
+      i.name.toLowerCase().split(/[\s&]+/).includes(key),
   );
   return entry?.available ?? false;
 }
@@ -400,6 +415,10 @@ const CONNECTABLE_PROVIDERS: { id: string; names: string[] }[] = [
   { id: "trello", names: ["trello", "kanban"] },
   { id: "woocommerce", names: ["woocommerce", "woo", "store wordpress"] },
   { id: "mailchimp", names: ["mailchimp", "newsletter", "email marketing"] },
+  { id: "outlook", names: ["outlook", "microsoft outlook", "posta outlook"] },
+  { id: "docs", names: ["google docs", "documento google", "docs"] },
+  { id: "forms", names: ["google forms", "modulo google", "forms", "modulo lead", "sondaggio"] },
+  { id: "analytics", names: ["google analytics", "analytics", "ga4", "traffico sito"] },
   { id: "slack", names: ["slack"] },
   { id: "notion", names: ["notion"] },
   { id: "hubspot", names: ["hubspot"] },

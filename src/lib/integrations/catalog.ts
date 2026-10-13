@@ -236,6 +236,74 @@ export const PROVIDER_CATALOG = [
     scopes: ["offline_access", "User.Read", "Files.ReadWrite", "Notes.ReadWrite"],
     hasApiProxy: true,
   },
+  {
+    id: "microsoft_outlook",
+    label: "Microsoft Outlook",
+    brand: "microsoftoutlook",
+    category: "Email Service",
+    // Stessa registrazione app Entra del provider `microsoft` (stesso client
+    // id), ma connessione separata: il consenso mail/calendario è incrementale
+    // e non imposto a chi usa solo Word/Excel. Redirect dedicato:
+    // /api/integrations/microsoft_outlook/callback (da registrare in Entra).
+    authType: "oauth2_pkce",
+    // Scope minimi delegati (verifica docs ottobre 2026: gratuiti, mai metered;
+    // Mail.Send incluso perché outlook_send_message esiste e richiede comunque
+    // approvazione esplicita — il consenso lo mostra in chiaro).
+    scopes: [
+      "offline_access",
+      "User.Read",
+      "Mail.Read",
+      "Mail.ReadWrite",
+      "Calendars.ReadWrite",
+      "Mail.Send",
+    ],
+    // Modulo dedicato src/lib/integrations/microsoft/outlook.ts + tool in
+    // src/lib/agents/outlook-tools.ts (stesso pattern di google_sheets: niente
+    // proxy condiviso, niente duplicazione).
+    hasApiProxy: false,
+  },
+  {
+    id: "google_docs",
+    label: "Google Docs",
+    brand: "googledocs",
+    category: "Productivity",
+    authType: "oauth2",
+    // drive.file = NON-SENSITIVE (crea file + opera sui file dell'app/scelti);
+    // documents = contenuto dei documenti esistenti (non restricted, niente
+    // assessment a pagamento). Niente scope Drive completo (restricted).
+    scopes: [
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/documents",
+    ],
+    hasApiProxy: true,
+  },
+  {
+    id: "google_forms",
+    label: "Google Forms",
+    brand: "googleforms",
+    category: "Productivity",
+    authType: "oauth2",
+    // forms.body + forms.responses.readonly = non restricted (niente assessment
+    // a pagamento, verifica Google gratuita); drive.file (NON-SENSITIVE) per il
+    // file collegato al form. Niente Pub/Sub: polling incrementale on-demand.
+    scopes: [
+      "https://www.googleapis.com/auth/forms.body",
+      "https://www.googleapis.com/auth/forms.responses.readonly",
+      "https://www.googleapis.com/auth/drive.file",
+    ],
+    hasApiProxy: true,
+  },
+  {
+    id: "google_analytics",
+    label: "Google Analytics",
+    brand: "googleanalytics",
+    category: "Analytics",
+    authType: "oauth2",
+    // Solo lettura: analytics.readonly (non restricted, niente assessment a
+    // pagamento). Nessuna scrittura esiste nel connettore.
+    scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+    hasApiProxy: true,
+  },
 ] as const;
 
 /**
@@ -264,6 +332,10 @@ export const IMPLEMENTED_PROVIDERS = [
   "woocommerce",
   "mailchimp",
   "microsoft",
+  "microsoft_outlook",
+  "google_docs",
+  "google_forms",
+  "google_analytics",
 ] as const;
 
 export type ImplementedProvider = (typeof IMPLEMENTED_PROVIDERS)[number];

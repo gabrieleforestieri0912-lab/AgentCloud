@@ -8,10 +8,14 @@ import {
   slackApiProxy,
   hubspotApiProxy,
   driveApiProxy,
+  docsApiProxy,
+  formsApiProxy,
+  gaApiProxy,
   airtableApiProxy,
   trelloApiProxy,
   wooApiProxy,
   mailchimpApiProxy,
+  mailchimpWriteProxy,
 } from "@/lib/integrations/api-proxy";
 import {
   MICROSOFT_TOOL_NAMES,
@@ -19,6 +23,12 @@ import {
   isMicrosoftTool,
   executeMicrosoftTool,
 } from "./microsoft-tools";
+import {
+  OUTLOOK_TOOL_NAMES,
+  OUTLOOK_TOOL_DEFINITIONS,
+  isOutlookTool,
+  executeOutlookTool,
+} from "./outlook-tools";
 
 /**
  * Tool agente per le integrazioni: GitHub / ClickUp / Asana / Notion / Slack /
@@ -57,6 +67,33 @@ const INTEGRATION_TOOL_NAMES = [
   "drive_search_files",
   "drive_read_file",
   "drive_list_folder",
+  "docs_create_document",
+  "docs_read_document",
+  "docs_append_to_document",
+  "docs_replace_text",
+  "docs_insert_table",
+  "docs_export_pdf",
+  "forms_create_form",
+  "forms_add_question",
+  "forms_update_form",
+  "forms_get_form",
+  "forms_list_responses",
+  "forms_get_response_summary",
+  "forms_export_to_sheet",
+  "ga_list_properties",
+  "ga_run_report",
+  "ga_traffic_summary",
+  "ga_top_pages",
+  "ga_conversions",
+  "ga_compare_periods",
+  "ga_detect_anomalies",
+  "mailchimp_upsert_contact",
+  "mailchimp_add_tags",
+  "mailchimp_create_campaign_draft",
+  "mailchimp_set_campaign_content",
+  "mailchimp_get_campaign_report",
+  "mailchimp_schedule_campaign",
+  "mailchimp_send_campaign",
   "airtable_list_bases",
   "airtable_list_tables",
   "airtable_list_records",
@@ -74,6 +111,9 @@ const INTEGRATION_TOOL_NAMES = [
   // vivono in ./microsoft-tools: qui resta solo il nome, così `isIntegrationTool`
   // continua a essere l'unico punto che decide il dispatch.
   ...MICROSOFT_TOOL_NAMES,
+  // Microsoft Outlook (email + calendario, provider `microsoft_outlook`).
+  // Stesso pattern: definizioni e handler in ./outlook-tools.
+  ...OUTLOOK_TOOL_NAMES,
 ] as const;
 
 export function isIntegrationTool(name: string): boolean {
@@ -456,6 +496,312 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
     },
   },
 
+  // --- Google Docs ----------------------------------------------------------
+  // Creazione e lettura libere; le modifiche a documenti esistenti (append,
+  // replace, tabelle) operano solo sui documenti che l'utente indica o che
+  // l'agente ha creato — mai scansioni globali del Drive.
+
+  docs_create_document: {
+    name: "docs_create_document",
+    description:
+      "Create a new Google Doc from a title and Markdown (headings, lists, tables, bold, links are converted). Returns the document link. Use this to save chat deliverables to Docs.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Document title, e.g. 'Q1 report'" },
+        markdown: { type: "string", description: "Content as Markdown" },
+      },
+      required: ["title"],
+    },
+  },
+
+  docs_read_document: {
+    name: "docs_read_document",
+    description:
+      "Read the text of a Google Doc by its id (from docs_create_document or given by the user). Long documents are truncated, and the output says so.",
+    input_schema: {
+      type: "object",
+      properties: {
+        documentId: { type: "string", description: "The Google Doc id" },
+      },
+      required: ["documentId"],
+    },
+  },
+
+  docs_append_to_document: {
+    name: "docs_append_to_document",
+    description:
+      "Append Markdown content at the end of an existing Google Doc (keeps current content). Give the document id and the Markdown to add.",
+    input_schema: {
+      type: "object",
+      properties: {
+        documentId: { type: "string", description: "The Google Doc id" },
+        markdown: { type: "string", description: "Markdown to append" },
+      },
+      required: ["documentId", "markdown"],
+    },
+  },
+
+  docs_replace_text: {
+    name: "docs_replace_text",
+    description:
+      "Replace text inside a Google Doc (all occurrences, case-insensitive). Show the user what will change before calling it.",
+    input_schema: {
+      type: "object",
+      properties: {
+        documentId: { type: "string", description: "The Google Doc id" },
+        find: { type: "string", description: "Text to find" },
+        replace: { type: "string", description: "Replacement text" },
+      },
+      required: ["documentId", "find", "replace"],
+    },
+  },
+
+  docs_insert_table: {
+    name: "docs_insert_table",
+    description:
+      "Insert a real table at the end of a Google Doc. Rows is an array of arrays of strings; the first row becomes the bold header.",
+    input_schema: {
+      type: "object",
+      properties: {
+        documentId: { type: "string", description: "The Google Doc id" },
+        rows: {
+          type: "array",
+          description: 'Table rows, e.g. [["Name","Price"],["Widget","10"]]',
+          items: { type: "array", items: { type: "string" } },
+        },
+      },
+      required: ["documentId", "rows"],
+    },
+  },
+
+  docs_export_pdf: {
+    name: "docs_export_pdf",
+    description:
+      "Explain how to download a Google Doc as PDF (opens the doc, File > Download). Read-only helper: it does not modify anything.",
+    input_schema: {
+      type: "object",
+      properties: {
+        documentId: { type: "string", description: "The Google Doc id" },
+      },
+      required: ["documentId"],
+    },
+  },
+
+  // --- Google Forms ----------------------------------------------------------
+  // Creazione e lettura libere; le risposte si leggono on-demand con
+  // deduplica per responseId (niente Pub/Sub, niente worker: costo zero).
+
+  forms_create_form: {
+    name: "forms_create_form",
+    description:
+      "Create a Google Form from title, description and questions [{title, type, options?, required?}]. Types: text, paragraph, choice, dropdown, checkbox, scale, date. Every form includes a privacy notice by default. Returns the edit link and the fill link.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Form title" },
+        description: { type: "string", description: "Form description (optional, privacy notice is added by default)" },
+        questions: {
+          type: "array",
+          description: "Questions: [{title, type, options?: string[], required?: boolean}]",
+          items: { type: "object" },
+        },
+      },
+      required: ["title"],
+    },
+  },
+
+  forms_add_question: {
+    name: "forms_add_question",
+    description:
+      "Add one question to an existing Google Form (appended at the end). Same question format as forms_create_form.",
+    input_schema: {
+      type: "object",
+      properties: {
+        formId: { type: "string", description: "The form id" },
+        question: {
+          type: "object",
+          description: "Question: {title, type, options?, required?, description?}",
+        },
+      },
+      required: ["formId", "question"],
+    },
+  },
+
+  forms_update_form: {
+    name: "forms_update_form",
+    description:
+      "Update a Google Form title and/or description. Show what will change before calling it.",
+    input_schema: {
+      type: "object",
+      properties: {
+        formId: { type: "string", description: "The form id" },
+        title: { type: "string" },
+        description: { type: "string" },
+      },
+      required: ["formId"],
+    },
+  },
+
+  forms_get_form: {
+    name: "forms_get_form",
+    description:
+      "Read a Google Form structure (title, description, questions) with edit and fill links.",
+    input_schema: {
+      type: "object",
+      properties: {
+        formId: { type: "string", description: "The form id" },
+      },
+      required: ["formId"],
+    },
+  },
+
+  forms_list_responses: {
+    name: "forms_list_responses",
+    description:
+      "List responses of a Google Form (deduplicated by responseId), newest scheme first. Read-only.",
+    input_schema: {
+      type: "object",
+      properties: {
+        formId: { type: "string", description: "The form id" },
+        limit: { type: "integer", description: "Max responses (default 20, max 50)" },
+      },
+      required: ["formId"],
+    },
+  },
+
+  forms_get_response_summary: {
+    name: "forms_get_response_summary",
+    description:
+      "Aggregated summary of a Google Form responses: counts, per-question distribution and recent examples. Computed on downloaded data. Read-only.",
+    input_schema: {
+      type: "object",
+      properties: {
+        formId: { type: "string", description: "The form id" },
+      },
+      required: ["formId"],
+    },
+  },
+
+  forms_export_to_sheet: {
+    name: "forms_export_to_sheet",
+    description:
+      "Export all form responses to a Google Sheet (creates one if spreadsheetId is omitted). Requires Google Sheets connected too. Read the responses, writes rows — confirm the target sheet with the user first.",
+    input_schema: {
+      type: "object",
+      properties: {
+        formId: { type: "string", description: "The form id" },
+        spreadsheetId: { type: "string", description: "Target spreadsheet id (optional: a new one is created)" },
+      },
+      required: ["formId"],
+    },
+  },
+
+  // --- Google Analytics 4 (sola lettura) --------------------------------------
+  // Solo metriche aggregate; nessun identificativo utente. I report restano in
+  // cache 30 minuti: l'output dice sempre "dati aggiornati alle HH:MM".
+
+  ga_list_properties: {
+    name: "ga_list_properties",
+    description:
+      "List the GA4 accounts and properties the connected Google account can access. Returns property ids (properties/...) to use with the other ga_ tools. Ask the user which properties to use.",
+    input_schema: { type: "object", properties: {} },
+  },
+
+  ga_run_report: {
+    name: "ga_run_report",
+    description:
+      "Run a custom GA4 report. Dimensions whitelist: date, pagePath, pageTitle, sessionSource, sessionMedium, sessionCampaign, deviceCategory, country, city. Metrics whitelist: sessions, totalUsers, newUsers, screenPageViews, engagementRate, bounceRate, averageSessionDuration, conversions, eventCount.",
+    input_schema: {
+      type: "object",
+      properties: {
+        property: { type: "string", description: 'Property id, e.g. "properties/123456789"' },
+        dimensions: { type: "array", description: "Dimensions from the whitelist", items: { type: "string" } },
+        metrics: { type: "array", description: "Metrics from the whitelist", items: { type: "string" } },
+        startDate: { type: "string", description: "YYYY-MM-DD or NdaysAgo (default 28daysAgo)" },
+        endDate: { type: "string", description: "YYYY-MM-DD or today (default today)" },
+        limit: { type: "integer", description: "Max rows (default 10, max 50)" },
+      },
+      required: ["property", "metrics"],
+    },
+  },
+
+  ga_traffic_summary: {
+    name: "ga_traffic_summary",
+    description:
+      "Traffic overview of a GA4 property (sessions, users, new users, pageviews, engagement rate) for a date range. Cached 30 minutes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        property: { type: "string", description: 'Property id, e.g. "properties/123456789"' },
+        startDate: { type: "string", description: "Default 28daysAgo" },
+        endDate: { type: "string", description: "Default today" },
+      },
+      required: ["property"],
+    },
+  },
+
+  ga_top_pages: {
+    name: "ga_top_pages",
+    description:
+      "Most visited pages of a GA4 property (pageviews + users, descending). Cached 30 minutes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        property: { type: "string", description: 'Property id, e.g. "properties/123456789"' },
+        startDate: { type: "string", description: "Default 28daysAgo" },
+        endDate: { type: "string", description: "Default today" },
+        limit: { type: "integer", description: "Max pages (default 10, max 50)" },
+      },
+      required: ["property"],
+    },
+  },
+
+  ga_conversions: {
+    name: "ga_conversions",
+    description:
+      "Daily conversions (and sessions) of a GA4 property for a date range. Cached 30 minutes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        property: { type: "string", description: 'Property id, e.g. "properties/123456789"' },
+        startDate: { type: "string", description: "Default 28daysAgo" },
+        endDate: { type: "string", description: "Default today" },
+      },
+      required: ["property"],
+    },
+  },
+
+  ga_compare_periods: {
+    name: "ga_compare_periods",
+    description:
+      "Compare two date ranges of a GA4 property (sessions, users, pageviews, conversions with % deltas).",
+    input_schema: {
+      type: "object",
+      properties: {
+        property: { type: "string", description: 'Property id, e.g. "properties/123456789"' },
+        startDate: { type: "string", description: "Current period start (YYYY-MM-DD)" },
+        endDate: { type: "string", description: "Current period end (YYYY-MM-DD)" },
+        compareStartDate: { type: "string", description: "Previous period start (YYYY-MM-DD)" },
+        compareEndDate: { type: "string", description: "Previous period end (YYYY-MM-DD)" },
+      },
+      required: ["property", "startDate", "endDate", "compareStartDate", "compareEndDate"],
+    },
+  },
+
+  ga_detect_anomalies: {
+    name: "ga_detect_anomalies",
+    description:
+      "Detect traffic anomalies of a GA4 property (daily sessions, last 90 days, z-score). Computed on downloaded data. Read-only.",
+    input_schema: {
+      type: "object",
+      properties: {
+        property: { type: "string", description: 'Property id, e.g. "properties/123456789"' },
+      },
+      required: ["property"],
+    },
+  },
+
   // --- Airtable ------------------------------------------------------------
   // Sola lettura: create/update esclusi per Open Decision 14 (manca il
   // meccanismo di conferma fra handler e UI).
@@ -616,9 +962,10 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
   },
 
   // --- Mailchimp ------------------------------------------------------------
-  // Solo lettura. Nessun invio di campagna e nessun iscritto aggiunto in questo
-  // batch: vedi Open Decision 14. mailchimp_add_subscriber è una scrittura su dati
-  // personali, e non c'è ancora il meccanismo di conferma fra handler e UI.
+  // Lettura + scritture GDPR: upsert solo con consenso esplicito, niente
+  // risottoscrizioni di unsubscribed/cleaned, invio bloccato se il
+  // compliance-check è rosso. schedule/send richiedono approvazione
+  // (tool-confirmation.ts).
 
   mailchimp_list_audiences: {
     name: "mailchimp_list_audiences",
@@ -656,7 +1003,119 @@ export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
       },
     },
   },
+
+  // --- Mailchimp scritture (GDPR integrato) -----------------------------------
+  // upsert solo con consenso esplicito (subscribed = consent_basis + data);
+  // unsubscribed/cleaned mai risottoscritti; invio bloccato se il
+  // compliance-check è rosso. schedule/send richiedono approvazione esplicita.
+
+  mailchimp_upsert_contact: {
+    name: "mailchimp_upsert_contact",
+    description:
+      "Add or update a Mailchimp contact (idempotent). For status subscribed you MUST provide consentBasis (e.g. 'website form 2026-10-13') and consentDate (YYYY-MM-DD); without them use pending (double opt-in). Never resubscribes unsubscribed/cleaned contacts.",
+    input_schema: {
+      type: "object",
+      properties: {
+        listId: { type: "string", description: "Mailchimp audience id" },
+        email: { type: "string", description: "Contact email" },
+        status: { type: "string", description: "subscribed (needs consent), pending, unsubscribed, transactional" },
+        consentBasis: { type: "string", description: "Explicit consent basis, required for subscribed" },
+        consentDate: { type: "string", description: "Consent date YYYY-MM-DD, required for subscribed" },
+        firstName: { type: "string" },
+        lastName: { type: "string" },
+        tags: { type: "array", description: "Tags to apply", items: { type: "string" } },
+      },
+      required: ["listId", "email", "status"],
+    },
+  },
+
+  mailchimp_add_tags: {
+    name: "mailchimp_add_tags",
+    description:
+      "Add tags to a Mailchimp contact (segments without changing subscription status).",
+    input_schema: {
+      type: "object",
+      properties: {
+        listId: { type: "string", description: "Mailchimp audience id" },
+        email: { type: "string", description: "Contact email" },
+        tags: { type: "array", description: "Tag names", items: { type: "string" } },
+      },
+      required: ["listId", "email", "tags"],
+    },
+  },
+
+  mailchimp_create_campaign_draft: {
+    name: "mailchimp_create_campaign_draft",
+    description:
+      "Create a campaign DRAFT (never sends). Requires subject, fromName (sender identity, mandatory in footer) and replyTo. Set content next with mailchimp_set_campaign_content.",
+    input_schema: {
+      type: "object",
+      properties: {
+        listId: { type: "string", description: "Mailchimp audience id" },
+        subject: { type: "string", description: "Email subject" },
+        fromName: { type: "string", description: "Sender name (shown in footer)" },
+        replyTo: { type: "string", description: "Reply-to email" },
+        title: { type: "string", description: "Internal campaign title (optional)" },
+      },
+      required: ["listId", "subject", "fromName", "replyTo"],
+    },
+  },
+
+  mailchimp_set_campaign_content: {
+    name: "mailchimp_set_campaign_content",
+    description:
+      "Set the HTML content of a campaign draft. Include an unsubscribe link and the sender footer.",
+    input_schema: {
+      type: "object",
+      properties: {
+        campaignId: { type: "string", description: "Campaign id from the draft" },
+        html: { type: "string", description: "Campaign HTML content" },
+      },
+      required: ["campaignId", "html"],
+    },
+  },
+
+  mailchimp_get_campaign_report: {
+    name: "mailchimp_get_campaign_report",
+    description:
+      "Read a campaign status, stats (sent, open/click rate) and its live compliance check (GREEN = ready to schedule/send, RED = sending is blocked with reasons). Read-only.",
+    input_schema: {
+      type: "object",
+      properties: {
+        campaignId: { type: "string", description: "Campaign id" },
+      },
+      required: ["campaignId"],
+    },
+  },
+
+  mailchimp_schedule_campaign: {
+    name: "mailchimp_schedule_campaign",
+    description:
+      "SCHEDULE a campaign for a future ISO datetime. Requires explicit user confirmation before running. Blocked when the compliance check is red.",
+    input_schema: {
+      type: "object",
+      properties: {
+        campaignId: { type: "string", description: "Campaign id" },
+        scheduleTime: { type: "string", description: "Future ISO datetime" },
+      },
+      required: ["campaignId", "scheduleTime"],
+    },
+  },
+
+  mailchimp_send_campaign: {
+    name: "mailchimp_send_campaign",
+    description:
+      "SEND a campaign immediately. Requires explicit user confirmation before running: always show subject, audience and content summary and get a clear approval first. Blocked when the compliance check is red.",
+    input_schema: {
+      type: "object",
+      properties: {
+        campaignId: { type: "string", description: "Campaign id" },
+      },
+      required: ["campaignId"],
+    },
+  },
   ...MICROSOFT_TOOL_DEFINITIONS,
+  ...OUTLOOK_TOOL_DEFINITIONS,
 };
 
 // ---------------------------------------------------------------------------
@@ -675,6 +1134,11 @@ export async function executeIntegrationTool(
   // firma del dispatcher: la conversione difensiva sta di là.
   if (isMicrosoftTool(name)) {
     return executeMicrosoftTool(name, input as unknown as Record<string, unknown>, tenantId);
+  }
+
+  // Outlook: stesso pattern, provider `microsoft_outlook` separato.
+  if (isOutlookTool(name)) {
+    return executeOutlookTool(name, input as unknown as Record<string, unknown>, tenantId);
   }
 
   switch (name) {
@@ -920,6 +1384,284 @@ export async function executeIntegrationTool(
       return r.ok ? r.data : r.error;
     }
 
+    case "docs_create_document": {
+      const title = clean(input.title, 200);
+      if (!title) return "docs_create_document requires title.";
+      const r = await docsApiProxy(
+        "createDocument",
+        { title, markdown: input.markdown ? clean(input.markdown, 60000) : undefined },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "docs_read_document": {
+      const documentId = clean(input.documentId, 200);
+      if (!documentId) return "docs_read_document requires documentId.";
+      const r = await docsApiProxy("readDocument", { documentId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "docs_append_to_document": {
+      const documentId = clean(input.documentId, 200);
+      const markdown = clean(input.markdown, 60000);
+      if (!documentId) return "docs_append_to_document requires documentId.";
+      if (!markdown) return "docs_append_to_document requires markdown.";
+      const r = await docsApiProxy("appendContent", { documentId, markdown }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "docs_replace_text": {
+      const documentId = clean(input.documentId, 200);
+      const find = clean(input.find, 2000);
+      if (!documentId) return "docs_replace_text requires documentId.";
+      if (!find) return "docs_replace_text requires find.";
+      const r = await docsApiProxy(
+        "replaceText",
+        { documentId, find, replace: input.replace ? clean(input.replace, 20000) : "" },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "docs_insert_table": {
+      const documentId = clean(input.documentId, 200);
+      if (!documentId) return "docs_insert_table requires documentId.";
+      let rows: string[][] = [];
+      try {
+        const parsed: unknown = JSON.parse(input.rows ?? "[]");
+        if (Array.isArray(parsed)) {
+          rows = parsed.map((r) => (Array.isArray(r) ? r.map((c) => String(c ?? "")) : []));
+        }
+      } catch {
+        return "docs_insert_table requires rows as an array of arrays of strings.";
+      }
+      if (rows.length === 0) return "docs_insert_table requires at least one row.";
+      const r = await docsApiProxy("insertTable", { documentId, rows }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "docs_export_pdf": {
+      const documentId = clean(input.documentId, 200);
+      if (!documentId) return "docs_export_pdf requires documentId.";
+      const r = await docsApiProxy("exportPdf", { documentId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "forms_create_form": {
+      const title = clean(input.title, 300);
+      if (!title) return "forms_create_form requires title.";
+      let questions: Record<string, unknown>[] = [];
+      if (input.questions) {
+        try {
+          const parsed: unknown = JSON.parse(input.questions);
+          if (Array.isArray(parsed)) questions = parsed as Record<string, unknown>[];
+        } catch {
+          return "forms_create_form requires questions as an array of {title, type, ...}.";
+        }
+      }
+      const r = await formsApiProxy(
+        "createForm",
+        {
+          title,
+          description: input.description ? clean(input.description, 2000) : undefined,
+          questions: questions.map((q) => ({
+            title: String(q.title ?? ""),
+            type: String(q.type ?? "text"),
+            description: typeof q.description === "string" ? q.description : undefined,
+            required: q.required === true,
+            options: Array.isArray(q.options) ? q.options.map(String) : undefined,
+          })),
+        },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "forms_add_question": {
+      const formId = clean(input.formId, 200);
+      if (!formId) return "forms_add_question requires formId.";
+      let q: Record<string, unknown>;
+      try {
+        const parsed: unknown = JSON.parse(input.question ?? "null");
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("bad shape");
+        }
+        q = parsed as Record<string, unknown>;
+      } catch {
+        return "forms_add_question requires question as {title, type, ...}.";
+      }
+      const r = await formsApiProxy(
+        "addQuestion",
+        {
+          formId,
+          question: {
+            title: String(q.title ?? ""),
+            type: String(q.type ?? "text"),
+            description: typeof q.description === "string" ? q.description : undefined,
+            required: q.required === true,
+            options: Array.isArray(q.options) ? q.options.map(String) : undefined,
+          },
+        },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "forms_update_form": {
+      const formId = clean(input.formId, 200);
+      if (!formId) return "forms_update_form requires formId.";
+      const r = await formsApiProxy(
+        "updateForm",
+        {
+          formId,
+          title: input.title ? clean(input.title, 300) : undefined,
+          description: input.description !== undefined ? clean(input.description, 2000) : undefined,
+        },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "forms_get_form": {
+      const formId = clean(input.formId, 200);
+      if (!formId) return "forms_get_form requires formId.";
+      const r = await formsApiProxy("getForm", { formId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "forms_list_responses": {
+      const formId = clean(input.formId, 200);
+      if (!formId) return "forms_list_responses requires formId.";
+      const r = await formsApiProxy(
+        "listResponses",
+        { formId, limit: parseLimit(input.limit) },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "forms_get_response_summary": {
+      const formId = clean(input.formId, 200);
+      if (!formId) return "forms_get_response_summary requires formId.";
+      const r = await formsApiProxy("getResponseSummary", { formId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "forms_export_to_sheet": {
+      const formId = clean(input.formId, 200);
+      if (!formId) return "forms_export_to_sheet requires formId.";
+      const r = await formsApiProxy(
+        "exportToSheet",
+        { formId, spreadsheetId: input.spreadsheetId ? clean(input.spreadsheetId, 200) : undefined },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "ga_list_properties": {
+      const r = await gaApiProxy("listProperties", {}, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "ga_run_report": {
+      const property = clean(input.property, 60);
+      if (!property) return "ga_run_report requires property.";
+      const parseList = (v: string | undefined): string[] | undefined => {
+        if (!v) return undefined;
+        try {
+          const parsed: unknown = JSON.parse(v);
+          if (Array.isArray(parsed)) return parsed.map(String);
+        } catch {
+          // Il modello manda anche "sessions,totalUsers": si accetta.
+        }
+        return v.split(/[,\s]+/).filter(Boolean);
+      };
+      const r = await gaApiProxy(
+        "runReport",
+        {
+          property,
+          dimensions: parseList(input.dimensions),
+          metrics: parseList(input.metrics),
+          startDate: input.startDate ? clean(input.startDate, 20) : undefined,
+          endDate: input.endDate ? clean(input.endDate, 20) : undefined,
+          limit: parseLimit(input.limit) ?? 10,
+        },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "ga_traffic_summary": {
+      const property = clean(input.property, 60);
+      if (!property) return "ga_traffic_summary requires property.";
+      const r = await gaApiProxy(
+        "getTrafficSummary",
+        {
+          property,
+          startDate: input.startDate ? clean(input.startDate, 20) : undefined,
+          endDate: input.endDate ? clean(input.endDate, 20) : undefined,
+        },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "ga_top_pages": {
+      const property = clean(input.property, 60);
+      if (!property) return "ga_top_pages requires property.";
+      const r = await gaApiProxy(
+        "getTopPages",
+        {
+          property,
+          startDate: input.startDate ? clean(input.startDate, 20) : undefined,
+          endDate: input.endDate ? clean(input.endDate, 20) : undefined,
+          limit: parseLimit(input.limit) ?? 10,
+        },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "ga_conversions": {
+      const property = clean(input.property, 60);
+      if (!property) return "ga_conversions requires property.";
+      const r = await gaApiProxy(
+        "getConversions",
+        {
+          property,
+          startDate: input.startDate ? clean(input.startDate, 20) : undefined,
+          endDate: input.endDate ? clean(input.endDate, 20) : undefined,
+        },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "ga_compare_periods": {
+      const property = clean(input.property, 60);
+      const startDate = clean(input.startDate, 20);
+      const endDate = clean(input.endDate, 20);
+      const compareStartDate = clean(input.compareStartDate, 20);
+      const compareEndDate = clean(input.compareEndDate, 20);
+      if (!property || !startDate || !endDate || !compareStartDate || !compareEndDate) {
+        return "ga_compare_periods requires property, startDate, endDate, compareStartDate, compareEndDate.";
+      }
+      const r = await gaApiProxy(
+        "comparePeriods",
+        { property, startDate, endDate, compareStartDate, compareEndDate },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "ga_detect_anomalies": {
+      const property = clean(input.property, 60);
+      if (!property) return "ga_detect_anomalies requires property.";
+      const r = await gaApiProxy("detectAnomalies", { property }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
     case "airtable_list_bases": {
       const r = await airtableApiProxy("listBases", {}, tenantId);
       return r.ok ? r.data : r.error;
@@ -1022,6 +1764,111 @@ export async function executeIntegrationTool(
         { limit: parseLimit(input.limit) },
         tenantId,
       );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_upsert_contact": {
+      const listId = clean(input.listId, 40);
+      const email = clean(input.email, 200);
+      const status = clean(input.status, 20);
+      if (!listId) return "mailchimp_upsert_contact requires listId.";
+      if (!email) return "mailchimp_upsert_contact requires email.";
+      if (!status) return "mailchimp_upsert_contact requires status.";
+      let tags: string[] | undefined;
+      if (input.tags) {
+        try {
+          const parsed: unknown = JSON.parse(input.tags);
+          if (Array.isArray(parsed)) tags = parsed.map(String);
+        } catch {
+          tags = input.tags.split(/[,\s]+/).filter(Boolean);
+        }
+      }
+      const r = await mailchimpWriteProxy(
+        "upsertContact",
+        {
+          listId,
+          email,
+          status,
+          consentBasis: input.consentBasis ? clean(input.consentBasis, 300) : undefined,
+          consentDate: input.consentDate ? clean(input.consentDate, 20) : undefined,
+          firstName: input.firstName ? clean(input.firstName, 50) : undefined,
+          lastName: input.lastName ? clean(input.lastName, 50) : undefined,
+          tags,
+        },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_add_tags": {
+      const listId = clean(input.listId, 40);
+      const email = clean(input.email, 200);
+      if (!listId) return "mailchimp_add_tags requires listId.";
+      if (!email) return "mailchimp_add_tags requires email.";
+      let tags: string[] = [];
+      try {
+        const parsed: unknown = JSON.parse(input.tags ?? "[]");
+        if (Array.isArray(parsed)) tags = parsed.map(String);
+      } catch {
+        tags = (input.tags ?? "").split(/[,\s]+/).filter(Boolean);
+      }
+      if (tags.length === 0) return "mailchimp_add_tags requires tags.";
+      const r = await mailchimpWriteProxy("addTags", { listId, email, tags }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_create_campaign_draft": {
+      const listId = clean(input.listId, 40);
+      const subject = clean(input.subject, 200);
+      const fromName = clean(input.fromName, 100);
+      const replyTo = clean(input.replyTo, 100);
+      if (!listId) return "mailchimp_create_campaign_draft requires listId.";
+      if (!subject) return "mailchimp_create_campaign_draft requires subject.";
+      if (!fromName) return "mailchimp_create_campaign_draft requires fromName.";
+      if (!replyTo) return "mailchimp_create_campaign_draft requires replyTo.";
+      const r = await mailchimpWriteProxy(
+        "createCampaignDraft",
+        {
+          listId,
+          subject,
+          fromName,
+          replyTo,
+          title: input.title ? clean(input.title, 200) : undefined,
+        },
+        tenantId,
+      );
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_set_campaign_content": {
+      const campaignId = clean(input.campaignId, 60);
+      const html = clean(input.html, 200000);
+      if (!campaignId) return "mailchimp_set_campaign_content requires campaignId.";
+      if (!html) return "mailchimp_set_campaign_content requires html.";
+      const r = await mailchimpWriteProxy("setCampaignContent", { campaignId, html }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_get_campaign_report": {
+      const campaignId = clean(input.campaignId, 60);
+      if (!campaignId) return "mailchimp_get_campaign_report requires campaignId.";
+      const r = await mailchimpWriteProxy("getCampaignReport", { campaignId }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_schedule_campaign": {
+      const campaignId = clean(input.campaignId, 60);
+      const scheduleTime = clean(input.scheduleTime, 40);
+      if (!campaignId) return "mailchimp_schedule_campaign requires campaignId.";
+      if (!scheduleTime) return "mailchimp_schedule_campaign requires scheduleTime.";
+      const r = await mailchimpWriteProxy("scheduleCampaign", { campaignId, scheduleTime }, tenantId);
+      return r.ok ? r.data : r.error;
+    }
+
+    case "mailchimp_send_campaign": {
+      const campaignId = clean(input.campaignId, 60);
+      if (!campaignId) return "mailchimp_send_campaign requires campaignId.";
+      const r = await mailchimpWriteProxy("sendCampaign", { campaignId }, tenantId);
       return r.ok ? r.data : r.error;
     }
 

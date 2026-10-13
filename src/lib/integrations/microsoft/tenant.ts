@@ -44,3 +44,30 @@ export async function graphClientForTenant(
   if (!resolved.ok) return { ok: false, error: resolved.error };
   return { ok: true, data: createGraphClient(integrationAuth(resolved.token)) };
 }
+
+/**
+ * True se il tenant ha una connessione Outlook attiva (provider separato da
+ * `microsoft`: il consenso mail/calendario è incrementale).
+ */
+export async function isOutlookConnected(tenantId: string): Promise<boolean> {
+  if (!tenantId) return false;
+  const admin = createAdminClient();
+  if (!admin) return false;
+  const { data, error } = await admin
+    .from("tenant_integrations")
+    .select("status")
+    .eq("tenant_id", tenantId)
+    .eq("provider", "microsoft_outlook")
+    .maybeSingle();
+  if (error || !data) return false;
+  return (data as { status?: string }).status === "connected";
+}
+
+/** Client Graph autenticato con i token Outlook del tenant (con refresh automatico). */
+export async function outlookClientForTenant(
+  tenantId: string,
+): Promise<GraphResult<GraphClient>> {
+  const resolved = await resolveIntegrationToken(tenantId, "microsoft_outlook");
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+  return { ok: true, data: createGraphClient(integrationAuth(resolved.token)) };
+}
