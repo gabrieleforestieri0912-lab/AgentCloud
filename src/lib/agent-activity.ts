@@ -139,6 +139,9 @@ const TOOL_META: Record<string, ToolMeta> = {
   request_integration_connect: { labelIt: "Richiesta connessione", labelEn: "Connection request", impact: "write" },
   quiz_create: { labelIt: "Creazione quiz", labelEn: "Creating quiz", impact: "write" },
   flashcards_create: { labelIt: "Creazione flashcard", labelEn: "Creating flashcards", impact: "write" },
+  create_artifact: { labelIt: "Creazione artefatto", labelEn: "Creating artifact", impact: "write" },
+  update_artifact: { labelIt: "Modifica artefatto", labelEn: "Updating artifact", impact: "write" },
+  rewrite_artifact: { labelIt: "Riscrittura artefatto", labelEn: "Rewriting artifact", impact: "write" },
 };
 
 function humanizeToolName(tool: string): string {

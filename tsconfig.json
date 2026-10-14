@@ -35,6 +35,7 @@
     "supabase/functions",
     "cli",
     "dist-extension",
-    "agentcloud-extension"
+    "agentcloud-extension",
+    "tests"
   ]
 }

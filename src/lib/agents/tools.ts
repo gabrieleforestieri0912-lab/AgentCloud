@@ -37,6 +37,16 @@ import { googleSheetsRequest } from "@/lib/google/sheets";
 import { executeWebSearch, formatWebSearchResults } from "@/lib/tools/tavily";
 import { buildQuizHtml, buildFlashcardsHtml } from "@/lib/study-cards";
 import {
+  ARTIFACT_MAX_BYTES,
+  applyStrEdits,
+  byteLength,
+  defaultFileName,
+  isValidArtifactType,
+  normalizeArtifactId,
+  type ArtifactType,
+  type StrEdit,
+} from "@/lib/artifact-edits";
+import {
   calculateQuote,
   formatQuoteMarkdown,
   sendQuoteByEmail,
@@ -1070,6 +1080,55 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
     },
   },
 
+  create_artifact: {
+    name: "create_artifact",
+    description:
+      "Create a versioned artifact (document, code, diagram, table) shown in the side panel instead of the chat. Types: markdown, html, code, svg, mermaid, csv, text. Use it for substantial reusable content (>~15 lines, or anything the user will copy/edit/send). After the call, write 1-2 intro sentences and NOTHING else in your message: the panel shows the content, never repeat it in the chat bubble.",
+    input_schema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Stable kebab-case id (for later updates). Auto-derived from title if omitted." },
+        type: { type: "string", description: "markdown | html | code | svg | mermaid | csv | text" },
+        title: { type: "string", description: "Readable title shown on the artifact card and panel" },
+        language: { type: "string", description: "For code: js, python, ts, ..." },
+        content: { type: "string", description: "Full artifact content" },
+      },
+      required: ["type", "title", "content"],
+    },
+  },
+
+  update_artifact: {
+    name: "update_artifact",
+    description:
+      "Apply small str_replace edits to the latest version of an artifact (creates a new version). Each old_str must match EXACTLY once in the current content, otherwise nothing is applied and you get an error telling you what to fix. For large changes use rewrite_artifact instead.",
+    input_schema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Artifact id from create_artifact" },
+        edits: {
+          type: "array",
+          description: "Edits applied in order: [{old_str, new_str}]",
+          items: { type: "object" },
+        },
+      },
+      required: ["id", "edits"],
+    },
+  },
+
+  rewrite_artifact: {
+    name: "rewrite_artifact",
+    description:
+      "Replace the whole content of an artifact (creates a new version). Use for large changes; for small targeted fixes prefer update_artifact.",
+    input_schema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Artifact id from create_artifact" },
+        content: { type: "string", description: "New full content" },
+      },
+      required: ["id", "content"],
+    },
+  },
+
   ...INTEGRATION_TOOL_DEFINITIONS,
 };
 
@@ -1488,6 +1547,87 @@ export async function executeTool(
       const r = buildFlashcardsHtml({ title, cards, lang });
       if (!r.ok) return r.error;
       return r.html;
+    }
+
+    case "create_artifact": {
+      const type = String(input.type ?? "").trim().toLowerCase();
+      if (!isValidArtifactType(type)) {
+        return "create_artifact: type must be one of markdown, html, code, svg, mermaid, csv, text.";
+      }
+      const artifactType = type as ArtifactType;
+      const title = (input.title ?? "").trim();
+      if (!title) return "create_artifact requires title.";
+      const content = input.content ?? "";
+      if (!content.trim()) return "create_artifact requires non-empty content.";
+      if (byteLength(content) > ARTIFACT_MAX_BYTES) {
+        return "create_artifact: content exceeds 2 MB. Split it or shorten it.";
+      }
+      const id = normalizeArtifactId(input.id && String(input.id).trim() ? input.id : title);
+      return JSON.stringify({
+        type: "file_created",
+        filename: defaultFileName(id, artifactType),
+        content,
+        downloadable: true,
+        artifact: {
+          id,
+          fileType: artifactType,
+          title: title.slice(0, 200),
+          ...(input.language ? { language: String(input.language).slice(0, 40) } : {}),
+        },
+      });
+    }
+
+    case "update_artifact":
+    case "rewrite_artifact": {
+      const id = normalizeArtifactId(input.id);
+      // Il contenuto corrente arriva dal contesto file che il client invia con
+      // la run (chiave slug oppure nome file). Senza, non c'è nulla da modificare.
+      const files = context.files ?? {};
+      const key = Object.keys(files).find(
+        (k) => k === id || k.toLowerCase() === String(input.id ?? "").toLowerCase(),
+      );
+      if (!key) {
+        return `${name}: no artifact "${String(input.id ?? "").slice(0, 60)}" in this conversation. Create it first with create_artifact.`;
+      }
+      const current = files[key] ?? "";
+      if (name === "rewrite_artifact") {
+        const content = input.content ?? "";
+        if (!content.trim()) return "rewrite_artifact requires non-empty content.";
+        if (byteLength(content) > ARTIFACT_MAX_BYTES) {
+          return "rewrite_artifact: content exceeds 2 MB.";
+        }
+        return JSON.stringify({
+          type: "file_created",
+          filename: key.includes(".") ? key : `${id}.md`,
+          content,
+          downloadable: true,
+          artifact: { id, rewrite: true },
+        });
+      }
+      let edits: unknown = (input as unknown as Record<string, unknown>).edits;
+      if (typeof edits === "string" && edits.trim()) {
+        try {
+          edits = JSON.parse(edits);
+        } catch {
+          return "update_artifact requires edits as [{old_str, new_str}].";
+        }
+      }
+      if (!Array.isArray(edits) || edits.length === 0) {
+        return "update_artifact requires a non-empty edits array.";
+      }
+      const cleanEdits: StrEdit[] = edits.slice(0, 20).map((e) => {
+        const o = (e ?? {}) as Record<string, unknown>;
+        return { old_str: String(o.old_str ?? ""), new_str: String(o.new_str ?? "") };
+      });
+      const r = applyStrEdits(current, cleanEdits);
+      if (!r.ok) return r.error;
+      return JSON.stringify({
+        type: "file_created",
+        filename: key.includes(".") ? key : `${id}.md`,
+        content: r.content,
+        downloadable: true,
+        artifact: { id, editsApplied: r.applied },
+      });
     }
 
     case "run_python": {

@@ -84,6 +84,12 @@ export const STUDY_DIRECTIVE = `Study mode (quiz & flashcards) — only when the
 - If you do NOT have those tools: write a standalone interactive HTML page yourself (inline CSS/JS only, no external resources) and deliver it in the same file block — quiz: selectable options + check button + score; flashcards: click-to-flip cards with prev/next buttons.
 - Quiz content: 2-15 questions, 2-6 options each, exactly one correct answer, short explanation when useful. Flashcards: front/back pairs in the user's language.`;
 
+/** Artefatti versionati: contenuti riusabili nel pannello laterale, mai duplicati in chat. */
+export const ARTIFACT_DIRECTIVE = `Artifacts (versioned side-panel content) — create one with create_artifact when the request produces substantial reusable content (>~15 lines, or something the user will copy/edit/send: documents, reports, code, diagrams, tables, email drafts, quotes). Do NOT create one for short answers, explanations or simple lists: those stay in the chat.
+- After create_artifact, write 1-2 intro sentences and NOTHING else: the panel shows the content. Never repeat the artifact content in the chat bubble.
+- Follow-ups that change it: update_artifact with small str_replace edits (old_str must match exactly once), rewrite_artifact for large changes. Reuse the same id: the panel versions it, never duplicates.
+- If the user edits the content in the panel, the next turn already includes their latest version: build on it, don't restore your text.`;
+
 /** Direttive comuni a tutti i prompt (connect + formato + fonti + link + file + studio + identità + consegna). */
 export function sharedAgentDirectives(
   connectGuidance: string = CONNECT_GUIDANCE,
@@ -101,6 +107,8 @@ export function sharedAgentDirectives(
     FILE_HANDLING_DIRECTIVE +
     "\n\n" +
     STUDY_DIRECTIVE +
+    "\n\n" +
+    ARTIFACT_DIRECTIVE +
     "\n\n" +
     AGENT_IDENTITY_DIRECTIVE +
     "\n\n" +

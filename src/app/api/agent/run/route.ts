@@ -542,6 +542,9 @@ export async function POST(req: Request) {
                     type: "file",
                     filename: parsed.filename,
                     content: parsed.content,
+                    // Campi artifact (assenti per write_file legacy): il client
+                    // li usa per id stabile, tipo e titolo del blocco.
+                    ...(parsed.artifact && typeof parsed.artifact === "object" ? { artifact: parsed.artifact } : {}),
                   });
                 } catch {
                   // ignora payload file malformati

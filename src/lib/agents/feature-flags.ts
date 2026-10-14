@@ -208,6 +208,10 @@ export const ALL_TOOLS_LIST = [
   // vedi getEnabledToolsForAgent. Nessuna conferma: creano file nuovi.
   "quiz_create",
   "flashcards_create",
+  // Artifact versionati (create/update/rewrite): seguono write_file come sopra.
+  "create_artifact",
+  "update_artifact",
+  "rewrite_artifact",
   "request_integration_connect",
 ];
 
@@ -323,9 +327,13 @@ export function getEnabledToolsForAgent(agentId: string): string[] {
   // Quiz e flashcard seguono write_file: un agente che sa produrre file sa anche
   // produrre quiz/flashcard interattive (stesso canale di consegna, blocco
   // <agentcloud_file type="html">). Un punto solo invece di 15 liste da allineare.
+  // Stessa regola per gli artifact versionati (create/update/rewrite).
   if (enabledTools.has("write_file")) {
     enabledTools.add("quiz_create");
     enabledTools.add("flashcards_create");
+    enabledTools.add("create_artifact");
+    enabledTools.add("update_artifact");
+    enabledTools.add("rewrite_artifact");
   }
 
   // Infine si filtra con l'elenco globale dei tool abilitati (se presente),

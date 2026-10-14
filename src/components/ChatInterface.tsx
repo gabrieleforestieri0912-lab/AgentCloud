@@ -1524,6 +1524,20 @@ export default function ChatInterface({
       ];
       const filesMap = toFilesMap(pending.filter((a) => a.kind !== "image"));
 
+      // Contenuti correnti dei file/artifact della conversazione: servono ai
+      // tool update_artifact/rewrite_artifact (e a read_file per nome). Oltre
+      // i 100k caratteri si tronca con avviso (vedi artifact-edits).
+      for (const { record } of conversationFiles) {
+        const last = record.versions[record.versions.length - 1];
+        if (!last || filesMap[record.slug] !== undefined) continue;
+        const text =
+          last.content.length > 100_000
+            ? last.content.slice(0, 100_000) + "\n\n[...contenuto troncato a 100.000 caratteri per il contesto: chiedi all'utente la sezione da modificare o usa rewrite_artifact.]"
+            : last.content;
+        filesMap[record.slug] = text;
+        if (record.name && filesMap[record.name] === undefined) filesMap[record.name] = text;
+      }
+
       // L'utente può inserire quanti agenti vuole nella conversazione (selectedAgentSlugs).
       // Se nessun agente è selezionato → chat generica. Se uno o più → loop su /api/agent/run.
       const targetSlugs = [...selectedAgentSlugs];
@@ -1667,6 +1681,34 @@ export default function ChatInterface({
                   responseText += json.content;
                   ensureAssistant();
                   scheduleText();
+                }
+                // File/artifact creato da un tool (write_file, quiz, artifact...):
+                // diventa un blocco nel messaggio così card e anteprima vivono
+                // anche dopo il reload. Il contenuto è escapato se contiene il
+                // tag di chiusura (il parser lo ripristina).
+                if (json.type === "file" && typeof (json as { content?: unknown }).content === "string") {
+                  const f = json as unknown as {
+                    filename?: unknown;
+                    content: string;
+                    artifact?: { id?: unknown; fileType?: unknown; title?: unknown; language?: unknown };
+                  };
+                  const filename = typeof f.filename === "string" && f.filename ? f.filename : "file.txt";
+                  const art = f.artifact && typeof f.artifact === "object" ? f.artifact : null;
+                  const slug = String(art?.id ?? filename)
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-+|-+$/g, "")
+                    .slice(0, 64) || "file";
+                  const ftype = typeof art?.fileType === "string" && art.fileType ? art.fileType : "";
+                  const ftitle = typeof art?.title === "string" && art.title ? ` title="${art.title.slice(0, 200).replace(/"/g, "")}"` : "";
+                  const flang = typeof art?.language === "string" && art.language ? ` language="${art.language.slice(0, 40).replace(/"/g, "")}"` : "";
+                  const safeContent = f.content.replace(/<\/agentcloud_file>/gi, "&lt;/agentcloud_file&gt;");
+                  const block = `\n\n<agentcloud_file id="${slug}" name="${filename}"${ftype ? ` type="${ftype}"` : ""}${ftitle}${flang}>${safeContent}</agentcloud_file>`;
+                  localText += block;
+                  responseText += block;
+                  ensureAssistant();
+                  scheduleText();
+                  convActivityProduced = true;
                 }
                 if (json.type === "tool_start") {
                   const evt = json as unknown as { toolName?: string; toolInput?: unknown };
