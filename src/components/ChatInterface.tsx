@@ -2940,18 +2940,19 @@ export default function ChatInterface({
               className="flex-1 flex flex-col items-center justify-center px-4"
             >
               {/* Welcome message */}
-              <div className="mb-6 text-center">
-                <div className="mb-5 flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-white/5">
-                  <Image
-                    src="/agentcloud.png"
-                    alt="AgentCloud"
-                    width={32}
-                    height={32}
-                  />
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-1.5">
+              <div className="mb-6 flex items-center justify-center gap-3 text-center">
+                <Image
+                  src="/agentcloud.png"
+                  alt="AgentCloud"
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 shrink-0"
+                />
+                <h2 className="text-2xl font-bold text-white">
                   {dict.chat.emptyTitle}
                 </h2>
+              </div>
+              <div className="mb-6 text-center -mt-4">
                 <p className="text-sm text-neutral-400 max-w-lg leading-relaxed">
                   {dict.chat.emptySubtitle}
                 </p>
