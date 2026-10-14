@@ -1060,7 +1060,7 @@ chat: {
     worksWith: "Funziona con",
     saveWithBundle: "Risparmia con il bundle",
     viewBundle: "Vedi bundle",
-    capabilitiesLabel: "capability",
+    capabilitiesLabel: "capacità",
     capabilitiesLabelPlural: "capabilità",
     integrationsLabel: "integrazioni",
     howItWorksLive: "Come lavora — demo dal vivo",
