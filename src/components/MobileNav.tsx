@@ -157,6 +157,11 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
         },
       ],
     },
+    {
+      id: "apps",
+      label: dict.navbar.appsLabel,
+      href: "/apps",
+    },
   ];
 
   // Azioni rapide come elenco organizzato: stessa voce ovunque, con badge

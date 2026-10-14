@@ -53,6 +53,7 @@ export default function Footer() {
     { label: dict.marketplacePage.bundlesAndSave, href: "/bundles" },
     { label: dict.navbar.integrations, href: "/integrations" },
     { label: dict.chat.aiChat, href: "/chat" },
+    { label: dict.navbar.appsLabel, href: "/apps" },
     { label: dict.mobile.badge, href: "/mobile" },
   ];
 

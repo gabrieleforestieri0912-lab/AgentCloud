@@ -6,6 +6,7 @@ import ProblemSolutionSection from "@/components/ProblemSolutionSection";
 import DashboardSection from "@/components/DashboardSection";
 import IntegrationsSection from "@/components/IntegrationsSection";
 import UseCasesSection from "@/components/UseCasesSection";
+import AppsSection from "@/components/AppsSection";
 import SecuritySection from "@/components/SecuritySection";
 import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
@@ -56,6 +57,7 @@ export default async function Home() {
         <ProblemSolutionSection />
         <DashboardSection />
         <IntegrationsSection />
+        <AppsSection />
         <UseCasesSection />
         <SecuritySection />
         <FAQSection />
