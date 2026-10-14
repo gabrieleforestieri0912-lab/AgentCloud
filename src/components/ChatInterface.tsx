@@ -26,6 +26,9 @@ import {
   Home,
   Folder,
   FolderPlus,
+  Plug,
+  Sparkles,
+  Blocks,
   ChevronDown,
   FileText,
   Wrench,
@@ -287,6 +290,32 @@ export default function ChatInterface({
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
+  // Gruppi collassabili della sidebar (progetti aperto, gli altri chiusi).
+  const [projectsOpen, setProjectsOpen] = useState(true);
+  const [artifactsOpen, setArtifactsOpen] = useState(false);
+  const [personalizationOpen, setPersonalizationOpen] = useState(false);
+  // Tutti i file generati nelle conversazioni (non eliminate) per il gruppo Artefatti.
+  const allFiles = useMemo(() => {
+    const out: { convId: string; convTitle: string; slug: string; name: string }[] = [];
+    for (const c of conversations) {
+      if (c.deleted_at) continue;
+      for (const m of c.messages) {
+        if (m.role !== "assistant" || !m.files) continue;
+        for (const f of m.files) {
+          if (!f.versions || f.versions.length === 0) continue;
+          out.push({ convId: c.id, convTitle: c.title, slug: f.slug, name: f.title || f.name });
+        }
+      }
+    }
+    return out;
+  }, [conversations]);
+
+  /** Apri un artefatto: vai alla sua conversazione e apri l'anteprima. */
+  function openArtifact(convId: string, slug: string) {
+    if (convId !== activeId) switchConversation(convId);
+    setPreviewSlug(slug);
+    setMobileSidebarOpen(false);
+  }
   // Solo client (localStorage): si legge al mount per non divergere dal server.
   useEffect(() => {
     setProjects(readProjects());
@@ -2324,23 +2353,33 @@ export default function ChatInterface({
           </button>
         </nav>
 
-        {/* Progetti: filtro + gestione (come i Projects di Claude) */}
+        {/* Progetti: gruppo collassabile con filtro + gestione */}
         <div data-onboard="projects" className="px-3 pb-1">
-          <div className="flex items-center justify-between px-3 py-2">
+          <button
+            onClick={() => setProjectsOpen((v) => !v)}
+            aria-expanded={projectsOpen}
+            className="flex w-full items-center justify-between px-3 py-2"
+          >
             <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
               {dict.chat.projects}
             </p>
-            <button
-              onClick={openProjectCreate}
-              aria-label={dict.chat.newProject}
-              title={dict.chat.newProject}
-              className="flex items-center gap-1 text-[10px] font-bold text-neutral-500 hover:text-white transition-all"
-            >
-              <FolderPlus size={12} />
-              {dict.chat.newProject}
-            </button>
-          </div>
-          {projects.length === 0 ? null : (
+            <span className="flex items-center gap-2">
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={dict.chat.newProject}
+                title={dict.chat.newProject}
+                onClick={(e) => { e.stopPropagation(); openProjectCreate(); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); openProjectCreate(); } }}
+                className="flex items-center gap-1 text-[10px] font-bold text-neutral-500 hover:text-white transition-all"
+              >
+                <FolderPlus size={12} />
+                {dict.chat.newProject}
+              </span>
+              <ChevronDown size={12} className={`text-neutral-600 transition-transform duration-200 ${projectsOpen ? "rotate-180" : ""}`} />
+            </span>
+          </button>
+          {projectsOpen && projects.length === 0 ? null : projectsOpen && (
             <div className="space-y-0.5">
               {projects.map((p) => {
                 const count = conversations.filter((c) => c.projectId === p.id && !c.deleted_at).length;
@@ -2374,6 +2413,86 @@ export default function ChatInterface({
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+
+        {/* Artefatti: tutti i file generati nelle conversazioni */}
+        <div className="px-3 pb-1">
+          <button
+            onClick={() => setArtifactsOpen((v) => !v)}
+            aria-expanded={artifactsOpen}
+            className="flex w-full items-center justify-between px-3 py-2"
+          >
+            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+              {dict.chat.artifacts} {allFiles.length > 0 && <span className="text-neutral-500">· {allFiles.length}</span>}
+            </p>
+            <ChevronDown size={12} className={`text-neutral-600 transition-transform duration-200 ${artifactsOpen ? "rotate-180" : ""}`} />
+          </button>
+          {artifactsOpen && (
+            <div className="max-h-48 space-y-0.5 overflow-y-auto">
+              {allFiles.length === 0 ? (
+                <p className="px-3 py-1 text-xs text-neutral-600">{dict.chat.files.noFiles}</p>
+              ) : (
+                allFiles.map((f) => (
+                  <button
+                    key={`${f.convId}:${f.slug}`}
+                    onClick={() => openArtifact(f.convId, f.slug)}
+                    title={`${f.name} — ${f.convTitle}`}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-all hover:bg-white/[0.03]"
+                  >
+                    <FileText size={13} className="shrink-0 text-neutral-500" />
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-400">
+                      {f.name}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Personalizzazione: integrazioni, competenze e plugin */}
+        <div className="px-3 pb-1">
+          <button
+            onClick={() => setPersonalizationOpen((v) => !v)}
+            aria-expanded={personalizationOpen}
+            className="flex w-full items-center justify-between px-3 py-2"
+          >
+            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+              {dict.dashboardShell.navPersonalization}
+            </p>
+            <ChevronDown size={12} className={`text-neutral-600 transition-transform duration-200 ${personalizationOpen ? "rotate-180" : ""}`} />
+          </button>
+          {personalizationOpen && (
+            <div className="space-y-0.5">
+              <Link
+                href="/dashboard/integrations"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-all hover:bg-white/[0.03]"
+              >
+                <Plug size={13} className="shrink-0 text-neutral-500" />
+                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-400">
+                  {dict.dashboardShell.navIntegrations}
+                </span>
+              </Link>
+              <Link
+                href="/skills"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-all hover:bg-white/[0.03]"
+              >
+                <Sparkles size={13} className="shrink-0 text-neutral-500" />
+                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-400">
+                  {dict.dashboardShell.navSkills}
+                </span>
+              </Link>
+              <Link
+                href="/plugins"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-all hover:bg-white/[0.03]"
+              >
+                <Blocks size={13} className="shrink-0 text-neutral-500" />
+                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-400">
+                  {dict.dashboardShell.navPlugins}
+                </span>
+              </Link>
             </div>
           )}
         </div>
