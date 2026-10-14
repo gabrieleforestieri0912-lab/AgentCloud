@@ -31,14 +31,12 @@ import {
   Blocks,
   ChevronDown,
   FileText,
-  Wrench,
   Bot,
   ShoppingCart,
   User,
   Settings,
   LogOut,
   CheckCircle2,
-  Clock3,
   ArrowRight,
   ArrowDown,
   Pencil,
@@ -264,7 +262,7 @@ export default function ChatInterface({
   // L'input parte centrato nella pagina; dopo il primo messaggio si sposta in basso
   const [inputCentered, setInputCentered] = useState(true);
   // Pannello attivo nella sidebar: chat, tools o agents
-  const [sidebarView, setSidebarView] = useState<"chat" | "tools" | "agents">("chat");
+  const [sidebarView, setSidebarView] = useState<"chat" | "projects" | "artifacts" | "personalization">("chat");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -290,10 +288,6 @@ export default function ChatInterface({
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
-  // Gruppi collassabili della sidebar (progetti aperto, gli altri chiusi).
-  const [projectsOpen, setProjectsOpen] = useState(true);
-  const [artifactsOpen, setArtifactsOpen] = useState(false);
-  const [personalizationOpen, setPersonalizationOpen] = useState(false);
   // Tutti i file generati nelle conversazioni (non eliminate) per il gruppo Artefatti.
   const allFiles = useMemo(() => {
     const out: { convId: string; convTitle: string; slug: string; name: string }[] = [];
@@ -313,6 +307,7 @@ export default function ChatInterface({
   /** Apri un artefatto: vai alla sua conversazione e apri l'anteprima. */
   function openArtifact(convId: string, slug: string) {
     if (convId !== activeId) switchConversation(convId);
+    setSidebarView("chat");
     setPreviewSlug(slug);
     setMobileSidebarOpen(false);
   }
@@ -1331,6 +1326,7 @@ export default function ChatInterface({
       restoreDraft(id);
     }
     setActiveId(id);
+    setSidebarView("chat");
     setMobileSidebarOpen(false);
     setConversationMenuId(null);
     const conv = conversations.find((c) => c.id === id);
@@ -1345,6 +1341,7 @@ export default function ChatInterface({
   function handleNewChat() {
     // Conserva la bozza della chat corrente prima di partire da una vuota.
     saveActiveDraft();
+    setSidebarView("chat");
     // Dentro un progetto si ereditano i suoi agenti, altrimenti l'agente
     // predefinito del pannello rapido (vuoto = chat generica).
     const activeProject = selectedProjectId
@@ -2152,8 +2149,7 @@ export default function ChatInterface({
   // dei comandi di esportazione) sia nella chat vuota che durante la conversazione.
   const agentPicker = (
     <div className="relative shrink-0" data-onboard="agent-picker">
-      {/* Bottone circolare con il solo avatar, accanto al "+": il nome
-          dell'agente vive nel dropdown e nelle intestazioni dei messaggi. */}
+      {/* Bottone con avatar + nome dell'agente, accanto al "+". */}
       <button
         type="button"
         onClick={() => setShowAgentPicker((v) => !v)}
@@ -2161,19 +2157,12 @@ export default function ChatInterface({
         aria-haspopup="listbox"
         title={dict.chat.changeAgent}
         aria-label={dict.chat.changeAgent}
-        className="relative flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] transition-all hover:border-white/25 hover:bg-white/10"
+        className="flex h-8 max-w-44 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 transition-all hover:border-white/25 hover:bg-white/10"
       >
-        {selectedAgents.length > 1 ? (
-          <>
-            <AgentAvatar agent={selectedAgents[0]} size="sm" circular />
-            <span className="absolute -bottom-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[9px] font-bold text-white">
-              {selectedAgents.length}
-            </span>
-          </>
-        ) : activeAgent ? (
+        {activeAgent ? (
           <AgentAvatar agent={activeAgent} size="sm" circular />
         ) : (
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20">
             <Image
               src="/agentcloud.png"
               alt="AgentCloud"
@@ -2183,6 +2172,10 @@ export default function ChatInterface({
             />
           </span>
         )}
+        <span className="truncate text-xs font-bold text-neutral-200">
+          {activeAgent ? activeAgentDisplayName : dict.chat.assistantName}
+        </span>
+        <ChevronDown size={12} className="shrink-0 text-neutral-500" />
       </button>
 
       {showAgentPicker && (
@@ -2291,8 +2284,18 @@ export default function ChatInterface({
             ${sidebarOpen ? "lg:w-64 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
           `}
         >
-        {/* Header: Close sidebar (left) + Home (right) */}
+        {/* Header: logo + nome piattaforma + chiudi */}
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/agentcloud.png"
+              alt="AgentCloud"
+              width={28}
+              height={28}
+              className="h-7 w-7"
+            />
+            <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
+          </div>
           <button
             onClick={() => {
               // Su mobile il bottone chiude il drawer; su desktop restringe la
@@ -2309,194 +2312,54 @@ export default function ChatInterface({
           </button>
         </div>
 
-        {/* Navigazione: tutti i pulsanti in verticale, compatti */}
+        {/* Navigazione principale: solo nuova chat, progetti, artefatti e
+            personalizzazione. Ognuno mostra il suo contenuto nello spazio chat. */}
         <nav data-onboard="nav" className="px-3 pt-3 pb-2 space-y-1">
           <button
             data-onboard="new-chat"
-            onClick={handleNewChat}
+            onClick={() => {
+              setSidebarView("chat");
+              handleNewChat();
+            }}
             className="flex h-9 w-full items-center gap-2 rounded-xl bg-white px-3 text-xs font-bold text-neutral-900 hover:bg-neutral-100 transition-all"
           >
             <Plus size={13} strokeWidth={2.5} className="shrink-0" />
             {dict.chat.newChat}
           </button>
           <button
-            onClick={() => setSidebarView("chat")}
+            onClick={() => setSidebarView("projects")}
             className={`flex h-9 w-full items-center gap-2 rounded-xl px-3 text-xs font-bold transition-all ${
-              sidebarView === "chat"
+              sidebarView === "projects"
                 ? "bg-white text-neutral-900"
                 : "text-neutral-400 hover:text-white hover:bg-white/5"
             }`}
           >
-            <MessageSquare size={13} className="shrink-0" />
-            {dict.chat.chat}
+            <Folder size={13} className="shrink-0" />
+            {dict.chat.projects}
           </button>
           <button
-            onClick={() => setSidebarView("tools")}
+            onClick={() => setSidebarView("artifacts")}
             className={`flex h-9 w-full items-center gap-2 rounded-xl px-3 text-xs font-bold transition-all ${
-              sidebarView === "tools"
+              sidebarView === "artifacts"
                 ? "bg-white text-neutral-900"
                 : "text-neutral-400 hover:text-white hover:bg-white/5"
             }`}
           >
-            <Wrench size={13} className="shrink-0" />
-            {dict.chat.tools}
+            <FileText size={13} className="shrink-0" />
+            {dict.chat.artifacts}
           </button>
           <button
-            onClick={() => setSidebarView("agents")}
+            onClick={() => setSidebarView("personalization")}
             className={`flex h-9 w-full items-center gap-2 rounded-xl px-3 text-xs font-bold transition-all ${
-              sidebarView === "agents"
+              sidebarView === "personalization"
                 ? "bg-white text-neutral-900"
                 : "text-neutral-400 hover:text-white hover:bg-white/5"
             }`}
           >
-            <Bot size={13} className="shrink-0" />
-            {dict.chat.agents}
+            <Sparkles size={13} className="shrink-0" />
+            {dict.dashboardShell.navPersonalization}
           </button>
         </nav>
-
-        {/* Progetti: gruppo collassabile con filtro + gestione */}
-        <div data-onboard="projects" className="px-3 pb-1">
-          <button
-            onClick={() => setProjectsOpen((v) => !v)}
-            aria-expanded={projectsOpen}
-            className="flex w-full items-center justify-between px-3 py-2"
-          >
-            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-              {dict.chat.projects}
-            </p>
-            <span className="flex items-center gap-2">
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label={dict.chat.newProject}
-                title={dict.chat.newProject}
-                onClick={(e) => { e.stopPropagation(); openProjectCreate(); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); openProjectCreate(); } }}
-                className="flex items-center gap-1 text-[10px] font-bold text-neutral-500 hover:text-white transition-all"
-              >
-                <FolderPlus size={12} />
-                {dict.chat.newProject}
-              </span>
-              <ChevronDown size={12} className={`text-neutral-600 transition-transform duration-200 ${projectsOpen ? "rotate-180" : ""}`} />
-            </span>
-          </button>
-          {projectsOpen && projects.length === 0 ? null : projectsOpen && (
-            <div className="space-y-0.5">
-              {projects.map((p) => {
-                const count = conversations.filter((c) => c.projectId === p.id && !c.deleted_at).length;
-                const selected = selectedProjectId === p.id;
-                return (
-                  <div
-                    key={p.id}
-                    className={`group flex w-full items-center gap-1 rounded-lg px-1 py-0.5 text-left transition-all ${
-                      selected ? "bg-white/[0.06] border border-white/[0.08]" : "border border-transparent hover:bg-white/[0.03]"
-                    }`}
-                  >
-                    <button
-                      onClick={() => setSelectedProjectId(selected ? null : p.id)}
-                      aria-pressed={selected}
-                      className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5"
-                    >
-                      <Folder size={13} className={`shrink-0 ${selected ? "text-brand-400" : "text-neutral-500"}`} />
-                      <span className={`min-w-0 flex-1 truncate text-[13px] font-medium ${selected ? "text-white" : "text-neutral-400"}`}>
-                        {p.name}
-                      </span>
-                      <span className="shrink-0 text-[10px] font-bold text-neutral-600">{count}</span>
-                    </button>
-                    <button
-                      onClick={() => openProjectEdit(p.id)}
-                      aria-label={`${dict.chat.projectEdit}: ${p.name}`}
-                      title={`${dict.chat.projectEdit}: ${p.name}`}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-600 opacity-0 transition-all hover:bg-white/10 hover:text-white group-hover:opacity-100"
-                    >
-                      <Pencil size={12} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Artefatti: tutti i file generati nelle conversazioni */}
-        <div className="px-3 pb-1">
-          <button
-            onClick={() => setArtifactsOpen((v) => !v)}
-            aria-expanded={artifactsOpen}
-            className="flex w-full items-center justify-between px-3 py-2"
-          >
-            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-              {dict.chat.artifacts} {allFiles.length > 0 && <span className="text-neutral-500">· {allFiles.length}</span>}
-            </p>
-            <ChevronDown size={12} className={`text-neutral-600 transition-transform duration-200 ${artifactsOpen ? "rotate-180" : ""}`} />
-          </button>
-          {artifactsOpen && (
-            <div className="max-h-48 space-y-0.5 overflow-y-auto">
-              {allFiles.length === 0 ? (
-                <p className="px-3 py-1 text-xs text-neutral-600">{dict.chat.files.noFiles}</p>
-              ) : (
-                allFiles.map((f) => (
-                  <button
-                    key={`${f.convId}:${f.slug}`}
-                    onClick={() => openArtifact(f.convId, f.slug)}
-                    title={`${f.name} — ${f.convTitle}`}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-all hover:bg-white/[0.03]"
-                  >
-                    <FileText size={13} className="shrink-0 text-neutral-500" />
-                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-400">
-                      {f.name}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Personalizzazione: integrazioni, competenze e plugin */}
-        <div className="px-3 pb-1">
-          <button
-            onClick={() => setPersonalizationOpen((v) => !v)}
-            aria-expanded={personalizationOpen}
-            className="flex w-full items-center justify-between px-3 py-2"
-          >
-            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-              {dict.dashboardShell.navPersonalization}
-            </p>
-            <ChevronDown size={12} className={`text-neutral-600 transition-transform duration-200 ${personalizationOpen ? "rotate-180" : ""}`} />
-          </button>
-          {personalizationOpen && (
-            <div className="space-y-0.5">
-              <Link
-                href="/dashboard/integrations"
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-all hover:bg-white/[0.03]"
-              >
-                <Plug size={13} className="shrink-0 text-neutral-500" />
-                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-400">
-                  {dict.dashboardShell.navIntegrations}
-                </span>
-              </Link>
-              <Link
-                href="/skills"
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-all hover:bg-white/[0.03]"
-              >
-                <Sparkles size={13} className="shrink-0 text-neutral-500" />
-                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-400">
-                  {dict.dashboardShell.navSkills}
-                </span>
-              </Link>
-              <Link
-                href="/plugins"
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-all hover:bg-white/[0.03]"
-              >
-                <Blocks size={13} className="shrink-0 text-neutral-500" />
-                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-400">
-                  {dict.dashboardShell.navPlugins}
-                </span>
-              </Link>
-            </div>
-          )}
-        </div>
 
         {/* Conversations list */}
         <div data-onboard="conversations" className="flex-1 overflow-y-auto px-2.5 py-2 space-y-0.5">
@@ -2834,7 +2697,7 @@ export default function ChatInterface({
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+      <div className="relative flex flex-1 flex-col min-w-0 overflow-hidden">
         <AppHeader
           variant="chat"
           agentLabel={activeAgentDisplayName}
@@ -2846,8 +2709,9 @@ export default function ChatInterface({
             onTextSizeChange: handleChatTextSizeChange,
           }}
         />
-        {/* Titolo chat + agente a sinistra, condivisione a destra */}
-        <div className="flex shrink-0 items-center justify-between gap-2 px-4 pt-1 sm:px-6">
+        {/* Header trasparente sopra i messaggi: titolo + agente a sinistra,
+            condivisione e dashboard a destra */}
+        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-b from-neutral-900 via-neutral-900/70 to-transparent px-4 pb-5 pt-2 sm:px-6">
           <div className={`flex min-w-0 items-center gap-2 ${!sidebarOpen ? "pl-10" : ""}`}>
             <p className="truncate text-sm font-bold text-white">
               {activeConv?.title ?? dict.chat.newChat}
@@ -2859,16 +2723,26 @@ export default function ChatInterface({
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => activeId && openShare(activeId)}
-            disabled={!activeId || messages.length === 0}
-            aria-label={dict.chat.shareConversation}
-            title={dict.chat.shareConversation}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40"
-          >
-            <Share2 size={15} />
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => activeId && openShare(activeId)}
+              disabled={!activeId || messages.length === 0}
+              aria-label={dict.chat.shareConversation}
+              title={dict.chat.shareConversation}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40"
+            >
+              <Share2 size={15} />
+            </button>
+            <Link
+              href="/dashboard"
+              aria-label="Dashboard"
+              title="Dashboard"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white"
+            >
+              <Home size={15} />
+            </Link>
+          </div>
         </div>
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
           {/* Trigger sidebar su mobile */}
@@ -2906,95 +2780,145 @@ export default function ChatInterface({
       >
         {sidebarView === "chat" && activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
 
-        {/* ── Tools panel ────────────────────────────────────── */}
-        {sidebarView === "tools" && (
+        {/* ── Projects view ────────────────────────────────────── */}
+        {sidebarView === "projects" && (
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-            <div className="mx-auto max-w-3xl space-y-6">
-              {/* Intestazione allineata allo stile della pagina (badge + titolo + descrizione) */}
-              <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-                  <Wrench size={18} className="text-brand-300" />
-                </span>
-                <div className="min-w-0">
-                  <h2 className="text-xl font-bold text-white mb-1">{dict.chat.tools}</h2>
-                  <p className="text-sm text-neutral-400 leading-relaxed">
-                    {dict.chat.toolsDescription}
-                  </p>
+            <div className="mx-auto max-w-3xl space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+                    <Folder size={18} className="text-brand-300" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-xl font-bold text-white mb-1">{dict.chat.projects}</h2>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={openProjectCreate}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-neutral-900 hover:bg-neutral-100 transition-all"
+                >
+                  <FolderPlus size={13} />
+                  {dict.chat.newProject}
+                </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {INTEGRATIONS.filter((i) => i.available).map((integ) => (
-                  <div key={integ.name} className="flex items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/50 px-4 py-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5">
-                      <BrandLogo slug={integ.brand} size={24} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-white truncate">{integ.name}</p>
-                      <p className="text-xs text-neutral-500 truncate">{integ.description}</p>
-                    </div>
-                    <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-                      <CheckCircle2 size={10} />
-                      {dict.common.active}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              {INTEGRATIONS.filter((i) => !i.available).length > 0 && (
-                <>
-                  <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider">
-                    {dict.chat.integrationSoon}
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {INTEGRATIONS.filter((i) => !i.available).map((integ) => (
-                      <div key={integ.name} className="flex items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/30 px-4 py-3 opacity-60">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5">
-                          <BrandLogo slug={integ.brand} size={24} />
-                        </div>
+              {projects.length === 0 ? (
+                <p className="rounded-xl border border-white/5 bg-neutral-800/30 px-4 py-6 text-center text-sm text-neutral-500">
+                  {dict.chat.newProject}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {projects.map((p) => {
+                    const count = conversations.filter((c) => c.projectId === p.id && !c.deleted_at).length;
+                    const selected = selectedProjectId === p.id;
+                    return (
+                      <div
+                        key={p.id}
+                        className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all ${selected ? "border-brand-500/40 bg-brand-500/5" : "border-white/5 bg-neutral-800/50"}`}
+                      >
+                        <Folder size={16} className={`shrink-0 ${selected ? "text-brand-400" : "text-neutral-500"}`} />
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-white truncate">{integ.name}</p>
-                          <p className="text-xs text-neutral-500 truncate">{integ.description}</p>
+                          <p className="truncate text-sm font-bold text-white">{p.name}</p>
+                          <p className="truncate text-xs text-neutral-500">
+                            {count} · {p.agentSlugs.length > 0 ? p.agentSlugs.map((s) => agentsBySlug.get(s)?.name ?? s).join(", ") : dict.chat.assistantName}
+                          </p>
+                          {p.instructions && (
+                            <p className="mt-0.5 truncate text-xs italic text-neutral-600">{p.instructions}</p>
+                          )}
                         </div>
-                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-500/10 px-2 py-0.5 text-[10px] font-bold text-neutral-500">
-                          <Clock3 size={10} />
-                          {dict.chat.integrationArriving}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedProjectId(selected ? null : p.id);
+                            setSidebarView("chat");
+                          }}
+                          className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition-all"
+                        >
+                          {selected ? dict.chat.close : dict.chat.open}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openProjectEdit(p.id)}
+                          aria-label={`${dict.chat.projectEdit}: ${p.name}`}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
+                        >
+                          <Pencil size={13} />
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                </>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
         )}
 
-        {/* ── Agents panel ────────────────────────────────────── */}
-        {sidebarView === "agents" && (
+        {/* ── Artifacts view ────────────────────────────────────── */}
+        {sidebarView === "artifacts" && (
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-            <div className="mx-auto max-w-3xl space-y-6">
-              {/* Intestazione allineata allo stile della pagina (badge + titolo + descrizione) */}
+            <div className="mx-auto max-w-3xl space-y-4">
               <div className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-                  <Bot size={18} className="text-brand-300" />
+                  <FileText size={18} className="text-brand-300" />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="text-xl font-bold text-white mb-1">{dict.chat.agents}</h2>
-                  <p className="text-sm text-neutral-400 leading-relaxed">
-                    {dict.chat.agentsDescription}
-                  </p>
+                  <h2 className="text-xl font-bold text-white mb-1">
+                    {dict.chat.artifacts} {allFiles.length > 0 && <span className="text-sm text-neutral-500">· {allFiles.length}</span>}
+                  </h2>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {Array.from(agentsBySlug.values()).map((agent) => (
+              {allFiles.length === 0 ? (
+                <p className="rounded-xl border border-white/5 bg-neutral-800/30 px-4 py-6 text-center text-sm text-neutral-500">
+                  {dict.chat.files.noFiles}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {allFiles.map((f) => (
+                    <button
+                      key={`${f.convId}:${f.slug}`}
+                      type="button"
+                      onClick={() => openArtifact(f.convId, f.slug)}
+                      className="flex w-full items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/50 px-4 py-3 text-left transition-all hover:bg-neutral-800 hover:border-white/10"
+                    >
+                      <FileText size={16} className="shrink-0 text-neutral-500" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-white">{f.name}</p>
+                        <p className="truncate text-xs text-neutral-500">{f.convTitle}</p>
+                      </div>
+                      <ArrowRight size={14} className="text-neutral-600 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Personalization view ────────────────────────────────────── */}
+        {sidebarView === "personalization" && (
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+            <div className="mx-auto max-w-3xl space-y-4">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+                  <Sparkles size={18} className="text-brand-300" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold text-white mb-1">{dict.dashboardShell.navPersonalization}</h2>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {[
+                  { href: "/dashboard/integrations", label: dict.dashboardShell.navIntegrations, icon: Plug },
+                  { href: "/skills", label: dict.dashboardShell.navSkills, icon: Sparkles },
+                  { href: "/plugins", label: dict.dashboardShell.navPlugins, icon: Blocks },
+                ].map(({ href, label, icon: Icon }) => (
                   <Link
-                    key={agent.slug}
-                    href={`/agents/${agent.slug}`}
-                    className="flex items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/50 px-4 py-3 hover:bg-neutral-800 hover:border-white/10 transition-all"
+                    key={href}
+                    href={href}
+                    className="flex items-center gap-3 rounded-xl border border-white/5 bg-neutral-800/50 px-4 py-3 transition-all hover:bg-neutral-800 hover:border-white/10"
                   >
-                    <AgentAvatar agent={agent} size="md" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-white truncate">{agent.name}</p>
-                      <p className="text-xs text-neutral-500 truncate">{agent.description}</p>
-                    </div>
+                    <Icon size={16} className="shrink-0 text-neutral-400" />
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{label}</span>
                     <ArrowRight size={14} className="text-neutral-600 shrink-0" />
                   </Link>
                 ))}
@@ -3135,7 +3059,7 @@ export default function ChatInterface({
             <div
               ref={attachMessages}
               onScroll={handleMessagesScroll}
-              className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-48"
+              className="flex-1 overflow-y-auto px-4 sm:px-6 pt-14 pb-48"
             >
             <div ref={contentRef} className="space-y-6 mx-auto max-w-4xl">
             {messages.map((msg, msgIndex) => (
