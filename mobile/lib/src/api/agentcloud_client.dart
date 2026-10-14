@@ -178,4 +178,67 @@ class AgentCloudClient {
       throw Exception('Errore connessione chat (${response.statusCode})');
     }
   }
+
+  /// Crea un link di condivisione in sola lettura (POST /api/chat/share).
+  /// Richiede login: lo snapshot è congelato, il destinatario vede senza
+  /// poter modificare. Ritorna l'URL completo da copiare/condividere.
+  Future<String> shareChat({
+    required String title,
+    required List<Map<String, String>> messages,
+  }) async {
+    final token = await getToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Accedi per condividere la conversazione.');
+    }
+    final url = Uri.parse('$baseUrl/api/chat/share');
+    final res = await http.post(
+      url,
+      headers: _headers(token),
+      body: jsonEncode({'title': title, 'messages': messages}),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      String reason = 'Impossibile creare il link.';
+      try {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        if (data['error'] is String) reason = data['error'] as String;
+      } catch (_) {}
+      throw Exception(reason);
+    }
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final path = data['url'] as String?;
+    if (path == null || path.isEmpty) throw Exception('Risposta di condivisione inattesa.');
+    return path.startsWith('http') ? path : '$baseUrl$path';
+  }
+
+  /// URL web per collegare un'integrazione dopo un evento `connection`:
+  /// si apre nel browser esterno (l'OAuth si completa sul sito). Ritorna
+  /// `null` per i provider senza flusso diretto (si apre la pagina integrazioni).
+  static String connectUrlFor(String baseUrl, String provider) {
+    final p = provider.toLowerCase();
+    if (p.contains('gmail') || p.contains('calendar')) {
+      return '$baseUrl/api/auth/google/connect';
+    }
+    const direct = {
+      'sheets': 'google_sheets',
+      'drive': 'google_drive',
+      'docs': 'google_docs',
+      'forms': 'google_forms',
+      'analytics': 'google_analytics',
+      'outlook': 'microsoft_outlook',
+      'notion': 'notion',
+      'slack': 'slack',
+      'hubspot': 'hubspot',
+      'github': 'github',
+      'clickup': 'clickup',
+      'asana': 'asana',
+      'airtable': 'airtable',
+      'trello': 'trello',
+      'woocommerce': 'woocommerce',
+      'mailchimp': 'mailchimp',
+    };
+    for (final entry in direct.entries) {
+      if (p.contains(entry.key)) return '$baseUrl/api/integrations/${entry.value}/authorize';
+    }
+    return '$baseUrl/dashboard/integrations';
+  }
 }
