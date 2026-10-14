@@ -34,6 +34,7 @@
     "node_modules",
     "supabase/functions",
     "cli",
+    "desktop",
     "dist-extension",
     "agentcloud-extension",
     "tests"

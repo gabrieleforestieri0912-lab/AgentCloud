@@ -1,0 +1,46 @@
+{
+  "name": "agentcloud-desktop",
+  "version": "0.1.0",
+  "description": "AgentCloud Desktop — chat con gli agenti AI dal tuo computer (Electron + TypeScript, come Claude Desktop)",
+  "main": "out/main/index.js",
+  "author": "AgentCloud Team <support@agentcloud.agency>",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "dist": "npm run build && electron-builder --publish never",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "dist:win": "npm run build && electron-builder --win --publish never",
+    "dist:linux": "npm run build && electron-builder --linux --publish never",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.0",
+    "dompurify": "^3.2.4",
+    "marked": "^16.2.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.0",
+    "electron-vite": "^4.0.0",
+    "typescript": "^5.4.0",
+    "vite": "^7.0.0"
+  },
+  "build": {
+    "appId": "agency.agentcloud.desktop",
+    "productName": "AgentCloud",
+    "files": ["out/**/*", "package.json"],
+    "mac": { "target": ["dmg"], "category": "public.app-category.productivity" },
+    "win": { "target": ["nsis"] },
+    "linux": { "target": ["AppImage", "deb"], "category": "Office" }
+  }
+}
