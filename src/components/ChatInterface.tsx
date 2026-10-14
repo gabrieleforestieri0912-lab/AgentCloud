@@ -759,15 +759,16 @@ export default function ChatInterface({
     );
   }, [agentSearch, selectableAgents]);
 
-  /** Cambia gli agenti della chat: qualsiasi modifica all'insieme apre una
-      NUOVA conversazione, così ogni chat resta con un solo contesto e non si
+  /** Cambia l'agente della chat: il nuovo SOSTITUISCE il precedente (un solo
+      agente per chat), mai in aggiunta. Qualsiasi cambio apre una NUOVA
+      conversazione, così ogni chat resta con un solo contesto e non si
       mischiano agenti diversi negli stessi messaggi. Unica eccezione: la chat
       nuova ancora vuota, che viene riusata sul posto per non accumulare
-      conversazioni vuote. Il testo già digitato viene riportato nella nuova. */
+      conversazioni vuote. Il testo già digitato viene riportato nella nuova.
+      Ricliccare l'agente attivo lo deseleziona (si torna all'assistente generico). */
   function toggleAgent(slug: string) {
-    const next = selectedAgentSlugs.includes(slug)
-      ? selectedAgentSlugs.filter((s) => s !== slug)
-      : [...selectedAgentSlugs, slug];
+    const next =
+      selectedAgentSlugs.length === 1 && selectedAgentSlugs[0] === slug ? [] : [slug];
     setShowAgentPicker(false);
     const activeConv = conversationsRef.current.find((c) => c.id === activeId);
     if (activeConv && activeConv.messages.length === 0) {
