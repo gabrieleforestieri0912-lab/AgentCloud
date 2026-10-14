@@ -18,6 +18,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { categoryForKind, dedupeKeyFor } from "@/lib/notification-rules";
 
 export type AgentNotificationKind =
   | "file_created"
@@ -265,6 +266,11 @@ export function buildActionNotification(
  * Persiste una notifica d'azione per un utente (best-effort — non lancia mai
  * eccezioni). I chiamanti anonimi in anteprima non hanno una casella:
  * devono essere filtrati a monte dal chiamante.
+ *
+ * Due regole prima della scrittura (vedi lib/notification-rules.ts):
+ * 1. preferenze: categoria disabilitata → niente scrittura (non solo nascosta);
+ * 2. dedup: se esiste già una riga NON letta con la stessa dedupe_key, si
+ *    incrementa `count` invece di aggiungere una riga ("12 nuovi lead", non 12).
  */
 export async function createAgentNotification(input: {
   userId: string;
@@ -281,11 +287,52 @@ export async function createAgentNotification(input: {
     return false;
   }
 
+  const category = categoryForKind(input.kind);
+  try {
+    const { data: pref } = await db
+      .from("notification_preferences")
+      .select("enabled")
+      .eq("user_id", input.userId)
+      .eq("category", category)
+      .eq("channel", "in_app")
+      .maybeSingle();
+    if (pref && (pref as { enabled?: boolean }).enabled === false) return true;
+  } catch {
+    // Preferenze illeggibili: meglio notificare che perdere l'evento.
+  }
+
+  const dedupeKey = dedupeKeyFor(input.kind, input.params ?? {});
+  if (dedupeKey) {
+    try {
+      const { data: existing } = await db
+        .from("agent_notifications")
+        .select("id, count")
+        .eq("user_id", input.userId)
+        .eq("dedupe_key", dedupeKey)
+        .eq("read", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const row = existing as { id: string; count?: number } | null;
+      if (row?.id) {
+        const { error } = await db
+          .from("agent_notifications")
+          .update({ count: (row.count ?? 1) + 1, params: input.params ?? {} })
+          .eq("id", row.id);
+        if (!error) return true;
+      }
+    } catch {
+      // Deduplica best-effort: se fallisce si inserisce una riga nuova sotto.
+    }
+  }
+
   const { error } = await db.from("agent_notifications").insert({
     user_id: input.userId,
     agent_slug: input.agentSlug,
     kind: input.kind,
     params: input.params ?? {},
+    dedupe_key: dedupeKey,
+    count: 1,
   });
 
   if (error) {

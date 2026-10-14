@@ -47,7 +47,7 @@ export async function GET() {
       .eq("status", "active"),
     db
       .from("agent_notifications")
-      .select("id, agent_slug, kind, params, read, created_at")
+      .select("id, agent_slug, kind, params, read, created_at, count")
       .eq("user_id", userIdForQuery)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -63,6 +63,7 @@ export async function GET() {
     params: (r.params ?? {}) as Record<string, string>,
     read: Boolean(r.read),
     createdAt: r.created_at,
+    count: typeof r.count === "number" && r.count > 1 ? r.count : 1,
   }));
 
   // Best-effort: invia l'email transazionale la prima volta che viene rilevata

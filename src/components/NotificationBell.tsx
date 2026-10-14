@@ -49,7 +49,11 @@ type AgentNotification = {
   params: Record<string, string | number>;
   read: boolean;
   createdAt: string;
+  /** Righe raggruppate dal dedup server-side (1 = singola). */
+  count: number;
 };
+
+const NOTIFY_CHANNEL = "agentcloud:notifications";
 
 const POLL_MS = 30_000;
 
@@ -89,39 +93,82 @@ export default function NotificationBell() {
   const [agentItems, setAgentItems] = useState<AgentNotification[]>([]);
   const [subItems, setSubItems] = useState<SubscriptionNotification[]>([]);
   const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [toasts, setToasts] = useState<AgentNotification[]>([]);
   const ref = useRef<HTMLDivElement>(null);
+  // Id già visti: solo le righe NUOVE mentre la tab è attiva fanno toast (mai
+  // al primo caricamento). Un solo tab fa toast (quello col focus): gli altri
+  // aggiornano comunque badge e titolo.
+  const seenIds = useRef<Set<string> | null>(null);
+  const baseTitle = useRef<string | null>(null);
+
+  const pushToast = (n: AgentNotification) => {
+    setToasts((prev) => (prev.some((t) => t.id === n.id) ? prev : [...prev.slice(-2), n]));
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== n.id));
+    }, 6000);
+  };
 
   useEffect(() => {
     let active = true;
-    const load = () =>
+    const bc =
+      typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(NOTIFY_CHANNEL) : null;
+    const load = (withToasts: boolean) =>
       fetch("/api/notifications")
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
           if (!active || !d) return;
           const data = d as {
             notifications?: SubscriptionNotification[];
-            agentNotifications?: AgentNotification[];
+            agentNotifications?: (AgentNotification & { count?: number })[];
           };
           setSubItems(data.notifications ?? []);
-          setAgentItems(data.agentNotifications ?? []);
+          const items = (data.agentNotifications ?? []).map((n) => ({
+            ...n,
+            count: typeof n.count === "number" && n.count > 1 ? n.count : 1,
+          }));
+          if (seenIds.current === null) {
+            seenIds.current = new Set(items.map((n) => n.id));
+          } else if (withToasts && document.hasFocus()) {
+            for (const n of items) {
+              if (!n.read && !seenIds.current.has(n.id)) pushToast(n);
+              seenIds.current.add(n.id);
+            }
+          } else {
+            for (const n of items) seenIds.current.add(n.id);
+          }
+          setAgentItems(items);
         })
         .catch(() => {
           // offline / transitorio — mantieni l'ultimo stato noto
         });
-    load();
-    const interval = setInterval(load, POLL_MS);
+    load(false);
+    const interval = setInterval(() => load(true), POLL_MS);
     // Aggiorna subito quando un agente completa un'azione (ChatInterface /
     // PublicAgentChat dispatchano 'agentcloud:notifications-refresh')
-    const onAgentDone = () => load();
+    const onAgentDone = () => load(true);
     const onVisibility = () => {
-      if (document.visibilityState === "visible") load();
+      if (document.visibilityState === "visible") load(false);
     };
+    // Sync lettura tra tab: un'altra tab ha segnato come lette.
+    const onBroadcast = (e: MessageEvent) => {
+      const msg = e.data as { type?: string; ids?: string[] } | null;
+      if (!msg || msg.type !== "read") return;
+      if (msg.ids && msg.ids.length > 0) {
+        const idSet = new Set(msg.ids);
+        setAgentItems((items) => items.map((n) => (idSet.has(n.id) ? { ...n, read: true } : n)));
+      } else {
+        setAgentItems((items) => items.map((n) => ({ ...n, read: true })));
+      }
+    };
+    bc?.addEventListener("message", onBroadcast);
     window.addEventListener("agentcloud:notifications-refresh", onAgentDone);
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("focus", onVisibility);
     return () => {
       active = false;
       clearInterval(interval);
+      bc?.close();
       window.removeEventListener("agentcloud:notifications-refresh", onAgentDone);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onVisibility);
@@ -140,6 +187,29 @@ export default function NotificationBell() {
 
   const unreadCount = agentItems.filter((n) => !n.read).length;
   const hasItems = agentItems.length > 0 || subItems.length > 0;
+  const visibleItems = filter === "unread" ? agentItems.filter((n) => !n.read) : agentItems;
+
+  // Badge nel titolo della tab quando è in background (ripristinato al ritorno).
+  useEffect(() => {
+    if (baseTitle.current === null) baseTitle.current = document.title;
+    const base = baseTitle.current ?? "AgentCloud";
+    if (unreadCount > 0 && document.hidden) {
+      document.title = `(${unreadCount}) ${base.replace(/^\(\d+\)\s*/, "")}`;
+    } else if (!document.hidden) {
+      document.title = base.replace(/^\(\d+\)\s*/, "");
+    }
+  }, [unreadCount]);
+
+  function broadcastRead(ids?: string[]) {
+    try {
+      const bc = new BroadcastChannel(NOTIFY_CHANNEL);
+      bc.postMessage({ type: "read", ids: ids ?? null });
+      bc.close();
+    } catch {
+      // BroadcastChannel assente (vecchi browser): le altre tab si
+      // riallineano al prossimo polling.
+    }
+  }
 
   async function markRead(ids?: string[]) {
     try {
@@ -151,6 +221,7 @@ export default function NotificationBell() {
     } catch {
       // best-effort — lo stato locale si aggiorna comunque
     }
+    broadcastRead(ids);
     if (ids) {
       const idSet = new Set(ids);
       setAgentItems((items) =>
@@ -380,16 +451,33 @@ export default function NotificationBell() {
               </button>
             )}
           </div>
+          <div className="mb-2 flex gap-1 px-1" role="tablist" aria-label={dict.notifications.title}>
+            {(["all", "unread"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                role="tab"
+                aria-selected={filter === f}
+                onClick={() => setFilter(f)}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                  filter === f ? "bg-white text-neutral-900" : "text-neutral-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                {f === "all" ? dict.notifications.filterAll : dict.notifications.filterUnread}
+                {f === "unread" && unreadCount > 0 ? ` (${unreadCount})` : ""}
+              </button>
+            ))}
+          </div>
 
-          {!hasItems ? (
+          {!hasItems || (filter === "unread" && unreadCount === 0) ? (
             <p className="px-1 py-3 text-sm text-neutral-500">
               {dict.notifications.empty}
             </p>
           ) : (
             <div className="max-h-80 overflow-y-auto">
-              {agentItems.length > 0 && (
+              {visibleItems.length > 0 && (
                 <ul className="space-y-1.5">
-                  {agentItems.map((n) => (
+                  {visibleItems.map((n) => (
                     <li key={n.id} className={n.read ? "opacity-60" : ""}>
                       <Link
                         href="/dashboard"
@@ -403,6 +491,11 @@ export default function NotificationBell() {
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm leading-5 text-neutral-300">
                             {actionMessage(n)}
+                            {n.count > 1 && (
+                              <span className="ml-1.5 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-neutral-200">
+                                ×{n.count}
+                              </span>
+                            )}
                           </span>
                           <span className="mt-0.5 block text-[11px] font-semibold text-neutral-500">
                             {timeAgo(n.createdAt, dict)}
@@ -419,7 +512,7 @@ export default function NotificationBell() {
 
               {subItems.length > 0 && (
                 <>
-                  {agentItems.length > 0 && (
+                  {visibleItems.length > 0 && (
                     <div className="my-2 border-t border-white/5" />
                   )}
                   <ul className="space-y-1.5">
@@ -454,6 +547,30 @@ export default function NotificationBell() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Toast per gli eventi arrivati mentre la tab è attiva (solo il tab col
+          focus li mostra: gli altri aggiornano badge e titolo). */}
+      {toasts.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-[70] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2" aria-live="polite">
+          {toasts.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              onClick={() => {
+                markRead([n.id]);
+                setToasts((prev) => prev.filter((t) => t.id !== n.id));
+              }}
+              className="flex items-start gap-3 rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-left shadow-2xl shadow-black/50 backdrop-blur transition-colors hover:border-brand-500/40"
+            >
+              <ActionIcon kind={n.kind} />
+              <span className="min-w-0 flex-1 text-sm leading-5 text-neutral-200">
+                {actionMessage(n)}
+                {n.count > 1 && <span className="ml-1.5 text-xs font-bold text-neutral-400">×{n.count}</span>}
+              </span>
+            </button>
+          ))}
         </div>
       )}
     </div>

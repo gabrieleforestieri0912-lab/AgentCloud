@@ -7,6 +7,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/constants";
 import { useTheme, type Theme } from "@/components/ThemeProvider";
+import { NOTIFICATION_CATEGORIES, type NotificationCategory } from "@/lib/notification-rules";
 
 // Client delle impostazioni: preferenze locali di lingua, notifiche e dati.
 // Le preferenze (toggle ecc.) sono per ora simulabili lato client — nessuna
@@ -16,6 +17,8 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [emailNotif, setEmailNotif] = useState(true);
   const [productUpdates, setProductUpdates] = useState(true);
+  // Preferenze notifiche agente per categoria (persistite via API, non solo locali).
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean> | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -37,7 +40,32 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
         }
       }
     } catch {}
+    // Categorie agente dal server (una riga = abilitata; assente = abilitata).
+    queueMicrotask(() => {
+      fetch("/api/notifications/preferences", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { preferences?: { category: string; enabled: boolean }[] } | null) => {
+          if (!d?.preferences) return;
+          const map: Record<string, boolean> = {};
+          for (const p of d.preferences) map[p.category] = p.enabled !== false;
+          setNotifPrefs(map);
+        })
+        .catch(() => {});
+    });
   }, []);
+
+  async function toggleNotifCategory(category: NotificationCategory, enabled: boolean) {
+    setNotifPrefs((prev) => ({ ...(prev ?? {}), [category]: enabled }));
+    try {
+      await fetch("/api/notifications/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, enabled }),
+      });
+    } catch {
+      // best-effort: lo stato locale resta, il server si riallinea al reload
+    }
+  }
 
   function handleSave() {
     setSaving(true);
@@ -181,6 +209,31 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
               <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${productUpdates ? "left-5" : "left-0.5"}`} />
             </button>
           </label>
+          {notifPrefs !== null && (
+            <div className="rounded-xl border border-white/5 bg-neutral-800 p-4">
+              <p className="text-sm font-bold text-white">{dict.notifications.prefsTitle}</p>
+              <p className="text-xs text-neutral-500">{dict.notifications.prefsDesc}</p>
+              <div className="mt-3 space-y-1">
+                {NOTIFICATION_CATEGORIES.map((cat) => {
+                  const enabled = notifPrefs[cat] !== false;
+                  return (
+                    <div key={cat} className="flex items-center justify-between gap-2 py-1.5">
+                      <span className="text-xs font-bold text-neutral-300">
+                        {dict.notifications.cats[cat] ?? cat}
+                      </span>
+                      <button
+                        onClick={() => toggleNotifCategory(cat, !enabled)}
+                        aria-pressed={enabled}
+                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${enabled ? "bg-brand-500" : "bg-neutral-700"}`}
+                      >
+                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${enabled ? "left-5" : "left-0.5"}`} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

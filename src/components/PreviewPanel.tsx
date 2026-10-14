@@ -230,51 +230,49 @@ function HtmlView({ content }: { content: string }) {
 function MermaidView({ content, streaming }: { content: string; streaming: boolean }) {
   const { dict } = useLanguage();
   const labels = dict.chat.files;
-  const [svg, setSvg] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-
+  // Debounce del testo: durante lo stream cambia a ogni token; renderizzare
+  // subito farebbe sfarfallare il diagramma e brucerebbe CPU.
+  const [debounced, setDebounced] = useState(content);
   useEffect(() => {
-    if (!content.trim()) {
-      setSvg(null);
-      return;
-    }
-    setFailed(false);
-    // Throttle: durante lo stream il testo cambia a ogni token; renderizzare
-    // a ogni keystroke farebbe sfarfallare il diagramma e brucerebbe CPU.
-    const timer = setTimeout(() => {
-      let cancelled = false;
-      void import("mermaid")
-        .then(async (mod) => {
-          const mermaid = mod.default;
-          mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "strict" });
-          const { svg: rendered } = await mermaid.render(`mmd-${Date.now()}`, content);
-          if (!cancelled) setSvg(rendered);
-        })
-        .catch(() => {
-          if (!cancelled) setFailed(true);
-        });
-      return () => {
-        cancelled = true;
-      };
-    }, 700);
+    const timer = setTimeout(() => setDebounced(content), 700);
     return () => clearTimeout(timer);
   }, [content]);
+  // Ultimo render completato (chiave = testo renderizzato): finché il nuovo
+  // non è pronto si mostra il precedente, senza sfarfallio.
+  const [rendered, setRendered] = useState<{ key: string; svg: string | null; failed: boolean } | null>(null);
+  useEffect(() => {
+    if (!debounced.trim()) return;
+    let cancelled = false;
+    void import("mermaid").then(
+      async (mod) => {
+        const mermaid = mod.default;
+        mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "strict" });
+        const { svg } = await mermaid.render(`mmd-${Date.now()}`, debounced);
+        if (!cancelled) setRendered({ key: debounced, svg, failed: false });
+      },
+      () => {
+        if (!cancelled) setRendered({ key: debounced, svg: null, failed: true });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [debounced]);
 
-  const safe = useMemo(() => (svg ? sanitizeSvg(svg) : ""), [svg]);
+  const shown = rendered && rendered.key === debounced ? rendered : null;
+  const safe = useMemo(() => (shown?.svg ? sanitizeSvg(shown.svg) : ""), [shown]);
   if (!safe.trim()) {
     // In streaming il diagramma parziale non è un errore: si mostra l'attesa.
     // A stream finito, testo non valido → messaggio + fallback codice.
-    if (streaming || (!failed && !content.trim())) {
+    if (streaming || !debounced.trim()) {
       return <p className="p-4 text-sm text-neutral-500">{labels.generating}</p>;
     }
-    if (failed || content.trim()) {
-      return (
-        <div className="space-y-2 p-4">
-          <p className="text-xs font-semibold text-amber-300">{labels.renderError}</p>
-          <CodeView language="mermaid" content={content} wrap={false} />
-        </div>
-      );
-    }
+    return (
+      <div className="space-y-2 p-4">
+        <p className="text-xs font-semibold text-amber-300">{labels.renderError}</p>
+        <CodeView language="mermaid" content={content} wrap={false} />
+      </div>
+    );
   }
   return (
     <div
@@ -353,14 +351,15 @@ export default function PreviewPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Restore/edit dell'utente: si torna all'ultima versione e si chiude
-  // l'editor. Non scatta per le versioni da streaming (vedi `epoch`).
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => {
+  // l'editor. Aggiornamento in fase di render (pattern "derived state", non un
+  // effect): non scatta per le versioni da streaming, solo al cambio di `epoch`.
+  const [epochSeen, setEpochSeen] = useState(epoch);
+  if (epochSeen !== epoch) {
+    setEpochSeen(epoch);
     setSelectedVersion(undefined);
     setEditing(false);
     setDraft(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [epoch]);
+  }
 
   // Un file nuovo riparte dalla versione più recente e dalla tab Anteprima:
   // lo fa il `key={slug}` con cui il padre monta il pannello, non un effect.
