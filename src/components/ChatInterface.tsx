@@ -21,7 +21,7 @@ import {
   Trash2,
   PanelLeftClose,
   PanelLeftOpen,
-  Send,
+  ArrowUp,
   Home,
   ChevronDown,
   FileText,
@@ -2065,54 +2065,50 @@ export default function ChatInterface({
           </button>
         </div>
 
-        {/* Navigazione: nuova chat + sezioni come pulsanti sopra le conversazioni */}
-        <div className="px-3 pt-4 pb-2 space-y-1.5">
+        {/* Navigazione: tutti i pulsanti in verticale, compatti */}
+        <nav data-onboard="nav" className="px-3 pt-3 pb-2 space-y-1">
           <button
             data-onboard="new-chat"
             onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 bg-white text-neutral-900 text-sm font-bold py-2 px-3.5 rounded-full transition-all hover:bg-neutral-100 shadow-lg shadow-white/5"
+            className="flex h-9 w-full items-center gap-2 rounded-xl bg-white px-3 text-xs font-bold text-neutral-900 hover:bg-neutral-100 transition-all"
           >
-            <Plus size={14} strokeWidth={2.5} />
+            <Plus size={13} strokeWidth={2.5} className="shrink-0" />
             {dict.chat.newChat}
           </button>
-          <nav data-onboard="nav">
-            <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-              <button
-                onClick={() => setSidebarView("chat")}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                  sidebarView === "chat"
-                    ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
-                    : "text-neutral-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <MessageSquare size={14} />
-                <span className="hidden sm:inline">{dict.chat.chat}</span>
-              </button>
-              <button
-                onClick={() => setSidebarView("tools")}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                  sidebarView === "tools"
-                    ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
-                    : "text-neutral-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Wrench size={14} />
-                <span className="hidden sm:inline">{dict.chat.tools}</span>
-              </button>
-              <button
-                onClick={() => setSidebarView("agents")}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                  sidebarView === "agents"
-                    ? "bg-white text-neutral-900 shadow-lg shadow-white/5"
-                    : "text-neutral-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Bot size={14} />
-                <span className="hidden sm:inline">{dict.chat.agents}</span>
-              </button>
-            </div>
-          </nav>
-        </div>
+          <button
+            onClick={() => setSidebarView("chat")}
+            className={`flex h-9 w-full items-center gap-2 rounded-xl px-3 text-xs font-bold transition-all ${
+              sidebarView === "chat"
+                ? "bg-white text-neutral-900"
+                : "text-neutral-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <MessageSquare size={13} className="shrink-0" />
+            {dict.chat.chat}
+          </button>
+          <button
+            onClick={() => setSidebarView("tools")}
+            className={`flex h-9 w-full items-center gap-2 rounded-xl px-3 text-xs font-bold transition-all ${
+              sidebarView === "tools"
+                ? "bg-white text-neutral-900"
+                : "text-neutral-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <Wrench size={13} className="shrink-0" />
+            {dict.chat.tools}
+          </button>
+          <button
+            onClick={() => setSidebarView("agents")}
+            className={`flex h-9 w-full items-center gap-2 rounded-xl px-3 text-xs font-bold transition-all ${
+              sidebarView === "agents"
+                ? "bg-white text-neutral-900"
+                : "text-neutral-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <Bot size={13} className="shrink-0" />
+            {dict.chat.agents}
+          </button>
+        </nav>
 
         {/* Conversations list */}
         <div data-onboard="conversations" className="flex-1 overflow-y-auto px-2.5 py-2 space-y-0.5">
@@ -2554,9 +2550,13 @@ export default function ChatInterface({
                             disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
                             aria-label={dict.chat.sendMessage}
                             title={dict.chat.sendMessage}
-                            className="w-9 h-9 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
+                            className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
+                              (!input.trim() && attach.attachments.length === 0) || isTyping || !activeId
+                                ? "bg-neutral-800 text-neutral-600 shadow-none"
+                                : "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_16px_rgba(3,139,254,0.45),0_4px_12px_rgba(0,0,0,0.3)] hover:brightness-110 hover:scale-105 hover:shadow-[0_0_22px_rgba(3,139,254,0.6),0_4px_12px_rgba(0,0,0,0.3)] active:scale-95"
+                            }`}
                           >
-                            <Send size={18} />
+                            <ArrowUp size={18} strokeWidth={2.5} />
                           </button>
                         </div>
                       </div>
@@ -2988,9 +2988,13 @@ export default function ChatInterface({
                       disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
                       aria-label={dict.chat.sendMessage}
                       title={dict.chat.sendMessage}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center bg-brand-500 text-white hover:bg-brand-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all shrink-0 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20"
+                      className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
+                        (!input.trim() && attach.attachments.length === 0) || isTyping || !activeId
+                          ? "bg-neutral-800 text-neutral-600 shadow-none"
+                          : "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_16px_rgba(3,139,254,0.45),0_4px_12px_rgba(0,0,0,0.3)] hover:brightness-110 hover:scale-105 hover:shadow-[0_0_22px_rgba(3,139,254,0.6),0_4px_12px_rgba(0,0,0,0.3)] active:scale-95"
+                      }`}
                     >
-                      <Send size={18} />
+                      <ArrowUp size={18} strokeWidth={2.5} />
                     </button>
                   )}
                 </div>
