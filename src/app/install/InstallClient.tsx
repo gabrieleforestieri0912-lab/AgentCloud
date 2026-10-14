@@ -234,6 +234,24 @@ export default function InstallClient() {
                     )}
                   </button>
                 </div>
+                <div className="mt-2 flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-4 font-mono text-xs text-neutral-300">
+                  <div className="flex items-center gap-3 select-all min-w-0">
+                    <span className="text-neutral-600 select-none">$</span>
+                    <span className="truncate">curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh</span>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard("curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh", "cli-install-sh")}
+                    className="ml-2 shrink-0 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white transition-colors cursor-pointer"
+                    title="Copia installazione rapida macOS/Linux"
+                  >
+                    {copiedKey === "cli-install-sh" ? (
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="mt-1.5 text-[11px] text-neutral-500">Installazione rapida per macOS e Linux (verifica Node 18+ e installa il pacchetto).</p>
               </div>
 
               {/* Login Snippet */}

@@ -1,0 +1,3 @@
+# Lo script di installazione CLI deve restare LF ovunque: con CRLF
+# l'hashbang (#!/bin/sh) si rompe su Linux e macOS.
+cli/install.sh text eol=lf

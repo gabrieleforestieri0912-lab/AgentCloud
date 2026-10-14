@@ -4,7 +4,19 @@ CLI unificata di AgentCloud: comandi utente e comandi admin in un unico binario 
 
 ## Requisiti e installazione
 
-Node.js 18+.
+Node.js 18+. Funziona identica su **Linux, macOS e Windows**.
+
+Installazione rapida (macOS e Linux):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh
+```
+
+Lo script verifica Node 18+, installa il pacchetto globale e controlla che il
+comando `agentcloud` risponda. Se Node manca, dice come installarlo (brew su
+macOS, nodesource su Ubuntu, nodejs.org per il resto).
+
+Via npm (tutti i sistemi):
 
 ```bash
 npm i -g agentcloud-cli
