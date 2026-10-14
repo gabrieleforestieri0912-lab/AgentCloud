@@ -14,7 +14,7 @@
 
 /* ── Tipi ─────────────────────────────────────────────────────────────── */
 
-export type ChatFileType = "markdown" | "html" | "code" | "csv" | "svg" | "text";
+export type ChatFileType = "markdown" | "html" | "code" | "csv" | "svg" | "mermaid" | "text";
 
 /** Stati mostrati dalla card: in creazione, pronta, interrotta, aggiornata. */
 export type ChatFileStatus = "streaming" | "ready" | "incomplete";
@@ -71,6 +71,7 @@ const TYPE_BY_EXT: Record<string, ChatFileType> = {
   html: "html", htm: "html",
   csv: "csv", tsv: "csv",
   svg: "svg",
+  mmd: "mermaid", mermaid: "mermaid",
   txt: "text", log: "text", json: "text", yaml: "text", yml: "text",
 };
 
@@ -117,7 +118,7 @@ export function fileExtension(name: string): string {
   return dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
 }
 
-const VALID_TYPES = new Set<ChatFileType>(["markdown", "html", "code", "csv", "svg", "text"]);
+const VALID_TYPES = new Set<ChatFileType>(["markdown", "html", "code", "csv", "svg", "mermaid", "text"]);
 
 /**
  * Tipo dichiarato dal modello, corretto con l'estensione quando il tipo è
@@ -369,6 +370,26 @@ export function toPlainText(record: ChatFileRecord, content: string): string {
 export function exportFileName(record: ChatFileRecord, format: "md" | "html" | "txt"): string {
   const stem = record.name.replace(/\.[^.]+$/, "") || "file";
   return `${stem}.${format}`;
+}
+
+/**
+ * Sostituisce il contenuto di un blocco file nel testo del messaggio (per
+ * restore ed editing utente): la versione mostrata all'agente al turno dopo
+ * è quella nuova, mai quella vecchia. Ritorna il testo invariato se lo slug
+ * non c'è (nessun danno, niente eccezioni).
+ */
+export function replaceFileBlockContent(
+  messageContent: string,
+  slug: string,
+  newContent: string,
+): string {
+  const openRe = new RegExp(`<agentcloud_file\\b([^>]*\\bid=["']${slug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["'][^>]*)>`, "i");
+  const open = openRe.exec(messageContent);
+  if (!open || open.index === undefined) return messageContent;
+  const afterOpen = open.index + open[0].length;
+  const closeIndex = messageContent.indexOf("</agentcloud_file>", afterOpen);
+  if (closeIndex === -1) return messageContent;
+  return messageContent.slice(0, afterOpen) + "\n" + newContent + messageContent.slice(closeIndex);
 }
 
 /* ── Sicurezza: HTML in iframe isolato ─────────────────────────────────── */

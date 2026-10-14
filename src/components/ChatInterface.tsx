@@ -105,6 +105,7 @@ import PreviewPanel from "./PreviewPanel";
 import {
   mergeFileRecords,
   parseChatFiles,
+  replaceFileBlockContent,
   type ChatFileRecord,
 } from "@/lib/chat-files";
 
@@ -338,6 +339,8 @@ export default function ChatInterface({
   // File attualmente aperto nel pannello di anteprima (slug del blocco
   // <agentcloud_file>). Nullo = pannello chiuso.
   const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+  // Contatore per il reset del pannello dopo restore/edit dell'utente.
+  const [panelEpoch, setPanelEpoch] = useState(0);
   // Ultimo file sincronizzato col DB: evita di ripostare a ogni token.
   const syncedFilesRef = useRef<string>("");
 
@@ -469,6 +472,53 @@ export default function ChatInterface({
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeId],
+  );
+
+  /**
+   * Aggiunge una versione al file e aggiorna il blocco nel messaggio: così la
+   * modifica (restore o editing utente) è quella che l'agente vede al turno
+   * dopo, che persiste nel reload e che finisce nel sync verso il DB.
+   */
+  const pushFileVersion = useCallback((slug: string, content: string, createdBy: "ai" | "user") => {
+    setConversations((prev) =>
+      prev.map((c) => {
+        let touched = false;
+        const messages = c.messages.map((m) => {
+          const rec = (m.files ?? []).find((f) => f.slug === slug);
+          if (!rec) return m;
+          touched = true;
+          const nextVersion = rec.currentVersion + 1;
+          const versions = [
+            ...rec.versions,
+            { version: nextVersion, content, created_at: new Date().toISOString(), created_by: createdBy },
+          ];
+          const files = (m.files ?? []).map((f) =>
+            f.slug === slug ? { ...f, currentVersion: nextVersion, updated: true, versions } : f,
+          );
+          return { ...m, files, content: replaceFileBlockContent(m.content, slug, content) };
+        });
+        return touched ? { ...c, messages } : c;
+      }),
+    );
+    setPanelEpoch((n) => n + 1);
+  }, []);
+
+  /** Ripristina una versione precedente come NUOVA versione (mai distruttivo). */
+  const handleRestoreFile = useCallback(
+    (record: ChatFileRecord, version: number) => {
+      const v = record.versions.find((x) => x.version === version);
+      if (!v) return;
+      pushFileVersion(record.slug, v.content, "user");
+    },
+    [pushFileVersion],
+  );
+
+  /** Salva una modifica utente come nuova versione (created_by=user). */
+  const handleEditFile = useCallback(
+    (record: ChatFileRecord, content: string) => {
+      pushFileVersion(record.slug, content, "user");
+    },
+    [pushFileVersion],
   );
 
   // Suggerimenti dinamici basati sugli agenti posseduti dall'utente.
@@ -3128,9 +3178,12 @@ export default function ChatInterface({
               key={activePreviewFile.slug}
               record={activePreviewFile}
               streaming={isPreviewStreaming}
+              epoch={panelEpoch}
               onClose={() => setPreviewSlug(null)}
               onRetry={retryFile}
               onSaveToIntegration={saveFileToIntegration}
+              onRestore={handleRestoreFile}
+              onEdit={handleEditFile}
             />
           )}
         </AnimatePresence>

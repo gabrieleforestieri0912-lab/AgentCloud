@@ -15,9 +15,11 @@ import {
   Check,
   ChevronLeft,
   Copy,
-  Loader2,
   Download,
+  History,
+  Loader2,
   MoreHorizontal,
+  Pencil,
   X,
   WrapText,
 } from "lucide-react";
@@ -58,6 +60,7 @@ const PREVIEW_TABS: Record<ChatFileType, { preview: boolean }> = {
   code: { preview: false },
   csv: { preview: true },
   svg: { preview: true },
+  mermaid: { preview: true },
   text: { preview: false },
 };
 
@@ -223,6 +226,64 @@ function HtmlView({ content }: { content: string }) {
   );
 }
 
+/** Mermaid → SVG renderizzato lato client e sanitizzato come gli SVG statici. */
+function MermaidView({ content, streaming }: { content: string; streaming: boolean }) {
+  const { dict } = useLanguage();
+  const labels = dict.chat.files;
+  const [svg, setSvg] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!content.trim()) {
+      setSvg(null);
+      return;
+    }
+    setFailed(false);
+    // Throttle: durante lo stream il testo cambia a ogni token; renderizzare
+    // a ogni keystroke farebbe sfarfallare il diagramma e brucerebbe CPU.
+    const timer = setTimeout(() => {
+      let cancelled = false;
+      void import("mermaid")
+        .then(async (mod) => {
+          const mermaid = mod.default;
+          mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "strict" });
+          const { svg: rendered } = await mermaid.render(`mmd-${Date.now()}`, content);
+          if (!cancelled) setSvg(rendered);
+        })
+        .catch(() => {
+          if (!cancelled) setFailed(true);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [content]);
+
+  const safe = useMemo(() => (svg ? sanitizeSvg(svg) : ""), [svg]);
+  if (!safe.trim()) {
+    // In streaming il diagramma parziale non è un errore: si mostra l'attesa.
+    // A stream finito, testo non valido → messaggio + fallback codice.
+    if (streaming || (!failed && !content.trim())) {
+      return <p className="p-4 text-sm text-neutral-500">{labels.generating}</p>;
+    }
+    if (failed || content.trim()) {
+      return (
+        <div className="space-y-2 p-4">
+          <p className="text-xs font-semibold text-amber-300">{labels.renderError}</p>
+          <CodeView language="mermaid" content={content} wrap={false} />
+        </div>
+      );
+    }
+  }
+  return (
+    <div
+      className="overflow-auto rounded-xl border border-white/10 bg-white p-4"
+      dangerouslySetInnerHTML={{ __html: safe }}
+    />
+  );
+}
+
 /** SVG → markup sanitizzato in allowlist, senza script né handler. */
 function SvgView({ content }: { content: string }) {
   const safe = useMemo(() => sanitizeSvg(content), [content]);
@@ -255,6 +316,16 @@ export interface PreviewPanelProps {
   onRetry?: (record: ChatFileRecord) => void;
   /** Callback per "Salva su Drive / Notion / Docs" quando l'integrazione è collegata. */
   onSaveToIntegration?: (provider: "google-drive" | "notion" | "google-docs", record: ChatFileRecord, content: string) => void;
+  /** Ripristina una versione precedente (crea una NUOVA versione, mai distruttivo). */
+  onRestore?: (record: ChatFileRecord, version: number) => void;
+  /** Salva una modifica dell'utente come nuova versione (created_by=user). */
+  onEdit?: (record: ChatFileRecord, content: string) => void;
+  /**
+   * Contatore che cambia solo su restore/edit dell'utente: il pannello torna
+   * all'ultima versione. Le nuove versioni da streaming NON lo toccano (il
+   * pannello non deve resettarsi a ogni token).
+   */
+  epoch?: number;
 }
 
 export default function PreviewPanel({
@@ -263,6 +334,9 @@ export default function PreviewPanel({
   onClose,
   onRetry,
   onSaveToIntegration,
+  onRestore,
+  onEdit,
+  epoch = 0,
 }: PreviewPanelProps) {
   const { dict } = useLanguage();
   const labels = dict.chat.files;
@@ -272,7 +346,21 @@ export default function PreviewPanel({
   const [menuOpen, setMenuOpen] = useState(false);
   const [wrap, setWrap] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Editing inline dell'utente: parte dal contenuto della versione mostrata,
+  // il salvataggio crea una nuova versione (mai distruttivo).
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Restore/edit dell'utente: si torna all'ultima versione e si chiude
+  // l'editor. Non scatta per le versioni da streaming (vedi `epoch`).
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    setSelectedVersion(undefined);
+    setEditing(false);
+    setDraft(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [epoch]);
 
   // Un file nuovo riparte dalla versione più recente e dalla tab Anteprima:
   // lo fa il `key={slug}` con cui il padre monta il pannello, non un effect.
@@ -391,6 +479,7 @@ export default function PreviewPanel({
     code: record.language?.toUpperCase() ?? "CODE",
     csv: "CSV",
     svg: "SVG",
+    mermaid: "MMD",
     text: "TXT",
   };
 
@@ -402,6 +491,7 @@ export default function PreviewPanel({
       if (record.type === "markdown") return <CodeView language="markdown" content={content} wrap={wrap} />;
       if (record.type === "html") return <CodeView language="xml" content={content} wrap={wrap} />;
       if (record.type === "csv") return <CodeView language="plaintext" content={content} wrap={wrap} />;
+      if (record.type === "mermaid") return <CodeView language="mermaid" content={content} wrap={wrap} />;
       return <CodeView language={record.language} content={content} wrap={wrap} />;
     }
     switch (record.type) {
@@ -413,6 +503,8 @@ export default function PreviewPanel({
         return <CsvView content={content} />;
       case "svg":
         return <SvgView content={content} />;
+      case "mermaid":
+        return <MermaidView content={content} streaming={streaming} />;
       case "text":
         return <TextView content={content} />;
       default:
@@ -485,7 +577,11 @@ export default function PreviewPanel({
                 <span className="sr-only">{labels.updated}</span>
                 <select
                   value={version}
-                  onChange={(e) => setSelectedVersion(Number(e.target.value))}
+                  onChange={(e) => {
+                    setSelectedVersion(Number(e.target.value));
+                    setEditing(false);
+                    setDraft(null);
+                  }}
                   className="bg-transparent font-bold outline-none"
                   aria-label={`${labels.updated} — v${version}`}
                 >
@@ -507,6 +603,55 @@ export default function PreviewPanel({
             >
               {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
             </button>
+
+            {/* Ripristina: visibile solo guardando una versione vecchia. Crea
+                una NUOVA versione col contenuto mostrato (mai distruttivo). */}
+            {onRestore && version < record.currentVersion && (
+              <button
+                type="button"
+                onClick={() => onRestore(record, version)}
+                aria-label={labels.restore}
+                title={labels.restore}
+                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 text-xs font-bold text-amber-200 transition-colors hover:bg-amber-500/20"
+              >
+                <History size={13} />
+                <span className="hidden xl:inline">{labels.restore}</span>
+              </button>
+            )}
+
+            {/* Modifica inline dell'utente: salva come nuova versione. */}
+            {onEdit && !streaming && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(content);
+                  setEditing((v) => !v);
+                }}
+                aria-label={labels.edit}
+                title={labels.edit}
+                aria-pressed={editing}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${editing ? "border-brand-500 bg-brand-500/15 text-white" : "border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white"}`}
+              >
+                <Pencil size={14} />
+              </button>
+            )}
+
+            {/* Modifica inline dell'utente: salva come nuova versione. */}
+            {onEdit && !streaming && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(content);
+                  setEditing((v) => !v);
+                }}
+                aria-label={labels.edit}
+                title={labels.edit}
+                aria-pressed={editing}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${editing ? "border-brand-500 bg-brand-500/15 text-white" : "border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white"}`}
+              >
+                <Pencil size={14} />
+              </button>
+            )}
 
             <button
               type="button"
@@ -663,7 +808,43 @@ export default function PreviewPanel({
       </header>
 
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto p-4">
-        {renderBody()}
+        {editing && onEdit ? (
+          <div className="flex h-full min-h-64 flex-col gap-2">
+            <textarea
+              value={draft ?? content}
+              onChange={(e) => setDraft(e.target.value)}
+              spellCheck={false}
+              aria-label={labels.edit}
+              className="min-h-64 flex-1 rounded-xl border border-white/10 bg-neutral-950 p-3 font-mono text-xs leading-relaxed text-neutral-200 outline-none focus:border-brand-500/60"
+            />
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onEdit(record, draft ?? content);
+                  setEditing(false);
+                  setDraft(null);
+                }}
+                disabled={(draft ?? content) === content}
+                className="rounded-full bg-brand-500 px-4 py-2 text-xs font-bold text-white hover:bg-brand-400 disabled:opacity-50"
+              >
+                {labels.save}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setDraft(null);
+                }}
+                className="rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-neutral-200 hover:bg-white/20"
+              >
+                {labels.cancel}
+              </button>
+            </div>
+          </div>
+        ) : (
+          renderBody()
+        )}
       </div>
 
       {/* Stato vuoto quando il file non ha ancora contenuto. */}

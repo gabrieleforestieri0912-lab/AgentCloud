@@ -8,6 +8,7 @@ import {
   FileCode2,
   FileSpreadsheet,
   FileText,
+  GitFork,
   Globe,
   Image as ImageIcon,
   Loader2,
@@ -38,6 +39,7 @@ const ICONS: Record<ChatFileType, typeof FileText> = {
   code: FileCode2,
   csv: FileSpreadsheet,
   svg: ImageIcon,
+  mermaid: GitFork,
   text: FileText,
 };
 
@@ -47,6 +49,7 @@ const TYPE_LABEL: Record<ChatFileType, string> = {
   code: "Codice",
   csv: "CSV",
   svg: "SVG",
+  mermaid: "Diagramma",
   text: "Testo",
 };
 
