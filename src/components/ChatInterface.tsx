@@ -13,6 +13,7 @@
  * dell'hero e gestione errori con link al supporto.
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -997,6 +998,8 @@ export default function ChatInterface({
   function setSidebar(open: boolean) {
     setSidebarOpen(open);
     saveSidebarOpen(open);
+    // Sidebar ristretta: il menu account di fianco non ha più senso, si chiude.
+    if (!open) setAccountMenuOpen(false);
   }
 
   // Ctrl/Cmd+B alterna la sidebar. Scorciatoia da solo: si lascia passare
@@ -2304,10 +2307,12 @@ export default function ChatInterface({
           )}
         </div>
 
-        {/* Account: il click apre un popup, non un menu inline */}
-        <div data-onboard="account" className="p-3 border-t border-white/[0.06]">
+        {/* Account: il click apre un menu di fianco alla sidebar */}
+        <div data-onboard="account" className="relative p-3 border-t border-white/[0.06]">
           <button
-            onClick={() => setAccountMenuOpen(true)}
+            onClick={() => setAccountMenuOpen((v) => !v)}
+            aria-expanded={accountMenuOpen}
+            aria-haspopup="menu"
             className="w-full flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 hover:bg-white/[0.05] transition-all"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
@@ -2330,8 +2335,75 @@ export default function ChatInterface({
               </p>
               <p className="text-[10px] text-neutral-500 font-medium">Account</p>
             </div>
-            <ChevronDown size={14} className="shrink-0 -rotate-90 text-neutral-500" />
+            <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform duration-200 ${accountMenuOpen ? "rotate-180 lg:-rotate-90" : "lg:-rotate-90"}`} />
           </button>
+          {/* Menu account di fianco alla sidebar (sopra il bottone su mobile) */}
+          {accountMenuOpen && createPortal(
+            <>
+              <button
+                type="button"
+                aria-label={dict.chat.close}
+                tabIndex={-1}
+                onClick={() => setAccountMenuOpen(false)}
+                className="fixed inset-0 z-40 cursor-default"
+              />
+              <div
+                role="menu"
+                className="fixed z-50 w-60 rounded-2xl border border-white/10 bg-neutral-900 p-2 shadow-2xl shadow-black/60 left-[268px] bottom-4 max-lg:left-4 max-lg:right-4 max-lg:w-auto max-lg:bottom-28"
+              >
+                <div className="flex items-center gap-2.5 px-2 pt-1 pb-2">
+                  <p className="min-w-0 flex-1 truncate text-xs font-bold text-white" title={accountTooltip ?? undefined}>
+                    {accountEmail || "..."}
+                  </p>
+                </div>
+                <Link
+                  href="/account"
+                  role="menuitem"
+                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+                >
+                  <User size={14} className="shrink-0 text-neutral-400" />
+                  Account
+                </Link>
+                <Link
+                  href="/settings"
+                  role="menuitem"
+                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+                >
+                  <Settings size={14} className="shrink-0 text-neutral-400" />
+                  {dict.navbar.settings}
+                </Link>
+                <Link
+                  href="/cart"
+                  role="menuitem"
+                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+                >
+                  <ShoppingCart size={14} className="shrink-0 text-neutral-400" />
+                  {dict.sidebarAccount.cart}
+                </Link>
+                <Link
+                  href="/dashboard"
+                  role="menuitem"
+                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+                >
+                  <Home size={14} className="shrink-0 text-neutral-400" />
+                  Dashboard
+                </Link>
+                <button
+                  role="menuitem"
+                  onClick={async () => {
+                    try { await createClient().auth.signOut(); } catch {}
+                    window.location.replace("/login");
+                  }}
+                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-red-300 hover:bg-red-500/15 transition-all"
+                >
+                  <LogOut size={14} className="shrink-0" />
+                  {dict.sidebarAccount.signOut}
+                </button>
+              </div>
+            </>
+            ,
+            document.body
+          )}
         </div>
       </aside>
 
@@ -3104,76 +3176,6 @@ export default function ChatInterface({
           </div>
         );
       })()}
-      {/* Popup gestione account */}
-      {accountMenuOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Account">
-          <button
-            type="button"
-            aria-label={dict.chat.close}
-            className="absolute inset-0 cursor-default bg-black/60"
-            onClick={() => setAccountMenuOpen(false)}
-          />
-          <div className="relative w-full max-w-xs rounded-2xl border border-white/10 bg-neutral-900 p-4 shadow-2xl shadow-black/60">
-            <div className="flex items-center gap-3 px-1 pb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
-                {accountAvatarUrl ? (
-                  <img src={accountAvatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
-                ) : accountLabelBase ? (
-                  accountLabelBase.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((s: string) => s[0]?.toUpperCase()).join("") || "?"
-                ) : (
-                  <span className="animate-pulse">...</span>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-white" title={accountTooltip ?? undefined}>
-                  {accountEmail || "..."}
-                </p>
-                <p className="text-[10px] text-neutral-500 font-medium">Account</p>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Link
-                href="/account"
-                className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-white/5 px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
-              >
-                <User size={14} className="shrink-0 text-neutral-400" />
-                Account
-              </Link>
-              <Link
-                href="/settings"
-                className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-white/5 px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
-              >
-                <Settings size={14} className="shrink-0 text-neutral-400" />
-                {dict.navbar.settings}
-              </Link>
-              <Link
-                href="/cart"
-                className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-white/5 px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
-              >
-                <ShoppingCart size={14} className="shrink-0 text-neutral-400" />
-                {dict.sidebarAccount.cart}
-              </Link>
-              <Link
-                href="/dashboard"
-                className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-white/5 px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
-              >
-                <Home size={14} className="shrink-0 text-neutral-400" />
-                Dashboard
-              </Link>
-              <button
-                onClick={async () => {
-                  try { await createClient().auth.signOut(); } catch {}
-                  window.location.replace("/login");
-                }}
-                className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-red-500/10 px-3 text-[13px] font-bold text-red-300 hover:bg-red-500/15 transition-all"
-              >
-                <LogOut size={14} className="shrink-0" />
-                {dict.sidebarAccount.signOut}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {paywallSlug && (
         <SubscribePaywallModal
           open={!!paywallSlug}

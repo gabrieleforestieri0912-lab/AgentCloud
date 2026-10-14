@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { User, ShoppingCart, Home, LogOut, Settings } from "lucide-react";
+import { createPortal } from "react-dom";
+import { User, ShoppingCart, Home, LogOut, Settings, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { avatarThumbnail } from "@/lib/avatar";
 import type { Session } from "@supabase/supabase-js";
@@ -16,6 +17,8 @@ export default function SidebarAccount({
   account?: AccountIdentity | null;
 }) {
   const [session, setSession] = useState<Session | null>(null);
+  // Menu account di fianco alla sidebar (non un popup al centro).
+  const [menuOpen, setMenuOpen] = useState(false);
   const { dict } = useLanguage();
 
   // Stesso pattern affidabile della chat AI: onAuthStateChange come fonte primaria + getSession fallback dopo 1s
@@ -73,8 +76,13 @@ export default function SidebarAccount({
     "";
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-      <div className="flex items-center gap-3 p-3">
+    <>
+      <button
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        className="w-full flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 hover:bg-white/[0.05] transition-all"
+      >
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
           {accountAvatarUrl ? (
             <img
@@ -99,46 +107,74 @@ export default function SidebarAccount({
           <p className="truncate text-sm font-bold text-white">{accountEmail || "..."}</p>
           <p className="text-[10px] text-neutral-500 font-medium">{dict.sidebarAccount.account}</p>
         </div>
-      </div>
-      <div className="px-3 pb-3 space-y-1 border-t border-white/[0.06]">
-        <div className="grid grid-cols-2 gap-1.5 pt-2">
-          <Link
-            href="/account"
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
+        <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform duration-200 ${menuOpen ? "rotate-180 lg:-rotate-90" : "lg:-rotate-90"}`} />
+      </button>
+      {menuOpen && createPortal(
+        <>
+          <button
+            type="button"
+            aria-label={dict.chat.close}
+            tabIndex={-1}
+            onClick={() => setMenuOpen(false)}
+            className="fixed inset-0 z-40 cursor-default"
+          />
+          <div
+            role="menu"
+            className="fixed z-50 w-60 rounded-2xl border border-white/10 bg-neutral-900 p-2 shadow-2xl shadow-black/60 left-[300px] bottom-4 max-lg:left-4 max-lg:right-4 max-lg:w-auto max-lg:bottom-28"
           >
-            <User size={12} /> {dict.sidebarAccount.account}
-          </Link>
-          <Link
-            href="/settings"
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
-          >
-            <Settings size={12} /> {dict.navbar.settings}
-          </Link>
-          <Link
-            href="/cart"
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
-          >
-            <ShoppingCart size={12} /> {dict.sidebarAccount.cart}
-          </Link>
-          <Link
-            href="/dashboard"
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-2 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all"
-          >
-            <Home size={12} /> Dashboard
-          </Link>
-        </div>
-        <button
-          onClick={async () => {
-            try {
-              await createClient().auth.signOut();
-            } catch {}
-            window.location.replace("/login");
-          }}
-          className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-2 py-2.5 text-xs font-bold text-red-300 hover:bg-red-500/15 transition-all"
-        >
-          <LogOut size={12} /> {dict.sidebarAccount.signOut}
-        </button>
-      </div>
-    </div>
+            <div className="flex items-center gap-2.5 px-2 pt-1 pb-2">
+              <p className="min-w-0 flex-1 truncate text-xs font-bold text-white">
+                {accountEmail || "..."}
+              </p>
+            </div>
+            <Link
+              href="/account"
+              role="menuitem"
+              onClick={() => setMenuOpen(false)}
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+            >
+              <User size={14} className="shrink-0 text-neutral-400" /> {dict.sidebarAccount.account}
+            </Link>
+            <Link
+              href="/settings"
+              role="menuitem"
+              onClick={() => setMenuOpen(false)}
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+            >
+              <Settings size={14} className="shrink-0 text-neutral-400" /> {dict.navbar.settings}
+            </Link>
+            <Link
+              href="/cart"
+              role="menuitem"
+              onClick={() => setMenuOpen(false)}
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+            >
+              <ShoppingCart size={14} className="shrink-0 text-neutral-400" /> {dict.sidebarAccount.cart}
+            </Link>
+            <Link
+              href="/dashboard"
+              role="menuitem"
+              onClick={() => setMenuOpen(false)}
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
+            >
+              <Home size={14} className="shrink-0 text-neutral-400" /> Dashboard
+            </Link>
+            <button
+              role="menuitem"
+              onClick={async () => {
+                try {
+                  await createClient().auth.signOut();
+                } catch {}
+                window.location.replace("/login");
+              }}
+              className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-red-300 hover:bg-red-500/15 transition-all"
+            >
+              <LogOut size={14} className="shrink-0" /> {dict.sidebarAccount.signOut}
+            </button>
+          </div>
+        </>,
+        document.body,
+      )}
+    </>
   );
 }
