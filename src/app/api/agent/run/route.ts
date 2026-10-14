@@ -25,7 +25,7 @@ import {
   createAgentNotification,
 } from "@/lib/agents/notifications";
 import {
-  FREE_MESSAGES_PER_AGENT,
+  FREE_MESSAGES_PER_DAY,
   getFreeMessagesUsed,
   incrementAnonymousFreeCount,
 } from "@/lib/billing/free-limit";
@@ -152,8 +152,9 @@ export async function POST(req: Request) {
   const check = await assertRunAllowed(userId, agentId, locale, isAdmin);
   const ipForFree = getClientIp(req);
 
-  // Freemium: 5 messaggi gratuiti AL GIORNO per agente per chi non ha abbonamento attivo.
-  // Admin e beta bypassano. Gli abbonati attivi non passano da qui.
+  // Freemium: 5 messaggi gratuiti AL GIORNO in totale (tutti gli agenti) per chi
+  // non ha abbonamento attivo. Admin e beta bypassano. Gli abbonati attivi non
+  // passano da qui.
   if (!isAdmin && !isBeta) {
     let enforceFree = false;
     if (userId === "anonymous") {
@@ -168,14 +169,14 @@ export async function POST(req: Request) {
     }
 
     if (enforceFree) {
-      const used = await getFreeMessagesUsed(userId, agentId, ipForFree);
-      if (used >= FREE_MESSAGES_PER_AGENT) {
+      const used = await getFreeMessagesUsed(userId, ipForFree);
+      if (used >= FREE_MESSAGES_PER_DAY) {
         return Response.json(
           {
             error: apiErrorMessageForLocale(locale, "freeLimitReached"),
             code: "FREE_LIMIT_REACHED",
             remaining: 0,
-            limit: FREE_MESSAGES_PER_AGENT,
+            limit: FREE_MESSAGES_PER_DAY,
           },
           { status: 402 },
         );
@@ -587,7 +588,7 @@ export async function POST(req: Request) {
           });
         } else if (userId === "anonymous") {
           // Anonimo in freemium: incrementa il contatore distribuito
-          await incrementAnonymousFreeCount(ipForFree, agentId).catch(() => {});
+          await incrementAnonymousFreeCount(ipForFree).catch(() => {});
         }
       } catch {
         emitter.stop();

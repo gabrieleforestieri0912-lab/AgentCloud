@@ -83,7 +83,7 @@ const it = {
       "Impossibile contattare il backend AI. Riprova più tardi.",
     internalServerError: "Errore interno del server",
     freeLimitReached:
-      "Hai raggiunto i 5 messaggi gratuiti di oggi per questo agente. Si resettano a mezzanotte — oppure abbonati per conversazioni illimitate.",
+      "Hai usato i 5 messaggi gratuiti di oggi (tutti gli agenti sommati). Si azzerano a mezzanotte — oppure abbonati per conversazioni illimitate.",
   },
 
   navbar: {
@@ -2464,7 +2464,7 @@ export const en: Dictionary = {
     aiConnectionFailed:
       "Could not reach the AI backend. Please try again later.",
     internalServerError: "Internal server error",
-    freeLimitReached: "You have reached today's 5 free messages for this agent. They reset at midnight — or subscribe for unlimited conversations.",
+    freeLimitReached: "You have used today's 5 free messages (all agents combined). They reset at midnight — or subscribe for unlimited conversations.",
   },
 
   navbar: {
@@ -4811,7 +4811,7 @@ export const es: Dictionary = {
     aiConnectionFailed:
       "No se pudo contactar con el backend de IA. Inténtalo más tarde.",
     internalServerError: "Error interno del servidor",
-    freeLimitReached: "Has alcanzado los 5 mensajes gratuitos de hoy para este agente. Se restablecen a medianoche — o suscríbete para conversaciones ilimitadas.",
+    freeLimitReached: "Has usado los 5 mensajes gratuitos de hoy (todos los agentes). Se restablecen a medianoche — o suscríbete para conversaciones ilimitadas.",
   },
 
   navbar: {
@@ -7155,7 +7155,7 @@ export const de: Dictionary = {
     aiConnectionFailed:
       "KI-Backend nicht erreichbar. Bitte versuche es später erneut.",
     internalServerError: "Interner Serverfehler",
-    freeLimitReached: "Du hast die 5 kostenlosen Nachrichten von heute für diesen Agenten erreicht. Sie werden um Mitternacht zurückgesetzt — oder abonniere für unbegrenzte Gespräche.",
+    freeLimitReached: "Du hast die 5 kostenlosen Nachrichten von heute verbraucht (alle Agenten zusammen). Sie werden um Mitternacht zurückgesetzt — oder abonniere für unbegrenzte Gespräche.",
   },
 
   navbar: {
@@ -9499,7 +9499,7 @@ export const fr: Dictionary = {
     aiConnectionFailed:
       "Impossible de joindre le backend IA. Réessayez plus tard.",
     internalServerError: "Erreur interne du serveur",
-    freeLimitReached: "Vous avez atteint les 5 messages gratuits du jour pour cet agent. Ils se réinitialisent à minuit — ou abonnez-vous pour des conversations illimitées.",
+    freeLimitReached: "Vous avez utilisé les 5 messages gratuits du jour (tous agents confondus). Ils se réinitialisent à minuit — ou abonnez-vous pour des conversations illimitées.",
   },
 
   navbar: {

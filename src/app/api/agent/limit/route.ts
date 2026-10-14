@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { assertRunAllowed } from "@/lib/billing/usage-tracking";
 import {
-  FREE_MESSAGES_PER_AGENT,
+  FREE_MESSAGES_PER_DAY,
   getFreeMessagesUsed,
   getNextResetAt,
 } from "@/lib/billing/free-limit";
@@ -13,9 +13,10 @@ import { resolveIsAdmin } from "@/lib/admin-access";
 /**
  * GET /api/agent/limit?agent=<slug>
  *
- * Ritorna il budget giornaliero freemium per (utente, agente): 5 messaggi al
- * giorno con reset alla mezzanotte UTC. La UI lo mostra sopra l'input della
- * chat insieme all'ora locale del reset.
+ * Ritorna il budget giornaliero freemium (5 messaggi al giorno in totale, su
+ * tutti gli agenti) con reset alla mezzanotte UTC. Il parametro `agent` serve
+ * solo a validare la richiesta e a mostrare il paywall per l'agente in uso.
+ * La UI lo mostra sopra l'input della chat insieme all'ora locale del reset.
  *
  * Risponde { unlimited: true } per abbonati attivi, admin e beta (nessun
  * limite). Per gli altri: { unlimited: false, used, remaining, limit,
@@ -63,13 +64,13 @@ export async function GET(req: Request) {
   }
 
   const ip = getClientIp(req);
-  const used = await getFreeMessagesUsed(userId, agentId, ip ?? undefined);
+  const used = await getFreeMessagesUsed(userId, ip ?? undefined);
   return NextResponse.json(
     {
       unlimited: false,
       used,
-      remaining: Math.max(0, FREE_MESSAGES_PER_AGENT - used),
-      limit: FREE_MESSAGES_PER_AGENT,
+      remaining: Math.max(0, FREE_MESSAGES_PER_DAY - used),
+      limit: FREE_MESSAGES_PER_DAY,
       resetAt: getNextResetAt().toISOString(),
     },
     { headers: { "Cache-Control": "no-store" } },
