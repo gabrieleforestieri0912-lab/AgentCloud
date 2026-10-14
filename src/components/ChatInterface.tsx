@@ -2062,7 +2062,7 @@ export default function ChatInterface({
             }}
             aria-label={dict.chat.closeSidebar}
             title={dict.chat.closeSidebar}
-            className="w-11 h-11 lg:w-9 lg:h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
           >
             <PanelLeftClose size={16} />
           </button>
@@ -2438,7 +2438,7 @@ export default function ChatInterface({
               onClick={() => setSidebar(true)}
               aria-label={dict.chat.openSidebar}
               title={`${dict.chat.openSidebar} (Ctrl+B)`}
-              className="hidden lg:flex absolute left-3 top-3 z-10 w-9 h-9 items-center justify-center rounded-full border border-white/10 bg-neutral-900/90 text-neutral-400 backdrop-blur-sm hover:text-white hover:bg-white/10 transition-all"
+              className="hidden lg:flex absolute left-3 top-3 z-10 w-9 h-9 items-center justify-center rounded-full text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
             >
               <PanelLeftOpen size={16} />
             </button>
@@ -2598,7 +2598,7 @@ export default function ChatInterface({
                       removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
                       imageAlt={dict.common.imageAttached}
                     />
-                    {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
+                    {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
                     <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
                       <textarea
                         ref={inputRef}
@@ -2996,7 +2996,7 @@ export default function ChatInterface({
               removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
               imageAlt={dict.common.imageAttached}
             />
-            {attach.notice && <p className="mb-2 text-xs text-amber-400">{attach.notice}</p>}
+            {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
             {pendingApproval && pendingApproval.convId === activeId && (
               <div
                 role="alertdialog"

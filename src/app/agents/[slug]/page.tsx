@@ -43,6 +43,7 @@ import { BUNDLES, getBundleAgents, formatMonthlyPrice } from "@/lib/bundles";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { getFAQs, getUseCases } from "@/lib/i18n/agentDetail";
+import { BRAND_TO_PROVIDER } from "@/lib/integrations";
 import { pageSeo } from "@/lib/seo";
 
 type AgentDetailPageProps = { params: Promise<{ slug: string }> };
@@ -116,10 +117,17 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
   const installedSkills = await getInstalledSkillsState(sessionUser?.id ?? null, slug);
   const connectedBrands: Record<string, boolean> = {};
   for (const [provider, connected] of Object.entries(genericConnected)) {
-    // `tenant_integrations` raggruppa più brand dietro un provider solo per
-    // Microsoft (Word/Excel/PowerPoint/OneNote): la mappa brand→provider fa
-    // sì che tutte e quattro risultino collegate insieme.
-    connectedBrands[provider] = connected;
+    // `tenant_integrations` è per PROVIDER, ma la UI ragiona per BRAND
+    // (es. provider `microsoft` → brand microsoftword/microsoftexcel/...,
+    // provider `microsoft_outlook` → brand microsoftoutlook). Senza questa
+    // mappa la pagina mostrava "non collegato" anche con OAuth attivo.
+    for (const [brand, mapped] of Object.entries(BRAND_TO_PROVIDER)) {
+      if (mapped === provider && connected) connectedBrands[brand] = true;
+    }
+    // Fallback: chiavi già brand (gmail/shopify legacy).
+    if (connected && !Object.values(BRAND_TO_PROVIDER).includes(provider)) {
+      connectedBrands[provider] = connected;
+    }
   }
   if (shopifyConnected) connectedBrands.shopify = true;
   if (googleConnected) {

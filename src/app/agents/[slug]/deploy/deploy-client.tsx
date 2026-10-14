@@ -48,12 +48,12 @@ const NO_CONNECTIONS: DeployConnections = {
  * Quale connettore OAuth reale corrisponde a un'etichetta di integrazione:
  *   "shopify" → OAuth Shopify (serve prima il dominio del negozio)
  *   "google"  → OAuth Google (Gmail + Calendar)
- *   "notion" | "slack" | "hubspot" | "google_sheets" | "github" | "clickup" | "asana" → OAuth generico
+ *   "notion" | "slack" | "hubspot" | "google_sheets" | "google_drive" | "github" | "clickup" | "asana" | "airtable" | "trello" | "woocommerce" | "mailchimp" | "microsoft" | "microsoft_outlook" | "google_docs" | "google_forms" | "google_analytics" → OAuth generico
  *               via /api/integrations/[provider]/authorize (stessa tabella usata
  *               dalla pagina /dashboard/integrations — single source of truth).
  *   null      → nessun connettore attivo
  */
-type ConnectorKind = "shopify" | "google" | "notion" | "slack" | "hubspot" | "google_sheets" | "google_drive" | "github" | "clickup" | "asana" | "airtable" | "trello" | "woocommerce" | "mailchimp" | null;
+type ConnectorKind = "shopify" | "google" | "notion" | "slack" | "hubspot" | "google_sheets" | "google_drive" | "github" | "clickup" | "asana" | "airtable" | "trello" | "woocommerce" | "mailchimp" | "microsoft" | "microsoft_outlook" | "google_docs" | "google_forms" | "google_analytics" | null;
 
 function genericProviderForIntegration(integration: string): Exclude<ConnectorKind, "shopify" | "google" | null> | null {
   const k = integration.toLowerCase();
@@ -69,6 +69,13 @@ function genericProviderForIntegration(integration: string): Exclude<ConnectorKi
   if (k === "github" || k.includes("github")) return "github";
   if (k === "clickup" || k.includes("clickup")) return "clickup";
   if (k === "asana" || k.includes("asana")) return "asana";
+  // Microsoft 365 (file) e Outlook (mail/calendario): connessioni separate.
+  if (k.includes("outlook")) return "microsoft_outlook";
+  if (k.includes("microsoft") || k.includes("word") || k.includes("excel") || k.includes("powerpoint") || k.includes("onenote")) return "microsoft";
+  // Google Docs/Forms/Analytics: provider generici dedicati (non il login Google legacy).
+  if (k.includes("docs")) return "google_docs";
+  if (k.includes("forms")) return "google_forms";
+  if (k.includes("analytics")) return "google_analytics";
   return null;
 }
 
@@ -195,7 +202,7 @@ export default function DeployAgentClient({
    */
   const startConnect = (integration: string) => {
     const kind = integrationKind(integration);
-    const genericProvider = kind && ["notion", "slack", "hubspot", "google_sheets", "github", "clickup", "asana"].includes(kind) ? (kind as string) : null;
+    const genericProvider = kind && ["notion", "slack", "hubspot", "google_sheets", "google_drive", "github", "clickup", "asana", "airtable", "trello", "woocommerce", "mailchimp", "microsoft", "microsoft_outlook", "google_docs", "google_forms", "google_analytics"].includes(kind) ? (kind as string) : null;
     const isConnected =
       (kind === "shopify" && connections.shopifyConnected) ||
       (kind === "google" && connections.googleConnected) ||

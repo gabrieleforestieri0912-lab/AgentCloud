@@ -34,6 +34,8 @@ function providerForIntegration(label: string): string | null {
   if (k.includes("mailchimp")) return "mailchimp";
   // Va prima del catch-all `includes("google")`: Outlook non è Google.
   if (k.includes("outlook")) return "microsoft_outlook";
+  // Microsoft 365 (Word/Excel/PowerPoint/OneNote): una sola connessione.
+  if (k.includes("microsoft") || k.includes("word") || k.includes("excel") || k.includes("powerpoint") || k.includes("onenote")) return "microsoft";
   // Google Docs è generico (provider google_docs), non il login Google legacy.
   if (k.includes("docs")) return "google_docs";
   // Google Forms è generico (provider google_forms). Va prima del catch-all.
@@ -77,7 +79,7 @@ export default function AgentIntegrationsCard({ integrations, agentSlug, generic
         {integrations.map((label) => {
           const prov = providerForIntegration(label);
           const soon = !isIntegrationAvailable(label);
-          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "google_drive", "google_docs", "google_forms", "google_analytics", "github", "clickup", "asana", "airtable", "trello", "woocommerce", "mailchimp", "microsoft_outlook"].includes(prov);
+          const isGeneric = prov && ["notion", "slack", "hubspot", "google_sheets", "google_drive", "google_docs", "google_forms", "google_analytics", "github", "clickup", "asana", "airtable", "trello", "woocommerce", "mailchimp", "microsoft", "microsoft_outlook"].includes(prov);
           const connected = isGeneric
             ? !!genericConnected[prov!]
             : prov === "shopify"
