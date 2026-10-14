@@ -24,6 +24,8 @@ import {
   PanelLeftOpen,
   ArrowUp,
   Home,
+  Folder,
+  FolderPlus,
   ChevronDown,
   FileText,
   Wrench,
@@ -108,6 +110,13 @@ import {
   replaceFileBlockContent,
   type ChatFileRecord,
 } from "@/lib/chat-files";
+import {
+  createProject,
+  projectContextBlock,
+  readProjects,
+  saveProjects,
+  type Project,
+} from "@/lib/projects";
 
 type LocalMessage = {
   id: string;
@@ -141,6 +150,8 @@ type LocalConversation = {
   // Token del link di condivisione in sola lettura (se creato): vive qui così
   // sopravvive al reload e la revoca resta a un click dal menu conversazione.
   shareToken?: string;
+  // Progetto di appartenenza (organizzazione locale, come i Projects di Claude).
+  projectId?: string;
 };
 
 function formatTime(dateStr: string) {
@@ -263,6 +274,24 @@ export default function ChatInterface({
   const [shareError, setShareError] = useState<string | null>(null);
   const [shareNotice, setShareNotice] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  // Progetti (organizzazione locale, come i Projects di Claude): filtro attivo,
+  // modale crea/modifica, form controllati.
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [projectModal, setProjectModal] = useState<{ mode: "create" } | { mode: "edit"; id: string } | null>(null);
+  const [projectFormName, setProjectFormName] = useState("");
+  const [projectFormInstructions, setProjectFormInstructions] = useState("");
+  const [projectFormAgents, setProjectFormAgents] = useState<string[]>([]);
+  const [projectDeleteArmed, setProjectDeleteArmed] = useState(false);
+  const projectsRef = useRef<Project[]>([]);
+  useEffect(() => {
+    projectsRef.current = projects;
+  }, [projects]);
+  // Solo client (localStorage): si legge al mount per non divergere dal server.
+  useEffect(() => {
+    setProjects(readProjects());
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, []);
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [agentSearch, setAgentSearch] = useState("");
@@ -733,6 +762,8 @@ export default function ChatInterface({
       messages: [],
       created_at: new Date().toISOString(),
       agentSlugs: [...next],
+      // Il fork resta nello stesso progetto della chat di origine.
+      projectId: activeConv?.projectId,
     };
     setConversations((prev) => [conv, ...prev]);
     setActiveId(conv.id);
@@ -1284,14 +1315,23 @@ export default function ChatInterface({
   function handleNewChat() {
     // Conserva la bozza della chat corrente prima di partire da una vuota.
     saveActiveDraft();
-    // Agente predefinito scelto nel pannello rapido (vuoto = chat generica).
-    const agentSlugs = defaultAgentSlug ? [defaultAgentSlug] : [];
+    // Dentro un progetto si ereditano i suoi agenti, altrimenti l'agente
+    // predefinito del pannello rapido (vuoto = chat generica).
+    const activeProject = selectedProjectId
+      ? projectsRef.current.find((p) => p.id === selectedProjectId)
+      : undefined;
+    const agentSlugs = activeProject
+      ? [...activeProject.agentSlugs]
+      : defaultAgentSlug
+        ? [defaultAgentSlug]
+        : [];
     const conv: LocalConversation = {
       id: generateId(),
       title: dict.chat.newChat,
       messages: [],
       created_at: new Date().toISOString(),
       agentSlugs,
+      projectId: selectedProjectId ?? undefined,
     };
     setConversations((prev) => [conv, ...prev]);
     setActiveId(conv.id);
@@ -1299,6 +1339,77 @@ export default function ChatInterface({
     setActiveAgentId(agentSlugs[0] ?? "");
     restoreDraft(conv.id);
     setMobileSidebarOpen(false);
+  }
+
+  // ── Progetti ─────────────────────────────────────────────────────────────
+  function updateProjects(next: Project[]) {
+    setProjects(next);
+    saveProjects(next);
+  }
+
+  function openProjectCreate() {
+    const activeProject = selectedProjectId
+      ? projectsRef.current.find((p) => p.id === selectedProjectId)
+      : undefined;
+    setProjectFormName("");
+    setProjectFormInstructions("");
+    // Nuovo progetto dal filtro attivo: propone gli stessi agenti.
+    setProjectFormAgents(activeProject ? [...activeProject.agentSlugs] : [...selectedAgentSlugs]);
+    setProjectDeleteArmed(false);
+    setProjectModal({ mode: "create" });
+  }
+
+  function openProjectEdit(id: string) {
+    const p = projectsRef.current.find((x) => x.id === id);
+    if (!p) return;
+    setProjectFormName(p.name);
+    setProjectFormInstructions(p.instructions ?? "");
+    setProjectFormAgents([...p.agentSlugs]);
+    setProjectDeleteArmed(false);
+    setProjectModal({ mode: "edit", id });
+  }
+
+  function saveProjectModal() {
+    if (!projectModal) return;
+    if (projectModal.mode === "create") {
+      const created = createProject(projectFormName, projectFormInstructions, projectFormAgents);
+      if (!created) return;
+      updateProjects([created, ...projectsRef.current]);
+      setSelectedProjectId(created.id);
+    } else {
+      const name = projectFormName.trim().slice(0, 80);
+      if (!name) return;
+      const now = new Date().toISOString();
+      updateProjects(
+        projectsRef.current.map((p) =>
+          p.id === projectModal.id
+            ? {
+                ...p,
+                name,
+                instructions: projectFormInstructions.trim()
+                  ? projectFormInstructions.trim().slice(0, 4000)
+                  : undefined,
+                agentSlugs: [...projectFormAgents],
+                updated_at: now,
+              }
+            : p,
+        ),
+      );
+    }
+    setProjectModal(null);
+  }
+
+  function deleteProject(id: string) {
+    updateProjects(projectsRef.current.filter((p) => p.id !== id));
+    // Le conversazioni restano, tornano senza progetto.
+    setConversations((prev) => prev.map((c) => (c.projectId === id ? { ...c, projectId: undefined } : c)));
+    if (selectedProjectId === id) setSelectedProjectId(null);
+    setProjectModal(null);
+  }
+
+  function moveConversationToProject(convId: string, projectId: string | undefined) {
+    setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, projectId } : c)));
+    setConversationMenuId(null);
   }
 
   // Azioni conversazione: chiamate dal menù "⋯" (il menù chiude se stesso).
@@ -1474,16 +1585,24 @@ export default function ChatInterface({
     pending: ChatAttachment[] = [],
     preAddedMsgId?: string,
   ) {
-    const apiText = composeUserContent(text, pending);
+    const baseText = composeUserContent(text, pending);
     const visionBlocks = toVisionBlocks(pending);
     const hasImages = visionBlocks.length > 0;
+    // Evita invio vuoto: serve testo o almeno un'immagine
+    if ((!baseText || !baseText.trim()) && visionBlocks.length === 0) return;
+    if (!convId) return;
+    // Istruzioni del progetto (solo API, mai salvate nei messaggi): il modello
+    // lavora sempre dentro il contesto del progetto della conversazione.
+    const convForSend = conversationsRef.current.find((c) => c.id === convId);
+    const projForSend = convForSend?.projectId
+      ? projectsRef.current.find((p) => p.id === convForSend.projectId)
+      : undefined;
+    const projBlock = projectContextBlock(projForSend);
+    const apiText = projBlock ? `${projBlock}\n\n${baseText}` : baseText;
     const visionText = buildVisionText(apiText, hasImages);
     const apiContent: unknown = hasImages
       ? ([{ type: "text" as const, text: visionText }, ...visionBlocks] as unknown)
       : apiText;
-    // Evita invio vuoto: serve testo o almeno un'immagine
-    if ((!apiText || !apiText.trim()) && visionBlocks.length === 0) return;
-    if (!convId) return;
     // Stessa conversazione già in generazione: rifiuta. La coda (Invio premuto
     // durante lo stream) è gestita in handleSend e riparte da qui a fine stream;
     // il ref evita lo stato React stale nelle chiamate in coda.
@@ -2205,6 +2324,60 @@ export default function ChatInterface({
           </button>
         </nav>
 
+        {/* Progetti: filtro + gestione (come i Projects di Claude) */}
+        <div data-onboard="projects" className="px-3 pb-1">
+          <div className="flex items-center justify-between px-3 py-2">
+            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+              {dict.chat.projects}
+            </p>
+            <button
+              onClick={openProjectCreate}
+              aria-label={dict.chat.newProject}
+              title={dict.chat.newProject}
+              className="flex items-center gap-1 text-[10px] font-bold text-neutral-500 hover:text-white transition-all"
+            >
+              <FolderPlus size={12} />
+              {dict.chat.newProject}
+            </button>
+          </div>
+          {projects.length === 0 ? null : (
+            <div className="space-y-0.5">
+              {projects.map((p) => {
+                const count = conversations.filter((c) => c.projectId === p.id && !c.deleted_at).length;
+                const selected = selectedProjectId === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    className={`group flex w-full items-center gap-1 rounded-lg px-1 py-0.5 text-left transition-all ${
+                      selected ? "bg-white/[0.06] border border-white/[0.08]" : "border border-transparent hover:bg-white/[0.03]"
+                    }`}
+                  >
+                    <button
+                      onClick={() => setSelectedProjectId(selected ? null : p.id)}
+                      aria-pressed={selected}
+                      className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5"
+                    >
+                      <Folder size={13} className={`shrink-0 ${selected ? "text-brand-400" : "text-neutral-500"}`} />
+                      <span className={`min-w-0 flex-1 truncate text-[13px] font-medium ${selected ? "text-white" : "text-neutral-400"}`}>
+                        {p.name}
+                      </span>
+                      <span className="shrink-0 text-[10px] font-bold text-neutral-600">{count}</span>
+                    </button>
+                    <button
+                      onClick={() => openProjectEdit(p.id)}
+                      aria-label={`${dict.chat.projectEdit}: ${p.name}`}
+                      title={`${dict.chat.projectEdit}: ${p.name}`}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-600 opacity-0 transition-all hover:bg-white/10 hover:text-white group-hover:opacity-100"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Conversations list */}
         <div data-onboard="conversations" className="flex-1 overflow-y-auto px-2.5 py-2 space-y-0.5">
           <div className="flex items-center justify-between px-3 py-2">
@@ -2218,13 +2391,13 @@ export default function ChatInterface({
               {showArchived ? dict.chat.activeTab : dict.chat.archived}
             </button>
           </div>
-          {conversations.filter((c) => showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at).length === 0 ? (
+          {conversations.filter((c) => (showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at) && (!selectedProjectId || c.projectId === selectedProjectId)).length === 0 ? (
             <p className="text-xs text-neutral-600 px-3 py-6 text-center">
               {showArchived ? dict.chat.noArchivedConversations : dict.chat.noConversations}
             </p>
           ) : (
             conversations
-              .filter((c) => showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at)
+              .filter((c) => (showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at) && (!selectedProjectId || c.projectId === selectedProjectId))
               .map((conv) => (
               <div
                 key={conv.id}
@@ -2323,6 +2496,38 @@ export default function ChatInterface({
                             <Share2 size={12} />
                             {dict.chat.shareConversation}
                           </button>
+                          {projects.length > 0 && (
+                            <>
+                              <div className="mx-2 my-1 border-t border-white/[0.06]" />
+                              <p className="px-2.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                                {dict.chat.moveToProject}
+                              </p>
+                              <div className="max-h-36 overflow-y-auto">
+                                {projects.map((p) => (
+                                  <button
+                                    key={p.id}
+                                    role="menuitem"
+                                    onClick={(e) => { e.stopPropagation(); moveConversationToProject(conv.id, conv.projectId === p.id ? undefined : p.id); }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-all"
+                                  >
+                                    <Folder size={12} className={conv.projectId === p.id ? "text-brand-400" : ""} />
+                                    <span className="min-w-0 flex-1 truncate text-left">{p.name}</span>
+                                    {conv.projectId === p.id && <Check size={12} className="shrink-0 text-emerald-400" />}
+                                  </button>
+                                ))}
+                              </div>
+                              {conv.projectId && (
+                                <button
+                                  role="menuitem"
+                                  onClick={(e) => { e.stopPropagation(); moveConversationToProject(conv.id, undefined); }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-all"
+                                >
+                                  <Folder size={12} />
+                                  {dict.chat.removeFromProject}
+                                </button>
+                              )}
+                            </>
+                          )}
                           <button
                             role="menuitem"
                             onClick={(e) => { e.stopPropagation(); handleDelete(conv.id); }}
@@ -2338,6 +2543,16 @@ export default function ChatInterface({
                 </div>
                 {conv.agentSlugs && conv.agentSlugs.length > 0 && (
                   <div className="ml-7 flex flex-wrap gap-1">
+                    {conv.projectId && (() => {
+                      const proj = projects.find((p) => p.id === conv.projectId);
+                      if (!proj) return null;
+                      return (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold text-neutral-300">
+                          <Folder size={8} />
+                          {proj.name}
+                        </span>
+                      );
+                    })()}
                     {conv.agentSlugs.map((slug) => {
                       const ag = agentsBySlug.get(slug);
                       return (
@@ -2511,6 +2726,30 @@ export default function ChatInterface({
             onTextSizeChange: handleChatTextSizeChange,
           }}
         />
+        {/* Titolo chat + agente a sinistra, condivisione a destra */}
+        <div className="flex shrink-0 items-center justify-between gap-2 px-4 pt-1 sm:px-6">
+          <div className={`flex min-w-0 items-center gap-2 ${!sidebarOpen ? "pl-10" : ""}`}>
+            <p className="truncate text-sm font-bold text-white">
+              {activeConv?.title ?? dict.chat.newChat}
+            </p>
+            {selectedAgents.length > 0 && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-500/10 px-2 py-0.5 text-[11px] font-bold text-brand-300">
+                <Bot size={10} />
+                {activeAgentDisplayName}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => activeId && openShare(activeId)}
+            disabled={!activeId || messages.length === 0}
+            aria-label={dict.chat.shareConversation}
+            title={dict.chat.shareConversation}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40"
+          >
+            <Share2 size={15} />
+          </button>
+        </div>
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
           {/* Trigger sidebar su mobile */}
           <button
@@ -2692,6 +2931,12 @@ export default function ChatInterface({
                     />
                     {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
                     <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+                      {selectedAgents.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-4 pt-2.5 text-xs font-bold text-neutral-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
+                          <span className="truncate">{activeAgentDisplayName}</span>
+                        </div>
+                      )}
                       <textarea
                         ref={inputRef}
                         value={input}
@@ -3023,7 +3268,7 @@ export default function ChatInterface({
         {/* Input in basso: fondo pieno con bordo superiore, niente trasparenza */}
         <div
           data-onboard="chat-input"
-          className="absolute inset-x-0 bottom-0 z-10 border-t border-white/5 bg-neutral-900 px-4 sm:px-6 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4"
+          className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent px-4 sm:px-6 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8"
           onDragEnter={attach.onDragEnter}
           onDragOver={attach.onDragOver}
           onDragLeave={attach.onDragLeave}
@@ -3120,6 +3365,12 @@ export default function ChatInterface({
               </div>
             )}
             <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+              {selectedAgents.length > 0 && (
+                <div className="flex items-center gap-1.5 px-4 pt-2.5 text-xs font-bold text-neutral-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
+                  <span className="truncate">{activeAgentDisplayName}</span>
+                </div>
+              )}
               <textarea
                 ref={inputRef}
                 value={input}
@@ -3271,6 +3522,110 @@ export default function ChatInterface({
           </div>
         );
       })()}
+      {/* Modale crea/modifica progetto */}
+      {projectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={dict.chat.projects}>
+          <button
+            type="button"
+            aria-label={dict.chat.close}
+            className="absolute inset-0 cursor-default bg-black/60"
+            onClick={() => setProjectModal(null)}
+          />
+          <div className="relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900 p-5 shadow-2xl shadow-black/60">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
+                <Folder size={16} />
+              </span>
+              <h2 className="text-sm font-bold text-white">
+                {projectModal.mode === "create" ? dict.chat.newProject : dict.chat.projectEdit}
+              </h2>
+            </div>
+            <label className="mt-4 block">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                {dict.chat.projectName}
+              </span>
+              <input
+                value={projectFormName}
+                onChange={(e) => setProjectFormName(e.target.value)}
+                placeholder={dict.chat.projectName}
+                maxLength={80}
+                className="w-full rounded-xl border border-white/10 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500"
+              />
+            </label>
+            <label className="mt-3 block">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                {dict.chat.projectInstructions}
+              </span>
+              <textarea
+                value={projectFormInstructions}
+                onChange={(e) => setProjectFormInstructions(e.target.value)}
+                placeholder={dict.chat.projectInstructionsHint}
+                rows={3}
+                maxLength={4000}
+                className="w-full resize-y rounded-xl border border-white/10 bg-neutral-800 px-3 py-2 text-sm leading-relaxed text-white placeholder-neutral-500 outline-none focus:border-brand-500"
+              />
+            </label>
+            {selectableAgents.length > 0 && (
+              <div className="mt-3">
+                <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                  {dict.chat.projectAgentsHint}
+                </p>
+                <div className="max-h-36 space-y-0.5 overflow-y-auto rounded-xl border border-white/10 bg-neutral-800/50 p-1">
+                  {selectableAgents.map((a) => {
+                    const on = projectFormAgents.includes(a.slug);
+                    const full = agentsBySlug.get(a.slug);
+                    return (
+                      <button
+                        key={a.slug}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setProjectFormAgents((prev) => (on ? prev.filter((s) => s !== a.slug) : [...prev, a.slug]))}
+                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-bold transition-all ${on ? "bg-white/10 text-white" : "text-neutral-400 hover:bg-white/5 hover:text-white"}`}
+                      >
+                        {full ? <AgentAvatar agent={full} size="sm" /> : <Bot size={12} />}
+                        <span className="min-w-0 flex-1 truncate">{a.name}</span>
+                        {on && <Check size={12} className="shrink-0 text-emerald-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={!projectFormName.trim()}
+                onClick={saveProjectModal}
+                className="flex-1 rounded-full bg-brand-500 px-3 py-2.5 text-sm font-bold text-white hover:bg-brand-400 transition-all disabled:opacity-50"
+              >
+                {projectModal.mode === "create" ? dict.chat.projectCreate : dict.chat.projectSave}
+              </button>
+              <button
+                type="button"
+                onClick={() => setProjectModal(null)}
+                className="rounded-full px-3 py-2 text-xs font-bold text-neutral-400 hover:text-white transition-all"
+              >
+                {dict.chat.close}
+              </button>
+            </div>
+            {projectModal.mode === "edit" && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!projectDeleteArmed) {
+                    setProjectDeleteArmed(true);
+                    return;
+                  }
+                  deleteProject(projectModal.id);
+                }}
+                className={`mt-2 w-full rounded-full px-3 py-2 text-xs font-bold transition-all ${projectDeleteArmed ? "bg-red-500 text-white hover:bg-red-400" : "text-red-400 hover:bg-red-500/15"}`}
+              >
+                {projectDeleteArmed ? dict.chat.projectConfirmDelete : dict.chat.projectDelete}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {paywallSlug && (
         <SubscribePaywallModal
           open={!!paywallSlug}

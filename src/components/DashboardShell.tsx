@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X, ChevronDown, Sparkles, Blocks } from "lucide-react";
 import { usePathname } from "next/navigation";
 import SidebarAccount from "./SidebarAccount";
 import type { AccountIdentity } from "@/lib/account-identity";
@@ -49,11 +49,21 @@ export default function DashboardShell({
     { href: "/dashboard", label: ds.navDashboard, icon: LayoutDashboard },
     { href: "/chat", label: ds.navChat, icon: MessageSquare },
     { href: "/agents", label: ds.navMarketplace, icon: Store },
-    { href: "/dashboard/integrations", label: ds.navIntegrations, icon: Plug },
     { href: "/cart", label: ds.navCart, icon: ShoppingCart },
     { href: "/dashboard/subscriptions", label: ds.navSubscriptions, icon: CreditCard },
     { href: "/account", label: ds.navAccount, icon: User },
   ];
+  // Gruppo Personalizzazione (come Claude): integrazioni, competenze e plugin
+  // sotto un'unica voce espandibile, aperta quando una pagina figlia è attiva.
+  const personalization = [
+    { href: "/dashboard/integrations", label: ds.navIntegrations, icon: Plug },
+    { href: "/skills", label: ds.navSkills, icon: Sparkles },
+    { href: "/plugins", label: ds.navPlugins, icon: Blocks },
+  ];
+  const [personalizationOpen, setPersonalizationOpen] = useState(false);
+  const personalizationActive = personalization.some(
+    ({ href }) => pathname === href || pathname.startsWith(href + "/"),
+  );
   return (
     <div className="flex h-dvh bg-neutral-950">
       {showOnboarding && (
@@ -107,6 +117,46 @@ export default function DashboardShell({
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setPersonalizationOpen((v) => !v)}
+            aria-expanded={personalizationOpen || personalizationActive}
+            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
+              personalizationActive
+                ? "bg-white/[0.06] text-white border border-white/[0.08]"
+                : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
+            }`}
+          >
+            <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+              personalizationActive ? "bg-brand-500/15" : "bg-white/5"
+            }`}>
+              <Sparkles size={14} className={personalizationActive ? "text-brand-400" : ""} />
+            </div>
+            <span className="flex-1 text-left">{ds.navPersonalization}</span>
+            <ChevronDown size={14} className={`transition-transform duration-200 ${(personalizationOpen || personalizationActive) ? "rotate-180" : ""}`} />
+          </button>
+          {(personalizationOpen || personalizationActive) && (
+            <div className="ml-5 space-y-0.5 border-l border-white/[0.06] pl-2">
+              {personalization.map(({ href, label, icon: Icon }) => {
+                const active = pathname === href || pathname.startsWith(href + "/");
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+                      active
+                        ? "bg-white/[0.06] text-white border border-white/[0.08]"
+                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
+                    }`}
+                  >
+                    <Icon size={14} className={active ? "text-brand-400" : ""} />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </nav>
         {/* Account */}
         <div data-onboard="dashboard-account" className="p-3 border-t border-white/[0.06]">
