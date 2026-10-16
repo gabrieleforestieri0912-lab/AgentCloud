@@ -29,11 +29,25 @@ import {
 import { buildVisionText, composeUserContent, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import { AGENTS } from "@/lib/agents";
-import { INTEGRATIONS } from "@/lib/integrations";
+import { BRAND_TO_PROVIDER, INTEGRATIONS } from "@/lib/integrations";
+import { IMPLEMENTED_PROVIDERS } from "@/lib/integrations/catalog";
 
-// Numeri mostrati nel badge della hero: derivati dai cataloghi reali così non
-// restano indietro quando un agente o un'integrazione vengono aggiunti.
-const LIVE_INTEGRATIONS = INTEGRATIONS.filter((i) => i.available).length;
+// Numero nel badge della hero: SOLO integrazioni davvero collegabili, cioè
+// flag UI `available` + backend implementato (adapter + proxy + tool).
+// Le voci "Prossimamente" restano fuori anche se qualcuno accendesse
+// `available` senza backend. Gmail/Calendar usano il flusso Google legacy
+// (fuori catalogo) e sono funzionanti, quindi contano.
+const LEGACY_GOOGLE_BRANDS: ReadonlySet<string> = new Set([
+  "gmail",
+  "googlecalendar",
+]);
+const IMPLEMENTED = IMPLEMENTED_PROVIDERS as readonly string[];
+const LIVE_INTEGRATIONS = INTEGRATIONS.filter((i) => {
+  if (!i.available) return false;
+  const provider = BRAND_TO_PROVIDER[i.brand];
+  if (provider) return IMPLEMENTED.includes(provider);
+  return LEGACY_GOOGLE_BRANDS.has(i.brand);
+}).length;
 
 // La conversazione dell'hero viene salvata qui così la pagina chat completa
 // (/chat) la riprende in automatico come conversazione salvata.
@@ -538,6 +552,24 @@ export default function HeroSection() {
             {dict.hero.subtitle}
           </motion.p>
 
+          {/* Nota piano gratuito: 5 messaggi/giorno in totale — esplicita per i nuovi utenti. */}
+          <motion.div
+            className="mx-auto mt-5 flex justify-center"
+            variants={{
+              hidden: { opacity: 0, y: 16 },
+              visible: {
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+              },
+            }}
+          >
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 text-[13px] sm:text-sm font-bold text-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.15)]">
+              <span aria-hidden="true">🎁</span>
+              {dict.hero.freeTrialNote}
+            </span>
+          </motion.div>
+
 
 
           {/* ── Inline Mini-Chat Box ── */}
@@ -814,6 +846,11 @@ export default function HeroSection() {
                 </div>
               </div>
             </div>
+
+            {/* Promemoria sotto la chat: ribadisce il budget gratuito giornaliero totale. */}
+            <p className="mt-3 text-center text-xs sm:text-[13px] font-semibold text-neutral-400">
+              {dict.hero.freeTrialCaption}
+            </p>
 
             {/* ── CTA apri chat completa ── */}
             {hasMessages && (
