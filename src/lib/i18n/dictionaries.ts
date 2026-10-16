@@ -83,7 +83,7 @@ const it = {
       "Impossibile contattare il backend AI. Riprova più tardi.",
     internalServerError: "Errore interno del server",
     freeLimitReached:
-      "Hai usato i 5 messaggi gratuiti di oggi (tutti gli agenti sommati). Si azzerano a mezzanotte — oppure abbonati per conversazioni illimitate.",
+      "Hai usato i 5 messaggi gratuiti di oggi. Ricorda: sono 5 in totale al giorno su tutti gli agenti — non 5 per agente. Si ricaricano a mezzanotte, oppure abbonati per conversazioni illimitate.",
   },
 
   navbar: {
@@ -603,7 +603,7 @@ stillQuestions: "Hai ancora domande?",
       },
       {
         q: "Cosa significano i “5 messaggi gratis al giorno”?",
-        a: "Hai 5 messaggi gratuiti al giorno in totale, sommati su tutti gli agenti, senza impegno: il contatore si azzera a mezzanotte. Per conversazioni illimitate puoi sbloccarle con l’abbonamento (€4,99–€9,99 al mese).",
+        a: "Ogni giorno hai 5 messaggi gratuiti da usare come vuoi, su qualsiasi agente: il contatore è unico e condiviso tra tutti gli agenti — non sono 5 per agente. Si azzera ogni notte a mezzanotte, senza carta di credito. Se ti servono conversazioni illimitate, puoi sbloccarle con l'abbonamento (€4,99–€9,99 al mese).",
       },
       {
         q: "I miei dati sono al sicuro?",
@@ -752,7 +752,7 @@ chat: {
     newChat: "Nuova chat",
     assistantName: "Assistente personale",
     multiAgents: "{count} agenti",
-    dailyLimit: "{remaining}/{limit} messaggi gratuiti · nuovi messaggi alle {time}",
+    dailyLimit: "{remaining}/{limit} gratuiti rimasti oggi · nuovi messaggi alle {time}",
     searchAgents: "Cerca agenti...",
     connectTitle: "Connetti {provider}",
     connectRequested: "Richiesto",
@@ -2198,10 +2198,10 @@ reasons: [
   },
   paywallModal: {
     title: "Hai raggiunto il limite gratuito",
-    description: "Hai usato i 5 messaggi gratuiti di oggi per {agent}. Si resettano a mezzanotte — oppure abbonati per conversazioni illimitate e tutte le funzionalità.",
+    description: "Hai esaurito i 5 messaggi gratuiti di oggi, inclusi quelli con {agent}. Sono 5 in totale al giorno su tutti gli agenti — non 5 per agente — e si ricaricano a mezzanotte. Oppure abbonati per conversazioni illimitate e tutte le funzionalità.",
     subscribe: "Abbonati ora",
     viewPlans: "Vedi piani",
-    remaining: "{count}/5 messaggi gratuiti di oggi usati",
+    remaining: "{count}/5 messaggi gratuiti di oggi usati (in totale)",
     limitReached: "Limite gratuito raggiunto",
   },
   countdownTimer: {
@@ -2479,7 +2479,7 @@ export const en: Dictionary = {
     aiConnectionFailed:
       "Could not reach the AI backend. Please try again later.",
     internalServerError: "Internal server error",
-    freeLimitReached: "You have used today's 5 free messages (all agents combined). They reset at midnight — or subscribe for unlimited conversations.",
+    freeLimitReached: "You've used today's 5 free messages. Remember: it's 5 per day in total across all agents — not 5 per agent. They refill at midnight, or subscribe for unlimited conversations.",
   },
 
   navbar: {
@@ -2991,7 +2991,7 @@ stillQuestions: "Still have questions?",
       },
       {
         q: "What do the “5 free messages a day” mean?",
-        a: "You get 5 free messages a day in total, summed across all agents, no commitment: the counter resets at midnight. For unlimited conversations you can unlock them with a subscription (€4.99–€9.99 per month).",
+        a: "Every day you get 5 free messages to use as you like, on any agent: the counter is shared across all agents — it's not 5 per agent. It resets every night at midnight, no credit card needed. If you need unlimited conversations, unlock them with a subscription (€4.99–€9.99 per month).",
       },
       {
         q: "Is my data safe?",
@@ -3119,7 +3119,7 @@ chat: {
     newChat: "New Chat",
     assistantName: "Personal assistant",
     multiAgents: "{count} agents",
-    dailyLimit: "{remaining}/{limit} free messages · new messages at {time}",
+    dailyLimit: "{remaining}/{limit} free left today · new messages at {time}",
     searchAgents: "Search agents...",
     connectTitle: "Connect {provider}",
     connectRequested: "Requested",
@@ -4563,10 +4563,10 @@ chat: {
   },
   paywallModal: {
     title: "Free limit reached",
-    description: "You have used today's 5 free messages for {agent}. They reset at midnight — or subscribe for unlimited conversations and all features.",
+    description: "You've used up today's 5 free messages, including those with {agent}. It's 5 per day in total across all agents — not 5 per agent — and they refill at midnight. Or subscribe for unlimited conversations and all features.",
     subscribe: "Subscribe now",
     viewPlans: "View plans",
-    remaining: "{count}/5 free messages used today",
+    remaining: "{count}/5 of today's free messages used (total)",
     limitReached: "Free limit reached",
   },
   countdownTimer: {
@@ -4841,7 +4841,7 @@ export const es: Dictionary = {
     aiConnectionFailed:
       "No se pudo contactar con el backend de IA. Inténtalo más tarde.",
     internalServerError: "Error interno del servidor",
-    freeLimitReached: "Has usado los 5 mensajes gratuitos de hoy (todos los agentes). Se restablecen a medianoche — o suscríbete para conversaciones ilimitadas.",
+    freeLimitReached: "Has usado los 5 mensajes gratuitos de hoy. Recuerda: son 5 al día en total entre todos los agentes — no 5 por agente. Se recargan a medianoche, o suscríbete para conversaciones ilimitadas.",
   },
 
   navbar: {
@@ -5353,7 +5353,7 @@ stillQuestions: "¿Aún tienes preguntas?",
       },
       {
         q: "¿Qué significan los «5 mensajes gratis al día»?",
-        a: "Tienes 5 mensajes gratis al día en total, sumados entre todos los agentes, sin compromiso: el contador se reinicia a medianoche. Para conversaciones ilimitadas puedes desbloquearlas con una suscripción (4,99 €–9,99 € al mes).",
+        a: "Cada día tienes 5 mensajes gratis para usar como quieras, en cualquier agente: el contador es único y compartido entre todos los agentes — no son 5 por agente. Se reinicia cada noche a medianoche, sin tarjeta. Si necesitas conversaciones ilimitadas, desbloquéalas con una suscripción (4,99 €–9,99 € al mes).",
       },
       {
         q: "¿Mis datos están seguros?",
@@ -5481,7 +5481,7 @@ chat: {
     newChat: "Nueva chat",
     assistantName: "Asistente personal",
     multiAgents: "{count} agentes",
-    dailyLimit: "{remaining}/{limit} mensajes gratuitos · nuevos mensajes a las {time}",
+    dailyLimit: "{remaining}/{limit} gratis restantes hoy · nuevos mensajes a las {time}",
     searchAgents: "Buscar agentes...",
     connectTitle: "Conectar {provider}",
     connectRequested: "Solicitado",
@@ -6922,10 +6922,10 @@ agentsPage: {
   },
   paywallModal: {
     title: "Limite gratuito alcanzado",
-    description: "Has usado los 5 mensajes gratuitos de hoy para {agent}. Se restablecen a medianoche — o suscríbete para conversaciones ilimitadas y todas las funciones.",
+    description: "Has agotado los 5 mensajes gratuitos de hoy, incluidos los de {agent}. Son 5 al día en total entre todos los agentes — no 5 por agente — y se recargan a medianoche. O suscríbete para conversaciones ilimitadas y todas las funciones.",
     subscribe: "Suscribirse ahora",
     viewPlans: "Ver planes",
-    remaining: "{count}/5 mensajes gratuitos de hoy usados",
+    remaining: "{count}/5 mensajes gratuitos de hoy usados (en total)",
     limitReached: "Limite gratuito alcanzado",
   },
   countdownTimer: {
@@ -7200,7 +7200,7 @@ export const de: Dictionary = {
     aiConnectionFailed:
       "KI-Backend nicht erreichbar. Bitte versuche es später erneut.",
     internalServerError: "Interner Serverfehler",
-    freeLimitReached: "Du hast die 5 kostenlosen Nachrichten von heute verbraucht (alle Agenten zusammen). Sie werden um Mitternacht zurückgesetzt — oder abonniere für unbegrenzte Gespräche.",
+    freeLimitReached: "Du hast die 5 kostenlosen Nachrichten von heute verbraucht. Denk dran: Es sind insgesamt 5 pro Tag für alle Agenten zusammen — nicht 5 pro Agent. Um Mitternacht gibt es neue, oder abonniere für unbegrenzte Gespräche.",
   },
 
   navbar: {
@@ -7712,7 +7712,7 @@ browseMarketplace: "Marktplatz durchsuchen",
       },
       {
         q: "Was bedeuten „5 Gratis-Nachrichten pro Tag“?",
-        a: "Du hast 5 Gratis-Nachrichten pro Tag insgesamt, summiert über alle Agenten, unverbindlich: Der Zähler wird um Mitternacht zurückgesetzt. Für unbegrenzte Unterhaltungen kannst du sie mit einem Abo freischalten (4,99 €–9,99 € pro Monat).",
+        a: "Jeden Tag hast du 5 kostenlose Nachrichten, die du beliebig auf alle Agenten verteilen kannst: Der Zähler gilt für alle Agenten zusammen — nicht 5 pro Agent. Er wird jede Nacht um Mitternacht zurückgesetzt, keine Kreditkarte nötig. Für unbegrenzte Gespräche gibt es das Abo (4,99 €–9,99 € pro Monat).",
       },
       {
         q: "Sind meine Daten sicher?",
@@ -7840,7 +7840,7 @@ chat: {
     newChat: "Neuer Chat",
     assistantName: "Persönlicher Assistent",
     multiAgents: "{count} Agenten",
-    dailyLimit: "{remaining}/{limit} kostenlose Nachrichten · neue Nachrichten um {time}",
+    dailyLimit: "{remaining}/{limit} heute noch gratis · neue Nachrichten um {time}",
     searchAgents: "Agenten suchen...",
     connectTitle: "{provider} verbinden",
     connectRequested: "Angefordert",
@@ -9281,10 +9281,10 @@ chat: {
   },
   paywallModal: {
     title: "Kostenloses Limit erreicht",
-    description: "Du hast die 5 kostenlosen Nachrichten von heute für {agent} verbraucht. Sie werden um Mitternacht zurückgesetzt — oder abonniere für unbegrenzte Gespräche und alle Funktionen.",
+    description: "Du hast die 5 kostenlosen Nachrichten von heute aufgebraucht, einschließlich derer mit {agent}. Es sind insgesamt 5 pro Tag für alle Agenten — nicht 5 pro Agent — und um Mitternacht gibt es neue. Oder abonniere für unbegrenzte Gespräche und alle Funktionen.",
     subscribe: "Jetzt abonnieren",
     viewPlans: "Plane ansehen",
-    remaining: "{count}/5 kostenlose Nachrichten von heute verwendet",
+    remaining: "{count}/5 kostenlose Nachrichten von heute verwendet (insgesamt)",
     limitReached: "Kostenloses Limit erreicht",
   },
   countdownTimer: {
@@ -9559,7 +9559,7 @@ export const fr: Dictionary = {
     aiConnectionFailed:
       "Impossible de joindre le backend IA. Réessayez plus tard.",
     internalServerError: "Erreur interne du serveur",
-    freeLimitReached: "Vous avez utilisé les 5 messages gratuits du jour (tous agents confondus). Ils se réinitialisent à minuit — ou abonnez-vous pour des conversations illimitées.",
+    freeLimitReached: "Vous avez utilisé les 5 messages gratuits du jour. Rappel : c'est 5 par jour au total pour tous les agents — pas 5 par agent. Ils se rechargent à minuit, ou abonnez-vous pour des conversations illimitées.",
   },
 
   navbar: {
@@ -10071,7 +10071,7 @@ browseMarketplace: "Parcourir la marketplace",
       },
       {
         q: "Que signifient les « 5 messages gratuits par jour » ?",
-        a: "Vous avez 5 messages gratuits par jour au total, cumulés sur tous les agents, sans engagement : le compteur se réinitialise à minuit. Pour des conversations illimitées, vous pouvez les débloquer avec un abonnement (4,99 €–9,99 € par mois).",
+        a: "Chaque jour, vous avez 5 messages gratuits à utiliser comme vous voulez, sur n'importe quel agent : le compteur est unique et partagé entre tous les agents — ce n'est pas 5 par agent. Il se réinitialise chaque nuit à minuit, sans carte bancaire. Pour des conversations illimitées, débloquez-les avec un abonnement (4,99 €–9,99 € par mois).",
       },
       {
         q: "Mes données sont-elles en sécurité ?",
@@ -10199,7 +10199,7 @@ browseMarketplace: "Parcourir la marketplace",
     },
     assistantName: "Assistant personnel",
     multiAgents: "{count} agents",
-    dailyLimit: "{remaining}/{limit} messages gratuits · nouveaux messages à {time}",
+    dailyLimit: "{remaining}/{limit} gratuits restants aujourd'hui · nouveaux messages à {time}",
     searchAgents: "Rechercher des agents...",
     connectTitle: "Connecter {provider}",
     connectRequested: "Demandé",
@@ -11640,10 +11640,10 @@ browseMarketplace: "Parcourir la marketplace",
   },
   paywallModal: {
     title: "Limite gratuite atteinte",
-    description: "Vous avez utilisé les 5 messages gratuits du jour pour {agent}. Ils se réinitialisent à minuit — ou abonnez-vous pour des conversations illimitées et toutes les fonctionnalités.",
+    description: "Vous avez épuisé les 5 messages gratuits du jour, y compris ceux avec {agent}. C'est 5 par jour au total pour tous les agents — pas 5 par agent — et ils se rechargent à minuit. Ou abonnez-vous pour des conversations illimitées et toutes les fonctionnalités.",
     subscribe: "S'abonner maintenant",
     viewPlans: "Voir les offres",
-    remaining: "{count}/5 messages gratuits du jour utilisés",
+    remaining: "{count}/5 messages gratuits du jour utilisés (au total)",
     limitReached: "Limite gratuite atteinte",
   },
   countdownTimer: {
