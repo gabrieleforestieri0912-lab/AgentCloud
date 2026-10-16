@@ -36,6 +36,7 @@ import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 import NotificationBell from "./NotificationBell";
 import { useCart } from "./CartProvider";
+import CartPreview from "./CartPreview";
 
 type MenuKey = "marketplace" | "solutions" | "integrations" | "pricing";
 
@@ -141,6 +142,8 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     : "AD";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const [cartMenuOpen, setCartMenuOpen] = useState(false);
+  const cartMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!userMenuOpen) return;
     const onClick = (e: MouseEvent) => {
@@ -150,6 +153,22 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [userMenuOpen]);
+  useEffect(() => {
+    if (!cartMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (cartMenuRef.current && !cartMenuRef.current.contains(e.target as Node))
+        setCartMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCartMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [cartMenuOpen]);
 
   async function handleSignOut() {
     try { await createClient().auth.signOut(); } catch {}
@@ -435,18 +454,27 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                     <MessageSquare size={14} />
                     {dict.chat.aiChat}
                   </Link>
-                  <Link
-                    href="/cart"
-                    aria-label={dict.navbar.ariaCart}
-                    className="relative flex h-11 w-11 lg:h-8 lg:w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white"
-                  >
-                    <ShoppingCart size={18} strokeWidth={1.75} />
-                    {cartCount > 0 && (
-                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
-                        {cartCount}
-                      </span>
+                  <div ref={cartMenuRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setCartMenuOpen((v) => !v)}
+                      aria-label={dict.navbar.ariaCart}
+                      aria-expanded={cartMenuOpen}
+                      className="relative flex h-11 w-11 lg:h-8 lg:w-8 items-center justify-center text-neutral-400 transition-colors hover:text-white"
+                    >
+                      <ShoppingCart size={18} strokeWidth={1.75} />
+                      {cartCount > 0 && (
+                        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
+                          {cartCount}
+                        </span>
+                      )}
+                    </button>
+                    {cartMenuOpen && (
+                      <div className="absolute right-0 top-full z-50 mt-2 w-80">
+                        <CartPreview onNavigate={() => setCartMenuOpen(false)} />
+                      </div>
                     )}
-                  </Link>
+                  </div>
                   <NotificationBell />
                   <div ref={userMenuRef} className="relative">
                     <button
