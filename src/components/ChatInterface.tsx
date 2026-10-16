@@ -58,6 +58,7 @@ import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
 import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import InlineConnectCard from "@/components/InlineConnectCard";
+import InlineCartCard from "@/components/InlineCartCard";
 import ChatOnboarding from "./ChatOnboarding";
 import {
   AttachPlusButton,
@@ -181,6 +182,48 @@ function stripConnectMarkers(text: string): string {
   return text
     .replace(/\[\[CONNECT:[a-zA-Z0-9_\-]+\]\]/g, "")
     .replace(/\{"type":"connection_required"[^}]+\}/g, "")
+    .trim();
+}
+
+function extractCartSlugs(text: string): string[] {
+  const slugs: string[] = [];
+  const markerRe = /\[\[CART:([a-zA-Z0-9_\-]+)\]\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = markerRe.exec(text)) !== null) {
+    if (m[1] && !slugs.includes(m[1].toLowerCase())) slugs.push(m[1].toLowerCase());
+  }
+  const jsonRe = /"type"\s*:\s*"cart_added"[^}]*"agent_slug"\s*:\s*"([^"]+)"/g;
+  while ((m = jsonRe.exec(text)) !== null) {
+    if (m[1] && !slugs.includes(m[1].toLowerCase())) slugs.push(m[1].toLowerCase());
+  }
+  return slugs;
+}
+
+function stripCartMarkers(text: string): string {
+  return text
+    .replace(/\[\[CART:[a-zA-Z0-9_\-]+\]\]/g, "")
+    .replace(/\{"type":"cart_added"[^}]+\}/g, "")
+    .trim();
+}
+
+function extractDisconnectedProviders(text: string): string[] {
+  const providers: string[] = [];
+  const markerRe = /\[\[DISCONNECTED:([a-zA-Z0-9_\-]+)\]\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = markerRe.exec(text)) !== null) {
+    if (m[1] && !providers.includes(m[1].toLowerCase())) providers.push(m[1].toLowerCase());
+  }
+  const jsonRe = /"type"\s*:\s*"integration_disconnected"[^}]*"provider"\s*:\s*"([^"]+)"/g;
+  while ((m = jsonRe.exec(text)) !== null) {
+    if (m[1] && !providers.includes(m[1].toLowerCase())) providers.push(m[1].toLowerCase());
+  }
+  return providers;
+}
+
+function stripDisconnectedMarkers(text: string): string {
+  return text
+    .replace(/\[\[DISCONNECTED:[a-zA-Z0-9_\-]+\]\]/g, "")
+    .replace(/\{"type":"integration_disconnected"[^}]+\}/g, "")
     .trim();
 }
 
@@ -619,12 +662,6 @@ export default function ChatInterface({
   // degli utenti normali, con cronologia)
   const effectiveAvailableAgents = useMemo(() => {
     if (availableAgents.length > 0) return availableAgents;
-    if (false) {
-      return Object.keys(AGENT_RUNTIME).map((slug) => ({
-        slug,
-        name: AGENT_RUNTIME[slug]?.name ?? slug,
-      }));
-    }
     return [];
   }, [availableAgents]);
 
@@ -1959,6 +1996,34 @@ export default function ChatInterface({
                     patchSteps(assistantId, (steps) => [...steps, createConnectionStep(prov)]);
                   }
                 }
+                if ((json as unknown as { type?: string; agent_slug?: string }).type === "cart_updated" && typeof (json as unknown as { agent_slug?: string }).agent_slug === "string") {
+                  const slug = (json as unknown as { agent_slug: string }).agent_slug;
+                  const marker = `[[CART:${slug}]]`;
+                  if (!localText.includes(marker)) {
+                    localText += (localText ? "\n\n" : "") + marker;
+                    responseText += marker;
+                    ensureAssistant();
+                    scheduleText();
+                    convActivityProduced = true;
+                  }
+                  // Aggiorna badge/contatore carrello ovunque (navbar, provider).
+                  try {
+                    window.dispatchEvent(new CustomEvent("cart:updated"));
+                  } catch {
+                    // non-fatal (SSR/test)
+                  }
+                }
+                if ((json as unknown as { type?: string; provider?: string }).type === "integration_disconnected" && typeof (json as unknown as { provider?: string }).provider === "string") {
+                  const prov = (json as unknown as { provider: string }).provider;
+                  const marker = `[[DISCONNECTED:${prov}]]`;
+                  if (!localText.includes(marker)) {
+                    localText += (localText ? "\n\n" : "") + marker;
+                    responseText += marker;
+                    ensureAssistant();
+                    scheduleText();
+                    convActivityProduced = true;
+                  }
+                }
                 if (json.type === "error") {
                   streamErrorMessage =
                     typeof json.message === "string" && json.message.trim() ? json.message : null;
@@ -2712,7 +2777,7 @@ export default function ChatInterface({
         {/* Header trasparente sopra i messaggi: titolo + agente a sinistra,
             condivisione e dashboard a destra */}
         <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-b from-neutral-900 via-neutral-900/70 to-transparent px-4 pb-5 pt-2 sm:px-6">
-          <div className={`flex min-w-0 items-center gap-2 ${!sidebarOpen ? "pl-10" : ""}`}>
+          <div className={`flex min-w-0 items-center gap-2 ${!sidebarOpen ? "pl-44" : ""}`}>
             <p className="truncate text-sm font-bold text-white">
               {activeConv?.title ?? dict.chat.newChat}
             </p>
@@ -2759,14 +2824,24 @@ export default function ChatInterface({
               solo `setSidebarOpen(false)`).(hidden sotto lg: il mobile usa il
               drawer e il FAB sopra) */}
           {!sidebarOpen && (
-            <button
-              onClick={() => setSidebar(true)}
-              aria-label={dict.chat.openSidebar}
-              title={`${dict.chat.openSidebar} (Ctrl+B)`}
-              className="hidden lg:flex absolute left-3 top-3 z-10 w-9 h-9 items-center justify-center rounded-full text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
-            >
-              <PanelLeftOpen size={16} />
-            </button>
+            <div className="hidden lg:flex absolute left-3 top-3 z-10 items-center gap-2">
+              <Image
+                src="/agentcloud.png"
+                alt="AgentCloud"
+                width={28}
+                height={28}
+                className="h-7 w-7"
+              />
+              <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
+              <button
+                onClick={() => setSidebar(true)}
+                aria-label={dict.chat.openSidebar}
+                title={`${dict.chat.openSidebar} (Ctrl+B)`}
+                className="flex w-9 h-9 items-center justify-center rounded-full text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
+              >
+                <PanelLeftOpen size={16} />
+              </button>
+            </div>
           )}
 
           {/* Area chat principale */}
@@ -3119,7 +3194,9 @@ export default function ChatInterface({
                     {msg.role === "assistant" ? (
                       (() => {
                         const providers = extractConnectProviders(msg.content);
-                        const cleanText = stripConnectMarkers(msg.content);
+                        const cartSlugs = extractCartSlugs(msg.content);
+                        const disconnected = extractDisconnectedProviders(msg.content);
+                        const cleanText = stripDisconnectedMarkers(stripCartMarkers(stripConnectMarkers(msg.content)));
                         // I blocchi <agentcloud_file> non si vedono mai come testo:
                         // il parser li estrae e al loro posto finisce la card.
                         const isLiveFileMessage =
@@ -3163,6 +3240,15 @@ export default function ChatInterface({
                             {cardProvider && (
                               <InlineConnectCard provider={cardProvider} />
                             )}
+                            {cartSlugs.map((slug) => (
+                              <InlineCartCard key={slug} slug={slug} />
+                            ))}
+                            {disconnected.map((prov) => (
+                              <p key={prov} className="my-2 inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-400">
+                                <Plug size={12} aria-hidden className="text-neutral-500" />
+                                {prov} disconnesso — l&apos;agente non vi accede più.
+                              </p>
+                            ))}
                             {msgFiles.map((record) => (
                               <FileCard
                                 key={record.slug}

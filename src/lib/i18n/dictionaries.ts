@@ -230,6 +230,8 @@ const it = {
     badge: "{count} agenti pronti all’uso • {n} integrazioni",
     demoRemaining: "{remaining} / {limit} messaggi demo rimasti",
     demoLimitReached: "Limite demo raggiunto — accedi per continuare",
+    freeTrialNote: "5 messaggi gratuiti al giorno — in totale su tutti gli agenti",
+    freeTrialCaption: "Senza carta • si ricaricano ogni giorno a mezzanotte • poi illimitati con l'abbonamento",
   },
 
 howItWorks: {
@@ -250,7 +252,7 @@ howItWorks: {
       },
       {
         title: "L’agente lavora per te",
-        desc: "Chiedi in chat e l’agente esegue: cerca prodotti, crea link al carrello, prenota appuntamenti, invia email. Provalo gratis con 5 messaggi al giorno.",
+        desc: "Chiedi in chat e l’agente esegue: cerca prodotti, crea link al carrello, prenota appuntamenti, invia email. Provalo gratis con 5 messaggi al giorno in totale su tutti gli agenti.",
       },
       {
         title: "Gestisci tutto da un posto",
@@ -266,6 +268,58 @@ howItWorks: {
     demoAgentReady: "Pronto oggi",
     demoConnected: "Negozio Shopify collegato",
     demoResult: "Link carrello pronto → invia al cliente",
+  },
+
+  features: {
+    badge: "Funzionalità",
+    titleA: "Tutto quello che serve",
+    titleB: "per delegare davvero",
+    subtitle:
+      "Quattro pilastri, un'unica piattaforma: scegli l'agente, collega i tuoi strumenti e lavora in chat.",
+    showDetails: "Vedi dettagli",
+    hideDetails: "Nascondi dettagli",
+    items: [
+      {
+        title: "Agenti AI pronti all'uso",
+        desc: "15 agenti in 6 categorie: E-commerce, Marketing, Customer Service, Business Ops, Design e Finanza. Attivazione in giornata, prezzi chiari.",
+        details: [
+          "Catalogo con prezzi e casi d'uso per ogni agente",
+          "Prova gratuita con 5 messaggi al giorno in totale",
+          "Abbonamento mensile, disdici quando vuoi",
+        ],
+        cta: "Sfoglia gli agenti",
+      },
+      {
+        title: "Integrazioni in 2 click",
+        desc: "Shopify, Gmail, Calendar, Slack, HubSpot e altri: colleghi i tuoi strumenti senza copiare chiavi né configurare nulla.",
+        details: [
+          "Accesso sicuro con token cifrati",
+          "Stato delle connessioni visibile in dashboard",
+          "Nuove integrazioni aggiunte di continuo",
+        ],
+        cta: "Vedi le integrazioni",
+      },
+      {
+        title: "Chat che esegue davvero",
+        desc: "Non solo risposte: l'agente cerca prodotti, crea link carrello, prenota appuntamenti, invia email e genera file.",
+        details: [
+          "Azioni reali: carrello, ordini, email, calendario, file",
+          "Allegati, input vocale e anteprime generate",
+          "Azioni delicate solo con la tua approvazione",
+        ],
+        cta: "Prova la chat",
+      },
+      {
+        title: "Dashboard, report ed export",
+        desc: "Attività svolte, agenti attivi e abbonamento sotto controllo. Esporti i report in PDF ed Excel quando ti servono.",
+        details: [
+          "Cronologia e attività di ogni agente",
+          "Export dei report in PDF ed Excel",
+          "Gestione di abbonamenti e utilizzo",
+        ],
+        cta: "Vai alla dashboard",
+      },
+    ],
   },
 
   problemSolution: {
@@ -416,48 +470,7 @@ howItWorks: {
     },
   },
 
-  features: {
-    badge: "Automazioni",
-    titleA: "Una piattaforma,",
-    titleB: "ogni attività automatizzata",
-    subtitle:
-      "AgentCloud si integra con gli strumenti che già usi - dalle suite di produttività ai CRM.",
-    cta: "Attiva il tuo primo agente",
-    items: [
-      {
-        title: "Assistente prodotti Shopify",
-        description:
-          "L'agente Shopify risponde alle domande su prodotti e ordini direttamente in chat, 24/7.",
-      },
-      {
-        title: "Link diretti al carrello",
-        description:
-          "Trova i prodotti nel catalogo e genera link diretti al carrello da condividere ovunque.",
-      },
-      {
-        title: "Stato ordini in tempo reale",
-        description:
-          "Verifica lo stato degli ordini con numero ordine ed email e rispondi in pochi secondi.",
-      },
-      {
-        title: "Acquisizione lead automatica",
-        description:
-          "L'agente lead capture raccoglie i dettagli dei prospect e li arricchisce con il contesto giusto.",
-      },
-      {
-        title: "Notifiche al team vendite",
-        description:
-          "Quando arriva un lead, il team vendite viene avvisato su Slack con tutti i dettagli.",
-      },
-      {
-        title: "Qualificazione lead",
-        description:
-          "Arricchisci i contatti e valuta ogni lead per concentrarti su quelli davvero pronti a comprare.",
-      },
-    ],
-  },
-
-integrations: {
+  integrations: {
     badge: "Integrazioni",
     titleA: "Funziona con gli strumenti",
     titleB: "che il tuo team usa già",
@@ -564,7 +577,7 @@ cta: {
     points: [
       {
         title: "5 messaggi gratis al giorno",
-        desc: "per ogni agente, prima di decidere",
+        desc: "in totale su tutti gli agenti, ogni giorno",
       },
       {
         title: "Dati al sicuro",
@@ -589,8 +602,8 @@ stillQuestions: "Hai ancora domande?",
         a: "L’integrazione Shopify è temporaneamente in “Prossimamente”: non è ancora collegabile. Stiamo completando il connettore — nel frattempo puoi usare tutte le altre integrazioni già disponibili.",
       },
       {
-        q: "Cosa significa “5 messaggi gratis al giorno per agente”?",
-        a: "Ogni agente si può provare con 5 messaggi gratuiti al giorno, senza impegno: il contatore si azzera a mezzanotte. Per conversazioni illimitate puoi sbloccarlo con l’abbonamento (€4,99–€9,99 al mese).",
+        q: "Cosa significano i “5 messaggi gratis al giorno”?",
+        a: "Hai 5 messaggi gratuiti al giorno in totale, sommati su tutti gli agenti, senza impegno: il contatore si azzera a mezzanotte. Per conversazioni illimitate puoi sbloccarle con l’abbonamento (€4,99–€9,99 al mese).",
       },
       {
         q: "I miei dati sono al sicuro?",
@@ -1090,7 +1103,7 @@ chat: {
     realTranscript: "Transcript reale",
     howItWorksLiveDesc: "ecco uno scambio tipico con strumenti e tempi",
     interactiveDemo: "Demo interattiva",
-    tryWithData: "Provalo con i tuoi dati — 5 messaggi gratuiti al giorno",
+    tryWithData: "Provalo con i tuoi dati — 5 messaggi gratuiti al giorno in totale",
     whyThisAgent: "Perché questo agente",
     whyBullets: [
       "Chat → azione diretta (carrello, booking, email) senza moduli.",
@@ -2603,6 +2616,8 @@ export const en: Dictionary = {
     badge: "{count} ready-to-use agents • {n} integrations",
     demoRemaining: "{remaining} / {limit} demo messages left",
     demoLimitReached: "Demo limit reached — sign in to continue",
+    freeTrialNote: "5 free messages per day — total across all agents",
+    freeTrialCaption: "No card required • refills every day at midnight • then unlimited with a subscription",
   },
 
 howItWorks: {
@@ -2623,7 +2638,7 @@ howItWorks: {
       },
       {
         title: "The agent works for you",
-        desc: "Ask in chat and the agent executes: search products, build cart links, book appointments, send emails. Try it free with 5 messages a day.",
+        desc: "Ask in chat and the agent executes: search products, build cart links, book appointments, send emails. Try it free with 5 messages a day in total across all agents.",
       },
       {
         title: "Manage everything in one place",
@@ -2639,6 +2654,58 @@ howItWorks: {
     demoAgentReady: "Ready today",
     demoConnected: "Shopify store connected",
     demoResult: "Cart link ready → send to customer",
+  },
+
+  features: {
+    badge: "Features",
+    titleA: "Everything you need",
+    titleB: "to truly delegate",
+    subtitle:
+      "Four pillars, one platform: pick your agent, connect your tools, and work in chat.",
+    showDetails: "See details",
+    hideDetails: "Hide details",
+    items: [
+      {
+        title: "Ready-to-use AI agents",
+        desc: "15 agents across 6 categories: E-commerce, Marketing, Customer Service, Business Ops, Design and Finance. Same-day activation, clear pricing.",
+        details: [
+          "Catalog with pricing and use cases for every agent",
+          "Free trial with 5 messages per day in total",
+          "Monthly subscription, cancel anytime",
+        ],
+        cta: "Browse agents",
+      },
+      {
+        title: "2-click integrations",
+        desc: "Shopify, Gmail, Calendar, Slack, HubSpot and more: connect your tools without copying keys or configuring anything.",
+        details: [
+          "Secure access with encrypted tokens",
+          "Connection status visible in your dashboard",
+          "New integrations added continuously",
+        ],
+        cta: "See integrations",
+      },
+      {
+        title: "Chat that actually executes",
+        desc: "Not just answers: the agent searches products, creates cart links, books appointments, sends emails and generates files.",
+        details: [
+          "Real actions: cart, orders, email, calendar, files",
+          "Attachments, voice input and generated previews",
+          "Sensitive actions only with your approval",
+        ],
+        cta: "Try the chat",
+      },
+      {
+        title: "Dashboard, reports and export",
+        desc: "Completed activities, active agents and subscription under control. Export reports to PDF and Excel whenever you need.",
+        details: [
+          "History and activity of every agent",
+          "Report export to PDF and Excel",
+          "Subscription and usage management",
+        ],
+        cta: "Go to dashboard",
+      },
+    ],
   },
 
   problemSolution: {
@@ -2789,47 +2856,6 @@ howItWorks: {
     },
   },
 
-  features: {
-    badge: "Automations",
-    titleA: "One platform,",
-    titleB: "every task automated",
-    subtitle:
-      "AgentCloud integrates with the tools you already use - from productivity suites to CRMs.",
-    cta: "Deploy Your First Agent",
-    items: [
-      {
-        title: "Shopify Product Assistant",
-        description:
-          "The Shopify agent answers product and order questions directly in chat, 24/7.",
-      },
-      {
-        title: "Direct Cart Links",
-        description:
-          "Find products in the catalog and generate direct cart links you can share anywhere.",
-      },
-      {
-        title: "Real-time Order Status",
-        description:
-          "Check order status with order number and email, and answer in seconds.",
-      },
-      {
-        title: "Automatic Lead Capture",
-        description:
-          "The lead capture agent collects prospect details and enriches them with the right context.",
-      },
-      {
-        title: "Sales Notifications",
-        description:
-          "When a lead arrives, the sales team is notified on Slack with all the details.",
-      },
-      {
-        title: "Lead Qualification",
-        description:
-          "Enrich contacts and score each lead so you focus only on those ready to buy.",
-      },
-    ],
-  },
-
   integrations: {
     badge: "Integrations",
     titleA: "Works with the tools",
@@ -2937,7 +2963,7 @@ browseMarketplace: "Browse marketplace",
     points: [
       {
         title: "5 free messages a day",
-        desc: "for every agent, before you decide",
+        desc: "total across all agents, every day",
       },
       {
         title: "Your data is safe",
@@ -2962,8 +2988,8 @@ stillQuestions: "Still have questions?",
         a: "The Shopify integration is temporarily “Coming soon”: it isn't connectable yet. We're finishing the connector — meanwhile you can use all the other integrations that are already available.",
       },
       {
-        q: "What does “5 free messages a day per agent” mean?",
-        a: "Every agent can be tried with 5 free messages a day, no commitment: the counter resets at midnight. For unlimited conversations you can unlock it with a subscription (€4.99–€9.99 per month).",
+        q: "What do the “5 free messages a day” mean?",
+        a: "You get 5 free messages a day in total, summed across all agents, no commitment: the counter resets at midnight. For unlimited conversations you can unlock them with a subscription (€4.99–€9.99 per month).",
       },
       {
         q: "Is my data safe?",
@@ -3441,7 +3467,7 @@ chat: {
     realTranscript: "Real transcript",
     howItWorksLiveDesc: "here’s a typical exchange with tools and timing",
     interactiveDemo: "Interactive demo",
-    tryWithData: "Try with your data — 5 free messages per day",
+    tryWithData: "Try with your data — 5 free messages per day in total",
     whyThisAgent: "Why this agent",
     whyBullets: [
       "Chat → direct action (cart, booking, email) — no forms.",
@@ -4950,6 +4976,8 @@ export const es: Dictionary = {
     badge: "{count} agentes listos para usar • {n} integraciones",
     demoRemaining: "{remaining} / {limit} mensajes demo restantes",
     demoLimitReached: "Límite demo alcanzado — inicia sesión para continuar",
+    freeTrialNote: "5 mensajes gratis al día — en total entre todos los agentes",
+    freeTrialCaption: "Sin tarjeta • se recargan cada día a medianoche • luego ilimitados con la suscripción",
   },
 
 howItWorks: {
@@ -4970,7 +4998,7 @@ howItWorks: {
       },
       {
         title: "El agente trabaja por ti",
-        desc: "Pregunta en el chat y el agente ejecuta: busca productos, crea enlaces al carrito, reserva citas, envía emails. Pruébalo gratis con 5 mensajes al día.",
+        desc: "Pregunta en el chat y el agente ejecuta: busca productos, crea enlaces al carrito, reserva citas, envía emails. Pruébalo gratis con 5 mensajes al día en total entre todos los agentes.",
       },
       {
         title: "Gestiona todo desde un sitio",
@@ -4986,6 +5014,58 @@ howItWorks: {
     demoAgentReady: "Listo hoy",
     demoConnected: "Tienda Shopify conectada",
     demoResult: "Enlace al carrito listo → envíalo al cliente",
+  },
+
+  features: {
+    badge: "Funcionalidades",
+    titleA: "Todo lo que necesitas",
+    titleB: "para delegar de verdad",
+    subtitle:
+      "Cuatro pilares, una sola plataforma: elige el agente, conecta tus herramientas y trabaja en el chat.",
+    showDetails: "Ver detalles",
+    hideDetails: "Ocultar detalles",
+    items: [
+      {
+        title: "Agentes IA listos para usar",
+        desc: "15 agentes en 6 categorías: E-commerce, Marketing, Atención al cliente, Operaciones, Diseño y Finanzas. Activación el mismo día, precios claros.",
+        details: [
+          "Catálogo con precios y casos de uso por agente",
+          "Prueba gratuita con 5 mensajes al día en total",
+          "Suscripción mensual, cancela cuando quieras",
+        ],
+        cta: "Explorar agentes",
+      },
+      {
+        title: "Integraciones en 2 clics",
+        desc: "Shopify, Gmail, Calendar, Slack, HubSpot y más: conecta tus herramientas sin copiar claves ni configurar nada.",
+        details: [
+          "Acceso seguro con tokens cifrados",
+          "Estado de conexiones visible en el panel",
+          "Nuevas integraciones añadidas continuamente",
+        ],
+        cta: "Ver integraciones",
+      },
+      {
+        title: "Chat que realmente ejecuta",
+        desc: "No solo respuestas: el agente busca productos, crea enlaces al carrito, reserva citas, envía correos y genera archivos.",
+        details: [
+          "Acciones reales: carrito, pedidos, correo, calendario, archivos",
+          "Adjuntos, entrada de voz y vistas previas generadas",
+          "Acciones delicadas solo con tu aprobación",
+        ],
+        cta: "Probar el chat",
+      },
+      {
+        title: "Panel, informes y exportación",
+        desc: "Actividades realizadas, agentes activos y suscripción bajo control. Exporta informes en PDF y Excel cuando lo necesites.",
+        details: [
+          "Historial y actividad de cada agente",
+          "Exportación de informes en PDF y Excel",
+          "Gestión de suscripciones y uso",
+        ],
+        cta: "Ir al panel",
+      },
+    ],
   },
 
   problemSolution: {
@@ -5136,47 +5216,6 @@ howItWorks: {
     },
   },
 
-  features: {
-    badge: "Automatizaciones",
-    titleA: "Una plataforma,",
-    titleB: "cada tarea automatizada",
-    subtitle:
-      "AgentCloud se integra con las herramientas que ya usas - desde suites de productividad hasta CRMs.",
-    cta: "Activa tu primer agente",
-    items: [
-      {
-        title: "Asistente de productos de Shopify",
-        description:
-          "El agente de Shopify responde a las preguntas sobre productos y pedidos directamente en el chat, 24/7.",
-      },
-      {
-        title: "Enlaces directos al carrito",
-        description:
-          "Encuentra productos en el catálogo y genera enlaces directos al carrito para compartir donde quieras.",
-      },
-      {
-        title: "Estado de pedidos en tiempo real",
-        description:
-          "Consulta el estado de los pedidos con número de pedido y email, y responde en segundos.",
-      },
-      {
-        title: "Captura de leads automática",
-        description:
-          "El agente de captura de leads recoge los datos de los prospectos y los enriquece con el contexto adecuado.",
-      },
-      {
-        title: "Notificaciones al equipo de ventas",
-        description:
-          "Cuando llega un lead, el equipo de ventas recibe un aviso en Slack con todos los detalles.",
-      },
-      {
-        title: "Cualificación de leads",
-        description:
-          "Enriquece los contactos y puntúa cada lead para centrarte solo en los que están listos para comprar.",
-      },
-    ],
-  },
-
   integrations: {
     badge: "Integraciones",
     titleA: "Funciona con las herramientas",
@@ -5284,7 +5323,7 @@ browseMarketplace: "Ver el marketplace",
     points: [
       {
         title: "5 mensajes gratis al día",
-        desc: "para cada agente, antes de decidir",
+        desc: "en total entre todos los agentes, cada día",
       },
       {
         title: "Tus datos, a salvo",
@@ -5309,8 +5348,8 @@ stillQuestions: "¿Aún tienes preguntas?",
         a: "La integración de Shopify está temporalmente en «Próximamente»: todavía no se puede conectar. Estamos terminando el conector — mientras tanto puedes usar todas las demás integraciones ya disponibles.",
       },
       {
-        q: "¿Qué significa «5 mensajes gratis al día por agente»?",
-        a: "Cada agente se puede probar con 5 mensajes gratuitos al día, sin compromiso: el contador se reinicia a medianoche. Para conversaciones ilimitadas puedes desbloquearlo con una suscripción (4,99 €–9,99 € al mes).",
+        q: "¿Qué significan los «5 mensajes gratis al día»?",
+        a: "Tienes 5 mensajes gratis al día en total, sumados entre todos los agentes, sin compromiso: el contador se reinicia a medianoche. Para conversaciones ilimitadas puedes desbloquearlas con una suscripción (4,99 €–9,99 € al mes).",
       },
       {
         q: "¿Mis datos están seguros?",
@@ -5786,7 +5825,7 @@ agentsPage: {
     realTranscript: "Transcripción real",
     howItWorksLiveDesc: "aquí tienes un intercambio típico con herramientas y tiempos",
     interactiveDemo: "Demo interactiva",
-    tryWithData: "Pruébalo con tus datos — 5 mensajes gratis al día",
+    tryWithData: "Pruébalo con tus datos — 5 mensajes gratis al día en total",
     whyThisAgent: "Por qué este agente",
     whyBullets: [
       "Chat → acción directa (carrito, reserva, email) sin formularios.",
@@ -7294,6 +7333,8 @@ export const de: Dictionary = {
     badge: "{count} einsatzbereite Agenten • {n} Integrationen",
     demoRemaining: "{remaining} / {limit} Demo-Nachrichten übrig",
     demoLimitReached: "Demo-Limit erreicht — melde dich an, um fortzufahren",
+    freeTrialNote: "5 Gratis-Nachrichten pro Tag — insgesamt für alle Agenten",
+    freeTrialCaption: "Keine Karte nötig • jeden Tag um Mitternacht neu • danach unbegrenzt mit Abo",
   },
 
 howItWorks: {
@@ -7314,7 +7355,7 @@ howItWorks: {
       },
       {
         title: "Der Agent arbeitet für dich",
-        desc: "Frag im Chat und der Agent führt aus: Produkte suchen, Warenkorb-Links erstellen, Termine buchen, E-Mails senden. Teste ihn gratis mit 5 Nachrichten pro Tag.",
+        desc: "Frag im Chat und der Agent führt aus: Produkte suchen, Warenkorb-Links erstellen, Termine buchen, E-Mails senden. Teste ihn gratis mit 5 Nachrichten pro Tag insgesamt für alle Agenten.",
       },
       {
         title: "Alles an einem Ort verwalten",
@@ -7330,6 +7371,58 @@ howItWorks: {
     demoAgentReady: "Heute fertig",
     demoConnected: "Shopify-Shop verbunden",
     demoResult: "Warenkorb-Link fertig → an den Kunden senden",
+  },
+
+  features: {
+    badge: "Funktionen",
+    titleA: "Alles, was du brauchst,",
+    titleB: "um wirklich zu delegieren",
+    subtitle:
+      "Vier Säulen, eine Plattform: Agent wählen, Tools verbinden und im Chat arbeiten.",
+    showDetails: "Details ansehen",
+    hideDetails: "Details ausblenden",
+    items: [
+      {
+        title: "Sofort einsetzbare KI-Agenten",
+        desc: "15 Agenten in 6 Kategorien: E-Commerce, Marketing, Kundenservice, Business Ops, Design und Finanzen. Aktivierung am selben Tag, klare Preise.",
+        details: [
+          "Katalog mit Preisen und Use Cases pro Agent",
+          "Kostenlos testen mit 5 Nachrichten pro Tag insgesamt",
+          "Monatliches Abo, jederzeit kündbar",
+        ],
+        cta: "Agenten entdecken",
+      },
+      {
+        title: "Integrationen in 2 Klicks",
+        desc: "Shopify, Gmail, Kalender, Slack, HubSpot und mehr: verbinde deine Tools, ohne Schlüssel zu kopieren oder etwas zu konfigurieren.",
+        details: [
+          "Sicherer Zugriff mit verschlüsselten Tokens",
+          "Verbindungsstatus im Dashboard sichtbar",
+          "Laufend neue Integrationen",
+        ],
+        cta: "Integrationen ansehen",
+      },
+      {
+        title: "Chat, der wirklich ausführt",
+        desc: "Nicht nur Antworten: Der Agent sucht Produkte, erstellt Warenkorb-Links, bucht Termine, sendet E-Mails und erstellt Dateien.",
+        details: [
+          "Echte Aktionen: Warenkorb, Bestellungen, E-Mail, Kalender, Dateien",
+          "Anhänge, Spracheingabe und generierte Vorschauen",
+          "Sensible Aktionen nur mit deiner Freigabe",
+        ],
+        cta: "Chat testen",
+      },
+      {
+        title: "Dashboard, Berichte und Export",
+        desc: "Erledigte Aufgaben, aktive Agenten und Abo im Blick. Berichte bei Bedarf als PDF und Excel exportieren.",
+        details: [
+          "Verlauf und Aktivitäten jedes Agenten",
+          "Berichtsexport als PDF und Excel",
+          "Verwaltung von Abos und Nutzung",
+        ],
+        cta: "Zum Dashboard",
+      },
+    ],
   },
 
   problemSolution: {
@@ -7480,47 +7573,6 @@ howItWorks: {
     },
   },
 
-  features: {
-    badge: "Automatisierungen",
-    titleA: "Eine Plattform,",
-    titleB: "jede Aufgabe automatisiert",
-    subtitle:
-      "AgentCloud integriert sich mit den Tools, die du schon nutzt - von Produktivitätssuites bis zu CRMs.",
-    cta: "Aktiviere deinen ersten Agenten",
-    items: [
-      {
-        title: "Shopify-Produktassistent",
-        description:
-          "Der Shopify-Agent beantwortet Produkt- und Bestellfragen direkt im Chat, rund um die Uhr.",
-      },
-      {
-        title: "Direkte Warenkorb-Links",
-        description:
-          "Finde Produkte im Katalog und erstelle direkte Warenkorb-Links, die du überall teilen kannst.",
-      },
-      {
-        title: "Bestellstatus in Echtzeit",
-        description:
-          "Prüfe den Bestellstatus mit Bestellnummer und E-Mail und antworte in Sekunden.",
-      },
-      {
-        title: "Automatische Lead-Erfassung",
-        description:
-          "Der Lead-Erfassungs-Agent sammelt Daten von Interessenten und reichert sie mit dem richtigen Kontext an.",
-      },
-      {
-        title: "Vertriebs-Benachrichtigungen",
-        description:
-          "Sobald ein Lead eingeht, wird das Vertriebsteam mit allen Details in Slack benachrichtigt.",
-      },
-      {
-        title: "Lead-Qualifizierung",
-        description:
-          "Reichere Kontakte an und bewerte jeden Lead, damit du dich nur auf die konzentrierst, die wirklich kaufen wollen.",
-      },
-    ],
-  },
-
   integrations: {
     badge: "Integrationen",
     titleA: "Funktioniert mit den Tools",
@@ -7628,7 +7680,7 @@ browseMarketplace: "Marktplatz durchsuchen",
     points: [
       {
         title: "5 Nachrichten pro Tag gratis",
-        desc: "für jeden Agenten, bevor du dich entscheidest",
+        desc: "insgesamt für alle Agenten, jeden Tag",
       },
       {
         title: "Deine Daten sind sicher",
@@ -7653,8 +7705,8 @@ browseMarketplace: "Marktplatz durchsuchen",
         a: "Die Shopify-Integration ist vorübergehend „Demnächst“: Sie ist noch nicht verbindbar. Wir fertigen den Connector — in der meantime kannst du alle anderen bereits verfügbaren Integrationen nutzen.",
       },
       {
-        q: "Was bedeutet „5 Gratis-Nachrichten pro Tag und Agent“?",
-        a: "Jeder Agent lässt sich mit 5 Gratis-Nachrichten pro Tag unverbindlich testen: Der Zähler wird um Mitternacht zurückgesetzt. Für unbegrenzte Unterhaltungen kannst du es mit einem Abo freischalten (4,99 €–9,99 € pro Monat).",
+        q: "Was bedeuten „5 Gratis-Nachrichten pro Tag“?",
+        a: "Du hast 5 Gratis-Nachrichten pro Tag insgesamt, summiert über alle Agenten, unverbindlich: Der Zähler wird um Mitternacht zurückgesetzt. Für unbegrenzte Unterhaltungen kannst du sie mit einem Abo freischalten (4,99 €–9,99 € pro Monat).",
       },
       {
         q: "Sind meine Daten sicher?",
@@ -8130,7 +8182,7 @@ chat: {
     realTranscript: "Echtes Transkript",
     howItWorksLiveDesc: "hier ist ein typischer Ablauf mit Tools und Zeiten",
     interactiveDemo: "Interaktive Demo",
-    tryWithData: "Mit deinen Daten testen — 5 kostenlose Nachrichten pro Tag",
+    tryWithData: "Mit deinen Daten testen — 5 kostenlose Nachrichten pro Tag insgesamt",
     whyThisAgent: "Warum dieser Agent",
     whyBullets: [
       "Chat → direkte Aktion (Warenkorb, Termin, E-Mail) — ohne Formulare.",
@@ -9638,6 +9690,8 @@ export const fr: Dictionary = {
     badge: "{count} agents prêts à l'emploi • {n} intégrations",
     demoRemaining: "{remaining} / {limit} messages démo restants",
     demoLimitReached: "Limite démo atteinte — connectez-vous pour continuer",
+    freeTrialNote: "5 messages gratuits par jour — au total pour tous les agents",
+    freeTrialCaption: "Sans carte • rechargés chaque jour à minuit • puis illimités avec l'abonnement",
   },
 
 howItWorks: {
@@ -9658,7 +9712,7 @@ howItWorks: {
       },
       {
         title: "L’agent travaille pour vous",
-        desc: "Demandez dans le chat et l’agent exécute : recherche de produits, liens panier, prise de rendez-vous, envoi d’e-mails. Essayez gratuitement avec 5 messages par jour.",
+        desc: "Demandez dans le chat et l’agent exécute : recherche de produits, liens panier, prise de rendez-vous, envoi d’e-mails. Essayez gratuitement avec 5 messages par jour au total pour tous les agents.",
       },
       {
         title: "Gérez tout au même endroit",
@@ -9674,6 +9728,58 @@ howItWorks: {
     demoAgentReady: "Prêt aujourd’hui",
     demoConnected: "Boutique Shopify connectée",
     demoResult: "Lien panier prêt → envoyer au client",
+  },
+
+  features: {
+    badge: "Fonctionnalités",
+    titleA: "Tout ce qu'il faut",
+    titleB: "pour vraiment déléguer",
+    subtitle:
+      "Quatre piliers, une seule plateforme : choisissez l'agent, connectez vos outils et travaillez dans le chat.",
+    showDetails: "Voir les détails",
+    hideDetails: "Masquer les détails",
+    items: [
+      {
+        title: "Agents IA prêts à l'emploi",
+        desc: "15 agents en 6 catégories : E-commerce, Marketing, Service client, Opérations, Design et Finance. Activation le jour même, tarifs clairs.",
+        details: [
+          "Catalogue avec tarifs et cas d'usage par agent",
+          "Essai gratuit avec 5 messages par jour au total",
+          "Abonnement mensuel, résiliable à tout moment",
+        ],
+        cta: "Parcourir les agents",
+      },
+      {
+        title: "Intégrations en 2 clics",
+        desc: "Shopify, Gmail, Agenda, Slack, HubSpot et plus : connectez vos outils sans copier de clés ni rien configurer.",
+        details: [
+          "Accès sécurisé avec jetons chiffrés",
+          "État des connexions visible dans le tableau de bord",
+          "Nouvelles intégrations ajoutées en continu",
+        ],
+        cta: "Voir les intégrations",
+      },
+      {
+        title: "Un chat qui exécute vraiment",
+        desc: "Pas seulement des réponses : l'agent cherche des produits, crée des liens panier, réserve des rendez-vous, envoie des e-mails et génère des fichiers.",
+        details: [
+          "Actions réelles : panier, commandes, e-mail, agenda, fichiers",
+          "Pièces jointes, saisie vocale et aperçus générés",
+          "Actions sensibles uniquement avec votre approbation",
+        ],
+        cta: "Essayer le chat",
+      },
+      {
+        title: "Tableau de bord, rapports et export",
+        desc: "Activités réalisées, agents actifs et abonnement sous contrôle. Exportez vos rapports en PDF et Excel quand vous voulez.",
+        details: [
+          "Historique et activité de chaque agent",
+          "Export des rapports en PDF et Excel",
+          "Gestion des abonnements et de l'utilisation",
+        ],
+        cta: "Aller au tableau de bord",
+      },
+    ],
   },
 
   problemSolution: {
@@ -9824,47 +9930,6 @@ howItWorks: {
     },
   },
 
-  features: {
-    badge: "Automatisations",
-    titleA: "Une plateforme,",
-    titleB: "chaque tâche automatisée",
-    subtitle:
-      "AgentCloud s'intègre aux outils que vous utilisez déjà - des suites de productivité aux CRM.",
-    cta: "Activez votre premier agent",
-    items: [
-      {
-        title: "Assistant produits Shopify",
-        description:
-          "L'agent Shopify répond aux questions sur les produits et les commandes directement dans le chat, 24/7.",
-      },
-      {
-        title: "Liens panier directs",
-        description:
-          "Trouvez des produits dans le catalogue et générez des liens panier directs à partager partout.",
-      },
-      {
-        title: "Statut des commandes en temps réel",
-        description:
-          "Vérifiez le statut d'une commande avec son numéro et l'e-mail, et répondez en quelques secondes.",
-      },
-      {
-        title: "Capture de leads automatique",
-        description:
-          "L'agent de capture de leads collecte les informations des prospects et les enrichit avec le bon contexte.",
-      },
-      {
-        title: "Notifications à l'équipe commerciale",
-        description:
-          "Dès qu'un lead arrive, l'équipe commerciale est prévenue sur Slack avec tous les détails.",
-      },
-      {
-        title: "Qualification de leads",
-        description:
-          "Enrichissez les contacts et évaluez chaque lead pour vous concentrer sur ceux prêts à acheter.",
-      },
-    ],
-  },
-
   integrations: {
     badge: "Intégrations",
     titleA: "Fonctionne avec les outils",
@@ -9972,7 +10037,7 @@ browseMarketplace: "Parcourir la marketplace",
     points: [
       {
         title: "5 messages gratuits par jour",
-        desc: "pour chaque agent, avant de décider",
+        desc: "au total pour tous les agents, chaque jour",
       },
       {
         title: "Vos données en sécurité",
@@ -9997,8 +10062,8 @@ browseMarketplace: "Parcourir la marketplace",
         a: "L’intégration Shopify est temporairement « Bientôt » : elle n’est pas encore connectable. Nous finalisons le connecteur — en attendant, vous pouvez utiliser toutes les autres intégrations déjà disponibles.",
       },
       {
-        q: "Que signifie « 5 messages gratuits par jour et par agent » ?",
-        a: "Chaque agent peut être testé avec 5 messages gratuits par jour, sans engagement : le compteur se réinitialise à minuit. Pour des conversations illimitées, vous pouvez le débloquer avec un abonnement (4,99 €–9,99 € par mois).",
+        q: "Que signifient les « 5 messages gratuits par jour » ?",
+        a: "Vous avez 5 messages gratuits par jour au total, cumulés sur tous les agents, sans engagement : le compteur se réinitialise à minuit. Pour des conversations illimitées, vous pouvez les débloquer avec un abonnement (4,99 €–9,99 € par mois).",
       },
       {
         q: "Mes données sont-elles en sécurité ?",
@@ -10474,7 +10539,7 @@ browseMarketplace: "Parcourir la marketplace",
     realTranscript: "Transcript réel",
     howItWorksLiveDesc: "voici un échange typique avec les outils et les délais",
     interactiveDemo: "Démo interactive",
-    tryWithData: "Essayez avec vos données — 5 messages gratuits par jour",
+    tryWithData: "Essayez avec vos données — 5 messages gratuits par jour au total",
     whyThisAgent: "Pourquoi cet agent",
     whyBullets: [
       "Chat → action directe (panier, réservation, e-mail) — sans formulaires.",

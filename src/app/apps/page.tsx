@@ -28,8 +28,6 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-const REPO = "https://github.com/gabrieleforestieri0912-lab/AgentCloud";
-
 export default async function AppsPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
@@ -41,7 +39,7 @@ export default async function AppsPage() {
       title: a.desktopTitle,
       desc: a.desktopDesc,
       cta: a.desktopCta,
-      href: `${REPO}/actions`,
+      href: "/install",
       steps: ["macOS (.dmg)", "Windows (.exe)", "Linux (.AppImage, .deb)"],
       live: false,
     },
@@ -51,7 +49,7 @@ export default async function AppsPage() {
       title: a.mobileTitle,
       desc: a.mobileDesc,
       cta: a.mobileCta,
-      href: `${REPO}/tree/main/mobile`,
+      href: "/install",
       steps: ["iOS", "Android"],
       live: false,
     },
@@ -63,7 +61,7 @@ export default async function AppsPage() {
       cta: a.cliCta,
       href: "/install",
       steps: ["npm i -g agentcloud-cli"],
-      live: true,
+      live: false,
     },
     {
       id: "extension",
@@ -73,7 +71,7 @@ export default async function AppsPage() {
       cta: a.extCta,
       href: "/install#extension",
       steps: ["Chrome", "Edge", "Brave", "Firefox"],
-      live: true,
+      live: false,
     },
   ];
   return (

@@ -6,6 +6,7 @@ import {
   Terminal,
   Globe,
   Smartphone,
+  MonitorDown,
   Copy,
   Check,
   ShieldCheck,
@@ -18,7 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 
-type ActiveTab = "cli" | "extension" | "mobile";
+type ActiveTab = "cli" | "extension" | "mobile" | "desktop";
 
 export default function InstallClient() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("cli");
@@ -73,7 +74,7 @@ export default function InstallClient() {
             AgentCloud ovunque lavori.
           </h1>
           <p className="mt-4 text-base md:text-lg text-neutral-300 leading-relaxed">
-            Installa la <strong>CLI</strong> per automatizzare da terminale e script, aggiungi l&apos;<strong>estensione Chrome</strong> per interagire dal browser, o usa l&apos;<strong>app mobile Flutter</strong> per il monitoraggio in mobilità.
+            Installa la <strong>CLI</strong> per automatizzare da terminale e script, scarica l&apos;<strong>app desktop</strong> per Windows, aggiungi l&apos;<strong>estensione Chrome</strong> per interagire dal browser, o usa l&apos;<strong>app mobile Flutter</strong> per il monitoraggio in mobilità.
           </p>
         </div>
 
@@ -155,6 +156,9 @@ export default function InstallClient() {
             >
               <Terminal className="w-4 h-4" />
               <span>CLI Terminale</span>
+              <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
+                Presto
+              </span>
             </button>
             <button
               onClick={() => setActiveTab("extension")}
@@ -166,6 +170,9 @@ export default function InstallClient() {
             >
               <Globe className="w-4 h-4" />
               <span>Estensione Chrome</span>
+              <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
+                Presto
+              </span>
             </button>
             <button
               onClick={() => setActiveTab("mobile")}
@@ -177,6 +184,23 @@ export default function InstallClient() {
             >
               <Smartphone className="w-4 h-4" />
               <span>App Mobile (Flutter)</span>
+              <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
+                Presto
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("desktop")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                activeTab === "desktop"
+                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
+                  : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <MonitorDown className="w-4 h-4" />
+              <span>App Desktop</span>
+              <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
+                Presto
+              </span>
             </button>
           </div>
         </div>
@@ -190,6 +214,9 @@ export default function InstallClient() {
                   <h2 className="text-2xl font-bold flex items-center gap-2.5 text-white">
                     <Terminal className="w-6 h-6 text-indigo-400" />
                     <span>AgentCloud CLI</span>
+                    <span className="ml-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-300">
+                      Prossimamente
+                    </span>
                   </h2>
                   <p className="mt-1 text-sm text-neutral-400">
                     Esegui agenti in background, passa file locali e integra automazioni nei tuoi script bash, cron o pipeline CI/CD.
@@ -491,8 +518,8 @@ export default function InstallClient() {
                     Porta il copilota AI su qualsiasi scheda: automazioni web, scraping di pagine, composizione email e analisi in tempo reale.
                   </p>
                 </div>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-                  Manifest V3 Ufficiale
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  Prossimamente · Chrome Web Store
                 </span>
               </div>
 
@@ -512,23 +539,13 @@ export default function InstallClient() {
                   </div>
                   <div className="mt-6 flex flex-col gap-2.5">
                     <button
-                      onClick={() => copyToClipboard(extensionInstallUrl, "ext-url")}
-                      className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-cyan-500/25"
+                      disabled
+                      className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-neutral-500 text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed"
                     >
-                      {copiedKey === "ext-url" ? (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span>URL Estensione Copiato!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          <span>Copia URL di Installazione</span>
-                        </>
-                      )}
+                      <span>Disponibile a breve sullo store</span>
                     </button>
                     <div className="text-[11px] text-center text-neutral-400">
-                      Link permanente: <span className="text-cyan-300 font-mono">agentcloud.agency/install#extension</span>
+                      Sviluppatori: caricamento manuale da <span className="text-cyan-300 font-mono">chrome://extensions</span> (vedi sotto)
                     </div>
                   </div>
                 </div>
@@ -603,8 +620,8 @@ export default function InstallClient() {
                     L&apos;app nativa per iOS e Android realizzata in Flutter per governare i tuoi agenti ovunque ti trovi.
                   </p>
                 </div>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/30">
-                  Pre-ordine · in sviluppo
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  Prossimamente · iOS e Android
                 </span>
               </div>
 
@@ -664,6 +681,56 @@ export default function InstallClient() {
                     Analisi del codice: <strong>0 errori</strong> con flutter analyze.
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Desktop App */}
+        {activeTab === "desktop" && (
+          <div className="mt-10 max-w-4xl mx-auto">
+            <div className="rounded-3xl bg-neutral-900/70 border border-white/10 p-6 md:p-8 backdrop-blur-xl shadow-2xl">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-2.5 text-white">
+                    <MonitorDown className="w-6 h-6 text-emerald-400" />
+                    <span>AgentCloud Desktop (Electron)</span>
+                  </h2>
+                  <p className="mt-1 text-sm text-neutral-400">
+                    Chatta con i tuoi agenti dal computer, in una finestra dedicata con notifiche di sistema.
+                  </p>
+                </div>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  Prossimamente · Windows 10+
+                </span>
+              </div>
+
+              <div className="mt-8 p-6 rounded-2xl bg-white/[0.02] border border-white/10 text-center">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                  <MonitorDown className="w-8 h-8 text-amber-300" />
+                </div>
+                <h3 className="mt-4 text-lg font-bold text-white">
+                  App desktop in arrivo
+                </h3>
+                <p className="mt-1 text-xs text-neutral-400">
+                  Stiamo preparando gli installer firmati per Windows, macOS e Linux
+                </p>
+                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                  {["Windows (.exe)", "macOS (.dmg)", "Linux (.AppImage, .deb)"].map((os) => (
+                    <span key={os} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-xs font-semibold text-neutral-300">
+                      {os}
+                      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                        Presto
+                      </span>
+                    </span>
+                  ))}
+                </div>
+                <button
+                  disabled
+                  className="mt-6 inline-flex cursor-not-allowed items-center gap-2 px-8 py-3.5 rounded-xl bg-white/5 border border-white/10 text-neutral-500 text-sm font-bold"
+                >
+                  <span>Download disponibile a breve</span>
+                </button>
               </div>
             </div>
           </div>
