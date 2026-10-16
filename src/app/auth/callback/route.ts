@@ -25,7 +25,8 @@ const COOKIE_OPTIONS = {
  * Se l'accesso proviene dalla waitlist (o se la piattaforma è in fase pre-lancio),
  * l'utente viene iscritto automaticamente alla waitlist e reindirizzato a /waitlist
  * con i cookie di stato coda valorizzati — ECCETTO admin (ADMIN_EMAILS) e chi
- * ha già un bypass via codice di accesso (waitlist_session / ac_wl_bypass).
+ * ha già un bypass via codice di accesso (cookie `waitlist_session` firmato
+ * nel formato server `wl_…`).
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -68,9 +69,11 @@ export async function GET(request: Request) {
   }
 
   const cookieHeader = request.headers.get("cookie") || "";
+  const sessionMatch = cookieHeader.match(/waitlist_session=([^;]+)/);
+  const sessionValue = (sessionMatch?.[1] || "").trim();
   const hasAccessBypass =
-    /(?:^|;\s*)waitlist_session=/.test(cookieHeader) ||
-    /(?:^|;\s*)ac_wl_bypass=/.test(cookieHeader);
+    /^wl_[0-9a-f]{32}_[0-9a-z]+$/.test(sessionValue) ||
+    sessionValue.startsWith("wl_admin_");
   const adminUser = Boolean(userEmail && isAdminEmail(userEmail));
 
   // Admin whitelist: promuovi ruolo e vai in dashboard — MAI iscrivere in waitlist.

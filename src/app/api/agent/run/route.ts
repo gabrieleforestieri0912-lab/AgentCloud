@@ -118,7 +118,31 @@ export async function POST(req: Request) {
   }
 
   // Risolve il chiamante dalla sessione autenticata (mai fidarsi del body).
-  const sessionUser = await getSessionUser();
+  // Le API key `ack_…` (scope per-agente) sono accettate SOLO qui e su
+  // /api/v1/run: lo scope è enforced (403 su mismatch) così una key legata
+  // a un agente non può agire su altri agenti o sull'account.
+  let sessionUser = await getSessionUser();
+  const authHeader = req.headers.get("authorization") ?? "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  if (!sessionUser && bearerToken.length > 20) {
+    try {
+      const { isApiKey, isPat, resolveBearerCredential } = await import("@/lib/supabase/pat");
+      if (isApiKey(bearerToken) || isPat(bearerToken)) {
+        const cred = await resolveBearerCredential(bearerToken);
+        if (cred) {
+          if (cred.scopeAgent && cred.scopeAgent !== agentId) {
+            return Response.json(
+              { error: apiErrorMessageForLocale(locale, "keyScopeMismatch"), code: "KEY_SCOPE_MISMATCH" },
+              { status: 403 },
+            );
+          }
+          sessionUser = cred.user;
+        }
+      }
+    } catch {
+      // fallback silenzioso → anonymous
+    }
+  }
   const userId = sessionUser?.id ?? "anonymous";
 
   // Stato admin: email di sessione in whitelist OPPURE `profiles.role = 'admin'`.
@@ -535,6 +559,27 @@ export async function POST(req: Request) {
               });
 
               send({ type: "tool_done", toolName: use.name });
+
+              // Carrello: il frontend aggiorna il badge/contatore via evento e
+              // rende la card [[CART:slug]] inline. Solo su successo (JSON cart_added).
+              if (use.name === "marketplace_add_to_cart" && result.includes('"type":"cart_added"')) {
+                try {
+                  const parsed = JSON.parse(result) as { agent_slug?: string };
+                  if (parsed.agent_slug) send({ type: "cart_updated", agent_slug: parsed.agent_slug });
+                } catch {
+                  // ignora payload malformati: il testo resta comunque in chat
+                }
+              }
+
+              // Disconnessione: il frontend invalida lo stato integrazioni via evento.
+              if (use.name === "integration_disconnect" && result.includes('"type":"integration_disconnected"')) {
+                try {
+                  const parsed = JSON.parse(result) as { provider?: string };
+                  if (parsed.provider) send({ type: "integration_disconnected", provider: parsed.provider });
+                } catch {
+                  // ignora payload malformati
+                }
+              }
 
               if (result.startsWith('{"type":"file_created"')) {
                 try {

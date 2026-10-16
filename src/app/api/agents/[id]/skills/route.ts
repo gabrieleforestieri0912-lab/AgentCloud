@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { AGENT_RUNTIME } from "@/lib/agents/registry";
+import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
 
 /**
  * GET /api/agents/[id]/skills
@@ -88,6 +90,16 @@ export async function POST(
 
   if (!skill_id && !skill_slug) {
     return NextResponse.json({ error: "skill_id or skill_slug is required" }, { status: 400 });
+  }
+
+  // L'istanza deve corrispondere a un agente del registry posseduto
+  // dall'utente (o admin): niente puntamenti ad agenti altrui/inesistenti.
+  if (!AGENT_RUNTIME[agentInstanceId]) {
+    return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+  }
+  const owned = await getOwnedAgentSlugs(user.id, user);
+  if (!owned.includes(agentInstanceId)) {
+    return NextResponse.json({ error: "Agent not accessible" }, { status: 403 });
   }
 
   // Verify skill exists and is accessible

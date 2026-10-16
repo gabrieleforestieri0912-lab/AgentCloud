@@ -62,14 +62,15 @@ async function resolveSession(request: NextRequest) {
   // Fallback Bearer: CLI (`agentcloud login` → /cli/auth) e mobile condividono lo stesso DB.
   // Se non c'è sessione cookie ma c'è Authorization: Bearer <supabase_access_token>, validalo.
   // In alternativa accetta i token API personali `act_…` generati nelle impostazioni.
+  // Le API key `ack_…` sono escluse: hanno scope per-agente e valgono solo su /api/v1/run.
   if (!user) {
     const auth = request.headers.get("authorization") ?? request.headers.get("Authorization");
     if (auth?.startsWith("Bearer ")) {
       const token = auth.slice(7).trim();
       if (token.length > 20) {
         try {
-          const { isPat, isApiKey, resolveBearerCredential } = await import("@/lib/supabase/pat");
-          if (isPat(token) || isApiKey(token)) {
+          const { isPat, resolveBearerCredential } = await import("@/lib/supabase/pat");
+          if (isPat(token)) {
             const cred = await resolveBearerCredential(token);
             if (cred) user = cred.user as unknown as typeof user;
           } else {
@@ -126,13 +127,16 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // 2b. Bypass via codice di accesso: chi ha inserito il codice admin
-    // (waitlist_session / ac_wl_bypass) può navigare ovunque anche pre-lancio.
+    // 2b. Bypass via codice di accesso: valido solo con `waitlist_session`
+    // nel formato emesso dal server (`wl_<32hex>_<base36>` o `wl_admin_…`).
+    // Il cookie in chiaro `ac_wl_bypass=1` non è più accettato: era
+    // falsificabile dal client (nessuna firma) e concedeva il bypass.
     // Se c'è anche una sessione auth, promuovi eventuali email in ADMIN_EMAILS
     // (altrimenti il bypass saltava ensureAdminRole e l'admin restava "normale").
+    const waitlistSession = request.cookies.get("waitlist_session")?.value || "";
     const hasWaitlistBypass =
-      request.cookies.get("waitlist_session")?.value ||
-      request.cookies.get("ac_wl_bypass")?.value;
+      /^wl_[0-9a-f]{32}_[0-9a-z]+$/.test(waitlistSession) ||
+      waitlistSession.startsWith("wl_admin_");
     if (hasWaitlistBypass) {
       let res: NextResponse = NextResponse.next();
       try {

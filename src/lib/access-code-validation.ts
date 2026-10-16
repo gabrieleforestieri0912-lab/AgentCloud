@@ -37,6 +37,9 @@ function expectedCode(): string {
  */
 export function isValidAccessCode(raw: string): boolean {
   if (!raw) return false;
+  // Fail-closed in produzione: senza ACCESS_CODE configurato nessun codice
+  // (incluso il default noto) è valido.
+  if (!process.env.ACCESS_CODE && process.env.NODE_ENV === "production") return false;
   const normalized = normalize(raw);
   if (!normalized) return false;
   const expected = expectedCode();

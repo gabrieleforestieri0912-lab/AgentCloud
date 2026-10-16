@@ -14,22 +14,21 @@ import { getLocale } from "@/lib/i18n/locale";
  *
  * Auth: Vercel Cron invia `Authorization: Bearer $CRON_SECRET` (e i cron
  * invocano con GET); per invocazioni manuali accettiamo anche POST con
- * `Bearer $ADMIN_API_TOKEN` oppure il secret in query `?token=`.
+ * `Bearer $ADMIN_API_TOKEN`. Il secret viaggia SOLO nell'header: il token in
+ * query `?token=` è disabilitato (finirebbe nei log/proxy).
  */
 function authorized(request: Request): boolean {
   const cronToken = process.env.CRON_SECRET;
   const adminToken = process.env.ADMIN_API_TOKEN;
   const authHeader = request.headers.get("authorization") || "";
-  const url = new URL(request.url);
-  const queryToken = url.searchParams.get("token");
 
   return (
     (cronToken !== undefined &&
       cronToken !== "" &&
-      (authHeader === `Bearer ${cronToken}` || queryToken === cronToken)) ||
+      authHeader === `Bearer ${cronToken}`) ||
     (adminToken !== undefined &&
       adminToken !== "" &&
-      (authHeader === `Bearer ${adminToken}` || queryToken === adminToken))
+      authHeader === `Bearer ${adminToken}`)
   );
 }
 

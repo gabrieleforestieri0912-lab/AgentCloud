@@ -113,9 +113,10 @@ export async function createPayPalSubscription(opts: {
 }
 
 export async function verifyPayPalWebhook(req: Request, rawBody: string): Promise<boolean> {
-  // Best-effort verification via PayPal API. If PAYPAL_WEBHOOK_ID not set, skip verification (still process).
+  // Fail-closed: senza PAYPAL_WEBHOOK_ID non possiamo verificare la firma,
+  // quindi rifiutiamo l'evento invece di processarlo (anti-forgery).
   const webhookId = process.env.PAYPAL_WEBHOOK_ID || "";
-  if (!webhookId) return true;
+  if (!webhookId) return false;
   try {
     const token = await getPayPalAccessToken();
     const headers: Record<string, string> = {};

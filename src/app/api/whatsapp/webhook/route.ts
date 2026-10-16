@@ -1,6 +1,24 @@
 import { logAudit } from "@/lib/audit";
 import { getSiteUrl } from "@/lib/site-url";
 import { sendWhatsApp } from "@/lib/whatsapp/send";
+import crypto from "crypto";
+
+/** Verifica HMAC `X-Hub-Signature-256: sha256=<hex>` con WHATSAPP_APP_SECRET. */
+async function isMetaSignatureValid(req: Request, rawBody: string): Promise<boolean> {
+  const secret = process.env.WHATSAPP_APP_SECRET || "";
+  if (!secret) return false;
+  const sig = req.headers.get("x-hub-signature-256") || "";
+  const m = /^sha256=([0-9a-fA-F]+)$/.exec(sig);
+  if (!m) return false;
+  const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+  try {
+    const a = Buffer.from(m[1], "hex");
+    const b = Buffer.from(expected, "hex");
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Elabora il messaggio in arrivo: lo inoltra a /api/agent/run e ricompone la
@@ -68,10 +86,14 @@ export async function GET(req: Request) {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
+    // Fail-closed: senza WHATSAPP_VERIFY_TOKEN configurato non verificare mai
+    // con fallback hardcoded (sarebbe un bypass noto).
+    const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || "";
     if (
       mode === "subscribe" &&
       token &&
-      token === (process.env.WHATSAPP_VERIFY_TOKEN || "agentcloud_verify_token")
+      verifyToken &&
+      token === verifyToken
     ) {
       return new Response(challenge || "", {
         status: 200,
@@ -91,11 +113,28 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
   try {
+    // Fail-closed: ogni POST deve portare una firma Meta valida. Senza
+    // WHATSAPP_APP_SECRET configurato l'endpoint è disabilitato (niente
+    // trigger LLM/SMS non autenticati, niente tenant-spoof via query).
+    const rawBody = await req.text();
+    if (!(await isMetaSignatureValid(req, rawBody))) {
+      logAudit("whatsapp_invalid_signature", {});
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const url = new URL(req.url);
     const tenantId = url.searchParams.get("tenantId") || "default";
     const agentId = url.searchParams.get("agentId") || "personal-assistant";
 
-    const body = await req.json().catch(() => null);
+    const body = (() => {
+      try {
+        return JSON.parse(rawBody);
+      } catch {
+        return null;
+      }
+    })();
     if (!body) {
       return new Response(JSON.stringify({ error: "Invalid JSON" }), {
         status: 400,

@@ -18,9 +18,10 @@ function keyFromEnv(): Buffer {
   const k =
     process.env.GOOGLE_TOKEN_ENCRYPTION_KEY || process.env.TENANT_STORE_KEY;
   if (!k) {
+    // Fail-closed in produzione: mai cifrare token OAuth con chiave nota.
     if (process.env.NODE_ENV === "production") {
-      console.error(
-        "GOOGLE_TOKEN_ENCRYPTION_KEY (or TENANT_STORE_KEY) is not set; token encryption will use an insecure dev key.",
+      throw new Error(
+        "GOOGLE_TOKEN_ENCRYPTION_KEY (or TENANT_STORE_KEY) is not set",
       );
     }
     return crypto.createHash("sha256").update("dev-google-key").digest();

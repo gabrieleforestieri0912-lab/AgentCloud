@@ -165,13 +165,6 @@ export async function POST(request: Request) {
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
       });
-      // Segna anche il bypass per il proxy (lettura rapida senza httpOnly su client non necessaria)
-      res.cookies.set("ac_wl_bypass", "1", {
-        path: "/",
-        maxAge: expiresIn,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-      });
       return res;
     }
 
@@ -202,12 +195,6 @@ export async function POST(request: Request) {
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
-      });
-      res.cookies.set("ac_wl_bypass", "1", {
-        path: "/",
-        maxAge: expiresIn,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
       });
       return res;
     }

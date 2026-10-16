@@ -20,7 +20,14 @@ export type TenantCredentials = {
 const STORE_PATH = path.join(process.cwd(), "data", "tenants.json");
 
 function keyFromEnv() {
-  const k = process.env.TENANT_STORE_KEY || "dev-tenant-key";
+  const k = process.env.TENANT_STORE_KEY || "";
+  // Fail-closed in produzione: niente chiave nota "dev-tenant-key" (decifrabile).
+  if (!k) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("TENANT_STORE_KEY is not set");
+    }
+    return crypto.createHash("sha256").update("dev-tenant-key").digest();
+  }
   return crypto.createHash("sha256").update(k).digest();
 }
 

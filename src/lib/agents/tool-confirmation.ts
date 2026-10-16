@@ -39,6 +39,9 @@ const CONFIRMATION_TOOLS = new Set<string>([
   // destinatari). La bozza e il contenuto non sono qui: non inviano nulla.
   "mailchimp_schedule_campaign",
   "mailchimp_send_campaign",
+  // Disconnessione integrazione: distruttiva (revoca token, stop accesso agente).
+  // La UI mostra la conferma con provider e conseguenze prima di eseguire.
+  "integration_disconnect",
 ]);
 
 export function toolRequiresConfirmation(name: string): boolean {
@@ -65,12 +68,19 @@ export type PendingBatch = {
 };
 
 function keyForHmac(): string {
-  return (
+  const k =
     process.env.INTEGRATIONS_STATE_SECRET ||
     process.env.TENANT_STORE_KEY ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    "dev-tool-confirmation"
-  );
+    "";
+  // Fail-closed in produzione: niente HMAC con chiave nota o col service_role
+  // riusato (separazione chiavi). In dev resta il fallback locale.
+  if (!k) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("INTEGRATIONS_STATE_SECRET (or TENANT_STORE_KEY) is not set");
+    }
+    return "dev-tool-confirmation";
+  }
+  return k;
 }
 
 function sign(b64: string): string {

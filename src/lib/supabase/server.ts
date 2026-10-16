@@ -50,6 +50,8 @@ export async function getSessionUser(): Promise<User | null> {
   // Il token è il Supabase access_token (JWT) inviato come `Authorization: Bearer <token>`.
   // In alternativa: token API personale `act_…` generato nelle impostazioni
   // (`agentcloud login --token …` / AGENTCLOUD_TOKEN) — validato su api_tokens.
+  // NOTA: le API key `ack_…` (scope per-agente, solo POST /api/v1/run) NON sono
+  // accettate qui: usarle come sessione account-wide aggirerebbe lo scope.
   try {
     const { headers } = await import("next/headers");
     const headerStore = await headers();
@@ -57,8 +59,8 @@ export async function getSessionUser(): Promise<User | null> {
     if (auth?.startsWith("Bearer ")) {
       const token = auth.slice(7).trim();
       if (token.length > 20) {
-        const { isPat, isApiKey, resolveBearerCredential } = await import("./pat");
-        if (isPat(token) || isApiKey(token)) {
+        const { isPat, resolveBearerCredential } = await import("./pat");
+        if (isPat(token)) {
           const cred = await resolveBearerCredential(token);
           if (cred) return cred.user;
           return null;
