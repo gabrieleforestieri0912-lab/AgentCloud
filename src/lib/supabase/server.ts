@@ -48,6 +48,8 @@ export async function getSessionUser(): Promise<User | null> {
 
   // Fallback Bearer: CLI (`agentcloud login` → /cli/auth) e mobile condividono lo stesso DB.
   // Il token è il Supabase access_token (JWT) inviato come `Authorization: Bearer <token>`.
+  // In alternativa: token API personale `act_…` generato nelle impostazioni
+  // (`agentcloud login --token …` / AGENTCLOUD_TOKEN) — validato su api_tokens.
   try {
     const { headers } = await import("next/headers");
     const headerStore = await headers();
@@ -55,6 +57,12 @@ export async function getSessionUser(): Promise<User | null> {
     if (auth?.startsWith("Bearer ")) {
       const token = auth.slice(7).trim();
       if (token.length > 20) {
+        const { isPat, resolvePatUser } = await import("./pat");
+        if (isPat(token)) {
+          const patUser = await resolvePatUser(token);
+          if (patUser) return patUser;
+          return null;
+        }
         const { createClient: createSupabaseClient } = await import("@supabase/supabase-js");
         const supabase = createSupabaseClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,

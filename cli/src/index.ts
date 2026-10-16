@@ -9,7 +9,7 @@ import { browserLogin } from "./browser-login.js";
 import { printLoginHint, printWelcome } from "./welcome.js";
 import { select } from "./tui/select.js";
 import { bold, cyan, dim, green, hr, red, yellow } from "./ui.js";
-import { adminRequest, ApiError, loginUser, streamAgent, userRequest, userWhoAmI } from "./api.js";
+import { adminRequest, ApiError, loginUser, loginWithToken, streamAgent, userRequest, userWhoAmI } from "./api.js";
 import { CATALOG } from "./catalog.js";
 
 const SITE = "https://www.agentcloud.agency";
@@ -79,8 +79,13 @@ function printTable(rows: string[][]) {
   for (const row of rows) console.log(row.map((cell, i) => cell.padEnd(widths[i])).join("  "));
 }
 
-program.command("login").description("Accedi dal browser (apre /cli/auth e riceve il token da solo)").option("--password", "Usa email e password invece del browser").action(async (options: { password?: boolean }) => {
+program.command("login").description("Accedi dal browser, con email/password o con un token API (impostazioni → Token API)").option("--password", "Usa email e password invece del browser").option("--token <token>", "Usa un token API act_… generato nelle impostazioni (pagina /account)").action(async (options: { password?: boolean; token?: string }) => {
   try {
+    if (options.token) {
+      await loginWithToken(options.token.trim());
+      console.log("✓ Login con token completato. Credenziali salvate in ~/.agentcloud/credentials.json");
+      return;
+    }
     if (options.password || !output.isTTY) {
       if (!options.password && !output.isTTY) {
         console.log("Senza terminale interattivo uso email e password (il browser non si può aprire).");

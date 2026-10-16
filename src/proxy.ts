@@ -61,20 +61,27 @@ async function resolveSession(request: NextRequest) {
 
   // Fallback Bearer: CLI (`agentcloud login` → /cli/auth) e mobile condividono lo stesso DB.
   // Se non c'è sessione cookie ma c'è Authorization: Bearer <supabase_access_token>, validalo.
+  // In alternativa accetta i token API personali `act_…` generati nelle impostazioni.
   if (!user) {
     const auth = request.headers.get("authorization") ?? request.headers.get("Authorization");
     if (auth?.startsWith("Bearer ")) {
       const token = auth.slice(7).trim();
       if (token.length > 20) {
         try {
-          const { createClient } = await import("@supabase/supabase-js");
-          const supa = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            { global: { headers: { Authorization: `Bearer ${token}` } } },
-          );
-          const { data: { user: bearerUser } } = await supa.auth.getUser(token);
-          if (bearerUser) user = bearerUser as unknown as typeof user;
+          const { isPat, resolvePatUser } = await import("@/lib/supabase/pat");
+          if (isPat(token)) {
+            const patUser = await resolvePatUser(token);
+            if (patUser) user = patUser as unknown as typeof user;
+          } else {
+            const { createClient } = await import("@supabase/supabase-js");
+            const supa = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+              { global: { headers: { Authorization: `Bearer ${token}` } } },
+            );
+            const { data: { user: bearerUser } } = await supa.auth.getUser(token);
+            if (bearerUser) user = bearerUser as unknown as typeof user;
+          }
         } catch {}
       }
     }

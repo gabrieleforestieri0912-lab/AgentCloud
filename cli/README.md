@@ -95,6 +95,17 @@ Fallback senza browser (server, email/password):
 agentcloud login --password
 ```
 
+Token API personale (consigliato su server headless e CI): generalo in
+`/account` → “Token API per la CLI”, poi usalo una tantum o via env — nessun
+browser, nessuna scadenza, revocabile in qualsiasi momento:
+
+```bash
+agentcloud login --token act_...
+
+# oppure senza salvare nulla su disco:
+AGENTCLOUD_TOKEN=act_... agentcloud agents run <slug> "ciao"
+```
+
 Prima del login con password configura le chiavi pubbliche Supabase
 nell'ambiente:
 

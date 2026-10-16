@@ -52,9 +52,41 @@ export async function loginUser(email: string, password: string) {
   return credentials;
 }
 
+/**
+ * Login con token API personale (`act_…`, generato in /account → Token API).
+ * Il token non scade e non ha refresh: vale finché non viene revocato.
+ */
+export async function loginWithToken(token: string) {
+  if (!token.startsWith("act_")) {
+    throw new Error("Token non valido: i token API iniziano con `act_` (generali in /account → Token API per la CLI).");
+  }
+  const credentials: UserCredentials = {
+    accessToken: token,
+    refreshToken: "",
+    // I token API non scadono: usa un expiresAt lontano così non si tenta mai il refresh.
+    expiresAt: Number.MAX_SAFE_INTEGER,
+  };
+  saveCredentials(credentials);
+  return credentials;
+}
+
+function isApiToken(token: string) {
+  return token.startsWith("act_");
+}
+
 async function getValidUserToken() {
+  // Token via env (CI/server headless): priorità massima, mai rinfrescato.
+  const envToken = (process.env.AGENTCLOUD_TOKEN || "").trim();
+  if (envToken) {
+    if (!isApiToken(envToken)) {
+      throw new ApiError(401, "AGENTCLOUD_TOKEN non valido: i token API iniziano con `act_`.");
+    }
+    return envToken;
+  }
   const credentials = loadCredentials();
   if (!credentials) throw new ApiError(401, "Non autenticato: esegui `agentcloud login`.");
+  // I token API non scadono né si rinfrescano: usali così come sono.
+  if (isApiToken(credentials.accessToken)) return credentials.accessToken;
   if (Date.now() < credentials.expiresAt) return credentials.accessToken;
   if (!credentials.refreshToken) {
     throw new ApiError(401, "Sessione scaduta: esegui di nuovo `agentcloud login`.");

@@ -50,6 +50,9 @@ export async function POST() {
     // 4. Elimina dalla waitlist
     await admin.from("waitlist").delete().eq("email", user.email || "");
 
+    // 4b. Revoca i token API personali (la CLI smette subito di funzionare)
+    await admin.from("api_tokens").delete().eq("user_id", userId);
+
     // 5. Elimina l'utente Supabase Auth
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
     if (deleteError) {

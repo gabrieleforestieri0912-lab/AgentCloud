@@ -7,6 +7,7 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AccountClient from "./account-client";
+import ApiTokens from "./api-tokens";
 import SettingsClient from "../settings/settings-client";
 import { listShopifyConnections } from "@/lib/shopify/connections";
 import { getGoogleConnectionSummary } from "@/lib/google/connections";
@@ -80,7 +81,10 @@ export default async function AccountPage() {
             <h2 className="text-2xl font-bold text-white mb-6">
               {dict.accountPage.settingsTitle}
             </h2>
-            <SettingsClient isMock={false} email={email} />
+            <div className="space-y-6">
+              <ApiTokens />
+              <SettingsClient isMock={false} email={email} />
+            </div>
           </div>
         </div>
       </section>
