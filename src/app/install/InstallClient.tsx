@@ -491,9 +491,13 @@ export default function InstallClient() {
                     Porta il copilota AI su qualsiasi scheda: automazioni web, scraping di pagine, composizione email e analisi in tempo reale.
                   </p>
                 </div>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-                  Manifest V3 Ufficiale
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  Prossimamente — non ancora disponibile
                 </span>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200/90">
+                L&apos;estensione browser è in arrivo e non è ancora installabile. Questa pagina mostra un&apos;anteprima di come funzionerà una volta disponibile.
               </div>
 
               {/* Extension Actions */}
