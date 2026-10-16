@@ -43,7 +43,7 @@ export default function InstallClient() {
       case "yarn":
         return "yarn global add agentcloud-cli";
       case "npx":
-        return "npx agentcloud-cli login";
+        return "npx -p agentcloud-cli agentcloud login";
     }
   };
 
@@ -261,6 +261,12 @@ export default function InstallClient() {
                     )}
                   </button>
                 </div>
+                {cliPkg === "yarn" && (
+                  <p className="mt-1.5 text-[11px] text-neutral-500">Vale per Yarn Classic 1.x — da Yarn 2+ il comando global non esiste: usa npm o pnpm.</p>
+                )}
+                {cliPkg === "npx" && (
+                  <p className="mt-1.5 text-[11px] text-neutral-500">Senza installazione: scarica ed esegue la CLI al volo (serve Node 18+).</p>
+                )}
                 <div className="mt-2 flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-4 font-mono text-xs text-neutral-300">
                   <div className="flex items-center gap-3 select-all min-w-0">
                     <span className="text-neutral-600 select-none">$</span>
@@ -519,8 +525,12 @@ export default function InstallClient() {
                   </p>
                 </div>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
-                  Prossimamente · Chrome Web Store
+                  Prossimamente — non ancora disponibile
                 </span>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200/90">
+                L&apos;estensione browser è in arrivo e non è ancora installabile. Questa pagina mostra un&apos;anteprima di come funzionerà una volta disponibile.
               </div>
 
               {/* Extension Actions */}

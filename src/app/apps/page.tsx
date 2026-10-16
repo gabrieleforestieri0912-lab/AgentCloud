@@ -12,8 +12,8 @@ import { MonitorDown, Smartphone, TerminalSquare, PanelRight, ArrowRight, ArrowL
  * browser. Citata dalla landing (sezione #app, navbar, footer): è il punto
  * unico da cui installare tutto l'ecosistema.
  *
- * Onestà di stato: la CLI si installa da npm, l'estensione si carica non
- * pacchettizzata, desktop e mobile arrivano dai build CI / store.
+ * Onestà di stato: la CLI si installa da npm, desktop, mobile ed estensione
+ * sono in arrivo (badge "In arrivo" / "Prossimamente").
  */
 export const revalidate = 300;
 

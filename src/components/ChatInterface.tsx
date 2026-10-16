@@ -122,7 +122,7 @@ import {
 
 type LocalMessage = {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   created_at: string;
   // True per le bolle dell'assistente che contengono un errore invece di una
@@ -134,8 +134,16 @@ type LocalMessage = {
   files?: ChatFileRecord[];
   // Agente che ha prodotto la bolla (assente per l'assistente generico):
   // serve a mostrare avatar e nome corretti anche dopo un reload.
+  // Per i divisori di sistema (systemKind "agent-switch") è l'agente di
+  // destinazione (assente = assistente generico).
   agentSlug?: string;
   agentName?: string;
+  // Divisore di sistema dentro la stessa conversazione (es. cambio agente):
+  // non va mai inviato alle API, solo renderizzato come avviso visivo.
+  systemKind?: "agent-switch";
+  // Cambio agente: da dove si proviene (per il testo "da X a Y").
+  switchFromSlug?: string;
+  switchFromName?: string;
   // Traccia operativa dell'esecuzione (task, strumenti, approvazioni):
   // deriva dagli eventi SSE, mai dal ragionamento del modello.
   activity?: AgentStep[];
@@ -792,19 +800,33 @@ export default function ChatInterface({
   }, [agentSearch, selectableAgents]);
 
   /** Cambia l'agente della chat: il nuovo SOSTITUISCE il precedente (un solo
-      agente per chat), mai in aggiunta. Qualsiasi cambio apre una NUOVA
-      conversazione, così ogni chat resta con un solo contesto e non si
-      mischiano agenti diversi negli stessi messaggi. Unica eccezione: la chat
-      nuova ancora vuota, che viene riusata sul posto per non accumulare
-      conversazioni vuote. Il testo già digitato viene riportato nella nuova.
-      Ricliccare l'agente attivo lo deseleziona (si torna all'assistente generico). */
+      agente per chat), mai in aggiunta. Il cambio resta NELLA STESSA
+      conversazione e inserisce un divisore di sistema "agent-switch" che
+      avvisa l'utente ("Ora stai parlando con X"): i messaggi precedenti
+      restano visibili sotto il divisore. Unica eccezione: la chat nuova
+      ancora vuota, che cambia agente sul posto senza divisore (niente da
+      separare). Ricliccare l'agente attivo lo deseleziona (si torna
+      all'assistente generico). */
   function toggleAgent(slug: string) {
     const next =
       selectedAgentSlugs.length === 1 && selectedAgentSlugs[0] === slug ? [] : [slug];
     setShowAgentPicker(false);
+    setAgentSearch("");
+    const resolveName = (s: string) =>
+      effectiveAvailableAgents.find((a) => a.slug === s)?.name ??
+      agentsBySlug.get(s)?.name ??
+      (agentLabel && selectedAgentSlugs.includes(s) ? agentLabel : undefined) ??
+      s;
     const activeConv = conversationsRef.current.find((c) => c.id === activeId);
-    if (activeConv && activeConv.messages.length === 0) {
-      // Chat nuova ancora vuota: cambia agente sul posto.
+    if (!activeConv) {
+      setSelectedAgentSlugs(next);
+      setActiveAgentId(next[0] ?? "");
+      return;
+    }
+    const prevKey = selectedAgentSlugs.join("|");
+    if (prevKey === next.join("|")) return;
+    if (activeConv.messages.length === 0) {
+      // Chat nuova ancora vuota: cambia agente sul posto, senza divisore.
       setSelectedAgentSlugs(next);
       setActiveAgentId(next[0] ?? "");
       setConversations((prev) =>
@@ -814,25 +836,29 @@ export default function ChatInterface({
       );
       return;
     }
-    // Fork: la chat corrente resta intatta in cronologia, si riparte da una
-    // nuova con gli agenti scelti. Testo e allegati digitati seguono l'utente.
-    const carriedInput = input;
-    const carriedAttachments = attach.take();
-    const conv: LocalConversation = {
+    // Stessa chat: avvisa con un divisore prima di continuare.
+    const fromSlug = selectedAgentSlugs[0];
+    const toSlug = next[0];
+    const divider: LocalMessage = {
       id: generateId(),
-      title: dict.chat.newChat,
-      messages: [],
+      role: "system",
+      content: "",
       created_at: new Date().toISOString(),
-      agentSlugs: [...next],
-      // Il fork resta nello stesso progetto della chat di origine.
-      projectId: activeConv?.projectId,
+      systemKind: "agent-switch",
+      agentSlug: toSlug,
+      agentName: toSlug ? resolveName(toSlug) : dict.chat.assistantName,
+      switchFromSlug: fromSlug,
+      switchFromName: fromSlug ? resolveName(fromSlug) : dict.chat.assistantName,
     };
-    setConversations((prev) => [conv, ...prev]);
-    setActiveId(conv.id);
     setSelectedAgentSlugs(next);
     setActiveAgentId(next[0] ?? "");
-    setInput(carriedInput);
-    attach.restore(carriedAttachments);
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === activeConv.id
+          ? { ...c, agentSlugs: [...next], messages: [...c.messages, divider] }
+          : c,
+      ),
+    );
     setMobileSidebarOpen(false);
   }
 
@@ -1750,9 +1776,10 @@ export default function ChatInterface({
         conversationsRef.current.find((c) => c.id === convId)?.messages ?? []
         // La bolla appena creata è aggiunta sotto come apiContent: toglierla
         // dalla cronologia evita di inviare due volte lo stesso messaggio.
-      ).filter((m) => m.id !== userMsg.id);
+        // I divisori di sistema (cambio agente) restano solo visivi: mai alle API.
+      ).filter((m) => m.id !== userMsg.id && m.role !== "system");
       const apiMessages = [
-        ...history.map((m) => ({ role: m.role, content: m.content })),
+        ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
         { role: "user" as const, content: apiContent },
       ];
       const filesMap = toFilesMap(pending.filter((a) => a.kind !== "image"));
@@ -3138,7 +3165,43 @@ export default function ChatInterface({
               className="flex-1 overflow-y-auto px-4 sm:px-6 pt-14 pb-48"
             >
             <div ref={contentRef} className="space-y-6 mx-auto max-w-4xl">
-            {messages.map((msg, msgIndex) => (
+            {messages.map((msg, msgIndex) => {
+              // Divisore di cambio agente: avviso visivo nella stessa chat,
+              // mai inviato alle API. Mostra da quale agente a quale si passa.
+              if (msg.role === "system" && msg.systemKind === "agent-switch") {
+                const target = msg.agentSlug ? agentForMessage(msg) : null;
+                const toName = msg.agentName ?? dict.chat.assistantName;
+                return (
+                  <div key={msg.id} className="flex items-center gap-3 py-1" role="separator" aria-label={t(dict.chat.nowChattingWith, { name: toName })}>
+                    <span className="h-px flex-1 bg-white/10" />
+                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs">
+                      {target ? (
+                        <AgentAvatar agent={target} size="sm" />
+                      ) : (
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20">
+                          <Image
+                            src="/agentcloud.png"
+                            alt="AgentCloud"
+                            width={14}
+                            height={14}
+                            className="h-3.5 w-3.5"
+                          />
+                        </span>
+                      )}
+                      <span className="min-w-0 text-left">
+                        <span className="block truncate font-bold text-neutral-200">
+                          {t(dict.chat.nowChattingWith, { name: toName })}
+                        </span>
+                        <span className="block text-[11px] font-medium text-neutral-500">
+                          {dict.chat.agentSwitchHint}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="h-px flex-1 bg-white/10" />
+                  </div>
+                );
+              }
+              return (
               <div
                 key={msg.id}
                 className={`flex items-start gap-3 ${
@@ -3334,7 +3397,8 @@ export default function ChatInterface({
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
 
           {/* Indicatori di generazione.
               I tre puntini SOSTITUISCONO l'avatar dell'agente (stesso ingombro,
@@ -3429,15 +3493,17 @@ export default function ChatInterface({
                   <ExportReportButton
                     variant="floating"
                     type="chat"
-                    messages={messages.map((m) => ({
-                      role: m.role,
-                      content: m.content,
-                      agentName:
-                        m.role === "assistant"
-                          ? (m.agentName ?? activeAgentDisplayName)
-                          : undefined,
-                      timestamp: m.created_at,
-                    }))}
+                    messages={messages
+                      .filter((m) => m.role !== "system")
+                      .map((m) => ({
+                        role: m.role as "user" | "assistant",
+                        content: m.content,
+                        agentName:
+                          m.role === "assistant"
+                            ? (m.agentName ?? activeAgentDisplayName)
+                            : undefined,
+                        timestamp: m.created_at,
+                      }))}
                     agentName={activeAgentDisplayName || "AgentCloud"}
                     agentSlug={activeAgentId || "agent"}
                   />
