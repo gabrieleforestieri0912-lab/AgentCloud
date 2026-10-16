@@ -58,7 +58,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="relative border-t border-white/5 pb-[env(safe-area-inset-bottom)] text-white">
+    <footer className="relative border-t border-white/5 bg-black pb-[env(safe-area-inset-bottom)] text-white">
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/70 to-transparent" />
       <div
         className="pointer-events-none absolute inset-0 select-none"
