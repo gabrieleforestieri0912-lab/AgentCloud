@@ -26,19 +26,18 @@ import AgentIcon from "./AgentIcon";
 import BrandLogo from "./BrandLogo";
 import MobileNav from "./MobileNav";
 import {
-  AGENTS,
   AVAILABLE_AGENTS,
   getFeaturedAgents,
   localizeAgent,
   type Agent,
 } from "@/lib/agents";
-import { ShoppingCart, MessageSquare, Sparkles, Package } from "lucide-react";
+import { ShoppingCart, MessageSquare } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 import NotificationBell from "./NotificationBell";
 import { useCart } from "./CartProvider";
 
-type MenuKey = "marketplace" | "solutions" | "integrations" | "pricing" | "customization";
+type MenuKey = "marketplace" | "solutions" | "integrations" | "pricing";
 
 type NavbarProps = {
   /**
@@ -75,7 +74,7 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
   // caso gli agenti vengono localizzati con la lingua attiva così le etichette
   // del menu non perdono mai inglese (localizeAgent è idempotente per input
   // già localizzati).
-  const fallbackAgents = false ? AGENTS : AVAILABLE_AGENTS;
+  const fallbackAgents = AVAILABLE_AGENTS;
   const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );
@@ -163,7 +162,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     { key: "marketplace" as MenuKey, label: dict.navbar.marketplace, href: "/#marketplace" },
     { key: "solutions" as MenuKey, label: dict.navbar.solutions, href: "/#soluzioni" },
     { key: "integrations" as MenuKey, label: dict.navbar.integrations, href: "/#integrazioni" },
-    { key: "customization" as MenuKey, label: dict.navbar.customization, href: "/skills" },
   ];
   // Le soluzioni puntano al proprio agente quando la piattaforma lo offre già;
   // le altre non sono ancora disponibili e rimandano alla richiesta agente personalizzato.
@@ -198,7 +196,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
     solutions: 288,
     integrations: 420,
     pricing: 320,
-    customization: 288,
   };
 
   function openMenu(key: MenuKey) {
@@ -393,48 +390,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                               </div>
                             )}
 
-                            {item.key === "customization" && (
-                              <div className="w-72">
-                                <p className="mb-3 px-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                                  {dict.navbar.customization}
-                                </p>
-                                <div className="space-y-1">
-                                  <Link
-                                    href="/skills"
-                                    className="group flex items-center gap-3 rounded-xl border border-transparent p-3 transition-all hover:border-white/10 hover:bg-white/5"
-                                  >
-                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
-                                      <Sparkles size={16} />
-                                    </span>
-                                    <span className="min-w-0">
-                                      <span className="block text-sm font-bold text-white group-hover:text-brand-300 transition-colors">
-                                        {dict.navbar.skills}
-                                      </span>
-                                      <span className="block truncate text-xs font-medium text-neutral-500">
-                                        {dict.navbar.customizationSkillsDesc}
-                                      </span>
-                                    </span>
-                                  </Link>
-                                  <Link
-                                    href="/plugins"
-                                    className="group flex items-center gap-3 rounded-xl border border-transparent p-3 transition-all hover:border-white/10 hover:bg-white/5"
-                                  >
-                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
-                                      <Package size={16} />
-                                    </span>
-                                    <span className="min-w-0">
-                                      <span className="block text-sm font-bold text-white group-hover:text-brand-300 transition-colors">
-                                        {dict.navbar.plugins}
-                                      </span>
-                                      <span className="block truncate text-xs font-medium text-neutral-500">
-                                        {dict.navbar.customizationPluginsDesc}
-                                      </span>
-                                    </span>
-                                  </Link>
-                                </div>
-                              </div>
-                            )}
-
                             {item.key === "pricing" && (
                               <div className="grid grid-cols-3 gap-2 w-80">
                                 {dict.navbar.pricingItems.map(({ plan, price, text }) => (
@@ -463,12 +418,6 @@ export default function Navbar({ marketplaceAgents }: NavbarProps) {
                 </div>
               ))}
 
-              <Link
-                href="/#app"
-                className="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold text-neutral-400 transition-all duration-200 hover:bg-white/5 hover:text-white"
-              >
-                {dict.navbar.appsLabel}
-              </Link>
             </nav>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">

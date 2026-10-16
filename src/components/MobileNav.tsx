@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronRight, ShoppingCart, MessageSquare, LayoutDashboard, User, LogOut } from "lucide-react";
 import Image from "next/image";
 import AgentIcon from "./AgentIcon";
-import { AGENTS, AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
+import { AVAILABLE_AGENTS, localizeAgent, type Agent } from "@/lib/agents";
 import { useLanguage } from "./LanguageProvider";
 import { useCart } from "./CartProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -85,7 +85,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
   // Le pagine server passano la lista autoritativa; altrimenti si ripiega sul
   // cookie di accesso (chi ha il codice vede il catalogo COMPLETO anche nel
   // menu mobile).
-  const fallbackAgents = false ? AGENTS : AVAILABLE_AGENTS;
+  const fallbackAgents = AVAILABLE_AGENTS;
   const agents = (marketplaceAgents ?? fallbackAgents).map((agent) =>
     localizeAgent(agent, locale),
   );
@@ -137,30 +137,6 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
       id: "integrations",
       label: dict.navbar.integrations,
       href: "/integrations",
-    },
-    {
-      id: "customization",
-      label: dict.navbar.customization,
-      href: "/skills",
-      children: [
-        {
-          label: dict.navbar.skills,
-          href: "/skills",
-          icon: "bot",
-          accent: "bg-brand-500/20",
-        },
-        {
-          label: dict.navbar.plugins,
-          href: "/plugins",
-          icon: "package",
-          accent: "bg-brand-500/20",
-        },
-      ],
-    },
-    {
-      id: "apps",
-      label: dict.navbar.appsLabel,
-      href: "/apps",
     },
   ];
 
