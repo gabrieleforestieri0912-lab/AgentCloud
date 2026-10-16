@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { assertRunAllowed } from "@/lib/billing/usage-tracking";
+import {
+  FREE_MESSAGES_PER_DAY,
+  getFreeMessagesUsed,
+} from "@/lib/billing/free-limit";
+import { getClientIp } from "@/lib/request-ip";
 import { resolveIsAdmin } from "@/lib/admin-access";
 import { getLocale } from "@/lib/i18n/locale";
 import { apiErrorMessageForLocale } from "@/lib/i18n/api-errors";
@@ -18,9 +23,10 @@ import {
  *        (accettati anche i token CLI act_…).
  * Body:  { "agent": "<slug-agente-abbonato>", "messages": [{role, content}], "stream"?: false }
  *
- * Nel codice si specifica SEMPRE il modello (slug) a cui si è abbonati: il
- * server verifica che la key sia valida, che lo scope lo consenta e che
- * l'abbonamento sia attivo (niente abbonamento → 402). La key da sola non basta.
+ * Nel codice si specifica SEMPRE il modello (slug): il server verifica che
+ * la key sia valida e che lo scope lo consenta. Con abbonamento attivo vale
+ * la quota del piano; senza abbonamento valgono gli stessi 5 messaggi
+ * gratuiti al giorno della chat (stesso contatore condiviso).
  *
  * Risposta: JSON { ok, agent, reply } oppure — con "stream": true — lo stesso
  * SSE di /api/agent/run. Le conferme umane dei tool distruttivi non sono
@@ -84,10 +90,39 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Abbonamento: via API serve un piano attivo — niente free tier anonimo.
+  // Abbonamento: attivo → quota del piano. Senza abbonamento attivo la key
+  // NON viene rifiutata: vale lo stesso freemium della chat (5 messaggi al
+  // giorno in totale, stesso contatore condiviso). Solo gli altri blocchi
+  // (scaduto ma con piano, limiti mensili superati, …) tornano 402/429.
   const isAdmin = await resolveIsAdmin(cred.user);
   const check = await assertRunAllowed(cred.user.id, agent, locale, isAdmin);
-  if (!check.allowed) {
+  if (!isAdmin) {
+    if (
+      !check.allowed &&
+      (check.code === "NOT_SUBSCRIBED" ||
+        check.code === "SUBSCRIPTION_INACTIVE" ||
+        check.code === "SUBSCRIPTION_EXPIRED")
+    ) {
+      const used = await getFreeMessagesUsed(cred.user.id, getClientIp(req));
+      if (used >= FREE_MESSAGES_PER_DAY) {
+        return NextResponse.json(
+          {
+            ok: false,
+            code: "FREE_LIMIT_REACHED",
+            error: apiErrorMessageForLocale(locale, "freeLimitReached"),
+            remaining: 0,
+            limit: FREE_MESSAGES_PER_DAY,
+          },
+          { status: 402 },
+        );
+      }
+    } else if (!check.allowed) {
+      return NextResponse.json(
+        { ok: false, code: check.code, error: check.message },
+        { status: check.status },
+      );
+    }
+  } else if (!check.allowed) {
     return NextResponse.json(
       { ok: false, code: check.code, error: check.message },
       { status: check.status },

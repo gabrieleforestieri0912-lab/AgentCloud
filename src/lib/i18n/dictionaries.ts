@@ -2226,7 +2226,7 @@ reasons: [
   },
   apiKeys: {
     title: "API keys per i tuoi progetti",
-    desc: "Integra i tuoi agenti in siti e app esterne via POST /api/v1/run. Nel codice specifichi il modello (slug) a cui sei abbonato — la key da sola non basta: senza abbonamento attivo la chiamata viene rifiutata. Puoi limitare ogni key a un solo modello, e revocarla in qualsiasi momento.",
+    desc: "Integra i tuoi agenti in siti e app esterne via POST /api/v1/run. Nel codice specifichi il modello (slug): con abbonamento attivo vale la quota del piano, senza abbonamento valgono gli stessi 5 messaggi gratuiti al giorno della chat (contatore condiviso). Puoi limitare ogni key a un solo modello, e revocarla in qualsiasi momento.",
     namePlaceholder: "Nome della key (es. Sito vetrina, CRM)",
     scopeLabel: "Modello (agente)",
     scopeAll: "Tutti i modelli posseduti",
@@ -4635,7 +4635,7 @@ chat: {
   },
   apiKeys: {
     title: "API keys for your projects",
-    desc: "Integrate your agents into external sites and apps via POST /api/v1/run. In code you always specify the model (slug) you're subscribed to — the key alone is not enough: calls without an active subscription are rejected. You can scope each key to a single model, and revoke it anytime.",
+    desc: "Integrate your agents into external sites and apps via POST /api/v1/run. In code you always specify the model (slug): with an active subscription the plan quota applies, without one the same 5 free messages per day as the chat apply (shared counter). You can scope each key to a single model, and revoke it anytime.",
     namePlaceholder: "Key name (e.g. Marketing site, CRM)",
     scopeLabel: "Model (agent)",
     scopeAll: "All owned models",
@@ -7038,7 +7038,7 @@ agentsPage: {
   },
   apiKeys: {
     title: "API keys para tus proyectos",
-    desc: "Integra tus agentes en sitios y apps externas vía POST /api/v1/run. En el código siempre especificas el modelo (slug) al que estás suscrito — la key sola no basta: sin suscripción activa la llamada se rechaza. Puedes limitar cada key a un solo modelo y revocarla en cualquier momento.",
+    desc: "Integra tus agentes en sitios y apps externas vía POST /api/v1/run. En el código siempre especificas el modelo (slug): con suscripción activa vale la cuota del plan, sin ella valen los mismos 5 mensajes gratis al día del chat (contador compartido). Puedes limitar cada key a un solo modelo y revocarla en cualquier momento.",
     namePlaceholder: "Nombre de la key (p. ej. Web, CRM)",
     scopeLabel: "Modelo (agente)",
     scopeAll: "Todos los modelos",
@@ -9441,7 +9441,7 @@ chat: {
   },
   apiKeys: {
     title: "API-Keys für deine Projekte",
-    desc: "Binde deine Agenten per POST /api/v1/run in externe Seiten und Apps ein. Im Code gibst du immer das Modell (Slug) an, das du abonniert hast — der Key allein genügt nicht: Ohne aktives Abo wird der Aufruf abgelehnt. Jeder Key lässt sich auf ein Modell beschränken und jederzeit widerrufen.",
+    desc: "Binde deine Agenten per POST /api/v1/run in externe Seiten und Apps ein. Im Code gibst du immer das Modell (Slug) an: Mit aktivem Abo gilt die Plan-Quote, ohne Abo gelten dieselben 5 Gratis-Nachrichten pro Tag wie im Chat (geteilter Zähler). Jeder Key lässt sich auf ein Modell beschränken und jederzeit widerrufen.",
     namePlaceholder: "Key-Name (z. B. Website, CRM)",
     scopeLabel: "Modell (Agent)",
     scopeAll: "Alle eigenen Modelle",
@@ -11844,7 +11844,7 @@ browseMarketplace: "Parcourir la marketplace",
   },
   apiKeys: {
     title: "Clés API pour vos projets",
-    desc: "Intégrez vos agents dans des sites et apps externes via POST /api/v1/run. Dans le code, vous indiquez toujours le modèle (slug) auquel vous êtes abonné — la clé seule ne suffit pas : sans abonnement actif, l'appel est rejeté. Chaque clé peut être limitée à un seul modèle, et révoquée à tout moment.",
+    desc: "Intégrez vos agents dans des sites et apps externes via POST /api/v1/run. Dans le code, vous indiquez toujours le modèle (slug) : avec un abonnement actif c'est le quota du plan qui s'applique, sinon ce sont les mêmes 5 messages gratuits par jour que le chat (compteur partagé). Chaque clé peut être limitée à un seul modèle, et révoquée à tout moment.",
     namePlaceholder: "Nom de la clé (p. ex. Site, CRM)",
     scopeLabel: "Modèle (agent)",
     scopeAll: "Tous les modèles",
