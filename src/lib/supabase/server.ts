@@ -57,10 +57,10 @@ export async function getSessionUser(): Promise<User | null> {
     if (auth?.startsWith("Bearer ")) {
       const token = auth.slice(7).trim();
       if (token.length > 20) {
-        const { isPat, resolvePatUser } = await import("./pat");
-        if (isPat(token)) {
-          const patUser = await resolvePatUser(token);
-          if (patUser) return patUser;
+        const { isPat, isApiKey, resolveBearerCredential } = await import("./pat");
+        if (isPat(token) || isApiKey(token)) {
+          const cred = await resolveBearerCredential(token);
+          if (cred) return cred.user;
           return null;
         }
         const { createClient: createSupabaseClient } = await import("@supabase/supabase-js");

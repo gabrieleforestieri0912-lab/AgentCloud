@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AccountClient from "./account-client";
 import ApiTokens from "./api-tokens";
+import ApiKeys from "./api-keys";
 import SettingsClient from "../settings/settings-client";
 import { listShopifyConnections } from "@/lib/shopify/connections";
 import { getGoogleConnectionSummary } from "@/lib/google/connections";
@@ -83,6 +84,7 @@ export default async function AccountPage() {
             </h2>
             <div className="space-y-6">
               <ApiTokens />
+              <ApiKeys />
               <SettingsClient isMock={false} email={email} />
             </div>
           </div>

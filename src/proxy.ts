@@ -68,10 +68,10 @@ async function resolveSession(request: NextRequest) {
       const token = auth.slice(7).trim();
       if (token.length > 20) {
         try {
-          const { isPat, resolvePatUser } = await import("@/lib/supabase/pat");
-          if (isPat(token)) {
-            const patUser = await resolvePatUser(token);
-            if (patUser) user = patUser as unknown as typeof user;
+          const { isPat, isApiKey, resolveBearerCredential } = await import("@/lib/supabase/pat");
+          if (isPat(token) || isApiKey(token)) {
+            const cred = await resolveBearerCredential(token);
+            if (cred) user = cred.user as unknown as typeof user;
           } else {
             const { createClient } = await import("@supabase/supabase-js");
             const supa = createClient(

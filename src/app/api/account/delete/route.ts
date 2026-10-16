@@ -53,6 +53,9 @@ export async function POST() {
     // 4b. Revoca i token API personali (la CLI smette subito di funzionare)
     await admin.from("api_tokens").delete().eq("user_id", userId);
 
+    // 4c. Revoca le API keys (le integrazioni esterne smettono di funzionare)
+    await admin.from("api_keys").delete().eq("user_id", userId);
+
     // 5. Elimina l'utente Supabase Auth
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
     if (deleteError) {

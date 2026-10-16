@@ -17,20 +17,41 @@ import type { User } from "@supabase/supabase-js";
 export const PAT_PREFIX = "act_";
 const PAT_BODY_LENGTH = 48;
 
-export function isPat(token: string): boolean {
+/** API keys per integrazioni esterne (`ack_…`, usate su POST /api/v1/run). */
+export const API_KEY_PREFIX = "ack_";
+const API_KEY_BODY_LENGTH = 48;
+
+function isPrefixedKey(token: string, prefix: string, bodyLength: number): boolean {
   return (
-    token.startsWith(PAT_PREFIX) &&
-    token.length === PAT_PREFIX.length + PAT_BODY_LENGTH &&
+    token.startsWith(prefix) &&
+    token.length === prefix.length + bodyLength &&
     /^[A-Za-z0-9_-]+$/.test(token)
   );
 }
 
+export function isPat(token: string): boolean {
+  return isPrefixedKey(token, PAT_PREFIX, PAT_BODY_LENGTH);
+}
+
+export function isApiKey(token: string): boolean {
+  return isPrefixedKey(token, API_KEY_PREFIX, API_KEY_BODY_LENGTH);
+}
+
 /** Token in chiaro da mostrare UNA sola volta alla creazione. */
 export function generatePat(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(24));
+  return generatePrefixedKey(PAT_PREFIX, 24);
+}
+
+/** API key in chiaro da mostrare UNA sola volta alla creazione. */
+export function generateApiKey(): string {
+  return generatePrefixedKey(API_KEY_PREFIX, 24);
+}
+
+function generatePrefixedKey(prefix: string, bytes: number): string {
+  const arr = crypto.getRandomValues(new Uint8Array(bytes));
   let body = "";
-  for (const b of bytes) body += b.toString(16).padStart(2, "0");
-  return `${PAT_PREFIX}${body}`;
+  for (const b of arr) body += b.toString(16).padStart(2, "0");
+  return `${prefix}${body}`;
 }
 
 /** Prefisso visibile in lista (es. `act_ab12cd34`) — mai il token intero. */
@@ -48,35 +69,58 @@ export async function sha256Hex(input: string): Promise<string> {
     .join("");
 }
 
+export type BearerCredential = {
+  user: User;
+  /** Solo per le API keys: slug dell'agente a cui è limitata, o null = tutti. */
+  scopeAgent: string | null;
+};
+
 /**
  * Risolve un token `act_…` nell'utente proprietario (o null se sconosciuto /
  * revocato / DB non disponibile). Aggiorna last_used_at best-effort.
  * Non lancia mai eccezioni.
  */
 export async function resolvePatUser(token: string): Promise<User | null> {
+  return (await resolveBearerCredential(token))?.user ?? null;
+}
+
+/**
+ * Risolve `act_…` (token CLI) e `ack_…` (API key): per le key restituisce
+ * anche lo scope agente. Non lancia mai eccezioni.
+ */
+export async function resolveBearerCredential(
+  token: string,
+): Promise<BearerCredential | null> {
   try {
-    if (!isPat(token)) return null;
+    const pat = isPat(token);
+    const key = !pat && isApiKey(token);
+    if (!pat && !key) return null;
     const { createAdminClient } = await import("./admin");
     const admin = createAdminClient();
     if (!admin) return null;
     const hash = await sha256Hex(token);
+    const table = key ? "api_keys" : "api_tokens";
+    const select = key ? "user_id,agent_slug" : "user_id";
     const { data } = await admin
-      .from("api_tokens")
-      .select("user_id")
-      .eq("token_hash", hash)
+      .from(table)
+      .select(select)
+      .eq(key ? "key_hash" : "token_hash", hash)
       .is("revoked_at", null)
       .maybeSingle();
-    const userId = (data as { user_id?: string } | null)?.user_id;
-    if (!userId) return null;
-    const { data: userData } = await admin.auth.admin.getUserById(userId);
+    const row = data as { user_id?: string; agent_slug?: string | null } | null;
+    if (!row?.user_id) return null;
+    const { data: userData } = await admin.auth.admin.getUserById(row.user_id);
     const user = userData?.user;
     if (!user) return null;
     void admin
-      .from("api_tokens")
+      .from(table)
       .update({ last_used_at: new Date().toISOString() })
-      .eq("token_hash", hash)
-      .then(() => undefined, () => undefined);
-    return user as User;
+      .eq(key ? "key_hash" : "token_hash", hash)
+      .then(
+        () => undefined,
+        () => undefined,
+      );
+    return { user: user as User, scopeAgent: key ? (row.agent_slug ?? null) : null };
   } catch {
     return null;
   }
