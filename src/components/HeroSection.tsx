@@ -552,26 +552,6 @@ export default function HeroSection() {
             {dict.hero.subtitle}
           </motion.p>
 
-          {/* Nota piano gratuito: 5 messaggi/giorno in totale — esplicita per i nuovi utenti. */}
-          <motion.div
-            className="mx-auto mt-5 flex justify-center"
-            variants={{
-              hidden: { opacity: 0, y: 16 },
-              visible: {
-                opacity: 1,
-                y: 0,
-                transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
-              },
-            }}
-          >
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 text-[13px] sm:text-sm font-bold text-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.15)]">
-              <span aria-hidden="true">🎁</span>
-              {dict.hero.freeTrialNote}
-            </span>
-          </motion.div>
-
-
-
           {/* ── Inline Mini-Chat Box ── */}
           <motion.div
             className="mx-auto mt-10 max-w-xl"
@@ -846,11 +826,6 @@ export default function HeroSection() {
                 </div>
               </div>
             </div>
-
-            {/* Promemoria sotto la chat: ribadisce il budget gratuito giornaliero totale. */}
-            <p className="mt-3 text-center text-xs sm:text-[13px] font-semibold text-neutral-400">
-              {dict.hero.freeTrialCaption}
-            </p>
 
             {/* ── CTA apri chat completa ── */}
             {hasMessages && (

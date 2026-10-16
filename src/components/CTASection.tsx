@@ -84,6 +84,30 @@ export default function CTASection() {
           {dict.cta.subtitle}
         </motion.p>
 
+        {/* Piano gratuito: l'invito a provare gratis vive qui, al momento della
+            conversione, invece che nella hero. */}
+        <motion.div
+          className="mx-auto mt-5 flex justify-center"
+          variants={{
+            hidden: { opacity: 0, y: 16 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+          }}
+        >
+          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 text-[13px] sm:text-sm font-bold text-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.15)]">
+            <span aria-hidden="true">🎁</span>
+            {dict.hero.freeTrialNote}
+          </span>
+        </motion.div>
+        <motion.p
+          className="mx-auto mt-2 max-w-xl text-center text-xs sm:text-[13px] font-semibold text-neutral-500"
+          variants={{
+            hidden: { opacity: 0, y: 16 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+          }}
+        >
+          {dict.hero.freeTrialCaption}
+        </motion.p>
+
         {/* Blocchi concreti (3) */}
         <motion.div
           className="mx-auto mt-6 grid max-w-3xl gap-3 sm:grid-cols-3 text-left"
