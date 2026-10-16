@@ -42,7 +42,7 @@ export default function InstallClient() {
       case "yarn":
         return "yarn global add agentcloud-cli";
       case "npx":
-        return "npx agentcloud-cli login";
+        return "npx -p agentcloud-cli agentcloud login";
     }
   };
 
@@ -234,6 +234,12 @@ export default function InstallClient() {
                     )}
                   </button>
                 </div>
+                {cliPkg === "yarn" && (
+                  <p className="mt-1.5 text-[11px] text-neutral-500">Vale per Yarn Classic 1.x — da Yarn 2+ il comando global non esiste: usa npm o pnpm.</p>
+                )}
+                {cliPkg === "npx" && (
+                  <p className="mt-1.5 text-[11px] text-neutral-500">Senza installazione: scarica ed esegue la CLI al volo (serve Node 18+).</p>
+                )}
                 <div className="mt-2 flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-4 font-mono text-xs text-neutral-300">
                   <div className="flex items-center gap-3 select-all min-w-0">
                     <span className="text-neutral-600 select-none">$</span>
