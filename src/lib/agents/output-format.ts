@@ -16,7 +16,7 @@ export const OUTPUT_FORMAT_DIRECTIVE = `Output format:
 - Code must be complete and runnable as-is: no "..." placeholders inside the block, no truncation. If a file is long, split it in multiple blocks, each one self-contained.
 - Put a prompt the user should copy-paste (e.g. for ChatGPT, Claude, or an automation tool) inside a \`\`\`prompt block, without commentary inside the block.
 - Keep prose explanations outside the code blocks; never mix explanation lines into a fenced block.
-- Format links as markdown [label](https://…) and also write bare https://… URLs plainly: the chat UI renders both as clickable links, including YouTube links (shown with a play icon). Never use any other link syntax.`;
+- Format links as markdown with a MEANINGFUL label: use the real site or page name (e.g. [example.com — Page title](https://example.com/page)). If you don't know the real name, use the domain or full URL itself as the label. NEVER use generic labels like "sito web", "website", "site", "link", "qui" or "clicca qui": the chat UI shows the label as-is, so a generic label hides where the link goes. Bare https://… URLs written plainly are also rendered as clickable links.`;
 
 /**
  * Fonti dopo una ricerca online: perché l'utente si fidi, deve vedere DA DOVE
