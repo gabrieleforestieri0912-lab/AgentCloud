@@ -4,6 +4,7 @@ import HowItWorksSection from "@/components/HowItWorksSection";
 import MarketplaceSection from "@/components/MarketplaceSection";
 import ProblemSolutionSection from "@/components/ProblemSolutionSection";
 import DashboardSection from "@/components/DashboardSection";
+import FeaturesSection from "@/components/FeaturesSection";
 import IntegrationsSection from "@/components/IntegrationsSection";
 import UseCasesSection from "@/components/UseCasesSection";
 import AppsSection from "@/components/AppsSection";
@@ -56,6 +57,7 @@ export default async function Home() {
         <MarketplaceSection />
         <ProblemSolutionSection />
         <DashboardSection />
+        <FeaturesSection />
         <IntegrationsSection />
         <AppsSection />
         <UseCasesSection />

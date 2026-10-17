@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -28,11 +27,6 @@ export default async function ChatPage(props: {
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const user = await getSessionUser();
-  // I possessori del codice saltano del tutto il login: il codice concede
-  // accesso alla piattaforma senza account Supabase. Non hanno agenti
-  // posseduti, quindi resta disponibile la chat generica (che gira in
-  // anonimo).
-  if (!user && !true) redirect("/login");
 
   const searchParams = await props.searchParams;
   const initialQuery = searchParams?.q;

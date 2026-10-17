@@ -1443,7 +1443,10 @@ export async function driveApiProxy(
     });
     if (!res.ok) return { ok: false, error: res.error! };
 
-    const files = (res.json as { files?: DriveFile[] } | undefined)?.files ?? [];
+    const files = (res.json as { files?: DriveFile[]; nextPageToken?: string } | undefined)?.files ?? [];
+    const moreNote = (res.json as { nextPageToken?: string } | undefined)?.nextPageToken
+      ? "\n(Altri risultati disponibili non mostrati: restringi la ricerca o alza il limite.)"
+      : "";
     if (files.length === 0) {
       return {
         ok: true,
@@ -1456,7 +1459,7 @@ export async function driveApiProxy(
       action === "listFolder"
         ? `${files.length} item(s) in the folder:`
         : `${files.length} file(s) matching "${params.query ?? ""}":`;
-    return { ok: true, data: `${header}\n${files.map(formatDriveFile).join("\n")}` };
+    return { ok: true, data: `${header}\n${files.map(formatDriveFile).join("\n")}${moreNote}` };
   }
 
   // readFile
@@ -1758,17 +1761,22 @@ export async function docsApiProxy(
   // Il binario PDF non può transitare dal risultato testuale del tool: si
   // restituisce il link al documento con le istruzioni di download (File >
   // Scarica > PDF). Onesto invece di un link export che richiederebbe il token.
+  //
+  // Il titolo si legge dalla Docs API (scope `documents`), non da Drive: la
+  // connessione google_docs chiede `drive.file`, che copre solo i file creati
+  // dall'app → un `files.get` di Drive sugli altri documenti rispondeva 404
+  // proprio mentre read/append/replace sugli stessi documenti funzionavano.
   const metaRes = await providerRequest(
-    `${DRIVE_FILES_API}/${encodeURIComponent(documentId)}?fields=id,name,webViewLink`,
+    `${DOCS_API}/${encodeURIComponent(documentId)}?fields=title`,
     { headers, providerLabel: label },
   );
   if (!metaRes.ok) {
     return { ok: false, error: docsError(metaRes.status, metaRes.json, "Google Docs: export fallito") };
   }
-  const meta = metaRes.json as { name?: string; webViewLink?: string } | undefined;
+  const meta = metaRes.json as { title?: string } | undefined;
   return {
     ok: true,
-    data: `Per scaricare "${meta?.name ?? documentId}" in PDF: apri ${meta?.webViewLink ?? docsLink(documentId)} → File → Scarica → PDF (.pdf).`,
+    data: `Per scaricare "${meta?.title ?? documentId}" in PDF: apri ${docsLink(documentId)} → File → Scarica → PDF (.pdf).`,
   };
 }
 
@@ -1864,6 +1872,19 @@ function formsError(status: number, json: unknown, fallback: string): string {
   const msg = (json as { error?: { message?: string } } | null)?.error?.message;
   if (status === 403) {
     return `${msg ?? fallback} — Collega Google Forms dalla dashboard Integrazioni: servono i permessi sui moduli e sulle risposte.`;
+  }
+  return msg ?? `${fallback} (${status})`;
+}
+
+/**
+ * Errore specifico di Google Sheets: l'export su foglio di un form usa una
+ * seconda connessione (`google_sheets`), quindi un 401/403 va attribuito a
+ * quella — non a Forms — altrimenti l'utente collega l'app sbagliata.
+ */
+function sheetsError(status: number, json: unknown, fallback: string): string {
+  const msg = (json as { error?: { message?: string } } | null)?.error?.message;
+  if (status === 401 || status === 403) {
+    return `${msg ?? fallback} — Collega (o ricollega) Google Sheets dalla dashboard Integrazioni: serve il permesso sui fogli.`;
   }
   return msg ?? `${fallback} (${status})`;
 }
@@ -2127,7 +2148,7 @@ export async function formsApiProxy(
       providerLabel: "Google Sheets",
     });
     if (!created.ok) {
-      return { ok: false, error: formsError(created.status, created.json, "Sheets: creazione foglio fallita") };
+      return { ok: false, error: sheetsError(created.status, created.json, "Sheets: creazione foglio fallita") };
     }
     spreadsheetId = (created.json as { spreadsheetId?: string } | undefined)?.spreadsheetId ?? "";
     if (!spreadsheetId) return { ok: false, error: "Sheets: risposta creazione inattesa" };
@@ -2147,8 +2168,13 @@ export async function formsApiProxy(
       return [resp.responseId ?? "", ...questions.map((q) => (ans[q.itemId] ?? []).join(", "))];
     }),
   ];
+  // Il nome del primo foglio non è noto a priori: dipende dalla locale
+  // dell'account ("Sheet1", "Foglio1", …) e, se il foglio è stato creato qui
+  // sopra, è quello di default dell'utente, non necessariamente "Foglio1".
+  // Un range senza nome foglio punta al primo foglio visibile: evita il
+  // `400 Unable to parse range` che uccideva l'export principale.
   const appended = await providerRequest(
-    `${SHEETS_API}/${encodeURIComponent(spreadsheetId)}/values/Foglio1!A1:append?valueInputOption=RAW`,
+    `${SHEETS_API}/${encodeURIComponent(spreadsheetId)}/values/A1:append?valueInputOption=RAW`,
     {
       method: "POST",
       headers: { ...sheetHeaders, "Content-Type": "application/json" },
@@ -2157,11 +2183,11 @@ export async function formsApiProxy(
     },
   );
   if (!appended.ok) {
-    return { ok: false, error: formsError(appended.status, appended.json, "Sheets: scrittura fallita") };
+    return { ok: false, error: sheetsError(appended.status, appended.json, "Sheets: scrittura fallita") };
   }
   return {
     ok: true,
-    data: `${r.responses.length} risposte esportate su https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit (foglio Foglio1).`,
+    data: `${r.responses.length} risposte esportate su https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit (primo foglio).`,
   };
 }
 

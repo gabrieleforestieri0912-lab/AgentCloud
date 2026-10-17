@@ -1025,7 +1025,7 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   request_integration_connect: {
     name: "request_integration_connect",
     description:
-      "Request the user to connect an integration directly inside the chat. Call ONLY when the user explicitly asked to connect an app in this turn (e.g. Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot, GitHub, ClickUp, Asana). This renders an inline card with the app logo and a Connect button (Claude-style). Never call it on your own initiative to push a connection — the agent can still talk without the connection. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp.",
+      "Request the user to connect an integration directly inside the chat. Call ONLY when the user explicitly asked to connect an app in this turn (e.g. Shopify, Gmail, Calendar, Sheets, Slack, Notion, HubSpot, GitHub, ClickUp, Asana, Whatsapp). This renders an inline card with the app logo and a Connect button (Claude-style). Never call it on your own initiative to push a connection — the agent can still talk without the connection. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp.",
     input_schema: {
       type: "object",
       properties: {
@@ -1036,6 +1036,38 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
         reason: {
           type: "string",
           description: "Short reason why the connection is needed (1 sentence, shown in chat)",
+        },
+      },
+      required: ["provider"],
+    },
+  },
+
+  marketplace_add_to_cart: {
+    name: "marketplace_add_to_cart",
+    description:
+      "Add an AgentCloud marketplace agent to the user's shopping cart. Call ONLY when the user explicitly asks to add/buy/put an agent in the cart in this turn (e.g. 'metti X nel carrello', 'add X to cart', 'voglio acquistare X'). Accepts any marketplace agent by slug or by name (fuzzy match on name/shortName). Never call it on your own initiative to push a sale — only on explicit request. After the call, confirm with name + price and link the user to /cart to complete checkout.",
+    input_schema: {
+      type: "object",
+      properties: {
+        agent_slug: {
+          type: "string",
+          description: "Marketplace agent slug (e.g. shopify-agent) or agent name (e.g. 'Shopify Agent'). Fuzzy-matched when not exact.",
+        },
+      },
+      required: ["agent_slug"],
+    },
+  },
+
+  integration_disconnect: {
+    name: "integration_disconnect",
+    description:
+      "Disconnect an integration (revoke token and delete the connection) for the current user. Call ONLY when the user explicitly asks to disconnect/remove an integration in this turn (e.g. 'disconnetti Gmail', 'disconnect Slack', 'scollega Shopify'). This is destructive: it stops the agent from accessing that app. Requires user confirmation via the UI approval flow — just call it and explain what will be disconnected. Provider must be one of: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, drive, airtable, trello, woocommerce, mailchimp, outlook, docs, forms, analytics, whatsapp.",
+    input_schema: {
+      type: "object",
+      properties: {
+        provider: {
+          type: "string",
+          description: "App to disconnect: shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, drive, airtable, trello, woocommerce, mailchimp, outlook, docs, forms, analytics, whatsapp",
         },
       },
       required: ["provider"],
@@ -1132,11 +1164,8 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
   ...INTEGRATION_TOOL_DEFINITIONS,
 };
 
-export type ToolContext = {
-  userId: string;
-  tenantId?: string;
-  files?: Record<string, string>;
-};
+import type { ToolContext } from "./tool-context";
+export type { ToolContext } from "./tool-context";
 
 /**
  * Provider supportati dalla card di connessione inline (vedi InlineConnectCard).
@@ -1205,6 +1234,25 @@ async function getGoogleTokenForContext(context: ToolContext) {
     token = await getValidGoogleAccessToken(context.tenantId).catch(() => null);
   }
   return token;
+}
+
+/**
+ * Attore da usare per le LETTURE Google (list_emails / get_calendar_events):
+ * l'utente che ha avviato l'agente se ha una connessione Google, altrimenti il
+ * tenant (admin via codice) — esattamente come fanno gmail_send/gmail_trash.
+ * Senza questo fallback un membro del team con la connessione del tenant poteva
+ * inviare email ma non leggerle.
+ */
+async function googleActorId(context: ToolContext): Promise<string | null> {
+  if (context.userId && context.userId !== "anonymous") {
+    const token = await getValidGoogleAccessToken(context.userId).catch(() => null);
+    if (token) return context.userId;
+  }
+  if (context.tenantId && context.tenantId !== context.userId) {
+    const token = await getValidGoogleAccessToken(context.tenantId).catch(() => null);
+    if (token) return context.tenantId;
+  }
+  return null;
 }
 
 /**
@@ -2937,17 +2985,16 @@ export async function executeTool(
     }
 
     case "calendar_delete_event": {
-      if (!context.userId || context.userId === "anonymous") {
-        return "calendar_delete_event requires a connected Google account. Please log in and connect Calendar from the dashboard, then retry.";
+      const resolved = await resolveCalendarAccess(context);
+      if (!resolved) {
+        return "Calendar tool not configured. Connect Google Calendar from the dashboard, or set GOOGLE_CALENDAR_ACCESS_TOKEN and GOOGLE_CALENDAR_CALENDAR_ID in your environment.";
       }
       const eventId = sanitizeText(input.event_id || "", 500);
       if (!eventId) return "calendar_delete_event requires event_id. Use get_calendar_events first to find the ID.";
-      const tokenData = await getGoogleTokenForContext(context);
-      if (!tokenData) return "No Google account connected. Connect Calendar from the dashboard (or via chat panel for admin), then retry.";
       try {
-        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
+        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(resolved.calendarId)}/events/${encodeURIComponent(eventId)}`, {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${tokenData.accessToken}` },
+          headers: { Authorization: `Bearer ${resolved.accessToken}` },
         });
         if (!res.ok && res.status !== 204) {
           const txt = await res.text();
@@ -2960,8 +3007,9 @@ export async function executeTool(
     }
 
     case "calendar_set_reminder": {
-      if (!context.userId || context.userId === "anonymous") {
-        return "calendar_set_reminder requires a connected Google account. Please log in and connect Calendar from the dashboard, then retry.";
+      const resolved = await resolveCalendarAccess(context);
+      if (!resolved) {
+        return "Calendar tool not configured. Connect Google Calendar from the dashboard, or set GOOGLE_CALENDAR_ACCESS_TOKEN and GOOGLE_CALENDAR_CALENDAR_ID in your environment.";
       }
       const eventId = sanitizeText(input.event_id || "", 500);
       const minutes = Number(input.minutes);
@@ -2969,12 +3017,10 @@ export async function executeTool(
       if (!eventId) return "calendar_set_reminder requires event_id.";
       if (!Number.isFinite(minutes) || minutes < 0 || minutes > 40320) return "calendar_set_reminder requires minutes between 0 and 40320.";
       const validMethod = method === "email" ? "email" : "popup";
-      const tokenData = await getGoogleTokenForContext(context);
-      if (!tokenData) return "No Google account connected. Connect Calendar from the dashboard (or via chat panel for admin), then retry.";
       try {
-        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
+        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(resolved.calendarId)}/events/${encodeURIComponent(eventId)}`, {
           method: "PATCH",
-          headers: { Authorization: `Bearer ${tokenData.accessToken}`, "Content-Type": "application/json" },
+          headers: { Authorization: `Bearer ${resolved.accessToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             reminders: { useDefault: false, overrides: [{ method: validMethod, minutes }] },
           }),
@@ -2990,7 +3036,8 @@ export async function executeTool(
     }
 
     case "list_emails": {
-      if (!context.userId || context.userId === "anonymous") {
+      const actor = await googleActorId(context);
+      if (!actor) {
         return "list_emails requires a connected Google account. Please log in and connect Gmail from the dashboard settings.";
       }
       const emailsResult = await googleApiProxy(
@@ -2999,13 +3046,14 @@ export async function executeTool(
           query: input.query || "",
           max_results: input.max_results || "10",
         },
-        context.userId,
+        actor,
       );
       return emailsResult.ok ? String(emailsResult.data) : emailsResult.error;
     }
 
     case "get_calendar_events": {
-      if (!context.userId || context.userId === "anonymous") {
+      const actor = await googleActorId(context);
+      if (!actor) {
         return "get_calendar_events requires a connected Google account. Please log in and connect Google Calendar from the dashboard settings.";
       }
       const eventsResult = await googleApiProxy(
@@ -3014,7 +3062,7 @@ export async function executeTool(
           date_from: input.date_from || "",
           date_to: input.date_to || "",
         },
-        context.userId,
+        actor,
       );
       return eventsResult.ok ? String(eventsResult.data) : eventsResult.error;
     }
@@ -3310,6 +3358,9 @@ export async function executeTool(
         minRating,
         unansweredOnly,
       });
+      if (reviews === null) {
+        return "Google Business Profile is not configured (or not reachable) for this account. Ask the user to connect the location (account/location id + access token) from the dashboard, then retry. No reviews were fabricated.";
+      }
       return formatReviewsMarkdown(reviews);
     }
 
@@ -3457,6 +3508,140 @@ export async function executeTool(
         // Marker for frontend markdown parser as fallback
         marker: `[[CONNECT:${finalProvider}]]`,
       });
+    }
+
+    case "marketplace_add_to_cart": {
+      const raw = sanitizeText(input.agent_slug || "", 120);
+      if (!raw) return "marketplace_add_to_cart requires agent_slug (slug or agent name).";
+      const authedUser = context.userId && context.userId !== "anonymous" ? context.userId : null;
+      if (!authedUser) {
+        return "marketplace_add_to_cart: sign-in required. The user must sign in before adding agents to the cart — invite them to sign in, then retry.";
+      }
+      // Risoluzione slug: esatto, poi fuzzy su slug/nome/shortName.
+      const { getAgentBySlug, AGENTS } = await import("@/lib/agents");
+      const norm = raw.toLowerCase().trim();
+      let slug: string | null = null;
+      const exact = getAgentBySlug(raw) ?? getAgentBySlug(norm);
+      if (exact) {
+        slug = exact.slug;
+      } else {
+        const normAlnum = norm.replace(/[^a-z0-9]/g, "");
+        const hit = AGENTS.find((a) => {
+          const candidates = [a.slug, a.name, a.shortName].filter(Boolean).map((s) => String(s).toLowerCase());
+          return candidates.some((c) => c === norm || c.replace(/[^a-z0-9]/g, "") === normAlnum || c.includes(norm) || norm.includes(c));
+        });
+        if (hit) slug = hit.slug;
+      }
+      if (!slug) {
+        const available = AGENTS.slice(0, 16).map((a) => `${a.name} (${a.slug})`).join(", ");
+        return `marketplace_add_to_cart: agent "${raw}" not found. Ask the user which one they mean. Available: ${available}.`;
+      }
+      try {
+        const { addToCart } = await import("@/lib/cart");
+        await addToCart(authedUser, slug);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg === "already_owned") {
+          return `marketplace_add_to_cart: the user already owns "${slug}" (active subscription) — no need to add it to the cart. Tell them it's already active.`;
+        }
+        return `marketplace_add_to_cart failed for "${slug}": ${msg.slice(0, 300)}`;
+      }
+      const added = getAgentBySlug(slug);
+      return JSON.stringify({
+        type: "cart_added",
+        agent_slug: slug,
+        agent_name: added?.name ?? slug,
+        price: added?.price ?? "",
+        marker: `[[CART:${slug}]]`,
+      });
+    }
+
+    case "integration_disconnect": {
+      const finalProvider = normalizeConnectProvider(input.provider);
+      if (!finalProvider) {
+        return `integration_disconnect: provider "${sanitizeText(input.provider || "", 40)}" non supportato. Usa uno tra: ${CONNECT_PROVIDERS.join(", ")}.`;
+      }
+      const authedUser = context.userId && context.userId !== "anonymous" ? context.userId : null;
+      const tenant = authedUser ?? context.tenantId;
+      if (!authedUser || !tenant) {
+        return "integration_disconnect: sign-in required. The user must sign in before disconnecting integrations — invite them to sign in, then retry.";
+      }
+      try {
+        const { createAdminClient } = await import("@/lib/supabase/admin");
+        const admin = createAdminClient();
+        if (!admin) return "integration_disconnect failed: database unavailable. Tell the user to disconnect from /dashboard/integrations.";
+        // Revoca best-effort lato provider (come la route /disconnect): fallimenti ignorati.
+        try {
+          const { getProvider } = await import("@/lib/integrations/registry");
+          const { decryptMaybe } = await import("@/lib/integrations/encryption");
+          const { data: existing } = await admin
+            .from("tenant_integrations")
+            .select("access_token")
+            .eq("tenant_id", tenant)
+            .eq("provider", finalProvider)
+            .maybeSingle();
+          const token = decryptMaybe((existing as { access_token?: string | null } | null)?.access_token ?? null);
+          const adapter = getProvider(finalProvider as never) as { revokeToken?: (opts: { accessToken: string }) => Promise<void> } | undefined;
+          if (token && adapter?.revokeToken) {
+            try { await adapter.revokeToken({ accessToken: token }); } catch { /* non-fatal */ }
+          }
+        } catch { /* non-fatal */ }
+        // Cancella la/le righe integrazione (match esatto + varianti google_*).
+        const candidates = new Set<string>([finalProvider]);
+        if (["gmail", "calendar", "sheets", "drive", "docs", "forms", "analytics"].includes(finalProvider)) {
+          candidates.add(`google_${finalProvider === "gmail" ? "gmail" : finalProvider}`);
+          if (finalProvider === "sheets") candidates.add("google_sheets");
+          if (finalProvider === "drive") candidates.add("google_drive");
+          if (finalProvider === "docs") candidates.add("google_docs");
+          if (finalProvider === "forms") candidates.add("google_forms");
+          if (finalProvider === "analytics") candidates.add("google_analytics");
+        }
+        let deleted = 0;
+        for (const p of candidates) {
+          const { data } = await admin.from("tenant_integrations").select("id").eq("tenant_id", tenant).eq("provider", p);
+          const rows = (data ?? []) as Array<{ id: string }>;
+          for (const r of rows) {
+            const { error } = await admin.from("tenant_integrations").delete().eq("id", r.id);
+            if (!error) {
+              deleted++;
+            } else {
+              await admin
+                .from("tenant_integrations")
+                .update({ status: "disconnected", access_token: null, refresh_token: null, updated_at: new Date().toISOString() })
+                .eq("id", r.id);
+              deleted++;
+            }
+          }
+        }
+        // Tabelle dedicate: Shopify (per-negozio) e Google (OAuth Gmail/Calendar).
+        if (finalProvider === "shopify") {
+          try {
+            const { listShopifyConnections, revokeShopifyConnection } = await import("@/lib/shopify/connections");
+            const conns = await listShopifyConnections(tenant).catch(() => []);
+            for (const c of conns) {
+              if (c.connected) await revokeShopifyConnection(tenant, c.shopDomain).catch(() => {});
+            }
+            if (conns.length > 0) deleted += conns.filter((c) => c.connected).length;
+          } catch { /* non-fatal */ }
+        }
+        if (["gmail", "calendar", "sheets", "drive", "docs", "forms", "analytics", "google"].includes(finalProvider)) {
+          try {
+            const { deleteGoogleConnection } = await import("@/lib/google/connections");
+            await deleteGoogleConnection(tenant).catch(() => {});
+            deleted++;
+          } catch { /* non-fatal */ }
+        }
+        if (deleted === 0) {
+          return `integration_disconnect: no active "${finalProvider}" connection found for this user. Tell them it's already disconnected — they can verify in /dashboard/integrations.`;
+        }
+        return JSON.stringify({
+          type: "integration_disconnected",
+          provider: finalProvider,
+          marker: `[[DISCONNECTED:${finalProvider}]]`,
+        });
+      } catch (e) {
+        return `integration_disconnect failed for "${finalProvider}": ${(e instanceof Error ? e.message : String(e)).slice(0, 300)}`;
+      }
     }
 
     default:

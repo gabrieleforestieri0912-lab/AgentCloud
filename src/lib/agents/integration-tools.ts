@@ -1,5 +1,5 @@
 import type { LLMTool } from "@/lib/llm";
-import type { ToolContext } from "./tools";
+import type { ToolContext } from "./tool-context";
 import {
   githubApiProxy,
   clickupApiProxy,

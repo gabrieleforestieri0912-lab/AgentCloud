@@ -78,7 +78,7 @@ export const googleSheetsProvider: IntegrationProvider = {
       scope,
       externalAccountId: email,
       metadata: { token_type: json.token_type, scope, google_email: email },
-      raw: json,
+      raw: { ...json, access_token: undefined, refresh_token: undefined },
     };
   },
   async refreshToken({ refreshToken }) {
@@ -105,7 +105,7 @@ export const googleSheetsProvider: IntegrationProvider = {
       refreshToken,
       expiresAt,
       scope: json.scope as string | undefined,
-      raw: json,
+      raw: { ...json, access_token: undefined, refresh_token: undefined },
     };
   },
 };

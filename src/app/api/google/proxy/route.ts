@@ -53,7 +53,9 @@ export async function POST(req: Request) {
     sessionUser.id,
   );
   if (!result.ok) {
-    return Response.json(result, { status: 502 });
+    // "Non connesso" non è un errore del gateway: 409 (Conflict) è più onesto
+    // del 502 e permette al chiamante di distinguere auth da upstream.
+    return Response.json(result, { status: result.code === "not_connected" ? 409 : 502 });
   }
   return Response.json(result);
 }

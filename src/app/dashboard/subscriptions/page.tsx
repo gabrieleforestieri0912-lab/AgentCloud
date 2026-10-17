@@ -18,7 +18,7 @@ export default async function SubscriptionsPage() {
   const isAdmin = await resolveIsAdmin(user);
 
   const effectiveId = user?.id ?? null;
-  const email = false ? "admin@agentcloud.agency" : (user?.email ?? "");
+  const email = user?.email ?? "";
 
   const db = createAdminClient();
   let active: Array<{ agent_slug: string; status: string; activated_at: string | null; current_period_end: string | null; config: Record<string, unknown> | null }> = [];

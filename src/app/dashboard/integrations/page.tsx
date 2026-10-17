@@ -21,7 +21,7 @@ export default async function DashboardIntegrationsPage({
 
   const user = await getSessionUser();
 
-  const effectiveId = user?.id ?? (false ? "__tenant__" : null);
+  const effectiveId = user?.id ?? null;
 
   const db = createAdminClient();
   let rows: Array<{
@@ -42,12 +42,12 @@ export default async function DashboardIntegrationsPage({
   }
 
   // Shopify + Google (existing OAuth) — così la pagina dashboard mostra TUTTE le app menzionate su agentcloud
-  const shopifyOwner = false ? user?.id ?? null : user?.id ?? null;
-  const googleOwner = false ? user?.id ?? null : user?.id ?? null;
+  const shopifyOwner = user?.id ?? null;
+  const googleOwner = user?.id ?? null;
   const shopifyConnections = shopifyOwner ? await listShopifyConnections(shopifyOwner).catch(() => []) : [];
   const googleConnection = googleOwner ? await getGoogleConnectionSummary(googleOwner).catch(() => null) : null;
 
-  const email = false ? "admin@agentcloud.agency" : (user?.email ?? "");
+  const email = user?.email ?? "";
 
   return (
     <DashboardShell email={email} account={accountIdentityFromUser(user)}>

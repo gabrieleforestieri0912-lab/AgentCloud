@@ -1,7 +1,7 @@
 import { getValidGoogleAccessToken } from "./token";
 
 /**
- * Proxy API Google in lettura e scrittura.
+ * Proxy API Google in lettura.
  *
  * Punto di accesso centrale per Gmail + Google Calendar. Perché esiste:
  * risolve il token OAuth del chiamante (con refresh automatico) e chiama le
@@ -9,14 +9,16 @@ import { getValidGoogleAccessToken } from "./token";
  * agenti AI non toccano MAI token o HTTP grezzo: passano sempre da questo
  * modulo (e dal suo wrapper HTTP in /api/google/proxy).
  *
- * Azioni (lettura & scrittura):
+ * Azioni (sola lettura):
  *   - list_emails(query?, max_results?)            → Gmail (lettura)
  *   - get_calendar_events(date_from, date_to)      → Calendar (lettura)
  */
 
 export type GoogleProxyAction = "list_emails" | "get_calendar_events";
 
-export type GoogleProxyResult = { ok: true; data: unknown } | { ok: false; error: string };
+export type GoogleProxyResult =
+  | { ok: true; data: unknown }
+  | { ok: false; error: string; code?: "not_connected" };
 
 const MAX_EMAILS = 20;
 const MAX_EVENTS = 50;
@@ -73,6 +75,7 @@ export async function googleApiProxy(
       ok: false,
       error:
         "No Google account connected. Ask the user to connect Gmail and Calendar from the dashboard settings (OAuth), then retry.",
+      code: "not_connected",
     };
   }
 
@@ -100,6 +103,7 @@ export async function googleApiProxy(
         }
         const listJson = (await listRes.json()) as {
           messages?: Array<{ id: string }>;
+          nextPageToken?: string;
         };
         const messages = listJson.messages ?? [];
         if (messages.length === 0) {
@@ -127,7 +131,11 @@ export async function googleApiProxy(
         }
         return {
           ok: true,
-          data: valid.map(normalizeEmailMessage).join("\n\n"),
+          data:
+            valid.map(normalizeEmailMessage).join("\n\n") +
+            (listJson.nextPageToken
+              ? "\n\n(Altri messaggi disponibili non mostrati: restringi la ricerca con una query.)"
+              : ""),
         };
       } catch (e) {
         return {
@@ -181,12 +189,22 @@ export async function googleApiProxy(
             error: `Calendar API error: ${res.status} ${res.statusText}`,
           };
         }
-        const json = (await res.json()) as { items?: Parameters<typeof normalizeCalendarEvent>[0][] };
+        const json = (await res.json()) as {
+          items?: Parameters<typeof normalizeCalendarEvent>[0][];
+          nextPageToken?: string;
+        };
         const items = json.items ?? [];
         if (items.length === 0) {
           return { ok: true, data: "No events in the requested range." };
         }
-        return { ok: true, data: items.map(normalizeCalendarEvent).join("\n\n") };
+        return {
+          ok: true,
+          data:
+            items.map(normalizeCalendarEvent).join("\n\n") +
+            (json.nextPageToken
+              ? "\n\n(Altri eventi disponibili non mostrati: restringi l'intervallo di date.)"
+              : ""),
+        };
       } catch (e) {
         return {
           ok: false,

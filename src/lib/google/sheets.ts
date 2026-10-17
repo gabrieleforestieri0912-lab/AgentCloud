@@ -167,6 +167,19 @@ function formatValues(range: string, values: unknown): string {
 }
 
 /**
+ * Errore leggibile per le risposte Sheets. Un 401/403 significa che l'access
+ * token è scaduto o revocato: se il refresh è fallito (refresh token scaduto),
+ * qui abbiamo ancora in mano il token vecchio e l'API risponderebbe 401. Meglio
+ * chiedere subito di ricollegare l'account che mostrare un errore HTTP grezzo.
+ */
+function sheetsApiError(status: number, statusText: string, msg?: string): string {
+  if (status === 401 || status === 403) {
+    return "Google Sheets: accesso scaduto o revocato. Chiedi all'utente di ricollegare Google Sheets dalla dashboard (Integrazioni), poi riprova.";
+  }
+  return `Sheets API error: ${status} ${statusText} - ${msg ?? ""}`;
+}
+
+/**
  * Esegue una lettura/scrittura su Google Sheets per conto di un tenant.
  * `params.values` è richiesto per updateValues/appendValues.
  */
@@ -219,7 +232,7 @@ export async function googleSheetsRequest(
       if (!res.ok) {
         return {
           ok: false,
-          error: `Sheets API error: ${res.status} ${res.statusText} - ${json.error?.message ?? ""}`,
+          error: sheetsApiError(res.status, res.statusText, json.error?.message),
         };
       }
       return { ok: true, data: formatValues(range, json.values) };
@@ -240,7 +253,7 @@ export async function googleSheetsRequest(
       if (!res.ok) {
         return {
           ok: false,
-          error: `Sheets API error: ${res.status} ${res.statusText} - ${json.error?.message ?? ""}`,
+          error: sheetsApiError(res.status, res.statusText, json.error?.message),
         };
       }
       return {
@@ -261,7 +274,7 @@ export async function googleSheetsRequest(
     if (!res.ok) {
       return {
         ok: false,
-        error: `Sheets API error: ${res.status} ${res.statusText} - ${json.error?.message ?? ""}`,
+        error: sheetsApiError(res.status, res.statusText, json.error?.message),
       };
     }
     return {

@@ -137,6 +137,8 @@ const TOOL_META: Record<string, ToolMeta> = {
   social_generate_calendar: { labelIt: "Piano contenuti social", labelEn: "Planning social content", impact: "write", brand: "instagram" },
   social_schedule_post: { labelIt: "Programmazione post", labelEn: "Scheduling post", impact: "high", brand: "instagram" },
   request_integration_connect: { labelIt: "Richiesta connessione", labelEn: "Connection request", impact: "write" },
+  marketplace_add_to_cart: { labelIt: "Aggiunta al carrello", labelEn: "Adding to cart", impact: "write" },
+  integration_disconnect: { labelIt: "Disconnessione integrazione", labelEn: "Disconnecting integration", impact: "high" },
   quiz_create: { labelIt: "Creazione quiz", labelEn: "Creating quiz", impact: "write" },
   flashcards_create: { labelIt: "Creazione flashcard", labelEn: "Creating flashcards", impact: "write" },
   create_artifact: { labelIt: "Creazione artefatto", labelEn: "Creating artifact", impact: "write" },
@@ -179,6 +181,8 @@ const SUMMARY_FIELDS = [
   "order",
   "product",
   "provider",
+  "agent_slug",
+  "agent",
   "text",
   "message",
 ] as const;

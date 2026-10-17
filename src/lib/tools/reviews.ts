@@ -76,76 +76,58 @@ function businessReviewsUrl(): string | null {
   return `${BUSINESS_API_BASE}/accounts/${encodeURIComponent(accountId)}/locations/${encodeURIComponent(locationId)}/reviews`;
 }
 
-// Store di fallback in memoria per le recensioni demo/test per-tenant
-const tenantReviewsStore = new Map<string, GoogleBusinessReview[]>();
-
-export function getOrCreateTenantReviews(tenantId: string): GoogleBusinessReview[] {
-  if (!tenantReviewsStore.has(tenantId)) {
-    tenantReviewsStore.set(tenantId, [
-      {
-        reviewId: "rev-101",
-        authorName: "Alessandro V.",
-        rating: 5,
-        comment: "Servizio eccellente e veloce. Molto professionali e puntuali!",
-        createTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        reviewId: "rev-102",
-        authorName: "Giulia B.",
-        rating: 2,
-        comment: "Tempi di attesa un po' lunghi, anche se il lavoro finale era ok.",
-        createTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ]);
-  }
-  return tenantReviewsStore.get(tenantId)!;
-}
+// Nessun fallback demo in memoria: i tool recensioni restituiscono dati reali
+// oppure un messaggio esplicito di "integrazione non configurata" (vedi
+// listBusinessReviews / replyToBusinessReview). Inventare recensioni faceva
+// mostrare all'agente dati falsi come se fossero veri.
 
 export async function listBusinessReviews(
   params: ListReviewsParams,
-): Promise<GoogleBusinessReview[]> {
+): Promise<GoogleBusinessReview[] | null> {
   const tenantId = params.tenantId || "default";
   logAudit("reviews_list_fetch", { tenantId, minRating: params.minRating });
 
   // Se per il tenant esistono credenziali Google live, interroghiamo la Google
-  // Business API
+  // Business API.
   const creds = getTenantCredentials(tenantId);
   const token = creds?.google?.accessToken;
 
   // Accesso live solo con account id E location id configurati.
   const reviewsUrl = businessReviewsUrl();
-  if (token && reviewsUrl) {
-    try {
-      const res = await fetch(`${reviewsUrl}?pageSize=50`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = (await res.json()) as {
-          reviews?: GoogleBusinessReviewPayload[];
-        };
-        const apiReviews: GoogleBusinessReview[] = (data.reviews ?? []).map((r) => ({
-          reviewId: r.reviewId || r.name || "",
-          authorName: r.reviewer?.displayName || "Utente",
-          rating: parseStarRating(r.starRating),
-          comment: r.comment || "",
-          createTime: r.createTime || new Date().toISOString(),
-          reply: r.reviewReply?.comment
-            ? {
-                comment: r.reviewReply.comment,
-                updateTime: r.reviewReply.updateTime || "",
-              }
-            : undefined,
-        }));
-        return filterReviews(apiReviews, params);
-      }
-    } catch (err) {
-      logAudit("reviews_fetch_error", { error: err instanceof Error ? err.message : String(err) });
-    }
-  }
 
-  // Altrimenti restituisci le recensioni locali per tenant
-  const localReviews = getOrCreateTenantReviews(tenantId);
-  return filterReviews(localReviews, params);
+  // Nessuna credenziale utilizzabile: null (il chiamante spiega come collegare
+  // l'account). Mai recensioni inventate.
+  if (!token || !reviewsUrl) return null;
+
+  try {
+    const res = await fetch(`${reviewsUrl}?pageSize=50`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      logAudit("reviews_fetch_error", { status: res.status });
+      return null;
+    }
+    const data = (await res.json()) as {
+      reviews?: GoogleBusinessReviewPayload[];
+    };
+    const apiReviews: GoogleBusinessReview[] = (data.reviews ?? []).map((r) => ({
+      reviewId: r.reviewId || r.name || "",
+      authorName: r.reviewer?.displayName || "Utente",
+      rating: parseStarRating(r.starRating),
+      comment: r.comment || "",
+      createTime: r.createTime || new Date().toISOString(),
+      reply: r.reviewReply?.comment
+        ? {
+            comment: r.reviewReply.comment,
+            updateTime: r.reviewReply.updateTime || "",
+          }
+        : undefined,
+    }));
+    return filterReviews(apiReviews, params);
+  } catch (err) {
+    logAudit("reviews_fetch_error", { error: err instanceof Error ? err.message : String(err) });
+    return null;
+  }
 }
 
 function filterReviews(
@@ -180,42 +162,43 @@ export async function replyToBusinessReview(
 
   const creds = getTenantCredentials(tenantId);
   const token = creds?.google?.accessToken;
-
   const reviewsUrl = businessReviewsUrl();
-  if (token && reviewsUrl) {
-    try {
-      const res = await fetch(`${reviewsUrl}/${encodeURIComponent(reviewId)}/reply`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ comment: cleanReply }),
-      });
-      if (res.ok) {
-        logAudit("review_reply_published", { tenantId, reviewId });
-        return { ok: true, message: `Risposta pubblicata con successo per la recensione ${reviewId} su Google Business.` };
-      }
-    } catch (err) {
-      logAudit("review_reply_publish_error", { error: err instanceof Error ? err.message : String(err) });
-    }
-  }
 
-  // Aggiorna nello store locale per-tenant
-  const reviews = getOrCreateTenantReviews(tenantId);
-  const target = reviews.find((r) => r.reviewId === reviewId);
-  if (target) {
-    target.reply = {
-      comment: cleanReply,
-      updateTime: new Date().toISOString(),
+  // Non pubblicare "a vuoto": senza credenziali non si finge un successo.
+  if (!token || !reviewsUrl) {
+    return {
+      ok: false,
+      message:
+        "Google Business Profile not configured: collega account/sede e token prima di pubblicare risposte. Nessuna risposta è stata inviata.",
     };
   }
 
-  logAudit("review_reply_saved_locally", { tenantId, reviewId });
-  return {
-    ok: true,
-    message: `Risposta registrata per la recensione ${reviewId} (autore: ${target?.authorName || "Cliente"}):\n"${cleanReply}"`,
-  };
+  try {
+    const res = await fetch(`${reviewsUrl}/${encodeURIComponent(reviewId)}/reply`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ comment: cleanReply }),
+    });
+    if (res.ok) {
+      logAudit("review_reply_published", { tenantId, reviewId });
+      return { ok: true, message: `Risposta pubblicata con successo per la recensione ${reviewId} su Google Business.` };
+    }
+    const detail = await res.text().catch(() => "");
+    logAudit("review_reply_publish_error", { status: res.status });
+    return {
+      ok: false,
+      message: `Google Business Profile ha rifiutato la risposta (${res.status}). ${detail.slice(0, 200)}`.trim(),
+    };
+  } catch (err) {
+    logAudit("review_reply_publish_error", { error: err instanceof Error ? err.message : String(err) });
+    return {
+      ok: false,
+      message: `Google Business Profile non raggiungibile: ${err instanceof Error ? err.message : String(err)}. Nessuna risposta è stata pubblicata.`,
+    };
+  }
 }
 
 export function formatReviewsMarkdown(reviews: GoogleBusinessReview[]): string {

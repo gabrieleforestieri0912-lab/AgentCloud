@@ -213,6 +213,8 @@ export const ALL_TOOLS_LIST = [
   "update_artifact",
   "rewrite_artifact",
   "request_integration_connect",
+  "marketplace_add_to_cart",
+  "integration_disconnect",
 ];
 
 /**
@@ -323,6 +325,10 @@ export function getEnabledToolsForAgent(agentId: string): string[] {
 
   // Connection card tool is always available (Claude-style inline connect)
   enabledTools.add("request_integration_connect");
+  // Cart + disconnect tools are always available: they act only on explicit
+  // user request (see tool descriptions) and the global filter must not strip them.
+  enabledTools.add("marketplace_add_to_cart");
+  enabledTools.add("integration_disconnect");
 
   // Quiz e flashcard seguono write_file: un agente che sa produrre file sa anche
   // produrre quiz/flashcard interattive (stesso canale di consegna, blocco
@@ -338,10 +344,14 @@ export function getEnabledToolsForAgent(agentId: string): string[] {
 
   // Infine si filtra con l'elenco globale dei tool abilitati (se presente),
   // così un tool bandito globalmente non può essere riattivato da un agente.
-  // request_integration_connect bypasses the global filter.
+  // request_integration_connect / marketplace_add_to_cart / integration_disconnect bypass the global filter.
   if (flags.enabledTools.length > 0) {
     return Array.from(enabledTools).filter(
-      (tool: string) => tool === "request_integration_connect" || flags.enabledTools.includes(tool),
+      (tool: string) =>
+        tool === "request_integration_connect" ||
+        tool === "marketplace_add_to_cart" ||
+        tool === "integration_disconnect" ||
+        flags.enabledTools.includes(tool),
     );
   }
 

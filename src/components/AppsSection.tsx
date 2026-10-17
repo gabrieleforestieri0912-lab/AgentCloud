@@ -49,7 +49,12 @@ export default function AppsSection() {
               href={href}
               className="group rounded-2xl border border-white/5 bg-neutral-900/60 p-5 transition-all hover:border-brand-500/30 hover:bg-neutral-900"
             >
-              <Icon size={20} className="text-brand-400" />
+              <div className="flex items-center justify-between gap-2">
+                <Icon size={20} className="text-brand-400" />
+                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-300">
+                  {a.soon}
+                </span>
+              </div>
               <p className="mt-3 text-sm font-bold text-white">{title}</p>
               <p className="mt-1 text-xs font-semibold leading-5 text-neutral-400">{desc}</p>
               <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand-400 transition-transform group-hover:translate-x-0.5">

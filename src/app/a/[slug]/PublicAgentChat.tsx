@@ -203,6 +203,30 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
               files: [...(last.files || []), { filename: data.filename, content: data.content }],
             }));
           }
+          if (data.type === "connection" && typeof data.provider === "string") {
+            const marker = `[[CONNECT:${data.provider}]]`;
+            updateLastAssistant((last) => ({
+              ...last,
+              content: last.content.includes(marker) ? last.content : `${last.content}\n\n${marker}`,
+            }));
+          }
+          if (data.type === "cart_updated" && typeof data.agent_slug === "string") {
+            const marker = `[[CART:${data.agent_slug}]]`;
+            updateLastAssistant((last) => ({
+              ...last,
+              content: last.content.includes(marker) ? last.content : `${last.content}\n\n${marker}`,
+            }));
+            try {
+              window.dispatchEvent(new CustomEvent("cart:updated"));
+            } catch {}
+          }
+          if (data.type === "integration_disconnected" && typeof data.provider === "string") {
+            const marker = `[[DISCONNECTED:${data.provider}]]`;
+            updateLastAssistant((last) => ({
+              ...last,
+              content: last.content.includes(marker) ? last.content : `${last.content}\n\n${marker}`,
+            }));
+          }
           if (data.type === "done") {
             setIsRunning(false);
             try {

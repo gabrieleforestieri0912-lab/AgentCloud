@@ -95,14 +95,12 @@ export const PUBLIC_PATHS = [
  * Rotte pubbliche percorse ESATTE (non prefissi).
  *
  * Perché servono: sotto `/api/agents` ci sono sia rotte pubbliche di
- * catalogo (`[id]/recommended-plugins`) sia rotte che scrivono e richiedono
- * sessione (`[id]/skills` = installa/disinstalla). Il match a prefisso
+ * catalogo sia rotte che scrivono e richiedono sessione
+ * (`[id]/skills` = installa/disinstalla). Il match a prefisso
  * aprirebbe anche le seconde, quindi queste eccezioni sono esplicite.
+ * (Attualmente vuoto: riservato per future rotte catalogo pubbliche.)
  */
-const PUBLIC_EXACT_PATHS = new Set([
-  // Plugin consigliati per un agente: dato di catalogo, come /api/plugins.
-  /^\/api\/agents\/[a-z0-9-]+\/recommended-plugins$/,
-]);
+const PUBLIC_EXACT_PATHS: RegExp[] = [];
 
 /** True se il path è in una delle eccezioni esatte. */
 function isPublicExactPath(pathname: string): boolean {
