@@ -11,7 +11,19 @@
  * markdown come `**grassetto**` restano intatti.
  */
 
-const WORD_DELAY_MS = 30;
+// Ritmo base dell'effetto "sta scrivendo". Deve restare sotto il ritmo tipico
+// del provider (~40-80 parole/s), altrimenti è l'emitter — non il modello — a
+// dettare la velocità della risposta. Sovrascrivibile via env.
+const WORD_DELAY_MS = Number(process.env.CHAT_WORD_DELAY_MS ?? 14);
+
+// Quando il provider consegna a raffiche (o la risposta è già tutta in coda),
+// non ha senso rallentare al ritmo base: si drena più in fretta man mano che la
+// coda cresce, così la UI resta dietro al modello invece di trattenerlo.
+function delayForBacklog(size: number): number {
+  if (size > 30) return 1;
+  if (size > 10) return 5;
+  return WORD_DELAY_MS;
+}
 
 export type WordEmitter = {
   /** Accoda il testo appena arriva dal provider (qualsiasi dimensione/chunking). */
@@ -45,12 +57,12 @@ export function createWordEmitter(onWord: (word: string) => void): WordEmitter {
       timer = null;
       return;
     }
-    timer = setTimeout(emitNext, WORD_DELAY_MS);
+    timer = setTimeout(emitNext, delayForBacklog(queue.length));
   };
 
   const ensureRunning = () => {
     if (!stopped && !timer && queue.length > 0) {
-      timer = setTimeout(emitNext, WORD_DELAY_MS);
+      timer = setTimeout(emitNext, delayForBacklog(queue.length));
     }
   };
 
@@ -63,7 +75,7 @@ export function createWordEmitter(onWord: (word: string) => void): WordEmitter {
     },
     async flush() {
       while (!stopped && (queue.length > 0 || timer)) {
-        await new Promise((resolve) => setTimeout(resolve, WORD_DELAY_MS + 5));
+        await new Promise((resolve) => setTimeout(resolve, delayForBacklog(queue.length) + 3));
       }
     },
     stop() {
