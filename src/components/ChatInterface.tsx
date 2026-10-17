@@ -94,9 +94,13 @@ import {
 } from "@/lib/agent-activity";
 import {
   chatTextZoom,
+  readActiveConversation,
+  readChatDrafts,
   readChatTextSize,
   readDefaultAgent,
   readSidebarOpen,
+  saveActiveConversation,
+  saveChatDrafts,
   saveChatTextSize,
   saveDefaultAgent,
   saveSidebarOpen,
@@ -1126,13 +1130,18 @@ export default function ChatInterface({
             ),
           }));
           setConversations((prev) => (prev.length === 0 ? normalized : prev));
-          const first = parsed[0] as LocalConversation | undefined;
-          if (first?.id) {
-            setActiveId((prev) => prev ?? first.id);
+          // Riapri la conversazione su cui l'utente era rimasto (se esiste
+          // ancora), altrimenti la prima: così la bozza salvata compare subito.
+          const remembered = readActiveConversation();
+          const target =
+            parsed.find((c) => c.id === remembered) ??
+            (parsed[0] as LocalConversation | undefined);
+          if (target?.id) {
+            setActiveId((prev) => prev ?? target.id);
             // La conversazione riaperta porta con sé i suoi agenti: senza questo
             // la selezione (vuota dopo un reload) li rimuoverebbe al primo
             // invio, perché è la selezione corrente a essere salvata nel turno.
-            const slugs = first.agentSlugs ?? [];
+            const slugs = target.agentSlugs ?? [];
             if (slugs.length > 0) {
               setSelectedAgentSlugs((prev) => (prev.length > 0 ? prev : slugs));
               setActiveAgentId((prev) => prev || slugs[0] || "");
@@ -1144,6 +1153,60 @@ export default function ChatInterface({
       // ignora
     }
   }, []);
+
+  // Bozze dell'input persistite in localStorage: il testo scritto sopravvive a
+  // un reload. Si idratano al mount (prima che `activeId` venga risolto) e si
+  // riscrive solo il testo — gli allegati restano in memoria.
+  const draftsHydratedRef = useRef(false);
+  const draftsRestoredRef = useRef<Set<string>>(new Set());
+
+  const persistDrafts = useCallback(() => {
+    const out: Record<string, string> = {};
+    for (const [id, draft] of Object.entries(draftsRef.current)) {
+      if (draft.input) out[id] = draft.input;
+    }
+    saveChatDrafts(out);
+  }, []);
+
+  useEffect(() => {
+    const saved = readChatDrafts();
+    for (const [id, text] of Object.entries(saved)) {
+      draftsRef.current[id] = {
+        input: text,
+        attachments: draftsRef.current[id]?.attachments ?? [],
+      };
+    }
+    draftsHydratedRef.current = true;
+  }, []);
+
+  // Ripristina la bozza della conversazione che diventa attiva, una sola volta:
+  // da lì in poi il testo live è la fonte di verità. Non sovrascrive ciò che
+  // l'utente sta già scrivendo (es. l'`initialQuery` che sta per essere inviato).
+  useEffect(() => {
+    if (!activeId || draftsRestoredRef.current.has(activeId)) return;
+    draftsRestoredRef.current.add(activeId);
+    const draft = draftsRef.current[activeId];
+    if (draft?.input) setInput((prev) => (prev ? prev : draft.input));
+  }, [activeId]);
+
+  // Backstop per le modifiche che non passano da `handleInputChange` (voce,
+  // suggerimenti, citazioni): la bozza persistita resta allineata. Non cancella
+  // mai su input vuoto — la rimozione è esplicita — così il mount, quando
+  // l'input è ancora "", non sovrascrive la bozza appena idratata.
+  useEffect(() => {
+    if (!activeId || !draftsHydratedRef.current || !input) return;
+    draftsRef.current[activeId] = {
+      input,
+      attachments: draftsRef.current[activeId]?.attachments ?? [],
+    };
+    persistDrafts();
+  }, [input, activeId, persistDrafts]);
+
+  // Ricorda l'ultima conversazione aperta per riaprirla (con la sua bozza) al
+  // reload invece della sola prima in cronologia.
+  useEffect(() => {
+    if (activeId) saveActiveConversation(activeId);
+  }, [activeId]);
 
   // Preferenze rapide salvate: si leggono al mount (solo client, localStorage)
   // per non far divergere l'HTML server-rendered da quello idratato.
@@ -1262,6 +1325,9 @@ export default function ChatInterface({
       };
       setConversations([conv]);
       setActiveId(conv.id);
+      // La query del deep-link è già stata inviata: lasciarla nell'input (e
+      // quindi salvarla come bozza) la farebbe ricomparire al reload.
+      setInput("");
       setTimeout(() => handleSendWithText(initialQuery, conv.id), 100);
     }
   }, [initialQuery]);
@@ -1375,12 +1441,10 @@ export default function ChatInterface({
   }
 
   // Ripristina la bozza della chat di destinazione (vuota se non ce n'è una).
-  // L'entrata viene consumata: da qui in poi la bozza "live" è la fonte di
-  // verità e viene risalvata solo allo switch successivo, così non rimangono
-  // copie stale nel ref.
+  // Il testo live resta anche nel ref (aggiornato a ogni tasto) così la bozza
+  // persistita non si perde: il ref è la fonte per il salvataggio in localStorage.
   function restoreDraft(id: string) {
     const draft = draftsRef.current[id];
-    delete draftsRef.current[id];
     setInput(draft?.input ?? "");
     attach.restore(draft?.attachments ?? []);
   }
@@ -1516,6 +1580,7 @@ export default function ChatInterface({
     }
     delete draftsRef.current[id];
     delete queueRef.current[id];
+    persistDrafts();
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (id === activeId) {
       // La bozza live apparteneva alla conversazione eliminata: si ripulisce,
@@ -2206,6 +2271,16 @@ export default function ChatInterface({
     setLimitTick((n) => n + 1);
   }
 
+  // Aggiorna l'input. Svuotare il campo cancella la bozza (così il testo
+  // eliminato non ricompare al reload); per il testo non vuoto la persistenza
+  // la fa l'effetto backstop, che copre anche le modifiche programmatiche.
+  function handleInputChange(value: string) {
+    setInput(value);
+    if (value || !activeId) return;
+    delete draftsRef.current[activeId];
+    persistDrafts();
+  }
+
   async function handleSend() {
     const text = input.trim();
     if ((!text && attach.attachments.length === 0) || !activeId) return;
@@ -2216,6 +2291,9 @@ export default function ChatInterface({
     const convId = activeId;
     const pending = attach.take();
     setInput("");
+    // Il messaggio è stato inviato: la bozza non deve più ricomparire.
+    delete draftsRef.current[convId];
+    persistDrafts();
     inputRef.current?.focus();
     if (streamingRef.current.has(convId)) {
       const userMsg = appendUserMessage(text, convId, pending);
@@ -3081,7 +3159,7 @@ export default function ChatInterface({
                       <textarea
                         ref={inputRef}
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={(e) => handleInputChange(e.target.value)}
                         onKeyDown={handleKeyDown}
                         onPaste={attach.makePaste(attachLabels)}
                         placeholder={dict.chat.placeholder}
@@ -3559,7 +3637,7 @@ export default function ChatInterface({
               <textarea
                 ref={inputRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onPaste={attach.makePaste(attachLabels)}
                 placeholder={dict.chat.placeholder}

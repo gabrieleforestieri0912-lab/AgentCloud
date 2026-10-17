@@ -72,6 +72,64 @@ export function saveChatTextSize(size: ChatTextSize): void {
 }
 
 /**
+ * Bozze dell'input della chat, per conversazione. Senza persistenza il testo
+ * già scritto spariva a un reload (o a un aggiornamento della pagina): è lavoro
+ * dell'utente, non stato effimero. Si salva solo il testo — gli allegati hanno
+ * anteprime come data URL e gonfierebbero lo storage per un beneficio minore.
+ */
+export const CHAT_DRAFTS_KEY = "agentcloud_chat_drafts";
+
+export type ChatDrafts = Record<string, string>;
+
+export function readChatDrafts(): ChatDrafts {
+  try {
+    const raw = localStorage.getItem(CHAT_DRAFTS_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: ChatDrafts = {};
+    for (const [id, text] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof text === "string" && text) out[id] = text;
+    }
+    return out;
+  } catch {
+    // Storage non disponibile o malformato: si riparte senza bozze.
+    return {};
+  }
+}
+
+export function saveChatDrafts(drafts: ChatDrafts): void {
+  try {
+    localStorage.setItem(CHAT_DRAFTS_KEY, JSON.stringify(drafts));
+  } catch {
+    // Storage non disponibile: la bozza resta valida per la sessione.
+  }
+}
+
+/**
+ * Conversazione aperta per ultima. Al reload la chat riapre sempre la prima
+ * della cronologia: se l'utente stava scrivendo altrove, il testo tornava solo
+ * dopo un click. Ricordare l'id rende il ripristino della bozza immediato.
+ */
+export const CHAT_ACTIVE_CONV_KEY = "agentcloud_chat_active_conv";
+
+export function readActiveConversation(): string {
+  try {
+    return localStorage.getItem(CHAT_ACTIVE_CONV_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function saveActiveConversation(id: string): void {
+  try {
+    localStorage.setItem(CHAT_ACTIVE_CONV_KEY, id);
+  } catch {
+    // Storage non disponibile: si riaprirà la prima conversazione.
+  }
+}
+
+/**
  * Sidebar aperta su desktop. Default `true`: una sidebar già ristretta è una
  * scelta dell'utente, una sidebar vuota all'ingresso è solo una sorpresa.
  */
