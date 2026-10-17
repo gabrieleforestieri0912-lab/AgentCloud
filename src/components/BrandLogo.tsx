@@ -22,6 +22,7 @@ const MULTICOLOR = new Set([
   "instagram",
   "tiktok",
   "slack",
+  "microsoftoutlook",
   "microsoftword",
   "microsoftexcel",
   "microsoftpowerpoint",
