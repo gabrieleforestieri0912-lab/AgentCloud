@@ -3336,9 +3336,10 @@ export default function ChatInterface({
                         // il parser li estrae e al loro posto finisce la card.
                         const isLiveFileMessage =
                           isStreamingActive && msg.id === messages[messages.length - 1]?.id;
-                        const parsedFiles = isLiveFileMessage
-                          ? parseChatFiles(cleanText)
-                          : { text: cleanText, files: [] };
+                        // I blocchi <agentcloud_file> vanno estratti SEMPRE, anche
+                        // dopo lo streaming: altrimenti il contenuto del file resta
+                        // sparso nel testo della bolla.
+                        const parsedFiles = parseChatFiles(cleanText);
                         const msgFiles = filesOfMessage(msg, isLiveFileMessage);
                         // La card "Connetti" compare SOLO se l'utente l'ha chiesta
                         // esplicitamente nel messaggio che precede questa risposta
