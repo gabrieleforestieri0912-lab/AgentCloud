@@ -249,22 +249,6 @@ export async function POST(req: Request) {
 
   // Rispetta i feature flag: espone solo gli strumenti abilitati per l'agente.
   let enabledToolNames = getEnabledToolsForAgent(agentId);
-  // I tool Microsoft si espongono solo con la connessione attiva: su un provider
-  // non collegato restituirebbero solo un errore e sposterebbero peso nel
-  // contesto del modello (stessa logica delle liste per agente).
-  if (!(await isMicrosoftConnected(effectiveTenant))) {
-    enabledToolNames = enabledToolNames.filter((t) => !isMicrosoftToolName(t));
-  }
-  // Outlook ha connessione separata (consenso incrementale): stessi motivi sopra.
-  if (!(await isOutlookConnected(effectiveTenant))) {
-    enabledToolNames = enabledToolNames.filter((t) => !isOutlookToolName(t));
-  }
-  const enabledTools = enabledToolNames
-    .map((tool) => TOOL_DEFINITIONS[tool])
-    .filter(Boolean);
-
-  // Risolve il backend del modello una volta per richiesta (Anthropic).
-  const provider = getLLMProvider();
 
   // Normalizza i messaggi in ingresso nella forma condivisa LLMMessage.
   // Il client invia stringhe oppure blocchi vision [{type:"text"...},{type:"image"...}] per l'ultimo messaggio.
@@ -290,17 +274,40 @@ export async function POST(req: Request) {
   // non dal modello, che ha negli strumenti e nel prompt esempi in italiano.
   const replyLocale = replyLanguage(locale, lastUserText(initialMessages));
 
-  // Competenze (progressive disclosure): nel system prompt finisce solo
-  // l'indice (nome + descrizione + rischio); il corpo della SKILL.md entra nel
-  // contesto solo se la richiesta corrisponde a una description. Vedi
-  // `lib/skills/runtime.ts` e `lib/skills/installed.ts`.
-  const skillsRun = await prepareSkillsForRun({
-    accountId: userId !== "anonymous" ? userId : null,
-    agentSlug: agentId,
-    // `lastUserText` può tornare undefined (nessun messaggio utente): in
-    // quel caso non c'è nulla su cui abbinare una skill.
-    userText: lastUserText(initialMessages) ?? "",
-  });
+  // Queste tre attese sono indipendenti tra loro: una sola andata/ritorno in
+  // parallelo invece di tre in sequenza, così la risposta parte prima.
+  //  - connessioni Microsoft/Outlook: i tool si espongono solo se il provider è
+  //    collegato (su un provider non collegato restituirebbero solo un errore
+  //    e sposterebbero peso nel contesto del modello — stessa logica delle
+  //    liste per agente);
+  //  - competenze (progressive disclosure): nel system prompt finisce solo
+  //    l'indice (nome + descrizione + rischio); il corpo della SKILL.md entra
+  //    nel contesto solo se la richiesta corrisponde a una description. Vedi
+  //    `lib/skills/runtime.ts` e `lib/skills/installed.ts`.
+  const [microsoftConnected, outlookConnected, skillsRun] = await Promise.all([
+    isMicrosoftConnected(effectiveTenant),
+    isOutlookConnected(effectiveTenant),
+    prepareSkillsForRun({
+      accountId: userId !== "anonymous" ? userId : null,
+      agentSlug: agentId,
+      // `lastUserText` può tornare undefined (nessun messaggio utente): in
+      // quel caso non c'è nulla su cui abbinare una skill.
+      userText: lastUserText(initialMessages) ?? "",
+    }),
+  ]);
+  if (!microsoftConnected) {
+    enabledToolNames = enabledToolNames.filter((t) => !isMicrosoftToolName(t));
+  }
+  if (!outlookConnected) {
+    enabledToolNames = enabledToolNames.filter((t) => !isOutlookToolName(t));
+  }
+  const enabledTools = enabledToolNames
+    .map((tool) => TOOL_DEFINITIONS[tool])
+    .filter(Boolean);
+
+  // Risolve il backend del modello una volta per richiesta (Anthropic).
+  const provider = getLLMProvider();
+
   const skillsIndex = skillsRun.indexBlock;
 
   const encoder = new TextEncoder();
