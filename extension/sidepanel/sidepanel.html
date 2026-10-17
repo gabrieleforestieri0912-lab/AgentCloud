@@ -59,24 +59,34 @@
               <span>Email</span>
               <input id="extEmail" type="email" required autocomplete="email" placeholder="tu@azienda.com">
             </label>
-            <label class="ext-label">
+            <label id="extPasswordLabel" class="ext-label">
               <span>Password</span>
               <input id="extPassword" type="password" required autocomplete="current-password" placeholder="La tua password">
+            </label>
+            <label id="extCodeLabel" class="ext-label hidden">
+              <span>Codice ricevuto per email</span>
+              <input id="extCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">
             </label>
             <div id="extError" class="ext-error hidden"></div>
             <div id="extSuccess" class="ext-success hidden"></div>
             <button id="extSubmit" type="submit" class="ext-primary">
               <span id="extSubmitText">Accedi</span>
             </button>
-            <div class="ext-forgot">
+            <div id="extForgot" class="ext-forgot">
               <button id="extForgotBtn" type="button" class="ext-link-btn">Password dimenticata?</button>
             </div>
+            <div id="extCodeLinks" class="ext-forgot hidden">
+              <button id="extResendCodeBtn" type="button" class="ext-link-btn">Rinvia codice</button>
+              <span aria-hidden="true"> · </span>
+              <button id="extChangeEmailBtn" type="button" class="ext-link-btn">Cambia email</button>
+            </div>
+            <button id="extCodeModeBtn" type="button" class="ext-refresh-link">Accedi con un codice via email</button>
           </form>
           <div class="ext-divider"><span>o</span></div>
           <button id="extGoogleBtn" type="button" class="ext-google">
             <span class="ext-google-g">G</span> Continua con Google
           </button>
-          <p class="ext-switch">
+          <p id="extSwitchRow" class="ext-switch">
             <span id="extSwitchPrompt">Non hai ancora un account?</span>
             <button id="extSwitchBtn" type="button" class="ext-switch-link">Registrati</button>
           </p>

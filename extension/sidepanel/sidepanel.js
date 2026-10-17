@@ -44,6 +44,9 @@ let loading = false;
 let pendingApproval = null;
 let lastRequest = null;
 let extMode = "login";
+// Modalità "code" (accesso senza password): "email" = invio del codice,
+// "code" = conferma del codice ricevuto. Per login/signup non è usata.
+let extCodeStep = "email";
 let extThrottleUntil = 0;
 let extAttempts = 0;
 
@@ -53,14 +56,23 @@ const extHint = document.getElementById("extHint");
 const extNameLabel = document.getElementById("extNameLabel");
 const extName = document.getElementById("extName");
 const extEmail = document.getElementById("extEmail");
+const extPasswordLabel = document.getElementById("extPasswordLabel");
 const extPassword = document.getElementById("extPassword");
+const extCodeLabel = document.getElementById("extCodeLabel");
+const extCode = document.getElementById("extCode");
 const extHoneypot = document.getElementById("extHoneypot");
 const extError = document.getElementById("extError");
 const extSuccess = document.getElementById("extSuccess");
 const extSubmit = document.getElementById("extSubmit");
 const extSubmitText = document.getElementById("extSubmitText");
+const extForgot = document.getElementById("extForgot");
 const extForgotBtn = document.getElementById("extForgotBtn");
+const extCodeLinks = document.getElementById("extCodeLinks");
+const extCodeModeBtn = document.getElementById("extCodeModeBtn");
+const extResendCodeBtn = document.getElementById("extResendCodeBtn");
+const extChangeEmailBtn = document.getElementById("extChangeEmailBtn");
 const extGoogleBtn = document.getElementById("extGoogleBtn");
+const extSwitchRow = document.getElementById("extSwitchRow");
 const extSwitchBtn = document.getElementById("extSwitchBtn");
 const extSwitchPrompt = document.getElementById("extSwitchPrompt");
 const extForm = document.getElementById("extForm");
@@ -81,16 +93,46 @@ function extSetSuccess(msg) {
 }
 function extUpdateMode(mode) {
   extMode = mode;
+  extCodeStep = "email";
   const isSignup = mode === "signup";
+  const isCode = mode === "code";
   if (extTitle) extTitle.textContent = isSignup ? "Crea il tuo account" : "Bentornato";
-  if (extHint) extHint.textContent = isSignup ? "Registrati con email e password o con Google" : "Accedi con email e password o con Google";
+  if (extHint) {
+    extHint.textContent = isSignup
+      ? "Registrati con email e password o con Google"
+      : isCode
+        ? "Inserisci l'email e conferma con il codice che ricevi"
+        : "Accedi con email e password o con Google";
+  }
   if (extNameLabel) extNameLabel.classList.toggle("hidden", !isSignup);
-  if (extSubmitText) extSubmitText.textContent = isSignup ? "Crea account" : "Accedi";
+  // In modalità "code" la password non serve: la nascondiamo per non confondere.
+  if (extPasswordLabel) extPasswordLabel.classList.toggle("hidden", isCode);
+  if (extPassword) {
+    extPassword.required = !isCode;
+    extPassword.placeholder = isSignup ? "Minimo 8 caratteri" : "La tua password";
+    if (isCode) extPassword.value = "";
+  }
+  if (extCodeLabel) extCodeLabel.classList.add("hidden");
+  if (extCode) extCode.value = "";
+  if (extSubmitText) extSubmitText.textContent = isSignup ? "Crea account" : isCode ? "Invia codice" : "Accedi";
+  if (extForgot) extForgot.classList.toggle("hidden", isCode);
+  if (extForgotBtn) extForgotBtn.style.display = isSignup ? "none" : "inline";
+  if (extCodeLinks) extCodeLinks.classList.add("hidden");
+  if (extCodeModeBtn) extCodeModeBtn.classList.toggle("hidden", isCode);
+  if (extSwitchRow) extSwitchRow.classList.toggle("hidden", isCode);
   if (extSwitchPrompt) extSwitchPrompt.textContent = isSignup ? "Hai già un account?" : "Non hai ancora un account?";
   if (extSwitchBtn) extSwitchBtn.textContent = isSignup ? "Accedi" : "Registrati";
-  if (extPassword) extPassword.placeholder = isSignup ? "Minimo 8 caratteri" : "La tua password";
-  if (extForgotBtn) extForgotBtn.style.display = isSignup ? "none" : "inline";
   extSetError(""); extSetSuccess("");
+}
+
+// Dopo l'invio del codice: mostra il campo a 6 cifre e i link di ripristino.
+function extShowCodeStep(email) {
+  extCodeStep = "code";
+  if (extCodeLabel) extCodeLabel.classList.remove("hidden");
+  if (extSubmitText) extSubmitText.textContent = "Conferma codice";
+  if (extCodeLinks) extCodeLinks.classList.remove("hidden");
+  extSetSuccess(`Codice inviato a ${email}. Controlla l'email (anche lo spam) e inseriscilo qui sotto.`);
+  if (extCode) { extCode.value = ""; extCode.focus(); }
 }
 function extValidateEmail(v) {
   const t = String(v || "").trim();
@@ -109,10 +151,39 @@ async function handleExtSubmit(e) {
     return;
   }
   const email = extEmail ? extEmail.value.trim() : "";
-  const password = extPassword ? extPassword.value : "";
-  const name = extName ? extName.value.trim() : "";
   const emailErr = extValidateEmail(email);
   if (emailErr) { extSetError(emailErr); return; }
+
+  // ——— Accesso senza password: invio del codice o conferma ———
+  if (extMode === "code") {
+    if (extCodeStep === "email") {
+      extSetError(""); extSetSuccess("");
+      if (extSubmit) { extSubmit.disabled = true; extSubmit.style.opacity = "0.7"; }
+      const res = await send({ action: "SEND_EMAIL_CODE", payload: { email, createUser: false } });
+      if (extSubmit) { extSubmit.disabled = false; extSubmit.style.opacity = ""; }
+      if (!res?.success) { extSetError(res?.error || "Impossibile inviare il codice. Riprova."); return; }
+      extShowCodeStep(email);
+      return;
+    }
+    const code = (extCode ? extCode.value : "").replace(/\D/g, "");
+    if (code.length !== 6) { extSetError("Inserisci il codice a 6 cifre ricevuto per email."); return; }
+    extSetError(""); extSetSuccess("");
+    if (extSubmit) { extSubmit.disabled = true; extSubmit.style.opacity = "0.7"; }
+    const res = await send({ action: "VERIFY_EMAIL_CODE", payload: { email, token: code } });
+    if (extSubmit) { extSubmit.disabled = false; extSubmit.style.opacity = ""; }
+    if (!res?.success) {
+      extAttempts += 1;
+      if (extAttempts >= 5) { extThrottleUntil = Date.now() + 30000; extAttempts = 0; }
+      extSetError(res?.error || "Codice non valido o scaduto.");
+      return;
+    }
+    extAttempts = 0;
+    await loadSession(true);
+    return;
+  }
+
+  const password = extPassword ? extPassword.value : "";
+  const name = extName ? extName.value.trim() : "";
   if (!password || password.length < 8) { extSetError(password.length < 8 ? "La password deve contenere almeno 8 caratteri." : "Password non valida."); return; }
   if (password.length > 128) { extSetError("La password non può superare i 128 caratteri."); return; }
   if (password.includes("\0")) { extSetError("La password contiene caratteri non ammessi."); return; }
@@ -132,6 +203,27 @@ async function handleExtSubmit(e) {
   extAttempts = 0;
   if (res?.needsEmailConfirm) { extSetSuccess(res.message || "Controlla la tua email per confermare la registrazione."); return; }
   await loadSession(true);
+}
+async function handleExtResendCode() {
+  const email = extEmail ? extEmail.value.trim() : "";
+  const err = extValidateEmail(email);
+  if (err) { extSetError(err); return; }
+  extSetError("");
+  if (extResendCodeBtn) extResendCodeBtn.disabled = true;
+  const res = await send({ action: "SEND_EMAIL_CODE", payload: { email, createUser: false } });
+  if (extResendCodeBtn) extResendCodeBtn.disabled = false;
+  if (!res?.success) { extSetError(res?.error || "Impossibile inviare il codice. Riprova."); return; }
+  extSetSuccess(`Nuovo codice inviato a ${email}.`);
+}
+// Torna al passo email della modalità codice (per correggere l'indirizzo).
+function handleExtChangeEmail() {
+  extCodeStep = "email";
+  if (extCodeLabel) extCodeLabel.classList.add("hidden");
+  if (extCode) extCode.value = "";
+  if (extSubmitText) extSubmitText.textContent = "Invia codice";
+  if (extCodeLinks) extCodeLinks.classList.add("hidden");
+  extSetError(""); extSetSuccess("");
+  if (extEmail) extEmail.focus();
 }
 async function handleExtForgot() {
   const email = extEmail ? extEmail.value.trim() : "";
@@ -161,6 +253,27 @@ function initExtAuth() {
   if (extGoogleBtn && !extGoogleBtn.dataset.bound) {
     extGoogleBtn.dataset.bound = "1";
     extGoogleBtn.addEventListener("click", () => send({ action: "OPEN_LOGIN" }));
+  }
+  if (extCodeModeBtn && !extCodeModeBtn.dataset.bound) {
+    extCodeModeBtn.dataset.bound = "1";
+    extCodeModeBtn.addEventListener("click", () => {
+      extUpdateMode("code");
+      if (extEmail) extEmail.focus();
+    });
+  }
+  if (extResendCodeBtn && !extResendCodeBtn.dataset.bound) {
+    extResendCodeBtn.dataset.bound = "1";
+    extResendCodeBtn.addEventListener("click", handleExtResendCode);
+  }
+  if (extChangeEmailBtn && !extChangeEmailBtn.dataset.bound) {
+    extChangeEmailBtn.dataset.bound = "1";
+    extChangeEmailBtn.addEventListener("click", handleExtChangeEmail);
+  }
+  if (extCode && !extCode.dataset.bound) {
+    extCode.dataset.bound = "1";
+    extCode.addEventListener("input", () => {
+      extCode.value = extCode.value.replace(/\D/g, "").slice(0, 6);
+    });
   }
   const refreshBtn = document.getElementById("refreshLoggedOutBtn");
   if (refreshBtn && !refreshBtn.dataset.bound) {

@@ -200,6 +200,45 @@ async function supabaseGetUser(accessToken) {
   return await res.json().catch(() => null);
 }
 
+// Accesso senza password: codice a 6 cifre inviato per email (OTP nativo Supabase).
+// L'email parte dallo SMTP di Supabase (da puntare a Resend sul dominio verificato)
+// e il codice compare nel messaggio solo se il template email di Supabase include
+// {{ .Token }}. Nessun invio diretto da qui: evita di custodire la API key Resend
+// nell'estensione.
+async function supabaseSendEmailCode(email, shouldCreateUser = false) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, create_user: shouldCreateUser, gotrue_meta_security: {} }),
+  });
+  if (res.ok) return { ok: true };
+  const data = await res.json().catch(() => ({}));
+  // Anti-enumerazione: con create_user:false un'email non registrata risponde 4xx.
+  // Rispondiamo comunque "inviato" così non si scopre chi è già cliente.
+  if (res.status === 400 || res.status === 422) return { ok: true };
+  throw new Error(data.error_description || data.msg || data.error || "Impossibile inviare il codice. Riprova.");
+}
+
+async function supabaseVerifyEmailCode(email, token) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "email", email, token }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error_description || data.msg || data.error || "Codice non valido o scaduto.");
+  }
+  const session = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    user: data.user,
+    expires_at: data.expires_in ? Date.now() + data.expires_in * 1000 : null,
+  };
+  await setSupabaseSession(session);
+  return session;
+}
+
 async function checkSession(force = false) {
   const stored = await api.storage.local.get(SESSION_KEY);
   const cached = stored[SESSION_KEY];
@@ -853,6 +892,21 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (!email) throw new Error("Email obbligatoria.");
         await supabaseForgot(email);
         sendResponse({ success: true });
+        return;
+      }
+      if (message.action === "SEND_EMAIL_CODE") {
+        const { email, createUser } = message.payload || {};
+        if (!email) throw new Error("Email obbligatoria.");
+        await supabaseSendEmailCode(email, Boolean(createUser));
+        sendResponse({ success: true });
+        return;
+      }
+      if (message.action === "VERIFY_EMAIL_CODE") {
+        const { email, token } = message.payload || {};
+        if (!email || !token) throw new Error("Email e codice sono obbligatori.");
+        await supabaseVerifyEmailCode(email, token);
+        await api.storage.local.remove(SESSION_KEY);
+        sendResponse({ success: true, data: await checkSession(true) });
         return;
       }
       if (message.action === "CLEAR_SESSION") {

@@ -41,7 +41,7 @@ function CompleteAccountNotice() {
   if (searchParams.get("reason") !== "complete_account") return null;
   return (
     <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-      Per accedere alla piattaforma, ricevi un link di accesso via email (qui sotto) oppure
+      Per accedere alla piattaforma, ricevi un codice di accesso via email (qui sotto) oppure
       imposta una password con &laquo;Password dimenticata?&raquo;.
     </p>
   );
@@ -81,9 +81,12 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [resetSent, setResetSent] = useState("");
   const [otpSent, setOtpSent] = useState("");
+  const [showCode, setShowCode] = useState(false);
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [resetting, setResetting] = useState(false);
 
   const a = dict.auth;
@@ -148,68 +151,7 @@ export default function LoginPage() {
       }
       // Accesso riuscito: reset contatore tentativi
       resetClientAttemptThrottle("login_attempt");
-
-      // Beta access: complete waitlist redemption if pending session cookie exists
-      if (process.env.NEXT_PUBLIC_ENABLE_WAITLIST_BETA_BYPASS === "true") {
-        const sessionMatch = document.cookie.match(/waitlist_session=([^;]+)/);
-        const sessionToken = sessionMatch?.[1];
-        if (sessionToken) {
-          try {
-            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-            const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token) {
-              await fetch(`${supabaseUrl}/functions/v1/complete-waitlist-redemption`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${session.access_token}`,
-                  "apikey": anonKey,
-                },
-                body: JSON.stringify({ session_token: sessionToken }),
-              });
-            }
-          } catch {
-            // Non-blocking: user still has normal account
-          }
-          // Clear the cookie
-          document.cookie = "waitlist_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        }
-      }
-
-      // Set auth_method_completed = true (password login = full auth)
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-          await fetch(`${supabaseUrl}/rest/v1/profiles?auth_method_completed=eq.false`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${session.access_token}`,
-              "apikey": anonKey,
-              "Prefer": "return=minimal",
-            },
-            body: JSON.stringify({ auth_method_completed: true }),
-          });
-          // Phase 2: completa referral pending -> 3 punti al referrer (Open Decision #7)
-          try { await fetch("/api/waitlist/complete-referral", { method: "POST" }); } catch {}
-        }
-      } catch {
-        // Non-blocking
-      }
-
-      // Riprende una connessione OAuth in sospeso (es. install Shopify) dopo
-      // il login — la route è un redirect API verso il provider esterno,
-      // quindi serve una navigazione piena, non un routing client-side.
-      const next = getNextParam();
-      if (next) {
-        window.location.assign(next);
-        return;
-      }
-      router.push("/dashboard");
-      router.refresh();
+      await completeSignIn();
     } catch {
       setError(a.errors.network);
     } finally {
@@ -217,14 +159,87 @@ export default function LoginPage() {
     }
   }
 
-  // Accesso senza password per i waitlist-user (solo email a suo tempo):
-  // invia un link monouso all'email già registrata. `shouldCreateUser: false`
+  // Passi comuni a ogni accesso riuscito (password o codice via email): riscatto
+  // della waitlist pre-lancio, profilo con metodo di accesso completato, referral
+  // pendente e redirect finale. Volutamente senza try/catch: gli errori di rete
+  // sono gestiti dai chiamanti, così ogni flusso mostra il proprio messaggio.
+  async function completeSignIn() {
+    const supabase = createClient();
+
+    // Beta access: complete waitlist redemption if pending session cookie exists
+    if (process.env.NEXT_PUBLIC_ENABLE_WAITLIST_BETA_BYPASS === "true") {
+      const sessionMatch = document.cookie.match(/waitlist_session=([^;]+)/);
+      const sessionToken = sessionMatch?.[1];
+      if (sessionToken) {
+        try {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            await fetch(`${supabaseUrl}/functions/v1/complete-waitlist-redemption`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${session.access_token}`,
+                "apikey": anonKey,
+              },
+              body: JSON.stringify({ session_token: sessionToken }),
+            });
+          }
+        } catch {
+          // Non-blocking: user still has normal account
+        }
+        // Clear the cookie
+        document.cookie = "waitlist_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      }
+    }
+
+    // Set auth_method_completed = true (accesso completo con password o codice)
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+        await fetch(`${supabaseUrl}/rest/v1/profiles?auth_method_completed=eq.false`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+            "apikey": anonKey,
+            "Prefer": "return=minimal",
+          },
+          body: JSON.stringify({ auth_method_completed: true }),
+        });
+        // Phase 2: completa referral pending -> 3 punti al referrer (Open Decision #7)
+        try { await fetch("/api/waitlist/complete-referral", { method: "POST" }); } catch {}
+      }
+    } catch {
+      // Non-blocking
+    }
+
+    // Riprende una connessione OAuth in sospeso (es. install Shopify) dopo
+    // il login — la route è un redirect API verso il provider esterno,
+    // quindi serve una navigazione piena, non un routing client-side.
+    const next = getNextParam();
+    if (next) {
+      window.location.assign(next);
+      return;
+    }
+    router.push("/dashboard");
+    router.refresh();
+  }
+
+  // Accesso senza password: invia per email un codice monouso a 6 cifre (lo stesso
+  // token del magic link, reso nel template Supabase da {{ .Token }}). Il codice
+  // viene poi confermato da handleVerifyEmailCode. `shouldCreateUser: false`
   // impedisce di creare account per email sconosciute.
-  async function handleMagicLink() {
+  async function handleSendEmailCode() {
     if (otpLoading) return;
     setError("");
     setResetSent("");
     setOtpSent("");
+    setShowCode(false);
+    setCode("");
 
     const emailCheck = validateAndSanitizeEmail(email);
     if (!emailCheck.valid || !emailCheck.email) {
@@ -247,14 +262,53 @@ export default function LoginPage() {
       });
       // Non riveliamo se l'email è registrata: messaggio generico anche in caso
       // di errore restituito da Supabase (anti-enumerazione).
-      if (error) console.warn("[login] magic link non inviato:", error.message);
+      if (error) console.warn("[login] codice di accesso non inviato:", error.message);
       setOtpSent(
-        "Ti abbiamo inviato un link di accesso. Controlla l'email (anche lo spam) e aprilo per entrare.",
+        `Ti abbiamo inviato un codice di accesso a ${emailCheck.email}. Controlla l'email (anche lo spam) e inseriscilo qui sotto.`,
       );
+      setShowCode(true);
     } catch {
       setError(a.errors.network);
     } finally {
       setOtpLoading(false);
+    }
+  }
+
+  // Conferma del codice ricevuto: crea la sessione e prosegue con gli stessi
+  // passi finali del login con password (waitlist, profilo, redirect).
+  async function handleVerifyEmailCode(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (verifying) return;
+    setError("");
+
+    const emailCheck = validateAndSanitizeEmail(email);
+    if (!emailCheck.valid || !emailCheck.email) {
+      setError(emailCheck.error || a.errors.invalidCredentials);
+      return;
+    }
+    const token = code.replace(/\D/g, "");
+    if (token.length !== 6) {
+      setError("Inserisci il codice a 6 cifre ricevuto per email.");
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.verifyOtp({
+        email: emailCheck.email,
+        token,
+        type: "email",
+      });
+      if (error) {
+        setError("Codice non valido o scaduto. Controlla e riprova.");
+        return;
+      }
+      await completeSignIn();
+    } catch {
+      setError(a.errors.network);
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -444,13 +498,48 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={handleMagicLink}
+                onClick={handleSendEmailCode}
                 disabled={otpLoading || !email}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-500/40 bg-brand-500/10 px-5 py-3 text-sm font-bold text-brand-200 transition-all hover:bg-brand-500/20 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {otpLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
-                Ricevi un link di accesso via email
+                Ricevi un codice di accesso via email
               </button>
+
+              {showCode && (
+                <div className="space-y-3 rounded-xl border border-brand-500/30 bg-brand-500/5 p-3">
+                  <label className="block">
+                    <span className="mb-1.5 block text-sm font-semibold text-neutral-300">
+                      Codice ricevuto per email
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleVerifyEmailCode();
+                        }
+                      }}
+                      placeholder="123456"
+                      className="w-full rounded-xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-center text-lg tracking-[0.4em] text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void handleVerifyEmailCode()}
+                    disabled={verifying || code.length !== 6}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-400 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {verifying ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                    Conferma codice
+                  </button>
+                </div>
+              )}
 
               <div className="text-center">
                 <button
