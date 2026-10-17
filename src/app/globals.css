@@ -1019,6 +1019,19 @@ html.light * { scrollbar-color: #c3c8d8 transparent; }
     animation-duration: 6s !important;
     animation-iteration-count: infinite !important;
   }
+  /* I puntini "sta pensando" restano animati anche con reduced-motion: sono
+     feedback di stato (l'agente sta lavorando), non decorazione. Da fermi
+     sembrerebbe che la chat si sia bloccata. */
+  .animate-typing-pulse {
+    animation-duration: 1.2s !important;
+    animation-iteration-count: infinite !important;
+  }
+  /* Stessa logica per le superfici che usano l'utility `animate-bounce`
+     (chat pubblica dell'agente, demo hero): sono puntini di attesa. */
+  .animate-bounce {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
 
 /* ── Ultra-wide (3xl ≥ 1920px): extra breathing room ── */
