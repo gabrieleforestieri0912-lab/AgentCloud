@@ -8,6 +8,12 @@ import { BRANDS } from "@/lib/brands";
  * colore singolo, quindi per questi usiamo il logo autentico (da
  * vectorlogo.zone) in /public/brand-logos. Tutto il resto ripiega sul glifo
  * monocolore ufficiale (che ha già il colore corretto del brand).
+ *
+ * INVARIANTE: ogni slug di MULTICOLOR deve avere il file
+ * `public/brand-logos/<slug>.svg`. Un `<img>` con src inesistente non ripiega
+ * su nulla: il browser mostra l'attributo `alt` al posto dell'icona. Aggiungere
+ * uno slug qui senza aggiungere il file rompe la UI; in tal caso lasciarlo
+ * fuori (il glifo monocolore ufficiale è comunque corretto).
  */
 const MULTICOLOR = new Set([
   "clickup",
@@ -19,8 +25,6 @@ const MULTICOLOR = new Set([
   "googlemeet",
   "googleads",
   "googleanalytics",
-  "googledocs",
-  "googleforms",
   "whatsapp",
   "instagram",
   "tiktok",
@@ -30,10 +34,6 @@ const MULTICOLOR = new Set([
   "microsoftexcel",
   "microsoftpowerpoint",
   "microsoftonenote",
-  "microsoftteams",
-  "microsoftsharepoint",
-  "onedrive",
-  "microsoftonedrive",
 ]);
 
 type BrandLogoProps = {
