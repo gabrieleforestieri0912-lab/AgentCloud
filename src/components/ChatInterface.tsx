@@ -514,8 +514,12 @@ export default function ChatInterface({
   const filesOfMessage = useCallback(
     (msg: LocalMessage, isLive: boolean): ChatFileRecord[] => {
       const blocks = isLive ? parseChatFiles(msg.content).files : [];
-      if (blocks.length === 0) return msg.files ?? [];
-      return mergeFileRecords(msg.files, blocks, activeConv?.created_at);
+      // Solo i blocchi completi: un file che il modello sta ancora scrivendo non
+      // deve comparire (card, chip in sidebar, anteprima) mentre cresce, con il
+      // contatore righe che cambia. Compare quando è pronto, a fine messaggio.
+      const complete = blocks.filter((b) => b.status !== "streaming");
+      if (complete.length === 0) return msg.files ?? [];
+      return mergeFileRecords(msg.files, complete, activeConv?.created_at);
     },
     [activeConv?.created_at],
   );
