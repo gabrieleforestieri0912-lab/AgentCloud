@@ -56,7 +56,6 @@ import { t } from "@/lib/i18n/dictionaries";
 import MarkdownText from "./MarkdownText";
 import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
-import ShopifyConnectionPrompt from "@/components/ShopifyConnectionPrompt";
 import InlineConnectCard from "@/components/InlineConnectCard";
 import InlineCartCard from "@/components/InlineCartCard";
 import ChatOnboarding from "./ChatOnboarding";
@@ -70,7 +69,6 @@ import {
 import { buildVisionText, composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
-import { SHOPIFY_AGENT_SLUG } from "@/lib/shopify/oauth";
 import { createClient } from "@/lib/supabase/client";
 import BrandLogo from "./BrandLogo";
 import AgentAvatar from "./AgentAvatar";
@@ -2884,8 +2882,6 @@ export default function ChatInterface({
         onDragLeave={attach.onDragLeave}
         onDrop={attach.makeDrop(attachLabels)}
       >
-        {sidebarView === "chat" && activeAgentId === SHOPIFY_AGENT_SLUG && <ShopifyConnectionPrompt />}
-
         {/* ── Projects view ────────────────────────────────────── */}
         {sidebarView === "projects" && (
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
