@@ -530,7 +530,11 @@ export default function PreviewPanel({
       exit={reduceMotion ? { opacity: 0 } : { x: 40, opacity: 0 }}
       transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
       style={{ width: `${effectiveWidth}px` }}
-      className="relative flex h-full w-full shrink-0 flex-col border-l border-white/10 bg-neutral-950 max-lg:w-full max-lg:border-l-0"
+      // z-20: l'overlay in alto a destra della chat (share + dashboard) è
+      // `inset-x-0 z-10` e coprirebbe i pulsanti di questo pannello; inoltre su
+      // desktop il pannello scende sotto la barra della chat (lg:mt-14) così
+      // l'intestazione non si confonde con i pulsanti in alto.
+      className="relative z-20 flex w-full shrink-0 flex-col border-l border-white/10 bg-neutral-950 max-lg:h-full max-lg:w-full max-lg:border-l-0 lg:mt-14"
     >
       {/* Maniglia di ridimensionamento (solo desktop). */}
       <div
@@ -615,23 +619,6 @@ export default function PreviewPanel({
               >
                 <History size={13} />
                 <span className="hidden xl:inline">{labels.restore}</span>
-              </button>
-            )}
-
-            {/* Modifica inline dell'utente: salva come nuova versione. */}
-            {onEdit && !streaming && (
-              <button
-                type="button"
-                onClick={() => {
-                  setDraft(content);
-                  setEditing((v) => !v);
-                }}
-                aria-label={labels.edit}
-                title={labels.edit}
-                aria-pressed={editing}
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${editing ? "border-brand-500 bg-brand-500/15 text-white" : "border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white"}`}
-              >
-                <Pencil size={14} />
               </button>
             )}
 
