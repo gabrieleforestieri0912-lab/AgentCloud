@@ -229,13 +229,26 @@ export async function notifyUserSubscriptions(
     );
 
     try {
-      await getResend().emails.send({
+      const { error: sendError } = await getResend().emails.send({
         from: FROM_EMAIL,
         to: email,
         subject,
         html,
         text,
       });
+      // L'SDK Resend non solleva per gli errori API sincroni (dominio
+      // mittente non verificato, destinatario non valido, chiave errata,
+      // rate limit...): li restituisce in `error`. Se non li controlliamo,
+      // l'abbonamento verrebbe marcato come "notificato" pur non essendo mai
+      // partita l'email, e il retry del giorno successivo verrebbe saltato:
+      // la notifica andrebbe persa per sempre.
+      if (sendError) {
+        console.error(
+          `Failed to send expiry email for subscription ${subId}:`,
+          sendError.message,
+        );
+        continue;
+      }
     } catch (err) {
       console.error(
         `Failed to send expiry email for subscription ${subId}:`,
