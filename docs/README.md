@@ -9,7 +9,7 @@ Piattaforma di **agenti AI** per le aziende: marketplace di agenti pronti al lan
 - 📊 **Dashboard** — agenti installati, utilizzo mensile token, stato abbonamento
 - 💳 **Billing Stripe** — checkout dinamico, attivazione automatica via webhook, customer portal (cancellazione self-service), **overage billing** con tetto di sicurezza a 2x l'allowance
 - 🌐 **i18n** — inglese di default, italiano/spagnolo/tedesco/francese via cookie `agentcloud_locale` (niente URL `/en`)
-- 🔐 **Auth Supabase** — email + password e Google OAuth (sessioni `@supabase/ssr`)
+- 🔐 **Auth Supabase** — email + password, Google OAuth e **codice via email** (sessioni `@supabase/ssr`)
 - 🔑 **Accesso con codice** — durante la fase waitlist si entra con un codice di accesso (niente più email admin): elimina il vincolo del login (niente account Supabase) e sblocca **tutte** le pagine e **tutti** gli agenti, anche quelli “in arrivo”
 - 🛡️ **Rate limiting distribuito** — Supabase (`rate_limits` + RPC), fail-open
 - 🔌 **Shopify OAuth multi-tenant** — App pubblica installabile da qualsiasi merchant (install/callback/webhooks, token cifrati AES-256-GCM)
@@ -95,5 +95,5 @@ Tutta la documentazione del progetto è raccolta in **`docs/`**:
 
 ## Deploy
 
-Consigliato su Vercel (o qualsiasi host Node). Prima del lancio: Google OAuth abilitato in Supabase con brand verificato e un **client OAuth dedicato** al sign-in, separato da quello di Gmail/Calendar (tra le sue Authorized redirect URIs deve esserci `https://<project-ref>.supabase.co/auth/v1/callback`, altrimenti il login Google dà **`Error 400: redirect_uri_mismatch`** — vedi [docs/PROJECT.md → Google sign-in](PROJECT.md#google-sign-in-redirect-uri)), chiavi **live** Stripe, webhook Stripe configurati, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, `supabase/schema.sql` eseguito. In **Supabase → Authentication → URL Configuration** imposta **Site URL** = `NEXT_PUBLIC_SITE_URL` e aggiungi `<host>/auth/callback` tra le Redirect URLs.
+Consigliato su Vercel (o qualsiasi host Node). Prima del lancio: Google OAuth abilitato in Supabase con brand verificato e un **client OAuth dedicato** al sign-in, separato da quello di Gmail/Calendar (tra le sue Authorized redirect URIs deve esserci `https://<project-ref>.supabase.co/auth/v1/callback`, altrimenti il login Google dà **`Error 400: redirect_uri_mismatch`** — vedi [docs/PROJECT.md → Google sign-in](PROJECT.md#google-sign-in-redirect-uri)), chiavi **live** Stripe, webhook Stripe configurati, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend (e in **Supabase → Authentication → SMTP** punta lo SMTP a Resend, con il template **"Magic Link"** che include `{{ .Token }}` per l'accesso con codice — vedi [docs/PROJECT.md → Accesso con codice](PROJECT.md#accesso-con-codice-via-email-otp)), `supabase/schema.sql` eseguito. In **Supabase → Authentication → URL Configuration** imposta **Site URL** = `NEXT_PUBLIC_SITE_URL` e aggiungi `<host>/auth/callback` tra le Redirect URLs.
 

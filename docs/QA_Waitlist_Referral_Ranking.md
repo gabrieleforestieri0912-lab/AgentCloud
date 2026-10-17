@@ -17,7 +17,7 @@ Next.js App Router, TypeScript, Tailwind, Supabase (RLS + Edge), Vercel. Esterno
 - [ ] A già in waitlist → `GET /api/waitlist/referral-code` → copia `codeA` (`base62` 8 chars)
 - [ ] Incognito → `GET /waitlist/join?ref=codeA` → verifica cookie `ac_wl_ref=codeA` (1h, Lax) e redirect `302` a `/waitlist?ref=codeA`
 - [ ] Registra B con email diversa via quel link → `POST /api/waitlist` con `ref=codeA` → verifica `waitlist_referrals` row `referrer=A, referred_email=B, status=pending, referrer_ip` loggato
-- [ ] B completa `auth_method_completed=true` (Google OAuth via `/auth/callback` o `POST /api/waitlist/complete-referral`) → verifica `status` diventa `completed`, `completed_at` set, `waitlist_points` per A = `3` → `GET /api/waitlist/ranking` per A mostra `position` diminuita (es. da #10 a #8 se 3 punti scavalcano 2 utenti a 0 punti)
+- [ ] B completa `auth_method_completed=true` (Google OAuth via `/auth/callback`, login con password o codice su `/login`, o `POST /api/waitlist/complete-referral`) → verifica `status` diventa `completed`, `completed_at` set, `waitlist_points` per A = `3` → `GET /api/waitlist/ranking` per A mostra `position` diminuita (es. da #10 a #8 se 3 punti scavalcano 2 utenti a 0 punti)
 
 ### 2. Duplicate IG follow non raddoppia
 - [ ] Da account waitlist (o `ac_wl_email` cookie) → card Instagram → clicca `Apri Instagram` → poi `Ho seguito` → `POST /api/waitlist/instagram-follow` → `200 {success:true, points:1}`

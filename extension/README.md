@@ -7,8 +7,9 @@ Il pannello laterale è **l'unica UI** dell'estensione: non esiste più il popup
 ## Flussi supportati
 
 - **Apertura:** click sull'icona → `action.onClicked` → `chrome.sidePanel.open()` (Chrome 116+). Su Chrome 114/115 il service worker attiva `sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`; sui browser senza Side Panel API il pannello si apre in una finestra dedicata (`sidepanel/sidepanel.html`) e, in ultima istanza, nella chat web.
-- **Sessione condivisa:** il pannello verifica `GET /api/extension/session` con i cookie del dominio `www.agentcloud.agency`; non salva password, token o credenziali.
-- **Login:** il pulsante apre il login web e il background rileva automaticamente il ritorno su una qualsiasi pagina AgentCloud (anche `/waitlist` in pre-lancio), aggiorna la sessione e notifica il pannello.
+- **Sessione condivisa:** il pannello verifica `GET /api/extension/session` con i cookie del dominio `www.agentcloud.agency`. Se accedi dall'estensione (email+password o codice via email) la sessione Supabase viene salvata in `chrome.storage.local` (`ac_supabase_session`) e inviata come `Authorization: Bearer`; la **password non viene mai salvata**.
+- **Accesso (tre metodi nel pannello):** 1) **email + password**; 2) **codice via email** — inserisci l'email, ricevi un codice a 6 cifre e lo confermi, con "Rinvia codice" e "Cambia email"; 3) **Google** — apre il login web.
+- **Ritorno dal login web:** il pulsante Google apre il login web e il background rileva automaticamente il ritorno su una qualsiasi pagina AgentCloud (anche `/waitlist` in pre-lancio), aggiorna la sessione e notifica il pannello.
 - **Account senza agenti:** mostra il catalogo statico (`shared/catalog.js`, sincronizzato con `src/lib/agents.ts` e `docs/PRICING.md`). Il checkout non è mai eseguito nell'estensione: ogni card apre il marketplace web.
 - **Account con agenti:** lista degli agenti posseduti con bottone **Usa**: apre una **nuova scheda operativa** (`/agents/<slug>`) dove l'agente lavora e mostra il **cursore reattivo** che attua davvero le operazioni sulla pagina (evidenzia, clicca, compila input, scrolla). La selezione è persistita in `chrome.storage.local` (`ac_selected_agent`), la tab operativa in `ac_operating_tab_id`.
 - **Chat reale:** `POST /api/agent/run` con il contratto web `{ agentId, messages }`, streaming SSE inoltrato parola per parola al pannello tramite `AGENT_STREAM`.
@@ -39,10 +40,11 @@ Firefox non supporta il Side Panel API: il click sull'icona apre il pannello in 
 
 ## Prerequisito obbligatorio lato backend
 
-Il pannello non può funzionare se il deployment di `www.agentcloud.agency` non espone **entrambe** queste cose:
+Il pannello non può funzionare se il deployment di `www.agentcloud.agency` non espone **tutte** queste cose:
 
 1. il route handler `src/app/api/extension/session/route.ts` (`GET /api/extension/session`);
-2. l'esenzione dal gate pre-lancio in `src/proxy.ts`: `/api/extension/*`, `/api/agent/run` e `/api/user/usage` devono passare anche prima del 1 ottobre 2026.
+2. l'esenzione dal gate pre-lancio in `src/proxy.ts`: `/api/extension/*`, `/api/agent/run` e `/api/user/usage` devono passare anche prima del 1 ottobre 2026;
+3. per l'**accesso con codice** (e per i link email di Supabase): in **Supabase → Authentication → SMTP** lo SMTP puntato a **Resend** (host `smtp.resend.com`, user `resend`, password = `RESEND_API_KEY`, mittente = dominio verificato) e il template **"Magic Link"** con `{{ .Token }}`. Senza il token l'email arriva ma **senza codice** (vedi [docs/PROJECT.md → Accesso con codice](../docs/PROJECT.md#accesso-con-codice-via-email-otp)).
 
 Senza di esse il gate risponde `307 → /waitlist` (HTML) e l'estensione mostra nel pannello:
 
@@ -76,9 +78,10 @@ npm run typecheck
 - `GET /api/extension/session` → `401 { authenticated:false, owned:[] }` oppure `200 { authenticated:true, owned:string[], email, name }`.
 - `POST /api/agent/run` → `{ agentId, messages, files? }`, risposta `text/event-stream` con eventi `text`, `tool_start`, `tool_done`, `file`, `connection`, `tool_confirm`, `awaiting_confirmation`, `done` o `error`.
 - **Conferma umana**: quando un'azione modifica contenuto esistente (es. `word_append`) il server mette in pausa la run con `tool_confirm` + `awaiting_confirmation` e un `token` firmato. Il pannello mostra Approva/Annulla e, se approvi, ripete la stessa richiesta con `approval: { token }`. Il token è firmato lato server: l'estensione non può cambiare tool né argomenti.
-- Autenticazione API → cookie di sessione AgentCloud inviati con `credentials: include`.
+- Autenticazione API → cookie di sessione AgentCloud inviati con `credentials: include` e, se presente, `Authorization: Bearer <access_token Supabase>` (sessione creata dall'accesso email+password o codice).
+- **Accesso con codice:** il pannello chiama direttamente Supabase — `POST /auth/v1/otp` per inviare il codice e `POST /auth/v1/verify` con `{ type: "email", email, token }` per confermarlo — usando la **anon key** pubblica. L'email è inviata dallo SMTP di Supabase: nessuna chiave Resend nell'estensione.
 
-Nessuna chiave Anthropic, Stripe, Supabase service role o password deve essere inserita nel bundle dell'estensione.
+Nessuna chiave Anthropic, Stripe, Supabase service role o password deve essere inserita nel bundle dell'estensione (la anon key Supabase è pubblica per definizione).
 
 ## Struttura
 

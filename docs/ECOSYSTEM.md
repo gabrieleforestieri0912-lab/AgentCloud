@@ -49,6 +49,7 @@ chat con activity feed, `/dashboard/integrations` (OAuth, token cifrati
 AES-256-GCM), fatturazione Stripe, consumo token.
 
 - **Tecnologie**: Next.js 16, React 19, Tailwind CSS v4, TypeScript, Supabase.
+- **Accesso**: email + password, Google OAuth e codice via email (OTP) su `/login`.
 
 ### 2. Mobile App (`mobile/`)
 
@@ -66,6 +67,8 @@ Estensione Manifest V3 per Chrome, Edge, Brave, Opera e Firefox.
 - **Tecnologie**: JavaScript vanilla + Chrome Extension APIs (MV3).
 - **UI**: un unico **side panel** persistente accanto alla pagina. Non esiste un
   popup: il click sull'icona apre (`sidePanel.open`) o mette a fuoco il pannello.
+- **Accesso**: tre metodi nel pannello — email + password, **codice via email**
+  (OTP Supabase) e Google (login web con ritorno automatico).
 - **Casi d'uso**: usa gli agenti posseduti sulla pagina attiva, contesto
   privacy-first (titolo/URL/selezione solo su richiesta), cursore reattivo sulla
   pagina operativa, chat SSE via `/api/agent/run`.

@@ -10,7 +10,7 @@
 - **React 19.2.4** — UI
 - **Tailwind CSS v4** — styling (`@theme`-based)
 - **TypeScript ^5** — type safety
-- **Supabase Auth** — autenticazione (email + password, Google OAuth, sessioni `@supabase/ssr`)
+- **Supabase Auth** — autenticazione (email + password, Google OAuth, **accesso con codice via email**, sessioni `@supabase/ssr`)
 - **Supabase** — database (billing, usage, rate limits, `tenant_integrations`) + form storage
 - **Stripe + PayPal** — checkout dinamico, abbonamenti, customer portal, **overage billing** (Billing Meter), **Klarna** e **Amazon Pay** abilitati su Stripe Checkout
 - **Anthropic Claude** — backend LLM unico (agenti `/api/agent/run`, chat `/api/chat`), risposte in **streaming parola per parola** + indicatore *Sta lavorando su* app collegata
@@ -142,10 +142,20 @@ La regola prevede quattro casi da controllare: chiavi mancanti/in più, stringhe
 
 ## Autenticazione
 
-- **Supabase Auth** (email + password e Google OAuth).
+- **Supabase Auth** offre tre metodi, tutti disponibili su `/login`: email + password, **Google OAuth** e **accesso con codice via email (OTP)**.
 - Sessioni SSR con `@supabase/ssr`: `src/lib/supabase/server.ts` (server), `client.ts` (browser), proxy in `src/proxy.ts`.
 - `profiles` popolati automaticamente dal trigger `handle_new_user` (vedi `schema.sql`).
 - ID utente = UUID `auth.users.id` (niente più `user_2…` di Clerk).
+
+### Accesso con codice via email (OTP)
+
+- Flusso senza password: l'utente inserisce l'email, riceve un **codice a 6 cifre** e lo conferma. Lato client: `supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })` per l'invio e `supabase.auth.verifyOtp({ email, token, type: "email" })` per la conferma. `shouldCreateUser: false` impedisce di creare account per email sconosciute; il messaggio mostrato è **sempre generico** (anti-enumerazione), anche se l'invio fallisce.
+- Disponibile sia su `/login` (`src/app/login/page.tsx`) sia nel **pannello dell'estensione** (`extension/sidepanel`), che chiama direttamente le REST `POST /auth/v1/otp` e `POST /auth/v1/verify` con la anon key. La sessione che ne esce è una sessione Supabase normale: passano sia il gate di `src/proxy.ts` (cookie) sia il `Bearer` dell'estensione.
+- I passi post-accesso condivisi con il login da password (riscatto waitlist, `profiles.auth_method_completed`, referral, redirect) sono in `completeSignIn()` in `src/app/login/page.tsx`.
+- **Prerequisiti Supabase** (dashboard, non `.env`):
+  1. **SMTP custom → Resend** (Authentication → SMTP): host `smtp.resend.com`, user `resend`, password = `RESEND_API_KEY`, mittente = dominio verificato su Resend. Così la mail parte davvero dal dominio di Resend.
+  2. Il **template email "Magic Link"** deve contenere `{{ .Token }}` (di default c'è solo `{{ .ConfirmationURL }}`): senza il token l'email arriva **senza codice**.
+  3. L'OTP è a **6 cifre** (default GoTrue). Cambiandolo vanno aggiornati `maxlength` e validazione nel pannello e in `/login`.
 
 ### Google sign-in (redirect URI)
 
@@ -301,7 +311,7 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 
 
 > **Checklist produzione** (dettagli in `FEATURE_FLAGS.md`, `PRICING.md`):
-> Google OAuth configurato in Supabase, webhook Stripe con i 4 eventi (`checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`), metered price per l'overage, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend, riesecuzione di `supabase/schema.sql` (incluso il trigger `handle_new_user`).
+> Google OAuth configurato in Supabase, webhook Stripe con i 4 eventi (`checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`), metered price per l'overage, `NEXT_PUBLIC_SITE_URL` valorizzata, dominio email verificato su Resend (**e SMTP di Supabase puntato a Resend, con il template "Magic Link" che include `{{ .Token }}`** per l'accesso con codice), riesecuzione di `supabase/schema.sql` (incluso il trigger `handle_new_user`).
 
 ---
 
