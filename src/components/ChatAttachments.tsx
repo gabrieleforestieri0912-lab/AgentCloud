@@ -132,9 +132,21 @@ export function useChatAttachments() {
     (labels: Labels) =>
     async (e: React.ClipboardEvent) => {
       const files = Array.from(e.clipboardData?.files || []);
-      if (files.length === 0) return;
-      e.preventDefault();
-      await addFiles(files, labels);
+      if (files.length > 0) {
+        e.preventDefault();
+        await addFiles(files, labels);
+        return;
+      }
+      // Testo incollato molto lungo / con molte righe: lo convertiamo in un
+      // allegato testo invece di riempire l'input, così l'UI mostra un chip.
+      const text = e.clipboardData?.getData("text/plain") ?? "";
+      const lines = text.split(/\n/);
+      const isLong = text.length > 500 || lines.length > 5;
+      if (isLong && text.trim()) {
+        e.preventDefault();
+        const file = new File([text], "pasted-text.txt", { type: "text/plain" });
+        await addFiles([file], labels);
+      }
     };
 
   return {
