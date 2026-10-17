@@ -17,7 +17,7 @@ import {
 } from "@/lib/agents/system-prompt";
 import { EXAMPLE_LINKS_DIRECTIVE } from "@/lib/agents/output-format";
 import { extractConnectMarkers, requestedConnectProviders } from "@/lib/integrations";
-import { apiErrorMessage } from "@/lib/i18n/api-errors";
+import { apiErrorMessage, apiErrorMessageForLocale } from "@/lib/i18n/api-errors";
 
 /**
  * POST /api/chat
@@ -98,7 +98,9 @@ export async function POST(req: Request) {
       typeof providerOverride === "string" ? providerOverride : undefined,
     );
     const encoder = new TextEncoder();
-    const streamErrorMessage = await apiErrorMessage("aiStreamError");
+    // Riusa la locale già risolta sopra: `apiErrorMessage` rileggerebbe i
+    // cookie con una seconda `getLocale()`.
+    const streamErrorMessage = apiErrorMessageForLocale(locale, "aiStreamError");
 
     const stream = new ReadableStream({
       async start(controller) {
