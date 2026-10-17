@@ -43,7 +43,8 @@ function Inline({ segments }: { segments: InlineSegment[] }) {
                 href={seg.url}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 break-all hover:text-brand-200"
+                onClick={(e) => e.stopPropagation()}
+                className="relative z-10 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 break-all hover:text-brand-200 cursor-pointer"
               >
                 {isYouTube ? `▶ ${seg.label}` : seg.label}
               </a>
