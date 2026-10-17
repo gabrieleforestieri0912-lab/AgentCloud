@@ -62,7 +62,7 @@ export interface ChatFileRecord {
 export const MAX_FILE_BYTES = 2 * 1024 * 1024;
 
 /** Soglia oltre la quale il modello è invitato a produrre un file (§1 del prompt). */
-export const LONG_CONTENT_LINES = 70;
+export const LONG_CONTENT_LINES = 100;
 
 const OPEN_TAG_RE = /<agentcloud_file\b([^>]*)>/i;
 const ATTR_RE = /([a-zA-Z_][a-zA-Z0-9_-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;

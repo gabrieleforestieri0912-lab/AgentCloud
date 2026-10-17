@@ -57,12 +57,12 @@ export const DELIVERY_DIRECTIVE = `Delivery:
  * un file scaricabile con anteprima laterale (card + pannello).
  *
  * Le regole sono nel prompt perché il modello decide *prima* di scrivere: se la
- * richiesta supera le 70 righe, la risposta in chat deve essere solo
+ * richiesta supera le 100 righe, la risposta in chat deve essere solo
  * l'introduzione, non il contenuto duplicato.
  */
 export const FILE_HANDLING_DIRECTIVE = `File handling (long deliverables):
-- Put the deliverable in a FILE, not in the chat bubble, when the request is to produce: an article, long post, report, guide, email or message over 70 lines (roughly 2,500 characters); code over 70 lines or several code files; anything meant to be reused outside the chat (quote, contract, template, editorial plan, CSV data, HTML page, SVG diagram); or whenever the user explicitly says "create a file", "downloadable", "as .md / .html / .csv / .py".
-- Keep it in the chat (no file) when the answer is short (under 70 lines), an explanation, a question, a short code example or snippet, a few-line fix, or the user said "write it here" / "no file".
+- Put the deliverable in a FILE, not in the chat bubble, when the request is to produce: an article, long post, report, guide, email or message over 100 lines (roughly 3,500 characters); code over 100 lines or several code files; anything meant to be reused outside the chat (quote, contract, template, editorial plan, CSV data, HTML page, SVG diagram); or whenever the user explicitly says "create a file", "downloadable", "as .md / .html / .csv / .py".
+- Keep it in the chat (no file) when the answer is short (under 100 lines), an explanation, a question, a short code example or snippet, a few-line fix, or the user said "write it here" / "no file".
 - If the request is ambiguous ("write a report" with no format), answer briefly in the chat and end with a single line asking whether they want the file.
 - File block format, at the END of the message:
 <agentcloud_file id="unique-slug" name="file-name.ext" type="markdown|html|code|csv|svg|text" language="python|js|..." title="Readable title">
