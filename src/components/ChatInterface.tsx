@@ -3078,12 +3078,6 @@ export default function ChatInterface({
                     />
                     {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
                     <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-                      {selectedAgents.length > 0 && (
-                        <div className="flex items-center gap-1.5 px-4 pt-2.5 text-xs font-bold text-neutral-400">
-                          <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
-                          <span className="truncate">{activeAgentDisplayName}</span>
-                        </div>
-                      )}
                       <textarea
                         ref={inputRef}
                         value={input}
@@ -3562,12 +3556,6 @@ export default function ChatInterface({
               </div>
             )}
             <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-              {selectedAgents.length > 0 && (
-                <div className="flex items-center gap-1.5 px-4 pt-2.5 text-xs font-bold text-neutral-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
-                  <span className="truncate">{activeAgentDisplayName}</span>
-                </div>
-              )}
               <textarea
                 ref={inputRef}
                 value={input}
