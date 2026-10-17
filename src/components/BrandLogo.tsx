@@ -18,6 +18,9 @@ const MULTICOLOR = new Set([
   "googlesheets",
   "googlemeet",
   "googleads",
+  "googleanalytics",
+  "googledocs",
+  "googleforms",
   "whatsapp",
   "instagram",
   "tiktok",
@@ -27,6 +30,10 @@ const MULTICOLOR = new Set([
   "microsoftexcel",
   "microsoftpowerpoint",
   "microsoftonenote",
+  "microsoftteams",
+  "microsoftsharepoint",
+  "onedrive",
+  "microsoftonedrive",
 ]);
 
 type BrandLogoProps = {
