@@ -2783,7 +2783,7 @@ export default function ChatInterface({
             onClick={() => setAccountMenuOpen((v) => !v)}
             aria-expanded={accountMenuOpen}
             aria-haspopup="menu"
-            className="w-full flex items-center gap-2.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-2 hover:bg-white/[0.05] transition-all"
+            className="w-full flex items-center gap-2.5 rounded-2xl p-2 hover:bg-white/[0.05] transition-all"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
               {accountAvatarUrl ? (
