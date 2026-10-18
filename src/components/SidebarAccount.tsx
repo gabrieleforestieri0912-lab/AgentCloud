@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { User, ShoppingCart, Home, LogOut, Settings, ChevronDown } from "lucide-react";
+import { User, ShoppingCart, Home, LogOut, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { avatarThumbnail } from "@/lib/avatar";
 import type { Session } from "@supabase/supabase-js";
@@ -81,9 +81,9 @@ export default function SidebarAccount({
         onClick={() => setMenuOpen((v) => !v)}
         aria-expanded={menuOpen}
         aria-haspopup="menu"
-        className="w-full flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 hover:bg-white/[0.05] transition-all"
+        className="w-full flex items-center gap-2.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-2 hover:bg-white/[0.05] transition-all"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
           {accountAvatarUrl ? (
             <img
               src={accountAvatarUrl}
@@ -103,11 +103,7 @@ export default function SidebarAccount({
             <span className="animate-pulse">...</span>
           )}
         </div>
-        <div className="min-w-0 flex-1 text-left">
-          <p className="truncate text-sm font-bold text-white">{accountEmail || "..."}</p>
-          <p className="text-[10px] text-neutral-500 font-medium">{dict.sidebarAccount.account}</p>
-        </div>
-        <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform duration-200 ${menuOpen ? "rotate-180 lg:-rotate-90" : "lg:-rotate-90"}`} />
+        <p className="min-w-0 flex-1 truncate text-left text-sm font-bold text-white">{accountEmail || "..."}</p>
       </button>
       {menuOpen && createPortal(
         <>

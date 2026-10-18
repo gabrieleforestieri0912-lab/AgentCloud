@@ -2770,14 +2770,14 @@ export default function ChatInterface({
         </div>
 
         {/* Account: il click apre un menu di fianco alla sidebar */}
-        <div data-onboard="account" className="relative p-3 border-t border-white/[0.06]">
+        <div data-onboard="account" className="relative p-2 border-t border-white/[0.06]">
           <button
             onClick={() => setAccountMenuOpen((v) => !v)}
             aria-expanded={accountMenuOpen}
             aria-haspopup="menu"
-            className="w-full flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 hover:bg-white/[0.05] transition-all"
+            className="w-full flex items-center gap-2.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-2 hover:bg-white/[0.05] transition-all"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
               {accountAvatarUrl ? (
                 <img src={accountAvatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
               ) : accountLabelBase ? (
@@ -2791,13 +2791,9 @@ export default function ChatInterface({
                 <span className="animate-pulse">...</span>
               )}
             </div>
-            <div className="min-w-0 flex-1 text-left">
-              <p className="truncate text-sm font-bold text-white">
-                {accountEmail || "..."}
-              </p>
-              <p className="text-[10px] text-neutral-500 font-medium">Account</p>
-            </div>
-            <ChevronDown size={14} className={`shrink-0 text-neutral-500 transition-transform duration-200 ${accountMenuOpen ? "rotate-180 lg:-rotate-90" : "lg:-rotate-90"}`} />
+            <p className="min-w-0 flex-1 truncate text-left text-sm font-bold text-white">
+              {accountEmail || "..."}
+            </p>
           </button>
           {/* Menu account di fianco alla sidebar (sopra il bottone su mobile) */}
           {accountMenuOpen && createPortal(

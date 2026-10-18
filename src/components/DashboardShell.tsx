@@ -159,7 +159,7 @@ export default function DashboardShell({
           )}
         </nav>
         {/* Account */}
-        <div data-onboard="dashboard-account" className="p-3 border-t border-white/[0.06]">
+        <div data-onboard="dashboard-account" className="p-2 border-t border-white/[0.06]">
           <SidebarAccount account={account} />
         </div>
       </aside>
