@@ -40,14 +40,19 @@ export const RESEARCH_SOURCES_DIRECTIVE = `Sources:
  * mille parole: tutorial video e guide ufficiali rendono la risposta "top".
  * Ma senza un ordine esplicito il modello o non mette mai link, o li inventa
  * (ID video YouTube falsi, URL profonde inesistenti che portano a 404).
- * Quindi: link consentiti solo in due forme sicure — ricerca YouTube
- * (URL sempre valido, mai un ID inventato) e homepage/documentazione
- * ufficiale dei tool citati. Mai URL profonde inventate.
+ *
+ * Per YouTube la UI ha un ponte server (/api/youtube) che valida ogni link in
+ * bolle: un ID valido rende la card reale del video (titolo + anteprima),
+ * mentre un ID inesistente o un link di ricerca viene risolto al primo
+ * risultato della ricerca per il testo del link. Da qui la regola: video
+ * diretti solo con ID certo ed etichetta descrittiva (che è anche la query di
+ * ripiego), altrimenti ricerca. Per il resto restano homepage ufficiali: la
+ * struttura di un dominio conosciuto non cambia, quella di un articolo sì.
  *
  * In inglese di proposito, come OUTPUT_FORMAT_DIRECTIVE.
  */
 export const EXAMPLE_LINKS_DIRECTIVE = `Example links:
-- When the answer explains a how-to, a setup, or a tool ("come creo…", "how do I…", "come collego…"), add at the end of the answer one short line "Video utili:" (or "Useful videos:" in the user's language) with 1-3 YouTube search links as markdown, e.g. [Come creare un prodotto Shopify (YouTube)](https://www.youtube.com/results?search_query=come+creare+prodotto+shopify+tutorial). Build the search_query from the user's actual topic in their language (+ the word tutorial), words joined with +. Never invent a watch?v= ID: use ONLY https://www.youtube.com/results?search_query=… links for video.
+- When the answer explains a how-to, a setup, or a tool ("come creo…", "how do I…", "come collego…"), add at the end of the answer one short line "Video utili:" (or "Useful videos:" in the user's language) with 1-3 YouTube links as markdown. Link a specific VIDEO when you know its exact ID: [Next.js in 100 Seconds — Fireship](https://www.youtube.com/watch?v=VIDEO_ID) — the chat UI checks it server-side and shows the real title and thumbnail of that video. Make the link text specific to the user's topic (+ the word tutorial), because it is what the UI falls back to as a YouTube search when the ID turns out not to exist, e.g. [Come creare un prodotto Shopify tutorial (YouTube)](https://www.youtube.com/watch?v=...). When you do not know any ID, use a search link instead: https://www.youtube.com/results?search_query=come+creare+prodotto+shopify+tutorial (words joined with +).
 - When you mention an official tool or documentation (Shopify, Gmail, Stripe, Google Calendar, …), link its official homepage or help center once, e.g. [Guida ufficiale Shopify](https://help.shopify.com). Use only the well-known root or /help domain you are sure exists — never invent deep article URLs.
 - Keep links few (max 3-4 per answer) and only when they truly help the user's request. Short answers, greetings and confirmations need no links.`;
 

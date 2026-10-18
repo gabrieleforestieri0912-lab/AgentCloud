@@ -14,6 +14,7 @@ import {
   loadHighlighter,
   type Highlighter,
 } from "@/lib/code-highlight";
+import YouTubeLink, { isYouTubePreviewUrl } from "./YouTubeLink";
 
 /**
  * Renderizza il markdown leggero prodotto dall'AI (grassetto, corsivo, codice
@@ -35,8 +36,13 @@ function Inline({ segments }: { segments: InlineSegment[] }) {
           case "italic":
             return <em key={i}>{seg.value}</em>;
           case "link": {
-            const isYouTube =
-              /(?:youtube\.com|youtu\.be)/i.test(seg.url);
+            // I link YouTube diventano una card con titolo e anteprima reali
+            // del video: il server (/api/youtube) risolve sia i link diretti
+            // sia quelli di ricerca al primo risultato, così in chat si vedono
+            // link a video veri e non pagine di ricerca di YouTube.
+            if (isYouTubePreviewUrl(seg.url)) {
+              return <YouTubeLink key={i} url={seg.url} label={seg.label} />;
+            }
             return (
               <a
                 key={i}
@@ -46,7 +52,7 @@ function Inline({ segments }: { segments: InlineSegment[] }) {
                 onClick={(e) => e.stopPropagation()}
                 className="relative z-10 font-semibold text-brand-300 underline decoration-brand-400/40 underline-offset-2 break-all hover:text-brand-200 cursor-pointer"
               >
-                {isYouTube ? `▶ ${seg.label}` : seg.label}
+                {seg.label}
               </a>
             );
           }

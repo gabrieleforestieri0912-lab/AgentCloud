@@ -71,6 +71,10 @@ export const PUBLIC_PATHS = [
   "/api/agent/run",
   "/api/extension/session",
   "/api/user/usage",
+  // Anteprime video YouTube delle bolle chat: ponte server verso l'oEmbed di
+  // YouTube (nessun dato privato, solo metadati pubblici). Deve rispondere
+  // anche alle chat pubbliche /a/..., che rendono markdown senza sessione.
+  "/api/youtube",
   "/api/waitlist",
   "/api/contact",
   "/api/sitemap",
