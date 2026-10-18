@@ -168,6 +168,21 @@ type LocalConversation = {
   projectId?: string;
 };
 
+/**
+ * Ultimo agente usato in una conversazione: quello dell'ultima bolla prodotta
+ * (o dell'ultimo divisore di cambio agente). Le bolle utente e quelle
+ * dell'assistente generico non hanno `agentSlug`, quindi il ciclo parte dalla
+ * fine e prende il primo che ne ha uno. In una chat ancora vuota torna
+ * l'agente selezionato, che è comunque quello che risponderà per primo.
+ */
+function lastAgentSlugFor(conv: LocalConversation): string | undefined {
+  for (let i = conv.messages.length - 1; i >= 0; i--) {
+    const slug = conv.messages[i]?.agentSlug;
+    if (slug) return slug;
+  }
+  return conv.agentSlugs?.[0];
+}
+
 function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString([], {
     hour: "2-digit",
@@ -2442,6 +2457,41 @@ export default function ChatInterface({
     </div>
   );
 
+  /** Chip sotto il titolo di ogni conversazione in sidebar: il progetto (se la
+   *  chat ne appartiene a uno) e un solo chip con l'ultimo agente usato. Prima
+   *  veniva mappato `conv.agentSlugs` per intero e una chat che aveva usato
+   *  più agenti si riempiva di pill tutte insieme. */
+  function conversationChips(conv: LocalConversation) {
+    const slug = lastAgentSlugFor(conv);
+    const proj = conv.projectId ? projects.find((p) => p.id === conv.projectId) : undefined;
+    if (!proj && !slug) return null;
+    const ag = slug ? agentsBySlug.get(slug) : undefined;
+    return (
+      <div className="ml-7 flex flex-wrap gap-1">
+        {proj && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold text-neutral-300">
+            <Folder size={8} />
+            {proj.name}
+          </span>
+        )}
+        {slug && (
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-white ${
+              ag?.accent ?? "bg-brand-500/10 text-brand-300"
+            }`}
+          >
+            {ag ? (
+              <AgentIcon icon={ag.icon} brand={ag.brand} size={10} className="text-white" />
+            ) : (
+              <Bot size={8} />
+            )}
+            {ag?.name ?? slug}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
     // data-streaming: stato di generazione della chat attiva, usato dagli E2E
     // per attendere la fine dello stream senza dipendere dal testo localizzato.
@@ -2712,43 +2762,7 @@ export default function ChatInterface({
                     )}
                   </div>
                 </div>
-                {conv.agentSlugs && conv.agentSlugs.length > 0 && (
-                  <div className="ml-7 flex flex-wrap gap-1">
-                    {conv.projectId && (() => {
-                      const proj = projects.find((p) => p.id === conv.projectId);
-                      if (!proj) return null;
-                      return (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold text-neutral-300">
-                          <Folder size={8} />
-                          {proj.name}
-                        </span>
-                      );
-                    })()}
-                    {conv.agentSlugs.map((slug) => {
-                      const ag = agentsBySlug.get(slug);
-                      return (
-                        <span
-                          key={slug}
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-white ${
-                            ag?.accent ?? "bg-brand-500/10 text-brand-300"
-                          }`}
-                        >
-                          {ag ? (
-                            <AgentIcon
-                              icon={ag.icon}
-                              brand={ag.brand}
-                              size={10}
-                              className="text-white"
-                            />
-                          ) : (
-                            <Bot size={8} />
-                          )}
-                          {ag?.name ?? slug}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
+                {conversationChips(conv)}
               </div>
             ))
           )}
