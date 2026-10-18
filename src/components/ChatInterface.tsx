@@ -2962,7 +2962,7 @@ export default function ChatInterface({
       >
         {/* ── Projects view ────────────────────────────────────── */}
         {sidebarView === "projects" && (
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-14 pb-6">
             <div className="mx-auto max-w-3xl space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
