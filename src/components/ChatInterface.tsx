@@ -2322,11 +2322,14 @@ export default function ChatInterface({
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
-  // Selettore agente: vive sopra l'input (allineato a destra, sulla stessa riga
-  // dei comandi di esportazione) sia nella chat vuota che durante la conversazione.
-  const agentPicker = (
+  // Selettore agente. Nella chat vuota resta nella toolbar accanto al "+";
+  // durante la conversazione vive fuori dall'input, nella riga sopra a destra.
+  // `align` serve ad ancorare il menu: a destra per il picker esterno (con
+  // `left-0` il menu w-72 uscirebbe dal contenitore), a sinistra per quello
+  // nella toolbar, che è sulla sinistra.
+  const renderAgentPicker = (align: "left" | "right") => (
     <div className="relative shrink-0" data-onboard="agent-picker">
-      {/* Bottone con avatar + nome dell'agente, accanto al "+". */}
+      {/* Bottone con avatar + nome dell'agente. */}
       <button
         type="button"
         onClick={() => setShowAgentPicker((v) => !v)}
@@ -2363,7 +2366,12 @@ export default function ChatInterface({
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setShowAgentPicker(false)}
           />
-          <div ref={agentDropdownRef} className="absolute bottom-full left-0 z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl shadow-black/40 backdrop-blur-xl overflow-hidden">
+          <div
+            ref={agentDropdownRef}
+            className={`absolute bottom-full z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl shadow-black/40 backdrop-blur-xl overflow-hidden ${
+              align === "right" ? "right-0" : "left-0"
+            }`}
+          >
             {/* Search bar */}
             <div className="flex items-center gap-2 border-b border-white/8 px-3 py-2.5">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-neutral-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -3192,7 +3200,7 @@ export default function ChatInterface({
                       {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
                       <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm rounded-b-2xl">
                         <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
-                        {agentPicker}
+                        {renderAgentPicker("left")}
                         <div className="flex-1 flex items-center justify-end gap-2">
                           <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
                           <button
@@ -3580,11 +3588,11 @@ export default function ChatInterface({
                 })}
               </p>
             )}
-            {/* Riga sopra l'input: comandi (PDF / Looker Studio). Il selettore
-                agente vive nella toolbar accanto al "+": qui non si duplica. */}
-            {messages.length > 0 && (
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <div className="flex items-center gap-1.5">
+            {/* Riga sopra l'input: comandi (PDF / Looker Studio) a sinistra e
+                selettore agente a destra, fuori dall'input. */}
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                {messages.length > 0 && (
                   <ExportReportButton
                     variant="floating"
                     type="chat"
@@ -3602,9 +3610,10 @@ export default function ChatInterface({
                     agentName={activeAgentDisplayName || "AgentCloud"}
                     agentSlug={activeAgentId || "agent"}
                   />
-                </div>
+                )}
               </div>
-            )}
+              {renderAgentPicker("right")}
+            </div>
             {paywallSlug && (
               <div className="mb-3 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
                 <p className="text-xs font-semibold text-amber-300">
@@ -3656,7 +3665,12 @@ export default function ChatInterface({
                 </div>
               </div>
             )}
-            <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+            {/* Input su una riga: "+" a sinistra, testo al centro, comandi a
+                destra. Il selettore agente è fuori, nella riga sopra. */}
+            <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-neutral-800 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+              <div className="flex h-11 shrink-0 items-center">
+                <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+              </div>
               <textarea
                 ref={inputRef}
                 value={input}
@@ -3664,15 +3678,11 @@ export default function ChatInterface({
                 onKeyDown={handleKeyDown}
                 onPaste={attach.makePaste(attachLabels)}
                 placeholder={dict.chat.placeholder}
-                rows={2}
-                className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-3 pb-16 leading-relaxed"
-                style={{ minHeight: "84px", maxHeight: "280px" } as React.CSSProperties}
+                rows={1}
+                className="min-w-0 flex-1 bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none py-2.5 leading-relaxed"
+                style={{ fieldSizing: "content", maxHeight: "160px" } as React.CSSProperties}
               />
-              {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
-              <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm rounded-b-2xl">
-                <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
-                {agentPicker}
-                <div className="flex-1 flex items-center justify-end gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                   <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
                   {isTyping ? (
                     <button
@@ -3698,7 +3708,6 @@ export default function ChatInterface({
                       <ArrowUp size={18} strokeWidth={2.5} />
                     </button>
                   )}
-                </div>
               </div>
             </div>
           </div>
