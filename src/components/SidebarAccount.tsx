@@ -12,9 +12,15 @@ import { useLanguage } from "./LanguageProvider";
 
 export default function SidebarAccount({
   account = null,
+  sidebarWidth,
+  sidebarIsDesktop = false,
 }: {
   /** Identità risolta lato server: mostrata subito, senza segnaposto. */
   account?: AccountIdentity | null;
+  /** Larghezza corrente della sidebar (da DashboardShell), per il menu laterale. */
+  sidebarWidth?: number;
+  /** true su desktop: è lì che la larghezza dinamica ha senso. */
+  sidebarIsDesktop?: boolean;
 }) {
   const [session, setSession] = useState<Session | null>(null);
   // Menu account di fianco alla sidebar (non un popup al centro).
@@ -116,6 +122,7 @@ export default function SidebarAccount({
           />
           <div
             role="menu"
+            style={sidebarIsDesktop && sidebarWidth ? { left: sidebarWidth + 12 } : undefined}
             className="fixed z-50 w-60 rounded-2xl border border-white/10 bg-neutral-900 p-2 shadow-2xl shadow-black/60 left-[300px] bottom-4 max-lg:left-4 max-lg:right-4 max-lg:w-auto max-lg:bottom-28"
           >
             <div className="flex items-center gap-2.5 px-2 pt-1 pb-2">

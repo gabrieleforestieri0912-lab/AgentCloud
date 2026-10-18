@@ -10,6 +10,10 @@ import type { AccountIdentity } from "@/lib/account-identity";
 import AppHeader from "./AppHeader";
 import DashboardOnboarding from "./DashboardOnboarding";
 import { useLanguage } from "./LanguageProvider";
+import { useResizableSidebar, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/lib/useResizableSidebar";
+
+/** Larghezza della sidebar del dashboard in px (preferenza, vedi il hook). */
+const SIDEBAR_WIDTH_KEY = "agentcloud_dashboard_sidebar_width";
 
 export default function DashboardShell({
   children,
@@ -64,6 +68,9 @@ export default function DashboardShell({
   const personalizationActive = personalization.some(
     ({ href }) => pathname === href || pathname.startsWith(href + "/"),
   );
+  // Larghezza della sidebar: regolabile trascinando il bordo destro (come su
+  // Claude), persistita in localStorage. Solo desktop: su mobile è un drawer.
+  const sidebarResize = useResizableSidebar(SIDEBAR_WIDTH_KEY, 288);
   return (
     <div className="flex h-dvh bg-neutral-950">
       {showOnboarding && (
@@ -74,13 +81,15 @@ export default function DashboardShell({
         <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
       {/* Sidebar — glassmorphism style matching chat */}
-      <aside
-        className={`
-          fixed lg:static inset-y-0 left-0 z-40 w-72 bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06]
-          flex flex-col h-dvh shrink-0 transition-transform duration-300
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-        `}
-      >
+      <div className="relative shrink-0 lg:flex">
+        <aside
+          style={sidebarResize.isDesktop ? { width: sidebarResize.width } : undefined}
+          className={`
+            fixed lg:static inset-y-0 left-0 z-40 w-72 bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06]
+            flex flex-col h-dvh shrink-0 transition-transform duration-300
+            ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          `}
+        >
         {/* Header */}
         <div className="flex h-14 items-center justify-between gap-2 border-b border-white/[0.06] px-4">
           <Link href="/" className="flex items-center gap-2.5">
@@ -160,9 +169,29 @@ export default function DashboardShell({
         </nav>
         {/* Account */}
         <div data-onboard="dashboard-account" className="p-2 border-t border-white/[0.06]">
-          <SidebarAccount account={account} />
+          <SidebarAccount
+            account={account}
+            sidebarWidth={sidebarResize.width}
+            sidebarIsDesktop={sidebarResize.isDesktop}
+          />
         </div>
       </aside>
+        {/* Maniglia di ridimensionamento (solo desktop). */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={dict.chat.resizeSidebar}
+          aria-valuenow={sidebarResize.width}
+          aria-valuemin={SIDEBAR_MIN_WIDTH}
+          aria-valuemax={SIDEBAR_MAX_WIDTH}
+          tabIndex={0}
+          onPointerDown={sidebarResize.startResize}
+          onKeyDown={sidebarResize.onKeyDown}
+          className={`absolute inset-y-0 right-0 z-40 w-1.5 cursor-col-resize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70 hidden lg:block ${
+            sidebarResize.dragging ? "bg-brand-500/40" : "hover:bg-brand-500/20"
+          }`}
+        />
+      </div>
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         {/* Mobile: solo il bottone menu fluttuante, senza barra né titolo —
             stessa regola dell'header desktop trasparente. */}

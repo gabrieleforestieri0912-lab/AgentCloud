@@ -21,6 +21,12 @@ export const CHAT_TEXT_SIZE_KEY = "agentcloud_chat_text_size";
  * niente scrittura su DB.
  */
 export const CHAT_SIDEBAR_OPEN_KEY = "agentcloud_chat_sidebar_open";
+/**
+ * Larghezza della sidebar della chat su desktop, in px. Stessa logica di
+ * `CHAT_SIDEBAR_OPEN_KEY`: è una scelta dell'utente (trascinamento del bordo)
+ * e deve sopravvivere al reload. La legge e la scrive `useResizableSidebar`.
+ */
+export const CHAT_SIDEBAR_WIDTH_KEY = "agentcloud_chat_sidebar_width";
 
 /**
  * Zoom applicato all'area della chat: scala insieme testo, bolle e anteprime,

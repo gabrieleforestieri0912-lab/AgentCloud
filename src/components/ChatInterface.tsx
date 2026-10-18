@@ -94,6 +94,7 @@ import {
 } from "@/lib/agent-activity";
 import {
   chatTextZoom,
+  CHAT_SIDEBAR_WIDTH_KEY,
   readActiveConversation,
   readChatDrafts,
   readChatTextSize,
@@ -106,6 +107,7 @@ import {
   saveSidebarOpen,
   type ChatTextSize,
 } from "@/lib/chat-settings";
+import { useResizableSidebar, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/lib/useResizableSidebar";
 import FileCard from "./FileCard";
 import PreviewPanel from "./PreviewPanel";
 import {
@@ -296,6 +298,9 @@ export default function ChatInterface({
     setStreamingMsgIds((prev) => prev.filter((x) => x !== id));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  // Larghezza della sidebar: regolabile trascinando il bordo destro (come su
+  // Claude), persistita in localStorage. Solo desktop: su mobile è un drawer.
+  const sidebarResize = useResizableSidebar(CHAT_SIDEBAR_WIDTH_KEY, 256);
 
   // Scroll lock del body mentre il drawer della cronologia è aperto su mobile.
   useEffect(() => {
@@ -2447,14 +2452,17 @@ export default function ChatInterface({
       )}
 
       {/* Sidebar — glassmorphism style matching header */}
-      <aside
-        className={`
-          fixed lg:static inset-y-0 left-0 z-30
-          w-64 bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] h-dvh
-            flex flex-col transition-all duration-300 shrink-0 overflow-y-auto
-            ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-            ${sidebarOpen ? "lg:w-64 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
-          `}
+      <div className="relative shrink-0 lg:flex">
+        <aside
+          style={sidebarResize.isDesktop && sidebarOpen ? { width: sidebarResize.width } : undefined}
+          className={`
+            fixed lg:static inset-y-0 left-0 z-30
+            w-64 bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] h-dvh
+              flex flex-col shrink-0 overflow-y-auto
+              ${sidebarResize.dragging ? "transition-none" : "transition-all duration-300"}
+              ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+              ${sidebarOpen ? "lg:w-64 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
+            `}
         >
         {/* Header: logo + nome piattaforma + chiudi */}
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
@@ -2807,6 +2815,7 @@ export default function ChatInterface({
               />
               <div
                 role="menu"
+                style={sidebarResize.isDesktop ? { left: sidebarResize.width + 12 } : undefined}
                 className="fixed z-50 w-60 rounded-2xl border border-white/10 bg-neutral-900 p-2 shadow-2xl shadow-black/60 left-[268px] bottom-4 max-lg:left-4 max-lg:right-4 max-lg:w-auto max-lg:bottom-28"
               >
                 <div className="flex items-center gap-2.5 px-2 pt-1 pb-2">
@@ -2864,6 +2873,23 @@ export default function ChatInterface({
           )}
         </div>
       </aside>
+        {/* Maniglia di ridimensionamento: si trascina il bordo destro (solo
+            desktop e solo con la sidebar aperta). */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={dict.chat.resizeSidebar}
+          aria-valuenow={sidebarResize.width}
+          aria-valuemin={SIDEBAR_MIN_WIDTH}
+          aria-valuemax={SIDEBAR_MAX_WIDTH}
+          tabIndex={0}
+          onPointerDown={sidebarResize.startResize}
+          onKeyDown={sidebarResize.onKeyDown}
+          className={`absolute inset-y-0 right-0 z-40 w-1.5 cursor-col-resize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70 ${
+            sidebarOpen ? "hidden lg:block" : "hidden"
+          } ${sidebarResize.dragging ? "bg-brand-500/40" : "hover:bg-brand-500/20"}`}
+        />
+      </div>
 
       <div className="relative flex flex-1 flex-col min-w-0 overflow-hidden">
         <AppHeader
