@@ -45,7 +45,12 @@ export const ACTIVE_10_AGENTS = [
   "business-manager",
 ];
 
-export const ACTIVE_15_AGENTS = [
+/** Agenti abilitati di default: i 10 della verticale Shopify + 6 trasversali
+ *  (finanza, HR, social, inventory, network, assistente personale). Il numero
+ *  nel nome deve riflettere il conteggio REALE della lista (10 + 6 = 16): se
+ *  se ne aggiunge uno, si aggiorna anche qui. Il catalogo completo — compresi
+ *  gli agenti "in arrivo" — vive in src/lib/agents.ts. */
+export const ACTIVE_16_AGENTS = [
   ...ACTIVE_10_AGENTS,
   "finance-manager",
   "personal-assistant",
@@ -221,7 +226,7 @@ export const ALL_TOOLS_LIST = [
  * Configurazione di default per il lancio verticale Shopify e-commerce.
  */
 export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
-  enabledAgents: ACTIVE_15_AGENTS,
+  enabledAgents: [...ACTIVE_16_AGENTS],
   enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
   enableOptionalToolsByDefault: true,
@@ -231,25 +236,19 @@ export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
  * Configurazione per la verticale servizi (ristoranti, professionisti, immobiliare)
  */
 export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
-  enabledAgents: ACTIVE_15_AGENTS,
+  enabledAgents: [...ACTIVE_16_AGENTS],
   enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
   enableOptionalToolsByDefault: true,
 };
 
 /**
- * Configurazione piattaforma completa (tutti i 15 agenti attivi abilitati)
+ * Configurazione piattaforma completa (tutti gli agenti attivi abilitati:
+ * gli stessi di ACTIVE_16_AGENTS, elencati da capo perché ogni verticale
+ * possa tagliare la lista che le serve)
  */
 export const FULL_PLATFORM_CONFIG: FeatureFlags = {
-  enabledAgents: [
-    ...ACTIVE_10_AGENTS,
-    "finance-manager",
-    "personal-assistant",
-    "hr-recruiter",
-    "social-media-agent",
-    "inventory-logistics",
-    "network-marketing",
-  ],
+  enabledAgents: [...ACTIVE_16_AGENTS],
   enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
   enableOptionalToolsByDefault: true,
@@ -260,7 +259,7 @@ export const FULL_PLATFORM_CONFIG: FeatureFlags = {
  * Priorità:
  * 1. Variabile d'ambiente AGENTCLOUD_FEATURE_FLAGS (stringa JSON)
  * 2. Variabile d'ambiente AGENTCLOUD_VERTICAL (shopify | services | full)
- * 3. Default: FULL_PLATFORM_CONFIG (15 agenti attivi)
+ * 3. Default: FULL_PLATFORM_CONFIG (tutti gli agenti attivi)
  */
 export function getFeatureFlags(): FeatureFlags {
   // Controlla eventuale config JSON custom
