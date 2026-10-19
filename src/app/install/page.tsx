@@ -5,9 +5,9 @@ import InstallClient from "./InstallClient";
 import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Installa l'Ecosistema AgentCloud | CLI, Estensione Chrome e Mobile";
+  const title = "Installa la CLI di AgentCloud | Estensione, desktop e mobile in arrivo";
   const description =
-    "Scarica e installa la CLI di AgentCloud per il terminale, aggiungi l'estensione Chrome per le automazioni browser o esegui l'app mobile Flutter.";
+    "Installa la CLI di AgentCloud con npm o curl e automatizza gli agenti da terminale. Estensione Chrome, app desktop e app mobile: l'anteprima di cosa arriverà.";
   const url = `${getSiteUrl()}/install`;
 
   return {

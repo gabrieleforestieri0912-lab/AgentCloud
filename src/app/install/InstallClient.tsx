@@ -47,8 +47,11 @@ export default function InstallClient() {
     }
   };
 
-  const extensionInstallUrl = "https://agentcloud.agency/install#extension";
   const cliInstallCmd = getCliInstallCommand();
+  // Unico comando curl: lo usiamo sia nella barra rapida sia nel tab CLI, così
+  // non ci sono due copie della stessa stringa da tenere allineate.
+  const cliCurlCmd =
+    "curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh";
 
   return (
     <div className="relative min-h-dvh bg-[#07070c] text-white pt-28 pb-24 overflow-hidden">
@@ -74,7 +77,7 @@ export default function InstallClient() {
             AgentCloud ovunque lavori.
           </h1>
           <p className="mt-4 text-base md:text-lg text-neutral-300 leading-relaxed">
-            Installa la <strong>CLI</strong> per automatizzare da terminale e script, scarica l&apos;<strong>app desktop</strong> per Windows, aggiungi l&apos;<strong>estensione Chrome</strong> per interagire dal browser, o usa l&apos;<strong>app mobile Flutter</strong> per il monitoraggio in mobilità.
+            La <strong>CLI</strong> è già disponibile: la installi dal terminale e automatizzi agenti, script e pipeline CI/CD. <strong>Estensione Chrome</strong>, <strong>app desktop</strong> e <strong>app mobile</strong> sono in arrivo — qui sotto trovi cosa sapranno fare.
           </p>
         </div>
 
@@ -111,24 +114,24 @@ export default function InstallClient() {
             </button>
           </div>
 
-          {/* Extension Fast Copy */}
+          {/* CLI Fast Copy: installazione rapida macOS/Linux */}
           <div className="relative group p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 transition-all flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center shrink-0">
-                <Globe className="w-5 h-5 text-cyan-400" />
+                <Code className="w-5 h-5 text-cyan-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs text-neutral-400 font-medium">Estensione Chrome (URL)</div>
+                <div className="text-xs text-neutral-400 font-medium">Installazione rapida (macOS/Linux)</div>
                 <div className="text-sm font-mono text-cyan-200 truncate mt-0.5">
-                  agentcloud.agency/install#extension
+                  {cliCurlCmd}
                 </div>
               </div>
             </div>
             <button
-              onClick={() => copyToClipboard(extensionInstallUrl, "quick-ext")}
+              onClick={() => copyToClipboard(cliCurlCmd, "quick-curl")}
               className="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-neutral-950 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 shadow-lg shadow-cyan-600/20 cursor-pointer"
             >
-              {copiedKey === "quick-ext" ? (
+              {copiedKey === "quick-curl" ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
                   <span>Copiato!</span>
@@ -136,7 +139,7 @@ export default function InstallClient() {
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5" />
-                  <span>Copia URL</span>
+                  <span>Copia</span>
                 </>
               )}
             </button>
@@ -156,8 +159,8 @@ export default function InstallClient() {
             >
               <Terminal className="w-4 h-4" />
               <span>CLI Terminale</span>
-              <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
-                Presto
+              <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                Disponibile
               </span>
             </button>
             <button
@@ -214,8 +217,8 @@ export default function InstallClient() {
                   <h2 className="text-2xl font-bold flex items-center gap-2.5 text-white">
                     <Terminal className="w-6 h-6 text-indigo-400" />
                     <span>AgentCloud CLI</span>
-                    <span className="ml-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-300">
-                      Prossimamente
+                    <span className="ml-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-bold text-emerald-300">
+                      Disponibile ora
                     </span>
                   </h2>
                   <p className="mt-1 text-sm text-neutral-400">
@@ -270,10 +273,10 @@ export default function InstallClient() {
                 <div className="mt-2 flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-4 font-mono text-xs text-neutral-300">
                   <div className="flex items-center gap-3 select-all min-w-0">
                     <span className="text-neutral-600 select-none">$</span>
-                    <span className="truncate">curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh</span>
+                    <span className="truncate">{cliCurlCmd}</span>
                   </div>
                   <button
-                    onClick={() => copyToClipboard("curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh", "cli-install-sh")}
+                    onClick={() => copyToClipboard(cliCurlCmd, "cli-install-sh")}
                     className="ml-2 shrink-0 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white transition-colors cursor-pointer"
                     title="Copia installazione rapida macOS/Linux"
                   >
@@ -533,54 +536,36 @@ export default function InstallClient() {
                 L&apos;estensione browser è in arrivo e non è ancora installabile. Questa pagina mostra un&apos;anteprima di come funzionerà una volta disponibile.
               </div>
 
-              {/* Extension Actions */}
+              {/* Descrizione e basta: l'estensione non è sullo store, quindi
+                  niente istruzioni di installazione (nemmeno il caricamento
+                  manuale da chrome://extensions, che era un percorso da
+                  sviluppatori spacciato per installazione). */}
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-6 rounded-2xl bg-gradient-to-br from-cyan-950/40 to-neutral-900 border border-cyan-500/20 flex flex-col justify-between">
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-wider text-cyan-400">
-                      Installazione Diretta
-                    </div>
-                    <h3 className="text-lg font-bold text-white mt-1">
-                      Aggiungi al tuo browser Chromium
-                    </h3>
-                    <p className="text-xs text-neutral-300 mt-2 leading-relaxed">
-                      Compatibile con Google Chrome, Microsoft Edge, Brave e Opera, oltre a Mozilla Firefox. Il pannello si apre accanto alla pagina attiva.
-                    </p>
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-cyan-950/40 to-neutral-900 border border-cyan-500/20">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-cyan-400">
+                    Cosa sarà
                   </div>
-                  <div className="mt-6 flex flex-col gap-2.5">
-                    <button
-                      disabled
-                      className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-neutral-500 text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed"
-                    >
-                      <span>Disponibile a breve sullo store</span>
-                    </button>
-                    <div className="text-[11px] text-center text-neutral-400">
-                      Sviluppatori: caricamento manuale da <span className="text-cyan-300 font-mono">chrome://extensions</span> (vedi sotto)
-                    </div>
-                  </div>
+                  <h3 className="text-lg font-bold text-white mt-1">
+                    Un copilota in ogni scheda
+                  </h3>
+                  <p className="text-xs text-neutral-300 mt-2 leading-relaxed">
+                    Lavorerà accanto alla pagina attiva su Google Chrome, Microsoft Edge, Brave, Opera e Mozilla Firefox: legge il contesto della scheda quando glielo chiedi e risponde nel pannello laterale.
+                  </p>
                 </div>
 
-                {/* Developer Mode Load */}
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col justify-between">
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
-                      Installazione Manuale / Beta
-                    </div>
-                    <h3 className="text-lg font-bold text-white mt-1">
-                      Carica estensione decompressa
-                    </h3>
-                    <ol className="mt-3 text-xs text-neutral-300 space-y-2 list-decimal list-inside">
-                      <li>Apri nel browser <code className="text-cyan-300 font-mono">chrome://extensions</code></li>
-                      <li>Attiva la spunta <strong>Modalità sviluppatore</strong> in alto a destra</li>
-                      <li>Clicca su <strong>Carica estensione non pacchettizzata</strong></li>
-                      <li>Seleziona la cartella <code className="text-indigo-300 font-mono">extension/</code> del progetto</li>
-                    </ol>
+                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
+                    Distribuzione
                   </div>
-                  <div className="mt-6">
-                    <div className="p-3 rounded-xl bg-neutral-950 border border-white/10 text-xs text-neutral-400 flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>Supporta SidePanel nativo e storage crittografato locale.</span>
-                    </div>
+                  <h3 className="text-lg font-bold text-white mt-1">
+                    Solo dallo store ufficiale
+                  </h3>
+                  <p className="text-xs text-neutral-300 mt-2 leading-relaxed">
+                    Sarà installabile dal Chrome Web Store con aggiornamenti automatici: nessun pacchetto da caricare a mano.
+                  </p>
+                  <div className="mt-4 p-3 rounded-xl bg-neutral-950 border border-white/10 text-xs text-neutral-400 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>SidePanel nativo e storage crittografato locale.</span>
                   </div>
                 </div>
               </div>
@@ -657,39 +642,16 @@ export default function InstallClient() {
                       <span>Dark theme elegante con Material 3 e colori AgentCloud</span>
                     </li>
                   </ul>
-
-                  <div className="pt-4 flex items-center gap-3">
-                    <button
-                      onClick={() => copyToClipboard("https://agentcloud.agency/install#mobile", "mobile-url")}
-                      className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
-                    >
-                      {copiedKey === "mobile-url" ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Link Copiato!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copia Link Mobile</span>
-                        </>
-                      )}
-                    </button>
-                    <span className="text-xs text-neutral-400">                      Codice sorgente: <code className="text-purple-300 font-mono">mobile/</code></span>
-                  </div>
                 </div>
 
                 <div className="p-6 rounded-2xl bg-neutral-950 border border-white/10 text-center">
                   <div className="w-16 h-16 mx-auto rounded-2xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center">
                     <Smartphone className="w-8 h-8 text-purple-400" />
                   </div>
-                  <div className="mt-4 text-base font-bold text-white">Esecuzione Locale con Flutter</div>
-                  <div className="mt-2 text-xs font-mono text-purple-300 bg-white/[0.04] p-2.5 rounded-xl border border-white/5 select-all">
-                    cd mobile && flutter run
-                  </div>
-                  <div className="mt-3 text-xs text-neutral-400">
-                    Analisi del codice: <strong>0 errori</strong> con flutter analyze.
-                  </div>
+                  <div className="mt-4 text-base font-bold text-white">In arrivo su App Store e Google Play</div>
+                  <p className="mt-3 text-xs text-neutral-400 leading-relaxed">
+                    Gli store ufficiali pubblicheranno la versione iOS e Android, firmata e aggiornata automaticamente: nessuna build da compilare a mano.
+                  </p>
                 </div>
               </div>
             </div>
@@ -759,7 +721,7 @@ export default function InstallClient() {
                   Un unico account per tutti i client
                 </h3>
                 <p className="text-sm text-neutral-300 max-w-xl">
-                  Accedi con email/password o Google: la CLI e l&apos;app mobile usano la stessa sessione via token, l&apos;estensione condivide i cookie del sito. Nessuna chiave da copiare.
+                  Accedi con email/password o Google: la CLI usa la stessa sessione via token, senza chiavi da copiare. Estensione e app mobile seguiranno lo stesso schema quando arriveranno.
                 </p>
               </div>
 
