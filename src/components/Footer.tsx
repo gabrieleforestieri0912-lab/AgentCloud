@@ -54,6 +54,9 @@ export default function Footer() {
     { label: dict.navbar.integrations, href: "/integrations" },
     { label: dict.chat.aiChat, href: "/chat" },
     { label: dict.navbar.appsLabel, href: "/apps" },
+    { label: dict.apps.cliTitle, href: "/cli" },
+    { label: dict.apps.extTitle, href: "/extension" },
+    { label: dict.apps.desktopTitle, href: "/desktop" },
     { label: dict.mobile.badge, href: "/mobile" },
   ];
 

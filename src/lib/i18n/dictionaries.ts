@@ -179,7 +179,7 @@ const it = {
     extDesc: "Il pannello laterale che lavora sulla pagina attiva.",
     extCta: "Aggiungi al browser",
     soon: "In arrivo",
-    metaTitle: "App ed estensioni | AgentCloud",
+    metaTitle: "App ed estensioni",
     metaDescription: "Scarica AgentCloud su desktop, mobile, terminale e browser: stessi agenti, stessa sessione, ovunque lavori.",
   },
 
@@ -283,7 +283,6 @@ howItWorks: {
     subtitle:
       "Quattro pilastri, un'unica piattaforma: scegli l'agente, collega i tuoi strumenti e lavora in chat.",
     showDetails: "Vedi dettagli",
-    hideDetails: "Nascondi dettagli",
     items: [
       {
         title: "Agenti AI pronti all'uso",
@@ -2612,7 +2611,7 @@ export const en: Dictionary = {
     extDesc: "The side panel that works on the active page.",
     extCta: "Add to browser",
     soon: "Coming soon",
-    metaTitle: "Apps & extensions | AgentCloud",
+    metaTitle: "Apps & extensions",
     metaDescription: "Get AgentCloud on desktop, mobile, terminal and browser: same agents, same session, wherever you work.",
   },
 
@@ -2716,7 +2715,6 @@ howItWorks: {
     subtitle:
       "Four pillars, one platform: pick your agent, connect your tools, and work in chat.",
     showDetails: "See details",
-    hideDetails: "Hide details",
     items: [
       {
         title: "Ready-to-use AI agents",
@@ -5020,7 +5018,7 @@ export const es: Dictionary = {
     extDesc: "El panel lateral que trabaja en la página activa.",
     extCta: "Añadir al navegador",
     soon: "Próximamente",
-    metaTitle: "Apps y extensiones | AgentCloud",
+    metaTitle: "Apps y extensiones",
     metaDescription: "Descarga AgentCloud en escritorio, móvil, terminal y navegador: mismos agentes, misma sesión, dondequiera que trabajes.",
   },
 
@@ -5124,7 +5122,6 @@ howItWorks: {
     subtitle:
       "Cuatro pilares, una sola plataforma: elige el agente, conecta tus herramientas y trabaja en el chat.",
     showDetails: "Ver detalles",
-    hideDetails: "Ocultar detalles",
     items: [
       {
         title: "Agentes IA listos para usar",
@@ -7425,7 +7422,7 @@ export const de: Dictionary = {
     extDesc: "Das Seitenpanel, das auf der aktiven Seite arbeitet.",
     extCta: "Zum Browser hinzufügen",
     soon: "Bald",
-    metaTitle: "Apps & Erweiterungen | AgentCloud",
+    metaTitle: "Apps & Erweiterungen",
     metaDescription: "Hole AgentCloud auf Desktop, Mobil, Terminal und Browser: gleiche Agenten, gleiche Sitzung, wo immer du arbeitest.",
   },
 
@@ -7529,7 +7526,6 @@ howItWorks: {
     subtitle:
       "Vier Säulen, eine Plattform: Agent wählen, Tools verbinden und im Chat arbeiten.",
     showDetails: "Details ansehen",
-    hideDetails: "Details ausblenden",
     items: [
       {
         title: "Sofort einsetzbare KI-Agenten",
@@ -9830,7 +9826,7 @@ export const fr: Dictionary = {
     extDesc: "Le panneau latéral qui travaille sur la page active.",
     extCta: "Ajouter au navigateur",
     soon: "Bientôt",
-    metaTitle: "Apps et extensions | AgentCloud",
+    metaTitle: "Apps et extensions",
     metaDescription: "AgentCloud sur bureau, mobile, terminal et navigateur : mêmes agents, même session, où que tu travailles.",
   },
 
@@ -9934,7 +9930,6 @@ howItWorks: {
     subtitle:
       "Quatre piliers, une seule plateforme : choisissez l'agent, connectez vos outils et travaillez dans le chat.",
     showDetails: "Voir les détails",
-    hideDetails: "Masquer les détails",
     items: [
       {
         title: "Agents IA prêts à l'emploi",

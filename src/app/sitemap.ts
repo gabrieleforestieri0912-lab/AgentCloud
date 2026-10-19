@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getSiteUrl } from "@/lib/site-url";
 import { AGENTS } from "@/lib/agents";
 import { SKILL_PLUGINS, allCatalogSkills } from "@/lib/skills/catalog";
+import { FEATURE_PATHS, FEATURE_SLUGS } from "@/lib/i18n/featureDetails";
 import { hasLaunched } from "@/lib/waitlist-constants";
 
 const BASE_URL = getSiteUrl();
@@ -80,6 +81,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     {
+      // Panoramica "App ed estensioni": pubblica e linkata da home e footer.
+      url: `${BASE_URL}/apps`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
       url: `${BASE_URL}/install`,
       lastModified: new Date(),
       changeFrequency: "monthly",
@@ -117,6 +125,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
+  // Ogni client dell'ecosistema ha la propria pagina di dettaglio, aperta
+  // dalle card di /apps e di /install: vanno indicizzate come /apps.
+  const clientRoutes: MetadataRoute.Sitemap = ["/cli", "/extension", "/desktop"].map(
+    (path) => ({
+      url: `${BASE_URL}${path}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    }),
+  );
+
+  // Le pagine di dettaglio delle funzionalità (link "Vedi dettagli" in home).
+  const featureRoutes: MetadataRoute.Sitemap = FEATURE_SLUGS.map((slug) => ({
+    url: `${BASE_URL}${FEATURE_PATHS[slug]}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
   // Ogni agente pubblicato ha la propria URL canonica indicizzabile.
   const agentRoutes: MetadataRoute.Sitemap = AGENTS.map((agent) => ({
     url: `${BASE_URL}/agents/${agent.slug}`,
@@ -145,5 +172,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Le pagine agente espongono la tab Competenze: già coperte dalle rotte
   // agente qui sotto, quindi nessuna voce aggiuntiva.
 
-  return [...staticRoutes, ...agentRoutes, ...skillPluginRoutes, ...skillRoutes];
+  return [
+    ...staticRoutes,
+    ...clientRoutes,
+    ...featureRoutes,
+    ...agentRoutes,
+    ...skillPluginRoutes,
+    ...skillRoutes,
+  ];
 }

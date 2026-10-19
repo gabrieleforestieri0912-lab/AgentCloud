@@ -13,10 +13,10 @@ export default function AppsSection() {
   const { dict } = useLanguage();
   const a = dict.apps;
   const cards = [
-    { icon: MonitorDown, title: a.desktopTitle, desc: a.desktopDesc, href: "/apps#desktop" },
-    { icon: Smartphone, title: a.mobileTitle, desc: a.mobileDesc, href: "/apps#mobile" },
-    { icon: TerminalSquare, title: a.cliTitle, desc: a.cliDesc, href: "/apps#cli" },
-    { icon: PanelRight, title: a.extTitle, desc: a.extDesc, href: "/apps#extension" },
+    { icon: MonitorDown, title: a.desktopTitle, desc: a.desktopDesc, href: "/desktop", soon: true },
+    { icon: Smartphone, title: a.mobileTitle, desc: a.mobileDesc, href: "/mobile", soon: true },
+    { icon: TerminalSquare, title: a.cliTitle, desc: a.cliDesc, href: "/cli", soon: false },
+    { icon: PanelRight, title: a.extTitle, desc: a.extDesc, href: "/extension", soon: true },
   ];
   return (
     <section id="app" className="py-16 sm:py-20">
@@ -43,7 +43,7 @@ export default function AppsSection() {
         </motion.div>
 
         <div className="mx-auto mb-10 grid max-w-5xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {cards.map(({ icon: Icon, title, desc, href }) => (
+          {cards.map(({ icon: Icon, title, desc, href, soon }) => (
             <Link
               key={title}
               href={href}
@@ -51,9 +51,11 @@ export default function AppsSection() {
             >
               <div className="flex items-center justify-between gap-2">
                 <Icon size={20} className="text-brand-400" />
-                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-300">
-                  {a.soon}
-                </span>
+                {soon && (
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-300">
+                    {a.soon}
+                  </span>
+                )}
               </div>
               <p className="mt-3 text-sm font-bold text-white">{title}</p>
               <p className="mt-1 text-xs font-semibold leading-5 text-neutral-400">{desc}</p>

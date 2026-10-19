@@ -8,12 +8,14 @@ import { pageSeo } from "@/lib/seo";
 import { MonitorDown, Smartphone, TerminalSquare, PanelRight, ArrowRight, ArrowLeft, Check } from "lucide-react";
 
 /**
- * Pagina dedicata ad app ed estensioni: desktop, mobile, CLI ed estensione
- * browser. Citata dalla landing (sezione #app, navbar, footer): è il punto
- * unico da cui installare tutto l'ecosistema.
+ * Pagina di sponsorizzazione di app ed estensioni: desktop, mobile, CLI ed
+ * estensione browser. Citata dalla landing (sezione #app, navbar, footer).
  *
- * Onestà di stato: la CLI si installa da npm, desktop, mobile ed estensione
- * sono in arrivo (badge "In arrivo" / "Prossimamente").
+ * Ogni card apre la pagina dedicata del client, mentre `/install` resta
+ * l'hub con i comandi da copiare.
+ *
+ * Onestà di stato: la CLI si installa da npm (live), desktop, mobile ed
+ * estensione sono in arrivo (badge "In arrivo" / "Prossimamente").
  */
 export const revalidate = 300;
 
@@ -39,7 +41,7 @@ export default async function AppsPage() {
       title: a.desktopTitle,
       desc: a.desktopDesc,
       cta: a.desktopCta,
-      href: "/install",
+      href: "/desktop",
       steps: ["macOS (.dmg)", "Windows (.exe)", "Linux (.AppImage, .deb)"],
       live: false,
     },
@@ -49,7 +51,7 @@ export default async function AppsPage() {
       title: a.mobileTitle,
       desc: a.mobileDesc,
       cta: a.mobileCta,
-      href: "/install",
+      href: "/mobile",
       steps: ["iOS", "Android"],
       live: false,
     },
@@ -59,9 +61,9 @@ export default async function AppsPage() {
       title: a.cliTitle,
       desc: a.cliDesc,
       cta: a.cliCta,
-      href: "/install",
+      href: "/cli",
       steps: ["npm i -g agentcloud-cli"],
-      live: false,
+      live: true,
     },
     {
       id: "extension",
@@ -69,7 +71,7 @@ export default async function AppsPage() {
       title: a.extTitle,
       desc: a.extDesc,
       cta: a.extCta,
-      href: "/install#extension",
+      href: "/extension",
       steps: ["Chrome", "Edge", "Brave", "Firefox"],
       live: false,
     },

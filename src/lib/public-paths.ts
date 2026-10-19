@@ -26,9 +26,19 @@ export const PUBLIC_PATHS = [
   // (singole skill e pacchetti sono due sezioni autonome).
   "/skills",
   "/plugins",
-  // Pagina di installazione dell'ecosistema (CLI/estensione/mobile): marketing
-  // come le altre pagine pubbliche, il login serve solo dentro l'app.
+  // Hub di installazione dell'ecosistema e pagine dedicate a ogni client
+  // (CLI, estensione, desktop): marketing come le altre pagine pubbliche, il
+  // login serve solo dentro l'app. `/mobile` è qui sopra.
+  // `/apps` è la panoramica "App ed estensioni" linkata da home, navbar e
+  // footer: era rimasta fuori da questo elenco, quindi da utente anonimo
+  // finiva in un redirect a /login.
+  "/apps",
   "/install",
+  "/cli",
+  "/extension",
+  "/desktop",
+  // Pagine di dettaglio delle funzionalità (link "Vedi dettagli" in home).
+  "/features",
   // Guida "Crea la tua competenza in 10 minuti": pubblica come /skills, da cui
   // arriva il template SKILL.md.
   "/docs",
@@ -106,12 +116,27 @@ export const PUBLIC_PATHS = [
  */
 const PUBLIC_EXACT_PATHS: RegExp[] = [];
 
+/**
+ * Sotto-rotte che restano PROTETTE anche quando il loro prefisso è pubblico.
+ *
+ * Perché servono: `/cli` è la pagina marketing della CLI (pubblica), ma
+ * `/cli/auth` consegna il token Supabase alla CLI in ascolto su 127.0.0.1 e
+ * deve continuare a richiedere una sessione, esattamente come faceva prima
+ * che `/cli` entrasse in PUBLIC_PATHS.
+ */
+const PROTECTED_UNDER_PUBLIC: RegExp[] = [/^\/cli\/auth(\/|$)/];
+
 /** True se il path è in una delle eccezioni esatte. */
 function isPublicExactPath(pathname: string): boolean {
   for (const pattern of PUBLIC_EXACT_PATHS) {
     if (pattern.test(pathname)) return true;
   }
   return false;
+}
+
+/** True se il path è un'eccezione protetta dentro un prefisso pubblico. */
+function isProtectedUnderPublic(pathname: string): boolean {
+  return PROTECTED_UNDER_PUBLIC.some((pattern) => pattern.test(pathname));
 }
 
 // Match con prefisso stretto: un path è pubblico quando è uguale a un prefisso
@@ -122,6 +147,8 @@ export function isPublicPath(pathname: string): boolean {
   if (/^\/google[a-z0-9]+\.html$/.test(pathname)) {
     return true;
   }
+  // Le eccezioni protette vincono sul prefisso pubblico (vedi sopra).
+  if (isProtectedUnderPublic(pathname)) return false;
   if (isPublicExactPath(pathname)) return true;
   return PUBLIC_PATHS.some((prefix) =>
     prefix === "/"
