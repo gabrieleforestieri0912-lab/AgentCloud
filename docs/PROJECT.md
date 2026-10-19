@@ -74,9 +74,8 @@ src/
 | `/agents`, `/agents/[slug]`, `/agents/[slug]/deploy` | Marketplace / dettaglio / deploy | Pubblico |
 | `/a/[slug]` | Chat pubblica agente (embed) | Pubblico |
 | `/waitlist`, `/contact`, `/about`, `/integrations`, `/privacy`, `/terms`, `/refunds`, `/login`, `/signup` | Landing/legal/auth | Pubblico |
-| `/apps` | Panoramica "App ed estensioni" (4 card → pagine client) | Pubblico |
-| `/install` | Hub di installazione: un comando per la CLI + link a ogni client | Pubblico |
-| `/cli`, `/extension`, `/desktop`, `/mobile` | Pagina dedicata di ogni client (i18n IT/EN/ES/DE/FR) | Pubblico |
+| `/apps` | Indice "App ed estensioni" (4 card → pagine client) | Pubblico |
+| `/cli`, `/extension`, `/desktop`, `/mobile` | Pagina dedicata di ogni client, con installazione e istruzioni (i18n IT/EN/ES/DE/FR) | Pubblico |
 | `/features/[slug]` | Dettaglio funzionalità (`agents`, `integrations`, `chat`, `dashboard`) — link "Vedi dettagli" in home | Pubblico |
 | `/cli/auth` | Autorizzazione CLI (token al server locale su 127.0.0.1) | Protetto (eccezione in `public-paths.ts`) |
 | `/chat` | Chat generica (con indicatore app collegata) | Protetto (Supabase) |

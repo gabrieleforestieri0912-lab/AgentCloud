@@ -81,17 +81,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     {
-      // Panoramica "App ed estensioni": pubblica e linkata da home e footer.
+      // Indice "App ed estensioni": pubblica e linkata da home e footer.
+      // `/install` non è nel sitemap: la pagina "generale" è stata eliminata
+      // (ora reindirizza a /apps) e ogni client ha la sua pagina dedicata.
       url: `${BASE_URL}/apps`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.6,
-    },
-    {
-      url: `${BASE_URL}/install`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.7,
     },
     {
       url: `${BASE_URL}/login`,
@@ -126,7 +122,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 
   // Ogni client dell'ecosistema ha la propria pagina di dettaglio, aperta
-  // dalle card di /apps e di /install: vanno indicizzate come /apps.
+  // dalle card di /apps: vanno indicizzate come /apps.
   const clientRoutes: MetadataRoute.Sitemap = ["/cli", "/extension", "/desktop"].map(
     (path) => ({
       url: `${BASE_URL}${path}`,

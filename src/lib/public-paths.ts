@@ -26,13 +26,17 @@ export const PUBLIC_PATHS = [
   // (singole skill e pacchetti sono due sezioni autonome).
   "/skills",
   "/plugins",
-  // Hub di installazione dell'ecosistema e pagine dedicate a ogni client
-  // (CLI, estensione, desktop): marketing come le altre pagine pubbliche, il
-  // login serve solo dentro l'app. `/mobile` è qui sopra.
-  // `/apps` è la panoramica "App ed estensioni" linkata da home, navbar e
-  // footer: era rimasta fuori da questo elenco, quindi da utente anonimo
-  // finiva in un redirect a /login.
+  // Pagine dedicate a ogni client (CLI, estensione, desktop): marketing come
+  // le altre pagine pubbliche, il login serve solo dentro l'app. `/mobile` è
+  // qui sopra.
+  // `/apps` è l'indice "App ed estensioni" linkato da home, navbar e footer:
+  // era rimasta fuori da questo elenco, quindi da utente anonimo finiva in un
+  // redirect a /login.
   "/apps",
+  // `/install` non è più una pagina: la pagina "generale" è stata eliminata
+  // e ogni client ha la sua. Resta nell'elenco solo perché il redirect a
+  // /apps deve poter partire anche per un utente anonimo (senza, il proxy
+  // manderebbe a /login invece che alla destinazione).
   "/install",
   "/cli",
   "/extension",

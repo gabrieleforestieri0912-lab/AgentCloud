@@ -62,11 +62,11 @@ export default function AppClientPage({
 
       <section className="relative z-10 mx-auto max-w-5xl px-4 pb-20 pt-28 sm:px-6 lg:px-8">
         <Link
-          href="/install"
+          href="/apps"
           className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-neutral-400 hover:text-white"
         >
           <ArrowLeft size={13} />
-          {content.hubLink}
+          {content.backLabel}
         </Link>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -158,10 +158,10 @@ export default function AppClientPage({
               <ArrowRight size={14} />
             </Link>
             <Link
-              href="/install"
+              href="/apps"
               className="inline-flex items-center rounded-full border border-white/10 bg-neutral-900 px-6 py-3 text-sm font-bold text-white transition-colors hover:border-white/20"
             >
-              {content.hubLink}
+              {content.backLabel}
             </Link>
           </div>
         </div>

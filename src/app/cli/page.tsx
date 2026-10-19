@@ -5,8 +5,9 @@ import { getClientPage } from "@/lib/i18n/appClients";
 import { pageSeo } from "@/lib/seo";
 
 /**
- * Pagina dedicata alla CLI: la scheda di `/install` rimanda qui invece di
- * aprire un tab nella pagina unica. Contenuti localizzati in `appClients.ts`.
+ * Pagina dedicata alla CLI: è lei a contenere installazione, login e comandi.
+ * L'indice "App ed estensioni" (/apps) e le card della home rimandano qui.
+ * Contenuti localizzati in `appClients.ts`.
  */
 export const revalidate = 300;
 

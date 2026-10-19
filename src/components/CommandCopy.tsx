@@ -4,10 +4,10 @@
  * Blocco "comando + Copia": mostra una riga di terminale e la copia negli
  * appunti con conferma visiva.
  *
- * Perché un componente: hub `/install` e pagina `/cli` mostrano gli stessi
- * comandi di installazione, e prima la logica di copia era duplicata dentro
- * la pagina tab. Le etichette di copia arrivano dal dizionario attivo così
- * restano tradotte in tutte le lingue.
+ * Perché un componente: la pagina `/cli` mostra i comandi di installazione
+ * e la logica di copia non deve stare dentro il markup della pagina. Le
+ * etichette di copia arrivano dal dizionario attivo così restano tradotte
+ * in tutte le lingue.
  */
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";

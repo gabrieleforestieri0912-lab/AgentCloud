@@ -1,14 +1,17 @@
 /**
- * Contenuti i18n di "App ed estensioni": l'hub `/install` e le pagine
- * dedicate a ogni client (`/cli`, `/extension`, `/desktop`).
+ * Contenuti i18n delle pagine dedicate a ogni client (`/cli`, `/extension`,
+ * `/desktop`).
  *
  * Perché un modulo separato da `dictionaries.ts`: sono pagine di marketing
  * ricche di testo, servite solo da server component. Tenerle qui evita di
  * gonfiare il dizionario client (`dictionaries.ts` finisce nel bundle) e
  * segue la convenzione già usata da `legal.ts` e `agentDetail.ts`.
  *
- * La pagina mobile ha già la sua sezione (`dict.mobile`) perché è nata prima:
- * l'hub la cita con la propria card, senza duplicarne la pagina.
+ * Non esiste una pagina "generale" con le informazioni di tutti i client:
+ * ogni client ha la sua pagina e `/apps` è solo l'indice che porta alle
+ * pagine dedicate.
+ *
+ * La pagina mobile ha già la sua sezione (`dict.mobile`) perché è nata prima.
  *
  * Onestà di stato: la CLI è pubblicata su npm (`agentcloud-cli`) quindi è
  * "available"; estensione, desktop e mobile sono annunciate ma non ancora
@@ -17,52 +20,17 @@
 
 import type { Locale } from "./constants";
 
-export type ClientSlug = "cli" | "extension" | "desktop" | "mobile";
-
 /** I client con una pagina dedicata propria (mobile vive in `dict.mobile`). */
-export type DocumentedClientSlug = Exclude<ClientSlug, "mobile">;
-
-/** Rotte delle pagine dedicate: qui una volta sola, così non si divergono. */
-export const CLIENT_PATHS: Record<ClientSlug, string> = {
-  cli: "/cli",
-  extension: "/extension",
-  desktop: "/desktop",
-  mobile: "/mobile",
-};
+export type DocumentedClientSlug = "cli" | "extension" | "desktop";
 
 /**
  * Comandi di installazione della CLI: veri e verificati (vedi `cli/README.md`).
- * Stanno qui come costanti perché hub e pagina CLI mostrano gli stessi comandi.
+ * Stanno qui come costanti perché la pagina CLI li usa nei passi di
+ * installazione.
  */
 export const CLI_INSTALL_NPM = "npm i -g agentcloud-cli";
 export const CLI_INSTALL_CURL =
   "curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh";
-
-export type HubCard = {
-  slug: ClientSlug;
-  title: string;
-  desc: string;
-  cta: string;
-  /** false = già disponibile: niente badge "in arrivo". */
-  soon: boolean;
-};
-
-export type AppHubContent = {
-  metaTitle: string;
-  metaDescription: string;
-  badge: string;
-  titleA: string;
-  titleB: string;
-  subtitle: string;
-  availableBadge: string;
-  soonBadge: string;
-  quickTitle: string;
-  quickNpm: string;
-  quickCurl: string;
-  accountTitle: string;
-  accountText: string;
-  cards: HubCard[];
-};
 
 export type InstallStep = {
   /** Cosa fa il passo, in linguaggio naturale. */
@@ -82,8 +50,8 @@ export type ClientPageContent = {
   available: boolean;
   statusLabel: string;
   statusNote: string;
-  /** Etichetta del link di ritorno all'hub. */
-  hubLink: string;
+  /** Etichetta del link di ritorno all'indice "App ed estensioni". */
+  backLabel: string;
   installTitle: string;
   installNote: string;
   installSteps: InstallStep[];
@@ -96,54 +64,6 @@ export type ClientPageContent = {
 
 // ─── Italiano ────────────────────────────────────────────────────────────────
 
-const hubIt: AppHubContent = {
-  metaTitle: "App ed estensioni",
-  metaDescription:
-    "AgentCloud nel terminale, nel browser, sul desktop e sul telefono: installa la CLI o consulta la pagina dedicata di ogni client. Stessa sessione, stessi agenti.",
-  badge: "App ed estensioni",
-  titleA: "Scegli da dove",
-  titleB: "far lavorare gli agenti",
-  subtitle:
-    "Quattro modi di usare AgentCloud: terminale, browser, desktop e mobile. La CLI è già disponibile; gli altri client arrivano dagli store ufficiali. Ogni client ha la sua pagina.",
-  availableBadge: "Disponibile ora",
-  soonBadge: "In arrivo",
-  quickTitle: "Installa la CLI con un comando",
-  quickNpm: "npm — tutti i sistemi, Node 18+",
-  quickCurl: "script — macOS e Linux",
-  accountTitle: "Un account, una sessione",
-  accountText:
-    "Accedi una volta e ritrovi gli stessi agenti su ogni client. La CLI usa la stessa sessione del sito; estensione, desktop e mobile seguiranno lo stesso schema.",
-  cards: [
-    {
-      slug: "cli",
-      title: "CLI Terminale",
-      desc: "Agenti in script, cron e pipeline CI/CD: login dal browser, risposte in streaming e sessioni riprendibili.",
-      cta: "Apri la pagina CLI",
-      soon: false,
-    },
-    {
-      slug: "extension",
-      title: "Estensione browser",
-      desc: "Un copilota nel pannello laterale: legge la scheda attiva e ci lavora su tua richiesta.",
-      cta: "Apri la pagina estensione",
-      soon: true,
-    },
-    {
-      slug: "desktop",
-      title: "App Desktop",
-      desc: "La chat in una finestra dedicata su macOS, Windows e Linux, con notifiche di sistema.",
-      cta: "Apri la pagina desktop",
-      soon: true,
-    },
-    {
-      slug: "mobile",
-      title: "App Mobile",
-      desc: "Gli agenti in tasca su iOS e Android, con notifiche push e approvazioni rapide.",
-      cta: "Apri la pagina mobile",
-      soon: true,
-    },
-  ],
-};
 
 const cliIt: ClientPageContent = {
   metaTitle: "CLI AgentCloud: gli agenti AI nel terminale",
@@ -158,7 +78,7 @@ const cliIt: ClientPageContent = {
   statusLabel: "Disponibile ora",
   statusNote:
     "Pubblicata su npm come agentcloud-cli. Richiede Node 18 o superiore e funziona su Linux, macOS e Windows.",
-  hubLink: "App ed estensioni",
+  backLabel: "App ed estensioni",
   installTitle: "Installazione",
   installNote:
     "Scegli npm o lo script: installano lo stesso comando agentcloud. Lo script dice anche come installare Node se manca.",
@@ -206,7 +126,7 @@ const extensionIt: ClientPageContent = {
   statusLabel: "In arrivo",
   statusNote:
     "Non è ancora pubblicata: sta arrivando sul Chrome Web Store. Qui trovi come funzionerà, senza scaricare nulla a mano.",
-  hubLink: "App ed estensioni",
+  backLabel: "App ed estensioni",
   installTitle: "Come si installerà",
   installNote:
     "Solo dallo store ufficiale, con aggiornamenti automatici: nessun pacchetto da caricare in modalità sviluppatore.",
@@ -253,7 +173,7 @@ const desktopIt: ClientPageContent = {
   statusLabel: "In arrivo",
   statusNote:
     "In sviluppo: finché la build non è firmata non pubblichiamo nessun download. Qui trovi come arriverà.",
-  hubLink: "App ed estensioni",
+  backLabel: "App ed estensioni",
   installTitle: "Come si installerà",
   installNote:
     "Dai canali ufficiali e con aggiornamenti automatici: nessun archivio da estrarre a mano.",
@@ -290,54 +210,6 @@ const desktopIt: ClientPageContent = {
 
 // ─── English ─────────────────────────────────────────────────────────────────
 
-const hubEn: AppHubContent = {
-  metaTitle: "Apps and extensions",
-  metaDescription:
-    "AgentCloud in your terminal, browser, desktop and phone: install the CLI or browse the dedicated page for each client. Same session, same agents.",
-  badge: "Apps & extensions",
-  titleA: "Choose where",
-  titleB: "your agents run",
-  subtitle:
-    "Four ways to use AgentCloud: terminal, browser, desktop and mobile. The CLI is available today; the other clients will arrive from the official stores. Each client has its own page.",
-  availableBadge: "Available now",
-  soonBadge: "Coming soon",
-  quickTitle: "Install the CLI with one command",
-  quickNpm: "npm — every system, Node 18+",
-  quickCurl: "script — macOS and Linux",
-  accountTitle: "One account, one session",
-  accountText:
-    "Sign in once and your agents are there on every client. The CLI uses the same session as the website; the extension, desktop and mobile apps will follow the same design.",
-  cards: [
-    {
-      slug: "cli",
-      title: "Terminal CLI",
-      desc: "Agents in scripts, cron and CI/CD pipelines: browser login, streamed answers and resumable sessions.",
-      cta: "Open the CLI page",
-      soon: false,
-    },
-    {
-      slug: "extension",
-      title: "Browser extension",
-      desc: "A copilot in the side panel: it reads the active tab and works on it when you ask.",
-      cta: "Open the extension page",
-      soon: true,
-    },
-    {
-      slug: "desktop",
-      title: "Desktop app",
-      desc: "Chat in a dedicated window on macOS, Windows and Linux, with system notifications.",
-      cta: "Open the desktop page",
-      soon: true,
-    },
-    {
-      slug: "mobile",
-      title: "Mobile app",
-      desc: "Your agents in your pocket on iOS and Android, with push notifications and quick approvals.",
-      cta: "Open the mobile page",
-      soon: true,
-    },
-  ],
-};
 
 const cliEn: ClientPageContent = {
   metaTitle: "AgentCloud CLI: AI agents in your terminal",
@@ -352,7 +224,7 @@ const cliEn: ClientPageContent = {
   statusLabel: "Available now",
   statusNote:
     "Published on npm as agentcloud-cli. Requires Node 18 or newer and runs on Linux, macOS and Windows.",
-  hubLink: "Apps & extensions",
+  backLabel: "Apps & extensions",
   installTitle: "Installation",
   installNote:
     "Pick npm or the script: both install the same agentcloud command. The script also tells you how to install Node if it is missing.",
@@ -400,7 +272,7 @@ const extensionEn: ClientPageContent = {
   statusLabel: "Coming soon",
   statusNote:
     "It is not published yet: it is heading to the Chrome Web Store. Here is how it will work, with no manual package to load.",
-  hubLink: "Apps & extensions",
+  backLabel: "Apps & extensions",
   installTitle: "How it will install",
   installNote:
     "From the official store only, with automatic updates: no package to load in developer mode.",
@@ -447,7 +319,7 @@ const desktopEn: ClientPageContent = {
   statusLabel: "Coming soon",
   statusNote:
     "In development: until the build is signed we will not publish a download. Here is how it will arrive.",
-  hubLink: "Apps & extensions",
+  backLabel: "Apps & extensions",
   installTitle: "How it will install",
   installNote:
     "From the official channels, with automatic updates: no archive to unpack by hand.",
@@ -484,54 +356,6 @@ const desktopEn: ClientPageContent = {
 
 // ─── Español ─────────────────────────────────────────────────────────────────
 
-const hubEs: AppHubContent = {
-  metaTitle: "Apps y extensiones",
-  metaDescription:
-    "AgentCloud en la terminal, el navegador, el escritorio y el móvil: instala la CLI o consulta la página de cada cliente. Misma sesión, mismos agentes.",
-  badge: "Apps y extensiones",
-  titleA: "Elige desde dónde",
-  titleB: "trabajan los agentes",
-  subtitle:
-    "Cuatro formas de usar AgentCloud: terminal, navegador, escritorio y móvil. La CLI ya está disponible; los demás clientes llegarán desde las tiendas oficiales. Cada cliente tiene su página.",
-  availableBadge: "Disponible ahora",
-  soonBadge: "Muy pronto",
-  quickTitle: "Instala la CLI con un comando",
-  quickNpm: "npm — todos los sistemas, Node 18+",
-  quickCurl: "script — macOS y Linux",
-  accountTitle: "Una cuenta, una sesión",
-  accountText:
-    "Inicia sesión una vez y tus agentes estarán en cada cliente. La CLI usa la misma sesión que la web; la extensión, el escritorio y el móvil seguirán el mismo diseño.",
-  cards: [
-    {
-      slug: "cli",
-      title: "CLI de terminal",
-      desc: "Agentes en scripts, cron y canalizaciones CI/CD: acceso desde el navegador, respuestas en streaming y sesiones recuperables.",
-      cta: "Abrir la página de la CLI",
-      soon: false,
-    },
-    {
-      slug: "extension",
-      title: "Extensión de navegador",
-      desc: "Un copiloto en el panel lateral: lee la pestaña activa y trabaja en ella cuando se lo pides.",
-      cta: "Abrir la página de la extensión",
-      soon: true,
-    },
-    {
-      slug: "desktop",
-      title: "App de escritorio",
-      desc: "El chat en una ventana propia en macOS, Windows y Linux, con notificaciones del sistema.",
-      cta: "Abrir la página de escritorio",
-      soon: true,
-    },
-    {
-      slug: "mobile",
-      title: "App móvil",
-      desc: "Tus agentes en el bolsillo en iOS y Android, con notificaciones push y aprobaciones rápidas.",
-      cta: "Abrir la página móvil",
-      soon: true,
-    },
-  ],
-};
 
 const cliEs: ClientPageContent = {
   metaTitle: "CLI de AgentCloud: agentes de IA en la terminal",
@@ -546,7 +370,7 @@ const cliEs: ClientPageContent = {
   statusLabel: "Disponible ahora",
   statusNote:
     "Publicada en npm como agentcloud-cli. Requiere Node 18 o superior y funciona en Linux, macOS y Windows.",
-  hubLink: "Apps y extensiones",
+  backLabel: "Apps y extensiones",
   installTitle: "Instalación",
   installNote:
     "Elige npm o el script: ambos instalan el mismo comando agentcloud. El script también explica cómo instalar Node si falta.",
@@ -594,7 +418,7 @@ const extensionEs: ClientPageContent = {
   statusLabel: "Muy pronto",
   statusNote:
     "Todavía no está publicada: llegará a Chrome Web Store. Aquí tienes cómo funcionará, sin cargar paquetes a mano.",
-  hubLink: "Apps y extensiones",
+  backLabel: "Apps y extensiones",
   installTitle: "Cómo se instalará",
   installNote:
     "Solo desde la tienda oficial y con actualizaciones automáticas: ningún paquete que cargar en modo desarrollador.",
@@ -641,7 +465,7 @@ const desktopEs: ClientPageContent = {
   statusLabel: "Muy pronto",
   statusNote:
     "En desarrollo: hasta que la build esté firmada no publicaremos ninguna descarga. Aquí tienes cómo llegará.",
-  hubLink: "Apps y extensiones",
+  backLabel: "Apps y extensiones",
   installTitle: "Cómo se instalará",
   installNote:
     "Desde los canales oficiales y con actualizaciones automáticas: ningún archivo que descomprimir a mano.",
@@ -678,54 +502,6 @@ const desktopEs: ClientPageContent = {
 
 // ─── Deutsch ─────────────────────────────────────────────────────────────────
 
-const hubDe: AppHubContent = {
-  metaTitle: "Apps und Erweiterungen",
-  metaDescription:
-    "AgentCloud im Terminal, im Browser, auf dem Desktop und auf dem Handy: installiere die CLI oder lies die eigene Seite zu jedem Client. Gleiche Sitzung, gleiche Agenten.",
-  badge: "Apps & Erweiterungen",
-  titleA: "Du entscheidest, wo",
-  titleB: "deine Agenten arbeiten",
-  subtitle:
-    "Vier Wege, AgentCloud zu nutzen: Terminal, Browser, Desktop und Mobil. Die CLI ist bereits verfügbar; die übrigen Clients kommen aus den offiziellen Stores. Jeder Client hat seine eigene Seite.",
-  availableBadge: "Jetzt verfügbar",
-  soonBadge: "Demnächst",
-  quickTitle: "CLI mit einem Befehl installieren",
-  quickNpm: "npm — alle Systeme, Node 18+",
-  quickCurl: "Skript — macOS und Linux",
-  accountTitle: "Ein Konto, eine Sitzung",
-  accountText:
-    "Einmal anmelden und deine Agenten sind in jedem Client da. Die CLI nutzt dieselbe Sitzung wie die Website; Erweiterung, Desktop und Mobil folgen demselben Prinzip.",
-  cards: [
-    {
-      slug: "cli",
-      title: "Terminal-CLI",
-      desc: "Agenten in Skripten, Cron und CI/CD-Pipelines: Browser-Login, gestreamte Antworten und fortsetzbare Sitzungen.",
-      cta: "Zur CLI-Seite",
-      soon: false,
-    },
-    {
-      slug: "extension",
-      title: "Browser-Erweiterung",
-      desc: "Ein Copilot im Seitenbereich: liest den aktiven Tab und arbeitet auf Anfrage darin.",
-      cta: "Zur Erweiterungs-Seite",
-      soon: true,
-    },
-    {
-      slug: "desktop",
-      title: "Desktop-App",
-      desc: "Der Chat in einem eigenen Fenster unter macOS, Windows und Linux, mit Systembenachrichtigungen.",
-      cta: "Zur Desktop-Seite",
-      soon: true,
-    },
-    {
-      slug: "mobile",
-      title: "Mobile App",
-      desc: "Deine Agenten für iOS und Android in der Tasche, mit Push-Benachrichtigungen und schnellen Freigaben.",
-      cta: "Zur Mobile-Seite",
-      soon: true,
-    },
-  ],
-};
 
 const cliDe: ClientPageContent = {
   metaTitle: "AgentCloud CLI: KI-Agenten im Terminal",
@@ -740,7 +516,7 @@ const cliDe: ClientPageContent = {
   statusLabel: "Jetzt verfügbar",
   statusNote:
     "Als agentcloud-cli auf npm veröffentlicht. Braucht Node 18 oder neuer und läuft unter Linux, macOS und Windows.",
-  hubLink: "Apps & Erweiterungen",
+  backLabel: "Apps & Erweiterungen",
   installTitle: "Installation",
   installNote:
     "Wähle npm oder das Skript: beide installieren denselben Befehl agentcloud. Das Skript erklärt auch, wie man Node installiert, falls es fehlt.",
@@ -788,7 +564,7 @@ const extensionDe: ClientPageContent = {
   statusLabel: "Demnächst",
   statusNote:
     "Noch nicht veröffentlicht: sie kommt in den Chrome Web Store. Hier steht, wie sie funktionieren wird – ohne manuell geladenes Paket.",
-  hubLink: "Apps & Erweiterungen",
+  backLabel: "Apps & Erweiterungen",
   installTitle: "So wird sie installiert",
   installNote:
     "Nur aus dem offiziellen Store, mit automatischen Updates: kein Paket, das im Entwicklermodus geladen werden muss.",
@@ -835,7 +611,7 @@ const desktopDe: ClientPageContent = {
   statusLabel: "Demnächst",
   statusNote:
     "In Entwicklung: solange der Build nicht signiert ist, veröffentlichen wir keinen Download. Hier steht, wie sie kommt.",
-  hubLink: "Apps & Erweiterungen",
+  backLabel: "Apps & Erweiterungen",
   installTitle: "So wird sie installiert",
   installNote:
     "Über die offiziellen Kanäle und mit automatischen Updates: kein Archiv, das man von Hand entpackt.",
@@ -872,54 +648,6 @@ const desktopDe: ClientPageContent = {
 
 // ─── Français ────────────────────────────────────────────────────────────────
 
-const hubFr: AppHubContent = {
-  metaTitle: "Applications et extensions",
-  metaDescription:
-    "AgentCloud dans le terminal, le navigateur, sur ordinateur et sur mobile : installez la CLI ou consultez la page dédiée à chaque client. Même session, mêmes agents.",
-  badge: "Apps et extensions",
-  titleA: "Choisissez d'où",
-  titleB: "vos agents travaillent",
-  subtitle:
-    "Quatre façons d'utiliser AgentCloud : terminal, navigateur, ordinateur et mobile. La CLI est déjà disponible ; les autres clients arriveront depuis les stores officiels. Chaque client a sa page.",
-  availableBadge: "Disponible maintenant",
-  soonBadge: "Bientôt",
-  quickTitle: "Installez la CLI en une commande",
-  quickNpm: "npm — tous les systèmes, Node 18+",
-  quickCurl: "script — macOS et Linux",
-  accountTitle: "Un compte, une session",
-  accountText:
-    "Connectez-vous une fois et vos agents sont là sur chaque client. La CLI utilise la même session que le site ; l'extension, l'ordinateur et le mobile suivront le même modèle.",
-  cards: [
-    {
-      slug: "cli",
-      title: "CLI en terminal",
-      desc: "Des agents dans vos scripts, cron et pipelines CI/CD : connexion par navigateur, réponses en streaming et sessions reprenables.",
-      cta: "Ouvrir la page CLI",
-      soon: false,
-    },
-    {
-      slug: "extension",
-      title: "Extension navigateur",
-      desc: "Un copilote dans le panneau latéral : il lit l'onglet actif et y travaille à votre demande.",
-      cta: "Ouvrir la page extension",
-      soon: true,
-    },
-    {
-      slug: "desktop",
-      title: "App de bureau",
-      desc: "Le chat dans une fenêtre dédiée sur macOS, Windows et Linux, avec notifications système.",
-      cta: "Ouvrir la page bureau",
-      soon: true,
-    },
-    {
-      slug: "mobile",
-      title: "App mobile",
-      desc: "Vos agents dans votre poche sur iOS et Android, avec notifications push et validations rapides.",
-      cta: "Ouvrir la page mobile",
-      soon: true,
-    },
-  ],
-};
 
 const cliFr: ClientPageContent = {
   metaTitle: "CLI AgentCloud: des agents IA dans votre terminal",
@@ -934,7 +662,7 @@ const cliFr: ClientPageContent = {
   statusLabel: "Disponible maintenant",
   statusNote:
     "Publiée sur npm sous le nom agentcloud-cli. Nécessite Node 18 ou plus et fonctionne sous Linux, macOS et Windows.",
-  hubLink: "Apps et extensions",
+  backLabel: "Apps et extensions",
   installTitle: "Installation",
   installNote:
     "Choisissez npm ou le script : les deux installent la même commande agentcloud. Le script explique aussi comment installer Node s'il manque.",
@@ -982,7 +710,7 @@ const extensionFr: ClientPageContent = {
   statusLabel: "Bientôt",
   statusNote:
     "Elle n'est pas encore publiée : elle arrive sur le Chrome Web Store. Voici comment elle fonctionnera, sans paquet à charger à la main.",
-  hubLink: "Apps et extensions",
+  backLabel: "Apps et extensions",
   installTitle: "Comment elle s'installera",
   installNote:
     "Uniquement depuis le store officiel et avec des mises à jour automatiques : aucun paquet à charger en mode développeur.",
@@ -1029,7 +757,7 @@ const desktopFr: ClientPageContent = {
   statusLabel: "Bientôt",
   statusNote:
     "En développement : tant que le build n'est pas signé, nous ne publions aucun téléchargement. Voici comment elle arrivera.",
-  hubLink: "Apps et extensions",
+  backLabel: "Apps et extensions",
   installTitle: "Comment elle s'installera",
   installNote:
     "Depuis les canaux officiels et avec des mises à jour automatiques : aucune archive à décompresser à la main.",
@@ -1064,13 +792,6 @@ const desktopFr: ClientPageContent = {
   ctaLabel: "Écrivez-nous",
 };
 
-const HUB: Record<Locale, AppHubContent> = {
-  it: hubIt,
-  en: hubEn,
-  es: hubEs,
-  de: hubDe,
-  fr: hubFr,
-};
 
 const CLIENTS: Record<
   Locale,
@@ -1083,9 +804,6 @@ const CLIENTS: Record<
   fr: { cli: cliFr, extension: extensionFr, desktop: desktopFr },
 };
 
-export function getAppHub(locale: Locale): AppHubContent {
-  return HUB[locale];
-}
 
 export function getClientPage(
   locale: Locale,
