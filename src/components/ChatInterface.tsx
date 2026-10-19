@@ -2522,9 +2522,14 @@ export default function ChatInterface({
               ${sidebarOpen ? "lg:w-64 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
             `}
         >
-        {/* Header: logo + nome piattaforma + chiudi */}
+        {/* Header: logo + nome piattaforma + chiudi. Logo e nome portano
+            alla landing: sono il riferimento del brand, non un'etichetta. */}
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
+            aria-label="AgentCloud"
+          >
             <Image
               src="/agentcloud.png"
               alt="AgentCloud"
@@ -2533,7 +2538,7 @@ export default function ChatInterface({
               className="h-7 w-7"
             />
             <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
-          </div>
+          </Link>
           <button
             onClick={() => {
               // Su mobile il bottone chiude il drawer; su desktop restringe la
@@ -2976,14 +2981,20 @@ export default function ChatInterface({
               drawer e il FAB sopra) */}
           {!sidebarOpen && (
             <div className="hidden lg:flex absolute left-3 top-3 z-10 items-center gap-2">
-              <Image
-                src="/agentcloud.png"
-                alt="AgentCloud"
-                width={28}
-                height={28}
-                className="h-7 w-7"
-              />
-              <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
+              <Link
+                href="/"
+                className="flex items-center gap-2 rounded-lg transition-opacity hover:opacity-80"
+                aria-label="AgentCloud"
+              >
+                <Image
+                  src="/agentcloud.png"
+                  alt="AgentCloud"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7"
+                />
+                <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
+              </Link>
               <button
                 onClick={() => setSidebar(true)}
                 aria-label={dict.chat.openSidebar}
