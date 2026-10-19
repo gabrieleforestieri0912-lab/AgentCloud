@@ -817,6 +817,15 @@ export default function DeployAgentClient({
                     <p className="mb-3 text-xs font-semibold text-neutral-500">
                       <span dangerouslySetInnerHTML={{ __html: dict.deploy.embedScriptDesc }} />
                     </p>
+                    {/* Shopify: lo snippet manuale non è il percorso conforme.
+                        Il codice dello storefront deve arrivare da un'app embed
+                        (theme app extension), altrimenti la review fallisce. */}
+                    <p className="mb-3 rounded-lg border border-green-500/20 bg-green-500/10 p-3 text-[11px] leading-relaxed text-green-200">
+                      <strong className="font-bold text-green-100">
+                        {dict.deploy.shopifyNote}
+                      </strong>{" "}
+                      {dict.deploy.shopifyNoteDesc}
+                    </p>
                     <div className="relative">
                       {/* break-all evita che il lungo tag script imposti la
                           larghezza min-content della pagina (causava scroll

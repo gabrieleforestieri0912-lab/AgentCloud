@@ -1166,6 +1166,9 @@ chat: {
     embedScript: "Script di embed",
     embedScriptDesc:
       "Incolla questo snippet prima di <code>&lt;/body&gt;</code> sul tuo sito.",
+    shopifyNote: "Hai un negozio Shopify?",
+    shopifyNoteDesc:
+      "Non incollare questo script nel tema: Shopify richiede che il codice arrivi da un'app embed. Vai su Negozio online → Temi → Personalizza → Embed dell'app, attiva AgentCloud e salva. Il widget compare senza toccare il codice del tema.",
     copy: "Copia",
     copied: "Copiato!",
     toolsBase: "Strumenti base del verticale",
@@ -3574,6 +3577,9 @@ chat: {
     embedScript: "Embed script",
     embedScriptDesc:
       "Paste this snippet just before <code>&lt;/body&gt;</code> on your website.",
+    shopifyNote: "Running a Shopify store?",
+    shopifyNoteDesc:
+      "Don't paste this script into your theme: Shopify requires storefront code to come from an app embed. Go to Online Store → Themes → Customize → App embeds, enable AgentCloud and save. The widget appears without touching theme code.",
     copy: "Copy",
     copied: "Copied!",
     toolsBase: "Vertical tool base",
@@ -5977,6 +5983,9 @@ agentsPage: {
     embedScript: "Script de inserción",
     embedScriptDesc:
       "Pega este fragmento justo antes de <code>&lt;/body&gt;</code> en tu web.",
+    shopifyNote: "¿Tienes una tienda Shopify?",
+    shopifyNoteDesc:
+      "No pegues este script en el tema: Shopify exige que el código llegue desde una app embed. Ve a Tienda online → Temas → Personalizar → App embeds, activa AgentCloud y guarda. El widget aparece sin tocar el código del tema.",
     copy: "Copiar",
     copied: "¡Copiado!",
     toolsBase: "Herramientas base del vertical",
@@ -8379,6 +8388,9 @@ chat: {
     embedScript: "Embed-Skript",
     embedScriptDesc:
       "Füge diesen Snippet direkt vor <code>&lt;/body&gt;</code> auf deiner Website ein.",
+    shopifyNote: "Hast du einen Shopify-Shop?",
+    shopifyNoteDesc:
+      "Füge dieses Skript nicht ins Theme ein: Shopify verlangt den Code aus einem App-Embed. Gehe zu Onlineshop → Themes → Anpassen → App-Embeds, aktiviere AgentCloud und speichere. Das Widget erscheint, ohne Theme-Code zu ändern.",
     copy: "Kopieren",
     copied: "Kopiert!",
     toolsBase: "Vertikales Tool-Basis",
@@ -10781,6 +10793,9 @@ browseMarketplace: "Parcourir la marketplace",
     embedScript: "Script d'intégration",
     embedScriptDesc:
       "Collez cet extrait juste avant <code>&lt;/body&gt;</code> sur votre site.",
+    shopifyNote: "Vous avez une boutique Shopify ?",
+    shopifyNoteDesc:
+      "Ne collez pas ce script dans le thème : Shopify exige que le code provienne d'une app embed. Allez dans Boutique en ligne → Thèmes → Personnaliser → App embeds, activez AgentCloud et enregistrez. Le widget apparaît sans toucher au code du thème.",
     copy: "Copier",
     copied: "Copié !",
     toolsBase: "Base d'outils du vertical",
