@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import BrandLogo from "@/components/BrandLogo";
+import SearchWithSuggestions from "@/components/SearchWithSuggestions";
 import SkillIcon from "./SkillIcon";
 import { Download, Sparkles, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
 import type { ResolvedPlugin } from "@/lib/skills/data";
@@ -101,6 +102,20 @@ export default function PluginsCatalog({
     });
   }, [plugins, category, agent, integration, onlyLive, query, liveSlugsSet]);
 
+  // Voci dell'autocompletamento: ogni pacchetto con la categoria come
+  // contesto, e tagline/descrizioni/skill cercabili nel testo lungo.
+  const suggestions = useMemo(
+    () =>
+      plugins.map((p) => ({
+        id: p.slug,
+        label: p.name,
+        hint: p.category,
+        keywords: `${p.tagline} ${p.description} ${p.skills.map((s) => s.name).join(" ")}`,
+        href: `/plugins/${p.slug}`,
+      })),
+    [plugins],
+  );
+
   const hasFilters = Boolean(category || agent || integration || onlyLive || query);
 
   const clearAll = () => {
@@ -120,13 +135,15 @@ export default function PluginsCatalog({
           <label htmlFor="skills-search" className="sr-only">
             {dict.searchLabel}
           </label>
-          <input
+          <SearchWithSuggestions
             id="skills-search"
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
+            suggestions={suggestions}
             placeholder={dict.searchPlaceholder}
-            className="w-full flex-1 rounded-lg border border-white/10 bg-neutral-900 px-3 py-2 text-[13px] font-semibold text-white placeholder-neutral-500 outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+            wrapperClassName="flex-1"
+            inputClassName="w-full rounded-lg border border-white/10 bg-neutral-900 px-3 py-2 text-[13px] font-semibold text-white placeholder-neutral-500 outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
           />
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:flex">

@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import AgentCard from "./AgentCard";
+import SearchWithSuggestions from "./SearchWithSuggestions";
 import type { Agent } from "@/lib/agents";
 import { t } from "@/lib/i18n/dictionaries";
 
@@ -82,6 +83,20 @@ export default function MarketplaceGrid({
     );
   }, [comingSoonAgents, query]);
 
+  // Voci dell'autocompletamento: SOLO gli agenti disponibili, perché le card
+  // "in arrivo" non sono cliccabili e una voce che ci porterebbe su mentirebbe.
+  const suggestions = useMemo(
+    () =>
+      availableAgents.map((a) => ({
+        id: a.slug,
+        label: a.name,
+        hint: a.category,
+        keywords: `${a.description} ${a.category} ${a.tasks.join(" ")}`,
+        href: `/agents/${a.slug}`,
+      })),
+    [availableAgents],
+  );
+
   return (
     <div className="space-y-12">
       {/* Sezione agenti disponibili */}
@@ -96,12 +111,13 @@ export default function MarketplaceGrid({
         {/* Barra di ricerca */}
         <div className="relative mb-4">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
-          <input
-            type="text"
+          <SearchWithSuggestions
+            id="agents-search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
+            suggestions={suggestions}
             placeholder={dict.marketplaceGrid.searchPlaceholder}
-            className="w-full rounded-xl border border-white/10 bg-neutral-900 py-3 pl-11 pr-10 text-sm font-semibold text-white placeholder-neutral-500 outline-none transition-colors focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+            inputClassName="w-full rounded-xl border border-white/10 bg-neutral-900 py-3 pl-11 pr-10 text-sm font-semibold text-white placeholder-neutral-500 outline-none transition-colors focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
           />
           {query && (
             <button
