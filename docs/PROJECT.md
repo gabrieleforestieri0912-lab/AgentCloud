@@ -343,13 +343,16 @@ installabile da qualsiasi merchant. Passi manuali nel **Shopify Partner Dashboar
    *"redirect_uri must match an allowed redirection URL"* → l'utente vede
    "non si può collegare".
 3. Imposta la **distribuzione su "Public"** e invia l'app per la **review Shopify**.
-4. **Scopes**: in Partner Dashboard devono essere dichiarati **tutti** gli scope di
-   `SHOPIFY_SCOPES` (12, comma-separated):
-   `read_products,write_products,read_orders,write_orders,read_inventory,write_inventory,read_customers,write_customers,read_content,write_content,read_themes,write_themes`.
-   Se manca anche solo uno → `invalid_scope` e il flusso non parte. Se non ti
-   servono tutti, **riduci `SHOPIFY_SCOPES`** (i tool usano soprattutto products,
-   orders, inventory, customers) e allinea il Dashboard: chiedere meno scope
-   riduce anche l'impegno di review (i `*_customers` sono *protected customer data*).
+4. **Scopes**: sono dichiarati in `shopify.app.toml` e la CLI li sincronizza
+   al deploy (10, comma-separated):
+   `read_products,write_products,read_orders,write_orders,read_inventory,write_inventory,read_customers,write_customers,read_content,write_content`.
+   L'env `SHOPIFY_SCOPES` (usata per l'URL di consenso OAuth) deve contenere
+   **esattamente la stessa lista**, altrimenti il flusso non parte e appare
+   `invalid_scope`. Gli scope tema (`read_themes`/`write_themes`) sono stati
+   rimossi: la theme app extension `extensions/agentcloud-theme` non ne ha
+   bisogno e l'app non scrive mai nei file del tema. Chiedere meno scope
+   riduce anche l'impegno di review (i `*_customers` sono *protected customer
+   data*).
 5. **Webhook**: l'endpoint `SHOPIFY_WEBHOOK_ADDRESS`
    (`https://www.agentcloud.agency/api/shopify/webhooks`) è **auto-registrato** a
    ogni install (`app/uninstalled` via GraphQL). I 3 topic GDPR
