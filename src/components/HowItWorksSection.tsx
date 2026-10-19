@@ -13,6 +13,8 @@ import { motion } from "framer-motion";
 import { Bot, PlugZap, MessageSquare, LayoutDashboard, ArrowRight, Check } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
+import { AGENTS, formatAgentPriceRange } from "@/lib/agents";
 
 // Icone allineate per indice con `dict.howItWorks.steps`.
 const STEP_ICONS = [Bot, PlugZap, MessageSquare, LayoutDashboard];
@@ -21,8 +23,10 @@ const STEP_ICONS = [Bot, PlugZap, MessageSquare, LayoutDashboard];
 const STEP_NUMBERS = ["01", "02", "03", "04"];
 
 export default function HowItWorksSection() {
-  const { dict } = useLanguage();
+  const { dict, locale } = useLanguage();
   const hw = dict.howItWorks;
+  // Il primo passo cita quante categorie ha il catalogo: si conta qui.
+  const categories = new Set(AGENTS.map((a) => a.category)).size;
 
   return (
     <section id="come-funziona" className="py-16 sm:py-20">
@@ -50,6 +54,16 @@ export default function HowItWorksSection() {
         <div className="mx-auto mt-10 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {hw.steps.map((s, idx) => {
             const Icon = STEP_ICONS[idx] ?? Bot;
+            // Il primo passo cita numero di agenti, categorie e fascia di
+            // prezzo: arrivano dal catalogo, così non invecchiano nel testo.
+            const desc =
+              idx === 0
+                ? t(s.desc, {
+                    count: AGENTS.length,
+                    cats: categories,
+                    price: formatAgentPriceRange(locale),
+                  })
+                : s.desc;
             return (
               <motion.div
                 key={s.title}
@@ -66,7 +80,7 @@ export default function HowItWorksSection() {
                   </span>
                 </div>
                 <p className="mt-3 text-sm font-bold text-white">{s.title}</p>
-                <p className="mt-1.5 text-xs font-semibold leading-5 text-neutral-400">{s.desc}</p>
+                <p className="mt-1.5 text-xs font-semibold leading-5 text-neutral-400">{desc}</p>
               </motion.div>
             );
           })}

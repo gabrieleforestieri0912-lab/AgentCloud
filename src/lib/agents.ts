@@ -818,6 +818,41 @@ export const AGENTS: Agent[] = SEEDS.map((seed) => ({
   stripePriceId: resolveStripePriceId(seed.slug, seed.stripePriceId),
 }));
 
+/**
+ * Fasce di prezzo REALI del catalogo, derivate dagli agenti.
+ *
+ * Perché esiste: "15 agenti" e la fascia "€4,99–€9,99" erano scritti a mano
+ * nel dizionario ed erano già superati al primo agente nuovo aggiunto (in
+ * catalogo ce ne sono molti di più e i prezzi vanno oltre quel tetto). Ora
+ * ogni cifra mostrata nel sito (statistiche della landing, "come funziona",
+ * funzionalità) parte da qui e invecchia insieme al catalogo.
+ */
+export function agentPriceCents(agent: Agent): number {
+  const match = agent.price.replace(/\s/g, "").match(/(\d+[.,]\d{2})/);
+  return match ? Math.round(parseFloat(match[1].replace(",", ".")) * 100) : 0;
+}
+
+export const AGENTS_MIN_PRICE_CENTS = Math.min(...AGENTS.map(agentPriceCents));
+export const AGENTS_MAX_PRICE_CENTS = Math.max(...AGENTS.map(agentPriceCents));
+
+/** Prezzo minimo del catalogo come stringa, es. "€4,99" ("€4.99" in inglese). */
+export function formatAgentMinPrice(locale: import("./i18n/constants").Locale): string {
+  return formatAgentPriceCents(AGENTS_MIN_PRICE_CENTS, locale);
+}
+
+/** Fasce del catalogo come stringa, es. "€4,99–€14,99". */
+export function formatAgentPriceRange(locale: import("./i18n/constants").Locale): string {
+  return `${formatAgentMinPrice(locale)}–${formatAgentPriceCents(AGENTS_MAX_PRICE_CENTS, locale)}`;
+}
+
+function formatAgentPriceCents(
+  cents: number,
+  locale: import("./i18n/constants").Locale,
+): string {
+  const decimal = locale === "en" ? "." : ",";
+  return `€${(cents / 100).toFixed(2).replace(".", decimal)}`;
+}
+
 export function getAgentBySlug(slug: string) {
   return AGENTS.find((agent) => agent.slug === slug);
 }

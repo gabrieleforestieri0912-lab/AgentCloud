@@ -19,6 +19,8 @@ import {
   Check,
 } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
+import { t } from "@/lib/i18n/dictionaries";
+import { AGENTS } from "@/lib/agents";
 
 // Icone e link allineati per indice con `dict.features.items`.
 const FEATURE_ICONS = [Bot, PlugZap, MessagesSquare, LayoutDashboard];
@@ -28,6 +30,8 @@ export default function FeaturesSection() {
   const { dict } = useLanguage();
   const ft = dict.features;
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  // Il primo pilastro cita quante categorie ha il catalogo: si conta qui.
+  const categories = new Set(AGENTS.map((a) => a.category)).size;
 
   return (
     <section id="funzionalita" className="py-16 sm:py-20">
@@ -61,6 +65,10 @@ export default function FeaturesSection() {
             const Icon = FEATURE_ICONS[idx] ?? Bot;
             const href = FEATURE_HREFS[idx] ?? "/agents";
             const open = openIdx === idx;
+            // Il primo pilastro cita il numero di agenti del catalogo:
+            // arriva dal catalogo, non dal dizionario, così non invecchia.
+            const desc =
+              idx === 0 ? t(f.desc, { count: AGENTS.length, cats: categories }) : f.desc;
             return (
               <motion.div
                 key={f.title}
@@ -75,7 +83,7 @@ export default function FeaturesSection() {
                 </div>
                 <p className="mt-3 text-base font-bold text-white">{f.title}</p>
                 <p className="mt-1.5 text-sm font-medium leading-6 text-neutral-400">
-                  {f.desc}
+                  {desc}
                 </p>
 
                 <AnimatePresence initial={false}>

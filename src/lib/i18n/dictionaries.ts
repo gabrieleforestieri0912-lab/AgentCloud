@@ -250,7 +250,7 @@ howItWorks: {
     steps: [
       {
         title: "Scegli l’agente",
-        desc: "15 agenti in 6 categorie: E-commerce, Marketing, Customer Service, Business Ops, Design e Finanza. Prezzi chiari (€4,99–€9,99 al mese) e attivazione in giornata.",
+        desc: "{count} agenti in {cats} categorie. Prezzi chiari ({price} al mese) e attivazione in giornata.",
       },
       {
         title: "Collega i tuoi strumenti",
@@ -287,7 +287,7 @@ howItWorks: {
     items: [
       {
         title: "Agenti AI pronti all'uso",
-        desc: "15 agenti in 6 categorie: E-commerce, Marketing, Customer Service, Business Ops, Design e Finanza. Attivazione in giornata, prezzi chiari.",
+        desc: "{count} agenti in {cats} categorie. Attivazione in giornata, prezzi chiari.",
         details: [
           "Catalogo con prezzi e casi d'uso per ogni agente",
           "Prova gratuita con 5 messaggi al giorno in totale",
@@ -555,13 +555,10 @@ previewMeta: "{count} agenti • {cats} categorie • da {price}/mese",
     viewAllLink: "Vedi tutti →",
     viewDetailsLink: "Vedi dettagli",
     previewStats: "{count} agenti • {cats} categorie • da {price}/mese",
-    priceTier0: "0,99€ – 4,99€",
-    priceTier0Short: "0,99€ – 4,99€",
-    priceNote: "Nuova fascia agenti a partire da 0,99€/mese",
     couponPublic: {
       enabled: "Sconto 50% in vigore (max 20 usi)",
       disabled: "Coupon scadiens (max 20 usi)",
-      banner: "Sconto 50% su agenti 0,99€–4,99€ con AGENTCLOUD50",
+      banner: "Sconto 50% su agenti 4,99€–9,99€ con AGENTCLOUD50",
       inBanner: "Sconto 50% in vigore (max 20 usi)",
       expired: "Coupon scadiens: AGENTCLOUD50",
       applied: "Coupon applicato: AGENTCLOUD50",
@@ -2271,14 +2268,10 @@ reasons: [
     customDesc: "Contattaci e lo progettiamo su misura per il tuo business. Colleghiamo i tuoi strumenti e consegniamo l'automazione pronta all'uso.",
     contactUs: "Contattaci",
     askOurAI: "Chiedi alla nostra AI",
-    // Nuova fascia prezzo 0,99€–4,99€ e coupon 50%-off (max 20 usi).
-    priceTier0: "0,99€ – 4,99€",
-    priceTier0Short: "0,99€ – 4,99€",
-    priceNote: "Nuova fascia agenti a partire da 0,99€/mese",
     couponPublic: {
       enabled: "Sconto 50% in vigore (max 20 usi)",
       disabled: "Coupon scadiens (max 20 usi)",
-      banner: "Sconto 50% su agenti 0,99€–4,99€ con AGENTCLOUD50",
+      banner: "Sconto 50% su agenti 4,99€–9,99€ con AGENTCLOUD50",
       inBanner: "Sconto 50% in vigore (max 20 usi)",
       expired: "Coupon scadiens: AGENTCLOUD50",
       applied: "Coupon applicato: AGENTCLOUD50",
@@ -2687,7 +2680,7 @@ howItWorks: {
     steps: [
       {
         title: "Pick an agent",
-        desc: "15 agents across 6 categories: E-commerce, Marketing, Customer Service, Business Ops, Design and Finance. Clear pricing (€4.99–€9.99 per month) and same-day activation.",
+        desc: "{count} agents across {cats} categories. Clear pricing ({price} per month) and same-day activation.",
       },
       {
         title: "Connect your tools",
@@ -2724,7 +2717,7 @@ howItWorks: {
     items: [
       {
         title: "Ready-to-use AI agents",
-        desc: "15 agents across 6 categories: E-commerce, Marketing, Customer Service, Business Ops, Design and Finance. Same-day activation, clear pricing.",
+        desc: "{count} agents across {cats} categories. Same-day activation, clear pricing.",
         details: [
           "Catalog with pricing and use cases for every agent",
           "Free trial with 5 messages per day in total",
@@ -2992,13 +2985,10 @@ cta: "Explore AgentCloud Integrations",
 viewAllLink: "View all →",
     viewDetailsLink: "View details",
     previewStats: "{count} agents • {cats} categories • from {price}/mo",
-    priceTier0: "€0.99 – €4.99",
-    priceTier0Short: "€0.99 – €4.99",
-    priceNote: "New agent tier starting at €0.99/month",
     couponPublic: {
       enabled: "50% discount active (max 20 uses)",
       disabled: "Coupon expired (max 20 uses)",
-      banner: "50% off agents €0.99–€4.99 with AGENTCLOUD50",
+      banner: "50% off agents €4.99–€9.99 with AGENTCLOUD50",
       inBanner: "50% discount active (max 20 uses)",
       expired: "Coupon expired: AGENTCLOUD50",
       applied: "Coupon applied: AGENTCLOUD50",
@@ -4685,13 +4675,10 @@ chat: {
     customDesc: "Contact us and we'll design it custom for your business. We connect your tools and deliver the automation ready to use.",
     contactUs: "Contact us",
     askOurAI: "Ask our AI",
-    priceTier0: "€0.99 – €4.99",
-    priceTier0Short: "€0.99 – €4.99",
-    priceNote: "New agent tier starting at €0.99/month",
     couponPublic: {
       enabled: "50% discount active (max 20 uses)",
       disabled: "Coupon expired (max 20 uses)",
-      banner: "50% off agents €0.99–€4.99 with AGENTCLOUD50",
+      banner: "50% off agents €4.99–€9.99 with AGENTCLOUD50",
       inBanner: "50% discount active (max 20 uses)",
       expired: "Coupon expired: AGENTCLOUD50",
       applied: "Coupon applied: AGENTCLOUD50",
@@ -5098,7 +5085,7 @@ howItWorks: {
     steps: [
       {
         title: "Elige el agente",
-        desc: "15 agentes en 6 categorías: E-commerce, Marketing, Customer Service, Business Ops, Design y Finanzas. Precios claros (4,99 €–9,99 € al mes) y activación el mismo día.",
+        desc: "{count} agentes en {cats} categorías. Precios claros ({price} al mes) y activación el mismo día.",
       },
       {
         title: "Conecta tus herramientas",
@@ -5135,7 +5122,7 @@ howItWorks: {
     items: [
       {
         title: "Agentes IA listos para usar",
-        desc: "15 agentes en 6 categorías: E-commerce, Marketing, Atención al cliente, Operaciones, Diseño y Finanzas. Activación el mismo día, precios claros.",
+        desc: "{count} agentes en {cats} categorías. Activación el mismo día, precios claros.",
         details: [
           "Catálogo con precios y casos de uso por agente",
           "Prueba gratuita con 5 mensajes al día en total",
@@ -5403,13 +5390,10 @@ howItWorks: {
 viewAllLink: "Ver todos →",
     viewDetailsLink: "Ver detalles",
     previewStats: "{count} agentes • {cats} categorías • desde {price}/mes",
-    priceTier0: "0,99 € – 4,99 €",
-    priceTier0Short: "0,99 € – 4,99 €",
-    priceNote: "Nueva gama de agentes desde 0,99 €/mes",
     couponPublic: {
       enabled: "Descuento del 50 % activo (máx. 20 usos)",
       disabled: "Cupón caducado (máx. 20 usos)",
-      banner: "50 % de descuento en agentes de 0,99 €–4,99 € con AGENTCLOUD50",
+      banner: "50 % de descuento en agentes de 4,99 €–9,99 € con AGENTCLOUD50",
       inBanner: "Descuento del 50 % activo (máx. 20 usos)",
       expired: "Cupón caducado: AGENTCLOUD50",
       applied: "Cupón aplicado: AGENTCLOUD50",
@@ -7093,13 +7077,10 @@ agentsPage: {
     customDesc: "Contáctanos y lo diseñamos a medida para tu negocio. Conectamos tus herramientas y entregamos la automatización lista para usar.",
     contactUs: "Contáctanos",
 askOurAI: "Pregunta a nuestra IA",
-    priceTier0: "0,99 € - 4,99 €",
-    priceTier0Short: "0,99 € - 4,99 €",
-    priceNote: "Nueva gama de agentes desde 0,99 €/mes",
     couponPublic: {
       enabled: "Descuento del 50 % activo (máx. 20 usos)",
       disabled: "Cupón caducado (máx. 20 usos)",
-      banner: "50 % de descuento en agentes de 0,99 €-4,99 € con AGENTCLOUD50",
+      banner: "50 % de descuento en agentes de 4,99 €-9,99 € con AGENTCLOUD50",
       inBanner: "Descuento del 50 % activo (máx. 20 usos)",
       expired: "Cupón caducado: AGENTCLOUD50",
       applied: "Cupón aplicado: AGENTCLOUD50",
@@ -7506,7 +7487,7 @@ howItWorks: {
     steps: [
       {
         title: "Agent auswählen",
-        desc: "15 Agenten in 6 Kategorien: E-Commerce, Marketing, Customer Service, Business Ops, Design und Finanzen. Klare Preise (4,99 €–9,99 € pro Monat) und Aktivierung am selben Tag.",
+        desc: "{count} Agenten in {cats} Kategorien. Klare Preise ({price} pro Monat) und Aktivierung am selben Tag.",
       },
       {
         title: "Tools verbinden",
@@ -7543,7 +7524,7 @@ howItWorks: {
     items: [
       {
         title: "Sofort einsetzbare KI-Agenten",
-        desc: "15 Agenten in 6 Kategorien: E-Commerce, Marketing, Kundenservice, Business Ops, Design und Finanzen. Aktivierung am selben Tag, klare Preise.",
+        desc: "{count} Agenten in {cats} Kategorien. Aktivierung am selben Tag, klare Preise.",
         details: [
           "Katalog mit Preisen und Use Cases pro Agent",
           "Kostenlos testen mit 5 Nachrichten pro Tag insgesamt",
@@ -7811,13 +7792,10 @@ browseAll: "Alle Agenten ansehen",
 viewAllLink: "Alle ansehen →",
     viewDetailsLink: "Details ansehen",
     previewStats: "{count} Agenten • {cats} Kategorien • ab {price}/Monat",
-    priceTier0: "0,99€ – 4,99€",
-    priceTier0Short: "0,99€ – 4,99€",
-    priceNote: "Neue Agenten-Fascia ab 0,99€/Monat",
     couponPublic: {
       enabled: "50% Rabatt aktiv (max. 20 Einlösungen)",
       disabled: "Gutschein abgelaufen (max. 20 Einlösungen)",
-      banner: "50% Rabatt auf Agenten 0,99€–4,99€ mit AGENTCLOUD50",
+      banner: "50% Rabatt auf Agenten 4,99€–9,99€ mit AGENTCLOUD50",
       inBanner: "50% Rabatt aktiv (max. 20 Einlösungen)",
       expired: "Gutschein abgelaufen: AGENTCLOUD50",
       applied: "Gutschein angewendet: AGENTCLOUD50",
@@ -9501,13 +9479,10 @@ chat: {
     customDesc: "Kontaktiere uns und wir gestalten ihn individuell für dein Unternehmen. Wir verbinden deine Tools und liefern die Automatisierung einsatzbereit.",
     contactUs: "Kontaktiere uns",
     askOurAI: "Frag unsere KI",
-    priceTier0: "0,99€ – 4,99€",
-    priceTier0Short: "0,99€ – 4,99€",
-    priceNote: "Neue Agenten-Fascia ab 0,99€/Monat",
     couponPublic: {
       enabled: "50% Rabatt aktiv (max. 20 Einlösungen)",
       disabled: "Gutschein abgelaufen (max. 20 Einlösungen)",
-      banner: "50% Rabatt auf Agenten 0,99€–4,99€ mit AGENTCLOUD50",
+      banner: "50% Rabatt auf Agenten 4,99€–9,99€ mit AGENTCLOUD50",
       inBanner: "50% Rabatt aktiv (max. 20 Einlösungen)",
       expired: "Gutschein abgelaufen: AGENTCLOUD50",
       applied: "Gutschein angewendet: AGENTCLOUD50",
@@ -9914,7 +9889,7 @@ howItWorks: {
     steps: [
       {
         title: "Choisissez l’agent",
-        desc: "15 agents dans 6 catégories : E-commerce, Marketing, Customer Service, Business Ops, Design et Finance. Tarifs clairs (4,99 €–9,99 € par mois) et activation le jour même.",
+        desc: "{count} agents dans {cats} catégories. Tarifs clairs ({price} par mois) et activation le jour même.",
       },
       {
         title: "Connectez vos outils",
@@ -9951,7 +9926,7 @@ howItWorks: {
     items: [
       {
         title: "Agents IA prêts à l'emploi",
-        desc: "15 agents en 6 catégories : E-commerce, Marketing, Service client, Opérations, Design et Finance. Activation le jour même, tarifs clairs.",
+        desc: "{count} agents en {cats} catégories. Activation le jour même, tarifs clairs.",
         details: [
           "Catalogue avec tarifs et cas d'usage par agent",
           "Essai gratuit avec 5 messages par jour au total",
@@ -10219,13 +10194,10 @@ howItWorks: {
 viewAllLink: "Tout voir →",
     viewDetailsLink: "Voir les détails",
     previewStats: "{count} agents • {cats} catégories • dès {price}/mois",
-    priceTier0: "0,99 € - 4,99 €",
-    priceTier0Short: "0,99 € - 4,99 €",
-    priceNote: "Nouvelle gamme d’agents dès 0,99 €/mois",
     couponPublic: {
       enabled: "Remise de 50 % active (20 utilisations max.)",
       disabled: "Code promo expiré (20 utilisations max.)",
-      banner: "50 % de remise sur les agents de 0,99 €-4,99 € avec AGENTCLOUD50",
+      banner: "50 % de remise sur les agents de 4,99 €-9,99 € avec AGENTCLOUD50",
       inBanner: "Remise de 50 % active (20 utilisations max.)",
       expired: "Code promo expiré : AGENTCLOUD50",
       applied: "Code promo appliqué : AGENTCLOUD50",
@@ -11909,13 +11881,10 @@ browseMarketplace: "Parcourir la marketplace",
     customDesc: "Contactez-nous et nous le concevons sur mesure pour votre entreprise. Nous connectons vos outils et livrons l'automatisation prête à l'emploi.",
     contactUs: "Contactez-nous",
 askOurAI: "Demandez à notre IA",
-    priceTier0: "0,99 € - 4,99 €",
-    priceTier0Short: "0,99 € - 4,99 €",
-    priceNote: "Nouvelle gamme d’agents dès 0,99 €/mois",
     couponPublic: {
       enabled: "Remise de 50 % active (20 utilisations max.)",
       disabled: "Code promo expiré (20 utilisations max.)",
-      banner: "50 % de remise sur les agents de 0,99 €-4,99 € avec AGENTCLOUD50",
+      banner: "50 % de remise sur les agents de 4,99 €-9,99 € avec AGENTCLOUD50",
       inBanner: "Remise de 50 % active (20 utilisations max.)",
       expired: "Code promo expiré : AGENTCLOUD50",
       applied: "Code promo appliqué : AGENTCLOUD50",

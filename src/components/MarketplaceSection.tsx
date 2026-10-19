@@ -9,7 +9,7 @@ import { Puzzle, ShoppingCart, Zap, Clock3, Tag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
-import { AGENTS, localizeAgent } from "@/lib/agents";
+import { AGENTS, formatAgentMinPrice, localizeAgent } from "@/lib/agents";
 import AgentIcon from "./AgentIcon";
 
 export default function MarketplaceSection() {
@@ -102,7 +102,7 @@ export default function MarketplaceSection() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                {t(mp.previewStats, { count: AGENTS.length, cats: categories, price: mp.priceTier0Short })}
+                {t(mp.previewStats, { count: AGENTS.length, cats: categories, price: formatAgentMinPrice(locale) })}
               </p>
               <h3 className="mt-1 text-2xl font-bold tracking-tight text-white">{mp.previewTitle}</h3>
               <p className="mt-1 max-w-xl text-sm font-semibold leading-5 text-neutral-400">{mp.previewSubtitle}</p>
