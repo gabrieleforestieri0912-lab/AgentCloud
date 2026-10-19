@@ -1,0 +1,170 @@
+{%- comment -%}
+  AgentCloud — app embed block (target: body).
+
+  Fa due sole cose:
+  1. espone la configurazione scelta dal merchant (window.AgentCloudEmbed);
+  2. carica assets/agentcloud.js, il loader che richiama il bundle del widget
+     su /api/embed/<slug> — codice sorgente pubblico e leggibile del nostro
+     stesso'app, non un blob offuscato (regole Shopify sulle theme app
+     extension).
+
+  Nessuno script scritto nel tema, nessuna ScriptTag API: il merchant
+  attiva/disattiva e configura tutto da Personalizza tema > Embed dell'app.
+  Il blocco non renderizza nulla se il widget è disattivato.
+{%- endcomment -%}
+
+{%- if block.settings.enabled -%}
+  {%- liquid
+    assign base_url = block.settings.app_url | default: 'https://www.agentcloud.agency'
+    assign base_url = base_url | remove_last: '/'
+
+    assign agent_handle = block.settings.agent_slug | default: 'support-agent' | strip | downcase
+
+    assign widget_lang = block.settings.lang
+    if widget_lang == 'auto'
+      assign locale_code = request.locale.iso_code | default: 'en' | split: '-' | first | downcase
+      if locale_code == 'it'
+        assign widget_lang = 'it'
+      else
+        assign widget_lang = 'en'
+      endif
+    endif
+
+    assign query = 'lang=' | append: widget_lang
+    assign query = query | append: '&mode=' | append: block.settings.mode
+    assign query = query | append: '&position=' | append: block.settings.position
+
+    assign widget_color = block.settings.primary_color | default: '#038bfe' | url_encode
+    assign query = query | append: '&primaryColor=' | append: widget_color
+
+    if block.settings.title != blank
+      assign q_title = block.settings.title | url_encode
+      assign query = query | append: '&title=' | append: q_title
+    endif
+
+    if block.settings.initial_message != blank
+      assign q_message = block.settings.initial_message | url_encode
+      assign query = query | append: '&initialMessage=' | append: q_message
+    endif
+
+    if block.settings.api_key != blank
+      assign q_key = block.settings.api_key | strip | url_encode
+      assign query = query | append: '&apiKey=' | append: q_key
+    endif
+
+    capture embed_src
+      echo base_url
+      echo '/api/embed/'
+      echo agent_handle
+      echo '?'
+      echo query
+    endcapture
+  -%}
+
+  <script>
+    window.AgentCloudEmbed = { src: {{ embed_src | json }} };
+  </script>
+  <script src="{{ 'agentcloud.js' | asset_url }}" defer></script>
+
+  {%- comment -%} Fallback per chi ha JavaScript disabilitato: l'unico testo
+    customer-facing renderizzato dal blocco, tradotto dalle storefront locale
+    file (en.default.json / it.json). {%- endcomment -%}
+  <noscript>
+    <div style="position:fixed;bottom:20px;{% if block.settings.position == 'bottom-left' %}left:20px;{% else %}right:20px;{% endif %}z-index:999999;max-width:min(320px,calc(100vw - 40px));padding:12px 16px;border-radius:12px;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,0.25);">
+      {{ 'blocks.agentcloud-embed.noscript' | t }}
+    </div>
+  </noscript>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.agentcloud-embed.name",
+  "target": "body",
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:blocks.agentcloud-embed.settings.general.content"
+    },
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "t:blocks.agentcloud-embed.settings.enabled.label",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "agent_slug",
+      "label": "t:blocks.agentcloud-embed.settings.agent_slug.label",
+      "info": "t:blocks.agentcloud-embed.settings.agent_slug.info",
+      "default": "support-agent"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "t:blocks.agentcloud-embed.settings.primary_color.label",
+      "default": "#038bfe"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "t:blocks.agentcloud-embed.settings.position.label",
+      "default": "bottom-right",
+      "options": [
+        { "value": "bottom-right", "label": "Bottom right" },
+        { "value": "bottom-left", "label": "Bottom left" }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "mode",
+      "label": "t:blocks.agentcloud-embed.settings.mode.label",
+      "default": "embed",
+      "options": [
+        { "value": "embed", "label": "Embedded panel" },
+        { "value": "popup", "label": "New window" }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "lang",
+      "label": "t:blocks.agentcloud-embed.settings.lang.label",
+      "info": "t:blocks.agentcloud-embed.settings.lang.info",
+      "default": "auto",
+      "options": [
+        { "value": "auto", "label": "Automatic (store language)" },
+        { "value": "it", "label": "Italiano" },
+        { "value": "en", "label": "English" }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.agentcloud-embed.settings.title.label",
+      "info": "t:blocks.agentcloud-embed.settings.title.info"
+    },
+    {
+      "type": "text",
+      "id": "initial_message",
+      "label": "t:blocks.agentcloud-embed.settings.initial_message.label",
+      "info": "t:blocks.agentcloud-embed.settings.initial_message.info"
+    },
+    {
+      "type": "header",
+      "content": "t:blocks.agentcloud-embed.settings.advanced.content"
+    },
+    {
+      "type": "text",
+      "id": "api_key",
+      "label": "t:blocks.agentcloud-embed.settings.api_key.label",
+      "info": "t:blocks.agentcloud-embed.settings.api_key.info"
+    },
+    {
+      "type": "url",
+      "id": "app_url",
+      "label": "t:blocks.agentcloud-embed.settings.app_url.label",
+      "info": "t:blocks.agentcloud-embed.settings.app_url.info",
+      "default": "https://www.agentcloud.agency"
+    }
+  ]
+}
+{% endschema %}

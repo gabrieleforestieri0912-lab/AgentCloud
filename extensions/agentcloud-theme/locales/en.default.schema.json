@@ -1,0 +1,51 @@
+{
+  "blocks": {
+    "agentcloud-embed": {
+      "name": "Chat widget",
+      "settings": {
+        "general": {
+          "content": "General"
+        },
+        "enabled": {
+          "label": "Enable chat widget"
+        },
+        "agent_slug": {
+          "label": "Agent handle",
+          "info": "Handle of the agent that chats with visitors, e.g. support-agent. You'll find it on the agent's page in AgentCloud."
+        },
+        "primary_color": {
+          "label": "Brand color"
+        },
+        "position": {
+          "label": "Position"
+        },
+        "mode": {
+          "label": "Opening mode"
+        },
+        "lang": {
+          "label": "Language",
+          "info": "\"Automatic\" follows the store language and falls back to English when the widget has no translation for it."
+        },
+        "title": {
+          "label": "Button label",
+          "info": "Text shown under the chat button and used as its accessible name. Leave empty for the default."
+        },
+        "initial_message": {
+          "label": "Welcome message",
+          "info": "First message shown when the chat opens. Leave empty for the default."
+        },
+        "advanced": {
+          "content": "Advanced"
+        },
+        "api_key": {
+          "label": "Public API key",
+          "info": "Optional. Public key of your AgentCloud tenant: it routes the chat to your own workspace."
+        },
+        "app_url": {
+          "label": "AgentCloud URL",
+          "info": "Where the widget is loaded from. Change it only for testing."
+        }
+      }
+    }
+  }
+}

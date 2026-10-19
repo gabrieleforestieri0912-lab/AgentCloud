@@ -1,0 +1,24 @@
+# Theme app extension di AgentCloud: l'unico modo conforme con cui il widget
+# della chat entra nel tema del negozio.
+#
+# Cosa risolve: il controllo automatico della Dev Dashboard "Usa le estensioni
+# dell'app per i temi" fallisce finché il codice mostrato nel tema non arriva
+# da un app embed block. Prima di questo file l'app non aveva alcuna
+# estensione tema.
+#
+# Le theme app extension NON richiedono gli scope read_themes/write_themes:
+# per questo sono stati tolti da shopify.app.toml (non servivano a nulla,
+# l'app non ha mai scritto nei file del tema).
+#
+# Struttura:
+#   blocks/agentcloud-embed.liquid  app embed block (target: body), attivabile
+#                                   da Personalizza tema > Embed dell'app
+#   assets/agentcloud.js            loader minimo e leggibile che richiama il
+#                                   bundle widget su /api/embed/<slug>
+#   locales/                        etichette dell'editor (*.schema.json) e
+#                                   testi dello storefront (*.json)
+
+name = "AgentCloud"
+type = "theme"
+handle = "agentcloud-theme"
+uid = "76e0076a-47fd-6e07-0b3b-d6e9c35dca522c1dc243"

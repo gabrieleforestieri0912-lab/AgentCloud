@@ -1,0 +1,51 @@
+{
+  "blocks": {
+    "agentcloud-embed": {
+      "name": "Widget chat",
+      "settings": {
+        "general": {
+          "content": "Generale"
+        },
+        "enabled": {
+          "label": "Attiva il widget chat"
+        },
+        "agent_slug": {
+          "label": "Handle dell'agente",
+          "info": "Handle dell'agente che dialoga con i visitatori, es. support-agent. Lo trovi sulla pagina dell'agente in AgentCloud."
+        },
+        "primary_color": {
+          "label": "Colore del brand"
+        },
+        "position": {
+          "label": "Posizione"
+        },
+        "mode": {
+          "label": "Modalità di apertura"
+        },
+        "lang": {
+          "label": "Lingua",
+          "info": "\"Automatica\" segue la lingua del negozio e usa l'inglese quando il widget non ha quella traduzione."
+        },
+        "title": {
+          "label": "Testo del pulsante",
+          "info": "Testo mostrato sotto il pulsante della chat e usato come nome accessibile. Lascia vuoto per il valore predefinito."
+        },
+        "initial_message": {
+          "label": "Messaggio di benvenuto",
+          "info": "Primo messaggio mostrato all'apertura della chat. Lascia vuoto per il valore predefinito."
+        },
+        "advanced": {
+          "content": "Avanzato"
+        },
+        "api_key": {
+          "label": "Chiave API pubblica",
+          "info": "Opzionale. Chiave pubblica del tuo tenant AgentCloud: instrada la chat sul tuo spazio di lavoro."
+        },
+        "app_url": {
+          "label": "URL di AgentCloud",
+          "info": "Da dove caricare il widget. Cambialo solo per i test."
+        }
+      }
+    }
+  }
+}
