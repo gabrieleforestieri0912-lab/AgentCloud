@@ -33,6 +33,10 @@ export const PUBLIC_PATHS = [
   // era rimasta fuori da questo elenco, quindi da utente anonimo finiva in un
   // redirect a /login.
   "/apps",
+  // Pannello dell'app dentro l'amministratore Shopify: Shopify lo incapsula
+  // in un iframe e lo apre per il merchant, che potrebbe non avere un
+  // account AgentCloud. Deve quindi essere raggiungibile senza sessione.
+  "/shopify",
   // `/install` non è più una pagina: la pagina "generale" è stata eliminata
   // e ogni client ha la sua. Resta nell'elenco solo perché il redirect a
   // /apps deve poter partire anche per un utente anonimo (senza, il proxy
@@ -105,6 +109,10 @@ export const PUBLIC_PATHS = [
   "/api/shopify/webhooks",
   "/api/shopify/install",
   "/api/shopify/status",
+  // Sessione dell'app incapsulata: la chiama il pannello dentro l'admin
+  // Shopify e si autentica con il session token firmato da Shopify, non con
+  // i cookie del browser. Per questo può rispondere senza sessione AgentCloud.
+  "/api/shopify/session",
   // Webhook di conformità Shopify (chiamati da Shopify, senza sessione)
   "/api/webhooks/shopify",
 ];

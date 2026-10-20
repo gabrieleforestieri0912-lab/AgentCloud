@@ -18,6 +18,34 @@ const nextConfig: NextConfig = {
       { source: "/install", destination: "/apps", permanent: true },
     ];
   },
+  async headers() {
+    return [
+      {
+        // Il pannello dell'app Shopify gira in un iframe dell'amministratore:
+        // solo l'admin Shopify (e il negozio stesso) può incapsularlo.
+        // Solo `frame-ancestors`: non limitiamo gli script, altrimenti
+        // bloccherei l'idratazione di Next.js.
+        source: "/shopify",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value:
+              "frame-ancestors https://admin.shopify.com https://*.myshopify.com",
+          },
+        ],
+      },
+      {
+        source: "/shopify/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value:
+              "frame-ancestors https://admin.shopify.com https://*.myshopify.com",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -17,6 +17,7 @@ import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { LOCALE_LABELS } from "@/lib/i18n/constants";
 import { getSiteUrl } from "@/lib/site-url";
 import { SUPPORT_EMAIL } from "@/lib/email-config";
+import { SHOPIFY_CLIENT_ID } from "@/lib/shopify/client";
 
 const BASE_URL = getSiteUrl();
 
@@ -228,6 +229,19 @@ export default async function RootLayout({
     // node_modules/next/dist/docs/01-app/02-guides/preventing-flash-before-hydration.md
     <html lang={locale} data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
+        {/* App Bridge (Shopify): deve essere il PRIMO script della pagina e
+            senza async/defer, come richiede Shopify — l'amministratore
+            incapsula l'app in un iframe e usa `shopify.idToken()` per
+            autenticare le richieste. Il client ID è pubblico (stesso di
+            shopify.app.toml); il client secret non finisce mai nel frontend.
+            Con next/script "afterInteractive" verrebbe iniettato dopo e il
+            controllo non lo troverebbe: qui è un <script> semplice. */}
+        <meta name="shopify-api-key" content={SHOPIFY_CLIENT_ID} />
+        {/* eslint-disable-next-line @next/next/no-sync-scripts -- Requisito di
+            Shopify: App Bridge va caricato con un <script> sincrono e come
+            primo script della pagina. Con async/defer il controllo non lo
+            considera caricato. */}
+        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"

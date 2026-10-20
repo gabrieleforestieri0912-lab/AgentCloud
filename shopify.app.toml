@@ -12,7 +12,10 @@
 
 client_id = "461eff50e7ece493b4ed79762975b42d"
 name = "AgentCloud"
-application_url = "https://www.agentcloud.agency"
+# URL che Shopify incapsula in un iframe dentro l'amministratore: deve essere
+# l'interfaccia dell'app, non la landing di marketing. La pagina /shopify
+# carica App Bridge e autentica le richieste con il session token.
+application_url = "https://www.agentcloud.agency/shopify"
 embedded = true
 
 # Scope: solo ciò che i tool dell'agente usano davvero. Gli scope tema

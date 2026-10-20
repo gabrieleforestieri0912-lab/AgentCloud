@@ -13,7 +13,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/dashboard", "/api/"],
+      // /shopify è il pannello incapsulato nell'admin Shopify: non ha senso
+      // indicizzarlo (si vede solo dentro l'amministratore).
+      disallow: ["/dashboard", "/shopify", "/api/"],
     },
     sitemap: `${BASE_URL}/sitemap.xml`,
   };

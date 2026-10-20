@@ -77,6 +77,7 @@ src/
 | `/apps` | Indice "App ed estensioni" (4 card → pagine client) | Pubblico |
 | `/cli`, `/extension`, `/desktop`, `/mobile` | Pagina dedicata di ogni client, con installazione e istruzioni (i18n IT/EN/ES/DE/FR) | Pubblico |
 | `/features/[slug]` | Dettaglio funzionalità (`agents`, `integrations`, `chat`, `dashboard`) — link "Vedi dettagli" in home | Pubblico |
+| `/shopify` | Pannello dell'app incapsulata (App Bridge + session token), `application_url` dell'app Shopify | Pubblico (lo apre l'admin Shopify, il merchant può non avere un account) |
 | `/cli/auth` | Autorizzazione CLI (token al server locale su 127.0.0.1) | Protetto (eccezione in `public-paths.ts`) |
 | `/chat` | Chat generica (con indicatore app collegata) | Protetto (Supabase) |
 | `/agent/[id]` | Chat agente | Protetto (Supabase) |
@@ -86,7 +87,7 @@ src/
 | `/account` | Account unificato (profilo + impostazioni) — `/settings` redirect | Protetto |
 | `/cart`, `/bundles` | Carrello + Bundle (pricing coerente) | Pubblico (carrello sync) |
 
-**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/paypal/webhook`, `billing/payment-link`, `checkout`, `cart`, `cart/checkout` (Klarna/Amazon Pay), `user/owned`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `chat`, `embed/[slug]`, `notifications`, `shopify/install`, `shopify/callback`, `shopify/webhooks`, `shopify/status`, `admin/tenants` (Bearer admin), `waitlist`, `contact`, `sitemap`.
+**API pubbliche**: `agent/run` (anon limitato), `billing/webhook`, `billing/paypal/webhook`, `billing/payment-link`, `checkout`, `cart`, `cart/checkout` (Klarna/Amazon Pay), `user/owned`, `email/webhook`, `email/send` (Bearer admin), `whatsapp/webhook`, `chat`, `embed/[slug]`, `notifications`, `shopify/install`, `shopify/callback`, `shopify/webhooks`, `shopify/status`, `shopify/session` (session token), `admin/tenants` (Bearer admin), `waitlist`, `contact`, `sitemap`.
 **API protette (Supabase)**: `billing/portal`, `billing/paypal/create` (ri-verifica sessione), `integrations/[provider]/{authorize,callback,disconnect,status}` (generic OAuth, signed state).
 
 ---
@@ -373,6 +374,39 @@ JSON, cifrato AES-256-GCM in `shopify_connections`) → i tool dell'agente leggo
 il token cifrato e lo revocano su 401 (APP_UNINSTALLED / shop/redact). La tabella
 `shopify_connections` è creata da `supabase/schema-shopify-oauth.sql`
 (rieseguire dopo il deploy).
+
+### App incapsulata (App Bridge + session token) - `application_url = /shopify`
+
+L'app è **embedded** (`embedded = true`) e `application_url` punta a
+`https://www.agentcloud.agency/shopify`: non la landing di marketing ma il
+pannello dell'app, che Shopify incapsula in un iframe dentro l'admin.
+
+- **App Bridge**: caricato dal `<head>` del layout root (`src/app/layout.tsx`)
+  come `<script>` **sincrono e primo script della pagina** (requisito
+  Shopify: con `async`/`defer`/`next/script afterInteractive` il controllo non
+  lo considera caricato). Nello stesso `<head>` il meta
+  `<meta name="shopify-api-key" content="<client id>">`. Il client ID è
+  pubblico (`src/lib/shopify/client.ts`); il **client secret non finisce mai
+  nel frontend**.
+- **Pannello `/shopify`** (`src/app/shopify/`): Shopify aggiunge `shop`,
+  `host`, `embedded=1`, `id_token` all'URL. Il pannello chiede un
+  **session token** ad App Bridge (`shopify.idToken()`) e lo manda al nostro
+  endpoint. Testi in `src/lib/i18n/shopifyApp.ts` (IT/EN/ES/DE/FR).
+- **Session token** (`src/lib/shopify/session-token.ts`): JWT HS256 firmato da
+  Shopify, verificato lato server con `SHOPIFY_API_SECRET` (firma a tempo
+  costante, `aud` = client ID, `exp`/`nbf`, `dest` normalizzato a
+  `*.myshopify.com`, `iss` coerente). Il token exchange
+  (session token → access token Admin API) è in `exchangeSessionToken`.
+- **Endpoint `POST /api/shopify/session`**: pubblico (niente cookie: si
+  autentica col session token), risponde `{ shop, shopName, userId, scope,
+  connected }` e 401 (`missing_session_token` / `invalid_session_token`) se il
+  token manca o non è valido.
+- **iframe**: header `Content-Security-Policy: frame-ancestors
+  https://admin.shopify.com https://*.myshopify.com` su `/shopify`
+  (`next.config.ts`). Nessun `X-Frame-Options` DENY/SAMEORIGIN.
+- Dopo aver cambiato `application_url` serve `shopify app deploy
+  --allow-updates`, altrimenti il Dev Dashboard continua a puntare alla URL
+  vecchia.
 
 ### Webhook di conformità Shopify (GDPR) + `app/uninstalled` dedicato
 
