@@ -6,6 +6,65 @@ export class ApiError extends Error {
 
 function baseUrl() { return loadConfig().apiUrl.replace(/\/$/, ""); }
 
+/** URL del sito/API senza slash finale (per i flussi di login). */
+export function siteUrl(): string {
+  return baseUrl();
+}
+
+/**
+ * Validazione di un access token contro `/api/extension/session` PRIMA di
+ * salvarlo (login con token incollato / AGENTCLOUD_TOKEN in script):
+ * distinguye token revocato/scaduto (401) da rete assente (fetch errore).
+ */
+export async function validateAccessToken(token: string): Promise<{ email: string }> {
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json",
+  };
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl()}/api/extension/session`, { headers });
+  } catch {
+    throw new ApiError(0, "Rete non raggiungibile: controlla la connessione e riprova.");
+  }
+  if (response.status === 401) {
+    throw new ApiError(401, "Token non valido, revocato o scaduto.");
+  }
+  if (!response.ok) throw new ApiError(response.status, await parseError(response));
+  const data = await response.json() as { authenticated: boolean; email?: string | null };
+  if (!data.authenticated) throw new ApiError(401, "Token non valido o revocato.");
+  return { email: data.email || "" };
+}
+
+/**
+ * Scambio `code`+`code_verifier` (PKCE) con i token, fatto dal server del
+ * sito a fine login browser. Il code è usa-e-getta e vive max 2 minuti
+ * (firma HMAC lato server): chi intercetta il callback locale non può
+ * recuperare token senza il verifier, che resta solo in questa CLI.
+ */
+export type TokenExchangeResponse = {
+  access_token: string;
+  refresh_token?: string;
+  email?: string;
+};
+
+export async function exchangeCliCode(apiUrl: string, code: string, codeVerifier: string): Promise<TokenExchangeResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl.replace(/\/$/, "")}/api/cli/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ code, code_verifier: codeVerifier }),
+    });
+  } catch {
+    throw new ApiError(0, "Rete non raggiungibile: controlla la connessione e riprova.");
+  }
+  if (!response.ok) throw new ApiError(response.status, await parseError(response));
+  const data = await response.json() as Partial<TokenExchangeResponse>;
+  if (!data.access_token) throw new ApiError(502, "Risposta di scambio token non valida.");
+  return data as TokenExchangeResponse;
+}
+
 async function parseError(response: Response): Promise<string> {
   try {
     const body = await response.json() as { error?: string };
@@ -55,16 +114,20 @@ export async function loginUser(email: string, password: string) {
 /**
  * Login con token API personale (`act_…`, generato in /account → Token API).
  * Il token non scade e non ha refresh: vale finché non viene revocato.
+ * Validazione prima del salvataggio: chiama /api/extension/session così un
+ * token revocato non resta "valido" su disco.
  */
 export async function loginWithToken(token: string) {
   if (!token.startsWith("act_")) {
     throw new Error("Token non valido: i token API iniziano con `act_` (generali in /account → Token API per la CLI).");
   }
+  await validateAccessToken(token);
   const credentials: UserCredentials = {
     accessToken: token,
     refreshToken: "",
     // I token API non scadono: usa un expiresAt lontano così non si tenta mai il refresh.
     expiresAt: Number.MAX_SAFE_INTEGER,
+    email: undefined,
   };
   saveCredentials(credentials);
   return credentials;

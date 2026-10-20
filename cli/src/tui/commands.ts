@@ -1,5 +1,4 @@
-import { clearCredentials, loadConfig, loadCredentials } from "../config.js";
-import { browserLogin } from "../browser-login.js";
+import { clearCredentials } from "../config.js";
 import { currentThemeName } from "./theme.js";
 import type { ChatMessage } from "./Chat.js";
 
@@ -28,6 +27,12 @@ export type CommandContext = {
   openDiff: (filename?: string) => void;
   openHelp: () => void;
   openSessions: () => void;
+  /** /agents: overlay con gli agenti posseduti, Invio per cambiare. */
+  openAgents: () => void;
+  /** /login: overlay di login (browser o token) dentro la chat. */
+  openLogin: () => void;
+  /** /logout: credenziali rimosse, la chat resta aperta ma non autenticata. */
+  onLogout: () => void;
   exit: () => void;
   notice: (msg: string) => void;
 };
@@ -41,17 +46,9 @@ export type CommandDef = {
 };
 
 async function doLogin(ctx: CommandContext): Promise<void> {
-  if (loadCredentials()) {
-    ctx.notice("Sei già autenticato. Usa /logout per uscire e cambiare account.");
-    return;
-  }
-  ctx.notice("Si apre il browser per accedere…");
-  try {
-    await browserLogin(loadConfig().apiUrl.replace(/\/$/, ""));
-    ctx.notice("Accesso completato.");
-  } catch (error) {
-    ctx.notice(`Accesso fallito: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  // La schermata di login si apre sempre: serve per entrare la prima volta,
+  // ma anche per cambiare account o rifare una sessione scaduta.
+  ctx.openLogin();
 }
 
 export const COMMANDS: CommandDef[] = [
@@ -78,6 +75,13 @@ export const COMMANDS: CommandDef[] = [
     usage: "/sessions",
     args: [],
     handler: (ctx) => ctx.openSessions(),
+  },
+  {
+    name: "agents",
+    description: "Scegli o cambia agente (i tuoi agenti attivi)",
+    usage: "/agents",
+    args: [],
+    handler: (ctx) => ctx.openAgents(),
   },
   {
     name: "rename",
@@ -143,13 +147,13 @@ export const COMMANDS: CommandDef[] = [
   },
   {
     name: "logout",
-    description: "Esci dall'account (chiude anche la chat)",
+    description: "Esci dall'account (torna alla chat non autenticata)",
     usage: "/logout",
     args: [],
     handler: (ctx) => {
       clearCredentials();
-      ctx.notice("Disconnesso.");
-      ctx.exit();
+      ctx.notice("Disconnesso. Usa /login per entrare di nuovo.");
+      ctx.onLogout();
     },
   },
   {

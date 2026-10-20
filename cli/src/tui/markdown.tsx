@@ -127,6 +127,66 @@ function Inline({ text }: { text: string }) {
   return <>{out}</>;
 }
 
+/* ------------------------------------------------------------------ *
+ * Syntax highlight semplice per i blocchi di codice.
+ * Universal tokenizer: stringhe, commenti, numeri, keyword comuni di
+ * JS/TS/Python/Go/SQL/Bash. Non sostituisce highlight.js: copre ciò che
+ * gli agenti effettivamente emettono, resta tollerante allo streaming.
+ * ------------------------------------------------------------------ */
+
+const TOKEN_RE =
+  /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\/\/[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/|\{\/\*[\s\S]*?\*\/\})|(\b\d+(?:\.\d+)?\b)|(\b(?:const|let|var|function|return|if|else|for|while|do|break|continue|switch|case|default|import|export|from|class|extends|new|await|async|try|catch|finally|throw|interface|type|enum|public|private|protected|static|readonly|def|self|lambda|None|True|False|null|undefined|true|false|package|func|struct|impl|fn|match|use|pub|mut|select|insert|update|delete|where|join|group|order|limit|echo|source|curl|npm|git)\b)/g;
+
+type Token = { text: string; kind: "plain" | "string" | "comment" | "number" | "keyword" };
+
+export function tokenizeCode(code: string): Token[] {
+  const tokens: Token[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = TOKEN_RE.exec(code)) !== null) {
+    if (m.index > last) tokens.push({ text: code.slice(last, m.index), kind: "plain" });
+    last = m.index + m[0].length;
+    const kind: Token["kind"] = m[1] ? "string" : m[2] ? "comment" : m[3] ? "number" : "keyword";
+    tokens.push({ text: m[0], kind });
+  }
+  if (last < code.length) tokens.push({ text: code.slice(last), kind: "plain" });
+  return tokens;
+}
+
+function TokenColor({ kind, children }: { kind: Token["kind"]; children: string }) {
+  const color =
+    kind === "string"
+      ? theme.success
+      : kind === "comment"
+        ? theme.muted
+        : kind === "number"
+          ? theme.warning
+          : kind === "keyword"
+            ? theme.accent
+            : undefined;
+  return <Text color={color}>{children}</Text>;
+}
+
+function CodeText({ code }: { code: string }) {
+  const lines = code.split("\n");
+  return (
+    <>
+      {lines.map((line, i) => {
+        const tokens = tokenizeCode(line);
+        return (
+          <Text key={i}>
+            {tokens.length === 0 ? " " : tokens.map((t, k) => (
+              <TokenColor key={k} kind={t.kind}>
+                {t.text}
+              </TokenColor>
+            ))}
+          </Text>
+        );
+      })}
+    </>
+  );
+}
+
 function BlockView({ block }: { block: Block }) {
   switch (block.type) {
     case "heading":
@@ -143,7 +203,7 @@ function BlockView({ block }: { block: Block }) {
       return (
         <Box flexDirection="column" borderStyle="single" borderColor={theme.border} paddingX={1}>
           {block.lang ? <Text color={theme.muted}>{block.lang}</Text> : null}
-          <Text>{block.code}</Text>
+          <CodeText code={block.code} />
         </Box>
       );
     case "list":

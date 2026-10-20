@@ -4,7 +4,8 @@ CLI unificata di AgentCloud: comandi utente e comandi admin in un unico binario 
 
 ## Requisiti e installazione
 
-Node.js 18+. Funziona identica su **Linux, macOS e Windows**.
+Node.js 20+ (la CLI si rifiuta di avviarsi con versioni precedenti, con un
+messaggio chiaro). Funziona identica su **Linux, macOS e Windows**.
 
 Installazione rapida (macOS e Linux):
 
@@ -12,7 +13,7 @@ Installazione rapida (macOS e Linux):
 curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh
 ```
 
-Lo script verifica Node 18+, installa il pacchetto globale e controlla che il
+Lo script verifica Node 20+, installa il pacchetto globale e controlla che il
 comando `agentcloud` risponda. Se Node manca, dice come installarlo (brew su
 macOS, nodesource su Ubuntu, nodejs.org per il resto).
 
@@ -21,6 +22,12 @@ Via npm (tutti i sistemi):
 ```bash
 npm i -g agentcloud-cli
 agentcloud --help
+```
+
+Oppure senza installare nulla (npx):
+
+```bash
+npx agentcloud-cli
 ```
 
 In alternativa, dai sorgenti:
@@ -67,27 +74,113 @@ codice aggiornato. Non committare mai segreti: il pacchetto contiene solo
 `dist/`, README e LICENSE. Dopo la pubblicazione, gli utenti aggiornano con
 `agentcloud update`.
 
-## Autenticazione utente
-
-Senza argomenti la CLI mostra il banner di benvenuto con la guida rapida:
+## La chat: `agentcloud` e basta
 
 ```bash
 agentcloud
 ```
 
-Il login apre il browser e riceve il token da solo (nessuna password da
-digitare):
+Si apre **direttamente la chat** a schermo intero (alternate screen), senza
+menu intermedi e senza attese: header con logo, versione, utente, piano e
+agente attivo; area messaggi scrollabile con markdown, syntax highlight nei
+blocchi di codice, streaming token per token con cursore animato e card
+compatte per le azioni dell'agente (Shopify, Gmail, Calendar…); input
+multilinea centrato (Invio invia, Maiusc+Invio a capo, ↑↓ cronologia);
+footer con scorciatoie e residuo di messaggi gratuiti quando l'API lo espone.
+
+Se non sei autenticato la chat si apre comunque: il messaggio di invio ti
+ricorda di usare `/login` (basta digitare `/` per il menu dei comandi).
+
+### Tasti
+
+| Tasto | Azione |
+|---|---|
+| `/` | apre il menu dei comandi (autocompletamento) |
+| Invio | invia · Maiusc+Invio o Ctrl+J va a capo |
+| ↑ ↓ | cronologia dei messaggi / navigazione del menu |
+| Esc | interrompe la risposta in corso · chiude gli overlay |
+| Ctrl+B | mostra/nasconde la sidebar |
+| Ctrl+C | esce pulito (il terminale viene sempre ripristinato) |
+
+### Comandi `/`
+
+| Comando | Cosa fa |
+|---|---|
+| `/agents` | scegli o cambia agente (i tuoi agenti attivi) |
+| `/login` | accedi dal browser o incolla un token |
+| `/logout` | esci dall'account (la chat resta aperta) |
+| `/clear` | pulisce la conversazione |
+| `/help` | comandi e scorciatoie |
+| `/exit` | esce (salva la sessione) |
+| `/new` · `/sessions` · `/rename` | sessione e titolo |
+| `/undo` · `/redo` · `/diff` | modifiche ai file |
+| `/theme` | tema attivo |
+
+## Login
 
 ```bash
-agentcloud login
+agentcloud login          # apre il browser (scelta consigliata)
 agentcloud whoami
-agentcloud logout
+agentcloud logout         # cancella le credenziali e revoca il token
 ```
 
-Come funziona: la CLI apre `/cli/auth?port=...&state=...` nel browser e resta
-in ascolto su `127.0.0.1`; la pagina rimanda access token + refresh token al
-terminale. Lo `state` casuale impedisce a un altro processo locale di
-iniettare un token.
+Come funziona (loopback + PKCE, come `gh`): la CLI avvia un server locale su
+`127.0.0.1` con porta casuale, genera uno `state` e una challenge PKCE, apre
+`/cli/login?port=…&state=…&code_challenge=…` nel browser e resta in ascolto.
+Dopo l'accesso sul sito la pagina reindirizza a
+`http://127.0.0.1:<porta>/callback?code=…&state=…`: la CLI verifica lo
+`state`, scambia `code` + `code_verifier` con i token via
+`POST /api/cli/token` e salva le credenziali.
+
+Nel browser non passa mai un token in chiaro: gira un `code` firmato, valido
+2 minuti e spendibile una volta sola. Nel terminale la schermata di login
+mostra l'URL completo, così se il browser non si apre basta copiarlo a mano.
+
+Timeout: 5 minuti. In quel caso la schermata di login propone `R` (riprova
+col browser) o `T` (incolla un token).
+
+**Senza browser (SSH, WSL, container)**: la CLI passa da sola al device code
+flow — mostra un codice breve e l'indirizzo `https://www.agentcloud.agency/device`:
+approvi da un secondo dispositivo e il terminale riceve l'accesso. Puoi
+forzarlo con `agentcloud login --device`.
+
+**Incolla un token** (campo mascherato, validato prima di salvare):
+
+```bash
+agentcloud login --token act_...
+```
+
+Il token si genera in `/account` → “Token API per la CLI” e si revoca dallo
+stesso posto (o con `agentcloud logout`, che revoca lato server).
+
+**Nei script e in CI** non serve nessun login: basta la variabile d'ambiente.
+
+```bash
+AGENTCLOUD_TOKEN=act_... agentcloud run support-agent "ciao"
+```
+
+### Login con email e password (senza browser)
+
+```bash
+agentcloud login --password
+```
+
+Prima del login con password configura le chiavi pubbliche Supabase
+nell'ambiente:
+
+```bash
+# PowerShell
+$env:NEXT_PUBLIC_SUPABASE_URL="https://<project>.supabase.co"
+$env:NEXT_PUBLIC_SUPABASE_ANON_KEY="<anon-key>"
+
+# bash/zsh
+export NEXT_PUBLIC_SUPABASE_URL="https://<project>.supabase.co"
+export NEXT_PUBLIC_SUPABASE_ANON_KEY="<anon-key>"
+```
+
+La password viene letta senza echo quando il terminale lo consente e non viene mai scritta su disco. Le credenziali sono in `~/.agentcloud/credentials.json` con permessi `600` dove supportato; su Windows il comportamento di `chmod` dipende dal filesystem/ACL.
+
+Google OAuth non è gestito direttamente dalla CLI: gli account Google devono impostare una password dal sito tramite il recupero password.
 
 Fallback senza browser (server, email/password):
 
@@ -104,6 +197,12 @@ agentcloud login --token act_...
 
 # oppure senza salvare nulla su disco:
 AGENTCLOUD_TOKEN=act_... agentcloud agents run <slug> "ciao"
+```
+
+### Login con email e password (senza browser)
+
+```bash
+agentcloud login --password
 ```
 
 Prima del login con password configura le chiavi pubbliche Supabase
@@ -135,6 +234,7 @@ agentcloud chat support-agent --resume 7c6aa8c2
 agentcloud usage
 agentcloud config
 agentcloud config --url http://localhost:3000
+agentcloud run support-agent "ciao" --json   # output JSON, per script
 ```
 
 Senza slug, `chat` mostra il selettore (frecce + Invio sul terminale,
@@ -146,11 +246,15 @@ categoria e prezzo. I colori si spengono da soli fuori dal terminale
 
 ## TUI a schermo intero
 
-Su terminale interattivo `agentcloud chat` apre la TUI stile OpenCode:
-conversazione con markdown e streaming, input multilinea (Invio invia,
-Maiusc+Invio o Ctrl+J a capo, Esc interrompe), barra di stato
-(agente · cartella · online), sidebar con titolo e modifiche ai file
-(Ctrl+B per mostrarla/nasconderla, sparisce sotto i 100 colonne).
+Su terminale interattivo `agentcloud` (e `agentcloud chat`) apre la TUI stile
+OpenCode: conversazione con markdown e streaming, input multilinea centrato
+(Invio invia, Maiusc+Invio o Ctrl+J a capo, Esc interrompe), barra di stato
+(agente · cartella · online · scorciatoie), sidebar con titolo e modifiche ai
+file (Ctrl+B per mostrarla/nasconderla, sparisce sotto i 100 colonne).
+
+I colori seguono la palette del sito (bg #0A0A0F, brand #038BFE) e degradano
+da soli: truecolor → 256 → 16 colori, e si spengono del tutto con
+`NO_COLOR=1` o quando l'output non è un terminale.
 
 Senza terminale interattivo (pipe, CI) o con `AGENTCLOUD_NO_TUI=1` gira il
 loop classico riga per riga. I colori si spengono da soli fuori dal
@@ -238,8 +342,15 @@ I contratti verificati sono in [`docs/api-contracts.md`](docs/api-contracts.md).
 ## Verifiche
 
 ```bash
+npm run typecheck
 npm run build
 node dist/index.js --help
 node dist/index.js agents --help
 node dist/index.js admin --help
+```
+
+Prova manuale della TUI (serve un terminale vero):
+
+```bash
+cd cli && npm run build && node dist/index.js
 ```

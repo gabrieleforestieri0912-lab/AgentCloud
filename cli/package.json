@@ -13,7 +13,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "preferGlobal": true,
   "publishConfig": {
@@ -24,6 +24,7 @@
     "build": "tsc && node -e \"try{require('fs').chmodSync('dist/index.js',0o755)}catch(e){}\"",
     "dev": "tsc -w",
     "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "test": "node dist/index.js --help"
   },

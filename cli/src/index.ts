@@ -5,12 +5,23 @@ import { stdin as input, stdout as output } from "node:process";
 import { clearCredentials, loadConfig, loadCredentials, saveConfig } from "./config.js";
 import { loadChatSession, resumeHint, saveChatSession, type ChatSession } from "./sessions.js";
 import { localVersion, maybeNotifyUpdate, runUpdate } from "./update.js";
-import { browserLogin } from "./browser-login.js";
+import { browserLoginWithFallback, deviceLoginFlow } from "./auth/flows.js";
 import { printLoginHint, printWelcome } from "./welcome.js";
 import { select } from "./tui/select.js";
 import { bold, cyan, dim, green, hr, red, yellow } from "./ui.js";
-import { adminRequest, ApiError, loginUser, loginWithToken, streamAgent, userRequest, userWhoAmI } from "./api.js";
+import { adminRequest, ApiError, loginUser, loginWithToken, streamAgent, userRequest, userWhoAmI, validateAccessToken } from "./api.js";
 import { CATALOG } from "./catalog.js";
+
+/**
+ * Gate di Node>=20: engines in package.json aiuta npm, ma non protegge da
+ * installazioni manuali (install.sh) o binari nostrani: qui fermiamo tutto
+ * con un messaggio chiaro PRIMA di eseguire qualsiasi altra cosa.
+ */
+if (Number(process.versions.node.split(".")[0]) < 20) {
+  console.error(`AgentCloud CLI richiede Node.js >= 20 (trovato ${process.versions.node}).`);
+  console.error("Aggiorna Node: https://nodejs.org/ (o `nvm install 20`).");
+  process.exit(1);
+}
 
 const SITE = "https://www.agentcloud.agency";
 const program = new Command();
@@ -79,11 +90,18 @@ function printTable(rows: string[][]) {
   for (const row of rows) console.log(row.map((cell, i) => cell.padEnd(widths[i])).join("  "));
 }
 
-program.command("login").description("Accedi dal browser, con email/password o con un token API (impostazioni → Token API)").option("--password", "Usa email e password invece del browser").option("--token <token>", "Usa un token API act_… generato nelle impostazioni (pagina /account)").action(async (options: { password?: boolean; token?: string }) => {
+program.command("login").description("Accedi dal browser, con email/password o con un token API (impostazioni → Token API)").option("--password", "Usa email e password invece del browser").option("--token <token>", "Usa un token API act_… generato nelle impostazioni (pagina /account)").option("--device", "Forza il device code flow (SSH/headless: codice da inserire su /device)").action(async (options: { password?: boolean; token?: string; device?: boolean }) => {
   try {
     if (options.token) {
-      await loginWithToken(options.token.trim());
-      console.log("✓ Login con token completato. Credenziali salvate in ~/.agentcloud/credentials.json");
+      // Validazione prima del salvataggio (rete assente/revocato → messaggio chiaro).
+      const token = options.token.trim();
+      const { email } = await validateAccessToken(token);
+      await loginWithToken(token);
+      console.log(`✓ Login con token completato${email ? ` come ${email}` : ""}.`);
+      return;
+    }
+    if (options.device) {
+      await deviceLoginFlow(loadConfig().apiUrl.replace(/\/$/, ""), console.log);
       return;
     }
     if (options.password || !output.isTTY) {
@@ -95,12 +113,18 @@ program.command("login").description("Accedi dal browser, con email/password o c
       console.log("✓ Login completato. Credenziali salvate in ~/.agentcloud/credentials.json");
       return;
     }
-    await browserLogin(loadConfig().apiUrl.replace(/\/$/, ""));
-    console.log("✓ Login completato dal browser. Credenziali salvate in ~/.agentcloud/credentials.json");
+    // Login browser con callback loopback + PKCE; se non c'è browser
+    // (SSH/WSL/headless) passa da solo al device code flow.
+    await browserLoginWithFallback(loadConfig().apiUrl.replace(/\/$/, ""), console.log);
   } catch (error) { printError(error); }
 });
 
-program.command("logout").description("Rimuove le credenziali utente locali").action(() => {
+program.command("logout").description("Rimuove le credenziali utente locali (e prova a revocare il token sul server)").action(async () => {
+  const credentials = loadCredentials();
+  if (credentials?.accessToken.startsWith("act_")) {
+    // PAT: revocabile a distanza, così non resta valido su altri usi.
+    try { await userRequest("/api/user/tokens/self", { method: "DELETE" }); } catch { /* il logout è comunque completo */ }
+  }
   clearCredentials();
   console.log("✓ Logout completato.");
 });
@@ -217,11 +241,22 @@ async function runWithApproval(
   return state.answer;
 }
 
-program.command("run").description("Esegui un prompt con un agente posseduto").argument("<agent-slug>").argument("<messaggio>").option("--yes", "Approva automaticamente le azioni che richiedono conferma").action(async (agent: string, message: string, options: { yes?: boolean }) => {
+program.command("run").description("Esegui un prompt con un agente posseduto").argument("<agent-slug>").argument("<messaggio>").option("--yes", "Approva automaticamente le azioni che richiedono conferma").option("--json", "Risposta in JSON (per script e pipeline)").action(async (agent: string, message: string, options: { yes?: boolean; json?: boolean }) => {
   try {
     const answer = await runWithApproval(agent, [{ role: "user", content: message }], { autoApprove: Boolean(options.yes) });
+    if (options.json) {
+      console.log(JSON.stringify({ agent, answer, ok: true }));
+      return;
+    }
     if (!answer) console.log("Nessuna risposta ricevuta."); else console.log("\n");
-  } catch (error) { printError(error); }
+  } catch (error) {
+    if (options.json && error instanceof ApiError) {
+      console.log(JSON.stringify({ agent, ok: false, status: error.status, error: error.message }));
+      process.exitCode = 1;
+      return;
+    }
+    printError(error);
+  }
 });
 
 program.command("chat").description("Avvia una chat interattiva (l'agente si sceglie dentro la chat)").argument("[agent-slug]").option("--resume <codice>", "Riprendi una chat salvata in precedenza").action(async (agent: string | undefined, options: { resume?: string }) => {
@@ -392,9 +427,28 @@ program.command("config").description("Mostra o aggiorna configurazione non sens
   console.log("Token admin: solo AGENTCLOUD_ADMIN_TOKEN, mai salvato dalla CLI.");
 });
 
-// Senza argomenti: schermata di benvenuto con logo e istruzioni,
-// poi l'help completo dei comandi.
+// Senza argomenti: TUI a schermo intero (alternate screen) che apre subito
+// in chat; se non autenticati mostra direttamente la schermata di login.
+// Senza terminale interattivo (pipe/CI) resta il welcome classico.
 if (process.argv.length <= 2) {
+  if (input.isTTY && output.isTTY) {
+    const { setTheme } = await import("./tui/theme.js");
+    setTheme(loadConfig().theme || "dark");
+    const { runWelcomeTui } = await import("./tui/Root.js");
+    const result = await runWelcomeTui();
+    if (result.messages.length > 0 && result.agent) {
+      // Stampa del codice di ripresa SOLO dopo che l'alternate screen è
+      // chiusa (dentro Root è uscito): resta visibile al ritorno nel terminale.
+      const session = saveChatSession(
+        result.agent,
+        result.messages.map(({ role, content }) => ({ role, content })),
+        undefined,
+        { title: result.title || undefined, files: result.files },
+      );
+      console.log(`\n${green(resumeHint(result.agent, session.code))}`);
+    }
+    process.exit(0);
+  }
   printWelcome();
   program.outputHelp();
   process.exit(0);

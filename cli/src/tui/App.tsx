@@ -1,16 +1,22 @@
 import React, { useCallback, useRef, useState } from "react";
 import { Box, Text, render, useApp, useInput, useStdout } from "ink";
 import path from "node:path";
-import { ApiError, deleteAgentFile, saveAgentFiles, streamAgent } from "../api.js";
+import { ApiError, deleteAgentFile, saveAgentFiles, streamAgent, userRequest, userWhoAmI } from "../api.js";
+import { localVersion } from "../update.js";
 import { theme } from "./theme.js";
-import { Chat, type ChatMessage } from "./Chat.js";
+import { Chat, type ChatMessage, type ToolStep } from "./Chat.js";
 import { ChatInput, type ConfirmState } from "./Input.js";
+import { Header } from "./Header.js";
+import { Spinner } from "./Spinner.js";
 import { StatusBar } from "./StatusBar.js";
 import { DiffOverlay } from "./DiffOverlay.js";
 import { SIDEBAR_WIDTH, Sidebar } from "./Sidebar.js";
 import { CommandMenu } from "./CommandMenu.js";
 import { HelpOverlay } from "./HelpOverlay.js";
 import { SessionsOverlay } from "./SessionsOverlay.js";
+import { AgentsOverlay, type AgentChoice } from "./AgentsOverlay.js";
+import { LoginScreen } from "./LoginScreen.js";
+import { CATALOG } from "../catalog.js";
 import {
   filterCommands,
   type CommandContext,
@@ -27,6 +33,15 @@ import {
   type FileTransition,
   type TrackedFile,
 } from "./fileChanges.js";
+
+export type SessionInfo = {
+  email?: string | null;
+  plan?: string | null;
+  /** Se l'API espone il residuo gratuito della giornata, qui arriva. */
+  messagesRemaining?: number | null;
+  /** false = sessione assente: la chat si apre comunque, /login per entrare. */
+  authenticated?: boolean;
+};
 
 export type TuiResult = { messages: ChatMessage[]; title: string; files: TrackedFile[] };
 
@@ -82,12 +97,37 @@ function stripFlags(messages: ChatMessage[]): Array<{ role: "user" | "assistant"
   return messages.map(({ role, content }) => ({ role, content }));
 }
 
+/** Upsert di una card tool per nome: aggiorna lo stato o la aggiunge. */
+function upsertTool(tools: ToolStep[] | undefined, step: ToolStep): ToolStep[] {
+  const list = tools ? [...tools] : [];
+  const idx = list.findIndex((t) => t.name === step.name);
+  if (idx >= 0) list[idx] = { ...step };
+  else list.push(step);
+  return list;
+}
+
+/** Messaggi d'errore API gentili: cosa fare, non solo il codice. */
+export function friendlyApiError(status: number, message: string): string {
+  if (status === 401) {
+    return `401 — ${message}. Rilancia /login per autenticarti di nuovo.`;
+  }
+  if (status === 402 || status === 429) {
+    return `${status} — ${message} Passa a un piano su https://www.agentcloud.agency/dashboard/subscriptions`;
+  }
+  if (status === 0) {
+    return `Rete non raggiungibile: controlla la connessione (${message}).`;
+  }
+  return `Errore ${status}: ${message}`;
+}
+
 export function App({
-  agent,
-  agentName,
+  agent: initialAgent,
+  agentName: initialAgentName,
   initial,
   initialTitle,
   initialFiles,
+  session,
+  showHeader = true,
   onExit,
 }: {
   agent: string;
@@ -95,12 +135,19 @@ export function App({
   initial: ChatMessage[];
   initialTitle?: string;
   initialFiles?: TrackedFile[];
+  /** Info utente per header e status (facoltativa: la chat classica non ce l'ha). */
+  session?: SessionInfo;
+  showHeader?: boolean;
   onExit: (messages: ChatMessage[], title: string, files: TrackedFile[]) => void;
 }) {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const rows = stdout?.rows ?? 24;
   const columns = stdout?.columns ?? 80;
+
+  // Agente come stato: /agents cambia agente a caldo senza ripartire la chat.
+  const [agent, setAgent] = useState(initialAgent);
+  const [agentName, setAgentName] = useState(initialAgentName);
 
   // Cronologia in ref + tick di render: gli append dello streaming non devono
   // passare per chiusure stale dei setState dentro callback asincrone.
@@ -125,10 +172,23 @@ export function App({
   const effectiveFocus: TuiFocus = sidebarVisible ? focus : "input";
   const [selected, setSelected] = useState(0);
 
-  // Overlay: un solo livello alla volta (help > sessioni > diff).
+  // Overlay: un solo livello alla volta (help > sessioni > diff > agents/login).
   const [helpOpen, setHelpOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [diffView, setDiffView] = useState<{ title: string; lines: DiffLine[] } | null>(null);
+  const [agentsOpen, setAgentsOpen] = useState(false);
+  const [agentChoices, setAgentChoices] = useState<AgentChoice[] | null>(null);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [liveInfo, setLiveInfo] = useState<SessionInfo | null>(null);
+  const info = liveInfo ?? session;
+  // Sessione presente? Se il sito non risponde 401 restiamo "forse": la CLI
+  // storica non faceva il whoami, e non vogliamo bloccare la chat senza prove.
+  const [loggedIn, setLoggedIn] = useState<boolean>(session?.authenticated !== false);
+  const [notice, setNotice] = useState<string | null>(
+    session?.authenticated === false
+      ? "Non sei autenticato: usa /login per accedere (oppure incolla un token con /login → token)."
+      : null,
+  );
 
   // Menu comandi "/": aperto mentre la bozza inizia per "/", filtrato dal
   // primo token. suppressMenuRef evita la riapertura quando il testo viene
@@ -166,7 +226,6 @@ export function App({
   const pendingRef = useRef<{ toolName: string; token: string } | null>(null);
   const confirmResolve = useRef<((yes: boolean) => void) | null>(null);
   const [activity, setActivity] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [online, setOnline] = useState<boolean | null>(null);
   const [inputHeight, setInputHeight] = useState(3);
   const abortRef = useRef<AbortController | null>(null);
@@ -213,7 +272,7 @@ export function App({
       return;
     }
     // Overlay aperti (help/sessioni/diff): possiedono i loro tasti.
-    if (helpOpen || sessionsOpen || diffView) return;
+    if (helpOpen || sessionsOpen || diffView || agentsOpen || loginOpen) return;
     if (menuOpen) {
       const { name } = parseSlash(draft);
       const list = menuList;
@@ -335,6 +394,16 @@ export function App({
       openDiff: (filename?: string) => openDiff(filename),
       openHelp: () => setHelpOpen(true),
       openSessions: () => setSessionsOpen(true),
+      openAgents: () => {
+        setAgentsOpen(true);
+        void loadAgentChoices();
+      },
+      openLogin: () => setLoginOpen(true),
+      onLogout: () => {
+        setLoggedIn(false);
+        setLiveInfo({ email: null, plan: null, messagesRemaining: null, authenticated: false });
+        touch();
+      },
       exit: () => finish(),
       notice: (msg: string) => setNotice(msg),
     };
@@ -399,6 +468,70 @@ export function App({
       setNotice(error instanceof Error ? error.message : String(error));
     }
   }
+
+  /** Ritorna informazioni utente fresche (header/status) senza bloccare. */
+  const refreshSession = async () => {
+    try {
+      const who = await userWhoAmI();
+      let plan: string | null = null;
+      let messagesRemaining: number | null = null;
+      try {
+        const usage = await userRequest<{
+          plan?: string;
+          messagesRemaining?: number;
+        }>("/api/user/usage");
+        plan = usage.plan ?? null;
+        messagesRemaining = typeof usage.messagesRemaining === "number" ? usage.messagesRemaining : null;
+      } catch { /* usage indispunibile: comunque header con email */ }
+      setLiveInfo({ email: who.email || null, plan, messagesRemaining, authenticated: true });
+      setLoggedIn(true);
+    } catch (error) {
+      // 401 = non autenticato: la chat resta aperta, ma i messaggi avvisano.
+      if (error instanceof ApiError && error.status === 401) {
+        setLiveInfo({ email: null, plan: null, messagesRemaining: null, authenticated: false });
+        setLoggedIn(false);
+      }
+    }
+  };
+
+  /** Carica (una volta) gli agenti posseduti per l'overlay /agents. */
+  const loadAgentChoices = async () => {
+    if (agentChoices) return;
+    setLoadingAgents(true);
+    try {
+      const who = await userWhoAmI();
+      const choices: AgentChoice[] = who.owned.map((slug) => {
+        const cat = CATALOG.find((a) => a.slug === slug);
+        return { slug, name: cat?.name ?? slug, category: cat?.category, price: cat?.price };
+      });
+      setAgentChoices(choices.length > 0 ? choices : [{ slug: agent, name: agentName }]);
+    } catch (error) {
+      setNotice(`Elenco agenti non disponibile: ${error instanceof Error ? error.message : String(error)}`);
+      setAgentsOpen(false);
+    } finally {
+      setLoadingAgents(false);
+    }
+  };
+
+  /** /agents → Invio: cambia agente e riparte pulito (nuova conversazione). */
+  const switchAgent = (slug: string) => {
+    const cat = CATALOG.find((a) => a.slug === slug);
+    setAgent(slug);
+    setAgentName(cat?.name ?? slug);
+    setAgentsOpen(false);
+    msgsRef.current = [];
+    filesRef.current = [];
+    undoRef.current = [];
+    redoRef.current = [];
+    setSelected(0);
+    setTitle(cat?.name ?? slug);
+    titleTouchedRef.current = false;
+    touch();
+    setNotice(`Agente attivo: ${cat?.name ?? slug}. Nuova conversazione pronta.`);
+  };
+
+  /** Carica (una volta) gli agenti posseduti per l'overlay /agents. */
+  const [loadingAgents, setLoadingAgents] = useState(false);
 
   /** Registra un evento `file` dallo stream + persistenza best-effort. */
   const recordFileEvent = (filename: string, content: string) => {
@@ -469,21 +602,38 @@ export function App({
       const chunk = event.content;
       patchLast((m) => ({ ...m, content: m.content + chunk }));
     } else if (event.type === "tool_start") {
-      setActivity(`[tool: ${String(event.toolName)}]`);
+      const name = String(event.toolName || "tool");
+      setActivity(`sto lavorando: ${name}…`);
+      patchLast((m) => ({ ...m, tools: upsertTool(m.tools, { name, state: "running" }) }));
     } else if (event.type === "tool_done") {
-      setActivity(`[done: ${String(event.toolName)}]`);
+      const name = String(event.toolName || "tool");
+      setActivity(null);
+      patchLast((m) => ({ ...m, tools: upsertTool(m.tools, { name, state: "done" }) }));
     } else if (event.type === "file" && typeof event.filename === "string") {
       const filename = String(event.filename);
       const content = typeof event.content === "string" ? event.content : "";
-      setActivity(`[file: ${filename}]`);
+      setActivity(`sto scrivendo: ${filename}…`);
+      patchLast((m) => {
+        const tools = upsertTool(m.tools, { name: `file: ${filename}`, state: "running" });
+        return { ...m, tools };
+      });
       recordFileEvent(filename, content);
+      patchLast((m) => ({ ...m, tools: m.tools?.map((t) => (t.name === `file: ${filename}` ? { ...t, state: "done" as const } : t)) }));
     } else if (event.type === "connection" && typeof event.provider === "string") {
-      setActivity(`[connetti ${event.provider} dal sito: dashboard/integrazioni]`);
+      setActivity(null);
+      patchLast((m) => ({
+        ...m,
+        tools: [
+          ...(m.tools ?? []),
+          { name: `connetti ${event.provider} — dashboard/integrazioni`, state: "error" as const },
+        ],
+      }));
     } else if (event.type === "tool_confirm") {
       pendingRef.current = {
         token: typeof event.token === "string" ? event.token : "",
         toolName: String(event.toolName || "tool"),
       };
+      setActivity("in attesa di conferma…");
     } else if (event.type === "error") {
       throw new Error(String(event.message || "Errore agente"));
     }
@@ -492,6 +642,13 @@ export function App({
   const runTurn = async (text: string) => {
     setNotice(null);
     setActivity(null);
+    // Nessuna sessione: non parte nessuna run, si spiega come entrare.
+    if (!loggedIn) {
+      setNotice(
+        "Non sei autenticato: usa /login per accedere col browser (consigliato) o incolla un token. Poi riprova il messaggio.",
+      );
+      return;
+    }
     pushMsg({ role: "user", content: text });
     pushMsg({ role: "assistant", content: "", streaming: true });
     setStreaming(true);
@@ -520,13 +677,17 @@ export function App({
       setOnline(true);
     } catch (error) {
       if ((error as Error)?.name === "AbortError" || ctrl.signal.aborted) {
-        patchLast((m) => ({ ...m, content: `${m.content}\n_(interrotto)_` }));
+        patchLast((m) => ({
+          ...m,
+          content: `${m.content}\n_(interrotto)_`,
+          tools: m.tools?.map((t) => (t.state === "running" ? { ...t, state: "error" as const } : t)),
+        }));
       } else if (error instanceof ApiError) {
         // Come la CLI classica: l'errore non entra in cronologia, resta il
         // messaggio utente e si mostra l'avviso. Il server ha risposto:
         // la connessione c'è.
         dropLast();
-        setNotice(`Errore ${error.status}: ${error.message}`);
+        setNotice(friendlyApiError(error.status, error.message));
       setOnline(true);
       // Titolo automatico dopo il primo scambio riuscito (max ~6 parole dal
       // primo messaggio). Una sola volta: /rename (passo 4) lo cambia a mano.
@@ -567,13 +728,18 @@ export function App({
   const menuList = filterCommands(parseSlash(draft).name);
   const menuSel = Math.min(menuSelected, Math.max(0, menuList.length - 1));
 
-  const chrome = 1 + (notice ? 1 : 0) + (activity ? 1 : 0) + inputHeight;
+  // Header: logo(1) + separatore(1) + stato(1). Il margine interno è gestito
+  // da paddingX senza righe extra.
+  const headerH = showHeader ? 3 : 0;
+  const chrome = headerH + 1 + (notice ? 1 : 0) + (activity ? 1 : 0) + inputHeight;
   // Il menu occupa righe fisse: va tolto dal budget della chat, altrimenti
   // il layout sfora e Ink taglia righe a caso.
   const menuRowsShown = menuOpen ? Math.min(menuList.length, 8) + (menuList.length > 8 ? 1 : 0) : 0;
   const menuH = menuOpen ? menuRowsShown + 2 : 0; // +2 bordi
   const chatHeight = Math.max(3, rows - chrome - menuH);
   const chatWidth = sidebarVisible ? Math.max(20, columns - SIDEBAR_WIDTH - 1) : columns;
+  // Input centrato: larghezza comoda (max 100 colonne) e allineato al centro.
+  const inputWidth = Math.max(30, Math.min(chatWidth, 100));
 
   // Diff a tutto schermo: possiede i tasti, il resto resta sotto.
   if (diffView) {
@@ -610,39 +776,86 @@ export function App({
     );
   }
 
+  if (agentsOpen || loginOpen) {
+    return (
+      <Box flexDirection="column" height={rows}>
+        {agentsOpen ? (
+          loadingAgents || !agentChoices ? (
+            <Box padding={1} flexDirection="column">
+              <Text bold color={theme.primary}>I tuoi agenti</Text>
+              <Text color={theme.muted}>…</Text>
+            </Box>
+          ) : (
+            <AgentsOverlay
+              agents={agentChoices}
+              current={agent}
+              height={rows}
+              onSelect={switchAgent}
+              onClose={() => setAgentsOpen(false)}
+            />
+          )
+        ) : (
+          <LoginScreen
+            onDone={() => {
+              setLoginOpen(false);
+              void refreshSession();
+              touch();
+            }}
+            onExit={() => setLoginOpen(false)}
+          />
+        )}
+      </Box>
+    );
+  }
+
   return (
     <Box flexDirection="row" height={rows}>
       <Box flexDirection="column" flexGrow={1}>
-        <Box flexDirection="column" height={chatHeight}>
-          <Chat messages={msgsRef.current} agentName={agentName} width={chatWidth} maxHeight={chatHeight} />
+        {showHeader ? (
+          <Header version={localVersion()} email={info?.email} plan={info?.plan} agentName={agentName} />
+        ) : null}
+        <Box flexDirection="column" height={chatHeight} alignItems="center">
+          <Box width={inputWidth} flexDirection="column">
+            <Chat messages={msgsRef.current} agentName={agentName} width={inputWidth} maxHeight={chatHeight} />
+          </Box>
         </Box>
         {notice ? (
           <Box>
-            <Text color={theme.warning}>{notice}</Text>
+            <Text color={theme.warning} wrap="truncate">
+              {notice}
+            </Text>
           </Box>
         ) : null}
         {activity ? (
           <Box>
-            <Text color={theme.muted}>{activity}</Text>
+            <Spinner label={activity} />
           </Box>
         ) : null}
         {menuOpen ? (
-          <CommandMenu commands={menuList} selected={menuSel} width={chatWidth} />
+          <Box alignItems="center">
+            <Box width={inputWidth} flexDirection="column">
+              <CommandMenu commands={menuList} selected={menuSel} width={inputWidth} />
+            </Box>
+          </Box>
         ) : null}
-        <ChatInput
-          onSubmit={(text) => void runTurn(text)}
-          streaming={streaming}
-          onInterrupt={() => abortRef.current?.abort()}
-          confirm={confirm}
-          onConfirm={answerConfirm}
-          placeholder={`Scrivi a ${agentName}… (Invio invia, / comandi)`}
-          onHeightChange={setInputHeight}
-          focused={effectiveFocus === "input"}
-          menuActive={menuOpen}
-          preset={preset}
-          onDraftChange={handleDraftChange}
-        />
-        <StatusBar agent={agent} cwd={path.basename(process.cwd()) || process.cwd()} online={online} />
+        <Box alignItems="center">
+          <Box width={inputWidth} flexDirection="column">
+            <ChatInput
+              onSubmit={(text) => void runTurn(text)}
+              streaming={streaming}
+              onInterrupt={() => abortRef.current?.abort()}
+              confirm={confirm}
+              onConfirm={answerConfirm}
+              placeholder={`Scrivi a ${agentName}… (Invio invia, / comandi)`}
+              onHeightChange={setInputHeight}
+              focused={effectiveFocus === "input"}
+              menuActive={menuOpen}
+              preset={preset}
+              onDraftChange={handleDraftChange}
+            />
+          </Box>
+        </Box>
+        <StatusBar agent={agent} cwd={path.basename(process.cwd()) || process.cwd()} online={online} session={info} />
       </Box>
       {sidebarVisible ? (
         <Sidebar

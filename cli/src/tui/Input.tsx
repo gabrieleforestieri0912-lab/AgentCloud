@@ -46,6 +46,11 @@ export function ChatInput({
   const [lines, setLines] = useState<string[]>([""]);
   const [row, setRow] = useState(0);
   const [col, setCol] = useState(0);
+  // Cronologia invii: ↑ richiama dalla coda, ↓ torna in avanti fino alla
+  // bozza corrente. La bozza in corso non viene persa quando si naviga.
+  const historyRef = useRef<string[]>([]);
+  const historyIdxRef = useRef<number | null>(null);
+  const draftRef = useRef<string>("");
   const appliedPreset = useRef(0);
 
   // Testo imposto dall'esterno: si applica una volta sola per chiave.
@@ -111,6 +116,9 @@ export function ChatInput({
       }
       const text = lines.join("\n");
       if (text.trim()) {
+        historyRef.current = [...historyRef.current.filter((h) => h !== text), text].slice(-100);
+        historyIdxRef.current = null;
+        draftRef.current = "";
         setLines([""]);
         setRow(0);
         setCol(0);
@@ -127,11 +135,38 @@ export function ChatInput({
         const nextRow = row - 1;
         setRow(nextRow);
         setCol(Math.min(col, (lines[nextRow] ?? "").length));
+      } else if (historyRef.current.length > 0 && historyIdxRef.current === null) {
+        // Primo ↑ in riga singola: parte dall'ultimo invio.
+        draftRef.current = lines.join("\n");
+        historyIdxRef.current = historyRef.current.length - 1;
+        const item = historyRef.current[historyIdxRef.current];
+        setLines(item.split("\n"));
+        setRow(0);
+        setCol(0);
+      } else if (historyRef.current.length > 0 && historyIdxRef.current !== null && historyIdxRef.current > 0) {
+        historyIdxRef.current -= 1;
+        setLines(historyRef.current[historyIdxRef.current].split("\n"));
+        setRow(0);
+        setCol(0);
       }
       return;
     }
     if (key.downArrow) {
-      if (row < lines.length - 1) {
+      if (historyIdxRef.current !== null) {
+        if (historyIdxRef.current < historyRef.current.length - 1) {
+          historyIdxRef.current += 1;
+          setLines(historyRef.current[historyIdxRef.current].split("\n"));
+          setRow(0);
+          setCol(0);
+        } else {
+          // Oltre l'ultimo: si torna alla bozza che c'era prima di ↑.
+          historyIdxRef.current = null;
+          const restored = draftRef.current === "" ? [""] : draftRef.current.split("\n");
+          setLines(restored);
+          setRow(restored.length - 1);
+          setCol(restored[restored.length - 1]?.length ?? 0);
+        }
+      } else if (row < lines.length - 1) {
         const nextRow = row + 1;
         setRow(nextRow);
         setCol(Math.min(col, (lines[nextRow] ?? "").length));
@@ -192,7 +227,7 @@ export function ChatInput({
     return (
       <Box borderStyle="single" borderColor={focused ? theme.warning : theme.border} paddingX={1}>
         <Text>
-          Confermi l'esecuzione di "{confirm.toolName}"? <Text color={theme.muted}>[y/N]</Text>
+          Confermi l&apos;esecuzione di &quot;{confirm.toolName}&quot;? <Text color={theme.muted}>[y/N]</Text>
         </Text>
       </Box>
     );
@@ -201,7 +236,7 @@ export function ChatInput({
   return (
     <Box borderStyle="single" borderColor={focused ? theme.primary : theme.border} paddingX={1} flexDirection="column">
       {streaming ? (
-        <Text color={theme.muted}>L'agente sta rispondendo… (Esc per interrompere)</Text>
+        <Text color={theme.muted}>L&apos;agente sta rispondendo… (Esc per interrompere)</Text>
       ) : (
         lines.map((line, i) => (
           <CursorLine key={i} line={line} col={i === row ? col : -1} placeholder={placeholder} />
