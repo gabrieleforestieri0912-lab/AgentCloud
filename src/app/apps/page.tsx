@@ -102,10 +102,13 @@ export default async function AppsPage() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           {cards.map(({ id, icon: Icon, title, desc, cta, href, live }) => (
-            <article
+            // La card è un link: cliccare un componente porta dritto alla
+            // pagina di quel client, non a un'altra pagina generica.
+            <Link
               key={id}
               id={id}
-              className="scroll-mt-28 rounded-3xl border border-white/10 bg-neutral-900/70 p-6 backdrop-blur-xl sm:p-8"
+              href={href}
+              className="group scroll-mt-28 rounded-3xl border border-white/10 bg-neutral-900/70 p-6 backdrop-blur-xl transition-colors hover:border-brand-500/30 sm:p-8"
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-300">
@@ -119,14 +122,11 @@ export default async function AppsPage() {
               </div>
               <h2 className="mt-4 text-2xl font-bold text-white">{title}</h2>
               <p className="mt-1 text-sm text-neutral-400">{desc}</p>
-              <Link
-                href={href}
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-400 transition-all"
-              >
+              <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white transition-all group-hover:bg-brand-400">
                 {cta}
                 <ArrowRight size={14} />
-              </Link>
-            </article>
+              </span>
+            </Link>
           ))}
         </div>
       </section>

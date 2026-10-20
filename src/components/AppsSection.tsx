@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Sezione "app" della landing: desktop, mobile, CLI ed estensione con link
- * alla pagina dedicata /apps. Stessi agenti, stessa sessione, ovunque.
+ * Sezione "app" della landing: desktop, mobile, CLI ed estensione, con un
+ * link per ogni client alla sua pagina dedicata. Stessi agenti, stessa
+ * sessione, ovunque.
  */
 import Link from "next/link";
 import { MonitorDown, Smartphone, TerminalSquare, PanelRight, Sparkles, ArrowRight } from "lucide-react";
@@ -66,12 +67,15 @@ export default function AppsSection() {
           ))}
         </div>
 
+        {/* Ogni card porta alla pagina del suo client. Il bottone in fondo
+            punta alla CLI: è l'unico client installabile oggi, quindi
+            l'unica azione reale da offrire qui. */}
         <div className="text-center">
           <Link
-            href="/apps"
+            href="/cli"
             className="inline-flex items-center gap-2 bg-brand-500 text-white px-8 py-3.5 rounded-full font-bold hover:bg-brand-400 hover:-translate-y-0.5 transition-all"
           >
-            {a.cta}
+            {a.cliCta}
           </Link>
         </div>
       </div>
