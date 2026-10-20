@@ -1,9 +1,12 @@
-import { adminRequest, userRequest, userWhoAmI } from "../api.js";
+import { adminRequest, agentLimit, userRequest, userWhoAmI } from "../api.js";
 import { CATALOG } from "../catalog.js";
 import { clearCredentials, loadConfig, loadCredentials } from "../config.js";
 import { compareVersions, latestVersion, localVersion } from "../update.js";
 import { currentThemeName } from "./theme.js";
 import type { ChatMessage } from "./Chat.js";
+
+/** Sito AgentCloud: i link di abbonamento agli agenti. */
+const SITE = "https://www.agentcloud.agency";
 
 export type CommandArg = {
   name: string;
@@ -280,26 +283,36 @@ export const COMMANDS: CommandDef[] = [
     usage: "/usage",
     args: [],
     handler: async (ctx) => {
+      const rows: string[] = [];
       try {
         const data = await userRequest<{
           plan?: string;
           tokensUsed?: number;
           tokenLimit?: number;
           runs?: number;
-          messagesRemaining?: number;
         }>("/api/user/usage");
-        const rows = [
-          `Piano: ${data.plan ?? "?"}`,
-          `Token usati: ${data.tokensUsed ?? "?"} / ${data.tokenLimit ?? "?"}`,
-          `Run: ${data.runs ?? "?"}`,
-        ];
-        if (typeof data.messagesRemaining === "number") {
-          rows.push(`Messaggi gratuiti residui: ${data.messagesRemaining}`);
-        }
-        ctx.system("Uso e piano", rows);
+        rows.push(`Piano: ${data.plan ?? "?"}`);
+        rows.push(`Token usati: ${data.tokensUsed ?? "?"} / ${data.tokenLimit ?? "?"}`);
+        rows.push(`Run: ${data.runs ?? "?"}`);
       } catch (error) {
-        ctx.system("Uso non disponibile", [errText(error)]);
+        rows.push(`Uso non disponibile: ${errText(error)}`);
       }
+      // Messaggi gratuiti residui: stessa fonte del banner in chat.
+      try {
+        const limit = await agentLimit(ctx.agent);
+        if (limit.unlimited) {
+          rows.push("Messaggi gratuiti: nessun limite (abbonamento attivo)");
+        } else {
+          rows.push(
+            `Messaggi gratuiti residui: ${limit.remaining} su ${limit.limit} al giorno` +
+              (limit.resetAt ? ` (reset ${new Date(limit.resetAt).toLocaleTimeString()})` : ""),
+          );
+          rows.push(`Abbonati: ${SITE}/agents/${ctx.agent}`);
+        }
+      } catch (error) {
+        rows.push(`Budget non disponibile: ${errText(error)}`);
+      }
+      ctx.system("Uso e piano", rows);
     },
   },
   {

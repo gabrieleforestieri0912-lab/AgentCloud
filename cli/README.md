@@ -91,6 +91,28 @@ footer con scorciatoie e residuo di messaggi gratuiti quando l'API lo espone.
 Se non sei autenticato la chat si apre comunque: il messaggio di invio ti
 ricorda di usare `/login` (basta digitare `/` per il menu dei comandi).
 
+### Prova gratuita e abbonamento
+
+Nella chat vuota, **sopra al messaggio di benvenuto**, compare il riquadro
+della prova gratuita quando l'utente non ha ancora un abbonamento attivo:
+
+```
+┌───────────────────────────────────────────────┐
+│ Prova gratuita                                │
+│ Restano 3 messaggi gratuiti su 5 al giorno.  │
+│ Abbonati a Support Agent e usa l'agente senza │
+│ limiti:                                       │
+│ https://www.agentcloud.agency/agents/support- │
+│ agent                                        │
+└───────────────────────────────────────────────┘
+```
+
+Il link porta alla pagina dell'agente, dove si abbona. Con un abbonamento
+attivo il riquadro non compare e il conteggio dei messaggi gratuiti sparisce
+dal footer. I dati arrivano da `GET /api/agent/limit` (la stessa fonte della
+chat web: 5 messaggi gratuiti al giorno in totale, reset a mezzanotte UTC) e
+si aggiornano a ogni risposta.
+
 ### Tasti
 
 | Tasto | Azione |
@@ -116,7 +138,7 @@ evidenziata. Ogni comando della CLI ha il suo equivalente slash:
 | `/catalog` | `agentcloud agents catalog` | popup: catalogo agenti e prezzi, scegli con le frecce |
 | `/run <agente> <prompt>` | `agentcloud run <agente> "<prompt>"` | run isolata: non entra in cronologia |
 | `/whoami` | `agentcloud whoami` | utente autenticato e suoi agenti |
-| `/usage` | `agentcloud usage` | piano, consumi e messaggi gratuiti residui |
+| `/usage` | `agentcloud usage` | piano, consumi, messaggi gratuiti residui e link di abbonamento |
 | `/config` | `agentcloud config` | URL API, agente predefinito, credenziali |
 | `/update` | `agentcloud update` | controlla se c'è una versione nuova |
 | `/login` | `agentcloud login` | accedi col browser o incolla un token |

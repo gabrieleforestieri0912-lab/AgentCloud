@@ -233,6 +233,46 @@ export async function userWhoAmI() {
 }
 
 /**
+ * Budget giornaliero freemium dell'agente (`GET /api/agent/limit`).
+ *
+ * `unlimited: true` = abbonato attivo (o admin): niente paywall.
+ * Altrimenti `{ used, remaining, limit, resetAt }`: la prova gratuita è
+ * ancora attiva e restano `remaining` messaggi gratuiti (5 al giorno in
+ * totale, reset a mezzanotte UTC). È la stessa fonte usata dalla chat web.
+ */
+export type AgentLimit =
+  | { unlimited: true }
+  | { unlimited: false; used: number; remaining: number; limit: number; resetAt: string };
+
+export async function agentLimit(agentSlug: string): Promise<AgentLimit> {
+  const token = await getValidUserToken();
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl()}/api/agent/limit?agent=${encodeURIComponent(agentSlug)}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    });
+  } catch {
+    throw new ApiError(0, "Rete non raggiungibile: controlla la connessione e riprova.");
+  }
+  if (!response.ok) throw new ApiError(response.status, await parseError(response));
+  const data = (await response.json()) as {
+    unlimited?: boolean;
+    used?: number;
+    remaining?: number;
+    limit?: number;
+    resetAt?: string;
+  };
+  if (data.unlimited) return { unlimited: true };
+  return {
+    unlimited: false,
+    used: data.used ?? 0,
+    remaining: data.remaining ?? 0,
+    limit: data.limit ?? 5,
+    resetAt: data.resetAt ?? "",
+  };
+}
+
+/**
  * Persistenza best-effort dei file generati (stesso contratto del web client,
  * che posta senza conversationId: upsert per slug con versioni sul server).
  * Ritorna false invece di lanciare: un salvataggio fallito non deve mai

@@ -1,7 +1,7 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Text, render, useApp, useInput, useStdout } from "ink";
 import path from "node:path";
-import { ApiError, deleteAgentFile, saveAgentFiles, streamAgent, userRequest, userWhoAmI } from "../api.js";
+import { ApiError, agentLimit, deleteAgentFile, saveAgentFiles, streamAgent, userRequest, userWhoAmI, type AgentLimit } from "../api.js";
 import { localVersion } from "../update.js";
 import { theme } from "./theme.js";
 import { Chat, type ChatMessage, type ToolStep } from "./Chat.js";
@@ -202,6 +202,9 @@ export function App({
   const [loginOpen, setLoginOpen] = useState(false);
   const [liveInfo, setLiveInfo] = useState<SessionInfo | null>(null);
   const info = liveInfo ?? session;
+  // Budget freemium dell'agente: se non è "unlimited" l'utente è in prova
+  // gratuita e in chat vuota compare il link per abbonarsi.
+  const [limit, setLimit] = useState<AgentLimit | null>(null);
   // Sessione presente? Se il sito non risponde 401 restiamo "forse": la CLI
   // storica non faceva il whoami, e non vogliamo bloccare la chat senza prove.
   const [loggedIn, setLoggedIn] = useState<boolean>(session?.authenticated !== false);
@@ -671,8 +674,7 @@ export function App({
   }
 
   /** Ritorna informazioni utente fresche (header/status) senza bloccare. */
-  const refreshSession = async () => {
-    try {
+  const refreshSession = async () => {    try {
       const who = await userWhoAmI();
       let plan: string | null = null;
       let messagesRemaining: number | null = null;
@@ -694,6 +696,25 @@ export function App({
       }
     }
   };
+
+  /**
+   * Budget freemium dell'agente: serve al link di abbonamento nella chat
+   * vuota e al contatore nel footer. Silenzioso in caso di errore: è un
+   * extra, non deve mai bloccare la chat.
+   */
+  const loadLimit = useCallback(async (slug: string) => {
+    try {
+      setLimit(await agentLimit(slug));
+    } catch {
+      setLimit(null);
+    }
+  }, []);
+
+  // Al cambio agente (e all'avvio) il budget va ricaricato.
+  useEffect(() => {
+    const timer = setTimeout(() => void loadLimit(agent), 0);
+    return () => clearTimeout(timer);
+  }, [agent, loadLimit]);
 
   /** Carica (una volta) gli agenti posseduti per il popup /agents. */
   const fetchAgentChoices = async (): Promise<AgentChoice[]> => {
@@ -902,6 +923,9 @@ export function App({
       setStreaming(false);
       abortRef.current = null;
       setActivity(null);
+      // Ogni risposta consuma un messaggio gratuito: il contatore va
+      // aggiornato (footer e link di abbonamento).
+      void loadLimit(agent);
     }
   };
 
@@ -990,7 +1014,14 @@ export function App({
         ) : null}
         <Box flexDirection="column" height={chatHeight} alignItems="center">
           <Box width={inputWidth} flexDirection="column">
-            <Chat messages={msgsRef.current} agentName={agentName} width={inputWidth} maxHeight={chatHeight} />
+            <Chat
+              messages={msgsRef.current}
+              agentName={agentName}
+              width={inputWidth}
+              maxHeight={chatHeight}
+              agentSlug={agent}
+              limit={limit}
+            />
           </Box>
         </Box>
         {notice ? (
@@ -1046,7 +1077,7 @@ export function App({
             />
           </Box>
         </Box>
-        <StatusBar agent={agent} cwd={path.basename(process.cwd()) || process.cwd()} online={online} session={info} />
+        <StatusBar agent={agent} cwd={path.basename(process.cwd()) || process.cwd()} online={online} session={info} limit={limit} />
       </Box>
       {sidebarVisible ? (
         <Sidebar

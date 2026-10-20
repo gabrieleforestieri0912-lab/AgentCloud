@@ -3,6 +3,10 @@ import { Box, Text } from "ink";
 import { theme } from "./theme.js";
 import { estimateLines, visibleFromEnd } from "./measure.js";
 import { Markdown } from "./markdown.js";
+import type { AgentLimit } from "../api.js";
+
+/** Sito AgentCloud: i link (abbonamento agli agenti). */
+const SITE = "https://www.agentcloud.agency";
 
 export type ToolStepState = "running" | "done" | "error";
 
@@ -74,11 +78,17 @@ export function Chat({
   agentName,
   width,
   maxHeight,
+  agentSlug,
+  limit,
 }: {
   messages: ChatMessage[];
   agentName: string;
   width: number;
   maxHeight: number;
+  /** Slug dell'agente attivo: serve al link di abbonamento. */
+  agentSlug?: string;
+  /** Budget freemium: se non è "unlimited" l'utente è in prova gratuita. */
+  limit?: AgentLimit | null;
 }) {
   const budget = Math.max(1, maxHeight);
   const lengths = messages.map((m) => heightOf(m, width));
@@ -94,6 +104,9 @@ export function Chat({
 
   return (
     <Box flexDirection="column" paddingX={1}>
+      {messages.length === 0 ? (
+        <EmptyState agentName={agentName} agentSlug={agentSlug ?? ""} limit={limit ?? null} />
+      ) : null}
       {visible.map((m, i) => {
         const isLast = i === lastIndex;
         const allowed = isLast ? budget - others : lengths[start + i];
@@ -165,6 +178,60 @@ function fitMessage(m: ChatMessage, allowed: number, width: number): ChatMessage
     ...m,
     content: hidden > 0 ? `… (${hidden} righe sopra)\n${kept.join("\n")}` : kept.join("\n"),
   };
+}
+
+/**
+ * Chat vuota: il benvenuto dell'agente e, se l'utente è ancora in prova
+ * gratuita, il link per abbonarsi all'agente che sta usando (sopra il
+ * benvenuto, come nel paywall della chat web).
+ */
+function EmptyState({
+  agentName,
+  agentSlug,
+  limit,
+}: {
+  agentName: string;
+  agentSlug: string;
+  limit: AgentLimit | null;
+}) {
+  const inFreeTrial = limit !== null && limit.unlimited === false;
+  const subscribeUrl = `${SITE}/agents/${agentSlug}`;
+  return (
+    <Box flexDirection="column">
+      {inFreeTrial && limit ? (
+        <Box flexDirection="column" borderStyle="single" borderColor={theme.warning} paddingX={1}>
+          <Text bold color={theme.warning}>
+            Prova gratuita
+          </Text>
+          {limit.remaining > 0 ? (
+            <Text color={theme.muted}>
+              Restano <Text color={theme.warning}>{limit.remaining}</Text> messaggi gratuiti su{" "}
+              {limit.limit} al giorno.
+            </Text>
+          ) : (
+            <Text color={theme.error}>
+              Hai usato i {limit.limit} messaggi gratuiti di oggi: si ripartisce a mezzanotte.
+            </Text>
+          )}
+          <Text color={theme.muted}>
+            Abbonati a <Text color={theme.text}>{agentName}</Text> e usa l&apos;agente senza limiti:
+          </Text>
+          <Text color={theme.primary}>{subscribeUrl}</Text>
+        </Box>
+      ) : null}
+      <Box flexDirection="column" marginTop={1}>
+        <Text bold color={theme.success}>
+          ● {agentName}
+        </Text>
+        <Text color={theme.text}>
+          Ciao! Sono {agentName}. Dimmi cosa ti serve e ci penso io.
+        </Text>
+        <Text color={theme.muted}>
+          Scrivi qui sotto e premi Invio · / per i comandi · Esc interrompe la risposta
+        </Text>
+      </Box>
+    </Box>
+  );
 }
 
 /**

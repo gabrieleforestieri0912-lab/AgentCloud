@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Text } from "ink";
 import { theme } from "./theme.js";
 import type { SessionInfo } from "./App.js";
+import type { AgentLimit } from "../api.js";
 
 /**
  * Barra di stato footer: agente, cartella di lavoro, connessione, piano e
@@ -13,11 +14,14 @@ export function StatusBar({
   cwd,
   online,
   session,
+  limit,
 }: {
   agent: string;
   cwd: string;
   online: boolean | null;
   session?: SessionInfo | null;
+  /** Budget freemium: la fonte autorevole dei messaggi gratuiti residui. */
+  limit?: AgentLimit | null;
 }) {
   const conn =
     online === null ? (
@@ -27,6 +31,13 @@ export function StatusBar({
     ) : (
       <Text color={theme.error}>offline</Text>
     );
+  // Residuo: prima il dato dell'API, altrimenti il budget freemium.
+  const remaining =
+    typeof session?.messagesRemaining === "number"
+      ? session.messagesRemaining
+      : limit && limit.unlimited === false
+        ? limit.remaining
+        : null;
   return (
     <Box>
       <Text color={theme.muted} wrap="truncate">
@@ -34,8 +45,8 @@ export function StatusBar({
         {cwd ? <>{cwd} · </> : null}
         {conn}
         {session?.plan ? <> · piano <Text color={theme.primary}>{session.plan}</Text></> : null}
-        {typeof session?.messagesRemaining === "number" ? (
-          <> · msg gratuiti residui: <Text color={session.messagesRemaining > 0 ? theme.success : theme.error}>{session.messagesRemaining}</Text></>
+        {remaining !== null ? (
+          <> · msg gratuiti residui: <Text color={remaining > 0 ? theme.success : theme.error}>{remaining}</Text></>
         ) : null}
         <> · Ctrl+C esci · Esc interrompe · / comandi</>
       </Text>
