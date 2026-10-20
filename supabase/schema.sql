@@ -99,6 +99,14 @@ create policy "Users can update own profile"
   on public.profiles for update
   using (auth.uid() = id);
 
+-- Serve a /api/user/onboarding quando la riga del profilo non esiste ancora
+-- (utente creato prima del trigger handle_new_user): l'utente può creare
+-- SOLO la propria riga, mai quella di un altro.
+drop policy if exists "Users can insert own profile" on public.profiles;
+create policy "Users can insert own profile"
+  on public.profiles for insert
+  with check (auth.uid() = id);
+
 -- Le policy "Service role can manage ..." devono restare LIMITATE al ruolo
 -- service_role. Senza `to service_role` una policy `for all using (true)`
 -- vale per TUTTI i ruoli: un utente autenticato che non lo sa poteva leggere
