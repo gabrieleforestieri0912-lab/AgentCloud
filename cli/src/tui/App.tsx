@@ -11,14 +11,16 @@ import { Spinner } from "./Spinner.js";
 import { StatusBar } from "./StatusBar.js";
 import { DiffOverlay } from "./DiffOverlay.js";
 import { SIDEBAR_WIDTH, Sidebar } from "./Sidebar.js";
-import { CommandMenu } from "./CommandMenu.js";
+import { CommandMenu, MAX_MENU_ROWS } from "./CommandMenu.js";
 import { HelpOverlay } from "./HelpOverlay.js";
 import { SessionsOverlay } from "./SessionsOverlay.js";
 import { AgentsOverlay, type AgentChoice } from "./AgentsOverlay.js";
 import { LoginScreen } from "./LoginScreen.js";
 import { CATALOG } from "../catalog.js";
 import {
-  filterCommands,
+  commandArgs,
+  commandBody,
+  matchCommands,
   type CommandContext,
   type CommandDef,
 } from "./commands.js";
@@ -94,7 +96,11 @@ export async function runChatTui(opts: {
 }
 
 function stripFlags(messages: ChatMessage[]): Array<{ role: "user" | "assistant"; content: string }> {
-  return messages.map(({ role, content }) => ({ role, content }));
+  // I messaggi di sistema (output dei comandi `/`) non vanno all'agente:
+  // sono roba della CLI, non della conversazione.
+  return messages
+    .filter((m) => !m.system)
+    .map(({ role, content }) => ({ role, content }));
 }
 
 /** Upsert di una card tool per nome: aggiorna lo stato o la aggiunge. */
@@ -213,10 +219,11 @@ export function App({
         if (menuOpenRef.current) setMenuOpen(false);
         return;
       }
-      if (!menuOpenRef.current) {
-        setMenuSelected(0);
-        setMenuOpen(true);
-      }
+      // La selezione torna in alto a ogni digitazione: il comando
+      // evidenziato corrisponde sempre a quello che l'utente sta scrivendo.
+      // Le frecce la spostano senza più modificare la bozza.
+      setMenuSelected(0);
+      if (!menuOpenRef.current) setMenuOpen(true);
     },
     [],
   );
@@ -235,6 +242,11 @@ export function App({
     msgsRef.current = [...msgsRef.current, m];
     touch();
   };
+  /** Output di un comando `/`: resta a schermo, non entra nella cronologia. */
+  const pushSystem = (title: string, body: string | string[]) => {
+    const content = Array.isArray(body) ? body.join("\n") : body;
+    pushMsg({ role: "assistant", content, system: title });
+  };
   const patchLast = (fn: (m: ChatMessage) => ChatMessage) => {
     const arr = [...msgsRef.current];
     arr[arr.length - 1] = fn(arr[arr.length - 1]);
@@ -251,7 +263,9 @@ export function App({
     finishedRef.current = true;
     abortRef.current?.abort();
     onExit(
-      msgsRef.current.map(({ role, content }) => ({ role, content })),
+      msgsRef.current
+        .filter((m) => !m.system)
+        .map(({ role, content }) => ({ role, content })),
       titleRef.current,
       filesRef.current,
     );
@@ -274,7 +288,7 @@ export function App({
     // Overlay aperti (help/sessioni/diff): possiedono i loro tasti.
     if (helpOpen || sessionsOpen || diffView || agentsOpen || loginOpen) return;
     if (menuOpen) {
-      const { name } = parseSlash(draft);
+      const body = commandBody(draft);
       const list = menuList;
       if (key.upArrow) {
         setMenuSelected((s) => (list.length ? (s - 1 + list.length) % list.length : 0));
@@ -286,13 +300,14 @@ export function App({
       }
       if (key.tab || key.return) {
         const def = list[menuSel];
-        const { args } = parseSlash(draft);
+
         if (!def) {
           setMenuOpen(false);
           setPreset({ text: "", key: Date.now() });
-          if (name) setNotice(`Comando sconosciuto: /${name} — /help per l'elenco.`);
+          if (body) setNotice(`Comando sconosciuto: /${body} — /help per l'elenco.`);
           return;
         }
+        const { args, rest } = commandArgs(def, body);
         if (def.args.some((a) => a.required) && args.length === 0) {
           // Suggerimento argomento: precompila e chiudi il menu.
           suppressMenuRef.current = true;
@@ -300,7 +315,7 @@ export function App({
           setMenuOpen(false);
           return;
         }
-        runSlashCommand(def, args);
+        runSlashCommand(def, args, rest);
         return;
       }
       if (key.escape) {
@@ -342,24 +357,13 @@ export function App({
     }
   });
 
-  /** "​/nome args..." → nome comando + argomenti. */
-  function parseSlash(draftText: string): { name: string; args: string[] } {
-    const body = draftText.startsWith("/") ? draftText.slice(1) : draftText;
-    const space = body.indexOf(" ");
-    if (space === -1) return { name: body.toLowerCase(), args: [] };
-    return {
-      name: body.slice(0, space).toLowerCase(),
-      args: body.slice(space + 1).trim().split(/\s+/).filter(Boolean),
-    };
-  }
-
   /** Esegue un comando del registro e pulisce l'input. */
-  function runSlashCommand(def: CommandDef, args: string[]) {
+  function runSlashCommand(def: CommandDef, args: string[], rest: string) {
     setMenuOpen(false);
     setPreset({ text: "", key: Date.now() });
     const ctx = buildCommandContext();
     void Promise.resolve()
-      .then(() => def.handler(ctx, args))
+      .then(() => def.handler(ctx, args, rest))
       .catch((error) =>
         setNotice(`Comando /${def.name}: ${error instanceof Error ? error.message : String(error)}`),
       );
@@ -369,7 +373,10 @@ export function App({
     return {
       agent,
       agentName,
-      getMessages: () => msgsRef.current.map(({ role, content }) => ({ role, content })),
+      getMessages: () =>
+        msgsRef.current
+          .filter((m) => !m.system)
+          .map(({ role, content }) => ({ role, content })),
       resetAll: () => {
         msgsRef.current = [];
         filesRef.current = [];
@@ -406,7 +413,36 @@ export function App({
       },
       exit: () => finish(),
       notice: (msg: string) => setNotice(msg),
+      system: (title: string, body: string | string[]) => pushSystem(title, body),
+      runAgent: (slug: string, prompt: string) => runIsolatedAgent(slug, prompt),
     };
+  }
+
+  /**
+   * Run isolata (comando `/run`): un altro agente risponde a un prompt
+   * senza che il prompt entri nella conversazione corrente.
+   */
+  async function runIsolatedAgent(slug: string, prompt: string): Promise<string> {
+    setActivity(`run ${slug}…`);
+    let out = "";
+    try {
+      await streamAgent(
+        slug,
+        [{ role: "user", content: prompt }],
+        (event) => {
+          if (event.type === "text" && typeof event.content === "string") {
+            out += event.content;
+          } else if (event.type === "tool_start") {
+            setActivity(`sto lavorando: ${String(event.toolName || "tool")}…`);
+          } else if (event.type === "error") {
+            throw new Error(String(event.message || "Errore agente"));
+          }
+        },
+      );
+      return out;
+    } finally {
+      setActivity(null);
+    }
   }
 
   /** Diff di un file o, senza argomento, di tutte le modifiche. */
@@ -725,7 +761,7 @@ export function App({
   const liveFiles = filesRef.current.filter((f) => f.head >= 0);
   const safeSelected = Math.min(selected, Math.max(0, liveFiles.length - 1));
   const totals = fileTotals(filesRef.current);
-  const menuList = filterCommands(parseSlash(draft).name);
+  const menuList = matchCommands(draft);
   const menuSel = Math.min(menuSelected, Math.max(0, menuList.length - 1));
 
   // Header: logo(1) + separatore(1) + stato(1). Il margine interno è gestito
@@ -734,7 +770,9 @@ export function App({
   const chrome = headerH + 1 + (notice ? 1 : 0) + (activity ? 1 : 0) + inputHeight;
   // Il menu occupa righe fisse: va tolto dal budget della chat, altrimenti
   // il layout sfora e Ink taglia righe a caso.
-  const menuRowsShown = menuOpen ? Math.min(menuList.length, 8) + (menuList.length > 8 ? 1 : 0) : 0;
+  const menuRowsShown = menuOpen
+    ? Math.min(menuList.length, MAX_MENU_ROWS) + (menuList.length > MAX_MENU_ROWS ? 1 : 0)
+    : 0;
   const menuH = menuOpen ? menuRowsShown + 2 : 0; // +2 bordi
   const chatHeight = Math.max(3, rows - chrome - menuH);
   const chatWidth = sidebarVisible ? Math.max(20, columns - SIDEBAR_WIDTH - 1) : columns;

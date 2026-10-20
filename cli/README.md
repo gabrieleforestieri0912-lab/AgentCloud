@@ -104,17 +104,39 @@ ricorda di usare `/login` (basta digitare `/` per il menu dei comandi).
 
 ### Comandi `/`
 
-| Comando | Cosa fa |
-|---|---|
-| `/agents` | scegli o cambia agente (i tuoi agenti attivi) |
-| `/login` | accedi dal browser o incolla un token |
-| `/logout` | esci dall'account (la chat resta aperta) |
-| `/clear` | pulisce la conversazione |
-| `/help` | comandi e scorciatoie |
-| `/exit` | esce (salva la sessione) |
-| `/new` · `/sessions` · `/rename` | sessione e titolo |
-| `/undo` · `/redo` · `/diff` | modifiche ai file |
-| `/theme` | tema attivo |
+Digitando `/` si apre il menu con **tutti** i comandi della CLI, in ordine di
+priorità; il menu scorre con le frecce (`↑`/`↓`) e mostra sempre la riga
+evidenziata. Ogni comando della CLI ha il suo equivalente slash:
+
+| Comando | Equivalente CLI | Cosa fa |
+|---|---|---|
+| `/help` | `agentcloud --help` | elenco comandi e scorciatoie |
+| `/version` | `agentcloud --version` | versione della CLI, di Node e dell'API |
+| `/agents` | `agentcloud agents list` | elenca e cambia agente attivo |
+| `/catalog` | `agentcloud agents catalog` | catalogo agenti e prezzi |
+| `/run <agente> <prompt>` | `agentcloud run <agente> "<prompt>"` | run isolata: non entra in cronologia |
+| `/whoami` | `agentcloud whoami` | utente autenticato e suoi agenti |
+| `/usage` | `agentcloud usage` | piano, consumi e messaggi gratuiti residui |
+| `/config` | `agentcloud config` | URL API, agente predefinito, credenziali |
+| `/update` | `agentcloud update` | controlla se c'è una versione nuova |
+| `/login` | `agentcloud login` | accedi col browser o incolla un token |
+| `/logout` | `agentcloud logout` | esci dall'account (la chat resta aperta) |
+| `/new` | — | nuova chat (azzera conversazione, file e titolo) |
+| `/sessions` | `agentcloud chat --resume <codice>` | chat precedenti e ripresa |
+| `/rename <titolo>` | — | rinomina la chat corrente |
+| `/undo` · `/redo` | — | annulla/ripristina modifiche ai file |
+| `/diff [file]` | — | mostra le modifiche (tutte o di un file) |
+| `/clear` | — | pulisce la conversazione |
+| `/theme` | — | tema attivo |
+| `/chat` | `agentcloud chat` | sei già in chat: parla con l'agente attivo |
+| `/exit` | — | esce (salva la sessione) |
+| `/admin tenants list` | `agentcloud admin tenants list` | tenant registrati |
+| `/admin integrations status` | `agentcloud admin integrations status` | stato integrazioni |
+| `/admin flags show` | `agentcloud admin flags show` | feature flag della CLI |
+| `/admin email send --to … --subject … --body …` | `agentcloud admin email send …` | email transazionali |
+
+L'output dei comandi (versione, catalogo, usage…) compare nella chat in un
+riquadro: resta a schermo ma **non** entra nella cronologia inviata all'agente.
 
 ## Login
 
@@ -196,35 +218,14 @@ browser, nessuna scadenza, revocabile in qualsiasi momento:
 agentcloud login --token act_...
 
 # oppure senza salvare nulla su disco:
-AGENTCLOUD_TOKEN=act_... agentcloud agents run <slug> "ciao"
+AGENTCLOUD_TOKEN=act_... agentcloud run <slug> "ciao"
 ```
-
-### Login con email e password (senza browser)
-
-```bash
-agentcloud login --password
-```
-
-Prima del login con password configura le chiavi pubbliche Supabase
-nell'ambiente:
-
-```bash
-# PowerShell
-$env:NEXT_PUBLIC_SUPABASE_URL="https://<project>.supabase.co"
-$env:NEXT_PUBLIC_SUPABASE_ANON_KEY="<anon-key>"
-
-# bash/zsh
-export NEXT_PUBLIC_SUPABASE_URL="https://<project>.supabase.co"
-export NEXT_PUBLIC_SUPABASE_ANON_KEY="<anon-key>"
-```
-
-La password viene letta senza echo quando il terminale lo consente e non viene mai scritta su disco. Le credenziali sono in `~/.agentcloud/credentials.json` con permessi `600` dove supportato; su Windows il comportamento di `chmod` dipende dal filesystem/ACL.
-
-Google OAuth non è gestito direttamente dalla CLI: gli account Google devono impostare una password dal sito tramite il recupero password.
 
 ## Comandi utente
 
 ```bash
+agentcloud --version
+agentcloud whoami
 agentcloud agents list
 agentcloud agents catalog
 agentcloud run support-agent "Analizza questa richiesta"
@@ -236,6 +237,10 @@ agentcloud config
 agentcloud config --url http://localhost:3000
 agentcloud run support-agent "ciao" --json   # output JSON, per script
 ```
+
+Ogni comando qui sopra ha anche il suo equivalente slash dentro la chat
+(`/version`, `/whoami`, `/agents`, `/catalog`, `/run`, `/usage`, `/config`…):
+vedi la tabella completa in [Comandi `/`](#comandi-).
 
 Senza slug, `chat` mostra il selettore (frecce + Invio sul terminale,
 elenco numerato se l'input è ridiretto): solo agenti disponibili, con
@@ -263,20 +268,12 @@ quello del sito).
 
 ### Comandi `/`
 
-Digitando `/` si apre il menu filtrabile (frecce, Tab/Invio, Esc):
+Digitando `/` si apre il menu filtrabile (frecce, Tab/Invio, Esc) con
+**tutti** i comandi della CLI: l'elenco completo è nella sezione
+[Comandi `/`](#comandi-) qui sopra, con l'equivalente CLI di ognuno.
 
-| Comando | Cosa fa |
-|---|---|
-| `/help` | comandi e scorciatoie |
-| `/new` | nuova chat (azzera tutto) |
-| `/sessions` | chat precedenti e ripresa |
-| `/rename <titolo>` | rinomina la chat |
-| `/undo` · `/redo` | annulla/ripristina modifiche file |
-| `/diff [file]` | tutte le modifiche o un file |
-| `/clear` | pulisce la conversazione |
-| `/theme` | mostra il tema attivo |
-| `/login` · `/logout` | account |
-| `/exit` | esce (salva la sessione) |
+Il menu scorre: con molti comandi la finestra segue la riga evidenziata e
+indica quanti ce ne sono sopra e sotto.
 
 Scorciatoie: Tab sposta il focus (input/sidebar), ↑↓ navigano,
 Ctrl+B sidebar, Ctrl+C esce salvando.
