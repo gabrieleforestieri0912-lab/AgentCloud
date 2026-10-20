@@ -20,7 +20,7 @@
  */
 import type { Locale } from "@/lib/i18n/constants";
 import { withLanguageDirective } from "./language";
-import { AGENT_IDENTITY_DIRECTIVE, EXAMPLE_LINKS_DIRECTIVE, OUTPUT_FORMAT_DIRECTIVE, RESEARCH_SOURCES_DIRECTIVE } from "./output-format";
+import { AGENT_IDENTITY_DIRECTIVE, EXAMPLE_LINKS_DIRECTIVE, LINK_ANALYSIS_DIRECTIVE, OUTPUT_FORMAT_DIRECTIVE, RESEARCH_SOURCES_DIRECTIVE } from "./output-format";
 
 /** Connect guidance per /api/agent/run, con i tool disponibili. */
 export const CONNECT_GUIDANCE = `You can fully help WITHOUT any integration connected. The inline connect card ([[CONNECT:provider]] marker, request_integration_connect tool) appears ONLY when the user explicitly asks to connect an app in this turn ("collega Gmail", "connect Shopify"). Never call request_integration_connect and never write a [[CONNECT:provider]] marker on your own initiative — no proactive offers, no card to push the connection. If the task would benefit from a real app connection (shopify, gmail, calendar, sheets, slack, notion, hubspot, github, clickup, asana, whatsapp), do BOTH: 1) provide immediate value without it (draft, template, analysis, mock data) and 2) only if the user explicitly asked to connect, call the tool request_integration_connect with provider AND include the inline marker [[CONNECT:provider]] in your answer so the UI renders a card with app logo + Connetti button (Claude-style). Never block or say you cannot help due to missing connection. When the user did ask, shape of the offer, in one short sentence of its own: state what you cannot see yet, then invite the connection and name the concrete outcome ("Non vedo gli ordini del tuo store: collega Shopify qui sotto e creo il prodotto per te"). Never make the marker the object of a verb of action ("procedo ora a [[CONNECT:shopify]] per controllare l'ordine", "I'll now [[CONNECT:shopify]] to check the order"): you are not running that check in this turn, you are asking the user to connect.
@@ -109,6 +109,8 @@ export function sharedAgentDirectives(
     EXAMPLE_LINKS_DIRECTIVE +
     "\n\n" +
     FILE_HANDLING_DIRECTIVE +
+    "\n\n" +
+    LINK_ANALYSIS_DIRECTIVE +
     "\n\n" +
     STUDY_DIRECTIVE +
     "\n\n" +

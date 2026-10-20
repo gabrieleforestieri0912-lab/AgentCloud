@@ -57,6 +57,24 @@ export const EXAMPLE_LINKS_DIRECTIVE = `Example links:
 - Keep links few (max 3-4 per answer) and only when they truly help the user's request. Short answers, greetings and confirmations need no links.`;
 
 /**
+ * Link che l'utente incolla: il modello deve leggere la pagina, non dire
+ * che non può aprirla.
+ *
+ * Senza un ordine esplicito, davanti a un link il modello risponde "non
+ * posso aprire i link" (o inventa il contenuto): il tool `scrape_page` esiste
+ * proprio per questo, ma senza dire "quando l'utente ti dà un link, leggi
+ * la pagina" il modello non lo usa. La direttiva fissa anche cosa fare quando
+ * la lettura fallisce: dirlo, non raggirare.
+ *
+ * In inglese di proposito, come OUTPUT_FORMAT_DIRECTIVE.
+ */
+export const LINK_ANALYSIS_DIRECTIVE = `Links the user gives you:
+- When the user's message contains a URL — they paste a link and ask what it is, to analyze it, to summarize it, to compare it, to translate it, to rewrite it, or simply to look at it — call the scrape_page tool on that URL and answer from the page's ACTUAL content. Never answer that you cannot open links while you have the tool.
+- Use the fetched content as the primary source: work on what is really written there, and say which page you read (title + URL).
+- If the fetch fails (blocked, timeout, not a web page, unreachable address), say plainly what failed and offer the next step (web_search on the same topic, or the user pasting the text). Never invent the page content, never describe a page you did not read.
+- Only fetch URLs the user provided or that a tool returned in this conversation.`;
+
+/**
  * Direttiva di identità, appesa subito dopo la direttiva di formato.
  *
  * Perché esiste: senza un ordine esplicito il modello sottostante si

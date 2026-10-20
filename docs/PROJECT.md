@@ -220,9 +220,34 @@ Backed da **Supabase** (tabella `rate_limits` + RPC atomici) — vale su tutte l
 | `/api/agent/run` (anonimi) | **30/min per IP** | burst filter in-memory + limite distribuito; header `Retry-After` |
 | `/api/contact` | **5/h per IP** | 429 localizzato |
 | `/api/waitlist` | **3/h per IP** | email comunque deduplicata dal DB |
+| letture pagina in chat (`scrape_page`) | **20/min per IP** | bucket `chat-page-fetch`; superato il tetto il tool risponde con un errore e la chat va avanti |
 
 - **Fail-open**: se il DB non è raggiungibile la richiesta passa (un guasto al rate limiter non blocca mai il traffico).
 - La pulizia delle finestre scadute avviene opportunisticamente (~1% delle chiamate).
+
+## Lettura di pagine web (tool `scrape_page`)
+
+Quando l'utente incolla un link, l'agente deve poterlo **leggere**: il tool
+`scrape_page` è la via. Il server scarica la pagina e passa il testo al
+modello, che risponde sul contenuto reale.
+
+- `src/lib/tools/web-fetch.ts`: fetch protetto. Solo `http`/`https`, host
+  risolto e **indirizzi privati o riservati bloccati** (loopback, rete
+  privata, link-local, metadata cloud) — controllati a ogni redirect, che
+  segue a mano (max 3). Timeout 15s, tetto 2 MB letti in streaming,
+  User-Agent da browser (molti siti rispondono 403 a quelli non umani),
+  solo content-type testuali (HTML, testo, markdown, JSON, XML). Estrae
+  titolo e testo leggibile, e restituisce un messaggio d'errore comprensibile
+  quando la pagina non è leggibile.
+- Loop dei tool in `/api/chat`: la route passava `tools: []`, quindi in chat
+  nessun link era leggibile. Ora il modello può chiedere `scrape_page`
+  (max 3 giri) e la risposta poggia sul contenuto reale della pagina.
+- Direttiva di prompt `LINK_ANALYSIS_DIRECTIVE` (`lib/agents/output-format.ts`):
+  se il messaggio contiene un URL, il modello legge la pagina e risponde da
+  ciò che ha letto; se la lettura fallisce, lo dice e non inventa il
+  contenuto.
+- I provider che non supportano i tool (backend economico della demo hero)
+  ricadono su una chiamata senza tool: la chat non si rompe.
 
 ---
 

@@ -35,6 +35,7 @@ import {
 import { getValidGoogleAccessToken } from "@/lib/google/token";
 import { googleSheetsRequest } from "@/lib/google/sheets";
 import { executeWebSearch, formatWebSearchResults } from "@/lib/tools/tavily";
+import { fetchPage, formatPageForModel } from "@/lib/tools/web-fetch";
 import { buildQuizHtml, buildFlashcardsHtml } from "@/lib/study-cards";
 import {
   ARTIFACT_MAX_BYTES,
@@ -101,7 +102,8 @@ export const TOOL_DEFINITIONS: Record<string, LLMTool> = {
 
   scrape_page: {
     name: "scrape_page",
-    description: "Read the full text content of a web page. Cite the page at the end of your answer in the Fonti section with its exact [title](url) link.",
+    description:
+      "Read the full text content of a web page. Use it whenever the user gives you a URL (a link to analyze, summarize, compare, translate or rewrite) and you need to read what is really on that page, and when you need the content of a specific page found through web_search. Cite the page at the end of your answer in the Fonti section with its exact [title](url) link.",
     input_schema: {
       type: "object",
       properties: {
@@ -1531,21 +1533,10 @@ export async function executeTool(
     }
 
     case "scrape_page": {
-      try {
-        const res = await fetch(input.url, {
-          headers: { "User-Agent": "Mozilla/5.0 (compatible; AgentCloud/1.0)" },
-        });
-        const html = await res.text();
-        const text = html
-          .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
-          .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "")
-          .replace(/<[^>]+>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-        return text.slice(0, 8000) || "Page content is empty";
-      } catch (e) {
-        return `Scrape error: ${e instanceof Error ? e.message : String(e)}`;
-      }
+      // Lettura protetta: host privati bloccati, timeout, tetto di peso e
+      // User-Agent da browser (vedi lib/tools/web-fetch.ts).
+      const result = await fetchPage(String(input.url ?? ""));
+      return formatPageForModel(result);
     }
 
     case "read_file": {

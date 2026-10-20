@@ -95,7 +95,6 @@ export default function HeroSection() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatBodyRef = useRef<HTMLDivElement>(null);
   const heroColumnRef = useRef<HTMLDivElement>(null);
   // Stream in corso, interrotto quando l'utente fa reset a metà risposta.
   const streamAbortRef = useRef<AbortController | null>(null);
@@ -174,11 +173,14 @@ export default function HeroSection() {
     ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
   }, [input]);
 
-  // Tiene in vista il messaggio più recente nell'area scrollabile della chat.
+  // Tiene in vista il messaggio più recente. Scorre la COLONNA centrale
+  // dell'hero, che è l'unico contenitore scrollabile della sezione: l'area
+  // messaggi cresce con la conversazione e non ha una scrollbar propria,
+  // altrimenti in sezione comparivano due scrollbar.
   const scrollToBottom = useCallback(() => {
-    const container = chatBodyRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
+    const column = heroColumnRef.current;
+    if (column) {
+      column.scrollTop = column.scrollHeight;
     }
   }, []);
 
@@ -204,11 +206,6 @@ export default function HeroSection() {
   // ancorata allo schermo (le decorazioni laterali tengono il posto): a
   // scorrere è la colonna centrale, fissata in basso così l'input resta
   // visibile.
-  useEffect(() => {
-    if (!hasMessages) return;
-    const el = heroColumnRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, isTyping, hasMessages]);
 
   // Mostra subito la bolla utente della demo (riusata da invio immediato e
   // coda, così il messaggio premuto durante la generazione è visibile subito).
@@ -564,12 +561,13 @@ export default function HeroSection() {
               },
             }}
           >
-            {/* La casella cresce con il contenuto fino a un tetto proporzionale
-                al viewport (min(400px, 50dvh)); oltre, l'area messaggi scorre
-                internamente, così l'hero non esplode con la conversazione. */}
+            {/* La casella cresce con il contenuto della conversazione: non ha
+                un'area messaggi scrollabile, così nella sezione c'è una sola
+                scrollbar (la colonna centrale dell'hero). Il tetto maxHeight
+                precedente aggiungeva una seconda barra e nascondeva il
+                contesto della risposta. */}
             <div
               className={`bg-neutral-900 rounded-3xl border border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.4)] transition-all duration-500 ease-out flex flex-col relative`}
-              style={hasMessages ? { maxHeight: "min(400px, 50dvh)" } : undefined}
               onDragEnter={attach.onDragEnter}
               onDragOver={attach.onDragOver}
               onDragLeave={attach.onDragLeave}
@@ -577,10 +575,7 @@ export default function HeroSection() {
             >
               {/* ── Messages area ── */}
               {hasMessages && (
-                <div
-                  ref={chatBodyRef}
-                  className="flex-1 min-h-0 overflow-y-auto px-5 pt-5 pb-2 space-y-3 text-left"
-                >
+                <div className="px-5 pt-5 pb-2 space-y-3 text-left">
                   {messages.map((msg) => (
                     <div
                       key={msg.id}
