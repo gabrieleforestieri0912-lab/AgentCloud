@@ -89,6 +89,12 @@ export type Loopback = {
 export function startLoopback(opts: { state: string; callbackTimeoutMs: number }): Loopback {
   const readyDeferred = defer<number>();
   const callbackDeferred = defer<CallbackResult>();
+  // Le promise sono "gestite" fin da subito: una richiesta stray (state
+  // sbagliato, doppio callback) può arrivare PRIMA che il chiamante
+  // attacchi il suo handler, e una rejection non gestita in Node termina il
+  // processo. Il consumatore riceve comunque l'errore.
+  readyDeferred.promise.catch(() => {});
+  callbackDeferred.promise.catch(() => {});
 
   const timer = setTimeout(finishWithTimeout, opts.callbackTimeoutMs);
 
@@ -118,14 +124,28 @@ export function startLoopback(opts: { state: string; callbackTimeoutMs: number }
       else callbackDeferred.reject(new Error(message));
     };
 
+    /**
+     * Richiesta non valida (state sbagliato, callback incompleto): si
+     * risponde con la pagina di errore ma il server RESTA APERTO. Il login
+     * è ancora in corso: una richiesta stray (doppia finestra, prefetch del
+     * browser, vecchio tab) non deve buttare giù l'attesa del callback
+     * legittimo.
+     */
+    const refuse = (message: string) => {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store");
+      res.end(errorPage(message));
+    };
+
     // Ordine di controllo: errore provider → risposta incompleta → state.
     if (gotError) { finalize(gotError, false); return; }
     if (!gotCode || !gotState) {
-      finalize("richiesta incompleta: rilancia `agentcloud login`.", false);
+      refuse("richiesta incompleta: rilancia `agentcloud login`.");
       return;
     }
     if (gotState !== opts.state) {
-      finalize("state non valido: forse hai più finestre di login contemporaneamente. Riprova dal terminale.", false);
+      refuse("state non valido: forse hai più finestre di login contemporaneamente. Riprova dal terminale.");
       return;
     }
     finalize("", true, gotCode);
