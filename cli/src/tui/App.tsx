@@ -945,10 +945,23 @@ export function App({
   const menuList = matchCommands(draft);
   const menuSel = Math.min(menuSelected, Math.max(0, menuList.length - 1));
 
+  // Riga della prova gratuita: solo con la chat vuota e senza abbonamento
+  // attivo. Va a piena larghezza della colonna (non dentro la colonna
+  // della chat) così il link all'abbonamento non viene mai tagliato, e la
+  // scritta è volutamente corta: resta su una riga anche con la sidebar
+  // aperta (colonna da 68 caratteri a un terminale da 100).
+  const trialLine =
+    limit && limit.unlimited === false && msgsRef.current.length === 0
+      ? {
+          label: `Prova ${limit.remaining}/${limit.limit}`,
+          url: `${SITE}/agents/${agent}`,
+        }
+      : null;
+
   // Header: logo(1) + separatore(1) + stato(1). Il margine interno è gestito
   // da paddingX senza righe extra.
   const headerH = showHeader ? 3 : 0;
-  const chrome = headerH + 1 + (notice ? 1 : 0) + (activity ? 1 : 0) + inputHeight;
+  const chrome = headerH + 1 + (notice ? 1 : 0) + (activity ? 1 : 0) + inputHeight + (trialLine ? 1 : 0);
   // Il menu occupa righe fisse: va tolto dal budget della chat, altrimenti
   // il layout sfora e Ink taglia righe a caso.
   const menuRowsShown = menuOpen
@@ -1012,6 +1025,15 @@ export function App({
         {showHeader ? (
           <Header version={localVersion()} email={info?.email} plan={info?.plan} agentName={agentName} />
         ) : null}
+        {trialLine ? (
+          <Box>
+            <Text color={theme.muted}>
+              <Text color={theme.warning}>{trialLine.label}</Text>
+              {" · "}
+              <Text color={theme.primary}>{trialLine.url}</Text>
+            </Text>
+          </Box>
+        ) : null}
         <Box flexDirection="column" height={chatHeight} alignItems="center">
           <Box width={inputWidth} flexDirection="column">
             <Chat
@@ -1019,8 +1041,6 @@ export function App({
               agentName={agentName}
               width={inputWidth}
               maxHeight={chatHeight}
-              agentSlug={agent}
-              limit={limit}
             />
           </Box>
         </Box>

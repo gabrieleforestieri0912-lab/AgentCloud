@@ -93,25 +93,19 @@ ricorda di usare `/login` (basta digitare `/` per il menu dei comandi).
 
 ### Prova gratuita e abbonamento
 
-Nella chat vuota, **sopra al messaggio di benvenuto**, compare il riquadro
-della prova gratuita quando l'utente non ha ancora un abbonamento attivo:
+Nella chat **vuota**, sopra al messaggio di benvenuto, compare una riga con il
+link per abbonarsi all'agente che stai usando, se l'utente è ancora in prova
+gratuita:
 
 ```
-┌───────────────────────────────────────────────┐
-│ Prova gratuita                                │
-│ Restano 3 messaggi gratuiti su 5 al giorno.  │
-│ Abbonati a Support Agent e usa l'agente senza │
-│ limiti:                                       │
-│ https://www.agentcloud.agency/agents/support- │
-│ agent                                        │
-└───────────────────────────────────────────────┘
+Prova 3/5 · https://www.agentcloud.agency/agents/support-agent
 ```
 
-Il link porta alla pagina dell'agente, dove si abbona. Con un abbonamento
-attivo il riquadro non compare e il conteggio dei messaggi gratuiti sparisce
-dal footer. I dati arrivano da `GET /api/agent/limit` (la stessa fonte della
-chat web: 5 messaggi gratuiti al giorno in totale, reset a mezzanotte UTC) e
-si aggiornano a ogni risposta.
+`3/5` sono i messaggi gratuiti rimasti (5 al giorno in totale, reset a
+mezzanotte UTC). Con un abbonamento attivo la riga non compare e il
+contatore dei messaggi gratuiti sparisce dal footer. I dati arrivano da
+`GET /api/agent/limit` (la stessa fonte della chat web) e si aggiornano a ogni
+risposta.
 
 ### Tasti
 
