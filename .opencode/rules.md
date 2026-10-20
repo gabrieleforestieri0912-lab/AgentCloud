@@ -61,8 +61,44 @@ appena eliminato non controllerà più nulla domani.
 
 ## 3. Prima di dichiarare finito un lavoro
 
+**Una modifica non è conclusa quando è scritta: è conclusa quando è stata
+provata e funziona correttamente.** Il codice che compila non è una prova di
+funzionamento, è il minimo. Se non riesci a verificare il comportamento, il
+lavoro non è finito: dillo apertamente invece di presentarlo come
+concluso.
+
+Prima di dire "fatto" devi avere questa evidenza:
+
 - typecheck pulito
 - lint senza errori nuovi (i warning preesistenti non sono un blocco)
 - build che compila
-- se hai toccato un'integrazione o una route: il percorso provato a mano
+- **il comportamento nuovo è stato provato** (vedi sotto)
 - i file di test che hai creato per la verifica sono eliminati
+
+### Cosa significa "provato", per tipo di modifica
+
+| Modifica | Prova minima |
+|----------|--------------|
+| UI / layout | pagina renderizzata davvero (build locale o produzione) e comportamento controllato: niente doppia scrollbar, niente layout rotto, testo presente |
+| Route / API | chiamata HTTP reale alla route, con status e body attesi — non "il file esiste" |
+| Integrazione esterna | chiamata vera al provider, o almeno al suo handler con i dati del caso |
+| Tool / prompt | invocazione reale del tool e verifica di ciò che il modello ne ricava |
+| Script / migrazione | esecuzione dello script e verifica dell'effetto sui dati |
+
+### Regole di verifica
+
+- **Prova il percorso vero**, non un mock: se la modifica sta in un form →
+  invia il form; se sta in una fetch → guarda la risposta; se sta in un tool →
+  chiamalo e leggi cosa torna.
+- **Il caso di errore è metà del lavoro**: una funzione che regge solo quando
+  tutto va bene non è verificata. Prova anche l'errore (input invalido,
+  timeout, risorsa non raggiungibile) e verifica che il fallimento venga
+  **detto**, non nascosto e non inventato.
+- **Non rilassare l'asserzione per farla passare**: se la verifica fallisce,
+  il bug è nel codice di produzione.
+- **Leggi il risultato, non solo il codice di uscita**: uno script che esce 0
+  ma non ha fatto nulla è una verifica mancata.
+- **Ciò che non puoi provare qui** (login interattivo, dashboard esterna,
+  store reale, click dentro un admin) va detto nell'atto finale: elenca cosa
+  hai potuto verificare e cosa resta all'utente. Non presentare come
+  verificato ciò che hai solo dedotto.
