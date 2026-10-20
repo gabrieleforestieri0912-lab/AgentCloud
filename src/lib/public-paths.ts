@@ -103,6 +103,18 @@ export const PUBLIC_PATHS = [
   // (`/api/agents/[id]/skills`) NON è in elenco e resta protetta.
   "/api/plugins",
   "/api/skills",
+  // API della CLI (`agentcloud`): il login via browser e il device flow
+  // devono poter parlare col sito SENZA sessione del sito (la CLI non ha
+  // cookie). L'autenticazione la fa il route handler stesso:
+  // - /api/cli/authorize e /api/cli/device/approve verificano l'access_token
+  //   Supabase passato nel body contro l'API Supabase;
+  // - /api/cli/token verifica firma HMAC + PKCE + scadenza del code;
+  // - /api/cli/device e /api/cli/device/token sono il polling del device flow.
+  "/api/cli",
+  // Pagina di approvazione del device login (SSH/headless): deve essere
+  // raggiungibile da anonimo, altrimenti reindirizza a /login e la CLI non
+  // riceve mai l'approvazione.
+  "/device",
   // Integrazioni OAuth callbacks & Webhooks (accessibili senza sessione affinché terze parti possano completare l'handshake o inviare eventi)
   "/api/integrations",
   "/api/shopify/callback",
