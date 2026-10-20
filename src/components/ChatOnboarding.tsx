@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronRight, ChevronLeft } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
+import { markOnboardingSeen } from "@/lib/onboarding";
 
 interface ChatOnboardingProps {
   onComplete: () => void;
@@ -103,6 +104,14 @@ export default function ChatOnboarding({ onComplete }: ChatOnboardingProps) {
     };
   }, [updateTargetRect]);
 
+  // Il tour è in mostra (anche come card centrata quando il bersaglio non è
+  // agganciabile): lo segniamo come visto subito, così non ricompare a ogni
+  // visita. Prima il flag veniva scritto solo alla chiusura e un tour
+  // abbandonato tornava alla visita successiva.
+  useEffect(() => {
+    markOnboardingSeen("chat");
+  }, []);
+
   const getTooltipPosition = () => {
     if (!targetRect) return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
 
@@ -195,13 +204,7 @@ export default function ChatOnboarding({ onComplete }: ChatOnboardingProps) {
 
   const handleClose = async () => {
     setVisible(false);
-    try {
-      await fetch("/api/user/onboarding", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "chat" }),
-      });
-    } catch {}
+    markOnboardingSeen("chat");
     onComplete();
   };
 

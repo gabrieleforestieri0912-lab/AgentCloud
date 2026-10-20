@@ -29,17 +29,32 @@ export async function POST(req: Request) {
   const column =
     type === "chat" ? "has_seen_chat_onboarding" : "has_seen_dashboard_onboarding";
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .update({ [column]: true })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     console.error(`[Onboarding] Failed to mark ${type}:`, error);
     return NextResponse.json({ error: "update_failed" }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  // La riga del profilo potrebbe non esistere (utente creato prima del trigger
+  // handle_new_user, o importato a mano): senza questa insert il flag non
+  // verrebbe mai salvato e il tour ricomparirebbe a ogni visita.
+  if (!data) {
+    const { error: insertError } = await supabase
+      .from("profiles")
+      .insert({ id: user.id, email: user.email ?? null, [column]: true });
+    if (insertError) {
+      console.error(`[Onboarding] Failed to create profile for ${type}:`, insertError);
+      return NextResponse.json({ error: "insert_failed" }, { status: 500 });
+    }
+  }
+
+  return NextResponse.json({ success: true, [type]: true });
 }
 
 /**

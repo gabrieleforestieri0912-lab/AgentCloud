@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronRight, ChevronLeft } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
+import { markOnboardingSeen } from "@/lib/onboarding";
 
 interface DashboardOnboardingProps {
   onComplete: () => void;
@@ -68,6 +69,15 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
     window.addEventListener("resize", updateTargetRect);
     return () => window.removeEventListener("resize", updateTargetRect);
   }, [updateTargetRect]);
+
+  // Il tour è stato effettivamente mostrato (il bersaglio è agganciabile):
+  // lo segniamo come visto subito. Prima il flag veniva scritto solo alla
+  // chiusura, quindi un tour abbandonato — o un reload a metà — ricompariva
+  // a ogni visita, anche a mesi di distanza.
+  useEffect(() => {
+    if (!targetRect) return;
+    markOnboardingSeen("dashboard");
+  }, [targetRect]);
 
   const getTooltipPosition = () => {
     if (!targetRect) return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
@@ -160,13 +170,7 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
 
   const handleClose = async () => {
     setVisible(false);
-    try {
-      await fetch("/api/user/onboarding", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "dashboard" }),
-      });
-    } catch {}
+    markOnboardingSeen("dashboard");
     onComplete();
   };
 
