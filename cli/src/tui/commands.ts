@@ -29,9 +29,16 @@ export type CommandContext = {
   redo: () => Promise<void>;
   openDiff: (filename?: string) => void;
   openHelp: () => void;
+  /** /sessions: popup con le chat precedenti, Invio riprende. */
   openSessions: () => void;
-  /** /agents: overlay con gli agenti posseduti, Invio per cambiare. */
+  /** /agents: popup con i tuoi agenti (e il catalogo), Invio cambia agente. */
   openAgents: () => void;
+  /** /catalog: popup con tutto il catalogo, prezzi inclusi. */
+  openCatalog: () => void;
+  /** Apre il popup degli agenti e passa lo slug scelto. */
+  pickAgent: (onPicked: (slug: string) => void) => void;
+  /** Scrive un testo nell'input (senza riaprire il menu dei comandi). */
+  preset: (text: string) => void;
   /** /login: overlay di login (browser o token) dentro la chat. */
   openLogin: () => void;
   /** /logout: credenziali rimosse, la chat resta aperta ma non autenticata. */
@@ -60,6 +67,11 @@ export type CommandDef = {
   description: string;
   usage: string;
   args: CommandArg[];
+  /**
+   * Il comando gestisce da solo i suoi argomenti (es. `/run` apre il popup
+   * degli agenti): l'App non deve fermarlo con il "suggerimento argomento".
+   */
+  picker?: boolean;
   /**
    * `args` = argomenti posizionali; `rest` = tutto il testo dopo il nome
    * del comando (per `--flag value` e per prompt con spazi).
@@ -159,24 +171,17 @@ export const COMMANDS: CommandDef[] = [
   },
   {
     name: "agents",
-    description: "Elenca e cambia agente (i tuoi agenti attivi)",
+    description: "Scegli l'agente attivo (popup con i tuoi agenti)",
     usage: "/agents",
     args: [],
     handler: (ctx) => ctx.openAgents(),
   },
   {
     name: "catalog",
-    description: "Catalogo degli agenti e prezzi",
+    description: "Catalogo agenti e prezzi (popup di scelta)",
     usage: "/catalog",
     args: [],
-    handler: (ctx) =>
-      ctx.system("Catalogo", [
-        ...CATALOG.map(
-          (a) =>
-            `${a.name} (${a.slug}) — ${a.category} — ${a.price}${a.comingSoon ? " — presto disponibile" : ""}`,
-        ),
-        "Equivalente: agentcloud agents catalog",
-      ]),
+    handler: (ctx) => ctx.openCatalog(),
   },
   {
     name: "rename",
@@ -346,10 +351,17 @@ export const COMMANDS: CommandDef[] = [
       { name: "agente", placeholder: "support-agent", required: true },
       { name: "prompt", placeholder: "cosa deve fare", required: true },
     ],
+    // L'agente mancante si sceglie dal popup, il prompt si scrive dopo.
+    picker: true,
     handler: async (ctx, args, rest) => {
       const slug = (args[0] ?? "").trim();
       const prompt = rest.slice(slug.length).trim();
-      if (!slug || !prompt) {
+      if (!slug) {
+        // Senza agente: si sceglie dal popup, poi il prompt si scrive.
+        ctx.pickAgent((chosen) => ctx.preset(`/run ${chosen} `));
+        return;
+      }
+      if (!prompt) {
         ctx.notice("Uso: /run <agente> <prompt>");
         return;
       }

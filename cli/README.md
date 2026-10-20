@@ -97,8 +97,8 @@ ricorda di usare `/login` (basta digitare `/` per il menu dei comandi).
 |---|---|
 | `/` | apre il menu dei comandi (autocompletamento) |
 | Invio | invia · Maiusc+Invio o Ctrl+J va a capo |
-| ↑ ↓ | cronologia dei messaggi / navigazione del menu |
-| Esc | interrompe la risposta in corso · chiude gli overlay |
+| ↑ ↓ | cronologia dei messaggi / navigazione del menu e dei popup |
+| Esc | interrompe la risposta in corso · chiude menu, popup e overlay |
 | Ctrl+B | mostra/nasconde la sidebar |
 | Ctrl+C | esce pulito (il terminale viene sempre ripristinato) |
 
@@ -112,8 +112,8 @@ evidenziata. Ogni comando della CLI ha il suo equivalente slash:
 |---|---|---|
 | `/help` | `agentcloud --help` | elenco comandi e scorciatoie |
 | `/version` | `agentcloud --version` | versione della CLI, di Node e dell'API |
-| `/agents` | `agentcloud agents list` | elenca e cambia agente attivo |
-| `/catalog` | `agentcloud agents catalog` | catalogo agenti e prezzi |
+| `/agents` | `agentcloud agents list` | popup: i tuoi agenti, scegli con le frecce |
+| `/catalog` | `agentcloud agents catalog` | popup: catalogo agenti e prezzi, scegli con le frecce |
 | `/run <agente> <prompt>` | `agentcloud run <agente> "<prompt>"` | run isolata: non entra in cronologia |
 | `/whoami` | `agentcloud whoami` | utente autenticato e suoi agenti |
 | `/usage` | `agentcloud usage` | piano, consumi e messaggi gratuiti residui |
@@ -122,10 +122,10 @@ evidenziata. Ogni comando della CLI ha il suo equivalente slash:
 | `/login` | `agentcloud login` | accedi col browser o incolla un token |
 | `/logout` | `agentcloud logout` | esci dall'account (la chat resta aperta) |
 | `/new` | — | nuova chat (azzera conversazione, file e titolo) |
-| `/sessions` | `agentcloud chat --resume <codice>` | chat precedenti e ripresa |
+| `/sessions` | `agentcloud chat --resume <codice>` | popup: chat precedenti, Invio riprende |
 | `/rename <titolo>` | — | rinomina la chat corrente |
 | `/undo` · `/redo` | — | annulla/ripristina modifiche ai file |
-| `/diff [file]` | — | mostra le modifiche (tutte o di un file) |
+| `/diff [file]` | — | popup: le modifiche da scegliere, poi il diff |
 | `/clear` | — | pulisce la conversazione |
 | `/theme` | — | tema attivo |
 | `/chat` | `agentcloud chat` | sei già in chat: parla con l'agente attivo |
@@ -135,8 +135,22 @@ evidenziata. Ogni comando della CLI ha il suo equivalente slash:
 | `/admin flags show` | `agentcloud admin flags show` | feature flag della CLI |
 | `/admin email send --to … --subject … --body …` | `agentcloud admin email send …` | email transazionali |
 
-L'output dei comandi (versione, catalogo, usage…) compare nella chat in un
+L'output dei comandi (versione, usage…) compare nella chat in un
 riquadro: resta a schermo ma **non** entra nella cronologia inviata all'agente.
+
+### Popup di scelta
+
+Ogni comando che deve farti scegliere qualcosa apre un **popup sopra la
+chat**, non una schermata a schermo intero: la conversazione resta visibile
+sotto, scegli con `↑`/`↓`, confermi con Invio, annulli con Esc.
+
+| Comando | Cosa compare nel popup |
+|---|---|
+| `/agents` | i tuoi agenti (prima) e il resto del catalogo |
+| `/catalog` | tutto il catalogo con categoria e prezzo |
+| `/sessions` | le chat precedenti di questo agente |
+| `/diff` | i file modificati (+ "tutte le modifiche") |
+| `/run` (senza agente) | gli agenti: scelto uno, scrivi il prompt |
 
 ## Login
 

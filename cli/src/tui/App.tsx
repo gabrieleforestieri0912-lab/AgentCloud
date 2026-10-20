@@ -12,9 +12,9 @@ import { StatusBar } from "./StatusBar.js";
 import { DiffOverlay } from "./DiffOverlay.js";
 import { SIDEBAR_WIDTH, Sidebar } from "./Sidebar.js";
 import { CommandMenu, MAX_MENU_ROWS } from "./CommandMenu.js";
+import { Popup, MAX_POPUP_ROWS, type PopupItem } from "./Popup.js";
 import { HelpOverlay } from "./HelpOverlay.js";
-import { SessionsOverlay } from "./SessionsOverlay.js";
-import { AgentsOverlay, type AgentChoice } from "./AgentsOverlay.js";
+import { type AgentChoice } from "./AgentsOverlay.js";
 import { LoginScreen } from "./LoginScreen.js";
 import { CATALOG } from "../catalog.js";
 import {
@@ -48,6 +48,23 @@ export type SessionInfo = {
 export type TuiResult = { messages: ChatMessage[]; title: string; files: TrackedFile[] };
 
 export type TuiFocus = "input" | "sidebar";
+
+/** Sito AgentCloud: i link dei messaggi (attivazione agenti, marketplace). */
+const SITE = "https://www.agentcloud.agency";
+
+/**
+ * Popup di selezione mostrato sopra la chat.
+ * `onSelect` riceve la voce scelta: il popup si chiude da solo e la chat
+ * continua (niente schermate a schermo intero per una scelta).
+ */
+export type PopupState = {
+  title: string;
+  hint?: string;
+  items: PopupItem[];
+  emptyText?: string;
+  footer?: string;
+  onSelect: (item: PopupItem) => void;
+};
 
 /** Entra nell'alternate screen; l'uscita ripristina sempre il terminale. */
 function enterAltScreen(): void {
@@ -180,9 +197,7 @@ export function App({
 
   // Overlay: un solo livello alla volta (help > sessioni > diff > agents/login).
   const [helpOpen, setHelpOpen] = useState(false);
-  const [sessionsOpen, setSessionsOpen] = useState(false);
   const [diffView, setDiffView] = useState<{ title: string; lines: DiffLine[] } | null>(null);
-  const [agentsOpen, setAgentsOpen] = useState(false);
   const [agentChoices, setAgentChoices] = useState<AgentChoice[] | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [liveInfo, setLiveInfo] = useState<SessionInfo | null>(null);
@@ -206,6 +221,11 @@ export function App({
   const menuOpenRef = useRef(false);
   menuOpenRef.current = menuOpen;
   const suppressMenuRef = useRef(false);
+
+  // Popup di selezione sopra la chat: la conversazione resta visibile
+  // sotto, il popup scompare appena si sceglie (o si annulla con Esc).
+  const [popup, setPopup] = useState<PopupState | null>(null);
+  const [popupSelected, setPopupSelected] = useState(0);
 
   const handleDraftChange = useCallback(
     (text: string) => {
@@ -285,8 +305,35 @@ export function App({
       setSidebarOpen((o) => !o);
       return;
     }
+    // Popup aperto: possiede i tasti (frecce, Invio, Esc). L'editor del
+    // testo è disattivato finché il popup è aperto (vedi `focused`).
+    if (popup) {
+      const items = popup.items;
+      if (key.upArrow) {
+        setPopupSelected((s) => (items.length ? (s - 1 + items.length) % items.length : 0));
+        return;
+      }
+      if (key.downArrow) {
+        setPopupSelected((s) => (items.length ? (s + 1) % items.length : 0));
+        return;
+      }
+      if (key.return) {
+        const item = items[Math.min(popupSelected, Math.max(0, items.length - 1))];
+        if (item) {
+          const onSelect = popup.onSelect;
+          setPopup(null);
+          onSelect(item);
+        }
+        return;
+      }
+      if (key.escape) {
+        setPopup(null);
+        return;
+      }
+      return;
+    }
     // Overlay aperti (help/sessioni/diff): possiedono i loro tasti.
-    if (helpOpen || sessionsOpen || diffView || agentsOpen || loginOpen) return;
+    if (helpOpen || diffView || loginOpen) return;
     if (menuOpen) {
       const body = commandBody(draft);
       const list = menuList;
@@ -308,7 +355,7 @@ export function App({
           return;
         }
         const { args, rest } = commandArgs(def, body);
-        if (def.args.some((a) => a.required) && args.length === 0) {
+        if (!def.picker && def.args.some((a) => a.required) && args.length === 0) {
           // Suggerimento argomento: precompila e chiudi il menu.
           suppressMenuRef.current = true;
           setPreset({ text: `/${def.name} `, key: Date.now() });
@@ -400,11 +447,11 @@ export function App({
       redo: () => redoChange(),
       openDiff: (filename?: string) => openDiff(filename),
       openHelp: () => setHelpOpen(true),
-      openSessions: () => setSessionsOpen(true),
-      openAgents: () => {
-        setAgentsOpen(true);
-        void loadAgentChoices();
-      },
+      openSessions: () => openSessionPicker(),
+      openAgents: () => void openAgentPicker("owned"),
+      openCatalog: () => void openAgentPicker("catalog"),
+      pickAgent: (onPicked: (slug: string) => void) => void openAgentPicker("owned", onPicked),
+      preset: (text: string) => applyPreset(text),
       openLogin: () => setLoginOpen(true),
       onLogout: () => {
         setLoggedIn(false);
@@ -445,7 +492,98 @@ export function App({
     }
   }
 
-  /** Diff di un file o, senza argomento, di tutte le modifiche. */
+  /** Apre un popup sopra la chat (la chat resta visibile sotto). */
+  function openPopup(state: PopupState) {
+    setMenuOpen(false);
+    setPopupSelected(0);
+    setPopup(state);
+  }
+
+  /** Scrive un testo nell'input senza riaprire il menu dei comandi. */
+  function applyPreset(text: string) {
+    suppressMenuRef.current = true;
+    setPreset({ text, key: Date.now() });
+  }
+
+  /**
+   * Selettore agenti in popup.
+   * - "owned": i tuoi agenti prima, poi il resto del catalogo;
+   * - "catalog": tutto il catalogo, con prezzi.
+   * Se `onPicked` è dato serve solo a scegliere (comando `/run`): non
+   * cambia l'agente attivo.
+   */
+  async function openAgentPicker(
+    scope: "owned" | "catalog",
+    onPicked?: (slug: string) => void,
+  ) {
+    setNotice(null);
+    let owned: AgentChoice[] = [];
+    try {
+      owned = await fetchAgentChoices();
+    } catch (error) {
+      // Senza rete o senza sessione si mostra comunque il catalogo: la
+      // scelta resta possibile (e l'errore resta visibile).
+      setNotice(
+        `Elenco dei tuoi agenti non disponibile: ${error instanceof Error ? error.message : String(error)} — mostro il catalogo.`,
+      );
+    }
+    const ownedSlugs = new Set(owned.map((c) => c.slug));
+    const catalogItems: PopupItem[] = CATALOG.filter((c) => !c.comingSoon).map((c) => ({
+      key: c.slug,
+      label: c.name,
+      hint: `${c.category} · ${c.price}${ownedSlugs.has(c.slug) ? "" : " · non attivato"}`,
+    }));
+    const ownedItems: PopupItem[] = owned.map((c) => ({
+      key: c.slug,
+      label: c.name,
+      hint: `${c.category ?? ""}${c.price ? ` · ${c.price}` : ""}${c.slug === agent ? " · attivo" : ""}`,
+    }));
+    const items = scope === "catalog" ? catalogItems : [...ownedItems, ...catalogItems.filter((c) => !ownedSlugs.has(c.key))];
+
+    openPopup({
+      title: scope === "catalog" ? "Catalogo agenti" : "Scegli l'agente",
+      hint: "↑↓ · Invio",
+      items,
+      emptyText: "(nessun agente: accedi con /login)",
+      onSelect: (item) => {
+        if (onPicked) {
+          onPicked(item.key);
+          return;
+        }
+        const isOwned = ownedSlugs.has(item.key);
+        if (!isOwned) {
+          const cat = CATALOG.find((c) => c.slug === item.key);
+          setNotice(
+            `"${cat?.name ?? item.key}" non è attivo sul tuo account: attivalo su ${SITE}/agents/${item.key}`,
+          );
+          return;
+        }
+        switchAgent(item.key);
+      },
+    });
+  }
+
+  /** Popup con le chat precedenti: Invio riprende quella scelta. */
+  function openSessionPicker() {
+    const sessions = listSessions().filter((s) => s.agent === agent);
+    openPopup({
+      title: "Chat precedenti",
+      hint: "↑↓ · Invio",
+      items: sessions.map((s) => ({
+        key: s.code,
+        label: s.title || s.preview || s.code,
+        hint: s.code,
+      })),
+      emptyText: "(nessuna chat precedente per questo agente)",
+      onSelect: (item) => resumeSession(item.key),
+    });
+  }
+
+  /**
+   * Diff: con il nome del file lo apre direttamente; senza, se i file
+   * modificati sono più di uno apre il popup per scegliere (come in
+   * OpenCode), altrimenti mostra l'unico diff.
+   */
   function openDiff(filename?: string) {
     const files = filesRef.current.filter((f) => f.head >= 0);
     if (filename) {
@@ -459,6 +597,34 @@ export function App({
       openSingleDiff(f.filename);
       return;
     }
+    if (files.length === 0) {
+      setNotice("Nessuna modifica in sessione.");
+      return;
+    }
+    if (files.length === 1) {
+      openSingleDiff(files[0].filename);
+      return;
+    }
+    openPopup({
+      title: "Modifiche",
+      hint: "↑↓ · Invio",
+      items: [
+        { key: "__all__", label: "Tutte le modifiche", hint: `${files.length} file` },
+        ...files.map((f) => ({
+          key: f.filename,
+          label: f.filename,
+          hint: `+${f.added} -${f.removed}`,
+        })),
+      ],
+      onSelect: (item) => {
+        if (item.key === "__all__") showAllDiff(files);
+        else openSingleDiff(item.key);
+      },
+    });
+  }
+
+  /** Diff di tutti i file modificati insieme. */
+  function showAllDiff(files: TrackedFile[]) {
     const lines: DiffLine[] = [];
     for (const f of files) {
       const oldText = f.head > 0 ? (f.versions[f.head - 1] ?? "") : "";
@@ -497,7 +663,6 @@ export function App({
         titleTouchedRef.current = true;
       }
       setSelected(0);
-      setSessionsOpen(false);
       touch();
       setNotice(`Sessione ${s.code} ripresa.`);
     } catch (error) {
@@ -530,23 +695,17 @@ export function App({
     }
   };
 
-  /** Carica (una volta) gli agenti posseduti per l'overlay /agents. */
-  const loadAgentChoices = async () => {
-    if (agentChoices) return;
-    setLoadingAgents(true);
-    try {
-      const who = await userWhoAmI();
-      const choices: AgentChoice[] = who.owned.map((slug) => {
-        const cat = CATALOG.find((a) => a.slug === slug);
-        return { slug, name: cat?.name ?? slug, category: cat?.category, price: cat?.price };
-      });
-      setAgentChoices(choices.length > 0 ? choices : [{ slug: agent, name: agentName }]);
-    } catch (error) {
-      setNotice(`Elenco agenti non disponibile: ${error instanceof Error ? error.message : String(error)}`);
-      setAgentsOpen(false);
-    } finally {
-      setLoadingAgents(false);
-    }
+  /** Carica (una volta) gli agenti posseduti per il popup /agents. */
+  const fetchAgentChoices = async (): Promise<AgentChoice[]> => {
+    if (agentChoices) return agentChoices;
+    const who = await userWhoAmI();
+    const choices: AgentChoice[] = who.owned.map((slug) => {
+      const cat = CATALOG.find((a) => a.slug === slug);
+      return { slug, name: cat?.name ?? slug, category: cat?.category, price: cat?.price };
+    });
+    const result = choices.length > 0 ? choices : [{ slug: agent, name: agentName }];
+    setAgentChoices(result);
+    return result;
   };
 
   /** /agents → Invio: cambia agente e riparte pulito (nuova conversazione). */
@@ -554,7 +713,6 @@ export function App({
     const cat = CATALOG.find((a) => a.slug === slug);
     setAgent(slug);
     setAgentName(cat?.name ?? slug);
-    setAgentsOpen(false);
     msgsRef.current = [];
     filesRef.current = [];
     undoRef.current = [];
@@ -567,7 +725,6 @@ export function App({
   };
 
   /** Carica (una volta) gli agenti posseduti per l'overlay /agents. */
-  const [loadingAgents, setLoadingAgents] = useState(false);
 
   /** Registra un evento `file` dallo stream + persistenza best-effort. */
   const recordFileEvent = (filename: string, content: string) => {
@@ -774,7 +931,13 @@ export function App({
     ? Math.min(menuList.length, MAX_MENU_ROWS) + (menuList.length > MAX_MENU_ROWS ? 1 : 0)
     : 0;
   const menuH = menuOpen ? menuRowsShown + 2 : 0; // +2 bordi
-  const chatHeight = Math.max(3, rows - chrome - menuH);
+  // Il popup di selezione sta sopra l'input, come il menu: le sue righe
+  // escono dal budget della chat, altrimenti il layout sfora.
+  const popupRowsShown = popup
+    ? Math.min(popup.items.length, MAX_POPUP_ROWS) + (popup.items.length > MAX_POPUP_ROWS ? 1 : 0)
+    : 0;
+  const popupH = popup ? popupRowsShown + 4 : 0; // +2 bordi, +1 titolo, +1 footer
+  const chatHeight = Math.max(3, rows - chrome - menuH - popupH);
   const chatWidth = sidebarVisible ? Math.max(20, columns - SIDEBAR_WIDTH - 1) : columns;
   // Input centrato: larghezza comoda (max 100 colonne) e allineato al centro.
   const inputWidth = Math.max(30, Math.min(chatWidth, 100));
@@ -801,47 +964,20 @@ export function App({
     );
   }
 
-  if (sessionsOpen) {
+  // Il login resta a schermo intero (schermata con scelte e campi): le
+  // selezioni di agenti, sessioni e file usano invece il popup sopra la
+  // chat, così la conversazione resta visibile.
+  if (loginOpen) {
     return (
       <Box flexDirection="column" height={rows}>
-        <SessionsOverlay
-          sessions={listSessions().filter((s) => s.agent === agent)}
-          height={rows}
-          onSelect={resumeSession}
-          onClose={() => setSessionsOpen(false)}
+        <LoginScreen
+          onDone={() => {
+            setLoginOpen(false);
+            void refreshSession();
+            touch();
+          }}
+          onExit={() => setLoginOpen(false)}
         />
-      </Box>
-    );
-  }
-
-  if (agentsOpen || loginOpen) {
-    return (
-      <Box flexDirection="column" height={rows}>
-        {agentsOpen ? (
-          loadingAgents || !agentChoices ? (
-            <Box padding={1} flexDirection="column">
-              <Text bold color={theme.primary}>I tuoi agenti</Text>
-              <Text color={theme.muted}>…</Text>
-            </Box>
-          ) : (
-            <AgentsOverlay
-              agents={agentChoices}
-              current={agent}
-              height={rows}
-              onSelect={switchAgent}
-              onClose={() => setAgentsOpen(false)}
-            />
-          )
-        ) : (
-          <LoginScreen
-            onDone={() => {
-              setLoginOpen(false);
-              void refreshSession();
-              touch();
-            }}
-            onExit={() => setLoginOpen(false)}
-          />
-        )}
       </Box>
     );
   }
@@ -876,6 +1012,21 @@ export function App({
             </Box>
           </Box>
         ) : null}
+        {popup ? (
+          <Box alignItems="center">
+            <Box width={inputWidth} flexDirection="column">
+              <Popup
+                title={popup.title}
+                hint={popup.hint}
+                items={popup.items}
+                selected={Math.min(popupSelected, Math.max(0, popup.items.length - 1))}
+                width={inputWidth}
+                emptyText={popup.emptyText}
+                footer={popup.footer}
+              />
+            </Box>
+          </Box>
+        ) : null}
         <Box alignItems="center">
           <Box width={inputWidth} flexDirection="column">
             <ChatInput
@@ -886,8 +1037,10 @@ export function App({
               onConfirm={answerConfirm}
               placeholder={`Scrivi a ${agentName}… (Invio invia, / comandi)`}
               onHeightChange={setInputHeight}
-              focused={effectiveFocus === "input"}
-              menuActive={menuOpen}
+              // Con il popup aperto l'editor si spegne: i tasti sono del
+              // popup (frecce, Invio, Esc), non della bozza.
+              focused={!popup && effectiveFocus === "input"}
+              menuActive={menuOpen || Boolean(popup)}
               preset={preset}
               onDraftChange={handleDraftChange}
             />
