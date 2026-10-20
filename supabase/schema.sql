@@ -99,9 +99,16 @@ create policy "Users can update own profile"
   on public.profiles for update
   using (auth.uid() = id);
 
+-- Le policy "Service role can manage ..." devono restare LIMITATE al ruolo
+-- service_role. Senza `to service_role` una policy `for all using (true)`
+-- vale per TUTTI i ruoli: un utente autenticato che non lo sa poteva leggere
+-- (e modificare) le righe di tutti gli altri — profili, abbonamenti, carrelli,
+-- run, notifiche. Il service role bypassa la RLS comunque, quindi la policy
+-- è solo-documentazione: limitarla non cambia nulla al codice server.
 drop policy if exists "Service role can manage profiles" on public.profiles;
 create policy "Service role can manage profiles"
   on public.profiles for all
+  to service_role
   using (true)
   with check (true);
 
@@ -138,6 +145,7 @@ create policy "Anyone can view agents_registry"
 drop policy if exists "Service role can manage agents_registry" on public.agents_registry;
 create policy "Service role can manage agents_registry"
   on public.agents_registry for all
+  to service_role
   using (true)
   with check (true);
 
@@ -180,6 +188,7 @@ create index if not exists idx_subscriptions_stripe_customer
 drop policy if exists "Service role can manage subscriptions" on public.subscriptions;
 create policy "Service role can manage subscriptions"
   on public.subscriptions for all
+  to service_role
   using (true)
   with check (true);
 
@@ -252,6 +261,7 @@ create policy "Users can update own user_agents config"
 drop policy if exists "Service role can manage user_agents" on public.user_agents;
 create policy "Service role can manage user_agents"
   on public.user_agents for all
+  to service_role
   using (true)
   with check (true);
 
@@ -307,6 +317,7 @@ create policy "Users can insert own agent_runs"
 drop policy if exists "Service role can manage agent_runs" on public.agent_runs;
 create policy "Service role can manage agent_runs"
   on public.agent_runs for all
+  to service_role
   using (true)
   with check (true);
 
@@ -374,6 +385,7 @@ create policy "Users can update own agent_notifications"
 drop policy if exists "Service role can manage agent_notifications" on public.agent_notifications;
 create policy "Service role can manage agent_notifications"
   on public.agent_notifications for all
+  to service_role
   using (true)
   with check (true);
 
@@ -463,6 +475,7 @@ create policy "Users can manage own carts"
 drop policy if exists "Service role can manage carts" on public.carts;
 create policy "Service role can manage carts"
   on public.carts for all
+  to service_role
   using (true)
   with check (true);
 
@@ -494,6 +507,7 @@ create policy "Users can manage own cart_items"
 drop policy if exists "Service role can manage cart_items" on public.cart_items;
 create policy "Service role can manage cart_items"
   on public.cart_items for all
+  to service_role
   using (true)
   with check (true);
 
