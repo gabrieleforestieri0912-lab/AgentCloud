@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X, ChevronDown, Sparkles, Blocks } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X, ChevronDown, Sparkles, Blocks, AppWindow } from "lucide-react";
 import { usePathname } from "next/navigation";
 import SidebarAccount from "./SidebarAccount";
 import type { AccountIdentity } from "@/lib/account-identity";
@@ -61,6 +61,7 @@ export default function DashboardShell({
   // sotto un'unica voce espandibile, aperta quando una pagina figlia è attiva.
   const personalization = [
     { href: "/dashboard/integrations", label: ds.navIntegrations, icon: Plug },
+    { href: "/dashboard/apps", label: ds.navApps, icon: AppWindow },
     { href: "/skills", label: ds.navSkills, icon: Sparkles },
     { href: "/plugins", label: ds.navPlugins, icon: Blocks },
   ];

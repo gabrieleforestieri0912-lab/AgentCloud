@@ -117,6 +117,17 @@ export const PUBLIC_PATHS = [
   "/device",
   // Integrazioni OAuth callbacks & Webhooks (accessibili senza sessione affinché terze parti possano completare l'handshake o inviare eventi)
   "/api/integrations",
+  // Callback OAuth dei server MCP: ci arriva il redirect del provider, che
+  // non ha sessione AgentCloud ma torna con il codice e lo `state`. Il
+  // route handler verifica comunque sessione + `state` + riga della
+  // connessione prima di scambiare il codice: renderlo raggiungibile dal
+  // proxy non toglie nessun controllo, evita solo che il redirect del
+  // provider finisca in un 401 spoglio.
+  "/api/mcp/callback",
+  // Avvio del flusso OAuth dei server MCP: senza sessione rimanda a
+  // /login?next=… invece di rispondere 401. La route verifica comunque la
+  // sessione prima di costruire l'authorize URL.
+  "/api/mcp/authorize",
   "/api/shopify/callback",
   "/api/shopify/webhooks",
   "/api/shopify/install",
