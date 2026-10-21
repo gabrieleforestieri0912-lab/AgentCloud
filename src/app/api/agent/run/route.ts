@@ -40,6 +40,7 @@ import {
 } from "@/lib/agents/tool-confirmation";
 import { logAudit } from "@/lib/audit";
 import { logSkillActivations, prepareSkillsForRun } from "@/lib/skills/installed";
+import { loadMcpToolsForTenant, toLlmTools } from "@/lib/mcp/tools";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -313,6 +314,22 @@ export async function POST(req: Request) {
     .map((tool) => TOOL_DEFINITIONS[tool])
     .filter(Boolean);
 
+  // Tool MCP delle integrazioni esterne collegate dall'utente.
+  //
+  // Sono dinamici (dipendono da cosa l'utente ha collegato e da quali tool
+  // ha abilitato), quindi non possono stare nella lista statica dei tool.
+  // Vengono caricati dopo il filtro dei feature flag: sono già filtrati dal
+  // lato utente (connessione + toggle), e il namespace li rende innocui per
+  // le liste statiche.
+  const mcpCatalog = await loadMcpToolsForTenant(effectiveTenant);
+  enabledTools.push(...toLlmTools(mcpCatalog));
+
+  // Un tool che scrive chiede la conferma dell'utente. Per i tool nativi la
+  // lista è statica; per i tool MCP dipende da cosa dichiara il server
+  // (annotation) e dal nome del tool.
+  const needsConfirmation = (toolName: string): boolean =>
+    toolRequiresConfirmation(toolName) || mcpCatalog.writeToolNames.has(toolName);
+
   // Risolve il backend del modello una volta per richiesta (Anthropic).
   const provider = getLLMProvider();
 
@@ -389,7 +406,7 @@ export async function POST(req: Request) {
             pending.t !== effectiveTenant ||
             pending.a !== agentId ||
             !confirmed ||
-            !toolRequiresConfirmation(confirmed.name)
+            !needsConfirmation(confirmed.name)
           ) {
             emitter.stop();
             send({ type: "error", message: executionErrorMessage });
@@ -401,7 +418,7 @@ export async function POST(req: Request) {
             const result = await executeTool(
               use.name,
               use.input as Record<string, string>,
-              { userId, tenantId, files: files as Record<string, string> | undefined },
+              { userId, tenantId, files: files as Record<string, string> | undefined, ephemeral: isEphemeral },
             );
             results.push({ id: use.id, content: result });
             toolCalls++;
@@ -480,7 +497,7 @@ export async function POST(req: Request) {
             // li farebbe rieseguire alla ripresa, con effetti duplicati (es. due
             // file creati). Il client approva e riprende con il token.
             const confirmIndex = response.toolUses.findIndex((u) =>
-              toolRequiresConfirmation(u.name),
+              needsConfirmation(u.name),
             );
             if (confirmIndex >= 0) {
               await emitter.flush();
@@ -538,6 +555,9 @@ export async function POST(req: Request) {
                   // env var.
                   tenantId,
                   files: files as Record<string, string> | undefined,
+                  // Modalità Ghost: i tool restano permessi, ma nessuna
+                  // traccia della conversazione viene scritta.
+                  ephemeral: isEphemeral,
                 },
               );
 

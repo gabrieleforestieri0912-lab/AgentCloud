@@ -9,4 +9,10 @@ export type ToolContext = {
   userId: string;
   tenantId?: string;
   files?: Record<string, string>;
+  /**
+   * Modalità Ghost (chat incognito): la run non lascia tracce. Le chiamate
+   * ai tool restano permesse, ma nessun audit e nessuna notifica
+   * vengono scritti (vedi `lib/ghost-mode.ts`).
+   */
+  ephemeral?: boolean;
 };

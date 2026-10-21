@@ -1503,6 +1503,18 @@ export async function executeTool(
     return executeIntegrationTool(name, input, context);
   }
 
+  // Tool MCP (server esterni): il nome è namespaced `mcp__<server>__<tool>`.
+  // Il modulo MCP gestisce connessione, token, rate limit e il confezionamento
+  // del risultato come dato non fidato.
+  if (name.startsWith("mcp__")) {
+    const { executeMcpTool } = await import("@/lib/mcp/tools");
+    return executeMcpTool(name, input as Record<string, unknown>, {
+      userId: context.userId,
+      tenantId: context.tenantId,
+      ephemeral: context.ephemeral === true,
+    });
+  }
+
   switch (name) {
     case "web_search": {
       logAudit("tool_exec_start", { tool: "web_search" });
