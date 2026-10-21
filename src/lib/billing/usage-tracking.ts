@@ -22,6 +22,14 @@ export type UsageRecord = {
   /** Chiamate ai tool della run. Opzionale per i chiamanti che non le contano. */
   tool_calls?: number;
   created_at?: string;
+  /**
+   * Modalità Ghost (chat incognito): la run non appartiene a nessuna
+   * conversazione salvata. Restano solo i contatori di consumo (token e
+   * tool_calls), che servono per quota e fatturazione: nessun messaggio,
+   * titolo, file o embedding viene scritto. `conversation_id` resta NULL e
+   * la run è esclusa dal conteggio delle conversazioni in dashboard.
+   */
+  ephemeral?: boolean;
 };
 
 export type UsageSummary = {
@@ -192,7 +200,11 @@ export async function recordUsage(usage: UsageRecord): Promise<void> {
     user_id: usage.user_id,
     user_agent_id: userAgentId,
     agent_slug: usage.agent_slug,
-    conversation_id: usage.conversation_id ?? null,
+    // Modalità Ghost: nessun collegamento a una conversazione (la chat non
+    // esiste lato server). I token contano per la quota come sempre.
+    conversation_id: usage.ephemeral
+      ? null
+      : (usage.conversation_id ?? null),
     status: "completed",
     input_tokens: usage.tokens_input,
     output_tokens: usage.tokens_output,
@@ -258,6 +270,10 @@ export async function getUsageSummary(userId: string, agentSlug: string, year: n
     .eq("user_id", userId)
     .eq("agent_slug", agentSlug)
     .eq("status", "completed")
+    // Le run " fantasma" (chat incognito) hanno conversation_id NULL: non
+    // appartengono a nessuna conversazione salvata e non contano come
+    // conversazioni in dashboard. I TOKEN contano sempre (quota reale).
+    .not("conversation_id", "is", null)
     .gte("started_at", periodStart)
     .lte("started_at", periodEnd);
   const { data: runs } = await db

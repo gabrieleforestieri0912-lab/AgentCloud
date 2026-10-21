@@ -82,11 +82,27 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  let body: { conversationId?: string; agentSlug?: string; files?: unknown };
+  let body: {
+    conversationId?: string;
+    agentSlug?: string;
+    files?: unknown;
+    /**
+     * Modalità Ghost (chat incognito): il client non deve chiedere di salvare
+     * i file prodotti in una chat fantasma. Il server rifiuta la scrittura:
+     * difesa in profondità (il client già non chiama questa route in Ghost).
+     */
+    ephemeral?: boolean;
+  };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+  if (body.ephemeral === true) {
+    return NextResponse.json(
+      { error: "ephemeral_chat_cannot_persist_files" },
+      { status: 409 },
+    );
   }
   if (!Array.isArray(body.files)) {
     return NextResponse.json({ error: "files_required" }, { status: 400 });

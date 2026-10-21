@@ -32,13 +32,19 @@ import { RATE_LIMIT_WINDOWS, rateLimit } from "@/lib/rate-limit";
  * Endpoint chat indipendente dal provider, usato dalla demo hero e dalla UI
  * chat completa.
  *
- * Body: { messages, model?, agentId?, provider? }
+ * Body: { messages, model?, agentId?, provider?, ephemeral? }
  *
  * `provider` è un override esplicito ("xt" | "anthropic") usato da UNA sola
  * superficie: la demo hero invia `provider: "xt"` così usa sempre la chiave
  * economica xKiro. Tutto il resto (chat con agente, agent/run) usa il default
  * di configurazione (Anthropic in produzione). Valori non riconosciuti
  * vengono ignorati.
+ *
+ * `ephemeral: true` marca la richiesta come "chat fantasma" (modalità Ghost):
+ * la risposta non viene conservata da nessuna parte e la run non lascia tracce
+ * nei log. Questa route non scrive MAI messaggi su DB (la cronologia vive nel
+ * browser), ma in modalità Ghost disattiva anche il log di audit: nessun
+ * metadata della conversazione deve uscire dal server.
  * Il backend del modello è risolto con `getLLMProvider()` — quello Anthropic
  * (Claude) quando `ANTHROPIC_API_KEY` è configurata. Il modello predefinito è
  * `claude-sonnet-5` (sovrascrivibile con `AGENT_LLM_MODEL`).
@@ -48,7 +54,15 @@ import { RATE_LIMIT_WINDOWS, rateLimit } from "@/lib/rate-limit";
  */
 export async function POST(req: Request) {
   try {
-    const { messages, model, agentId, provider: providerOverride } = await req.json();
+    const {
+      messages,
+      model,
+      agentId,
+      provider: providerOverride,
+      // Modalità Ghost: la richiesta non deve lasciare tracce.
+      ephemeral,
+    } = await req.json();
+    const isEphemeral = ephemeral === true;
 
     if (!Array.isArray(messages)) {
       return Response.json(
@@ -231,12 +245,16 @@ export async function POST(req: Request) {
                 { userId: "anonymous", tenantId: undefined, files: undefined },
               );
               results.push({ id: use.id, content });
-              logAudit("tool_exec", {
-                tool: use.name,
-                durationMs: Date.now() - startedAt,
-                resultBytes: content.length,
-                surface: "chat",
-              });
+              // Modalità Ghost: nessun log di audit (il log di tool è un
+              // metadata della conversazione e non deve essere scritto).
+              if (!isEphemeral) {
+                logAudit("tool_exec", {
+                  tool: use.name,
+                  durationMs: Date.now() - startedAt,
+                  resultBytes: content.length,
+                  surface: "chat",
+                });
+              }
             }
 
             // Il modello riceve l'esito del tool e continua: è il giro
@@ -287,7 +305,8 @@ export async function POST(req: Request) {
     return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        // Modalità Ghost: niente cache, niente memorizzazione intermediate.
+        "Cache-Control": isEphemeral ? "no-store" : "no-cache",
         Connection: "keep-alive",
       },
     });

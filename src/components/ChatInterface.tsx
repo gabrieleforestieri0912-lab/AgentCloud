@@ -48,6 +48,7 @@ import {
   Link2,
   Copy,
   Check,
+  Ghost,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -123,6 +124,16 @@ import {
   saveProjects,
   type Project,
 } from "@/lib/projects";
+// Modalità Ghost (chat incognito): helper puri che decidono COSA si persiste.
+import {
+  ephemeralConversationIds,
+  isEphemeralConversation,
+  persistableConversations,
+  withEphemeralFlag,
+} from "@/lib/ghost-mode";
+import { useGhostMode } from "./GhostModeProvider";
+import GhostModeButton from "./GhostModeButton";
+import GhostConfirmDialog from "./GhostConfirmDialog";
 
 type LocalMessage = {
   id: string;
@@ -166,6 +177,10 @@ type LocalConversation = {
   shareToken?: string;
   // Progetto di appartenenza (organizzazione locale, come i Projects di Claude).
   projectId?: string;
+  // Chat fantasma (modalità incognito): questa conversazione vive solo in
+  // memoria. NON viene mai scritta in localStorage, non viene inviata al
+  // backend per essere conservata e non genera notifiche né log.
+  ephemeral?: boolean;
 };
 
 /**
@@ -266,13 +281,7 @@ function generateId() {
   return Math.random().toString(36).substring(2, 15);
 }
 
-export default function ChatInterface({
-  initialQuery,
-  agentId,
-  agentLabel,
-  availableAgents = [],
-  account = null,
-}: {
+type ChatInterfaceProps = {
   initialQuery?: string;
   agentId?: string;
   /** Nome localizzato dell'agente mostrato quando la chat è stata aperta per un agente. */
@@ -280,10 +289,40 @@ export default function ChatInterface({
   availableAgents?: { slug: string; name: string }[];
   /** Identità risolta lato server (email/nome/avatar) per la sidebar account. */
   account?: AccountIdentity | null;
-}) {
+};
+
+/**
+ * NOTA: lo stato della modalità Ghost vive in `GhostModeProvider`, montato dal
+ * server component di /chat (vedi src/app/chat/page.tsx). Qui il componente
+ * resta UNO solo: dividerlo in due (wrapper + interno) faceva scattare le
+ * regole del React Compiler su un file che ne contiene già altre (refs usati
+ * come stato, callback che referenziano funzioni dichiarate più avanti).
+ */
+export default function ChatInterface({
+  initialQuery,
+  agentId,
+  agentLabel,
+  availableAgents = [],
+  account = null,
+}: ChatInterfaceProps) {
   const { dict, locale } = useLanguage();
   const attachLabels = chatAttachLabels(dict);
   const attach = useChatAttachments();
+  // ── Modalità Ghost (chat incognito) ──────────────────────────────────────
+  // `isGhostMode` è lo stato globale (volatile) della modalità; la conversazione
+  // fantasma è marcata `ephemeral: true` e questa è la fonte di verità per la
+  // persistenza: ogni scrittura controlla il flag, non lo stato della UI.
+  const ghost = useGhostMode();
+  const isGhostMode = ghost.isGhostMode;
+  // Dialog di conferma Ghost aperto: "enter" (la chat aperta ha messaggi) o
+  // "exit" (la chat fantasma ha messaggi da eliminare definitivamente).
+  const [ghostDialog, setGhostDialog] = useState<"enter" | "exit" | null>(null);
+  // Id della chat fantasma da ripulire dalla memoria (stream, coda).
+  // La pulizia dei ref avviene in un effect, NON dentro l'handler del bottone:
+  // l'handler è passato come prop a un componente, e il React Compiler
+  // assume che una prop di un componente custom possa essere chiamata durante
+  // il render (e segnalerebbe come errore l'accesso ai ref).
+  const [ghostCleanupId, setGhostCleanupId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [activeAgentId, setActiveAgentId] = useState(agentId || "");
   const [selectedAgentSlugs, setSelectedAgentSlugs] = useState<string[]>(agentId ? [agentId] : []);
@@ -313,6 +352,12 @@ export default function ChatInterface({
     setStreamingMsgIds((prev) => prev.filter((x) => x !== id));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  // Visibilità EFFETTIVA della sidebar. In modalità Ghost la sidebar è
+  // sempre nascosta, anche se l'utente l'aveva aperta: la sua preferenza
+  // (`sidebarOpen`) non viene toccata, quindi al termine della modalità la
+  // sidebar torna esattamente com'era prima.
+  const sidebarVisible = sidebarOpen && !isGhostMode;
+  const mobileSidebarVisible = mobileSidebarOpen && !isGhostMode;
   // Larghezza della sidebar: regolabile trascinando il bordo destro (come su
   // Claude), persistita in localStorage. Solo desktop: su mobile è un drawer.
   const sidebarResize = useResizableSidebar(CHAT_SIDEBAR_WIDTH_KEY, 256);
@@ -517,6 +562,19 @@ export default function ChatInterface({
   useEffect(() => {
     conversationsRef.current = conversations;
   }, [conversations]);
+  /**
+   * True se la conversazione indicata è una chat fantasma.
+   *
+   * Fonte di verità: il flag `ephemeral` sulla conversazione (non lo stato
+   * della UI): se i due divergono, vince il dato e la conversazione non
+   * viene mai persistita.
+   */
+  function isEphemeralConv(id: string | null): boolean {
+    if (!id) return false;
+    return isEphemeralConversation(
+      conversationsRef.current.find((c) => c.id === id),
+    );
+  }
   // True finché l'utente è in fondo alla conversazione. L'auto-scroll scatta
   // solo allora: in streaming gli aggiornamenti parola per parola scorrono il
   // contenitore direttamente (istantaneo, niente animazione smooth che lotta
@@ -527,6 +585,9 @@ export default function ChatInterface({
   const activeConv = conversations.find((c) => c.id === activeId);
   const messages = useMemo(() => activeConv?.messages ?? [], [activeConv]);
   const isStreamingActive = streamingConvs.includes(activeId ?? "");
+  // La conversazione attiva è una chat fantasma? (titolo, salvataggio file e
+  // richieste al backend dipendono da questo flag).
+  const activeIsEphemeral = isEphemeralConversation(activeConv);
 
   /**
    * File di un messaggio: versioni già salvate + eventuale blocco che sta
@@ -1134,9 +1195,13 @@ export default function ChatInterface({
       if (raw) {
         const parsed = JSON.parse(raw) as LocalConversation[];
         if (Array.isArray(parsed) && parsed.length > 0) {
+          // Difesa in profondità: una conversazione marcata `ephemeral` non
+          // deve mai essere riletta dalla cronologia, nemmeno se un bug (o un
+          // altro tab) l'avesse scritta. Qui viene scartata.
+          const persistable = persistableConversations(parsed);
           // Dopo un reload nessuno step può essere ancora "in corso": i
           // running diventano completed così il feed resta coerente.
-          const normalized = parsed.map((c) => ({
+          const normalized = persistable.map((c) => ({
             ...c,
             messages: (c.messages ?? []).map((m) =>
               m.activity?.some((s) => s.status === "running")
@@ -1154,8 +1219,8 @@ export default function ChatInterface({
           // ancora), altrimenti la prima: così la bozza salvata compare subito.
           const remembered = readActiveConversation();
           const target =
-            parsed.find((c) => c.id === remembered) ??
-            (parsed[0] as LocalConversation | undefined);
+            persistable.find((c) => c.id === remembered) ??
+            (persistable[0] as LocalConversation | undefined);
           if (target?.id) {
             setActiveId((prev) => prev ?? target.id);
             // La conversazione riaperta porta con sé i suoi agenti: senza questo
@@ -1182,7 +1247,11 @@ export default function ChatInterface({
 
   const persistDrafts = useCallback(() => {
     const out: Record<string, string> = {};
+    const ephemeral = ephemeralConversationIds(conversationsRef.current);
     for (const [id, draft] of Object.entries(draftsRef.current)) {
+      // Le bozze delle chat fantasma NON vengono scritte: la chat ghost non
+      // deve lasciare traccia nemmeno del testo non inviato.
+      if (ephemeral.has(id)) continue;
       if (draft.input) out[id] = draft.input;
     }
     saveChatDrafts(out);
@@ -1223,9 +1292,12 @@ export default function ChatInterface({
   }, [input, activeId, persistDrafts]);
 
   // Ricorda l'ultima conversazione aperta per riaprirla (con la sua bozza) al
-  // reload invece della sola prima in cronologia.
+  // reload invece della sola prima in cronologia. Una chat fantasma non viene
+  // mai ricordata: al reload si riapre l'ultima chat normale.
   useEffect(() => {
-    if (activeId) saveActiveConversation(activeId);
+    if (!activeId) return;
+    if (isEphemeralConv(activeId)) return;
+    saveActiveConversation(activeId);
   }, [activeId]);
 
   // Preferenze rapide salvate: si leggono al mount (solo client, localStorage)
@@ -1259,9 +1331,11 @@ export default function ChatInterface({
   // Ctrl/Cmd+B alterna la sidebar. Scorciatoia da solo: si lascia passare
   // quando il focus è in un campo di testo (l'utente potrebbe voler digitare
   // quel tasto) o quando un tasto modificatore è premuto.
+  // In modalità Ghost la sidebar resta nascosta: la scorciatoia non fa nulla.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key.toLowerCase() !== "b" || !(e.metaKey || e.ctrlKey) || e.altKey) return;
+      if (isGhostMode) return;
       const el = document.activeElement;
       const tag = el?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea" || (el as HTMLElement | null)?.isContentEditable) {
@@ -1272,17 +1346,25 @@ export default function ChatInterface({
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [sidebarOpen]);
+  }, [sidebarOpen, isGhostMode]);
 
   // Salvataggio della cronologia. In streaming le conversazioni cambiano a
   // ogni token: serializzare l'intero storico (immagini incluse, come data URL)
   // a ogni chunk blocca il main thread. Si scrive quindi con un piccolo debounce
   // e si forza la scrittura se la pagina viene nascosta/chiusa.
+  //
+  // Modalità Ghost: `persistableHistory` esclude le conversazioni fantasma,
+  // quindi nella cronologia salvata non compare mai una chat ghost.
   useEffect(() => {
     if (conversations.length === 0) return;
     const write = () => {
       try {
-        localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(conversations));
+        // Le conversazioni fantasma sono escluse: la cronologia salvata non
+        // contiene mai una chat ghost.
+        localStorage.setItem(
+          CHAT_HISTORY_KEY,
+          JSON.stringify(persistableConversations(conversations)),
+        );
       } catch {
         // Storage pieno o non disponibile — la cronologia resta in memoria.
       }
@@ -1302,8 +1384,12 @@ export default function ChatInterface({
   // Persistenza lato DB dei file generati: la chat continua a funzionare anche
   // senza (i file vivono nel messaggio), ma così versioni e anteprime restano
   // disponibili su un altro dispositivo e nell'export dati.
+  //
+  // Modalità Ghost: i file prodotti in una chat fantasma NON vengono scritti
+  // su DB (l'utente ha chiesto che nulla venga conservato).
   useEffect(() => {
     if (conversationFiles.length === 0) return;
+    if (isEphemeralConv(activeId)) return;
     const payload = conversationFiles
       .slice()
       .reverse()
@@ -1332,7 +1418,7 @@ export default function ChatInterface({
       });
     }, 1200);
     return () => clearTimeout(timer);
-  }, [conversationFiles]);
+  }, [conversationFiles, activeId]);
 
   useEffect(() => {
     if (initialQuery && !initializedRef.current) {
@@ -1487,10 +1573,11 @@ export default function ChatInterface({
     }
   }
 
-  function handleNewChat() {
-    // Conserva la bozza della chat corrente prima di partire da una vuota.
-    saveActiveDraft();
-    setSidebarView("chat");
+  /**
+   * Crea una conversazione NUOVA (normale) e la rende attiva.
+   * Usata da "Nuova chat" e dall'uscita dalla modalità Ghost.
+   */
+  function createNewConversation(): LocalConversation {
     // Dentro un progetto si ereditano i suoi agenti, altrimenti l'agente
     // predefinito del pannello rapido (vuoto = chat generica).
     const activeProject = selectedProjectId
@@ -1514,6 +1601,166 @@ export default function ChatInterface({
     setSelectedAgentSlugs(agentSlugs);
     setActiveAgentId(agentSlugs[0] ?? "");
     restoreDraft(conv.id);
+    return conv;
+  }
+
+  // ── Modalità Ghost (chat incognito) ────────────────────────────────────────
+
+  /**
+   * Pulizia della memoria della chat fantasma: chiude lo stream in corso e
+   * libera la coda dei messaggi in attesa.
+   *
+   * Vive in un effect (e non dentro l'handler) per due motivi: l'evento è
+   * comunque asincrono rispetto al click, e l'handler è una prop di un
+   * componente custom — il React Compiler assume che una prop di questo tipo
+   * possa essere chiamata durante il render e segnalerebbe come errore
+   * l'accesso ai ref.
+   */
+  useEffect(() => {
+    if (!ghostCleanupId) return;
+    // Streaming in corso: si chiude il fetch, così nessuna risposta parziale
+    // resta appesa e nulla viene scritto.
+    stopStreaming(ghostCleanupId);
+    streamingRef.current.delete(ghostCleanupId);
+    setGhostCleanupId(null);
+  }, [ghostCleanupId]);
+
+  /**
+   * Avvia (o riprende) la chat fantasma.
+   *
+   * - Se la conversazione aperta è vuota viene Riusata: diventa la chat
+   *   fantasma (marca `ephemeral`) e i suoi messaggi restano in memoria.
+   * - Se ha già messaggi non viene toccata: si crea una NUOVA conversazione
+   *   fantasma, vuota. La chat precedente resta in cronologia, intatta.
+   */
+  function startGhostSession() {
+    const current = conversationsRef.current.find((c) => c.id === activeId);
+    if (current && current.messages.length === 0) {
+      // Conversazione vuota: la stessa diventa la chat fantasma.
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === current.id
+            ? {
+                ...c,
+                ephemeral: true,
+                // Nessun titolo automatico in modalità Ghost: il titolo è
+                // quello fisso della modalità, così non si "indovina" nulla
+                // dal contenuto della chat.
+                title: dict.chat.ghost.title,
+                projectId: undefined,
+              }
+            : c,
+        ),
+      );
+      ghost.enterGhostMode(current.id);
+    } else {
+      // Chat con messaggi (o nessuna chat aperta): nuova conversazione
+      // fantasma vuota. Quella precedente non viene modificata né cancellata.
+      const agentSlugs = selectedAgentSlugs.length
+        ? [...selectedAgentSlugs]
+        : defaultAgentSlug
+          ? [defaultAgentSlug]
+          : [];
+      const conv: LocalConversation = {
+        id: generateId(),
+        title: dict.chat.ghost.title,
+        messages: [],
+        created_at: new Date().toISOString(),
+        agentSlugs,
+        ephemeral: true,
+      };
+      setConversations((prev) => [conv, ...prev]);
+      setActiveId(conv.id);
+      setSelectedAgentSlugs(agentSlugs);
+      setActiveAgentId(agentSlugs[0] ?? "");
+      ghost.enterGhostMode(conv.id);
+    }
+    // Input e allegati: la chat fantasma parte pulita.
+    setInput("");
+    attach.clear();
+    setMobileSidebarOpen(false);
+    setSidebarView("chat");
+    setConversationMenuId(null);
+    setShareConvId(null);
+  }
+
+  /**
+   * Distrugge la sessione Ghost: rimuove la conversazione dallo stato, libera
+   * bozze e coda ed esce dalla modalità. Nulla resta in memoria: è la fine
+   * della chat fantasma.
+   *
+   * Lo stream in corso viene chiuso dall'effect di pulizia (vedi sopra).
+   */
+  const destroyGhostSession = () => {
+    const gid = ghost.ghostConversationId;
+    if (gid) {
+      setGhostCleanupId(gid);
+      setStreamingConvs((prev) => prev.filter((id) => id !== gid));
+      setPartialConvs((prev) => prev.filter((id) => id !== gid));
+      delete draftsRef.current[gid];
+      delete queueRef.current[gid];
+      setConversations((prev) => prev.filter((c) => c.id !== gid));
+      setActiveId((prev) => (prev === gid ? null : prev));
+    }
+    ghost.exitGhostMode();
+  };
+
+  /** Click sull'icona fantasma: entra o esce dalla modalità. */
+  function handleGhostToggle() {
+    setGhostDialog(null);
+    if (isGhostMode) {
+      // Uscita: se la chat fantasma ha messaggi, chiedi conferma (vengono
+      // eliminati definitivamente). Se è vuota, si esce e basta.
+      const gid = ghost.ghostConversationId;
+      const conv = gid
+        ? conversationsRef.current.find((c) => c.id === gid)
+        : undefined;
+      if (conv && conv.messages.length > 0) {
+        setGhostDialog("exit");
+        return;
+      }
+      destroyGhostSession();
+      createNewConversation();
+      return;
+    }
+    // Ingresso: se la chat aperta ha già messaggi, chiedi conferma e poi
+    // parte una NUOVA chat fantasma (quella attiva resta in cronologia).
+    const current = conversationsRef.current.find((c) => c.id === activeId);
+    if (current && current.messages.length > 0) {
+      setGhostDialog("enter");
+      return;
+    }
+    startGhostSession();
+  }
+
+  /** Conferma del dialog "enter": nuova chat fantasma, la precedente resta. */
+  function confirmGhostEnter() {
+    setGhostDialog(null);
+    startGhostSession();
+  }
+
+  /** Conferma del dialog "exit": la chat fantasma viene eliminata per sempre. */
+  function confirmGhostExit() {
+    setGhostDialog(null);
+    destroyGhostSession();
+    createNewConversation();
+  }
+
+  /**
+   * "Nuova chat".
+   *
+   * Sta DOPO le funzioni Ghost a propósito: `destroyGhostSession` è chiamata
+   * qui e deve essere dichiarata prima. Il React Compiler segnala come errore
+   * l'uso di una funzione prima della sua dichiarazione.
+   */
+  function handleNewChat() {
+    // Conserva la bozza della chat corrente prima di partire da una vuota.
+    saveActiveDraft();
+    setSidebarView("chat");
+    // "Nuova chat" in modalità Ghost: la sessione fantasma viene distrutta
+    // (niente resta in memoria) e si torna a una chat normale.
+    if (isGhostMode) destroyGhostSession();
+    createNewConversation();
     setMobileSidebarOpen(false);
   }
 
@@ -1643,6 +1890,12 @@ export default function ChatInterface({
       setShareError(dict.chat.shareEmpty);
       return;
     }
+    // Una chat fantasma non è condivisibile: non esiste da nessuna parte,
+    // quindi non può neppure essere pubblicata.
+    if (isEphemeralConversation(conv)) {
+      setShareError(dict.chat.ghost.shareDisabled);
+      return;
+    }
     if (conv.shareToken) return;
     setShareBusy(true);
     setShareError(null);
@@ -1742,7 +1995,12 @@ export default function ChatInterface({
           ? {
               ...c,
               messages: [...c.messages, userMsg],
-              title: getConvTitle([...c.messages, userMsg], dict.chat.newChat),
+              // Modalità Ghost: nessuna generazione automatica del titolo (non
+              // deve "indovinare" il contenuto della chat). Le chat normali
+              // prendono il titolo dal primo messaggio.
+              title: c.ephemeral
+                ? dict.chat.ghost.title
+                : getConvTitle([...c.messages, userMsg], dict.chat.newChat),
             }
           : c,
       ),
@@ -1771,6 +2029,9 @@ export default function ChatInterface({
     // Istruzioni del progetto (solo API, mai salvate nei messaggi): il modello
     // lavora sempre dentro il contesto del progetto della conversazione.
     const convForSend = conversationsRef.current.find((c) => c.id === convId);
+    // Modalità Ghost: la richiesta viaggia con `ephemeral: true` e il server
+    // non salva messaggi, titolo, file, embedding o notifiche della run.
+    const sendIsEphemeral = isEphemeralConversation(convForSend);
     const projForSend = convForSend?.projectId
       ? projectsRef.current.find((p) => p.id === convForSend.projectId)
       : undefined;
@@ -2190,15 +2451,21 @@ export default function ChatInterface({
       }
 
       if (targetSlugs.length === 0) {
-        await streamOne("/api/chat", { messages: apiMessages });
+        await streamOne(
+          "/api/chat",
+          withEphemeralFlag({ messages: apiMessages }, sendIsEphemeral),
+        );
       } else if (targetSlugs.length === 1) {
         await streamOne(
           "/api/agent/run",
-          {
-            agentId: targetSlugs[0],
-            messages: apiMessages,
-            files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
-          },
+          withEphemeralFlag(
+            {
+              agentId: targetSlugs[0],
+              messages: apiMessages,
+              files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
+            },
+            sendIsEphemeral,
+          ),
           agentMeta(targetSlugs[0]),
         );
       } else {
@@ -2206,11 +2473,14 @@ export default function ChatInterface({
           try {
             await streamOne(
               "/api/agent/run",
-              {
-                agentId: slug,
-                messages: apiMessages,
-                files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
-              },
+              withEphemeralFlag(
+                {
+                  agentId: slug,
+                  messages: apiMessages,
+                  files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
+                },
+                sendIsEphemeral,
+              ),
               agentMeta(slug),
             );
           } catch (e) {
@@ -2495,14 +2765,23 @@ export default function ChatInterface({
   return (
     // data-streaming: stato di generazione della chat attiva, usato dagli E2E
     // per attendere la fine dello stream senza dipendere dal testo localizzato.
-    <div className="flex h-dvh bg-neutral-950" data-streaming={isTyping ? "true" : "false"}>
+    // data-ghost: la modalità Ghost è attiva (usato dagli E2E e dal tema).
+    <div
+      className={`flex h-dvh ${
+        isGhostMode
+          ? "bg-[#0b0913] shadow-[inset_0_0_140px_rgba(139,92,246,0.12)]"
+          : "bg-neutral-950"
+      }`}
+      data-streaming={isTyping ? "true" : "false"}
+      data-ghost={isGhostMode ? "true" : "false"}
+    >
       {/* Chat onboarding tour */}
       {showOnboarding && (
         <ChatOnboarding onComplete={() => setShowOnboarding(false)} />
       )}
 
       {/* Overlay sidebar mobile */}
-      {mobileSidebarOpen && (
+      {mobileSidebarVisible && (
         <div
           className="fixed inset-0 bg-black/60 z-20 lg:hidden"
           onClick={() => setMobileSidebarOpen(false)}
@@ -2512,14 +2791,14 @@ export default function ChatInterface({
       {/* Sidebar — glassmorphism style matching header */}
       <div className="relative shrink-0 lg:flex">
         <aside
-          style={sidebarResize.isDesktop && sidebarOpen ? { width: sidebarResize.width } : undefined}
+          style={sidebarResize.isDesktop && sidebarVisible ? { width: sidebarResize.width } : undefined}
           className={`
             fixed lg:static inset-y-0 left-0 z-30
             w-64 bg-neutral-950/80 backdrop-blur-2xl border-r border-white/[0.06] h-dvh
               flex flex-col shrink-0 overflow-y-auto
               ${sidebarResize.dragging ? "transition-none" : "transition-all duration-300"}
-              ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-              ${sidebarOpen ? "lg:w-64 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
+              ${mobileSidebarVisible ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+              ${sidebarVisible ? "lg:w-64 lg:translate-x-0" : "lg:w-0 lg:overflow-hidden lg:border-0 lg:opacity-0"}
             `}
         >
         {/* Header: logo + nome piattaforma + chiudi. Logo e nome portano
@@ -2913,7 +3192,7 @@ export default function ChatInterface({
           onPointerDown={sidebarResize.startResize}
           onKeyDown={sidebarResize.onKeyDown}
           className={`absolute inset-y-0 right-0 z-40 w-1.5 cursor-col-resize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70 ${
-            sidebarOpen ? "hidden lg:block" : "hidden"
+            sidebarVisible ? "hidden lg:block" : "hidden"
           } ${sidebarResize.dragging ? "bg-brand-500/40" : "hover:bg-brand-500/20"}`}
         />
       </div>
@@ -2931,9 +3210,17 @@ export default function ChatInterface({
           }}
         />
         {/* Header trasparente sopra i messaggi: titolo + agente a sinistra,
-            condivisione e dashboard a destra */}
-        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-b from-neutral-900 via-neutral-900/70 to-transparent px-4 pb-5 pt-2 sm:px-6">
-          <div className={`flex min-w-0 items-center gap-2 ${!sidebarOpen ? "pl-44" : ""}`}>
+            condivisione e dashboard a destra.
+            In modalità Ghost il gradiente di sfondo diventa viola e il
+            titolo è accompagnato dall'etichetta "non verrà salvata". */}
+        <div
+          className={`absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-b ${
+            isGhostMode
+              ? "from-[#12101c] via-[#12101c]/70 to-transparent"
+              : "from-neutral-900 via-neutral-900/70 to-transparent"
+          } px-4 pb-5 pt-2 sm:px-6`}
+        >
+          <div className={`flex min-w-0 items-center gap-2 ${!sidebarVisible ? "pl-44" : ""}`}>
             <p className="truncate text-sm font-bold text-white">
               {activeConv?.title ?? dict.chat.newChat}
             </p>
@@ -2943,14 +3230,34 @@ export default function ChatInterface({
                 {activeAgentDisplayName}
               </span>
             )}
+            {/* Etichetta discreta di modalità Ghost: dice chiaramente che la
+                conversazione non verrà salvata. */}
+            {isGhostMode && (
+              <span
+                role="status"
+                className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-500/10 px-2 py-0.5 text-[11px] font-bold text-purple-200"
+              >
+                <Ghost size={11} aria-hidden="true" />
+                <span className="truncate">{dict.chat.ghost.banner}</span>
+              </span>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
+            <GhostModeButton
+              active={isGhostMode}
+              label={isGhostMode ? dict.chat.ghost.exit : dict.chat.ghost.enter}
+              onToggle={handleGhostToggle}
+            />
             <button
               type="button"
               onClick={() => activeId && openShare(activeId)}
-              disabled={!activeId || messages.length === 0}
+              disabled={!activeId || messages.length === 0 || activeIsEphemeral}
               aria-label={dict.chat.shareConversation}
-              title={dict.chat.shareConversation}
+              title={
+                activeIsEphemeral
+                  ? dict.chat.ghost.shareDisabled
+                  : dict.chat.shareConversation
+              }
               className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40"
             >
               <Share2 size={15} />
@@ -2966,20 +3273,26 @@ export default function ChatInterface({
           </div>
         </div>
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
-          {/* Trigger sidebar su mobile */}
-          <button
-            onClick={() => setMobileSidebarOpen(true)}
-            className="lg:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-[calc(1rem+env(safe-area-inset-left))] z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
-            title={dict.chat.openSidebar}
-          >
-            <MessageSquare size={18} className="text-white" />
-          </button>
+          {/* Trigger sidebar su mobile: in modalità Ghost il drawer della
+              cronologia resta disabilitato (l'icona fantasma resta visibile
+              nell'header). */}
+          {!isGhostMode && (
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="lg:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-[calc(1rem+env(safe-area-inset-left))] z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
+              title={dict.chat.openSidebar}
+            >
+              <MessageSquare size={18} className="text-white" />
+            </button>
+          )}
 
           {/* Riapertura sidebar su desktop: senza questo, una volta ristretta la
               sidebar restava chiusa fino al reload (era il difetto: esisteva
               solo `setSidebarOpen(false)`).(hidden sotto lg: il mobile usa il
-              drawer e il FAB sopra) */}
-          {!sidebarOpen && (
+              drawer e il FAB sopra)
+              In modalità Ghost il bottone di riapertura non c'è: la sidebar
+              resta nascosta finché la modalità è attiva. */}
+          {!sidebarVisible && (
             <div className="hidden lg:flex absolute left-3 top-3 z-10 items-center gap-2">
               <Link
                 href="/"
@@ -2995,21 +3308,25 @@ export default function ChatInterface({
                 />
                 <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
               </Link>
-              <button
-                onClick={() => setSidebar(true)}
-                aria-label={dict.chat.openSidebar}
-                title={`${dict.chat.openSidebar} (Ctrl+B)`}
-                className="flex w-9 h-9 items-center justify-center rounded-full text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
-              >
-                <PanelLeftOpen size={16} />
-              </button>
+              {!isGhostMode && (
+                <button
+                  onClick={() => setSidebar(true)}
+                  aria-label={dict.chat.openSidebar}
+                  title={`${dict.chat.openSidebar} (Ctrl+B)`}
+                  className="flex w-9 h-9 items-center justify-center rounded-full text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
+                >
+                  <PanelLeftOpen size={16} />
+                </button>
+              )}
             </div>
           )}
 
           {/* Area chat principale */}
           <main
             style={chatTextSize === "md" ? undefined : { zoom: chatTextZoom(chatTextSize) }}
-            className="flex-1 flex flex-col min-h-0 bg-neutral-900 relative"
+            className={`flex-1 flex flex-col min-h-0 relative ${
+              isGhostMode ? "bg-[#12101c]" : "bg-neutral-900"
+            }`}
         onDragEnter={attach.onDragEnter}
         onDragOver={attach.onDragOver}
         onDragLeave={attach.onDragLeave}
@@ -3760,6 +4077,31 @@ export default function ChatInterface({
         </AnimatePresence>
         </div>
       </div>
+      {/* Dialog di conferma della modalità Ghost:
+          - "enter": la chat aperta ha messaggi → parte una NUOVA chat fantasma
+            e quella corrente resta intatta in cronologia;
+          - "exit": la chat fantasma ha messaggi → vengono eliminati per sempre. */}
+      {ghostDialog === "enter" && (
+        <GhostConfirmDialog
+          title={dict.chat.ghost.confirmEnterTitle}
+          body={dict.chat.ghost.confirmEnterBody}
+          confirmLabel={dict.chat.ghost.confirmEnterCta}
+          cancelLabel={dict.chat.ghost.cancel}
+          onConfirm={confirmGhostEnter}
+          onCancel={() => setGhostDialog(null)}
+        />
+      )}
+      {ghostDialog === "exit" && (
+        <GhostConfirmDialog
+          title={dict.chat.ghost.confirmExitTitle}
+          body={dict.chat.ghost.confirmExitBody}
+          confirmLabel={dict.chat.ghost.confirmExitCta}
+          cancelLabel={dict.chat.ghost.cancel}
+          tone="danger"
+          onConfirm={confirmGhostExit}
+          onCancel={() => setGhostDialog(null)}
+        />
+      )}
       {/* Modale condivisione in sola lettura: crea/copia/revoca il link. */}
       {shareConvId && (() => {
         const conv = conversations.find((c) => c.id === shareConvId);

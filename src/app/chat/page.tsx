@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ChatInterface from "@/components/ChatInterface";
+import { GhostModeProvider } from "@/components/GhostModeProvider";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getSessionUser } from "@/lib/supabase/server";
@@ -69,13 +70,20 @@ export default async function ChatPage(props: {
 
   return (
     <main className="min-h-dvh bg-neutral-950">
-      <ChatInterface
-        account={accountIdentityFromUser(user)}
-        initialQuery={initialQuery}
-        agentId={agentParam}
-        agentLabel={agentLabel}
-        availableAgents={availableAgents}
-      />
+      {/*
+        Modalità Ghost (chat incognito): il provider tiene lo stato volatile
+        della modalità (niente storage, niente URL). Al refresh o alla chiusura
+        della tab tutto torna allo stato iniziale e la chat fantasma sparisce.
+      */}
+      <GhostModeProvider>
+        <ChatInterface
+          account={accountIdentityFromUser(user)}
+          initialQuery={initialQuery}
+          agentId={agentParam}
+          agentLabel={agentLabel}
+          availableAgents={availableAgents}
+        />
+      </GhostModeProvider>
     </main>
   );
 }

@@ -90,6 +90,12 @@ export async function POST(req: Request) {
     files?: unknown;
     /** Ripresa dopo la conferma di un tool che modifica contenuto esistente. */
     approval?: { token?: string };
+    /**
+     * Modalità Ghost (chat incognito): la run non deve lasciare tracce.
+     * Messaggi, titolo, file, embedding e notifiche non vengono salvati;
+     * restano solo i contatori di consumo (token) per quota e fatturazione.
+     */
+    ephemeral?: boolean;
   };
   try {
     body = await req.json();
@@ -100,7 +106,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const { agentId, messages, files, approval } = body;
+  const { agentId, messages, files, approval, ephemeral } = body;
+  // Modalità Ghost: nessuna persistenza della conversazione.
+  const isEphemeral = ephemeral === true;
 
   if (!agentId || !Array.isArray(messages)) {
     return Response.json(
@@ -450,14 +458,17 @@ export async function POST(req: Request) {
             }
             // Log delle competenze attivate in questo turno (dashboard +
             // metriche). Best-effort: non deve mai far fallire la run.
-            await logSkillActivations({
-              accountId: userId !== "anonymous" ? userId : null,
-              agentSlug: agentId,
-              runId: conversationId,
-              skills: skillsRun.skills,
-              outcome: "success",
-              tokens: inputTokens + outputTokens,
-            });
+            // Modalità Ghost: nessun log — è analytics della conversazione.
+            if (!isEphemeral) {
+              await logSkillActivations({
+                accountId: userId !== "anonymous" ? userId : null,
+                agentSlug: agentId,
+                runId: conversationId,
+                skills: skillsRun.skills,
+                outcome: "success",
+                tokens: inputTokens + outputTokens,
+              });
+            }
             send({ type: "done" });
             break;
           }
@@ -536,9 +547,14 @@ export async function POST(req: Request) {
               // e coerente tra admin e utente reale: anche i possessori del
               // codice (anteprima senza login) ricevono notifiche sotto l'identità
               // condivisa del tenant, così la preview è testabile come un account vero.
+              //
+              // Modalità Ghost: NESSUNA notifica. Le notifiche contengono
+              // metadata della conversazione (oggetto dell'email, nome del
+              // file, titolo del prodotto) e in modalità incognito non devono
+              // essere conservate da nessuna parte.
               const notificationUserId =
                 userId !== "anonymous" ? userId : sessionUser?.id ?? null;
-              if (notificationUserId) {
+              if (notificationUserId && !isEphemeral) {
                 const action = buildActionNotification(
                   use.name,
                   use.input as Record<string, string>,
@@ -557,13 +573,16 @@ export async function POST(req: Request) {
               toolCalls++;
               // Log strutturato: user, tool, esito (durata/byte), MAI il contenuto
               // dei documenti: l'audit non deve diventare una copia dei file.
-              logAudit("tool_exec", {
-                userId,
-                agent: agentId,
-                tool: use.name,
-                durationMs: Date.now() - toolStartedAt,
-                resultBytes: result.length,
-              });
+              // Modalità Ghost: nessun audit (nessun metadata di conversazione).
+              if (!isEphemeral) {
+                logAudit("tool_exec", {
+                  userId,
+                  agent: agentId,
+                  tool: use.name,
+                  durationMs: Date.now() - toolStartedAt,
+                  resultBytes: result.length,
+                });
+              }
 
               send({ type: "tool_done", toolName: use.name });
 
@@ -627,6 +646,10 @@ export async function POST(req: Request) {
         // Registra la run (conversazione + token) a fine esecuzione.
         // Anche i possessori del codice registrano l'uso sotto l'identità del tenant
         // così la dashboard mock mostra gli stessi grafici/costi di un utente reale.
+        //
+        // Modalità Ghost: restano solo i contatori di token (quota e billing).
+        // Nessun collegamento a una conversazione e nessun contenuto: la
+        // conversazione non viene salvata da nessuna parte.
         const usageUserId =
           userId !== "anonymous" ? userId : true ? sessionUser?.id ?? null : null;
         if (usageUserId) {
@@ -637,6 +660,7 @@ export async function POST(req: Request) {
             tokens_input: inputTokens,
             tokens_output: outputTokens,
             tool_calls: toolCalls,
+            ephemeral: isEphemeral,
           });
         } else if (userId === "anonymous") {
           // Anonimo in freemium: incrementa il contatore distribuito
@@ -661,7 +685,8 @@ export async function POST(req: Request) {
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
+      // Modalità Ghost: niente cache, niente memorizzazione intermediate.
+      "Cache-Control": isEphemeral ? "no-store" : "no-cache",
       Connection: "keep-alive",
     },
   });
