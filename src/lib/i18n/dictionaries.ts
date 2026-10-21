@@ -66,9 +66,9 @@ const it = {
       "Il tuo abbonamento per questo agente è {status}. Riattivalo per continuare a usarlo.",
     subscriptionExpired: "Il tuo abbonamento è scaduto. Rinnova per continuare a usare l'agente.",
     overageCapReached:
-      "Hai raggiunto il tetto di sicurezza mensile di {cap} token ({multiplier}x l'allowance del tuo piano) per questo agente. Contattaci per aumentare il limite.",
+      "Hai raggiunto il tetto di sicurezza mensile di {cap} token ({multiplier}x l'allowance del tuo piano). Contattaci per aumentare il limite.",
     limitExceeded:
-      "Hai esaurito l'allowance mensile di {limit} token per questo agente. Aggiorna il tuo piano per continuare.",
+      "Hai esaurito il budget mensile di {limit} token del tuo piano. Aggiorna il piano per continuare.",
     invalidEmail: "Email non valida",
     invalidPlan: "Piano non valido",
     missingAgentOrPlan: "Manca agentId o planId+vertical",
@@ -754,6 +754,10 @@ chat: {
     assistantName: "Assistente personale",
     multiAgents: "{count} agenti",
     dailyLimit: "{remaining}/{limit} gratuiti rimasti oggi · nuovi messaggi alle {time}",
+    tokenBudget:
+      "Budget: {used} / {limit} token · si rinnova il {date}",
+    tokenBudgetExhausted:
+      "Budget esaurito ({limit} token). Aggiorna il piano per continuare.",
     searchAgents: "Cerca agenti...",
     connectTitle: "Connetti {provider}",
     connectRequested: "Richiesto",
@@ -1255,6 +1259,9 @@ chat: {
     statInstalledAgents: "Agenti installati",
     statRunsThisMonth: "Esecuzioni questo mese",
     statTokensUsed: "Token usati",
+    budgetTitle: "Budget token",
+    budgetRenews: "Si rinnova il {date}",
+    budgetExhausted: "Budget esaurito: aggiorna il piano per continuare.",
     statActiveAgents: "Agenti attivi",
     justNow: "adesso",
     minutesAgo: "{n} min",
@@ -2524,9 +2531,9 @@ export const en: Dictionary = {
       "Your subscription for this agent is {status}. Reactivate it to keep using it.",
     subscriptionExpired: "Your subscription has expired. Renew to continue using the agent.",
     overageCapReached:
-      "You've reached the monthly safety cap of {cap} tokens ({multiplier}x your plan allowance) for this agent. Contact us to raise your limit.",
+      "You've reached the monthly safety cap of {cap} tokens ({multiplier}x your plan allowance). Contact us to raise your limit.",
     limitExceeded:
-      "You've used your monthly allowance of {limit} tokens for this agent. Upgrade your plan to continue.",
+      "You've used the {limit} token monthly budget of your plan. Upgrade your plan to continue.",
     invalidEmail: "Invalid email",
     invalidPlan: "Invalid plan",
     missingAgentOrPlan: "Missing agentId or planId+vertical",
@@ -3182,6 +3189,10 @@ chat: {
     assistantName: "Personal assistant",
     multiAgents: "{count} agents",
     dailyLimit: "{remaining}/{limit} free left today · new messages at {time}",
+    tokenBudget:
+      "Budget: {used} / {limit} tokens · renews on {date}",
+    tokenBudgetExhausted:
+      "Budget exhausted ({limit} tokens). Upgrade your plan to continue.",
     searchAgents: "Search agents...",
     connectTitle: "Connect {provider}",
     connectRequested: "Requested",
@@ -3692,6 +3703,9 @@ chat: {
     statInstalledAgents: "Installed agents",
     statRunsThisMonth: "Runs this month",
     statTokensUsed: "Tokens used",
+    budgetTitle: "Token budget",
+    budgetRenews: "Renews on {date}",
+    budgetExhausted: "Budget exhausted: upgrade your plan to continue.",
     statActiveAgents: "Active agents",
     justNow: "just now",
     minutesAgo: "{n} min",
@@ -4948,9 +4962,9 @@ export const es: Dictionary = {
       "Tu suscripción para este agente es {status}. Reactívala para seguir usándolo.",
     subscriptionExpired: "Tu suscripción ha expirado. Renuévala para seguir usando el agente.",
     overageCapReached:
-      "Has alcanzado el límite de seguridad mensual de {cap} tokens ({multiplier}x tu asignación) para este agente. Contáctanos para aumentarlo.",
+      "Has alcanzado el límite de seguridad mensual de {cap} tokens ({multiplier}x tu asignación). Contáctanos para aumentarlo.",
     limitExceeded:
-      "Has agotado tu asignación mensual de {limit} tokens para este agente. Mejora tu plan para continuar.",
+      "Has agotado el presupuesto mensual de {limit} tokens de tu plan. Mejora tu plan para continuar.",
     invalidEmail: "Email no válido",
     invalidPlan: "Plan no válido",
     missingAgentOrPlan: "Falta agentId o planId+vertical",
@@ -5606,6 +5620,10 @@ chat: {
     assistantName: "Asistente personal",
     multiAgents: "{count} agentes",
     dailyLimit: "{remaining}/{limit} gratis restantes hoy · nuevos mensajes a las {time}",
+    tokenBudget:
+      "Presupuesto: {used} / {limit} tokens · se renueva el {date}",
+    tokenBudgetExhausted:
+      "Presupuesto agotado ({limit} tokens). Mejora tu plan para continuar.",
     searchAgents: "Buscar agentes...",
     connectTitle: "Conectar {provider}",
     connectRequested: "Solicitado",
@@ -6114,6 +6132,9 @@ agentsPage: {
     statInstalledAgents: "Agentes instalados",
     statRunsThisMonth: "Ejecuciones este mes",
     statTokensUsed: "Tokens usados",
+    budgetTitle: "Presupuesto de tokens",
+    budgetRenews: "Se renueva el {date}",
+    budgetExhausted: "Presupuesto agotado: mejora tu plan para continuar.",
     statActiveAgents: "Agentes activos",
     justNow: "ahora mismo",
     minutesAgo: "{n} min",
@@ -7371,7 +7392,7 @@ export const de: Dictionary = {
     overageCapReached:
       "Du hast das monatliche Sicherheitslimit von {cap} Tokens ({multiplier}x dein Kontingent) erreicht. Kontaktiere uns zur Erhöhung.",
     limitExceeded:
-      "Du hast dein monatliches Kontingent von {limit} Tokens verbraucht. Upgrade deinen Plan.",
+      "Du hast das monatliche Budget von {limit} Tokens deines Plans verbraucht. Upgrade deinen Plan.",
     invalidEmail: "Ungültige E-Mail",
     invalidPlan: "Ungültiger Plan",
     missingAgentOrPlan: "agentId oder planId+vertical fehlt",
@@ -8027,6 +8048,10 @@ chat: {
     assistantName: "Persönlicher Assistent",
     multiAgents: "{count} Agenten",
     dailyLimit: "{remaining}/{limit} heute noch gratis · neue Nachrichten um {time}",
+    tokenBudget:
+      "Budget: {used} / {limit} Token · erneuert sich am {date}",
+    tokenBudgetExhausted:
+      "Budget aufgebraucht ({limit} Token). Aktualisiere deinen Plan, um weiterzumachen.",
     searchAgents: "Agenten suchen...",
     connectTitle: "{provider} verbinden",
     connectRequested: "Angefordert",
@@ -8535,6 +8560,9 @@ chat: {
     statInstalledAgents: "Installierte Agenten",
     statRunsThisMonth: "Ausführungen diesen Monat",
     statTokensUsed: "Verwendete Tokens",
+    budgetTitle: "Token-Budget",
+    budgetRenews: "Erneuert sich am {date}",
+    budgetExhausted: "Budget aufgebraucht: aktualisiere deinen Plan, um weiterzumachen.",
     statActiveAgents: "Aktive Agenten",
     justNow: "gerade eben",
     minutesAgo: "{n} min",
@@ -9790,9 +9818,9 @@ export const fr: Dictionary = {
       "Votre abonnement pour cet agent est {status}. Réactivez-le pour continuer.",
     subscriptionExpired: "Votre abonnement a expiré. Renouvelez-le pour continuer à utiliser l'agent.",
     overageCapReached:
-      "Vous avez atteint le plafond de sécurité mensuel de {cap} tokens ({multiplier}x l'enveloppe de votre offre) pour cet agent. Contactez-nous pour relever la limite.",
+      "Vous avez atteint le plafond de sécurité mensuel de {cap} tokens ({multiplier}x l'enveloppe de votre offre). Contactez-nous pour relever la limite.",
     limitExceeded:
-      "Vous avez épuisé votre enveloppe mensuelle de {limit} tokens pour cet agent. Passez à une offre supérieure pour continuer.",
+      "Vous avez épuisé le budget mensuel de {limit} tokens de votre offre. Passez à une offre supérieure pour continuer.",
     invalidEmail: "E-mail invalide",
     invalidPlan: "Offre invalide",
     missingAgentOrPlan: "agentId ou planId+vertical manquant",
@@ -10448,6 +10476,10 @@ browseMarketplace: "Parcourir la marketplace",
     assistantName: "Assistant personnel",
     multiAgents: "{count} agents",
     dailyLimit: "{remaining}/{limit} gratuits restants aujourd'hui · nouveaux messages à {time}",
+    tokenBudget:
+      "Budget : {used} / {limit} tokens · renouvelé le {date}",
+    tokenBudgetExhausted:
+      "Budget épuisé ({limit} tokens). Passez à un forfait supérieur pour continuer.",
     searchAgents: "Rechercher des agents...",
     connectTitle: "Connecter {provider}",
     connectRequested: "Demandé",
@@ -10956,6 +10988,9 @@ browseMarketplace: "Parcourir la marketplace",
     statInstalledAgents: "Agents installés",
     statRunsThisMonth: "Exécutions ce mois-ci",
     statTokensUsed: "Tokens utilisés",
+    budgetTitle: "Budget de tokens",
+    budgetRenews: "Renouvelé le {date}",
+    budgetExhausted: "Budget épuisé : passez à un forfait supérieur pour continuer.",
     statActiveAgents: "Agents actifs",
     justNow: "à l'instant",
     minutesAgo: "{n} min",

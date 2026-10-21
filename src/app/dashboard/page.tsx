@@ -27,6 +27,27 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { DATE_LOCALES } from "@/lib/i18n/constants";
 import GeneratedFilesPanel from "@/components/GeneratedFilesPanel";
+import { getTokenPoolsForUser, type TokenPool } from "@/lib/billing/token-pool";
+import { getPlan } from "@/lib/billing/pricing";
+import { formatTokens } from "@/lib/format-tokens";
+
+/**
+ * Nome leggibile del piano di un pool ("Growth", "Starter"…).
+ * Il pool sa solo il plan_id grezzo ("shopify-growth"): il nome vero viene
+ * dal catalogo dei piani.
+ */
+function poolPlanLabel(pool: Pick<TokenPool, "planId" | "vertical">): string {
+  if (!pool.planId) return "—";
+  if (!pool.vertical) return pool.planId;
+  const tier = pool.planId.startsWith(`${pool.vertical}-`)
+    ? pool.planId.slice(pool.vertical.length + 1)
+    : pool.planId;
+  const plan = getPlan(
+    pool.vertical as "shopify" | "services",
+    tier as "starter" | "growth",
+  );
+  return plan?.name ?? pool.planId;
+}
 
 type InstalledAgent = {
   slug: string;
@@ -40,12 +61,6 @@ type InstalledAgent = {
 };
 
 function formatCount(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
 }
@@ -212,6 +227,10 @@ export default async function DashboardPage({
     ],
   ];
 
+  // Pool di token: il budget dei piani attivi (uno per abbonamento). È il
+  // numero che l'utente deve poter leggere per capire quanto ha ancora.
+  const tokenPools = userId ? await getTokenPoolsForUser(userId) : [];
+
   // ── Grafici: bucket giornalieri degli ultimi 7 giorni + costi ─────────
   // Costruisce i bucket giornalieri (7 giorni) a partire dalle run del mese
   // (se il DB è disponibile), con una leggera aggregazione in memoria; se non
@@ -307,6 +326,75 @@ export default async function DashboardPage({
               <AlertCircle size={16} className="shrink-0" />
               {dict.dashboard.billingError}
             </div>
+          )}
+
+          {/* Budget di token: un pool per abbonamento, con gli agenti che lo
+              condividono. Il budget è ciò che rende gli agenti utilizzabili,
+              quindi va in evidenza come le statistiche. */}
+          {tokenPools.length > 0 && (
+            <section data-onboard="dashboard-budget" className="mb-8">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-neutral-500">
+                {dict.dashboard.budgetTitle}
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                {tokenPools.map((pool) => {
+                  const pct = Math.min(100, Math.round(pool.ratio * 100));
+                  const tone =
+                    pool.ratio >= 1
+                      ? "bg-red-400"
+                      : pool.ratio >= 0.8
+                        ? "bg-amber-400"
+                        : "bg-brand-400";
+                  return (
+                    <div
+                      key={pool.poolId}
+                      className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm"
+                    >
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-white">
+                            {poolPlanLabel(pool)}
+                          </p>
+                          <p className="truncate text-xs text-neutral-500">
+                            {pool.agents
+                              .map(
+                                (slug) =>
+                                  AGENTS.find((a) => a.slug === slug)?.name ??
+                                  slug,
+                              )
+                              .join(" · ")}
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-sm font-bold text-white">
+                          {formatTokens(pool.used)}{" "}
+                          <span className="text-neutral-500">
+                            / {formatTokens(pool.tokenLimit)}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                        <div
+                          className={`h-full rounded-full ${tone}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <p className="mt-2 text-[11px] text-neutral-500">
+                        {pool.ratio >= 1
+                          ? dict.dashboard.budgetExhausted
+                          : t(dict.dashboard.budgetRenews, {
+                              date: pool.periodEnd
+                                ? new Date(pool.periodEnd).toLocaleDateString(
+                                    DATE_LOCALES[locale],
+                                    { day: "numeric", month: "short" },
+                                  )
+                                : "—",
+                            })}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           )}
 
           <div data-onboard="dashboard-stats" className="mb-8 grid gap-4 md:grid-cols-4">

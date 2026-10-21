@@ -109,6 +109,8 @@ import {
   type ChatTextSize,
 } from "@/lib/chat-settings";
 import { useResizableSidebar, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/lib/useResizableSidebar";
+import { formatTokens } from "@/lib/format-tokens";
+import TokenBudgetLine from "./TokenBudgetLine";
 import FileCard from "./FileCard";
 import PreviewPanel from "./PreviewPanel";
 import {
@@ -440,28 +442,88 @@ export default function ChatInterface({
   const agentDropdownRef = useRef<HTMLDivElement>(null);
   const agentSearchRef = useRef<HTMLInputElement>(null);
   // Freemium giornaliero: il blocco autoritativo arriva dal server (402) — vedi banner limite sopra l'input
+  //
+  // Per chi è abbonato il limite non è sui messaggi ma sul POOL DI TOKEN del
+  // piano: budget condiviso fra gli agenti del piano, misurato nel periodo di
+  // abbonamento. È quello che l'utente deve vedere: quanto ha consumato e
+  // quanto gli resta.
+  type TokenBudget = {
+    planId: string | null;
+    tokenLimit: number;
+    used: number;
+    remaining: number;
+    ratio: number;
+    periodEnd: string | null;
+    level: "ok" | "warning" | "critical";
+    exhausted: boolean;
+  };
   type DailyLimitInfo =
-    | { unlimited: true }
+    | { unlimited: true; budget?: TokenBudget }
     | { unlimited: false; remaining: number; limit: number; resetAt: string };
   const [dailyLimit, setDailyLimit] = useState<DailyLimitInfo | null>(null);
   // Bump per ricaricare il contatore dopo ogni risposta completata.
   const [limitTick, setLimitTick] = useState(0);
   const limitSlug = selectedAgentSlugs.length === 1 && selectedAgentSlugs[0] ? selectedAgentSlugs[0] : null;
 
-  // Budget giornaliero freemium (5/giorno per agente, reset a mezzanotte UTC):
-  // mostrato sopra l'input con l'ora locale del reset.
+  /**
+   * Riga del budget di token, pronta per il render.
+   *
+   * Il testo è localizzato qui (il componente `TokenBudgetLine` è solo
+   * presentazione) e resta `null` per chi non ha un budget: gli abbonati
+   * hanno il pool, gli altri (piano gratuito) no.
+   */
+  const tokenBudgetLine = (() => {
+    const budget = dailyLimit?.unlimited ? dailyLimit.budget : undefined;
+    if (!budget) return null;
+    const text = budget.exhausted
+      ? t(dict.chat.tokenBudgetExhausted, {
+          limit: formatTokens(budget.tokenLimit),
+        })
+      : t(dict.chat.tokenBudget, {
+          used: formatTokens(budget.used),
+          limit: formatTokens(budget.tokenLimit),
+          date: budget.periodEnd
+            ? new Date(budget.periodEnd).toLocaleDateString(undefined, {
+                day: "numeric",
+                month: "short",
+              })
+            : "-",
+        });
+    return { ratio: budget.ratio, level: budget.level, text };
+  })();
+
+  // Budget giornaliero freemium (5/giorno per agente, reset a mezzanotte UTC)
+  // e budget di token del piano: mostrati sopra l'input.
+  //
+  // L'agente è opzionale nella richiesta: senza agent il server risponde con
+  // il pool principale dell'utente, così il budget è visibile anche prima di
+  // aver scelto un agente (è il budget del piano che l'utente ha comprato).
   useEffect(() => {
-    if (!limitSlug) {
-      setDailyLimit(null);
-      return;
-    }
     let cancelled = false;
-    fetch(`/api/agent/limit?agent=${encodeURIComponent(limitSlug)}`, { credentials: "same-origin" })
+    const qs = limitSlug ? `?agent=${encodeURIComponent(limitSlug)}` : "";
+    fetch(`/api/agent/limit${qs}`, { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled || !data) return;
-        if (data.unlimited) setDailyLimit({ unlimited: true });
-        else if (typeof data.remaining === "number") {
+        if (data.unlimited) {
+          // Abbonato: nessun limite di messaggi, ma c'è il budget di token.
+          const p = data.pool;
+          setDailyLimit({
+            unlimited: true,
+            budget: p
+              ? {
+                  planId: p.planId ?? null,
+                  tokenLimit: Number(p.tokenLimit) || 0,
+                  used: Number(p.used) || 0,
+                  remaining: Number(p.remaining) || 0,
+                  ratio: Number(p.ratio) || 0,
+                  periodEnd: p.periodEnd ?? null,
+                  level: (p.level ?? "ok") as "ok" | "warning" | "critical",
+                  exhausted: Boolean(data.exhausted),
+                }
+              : undefined,
+          });
+        } else if (typeof data.remaining === "number") {
           setDailyLimit({
             unlimited: false,
             remaining: data.remaining,
@@ -2233,6 +2295,12 @@ export default function ChatInterface({
             // propagate paywall immediately
             if (code === "FREE_LIMIT_REACHED" && agent) setPaywallSlug(agent.slug);
             else if (code === "FREE_LIMIT_REACHED") setPaywallSlug(targetSlugs[0] ?? null);
+            // Budget di token esaurito: la risposta è "il tuo piano è finito,
+            // puoi aggiornarlo" → stessa CTA del piano gratuito (l'utente non
+            // ha un errore da capire, ha una quota da ricaricare).
+            else if (code === "LIMIT_EXCEEDED" || code === "OVERAGE_CAP_REACHED") {
+              setPaywallSlug(agent?.slug ?? targetSlugs[0] ?? "");
+            }
             throw new Error("AI backend error");
           }
           if (!res.body) throw new Error("AI backend unavailable");
@@ -2450,10 +2518,28 @@ export default function ChatInterface({
         }
       }
 
+      // Repository GitHub collegato: senza questo dato il modello non sa che
+      // può leggere e scrivere nel codice, e i tool `github_repo_*` restano
+      // disattivati lato server.
+      const githubRepoPayload = activeGithubRepo
+        ? {
+            owner: activeGithubRepo.owner,
+            repo: activeGithubRepo.repo,
+            branch: activeGithubRepo.branch,
+          }
+        : undefined;
+
       if (targetSlugs.length === 0) {
         await streamOne(
           "/api/chat",
-          withEphemeralFlag({ messages: apiMessages }, sendIsEphemeral),
+          withEphemeralFlag(
+            {
+              messages: apiMessages,
+              githubRepo: githubRepoPayload,
+              webSearch: webSearchEnabled,
+            },
+            sendIsEphemeral,
+          ),
         );
       } else if (targetSlugs.length === 1) {
         await streamOne(
@@ -2478,6 +2564,8 @@ export default function ChatInterface({
                   agentId: slug,
                   messages: apiMessages,
                   files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
+                  githubRepo: githubRepoPayload,
+                  webSearch: webSearchEnabled,
                 },
                 sendIsEphemeral,
               ),

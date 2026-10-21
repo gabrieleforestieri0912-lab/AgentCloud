@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
-import { getPlan } from "@/lib/billing/pricing";
+import { getPlan, DEFAULT_TOKEN_LIMIT } from "@/lib/billing/pricing";
 import { apiErrorMessage } from "@/lib/i18n/api-errors";
 
 /**
@@ -53,6 +53,10 @@ export async function GET(req: Request) {
 
       metadata.plan_id = `${vertical}-${planId}`;
       metadata.vertical = vertical;
+      // Snapshot del budget venduto: è ciò che finisce nel pool di token
+      // dell'utente. Se il catalogo cambia dopo, chi ha già comprato mantiene
+      // l'allowance che aveva comprato.
+      metadata.tokens = String(plan.tokens);
     }
     // Prezzi basati su agente (legacy, per compatibilità all'indietro)
     else if (agentId) {
@@ -70,6 +74,9 @@ export async function GET(req: Request) {
       paymentLink = process.env[envKey] || null;
 
       metadata.agent_id = agentId;
+      // Anche l'acquisto del singolo agente ha un budget: senza questo il
+      // pool cadrebbe sull'allowance di default.
+      metadata.tokens = String(DEFAULT_TOKEN_LIMIT);
     } else {
       return NextResponse.json(
         { error: await apiErrorMessage("missingAgentOrPlan") },

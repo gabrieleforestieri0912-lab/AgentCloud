@@ -6,6 +6,8 @@ import {
 } from "@/lib/stripe/webhook-helpers";
 import { getOrCreateMeterItem, isOverageBillingEnabled } from "@/lib/stripe/overage";
 import { isExpiringSoon } from "@/lib/billing/subscription-notifications";
+import { getPlan } from "@/lib/billing/pricing";
+import { buildPoolConfig } from "@/lib/billing/token-pool";
 
 /**
  * I tipi generati dello Stripe SDK v22 sono pesantemente ristrutturati;
@@ -18,6 +20,7 @@ type WebhookSubscription = {
   // livello di subscription item; teniamo entrambe le posizioni per coprire
   // anche payload legacy.
   current_period_end?: number | null;
+  current_period_start?: number | null;
   cancel_at_period_end?: boolean | null;
   items?: { data?: Array<{ current_period_end?: number | null }> };
 };
@@ -28,9 +31,15 @@ function subscriptionPeriodEndIso(sub: WebhookSubscription): string | null {
   return ts ? new Date(ts * 1000).toISOString() : null;
 }
 
+function subscriptionPeriodStartIso(sub: WebhookSubscription): string | null {
+  const ts = sub.current_period_start ?? null;
+  return ts ? new Date(ts * 1000).toISOString() : null;
+}
+
 type WebhookInvoice = {
   subscription?: string | null;
   period_end?: number | null;
+  period_start?: number | null;
 };
 
 function getStripe() {
@@ -52,6 +61,35 @@ function resolveUserId(session: Stripe.Checkout.Session, metadataUserId: string 
     session.customer_details?.email ??
     null
   );
+}
+
+/**
+ * Allinea il PERIODO DEL POOL di tutte le righe `user_agents` di un
+ * abbonamento.
+ *
+ * Serve al rinnovo: il budget si misura dentro il periodo di abbonamento,
+ * quindi a ogni rinnovo la finestra di consumo deve scorrere. La `config` va
+ * riletta e riscritta campo per campo: `config` è un jsonb con dentro anche
+ * planId, poolId e gli altri metadati, e sovrascriverla perderebbe tutto.
+ */
+async function syncPoolPeriod(
+  db: NonNullable<ReturnType<typeof createAdminClient>>,
+  subscriptionId: string,
+  periodStart: string | null,
+  periodEnd: string | null,
+) {
+  if (!periodStart && !periodEnd) return;
+  const { data } = await db
+    .from("user_agents")
+    .select("id, config")
+    .eq("stripe_subscription_id", subscriptionId);
+  for (const row of data ?? []) {
+    const config = (row.config ?? {}) as Record<string, unknown>;
+    const next: Record<string, unknown> = { ...config };
+    if (periodStart) next.periodStart = periodStart;
+    if (periodEnd) next.periodEnd = periodEnd;
+    await db.from("user_agents").update({ config: next }).eq("id", row.id);
+  }
 }
 
 async function activateSubscription(
@@ -97,19 +135,60 @@ async function activateSubscription(
   // questo campo la riga `user_agents` resta senza scadenza e il preavviso
   // non può mai scattare. invoice.paid e subscription.updated lo tengono poi
   // sincronizzato ai rinnovi.
+  //
+  // Lo stesso periodo è il PERIODO DEL POOL DI TOKEN: il budget si misura
+  // dentro [periodStart, periodEnd], non nel mese di calendario.
   let periodEndIso: string | null = null;
+  let periodStartIso: string | null = null;
   if (subscriptionId) {
     try {
       const sub = await getStripe().subscriptions.retrieve(subscriptionId);
       periodEndIso = subscriptionPeriodEndIso(sub as unknown as WebhookSubscription);
+      periodStartIso = subscriptionPeriodStartIso(sub as unknown as WebhookSubscription);
     } catch (err) {
       console.error("Failed to retrieve subscription period end:", err);
     }
   }
+
+  // Budget del pool: lo snapshot di ciò che è stato VENDUTO (metadata `tokens`)
+  // vince sul valore corrente del catalogo, così un piano venduto a 300k resta
+  // a 300k anche se il catalogo cambia dopo. Senza metadata si usa il
+  // catalogo; senza niente, l'allowance di default.
+  const catalogTokens =
+    resolution.planId && resolution.vertical
+      ? (() => {
+          const tier = resolution.planId.startsWith(`${resolution.vertical}-`)
+            ? resolution.planId.slice(resolution.vertical.length + 1)
+            : resolution.planId;
+          const plan = getPlan(
+            resolution.vertical,
+            tier as "starter" | "growth",
+          );
+          return plan?.tokens ?? null;
+        })()
+      : null;
+
+  const pool = buildPoolConfig({
+    // Un pool = un abbonamento Stripe: gli agenti dello stesso piano
+    // condividono lo stesso budget.
+    poolId: subscriptionId ?? `agent:${resolution.agentIds[0] ?? "unknown"}`,
+    planId: resolution.planId,
+    vertical: resolution.vertical,
+    soldTokens: metadata.tokens,
+    catalogTokens,
+    periodStart: periodStartIso,
+    periodEnd: periodEndIso,
+  });
+
   const config: Record<string, unknown> = {
     planId: resolution.planId,
     vertical: resolution.vertical,
     activatedVia: resolution.planId ? "plan" : "agent",
+    // Pool di token: budget e periodo (vedi lib/billing/token-pool.ts).
+    tokenLimit: pool.tokenLimit,
+    poolId: pool.poolId,
+    periodStart: pool.periodStart,
+    periodEnd: pool.periodEnd,
   };
 
   // Aggancia subito il Price metered overage all'abbonamento così l'overage può essere fatturato dalla prima run.
@@ -215,6 +294,9 @@ export async function POST(req: Request) {
 
     case "invoice.paid": {
       // Abbonamento rinnovato — mantieni il diritto attivo e aggiorna il periodo.
+      // Il periodo è anche la finestra di consumo del pool di token: senza
+      // questo allineamento il budget continuerebbe a contare i token del
+      // periodo precedente.
       const invoice = event.data.object as unknown as WebhookInvoice;
       const subscriptionId =
         typeof invoice.subscription === "string"
@@ -224,6 +306,9 @@ export async function POST(req: Request) {
         const periodEnd = invoice.period_end
           ? new Date(invoice.period_end * 1000).toISOString()
           : null;
+        const periodStart = invoice.period_start
+          ? new Date(invoice.period_start * 1000).toISOString()
+          : null;
         await db
           .from("user_agents")
           .update({
@@ -232,6 +317,7 @@ export async function POST(req: Request) {
             cancelled_at: null,
           })
           .eq("stripe_subscription_id", subscriptionId);
+        await syncPoolPeriod(db, subscriptionId, periodStart, periodEnd);
         console.log(`Invoice paid for subscription ${subscriptionId}`);
       }
       break;
@@ -240,6 +326,7 @@ export async function POST(req: Request) {
     case "customer.subscription.updated": {
       const subscription = event.data.object as unknown as WebhookSubscription;
       const periodEnd = subscriptionPeriodEndIso(subscription);
+      const periodStart = subscriptionPeriodStartIso(subscription);
       const cancelAtPeriodEnd = subscription.cancel_at_period_end === true;
 
       await db
@@ -261,6 +348,11 @@ export async function POST(req: Request) {
           ...existing,
           cancelAtPeriodEnd,
         };
+        // Il periodo del pool segue il periodo dell'abbonamento: se Stripe
+        // sposta la fine periodo (prova, cambio di fatturazione) la finestra
+        // di consumo del budget deve spostarsi con lei.
+        if (periodStart) config.periodStart = periodStart;
+        if (periodEnd) config.periodEnd = periodEnd;
         // Un periodo rinnovato/prolungato è un nuovo ciclo di fatturazione,
         // quindi la notifica di scadenza può scattare di nuovo alla prossima
         // finestra.

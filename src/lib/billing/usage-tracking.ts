@@ -11,6 +11,7 @@ import { getOrCreateMeterItem, isOverageBillingEnabled, reportOverageUsage } fro
 import { apiErrorMessageForLocale } from "@/lib/i18n/api-errors";
 import { DATE_LOCALES, DEFAULT_LOCALE, type Locale } from "@/lib/i18n/constants";
 import { DEFAULT_TOKEN_LIMIT, OVERAGE_HARD_CAP_MULTIPLIER } from "./pricing";
+import { getTokenPoolForAgent } from "./token-pool";
 
 export type UsageRecord = {
   id?: string;
@@ -30,16 +31,6 @@ export type UsageRecord = {
    * la run è esclusa dal conteggio delle conversazioni in dashboard.
    */
   ephemeral?: boolean;
-};
-
-export type UsageSummary = {
-  userId: string;
-  agentSlug: string;
-  period: string;
-  conversations: number;
-  tokensUsed: number;
-  tokenLimit: number;
-  overage: number;
 };
 
 export type UserAgentRecord = {
@@ -64,12 +55,6 @@ export type RunCheck =
 
 async function getDb() {
   return createAdminClient() ?? (await createClient());
-}
-
-function periodBounds(year: number, month: number) {
-  const periodStart = new Date(Date.UTC(year, month - 1, 1)).toISOString();
-  const periodEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString();
-  return { periodStart, periodEnd };
 }
 
 export async function getUserAgent(userId: string, agentSlug: string): Promise<UserAgentRecord | null> {
@@ -150,10 +135,15 @@ export async function assertRunAllowed(
     }
   }
 
-  const tokenLimit = resolveTokenLimit(userAgent.config);
-  const now = new Date();
-  const summary = await getUsageSummary(userId, agentSlug, now.getFullYear(), now.getMonth() + 1);
-  const used = summary?.tokensUsed ?? 0;
+  // ── Budget: il POOL di token del piano (non più la quota del singolo agente)
+  //
+  // Il pool è condiviso da tutti gli agenti dello stesso abbonamento e il
+  // periodo è quello dell'abbonamento (non il mese di calendario): vedi
+  // lib/billing/token-pool.ts. Se l'utente non ha un pool (abbonamento legacy
+  // o agente non coperto) si cade sul comportamento precedente.
+  const pool = await getTokenPoolForAgent(userId, agentSlug);
+  const tokenLimit = pool?.tokenLimit ?? resolveTokenLimit(userAgent.config);
+  const used = pool?.used ?? 0;
 
   const overageAvailable =
     Boolean(userAgent.stripe_subscription_id) && Boolean(userAgent.stripe_customer_id) && isOverageBillingEnabled();
@@ -231,10 +221,12 @@ export async function recordUsageAndReportOverage(usage: UsageRecord): Promise<v
     return;
   }
 
-  const tokenLimit = userAgent ? resolveTokenLimit(userAgent.config) : DEFAULT_TOKEN_LIMIT;
-  const now = new Date();
-  const summary = await getUsageSummary(usage.user_id, usage.agent_slug, now.getFullYear(), now.getMonth() + 1);
-  const usedBefore = summary?.tokensUsed ?? 0;
+  // L'overage si calcola sul POOL: la parte di QUESTA run che ha superato il
+  // budget condiviso del piano. `usedBefore` è il consumo del pool PRIMA di
+  // questa run (la riga viene inserita dopo, in `recordUsage`).
+  const pool = await getTokenPoolForAgent(usage.user_id, usage.agent_slug);
+  const tokenLimit = pool?.tokenLimit ?? (userAgent ? resolveTokenLimit(userAgent.config) : DEFAULT_TOKEN_LIMIT);
+  const usedBefore = pool?.used ?? 0;
   const runTokens = (usage.tokens_input || 0) + (usage.tokens_output || 0);
   const remainingAllowance = Math.max(0, tokenLimit - usedBefore);
   const overageTokens = Math.max(0, runTokens - remainingAllowance);
@@ -260,40 +252,9 @@ export function resolveTokenLimitCompat(_config: Record<string, unknown>): numbe
   return Number.MAX_SAFE_INTEGER;
 }
 
-export async function getUsageSummary(userId: string, agentSlug: string, year: number, month: number): Promise<UsageSummary | null> {
-  const db = await getDb();
-  if (!db) return null;
-  const { periodStart, periodEnd } = periodBounds(year, month);
-  const { count: conversations } = await db
-    .from("agent_runs")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("agent_slug", agentSlug)
-    .eq("status", "completed")
-    // Le run " fantasma" (chat incognito) hanno conversation_id NULL: non
-    // appartengono a nessuna conversazione salvata e non contano come
-    // conversazioni in dashboard. I TOKEN contano sempre (quota reale).
-    .not("conversation_id", "is", null)
-    .gte("started_at", periodStart)
-    .lte("started_at", periodEnd);
-  const { data: runs } = await db
-    .from("agent_runs")
-    .select("input_tokens, output_tokens")
-    .eq("user_id", userId)
-    .eq("agent_slug", agentSlug)
-    .gte("started_at", periodStart)
-    .lte("started_at", periodEnd);
-  const totalTokens = runs?.reduce((sum, run) => sum + (run.input_tokens || 0) + (run.output_tokens || 0), 0) || 0;
-  const userAgent = await getUserAgent(userId, agentSlug);
-  const config = userAgent?.config ?? {};
-  const tokenLimit = resolveTokenLimit(config);
-  return {
-    userId,
-    agentSlug,
-    period: `${year}-${month.toString().padStart(2, "0")}`,
-    conversations: conversations || 0,
-    tokensUsed: totalTokens,
-    tokenLimit,
-    overage: Math.max(0, totalTokens - tokenLimit),
-  };
-}
+// NOTA: non esiste più una "usage summary per agente per mese di calendario".
+// Il consumo si legge dai POOL DI TOKEN (lib/billing/token-pool.ts): il
+// budget è condiviso dagli agenti dello stesso abbonamento e il periodo è
+// quello dell'abbonamento. Qui ci sarebbe una seconda, concorrente verità su
+// "quanto ho consumato" — e le due divergerebbero.
+
