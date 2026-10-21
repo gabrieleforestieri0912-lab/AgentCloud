@@ -83,8 +83,9 @@ function isAnonRateLimited(ip: string): boolean {
  * passano dai controlli abbonamento + limite mensile; i chiamanti anonimi
  * (pagine pubbliche / embed) sono ammessi come anteprima ma senza quota.
  *
- * Il backend del modello è scelto con `getLLMProvider()` — quello Anthropic
- * (Claude) quando `ANTHROPIC_API_KEY` è configurata.
+ * Il backend del modello è scelto con `getLLMProvider()`: xKiro
+ * (OpenAI-compatible, `XT_API_KEY`) quando `AGENT_LLM_PROVIDER=xt|xkiro`
+ * o quando è presente una chiave xKiro, Anthropic (Claude) altrimenti.
  */
 export async function POST(req: Request) {
   const locale = await getLocale();
@@ -372,7 +373,7 @@ export async function POST(req: Request) {
   const needsConfirmation = (toolName: string): boolean =>
     toolRequiresConfirmation(toolName) || mcpCatalog.writeToolNames.has(toolName);
 
-  // Risolve il backend del modello una volta per richiesta (Anthropic).
+  // Risolve il backend del modello una volta per richiesta (xKiro o Anthropic).
   const provider = getLLMProvider();
 
   const skillsIndex = skillsRun.indexBlock;

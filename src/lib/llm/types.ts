@@ -4,8 +4,12 @@
  * Perché esiste: il runtime degli agenti parla con un provider generico
  * tramite un'unica interfaccia:
  *
- *  - `anthropic`: unico provider supportato. Si attiva impostando
- *    `ANTHROPIC_API_KEY` e opzionalmente `AGENT_LLM_PROVIDER=anthropic`.
+ *  - `xt` (xKiro, gateway OpenAI-compatible): si attiva impostando
+ *    `XT_API_KEY` (o `XKIRO_API_KEY`) e opzionalmente
+ *    `AGENT_LLM_PROVIDER=xt|xkiro|openai`.
+ *    Modello di default: `XT_MODEL` (es. `mistralai/mistral-small-2603`).
+ *  - `anthropic`: si attiva impostando `ANTHROPIC_API_KEY` e opzionalmente
+ *    `AGENT_LLM_PROVIDER=anthropic`.
  *    Modello di default: `claude-sonnet-5`.
  *
  * La route (`src/app/api/agent/run/route.ts`) dipende solo dai tipi sotto:

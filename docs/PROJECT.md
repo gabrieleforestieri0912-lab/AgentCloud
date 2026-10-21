@@ -333,7 +333,10 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | Variabile | Default | Note |
 |-----------|---------|------|
 | `GOOGLE_SITE_VERIFICATION` | – | token **tag HTML** di Google Search Console: emesso come `<meta name="google-site-verification">` in `layout.tsx` (verifica della proprietà per la revisione OAuth) |
-| `AGENT_LLM_PROVIDER` | `anthropic` | backend del runtime agenti (unico supportato: Anthropic). Default: Anthropic se `ANTHROPIC_API_KEY` è configurata |
+| `AGENT_LLM_PROVIDER` | `xt` | backend del runtime agenti: `xt`/`xkiro`/`openai` (xKiro, OpenAI-compatible) o `anthropic` (Claude). Default: xKiro se `XT_API_KEY`/`XKIRO_API_KEY` è configurata, altrimenti Anthropic |
+| `XT_API_KEY` / `XKIRO_API_KEY` | – | chiave xKiro (`sk-xt-…`) usata dal backend OpenAI-compatible |
+| `XT_API_BASE` / `XKIRO_API_BASE` | `https://api.openai.com/v1` | base URL del gateway xKiro (di solito `https://api.xkiro.com/v1`) |
+| `XT_MODEL` / `XKIRO_MODEL` | `gpt-4o-mini` | modello xKiro (formato `vendor/model`, es. `mistralai/mistral-small-2603`) |
 | `AGENT_LLM_MODEL` | `claude-sonnet-5` | modello usato dal backend Claude quando non specificato per-request |
 | `AGENT_MAX_TOKENS` | `4096` | max_tokens per chiamata LLM (Claude) |
 | `AGENT_ANON_RATE_LIMIT` | `30` | richieste/min per IP per i preview anonimi |

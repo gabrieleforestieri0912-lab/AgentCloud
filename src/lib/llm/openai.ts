@@ -1,27 +1,53 @@
 import type { LLMChatParams, LLMMessage, LLMProvider, LLMResponse, LLMTool } from "./types";
 
 /**
- * Provider OpenAI-compatibile (usato per chiave sk-xt-...).
+ * Provider OpenAI-compatibile — è il backend xKiro (https://api.xkiro.com/v1).
  *
  * Si attiva con:
- *   XT_API_KEY=sk-xt-... (fornita dall'utente)
- *   XT_API_BASE=https://api.example.com/v1  (opzionale, default OpenAI)
- *   XT_MODEL=gpt-4o-mini (opzionale)
- *   AGENT_LLM_PROVIDER=xt  o  openai
+ *   XT_API_KEY=sk-xt-... (fornita dall'utente)  oppure  XKIRO_API_KEY=sk-xt-...
+ *   XT_API_BASE=https://api.xkiro.com/v1  (opzionale, default OpenAI)
+ *   XT_MODEL=mistralai/mistral-small-2603 (opzionale)
+ *   AGENT_LLM_PROVIDER=xt  |  openai  |  xkiro
  *
- * Accetta anche OPENAI_API_KEY / OPENAI_API_BASE come fallback.
- * Mappa modelli claude-* sul default OpenAI.
+ * Accetta anche OPENAI_API_KEY / OPENAI_API_BASE / LLM_API_KEY come fallback.
+ * I modelli in stile Anthropic (claude-*) vengono mappati sul modello
+ * configurato su xKiro, che è un gateway multi-provider: `claude-sonnet-5`
+ * non esiste come id, esiste `anthropic/claude-sonnet-5`.
  */
 
-const DEFAULT_OPENAI_MODEL = process.env.XT_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
+const DEFAULT_OPENAI_MODEL =
+  process.env.XT_MODEL ||
+  process.env.XKIRO_MODEL ||
+  // AGENT_LLM_MODEL vale solo se non è un id Claude (quelli verrebbero
+  // rimappati sul default e diventerebbero un circolo vizioso).
+  (process.env.AGENT_LLM_MODEL && !process.env.AGENT_LLM_MODEL.startsWith("claude")
+    ? process.env.AGENT_LLM_MODEL
+    : undefined) ||
+  process.env.OPENAI_MODEL ||
+  "gpt-4o-mini";
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 
 function getApiKey(override?: string): string | undefined {
-  return override || process.env.XT_API_KEY || process.env.OPENAI_API_KEY || process.env.LLM_API_KEY || process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.startsWith("sk-xt-") ? process.env.ANTHROPIC_API_KEY : undefined;
+  return (
+    override ||
+    process.env.XT_API_KEY ||
+    process.env.XKIRO_API_KEY ||
+    process.env.OPENAI_API_KEY ||
+    process.env.LLM_API_KEY ||
+    (process.env.ANTHROPIC_API_KEY?.startsWith("sk-xt-")
+      ? process.env.ANTHROPIC_API_KEY
+      : undefined)
+  );
 }
 
 function getBaseUrl(override?: string): string {
-  const raw = override || process.env.XT_API_BASE || process.env.OPENAI_API_BASE || process.env.LLM_API_BASE || DEFAULT_BASE_URL;
+  const raw =
+    override ||
+    process.env.XT_API_BASE ||
+    process.env.XKIRO_API_BASE ||
+    process.env.OPENAI_API_BASE ||
+    process.env.LLM_API_BASE ||
+    DEFAULT_BASE_URL;
   return raw.replace(/\/$/, "");
 }
 
@@ -96,12 +122,14 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
   const defaultModel = options?.model || DEFAULT_OPENAI_MODEL;
 
   function getRuntimeApiKey(): string | undefined {
-    return options?.apiKey || process.env.XT_API_KEY || process.env.OPENAI_API_KEY || process.env.LLM_API_KEY || (process.env.ANTHROPIC_API_KEY?.startsWith("sk-xt-") ? process.env.ANTHROPIC_API_KEY : undefined);
+    return getApiKey(options?.apiKey);
   }
   function ensureKey(): string {
     const k = getRuntimeApiKey();
     if (!k) {
-      throw new Error("OpenAI/XT provider requires XT_API_KEY (sk-xt-...) or OPENAI_API_KEY environment variable.");
+      throw new Error(
+        "xKiro/OpenAI provider requires XT_API_KEY (sk-xt-...), XKIRO_API_KEY or OPENAI_API_KEY environment variable.",
+      );
     }
     return k;
   }
@@ -110,7 +138,8 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
   }
 
   return {
-    name: "anthropic" as unknown as LLMProvider["name"], // keep type compatible, actual name is openai/xt
+    // Il nome dichiara il backend reale: `xt` (xKiro, gateway OpenAI-compatible).
+    name: "xt",
 
     async chat(params: LLMChatParams, onText?: (delta: string) => void): Promise<LLMResponse> {
       const key = ensureKey();
@@ -132,15 +161,36 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
 
       // Streaming path
       if (onText) {
-        const res = await fetch(`${baseUrl}/chat/completions`, {
+        // `stream_options.include_usage` fa arrivare il consumo di token
+        // nell'ultimo chunk: senza, il billing delle run resterebbe a zero.
+        // Alcuni gateway OpenAI-compatible non lo accettano: in quel caso si
+        // ritenta senza (il consumo resta semplicemente non disponibile).
+        const streamingBody = { ...body, stream_options: { include_usage: true } };
+        let res = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${key}`,
             "x-api-key": key,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify(streamingBody),
         });
+        if (!res.ok) {
+          const errText = await res.text().catch(() => "");
+          if (errText.includes("stream_options")) {
+            res = await fetch(`${baseUrl}/chat/completions`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${key}`,
+                "x-api-key": key,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(body),
+            });
+          } else {
+            throw new Error(`OpenAI API error ${res.status}: ${errText.slice(0, 500)}`);
+          }
+        }
         if (!res.ok) {
           const text = await res.text().catch(() => "");
           throw new Error(`OpenAI API error ${res.status}: ${text.slice(0, 500)}`);
@@ -155,6 +205,7 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
         // accumulator for tool call arguments streaming
         const toolCallsMap = new Map<number, { id: string; name: string; arguments: string }>();
         let usage = { inputTokens: 0, outputTokens: 0 };
+        let finishReason: string | null = null;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -165,13 +216,17 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
           for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed || trimmed === "data: [DONE]") continue;
-            if (!trimmed.startsWith("data: ")) continue;
+            // Il framing SSE è "data: {...}", ma alcuni gateway (xKiro)
+            // mandano "data:{...}" senza spazio: si accettano entrambi.
+            if (!trimmed.startsWith("data:")) continue;
+            const payload = trimmed.slice(5).trim();
+            if (!payload || payload === "[DONE]") continue;
             let data: {
               choices?: { delta?: { content?: string; tool_calls?: { index: number; id?: string; function?: { name?: string; arguments?: string } }[] }; finish_reason?: string | null }[];
               usage?: { prompt_tokens?: number; completion_tokens?: number };
             };
             try {
-              data = JSON.parse(trimmed.slice(6));
+              data = JSON.parse(payload);
             } catch {
               continue;
             }
@@ -183,6 +238,7 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
             }
             const choice = data.choices?.[0];
             if (!choice) continue;
+            if (choice.finish_reason) finishReason = choice.finish_reason;
             const delta = choice.delta;
             if (delta?.content) {
               fullText += delta.content;
@@ -198,7 +254,7 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
                 toolCallsMap.set(idx, cur);
               }
             }
-            if (choice.finish_reason === "tool_calls") {
+            if (choice.finish_reason === "tool_calls" || choice.finish_reason === "function_call") {
               for (const [, v] of toolCallsMap) {
                 let input: Record<string, unknown> = {};
                 try {
@@ -229,7 +285,12 @@ export function createOpenAIProvider(options?: { apiKey?: string; baseUrl?: stri
         return {
           text: fullText,
           toolUses,
-          stopReason: toolUses.length > 0 ? "tool_use" : "end_turn",
+          stopReason:
+            toolUses.length > 0
+              ? "tool_use"
+              : finishReason === "length"
+                ? "max_tokens"
+                : "end_turn",
           usage,
         };
       }
