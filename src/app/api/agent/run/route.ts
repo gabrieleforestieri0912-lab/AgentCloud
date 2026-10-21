@@ -41,6 +41,10 @@ import {
 import { logAudit } from "@/lib/audit";
 import { logSkillActivations, prepareSkillsForRun } from "@/lib/skills/installed";
 import { loadMcpToolsForTenant, toLlmTools } from "@/lib/mcp/tools";
+import {
+  GITHUB_REPO_TOOL_DEFINITIONS,
+  buildGithubRepoContext,
+} from "@/lib/agents/github-repo-tools";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -97,6 +101,10 @@ export async function POST(req: Request) {
      * restano solo i contatori di consumo (token) per quota e fatturazione.
      */
     ephemeral?: boolean;
+    /** Repository GitHub collegato dalla chat (menu "+"): owner/repo/branch. */
+    githubRepo?: { owner?: string; repo?: string; branch?: string };
+    /** Ricerca web accesa dal menu "+": espone il tool `web_search`. */
+    webSearch?: boolean;
   };
   try {
     body = await req.json();
@@ -107,7 +115,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { agentId, messages, files, approval, ephemeral } = body;
+  const { agentId, messages, files, approval, ephemeral, githubRepo, webSearch } = body;
   // Modalità Ghost: nessuna persistenza della conversazione.
   const isEphemeral = ephemeral === true;
 
@@ -254,7 +262,27 @@ export async function POST(req: Request) {
 
   // Tenant effettivo per i tool: stessa regola di `resolveTenant` in
   // integration-tools (utente autenticato, altrimenti tenant condiviso).
-  const effectiveTenant = userId !== "anonymous" ? userId : (tenantId ?? "");
+  // Non è mai vuoto: il token di conferma dei tool contiene il tenant e un
+  // tenant vuoto non passerebbe la validazione della forma.
+  const effectiveTenant = userId !== "anonymous" ? userId : "anonymous";
+
+  // Repository GitHub collegato dalla chat (menu "+"): il modello ci lavora
+  // con i tool `github_repo_*`. Solo forma nota: niente URL, niente percorsi.
+  const repoRef =
+    githubRepo &&
+    typeof githubRepo.owner === "string" &&
+    githubRepo.owner.trim() &&
+    typeof githubRepo.repo === "string" &&
+    githubRepo.repo.trim()
+      ? {
+          owner: githubRepo.owner.trim(),
+          repo: githubRepo.repo.trim(),
+          branch:
+            typeof githubRepo.branch === "string" && githubRepo.branch.trim()
+              ? githubRepo.branch.trim()
+              : undefined,
+        }
+      : null;
 
   // Rispetta i feature flag: espone solo gli strumenti abilitati per l'agente.
   let enabledToolNames = getEnabledToolsForAgent(agentId);
@@ -314,6 +342,20 @@ export async function POST(req: Request) {
     .map((tool) => TOOL_DEFINITIONS[tool])
     .filter(Boolean);
 
+  // Tool del repository GitHub collegato: sono dinamici come i tool MCP,
+  // perché dipendono da cosa l'utente ha collegato. Vanno aggiunti DOPO il
+  // filtro dei feature flag dell'agente.
+  if (repoRef) {
+    enabledTools.push(...Object.values(GITHUB_REPO_TOOL_DEFINITIONS));
+  }
+
+  // Ricerca web accesa dal menu "+": il tool entra anche se l'agente non lo
+  // aveva tra i suoi default. L'utente l'ha chiesto esplicitamente.
+  if (webSearch === true && !enabledTools.some((t) => t.name === "web_search")) {
+    const webTool = TOOL_DEFINITIONS.web_search;
+    if (webTool) enabledTools.push(webTool);
+  }
+
   // Tool MCP delle integrazioni esterne collegate dall'utente.
   //
   // Sono dinamici (dipendono da cosa l'utente ha collegato e da quali tool
@@ -334,6 +376,10 @@ export async function POST(req: Request) {
   const provider = getLLMProvider();
 
   const skillsIndex = skillsRun.indexBlock;
+  // Repository collegato: il prompt dice al modello su quale codice può
+  // lavorare e con quali tool (senza questo i tool github_repo_* restano
+  // scoperti e il modello non li usa mai).
+  const repoContext = buildGithubRepoContext(repoRef);
 
   const encoder = new TextEncoder();
   const conversationId = crypto.randomUUID();
@@ -418,7 +464,7 @@ export async function POST(req: Request) {
             const result = await executeTool(
               use.name,
               use.input as Record<string, string>,
-              { userId, tenantId, files: files as Record<string, string> | undefined, ephemeral: isEphemeral },
+              { userId, tenantId, files: files as Record<string, string> | undefined, ephemeral: isEphemeral, githubRepo: repoRef ?? undefined },
             );
             results.push({ id: use.id, content: result });
             toolCalls++;
@@ -452,7 +498,8 @@ export async function POST(req: Request) {
               // Direttive condivise e ordine sono definiti una volta sola in
               // lib/agents/system-prompt.ts, così route e test usano lo stesso
               // prompt (connect guidance, formato, identità, consegna, lingua).
-              system: buildAgentSystemPrompt(config.systemPrompt, replyLocale, undefined, skillsIndex),
+              system: buildAgentSystemPrompt(config.systemPrompt, replyLocale, undefined, skillsIndex) +
+                (repoContext ? `\n\n${repoContext}` : ""),
               messages: conversationMessages,
               tools: enabledTools,
               maxTokens: MAX_TOKENS,
@@ -558,6 +605,9 @@ export async function POST(req: Request) {
                   // Modalità Ghost: i tool restano permessi, ma nessuna
                   // traccia della conversazione viene scritta.
                   ephemeral: isEphemeral,
+                  // Repository GitHub collegato: i tool `github_repo_*`
+                  // lavorano su questo repository.
+                  githubRepo: repoRef ?? undefined,
                 },
               );
 

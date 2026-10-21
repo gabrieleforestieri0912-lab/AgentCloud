@@ -7,9 +7,19 @@ import {
   withLanguageDirective,
 } from "@/lib/agents/language";
 import { getLLMProvider } from "@/lib/llm";
-import type { LLMMessage, LLMResponse, LLMToolResult } from "@/lib/llm";
+import type { LLMMessage, LLMResponse, LLMTool, LLMToolResult } from "@/lib/llm";
 import { createWordEmitter } from "@/lib/stream";
 import { TOOL_DEFINITIONS, executeTool } from "@/lib/agents/tools";
+import {
+  GITHUB_REPO_TOOL_DEFINITIONS,
+  buildGithubRepoContext,
+} from "@/lib/agents/github-repo-tools";
+import {
+  buildApprovalToken,
+  toolRequiresConfirmation,
+  verifyApprovalToken,
+} from "@/lib/agents/tool-confirmation";
+import { getSessionUser } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import {
   CONNECT_GUIDANCE_CHAT,
@@ -32,7 +42,8 @@ import { RATE_LIMIT_WINDOWS, rateLimit } from "@/lib/rate-limit";
  * Endpoint chat indipendente dal provider, usato dalla demo hero e dalla UI
  * chat completa.
  *
- * Body: { messages, model?, agentId?, provider?, ephemeral? }
+ * Body: { messages, model?, agentId?, provider?, ephemeral?, webSearch?,
+ *         githubRepo?, approval? }
  *
  * `provider` è un override esplicito ("xt" | "anthropic") usato da UNA sola
  * superficie: la demo hero invia `provider: "xt"` così usa sempre la chiave
@@ -49,6 +60,17 @@ import { RATE_LIMIT_WINDOWS, rateLimit } from "@/lib/rate-limit";
  * (Claude) quando `ANTHROPIC_API_KEY` è configurata. Il modello predefinito è
  * `claude-sonnet-5` (sovrascrivibile con `AGENT_LLM_MODEL`).
  *
+ * `webSearch: true` espone il tool `web_search` (acceso dal menu "+" della
+ * chat): senza quel flag la chat resta senza ricerca sul web.
+ *
+ * `githubRepo: { owner, repo, branch? }` è il repository GitHub collegato
+ * dalla chat: espone i tool `github_repo_*` (leggere i file, scriverci, aprire
+ * branch e pull request) e aggiunge il contesto del repository al prompt.
+ * Le scritture chiedono la conferma all'utente, come in /api/agent/run.
+ *
+ * `approval: { token }` riprende una run ferma su una conferma: il token
+ * firmato contiene il batch di tool approvato, il client non può cambiarlo.
+ *
  * Stream SSE: chunk `data: { type: "text", content }`, poi
  * `data: { type: "done" }` (oppure `type: "error"` in caso di errore).
  */
@@ -61,6 +83,10 @@ export async function POST(req: Request) {
       provider: providerOverride,
       // Modalità Ghost: la richiesta non deve lasciare tracce.
       ephemeral,
+      // Ricerca web e repository GitHub collegato (menu "+" della chat).
+      webSearch,
+      githubRepo,
+      approval,
     } = await req.json();
     const isEphemeral = ephemeral === true;
 
@@ -71,10 +97,38 @@ export async function POST(req: Request) {
       );
     }
 
+    // Repository collegato: solo forma nota (owner/repo/branch), niente URL.
+    const linkedRepo =
+      githubRepo &&
+      typeof githubRepo === "object" &&
+      typeof (githubRepo as { owner?: unknown }).owner === "string" &&
+      typeof (githubRepo as { repo?: unknown }).repo === "string"
+        ? {
+            owner: String((githubRepo as { owner: string }).owner).trim(),
+            repo: String((githubRepo as { repo: string }).repo).trim(),
+            branch:
+              typeof (githubRepo as { branch?: unknown }).branch === "string" &&
+              (githubRepo as { branch: string }).branch
+                ? String((githubRepo as { branch: string }).branch).trim()
+                : undefined,
+          }
+        : null;
+    const repoRef = linkedRepo?.owner && linkedRepo?.repo ? linkedRepo : null;
+
     // La locale viene letta subito così la costruzione lenta del prompt di
     // piattaforma (query live sul DB) può avvenire in modo lazy dentro lo
     // stream senza ritardare gli header.
     const locale = await getLocale();
+
+    // Il chiamante è risolto lato server dalla sessione (mai dal body): serve
+    // per il token GitHub del tenant e per la conferma dei tool che scrivono.
+    const sessionUser = await getSessionUser();
+    const userId = sessionUser?.id ?? "anonymous";
+    const tenantId = sessionUser?.id ?? undefined;
+    // Tenant per i token di conferma: non vuoto mai ("anonymous" per chi non
+    // ha una sessione), altrimenti il token firmato non supererebbe la
+    // validazione della forma e la conferma non potrebbe mai riprendersi.
+    const effectiveTenant = userId;
 
     // Modello dal registry degli agenti quando è indicato un agente. I client
     // possono inviare un nome modello (es. dalla config di un agente). Se non
@@ -140,7 +194,7 @@ export async function POST(req: Request) {
         // altrimenti costruito dai dati REALI della piattaforma (agenti attivi
         // e conteggi letti dal DB agents_registry — vedi platform-context).
         // Viene costruito in modo lazy così gli header arrivano subito al
-        // client e cold start / query DB lente non bloccano lo stream prima
+        // client e cold start / query DB lenta non bloccano lo stream prima
         // del primo byte. Un errore degrada al prompt generico, mai a un errore.
         // La direttiva di lingua è accodata a ogni variante del prompt
         // (anche a quella generica di ripiego).
@@ -167,6 +221,10 @@ export async function POST(req: Request) {
           // Mantieni il prompt generico — non far mai fallire la chat perché
           // il prompt di piattaforma non si è potuto costruire.
         }
+        // Repository collegato: il modello deve sapere che esiste e quali tool
+        // usare, altrimenti non li chiama mai.
+        const repoContext = buildGithubRepoContext(repoRef);
+        if (repoContext) systemPrompt = `${systemPrompt}\n\n${repoContext}`;
 
         // Re-emette i delta di testo del provider una parola alla volta così
         // il messaggio viene "scritto" in ogni UI chat invece di apparire intero.
@@ -179,8 +237,18 @@ export async function POST(req: Request) {
           // (scrape_page) prima di rispondere — è quello che rende possibile
           // analizzare un link che l'utente incolla. Prima questa route
           // passava `tools: []`, quindi in chat nessun link era leggibile.
+          // Con il menu "+" l'utente può accendere la ricerca web e
+          // collegare un repository GitHub: in quel caso i tool corrispondenti
+          // vengono esposti (le scritture sul repository chiedono conferma).
           const MAX_TOOL_ITERATIONS = 3;
-          const chatTools = [TOOL_DEFINITIONS.scrape_page].filter(Boolean);
+          const chatTools: LLMTool[] = [TOOL_DEFINITIONS.scrape_page].filter(Boolean);
+          if (webSearch === true) {
+            const webTool = TOOL_DEFINITIONS.web_search;
+            if (webTool) chatTools.push(webTool);
+          }
+          if (repoRef) {
+            chatTools.push(...Object.values(GITHUB_REPO_TOOL_DEFINITIONS));
+          }
 
           const chatWithTools = async (messages: LLMMessage[]) => {
             try {
@@ -214,12 +282,90 @@ export async function POST(req: Request) {
           let chatMessages = conversationMessages;
           let response: LLMResponse | null = null;
 
+          // Ripresa dopo una conferma: il token firmato porta il batch di
+          // tool_use approvato. Lo eseguiamo e iniettiamo
+          // assistant(tool_use) + user(results), così il loop continua come se
+          // la conferma non fosse mai esistita.
+          if (approval?.token) {
+            const pending = verifyApprovalToken(approval.token);
+            const confirmed = pending ? pending.u[pending.c] : undefined;
+            if (
+              !pending ||
+              pending.t !== effectiveTenant ||
+              !confirmed ||
+              !toolRequiresConfirmation(confirmed.name)
+            ) {
+              emitter.stop();
+              send({ type: "error", message: streamErrorMessage });
+              return;
+            }
+            const results: LLMToolResult[] = [];
+            for (const use of pending.u) {
+              const startedAt = Date.now();
+              const content = await executeTool(
+                use.name,
+                use.input as Record<string, string>,
+                {
+                  userId,
+                  tenantId,
+                  files: undefined,
+                  ephemeral: isEphemeral,
+                  githubRepo: repoRef ?? undefined,
+                },
+              );
+              results.push({ id: use.id, content });
+              if (!isEphemeral) {
+                logAudit("tool_exec", {
+                  tool: use.name,
+                  durationMs: Date.now() - startedAt,
+                  resultBytes: content.length,
+                  surface: "chat",
+                });
+              }
+            }
+            chatMessages = [
+              ...chatMessages,
+              { role: "assistant", content: pending.u },
+              { role: "user", content: results },
+            ];
+          }
+
           for (let iteration = 0; iteration <= MAX_TOOL_ITERATIONS; iteration++) {
             response = await chatWithTools(chatMessages);
             await emitter.flush();
 
             if (response.stopReason !== "tool_use" || response.toolUses.length === 0) {
               break;
+            }
+
+            // Scritture (es. su un file del repository GitHub): prima di
+            // eseguire, l'utente conferma. Il token firmato contiene il batch
+            // approvato, quindi il client non può cambiarne i parametri.
+            const confirmIndex = response.toolUses.findIndex((u) =>
+              toolRequiresConfirmation(u.name),
+            );
+            if (confirmIndex >= 0) {
+              const pendingUse = response.toolUses[confirmIndex];
+              const token = buildApprovalToken({
+                t: effectiveTenant,
+                a: agentId || "chat",
+                u: response.toolUses.map((u) => ({
+                  id: u.id,
+                  name: u.name,
+                  input: u.input,
+                })),
+                c: confirmIndex,
+              });
+              send({
+                type: "tool_confirm",
+                toolName: pendingUse.name,
+                toolInput: pendingUse.input,
+                toolUseId: pendingUse.id,
+                token,
+              });
+              send({ type: "awaiting_confirmation" });
+              emitter.stop();
+              return;
             }
 
             const results: LLMToolResult[] = [];
@@ -242,7 +388,13 @@ export async function POST(req: Request) {
               const content = await executeTool(
                 use.name,
                 use.input as Record<string, string>,
-                { userId: "anonymous", tenantId: undefined, files: undefined },
+                {
+                  userId,
+                  tenantId,
+                  files: undefined,
+                  ephemeral: isEphemeral,
+                  githubRepo: repoRef ?? undefined,
+                },
               );
               results.push({ id: use.id, content });
               // Modalità Ghost: nessun log di audit (il log di tool è un

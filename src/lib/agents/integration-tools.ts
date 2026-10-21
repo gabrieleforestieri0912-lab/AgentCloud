@@ -24,6 +24,11 @@ import {
   executeMicrosoftTool,
 } from "./microsoft-tools";
 import {
+  GITHUB_REPO_TOOL_NAMES,
+  GITHUB_REPO_TOOL_DEFINITIONS,
+  executeGithubRepoTool,
+} from "./github-repo-tools";
+import {
   OUTLOOK_TOOL_NAMES,
   OUTLOOK_TOOL_DEFINITIONS,
   isOutlookTool,
@@ -45,6 +50,9 @@ const INTEGRATION_TOOL_NAMES = [
   "github_list_repos",
   "github_list_issues",
   "github_create_issue",
+  // Operazioni sul repository GitHub collegato (file, branch, pull request).
+  // Le definizioni e gli handler vivono in ./github-repo-tools.
+  ...GITHUB_REPO_TOOL_NAMES,
   "clickup_list_spaces",
   "clickup_list_tasks",
   "clickup_create_task",
@@ -144,6 +152,8 @@ function resolveTenant(context: ToolContext): string {
 // ---------------------------------------------------------------------------
 
 export const INTEGRATION_TOOL_DEFINITIONS: Record<string, LLMTool> = {
+  ...GITHUB_REPO_TOOL_DEFINITIONS,
+
   github_list_repos: {
     name: "github_list_repos",
     description:
@@ -1873,6 +1883,11 @@ export async function executeIntegrationTool(
     }
 
     default:
+      // Tool del repository GitHub collegato: gestiti a parte perché
+      // dipendono dal repository scelto dall'utente (contesto del tool).
+      if (name.startsWith("github_repo_")) {
+        return executeGithubRepoTool(name, input, context);
+      }
       return `Tool "${name}" is not implemented`;
   }
 }

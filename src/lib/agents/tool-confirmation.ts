@@ -42,6 +42,11 @@ const CONFIRMATION_TOOLS = new Set<string>([
   // Disconnessione integrazione: distruttiva (revoca token, stop accesso agente).
   // La UI mostra la conferma con provider e conseguenze prima di eseguire.
   "integration_disconnect",
+  // GitHub: scritture nel repository collegato. Modificano il codice
+  // dell'utente, quindi vanno confermate una per una.
+  "github_repo_write_file",
+  "github_repo_create_branch",
+  "github_repo_create_pull_request",
 ]);
 
 export function toolRequiresConfirmation(name: string): boolean {

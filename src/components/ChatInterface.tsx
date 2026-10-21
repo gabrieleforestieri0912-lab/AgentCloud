@@ -61,12 +61,20 @@ import InlineConnectCard from "@/components/InlineConnectCard";
 import InlineCartCard from "@/components/InlineCartCard";
 import ChatOnboarding from "./ChatOnboarding";
 import {
-  AttachPlusButton,
   AttachmentChips,
   DropHint,
   chatAttachLabels,
   useChatAttachments,
 } from "@/components/ChatAttachments";
+import ChatPlusMenu, { chatPlusMenuLabels } from "@/components/ChatPlusMenu";
+import {
+  addGithubRepo,
+  readActiveGithubRepo,
+  readGithubRepos,
+  removeGithubRepo,
+  setActiveGithubRepo as persistActiveGithubRepo,
+  type GithubRepoLink,
+} from "@/lib/github-repos";
 import { buildVisionText, composeUserContent, toFilesMap, toVisionBlocks } from "@/lib/chat-attachments";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
@@ -309,6 +317,7 @@ export default function ChatInterface({
 }: ChatInterfaceProps) {
   const { dict, locale } = useLanguage();
   const attachLabels = chatAttachLabels(dict);
+  const plusLabels = useMemo(() => chatPlusMenuLabels(dict), [dict]);
   const attach = useChatAttachments();
   // ── Modalità Ghost (chat incognito) ──────────────────────────────────────
   // `isGhostMode` è lo stato globale (volatile) della modalità; la conversazione
@@ -408,6 +417,13 @@ export default function ChatInterface({
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
+  // Repository GitHub collegati (menu "+"): l'agente ci lavora con i tool
+  // `github_repo_*`. Il token GitHub resta nelle integrazioni del tenant.
+  const [githubRepos, setGithubRepos] = useState<GithubRepoLink[]>([]);
+  const [activeGithubRepo, setActiveGithubRepo] = useState<GithubRepoLink | null>(null);
+  const [githubConnected, setGithubConnected] = useState(false);
+  // Ricerca web: quando è accesa il modello può usare il tool `web_search`.
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   // Tutti i file generati nelle conversazioni (non eliminate) per il gruppo Artefatti.
   const allFiles = useMemo(() => {
     const out: { convId: string; convTitle: string; slug: string; name: string }[] = [];
@@ -434,8 +450,78 @@ export default function ChatInterface({
   // Solo client (localStorage): si legge al mount per non divergere dal server.
   useEffect(() => {
     setProjects(readProjects());
+    setGithubRepos(readGithubRepos());
+    setActiveGithubRepo(readActiveGithubRepo());
     // eslint-disable-next-line react-hooks/set-state-in-effect
   }, []);
+
+  // GitHub collegato come integrazione? Il menu lo mostra: un repository
+  // collegato senza account GitHub non può essere usato dai tool.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/integrations/status")
+      .then((r) => (r.ok ? r.json() : { providers: [] }))
+      .then((data: { providers?: { provider: string; status?: string }[] }) => {
+        if (cancelled) return;
+        setGithubConnected(
+          (data.providers ?? []).some(
+            (p) => p.provider === "github" && p.status === "connected",
+          ),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Collega un repository GitHub e lo rende quello attivo. */
+  function linkGithubRepo(owner: string, repo: string) {
+    const link = addGithubRepo(owner, repo);
+    if (!link) return;
+    setGithubRepos(readGithubRepos());
+    setActiveGithubRepo(link);
+  }
+
+  /** Scollega un repository GitHub. */
+  function unlinkGithubRepo(repo: GithubRepoLink) {
+    removeGithubRepo(repo.owner, repo.repo);
+    setGithubRepos(readGithubRepos());
+    setActiveGithubRepo(readActiveGithubRepo());
+  }
+
+  /** Sceglie il repository su cui l'agente lavorerà. */
+  function selectGithubRepo(repo: GithubRepoLink) {
+    persistActiveGithubRepo(repo);
+    setActiveGithubRepo(repo);
+  }
+
+  /**
+   * "Aggiungi al progetto": se c'è una conversazione attiva la sposta nel
+   * progetto scelto, altrimenti il progetto diventa quello predefinito per le
+   * prossime chat.
+   */
+  function addToProject(projectId: string) {
+    setSelectedProjectId(projectId);
+    if (activeId) moveConversationToProject(activeId, projectId);
+    setSidebarView("projects");
+  }
+
+  // Il menu "+" può chiedere di usare una skill: la richiesta finisce
+  // nell'input come testo, cosi' l'utente la rivede e la modifica prima di
+  // inviarla.
+  useEffect(() => {
+    const onUseSkill = (e: Event) => {
+      const detail = (e as CustomEvent<{ name?: string }>).detail;
+      const name = detail?.name?.trim();
+      if (!name) return;
+      setInput((prev) =>
+        (prev ? `${prev} ` : "") + plusLabels.useSkill.replace("{name}", name),
+      );
+    };
+    window.addEventListener("agentcloud:use-skill", onUseSkill);
+    return () => window.removeEventListener("agentcloud:use-skill", onUseSkill);
+  }, [plusLabels.useSkill]);
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [agentSearch, setAgentSearch] = useState("");
@@ -2549,6 +2635,8 @@ export default function ChatInterface({
               agentId: targetSlugs[0],
               messages: apiMessages,
               files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
+              githubRepo: githubRepoPayload,
+              webSearch: webSearchEnabled,
             },
             sendIsEphemeral,
           ),
@@ -3600,6 +3688,15 @@ export default function ChatInterface({
 
               {/* Input ridotto centrato */}
               <div className="w-full max-w-3xl px-4">
+                {/* Budget di token: anche nella chat vuota l'utente deve
+                    vedere quanto gliene resta. */}
+                {tokenBudgetLine && (
+                  <TokenBudgetLine
+                    ratio={tokenBudgetLine.ratio}
+                    level={tokenBudgetLine.level}
+                    text={tokenBudgetLine.text}
+                  />
+                )}
                 <div
                   onDragEnter={attach.onDragEnter}
                   onDragOver={attach.onDragOver}
@@ -3629,7 +3726,22 @@ export default function ChatInterface({
                       />
                       {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
                       <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm rounded-b-2xl">
-                        <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+                        <ChatPlusMenu
+                          labels={plusLabels}
+                          disabled={isTyping}
+                          onFiles={(files) => attach.addFiles(files, attachLabels)}
+                          onScreenshot={(file) => attach.addFiles([file], attachLabels)}
+                          projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+                          onSelectProject={addToProject}
+                          repos={githubRepos}
+                          activeRepo={activeGithubRepo}
+                          onSelectRepo={selectGithubRepo}
+                          onUnlinkRepo={unlinkGithubRepo}
+                          onLinkRepo={linkGithubRepo}
+                          githubConnected={githubConnected}
+                          webSearch={webSearchEnabled}
+                          onToggleWebSearch={setWebSearchEnabled}
+                        />
                         {renderAgentPicker("left")}
                         <div className="flex-1 flex items-center justify-end gap-2">
                           <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
@@ -4003,6 +4115,16 @@ export default function ChatInterface({
           onDrop={attach.makeDrop(attachLabels)}
         >
           <div className="relative mx-auto max-w-4xl">
+            {/* Budget di token del piano: quanto hai usato, quanto ti resta e
+                quando il budget si rinnova. È la sola cosa che l'utente deve
+                poter leggere per capire se l'agente può ancora lavorare. */}
+            {tokenBudgetLine && (
+              <TokenBudgetLine
+                ratio={tokenBudgetLine.ratio}
+                level={tokenBudgetLine.level}
+                text={tokenBudgetLine.text}
+              />
+            )}
             {/* Budget giornaliero freemium sopra l'input, con ora locale del reset */}
             {dailyLimit && !dailyLimit.unlimited && limitSlug && (
               <p className="mb-2 text-center text-[11px] font-semibold text-neutral-500">
@@ -4099,7 +4221,22 @@ export default function ChatInterface({
                 destra. Il selettore agente è fuori, nella riga sopra. */}
             <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-neutral-800 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
               <div className="flex h-11 shrink-0 items-center">
-                <AttachPlusButton labels={attachLabels} disabled={isTyping} onPick={(files) => attach.addFiles(files, attachLabels)} />
+                <ChatPlusMenu
+                  labels={plusLabels}
+                  disabled={isTyping}
+                  onFiles={(files) => attach.addFiles(files, attachLabels)}
+                  onScreenshot={(file) => attach.addFiles([file], attachLabels)}
+                  projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+                  onSelectProject={addToProject}
+                  repos={githubRepos}
+                  activeRepo={activeGithubRepo}
+                  onSelectRepo={selectGithubRepo}
+                  onUnlinkRepo={unlinkGithubRepo}
+                  onLinkRepo={linkGithubRepo}
+                  githubConnected={githubConnected}
+                  webSearch={webSearchEnabled}
+                  onToggleWebSearch={setWebSearchEnabled}
+                />
               </div>
               <textarea
                 ref={inputRef}
