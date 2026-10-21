@@ -3169,14 +3169,18 @@ export default function ChatInterface({
                             {conv.archived_at ? <RotateCcw size={12} /> : <Archive size={12} />}
                             {conv.archived_at ? dict.chat.restore : dict.chat.archiveAction}
                           </button>
-                          <button
-                            role="menuitem"
-                            onClick={(e) => { e.stopPropagation(); openShare(conv.id); }}
-                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-all"
-                          >
-                            <Share2 size={12} />
-                            {dict.chat.shareConversation}
-                          </button>
+                          {/* Come il bottone nell'intestazione: si può condividere
+                              solo una chat già iniziata. */}
+                          {conv.messages.length > 0 && (
+                            <button
+                              role="menuitem"
+                              onClick={(e) => { e.stopPropagation(); openShare(conv.id); }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-all"
+                            >
+                              <Share2 size={12} />
+                              {dict.chat.shareConversation}
+                            </button>
+                          )}
                           {projects.length > 0 && (
                             <>
                               <div className="mx-2 my-1 border-t border-white/[0.06]" />
@@ -3424,20 +3428,24 @@ export default function ChatInterface({
               label={isGhostMode ? dict.chat.ghost.exit : dict.chat.ghost.enter}
               onToggle={handleGhostToggle}
             />
-            <button
-              type="button"
-              onClick={() => activeId && openShare(activeId)}
-              disabled={!activeId || messages.length === 0 || activeIsEphemeral}
-              aria-label={dict.chat.shareConversation}
-              title={
-                activeIsEphemeral
-                  ? dict.chat.ghost.shareDisabled
-                  : dict.chat.shareConversation
-              }
-              className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40"
-            >
-              <Share2 size={15} />
-            </button>
+            {/* Condividere una chat vuota non ha senso: il bottone compare
+                solo quando la conversazione è iniziata. */}
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={() => activeId && openShare(activeId)}
+                disabled={!activeId || activeIsEphemeral}
+                aria-label={dict.chat.shareConversation}
+                title={
+                  activeIsEphemeral
+                    ? dict.chat.ghost.shareDisabled
+                    : dict.chat.shareConversation
+                }
+                className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40"
+              >
+                <Share2 size={15} />
+              </button>
+            )}
             <Link
               href="/dashboard"
               aria-label="Dashboard"
