@@ -234,8 +234,25 @@ export default async function RootLayout({
             incapsula l'app in un iframe e usa `shopify.idToken()` per
             autenticare le richieste. Il client ID è pubblico (stesso di
             shopify.app.toml); il client secret non finisce mai nel frontend.
-            Con next/script "afterInteractive" verrebbe iniettato dopo e il
-            controllo non lo troverebbe: qui è un <script> semplice. */}
+
+            Perché un <script> semplice e NON `next/script` (misurato su
+            Next 16.2.9, build di produzione): con `next/script` +
+            `strategy="beforeInteractive"` l'HTML ricevuto dal browser
+            contiene solo
+              <link rel="preload" href=".../app-bridge.js" as="script"/>
+            e NESSUN tag <script>: il tag viene iniettato dal runtime in
+            fase di hydration, quindi il controllo di Shopify (che legge
+            l'HTML) non lo trova. Con il tag qui sotto l'HTML contiene
+            davvero lo <script src="https://cdn.shopify.com/..."> senza
+            attributi aggiuntivi, senza async/defer/type=module.
+
+            Nota sull'ordine: nell'HTML i chunk di Next (tutti `async`,
+            primo-party) precedono questo tag, perché il framework li
+            emette prima del contenuto del layout. È il massimo
+            ottenibile con l'App Router: questo resta l'unico script
+            bloccante (senza async) e l'unico script Shopify della pagina,
+            e App Bridge è pronto prima che il pannello chieda il session
+            token (che aspetta `window.shopify` con timeout). */}
         <meta name="shopify-api-key" content={SHOPIFY_CLIENT_ID} />
         {/* eslint-disable-next-line @next/next/no-sync-scripts -- Requisito di
             Shopify: App Bridge va caricato con un <script> sincrono e come

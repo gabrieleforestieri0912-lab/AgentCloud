@@ -92,6 +92,8 @@ Tutta la documentazione del progetto è raccolta in **`docs/`**:
 - **[docs/PRICING.md](docs/PRICING.md)** — modelli di prezzo, piani di abbonamento e token allowance
 - **[docs/SKILLS.md](docs/SKILLS.md)** — sistema Competenze (Skills & Plugin): architettura, runtime, sicurezza, politica prezzi
 - **[docs/CHAT_FILES.md](docs/CHAT_FILES.md)** — file generati dalla chat: blocco `<agentcloud_file>`, parser stream-safe, card, pannello di anteprima, versioni, sicurezza
+- **[docs/shopify-embedded-app.md](docs/shopify-embedded-app.md)** — app Shopify incapsulata: script App Bridge dalla CDN, session token (HS256, aud, exp/nbf, dest/iss), token exchange e come verificarli
+- **[docs/shopify-compliance.md](docs/shopify-compliance.md)** — privacy webhooks: cosa conserviamo, firma HMAC, checklist Partner Dashboard
 
 ## Deploy
 

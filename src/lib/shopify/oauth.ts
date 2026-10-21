@@ -34,9 +34,28 @@ export const OAUTH_RETURN_MAX_AGE = 60 * 15; // 15 minuti
 export const SHOPIFY_AGENT_SLUG =
   process.env.SHOPIFY_AGENT_SLUG || "shopify-agent";
 
-/** Scope di default previsti in specifica. Override via SHOPIFY_SCOPES. */
-const DEFAULT_SCOPES =
-  "read_products write_products read_orders write_orders read_inventory write_inventory";
+/**
+ * Scope di default previsti in specifica. Override via SHOPIFY_SCOPES.
+ *
+ * ⚠️ DEV'ESSERE UGUALE alla lista in `shopify.app.toml` (`[access_scopes]`).
+ * Se i due elenchi differiscono, Shopify rifiuta l'installazione con
+ * `invalid_scope` oppure concede meno permessi del necessario: gli scope
+ * richiesti dal flusso OAuth devono essere esattamente quelli dichiarati
+ * nell'app. Qui sono separati da spazi ( formato del parametro `scope`),
+ * nel toml da virgole.
+ */
+const DEFAULT_SCOPES = [
+  "read_products",
+  "write_products",
+  "read_orders",
+  "write_orders",
+  "read_inventory",
+  "write_inventory",
+  "read_customers",
+  "write_customers",
+  "read_content",
+  "write_content",
+].join(" ");
 
 /**
  * Valida e normalizza un dominio negozio Shopify. Rifiuta qualunque valore
