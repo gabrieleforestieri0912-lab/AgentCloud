@@ -11,7 +11,7 @@ import { getOrCreateMeterItem, isOverageBillingEnabled, reportOverageUsage } fro
 import { apiErrorMessageForLocale } from "@/lib/i18n/api-errors";
 import { DATE_LOCALES, DEFAULT_LOCALE, type Locale } from "@/lib/i18n/constants";
 import { DEFAULT_TOKEN_LIMIT, OVERAGE_HARD_CAP_MULTIPLIER } from "./pricing";
-import { getTokenPoolForAgent } from "./token-pool";
+import { getPrimaryTokenPool, getTokenPoolForAgent } from "./token-pool";
 
 export type UsageRecord = {
   id?: string;
@@ -147,6 +147,60 @@ export async function assertRunAllowed(
 
   const overageAvailable =
     Boolean(userAgent.stripe_subscription_id) && Boolean(userAgent.stripe_customer_id) && isOverageBillingEnabled();
+
+  if (used >= tokenLimit) {
+    if (overageAvailable) {
+      const hardCap = tokenLimit * OVERAGE_HARD_CAP_MULTIPLIER;
+      if (used >= hardCap) {
+        return {
+          allowed: false,
+          status: 429,
+          code: "OVERAGE_CAP_REACHED",
+          message: apiErrorMessageForLocale(locale, "overageCapReached", {
+            cap: hardCap.toLocaleString(DATE_LOCALES[locale]),
+            multiplier: OVERAGE_HARD_CAP_MULTIPLIER,
+          }),
+        };
+      }
+      return { allowed: true, overage: true };
+    }
+    return {
+      allowed: false,
+      status: 429,
+      code: "LIMIT_EXCEEDED",
+      message: apiErrorMessageForLocale(locale, "limitExceeded", {
+        limit: tokenLimit.toLocaleString(DATE_LOCALES[locale]),
+      }),
+    };
+  }
+
+  return { allowed: true, overage: false };
+}
+
+/**
+ * Stessa regola di `assertRunAllowed`, ma per l'ASSISTENTE GENERICO (la chat
+ * senza agente selezionato).
+ *
+ * L'assistente generico non appartiene a nessun piano: il suo consumo viene
+ * addebitato al pool principale dell'utente (quello con il budget più
+ * grande). Se l'utente non ha abbonamenti, il vincolo non è un budget ma il
+ * piano gratuito (5 messaggi al giorno) → lo gestisce la route, che risponde
+ * 402 FREE_LIMIT_REACHED.
+ */
+export async function assertPrimaryPoolAllowed(
+  userId: string,
+  locale: Locale = DEFAULT_LOCALE,
+  isAdmin = false,
+): Promise<RunCheck> {
+  if (isAdmin) return { allowed: true, overage: false };
+  if (!userId || userId === "anonymous") return { allowed: true, overage: false };
+
+  const pool = await getPrimaryTokenPool(userId);
+  if (!pool) return { allowed: true, overage: false };
+
+  const tokenLimit = pool.tokenLimit;
+  const used = pool.used;
+  const overageAvailable = isOverageBillingEnabled();
 
   if (used >= tokenLimit) {
     if (overageAvailable) {

@@ -35,6 +35,16 @@ import { extractConnectMarkers, requestedConnectProviders } from "@/lib/integrat
 import { apiErrorMessage, apiErrorMessageForLocale } from "@/lib/i18n/api-errors";
 import { getClientIp } from "@/lib/request-ip";
 import { RATE_LIMIT_WINDOWS, rateLimit } from "@/lib/rate-limit";
+import { checkFreeUsage, consumeFreeUsage } from "@/lib/billing/free-usage";
+import {
+  assertPrimaryPoolAllowed,
+  recordUsage,
+} from "@/lib/billing/usage-tracking";
+import {
+  DEMO_AGENT_SLUG,
+  GENERIC_AGENT_SLUG,
+  getPrimaryTokenPool,
+} from "@/lib/billing/token-pool";
 
 /**
  * POST /api/chat
@@ -87,8 +97,12 @@ export async function POST(req: Request) {
       webSearch,
       githubRepo,
       approval,
+      // Superficie della richiesta: "demo" (chat di prova sulla home) o
+      // "chat" (la chat vera, con o senza agente).
+      surface,
     } = await req.json();
     const isEphemeral = ephemeral === true;
+    const isDemoSurface = surface === "demo";
 
     if (!Array.isArray(messages)) {
       return Response.json(
@@ -172,6 +186,42 @@ export async function POST(req: Request) {
     const provider = getLLMProvider(
       typeof providerOverride === "string" ? providerOverride : undefined,
     );
+
+    // ── Piano gratuito: un solo contatore per tutta la piattaforma ─────────
+    //
+    // Il freemium è 5 messaggi al giorno IN TOTALE: demo della home, chat
+    // generica e agenti contano sullo stesso contatore (è quello che la copy
+    // promette). Chi non è abbonato e ha finito i suoi 5 non può più scrivere
+    // da nessuna parte; chi è abbonato non ha limiti (il suo vincolo è il pool
+    // di token, vedi assertPrimaryPoolAllowed).
+    const ip = getClientIp(req);
+    const primaryPool = userId === "anonymous" ? null : await getPrimaryTokenPool(userId);
+    const isSubscriber = Boolean(primaryPool);
+
+    if (!isSubscriber) {
+      const free = await checkFreeUsage(userId, ip ?? undefined);
+      if (!free.allowed) {
+        return Response.json(
+          {
+            error: apiErrorMessageForLocale(locale, "freeLimitReached"),
+            code: "FREE_LIMIT_REACHED",
+            remaining: free.remaining,
+            limit: free.limit,
+          },
+          { status: 402 },
+        );
+      }
+    } else if (!isDemoSurface) {
+      // Abbonato: la chat generica consuma il pool principale.
+      const check = await assertPrimaryPoolAllowed(userId, locale);
+      if (!check.allowed) {
+        return Response.json(
+          { error: check.message, code: check.code },
+          { status: check.status },
+        );
+      }
+    }
+
     const encoder = new TextEncoder();
     // Riusa la locale già risolta sopra: `apiErrorMessage` rileggerebbe i
     // cookie con una seconda `getLocale()`.
@@ -440,7 +490,37 @@ export async function POST(req: Request) {
             send({ type: "connection", provider });
           }
 
-          send({ type: "done" });
+          // ── Uso registrato ────────────────────────────────────────────────
+          // Solo token: nessun contenuto della conversazione viene scritto,
+          // quindi la modalità Ghost resta garantita. La run fa avanzare il
+          // contatore del piano gratuito (utenti autenticati: conta le run
+          // di oggi) e consuma il pool (abbonati: la chat generica pesa sul
+          // pool principale).
+          const inputTokens = response.usage.inputTokens;
+          const outputTokens = response.usage.outputTokens;
+          await recordUsage({
+            user_id: userId,
+            agent_slug: isDemoSurface ? DEMO_AGENT_SLUG : GENERIC_AGENT_SLUG,
+            // In modalità Ghost nessuna conversazione: il collegamento resta
+            // vuoto (la run non appartiene a nessuna chat salvata).
+            conversation_id: isEphemeral ? undefined : crypto.randomUUID(),
+            tokens_input: inputTokens,
+            tokens_output: outputTokens,
+            ephemeral: isEphemeral,
+          });
+          await consumeFreeUsage(userId, ip ?? undefined);
+
+          // Quota residua: la UI (la demo della home) mostra "3/5 rimasti"
+          // senza dover ricontare i messaggi da sola.
+          const quota = isSubscriber
+            ? null
+            : await checkFreeUsage(userId, ip ?? undefined);
+          send({
+            type: "done",
+            quota: quota
+              ? { remaining: quota.remaining, limit: quota.limit }
+              : null,
+          });
         } catch {
           emitter.stop();
           send({ type: "error", message: streamErrorMessage });

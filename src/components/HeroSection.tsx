@@ -73,7 +73,12 @@ function heroId() {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────
-const DEMO_LIMIT = 10;
+// Quanti messaggi gratuiti restano al giorno. Il numero è il PIANO GRATUITO
+// (5 al giorno, in totale su demo e agenti): la demo non è un piano a sé, è
+// il piano gratis visto da fuori. Il server è l'autorità (contatore unico,
+// enforced lato server): questo valore è solo la stima iniziale, aggiornata
+// dal server a ogni risposta.
+const DEMO_LIMIT = 5;
 
 export default function HeroSection() {
   const { dict, locale } = useLanguage();
@@ -115,7 +120,16 @@ export default function HeroSection() {
 
   const hasMessages = messages.length > 0 || isTyping;
   const userCount = messages.filter((m) => m.role === "user").length;
-  const remaining = Math.max(0, DEMO_LIMIT - userCount);
+  // Quota gratuita residua, come la conosce il SERVER (l'unico contatore
+  // valido). Finché non arriva la prima risposta si usa la stima locale.
+  const [demoQuota, setDemoQuota] = useState<{
+    remaining: number;
+    limit: number;
+  } | null>(null);
+  const limit = demoQuota?.limit ?? DEMO_LIMIT;
+  const remaining = demoQuota
+    ? demoQuota.remaining
+    : Math.max(0, DEMO_LIMIT - userCount);
 
   // Prompt estesi per i chip di suggerimento — frasi ben formate per lingua
   const CHIP_EXPANDED: Record<string, string[]> = {
@@ -231,13 +245,14 @@ export default function HeroSection() {
     const trimmed = text.trim();
     const hasAttachments = pending.length > 0;
     if ((!trimmed && !hasAttachments) || typingRef.current) return;
-    // Limite demo per utenti non autenticati: 10 messaggi utente, poi modale di
-    // login. Saltato per i messaggi in coda (già accettati con Enter).
+    // Limite demo: scorciatoia per i visitatori (conta i messaggi di questa
+    // sessione). L'autorità è il SERVER: il contatore dei messaggi gratuiti
+    // al giorno è unico e vale per demo e agenti insieme. Saltato per i
+    // messaggi in coda (già accettati con Enter).
     if (!preAdded && !isAuthed && userCount >= DEMO_LIMIT) {
       setShowLimitModal(true);
       return;
-    }
-    if (!preAdded) {
+    }    if (!preAdded) {
       setInput("");
       if (textareaRef.current) textareaRef.current.style.height = "auto";
     }
@@ -270,13 +285,27 @@ export default function HeroSection() {
         body: JSON.stringify({
           // La demo hero usa SEMPRE la chiave economica xKiro, mai Claude.
           provider: "xt",
+          // Superficie "demo": il server applica il contatore unico dei
+          // messaggi gratuiti al giorno (lo stesso degli agenti) e non tocca
+          // il pool di token dei piani.
+          surface: "demo",
           messages: [{ role: "user", content: apiContent as unknown }],
         }),
         signal: controller.signal,
       });
       clearTimeout(timeout);
 
-      if (!res.ok || !res.body) throw new Error("AI backend unavailable");
+      if (!res.ok) {
+        // Il piano gratuito è finito: lo decide il server (402). Si mostra la
+        // finestra di accesso, che è la risposta giusta per un visitatore.
+        if (res.status === 402) {
+          setDemoQuota({ remaining: 0, limit: DEMO_LIMIT });
+          setShowLimitModal(true);
+          return;
+        }
+        throw new Error("AI backend unavailable");
+      }
+      if (!res.body) throw new Error("AI backend unavailable");
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -294,7 +323,11 @@ export default function HeroSection() {
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
-          let json: { type?: string; content?: string };
+          let json: {
+            type?: string;
+            content?: string;
+            quota?: { remaining?: number; limit?: number } | null;
+          };
           try {
             json = JSON.parse(line.slice(6));
           } catch {
@@ -326,7 +359,19 @@ export default function HeroSection() {
             }
           }
 
-          if (json.type === "done") break;
+          if (json.type === "done") {
+            // Il server rimanda quanti messaggi gratuiti restano oggi: è
+            // l'unico contatore valido (demo + agenti insieme).
+            const quota = json.quota;
+            if (quota && typeof quota.remaining === "number") {
+              setDemoQuota({
+                remaining: quota.remaining,
+                limit:
+                  typeof quota.limit === "number" ? quota.limit : DEMO_LIMIT,
+              });
+            }
+            break;
+          }
         }
       }
 
@@ -877,7 +922,7 @@ export default function HeroSection() {
           {hasMessages && !isAuthed && (
             <p className="mt-3 text-center text-xs font-semibold text-neutral-500">
               {remaining > 0
-                ? t(dict.hero.demoRemaining, { remaining, limit: DEMO_LIMIT })
+                ? t(dict.hero.demoRemaining, { remaining, limit })
                 : dict.hero.demoLimitReached}
             </p>
           )}

@@ -73,6 +73,27 @@ type UserAgentRow = PoolUserAgentRow & {
   current_period_end: string | null;
 };
 
+/**
+ * Slug pseudo-agente con cui vengono registrate le run dell'ASSISTENTE
+ * GENERICO (la chat in /chat senza agente selezionato).
+ *
+ * L'assistente generico è un agente a tutti gli effetti: usa il provider
+ * costoso e quindi consuma budget. Non appartenendo a nessun piano, il suo
+ * consumo viene attribuito al POOL PRINCIPALE dell'utente (quello con il
+ * budget più grande): così un abbonato non può usare la chat generica come
+ * scappatoia illimitata.
+ */
+export const GENERIC_AGENT_SLUG = "assistant";
+
+/**
+ * Slug con cui vengono registrate le run della DEMO DELLA HOME.
+ *
+ * La demo gira sul provider economico ed è un assaggio del prodotto: NON
+ * consuma il pool (l'abbonato può usarla liberamente) ma, per chi non è
+ * abbonato, conta nei suoi 5 messaggi gratuiti del giorno.
+ */
+export const DEMO_AGENT_SLUG = "demo";
+
 async function getDb() {
   return createAdminClient() ?? (await createClient());
 }
@@ -184,4 +205,37 @@ export async function getTokenPoolsForUser(
     pools.push({ ...config, agents, ...computePoolUsage(config.tokenLimit, used) });
   }
   return pools;
+}
+
+/**
+ * Il pool PRINCIPALE dell'utente: quello con il budget più grande.
+ *
+ * È il pool a cui viene addebitato il consumo dell'assistente generico
+ * (l'utente non ha scelto un agente): non appartenendo a nessun piano,
+ * l'uso della chat generica deve pesare su un budget, e il maggiore è quello
+ * che l'utente ha effettivamente comprato.
+ *
+ * L'ordinamento è deterministico (budget decrescente, poi id del pool) così
+ * lo stesso utente non vede mai due pool primari diversi.
+ */
+export async function getPrimaryTokenPool(
+  userId: string,
+): Promise<TokenPool | null> {
+  const pools = await getTokenPoolsForUser(userId);
+  if (pools.length === 0) return null;
+  const sorted = pools.slice().sort((a, b) => {
+    if (b.tokenLimit !== a.tokenLimit) return b.tokenLimit - a.tokenLimit;
+    return a.poolId.localeCompare(b.poolId);
+  });
+  const primary = sorted[0];
+
+  // Il consumo dell'assistente generico entra nel pool principale.
+  const used = await tokensUsedInPeriod(
+    userId,
+    [...primary.agents, GENERIC_AGENT_SLUG],
+    primary.periodStart,
+    primary.periodEnd ?? calendarMonthBounds(new Date()).end,
+  );
+
+  return { ...primary, ...computePoolUsage(primary.tokenLimit, used) };
 }
