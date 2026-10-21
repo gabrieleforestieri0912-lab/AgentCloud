@@ -43,6 +43,10 @@ export function HelpOverlay({ height, onClose }: { height: number; onClose: () =
           </Text>
         ) : null}
         <Text> </Text>
+        <Text bold>Schede</Text>
+        <Text color={theme.muted}>Ctrl+T nuova · Ctrl+W chiudi · Alt+1…9 vai · Alt+←/→ scorri</Text>
+        <Text color={theme.muted}>/tabs elenco schede (Invio ne cambia)</Text>
+        <Text> </Text>
         <Text bold>Scorciatoie</Text>
         <Text color={theme.muted}>Invio invia — Maiusc+Invio / Ctrl+J a capo — Esc interrompe/pulisce</Text>
         <Text color={theme.muted}>Tab menu-focus — Ctrl+B sidebar — Ctrl+C esce (salva tutto)</Text>

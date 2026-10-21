@@ -330,11 +330,22 @@ program.command("chat").description("Avvia una chat interattiva (l'agente si sce
       initialTitle: resumedSession?.title,
       initialFiles: resumedSession?.files,
     });
-    history.length = 0;
-    history.push(...result.messages);
-    const session = saveChatSession(slug, history, sessionCode, { title: result.title || undefined, files: result.files });
-    sessionCode = session.code;
-    console.log(`\n${green(resumeHint(slug, session.code))}`);
+    // Ogni scheda chiusa è una sessione a sé: si salvano tutte, con il
+    // proprio codice, così si torna a ognuna con --resume. La scheda da cui
+    // si era ripresi conserva il codice originale (la ripresa continua
+    // quella chat invece di crearne una gemella).
+    const saved: Array<{ agent: string; code: string }> = [];
+    for (const [i, tab] of result.tabs.entries()) {
+      if (tab.messages.length === 0) continue;
+      const session = saveChatSession(tab.agent, tab.messages, i === 0 ? sessionCode : undefined, {
+        title: tab.title || undefined,
+        files: tab.files,
+      });
+      saved.push({ agent: tab.agent, code: session.code });
+    }
+    if (saved.length > 0) {
+      console.log(`\n${green(saved.map((s) => resumeHint(s.agent, s.code)).join("\n"))}`);
+    }
     return;
   }
 
@@ -436,16 +447,17 @@ if (process.argv.length <= 2) {
     setTheme(loadConfig().theme || "dark");
     const { runWelcomeTui } = await import("./tui/Root.js");
     const result = await runWelcomeTui();
-    if (result.messages.length > 0 && result.agent) {
-      // Stampa del codice di ripresa SOLO dopo che l'alternate screen è
-      // chiusa (dentro Root è uscito): resta visibile al ritorno nel terminale.
-      const session = saveChatSession(
-        result.agent,
-        result.messages.map(({ role, content }) => ({ role, content })),
-        undefined,
-        { title: result.title || undefined, files: result.files },
-      );
-      console.log(`\n${green(resumeHint(result.agent, session.code))}`);
+    if (result.tabs.length > 0) {
+      const saved: string[] = [];
+      for (const tab of result.tabs) {
+        if (tab.messages.length === 0) continue;
+        const session = saveChatSession(tab.agent, tab.messages, undefined, {
+          title: tab.title || undefined,
+          files: tab.files,
+        });
+        saved.push(resumeHint(tab.agent, session.code));
+      }
+      if (saved.length > 0) console.log(`\n${green(saved.join("\n"))}`);
     }
     process.exit(0);
   }

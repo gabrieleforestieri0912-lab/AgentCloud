@@ -8,8 +8,6 @@ import { Spinner } from "./Spinner.js";
 import { AgentsOverlay } from "./AgentsOverlay.js";
 import { App, type TuiResult } from "./App.js";
 import { CATALOG } from "../catalog.js";
-import type { ChatMessage } from "./Chat.js";
-import type { TrackedFile } from "./fileChanges.js";
 
 type Phase = "boot" | "auth" | "pick" | "chat" | "offline";
 
@@ -37,10 +35,10 @@ function leaveAltScreen(): void {
  * default dell'agente → chat. Alla fine risolve con i dati per salvare la
  * sessione e stampare il codice di ripresa.
  */
-export async function runWelcomeTui(): Promise<TuiResult & { agent: string }> {
+export async function runWelcomeTui(): Promise<TuiResult> {
   enterAltScreen();
   try {
-    let result: (TuiResult & { agent: string }) | null = null;
+    let result: TuiResult | null = null;
     const { waitUntilExit } = render(
       <Root
         onResult={(r) => {
@@ -50,16 +48,14 @@ export async function runWelcomeTui(): Promise<TuiResult & { agent: string }> {
       { exitOnCtrlC: false },
     );
     await waitUntilExit();
-    if (!result) {
-      return { messages: [] as ChatMessage[], title: "", files: [] as TrackedFile[], agent: "" };
-    }
+    if (!result) return { tabs: [] };
     return result;
   } finally {
     leaveAltScreen();
   }
 }
 
-function Root({ onResult }: { onResult: (r: TuiResult & { agent: string }) => void }) {
+function Root({ onResult }: { onResult: (r: TuiResult) => void }) {
   const { exit } = useApp();
   const [, setTick] = useState(0);
   const touch = () => setTick((t) => t + 1);
@@ -142,8 +138,8 @@ function Root({ onResult }: { onResult: (r: TuiResult & { agent: string }) => vo
           authenticated: info?.authenticated ?? true,
         }}
         showHeader
-        onExit={(messages, title, files) => {
-          onResult({ messages, title, files, agent: agentChoice.slug });
+        onExit={(tabs) => {
+          onResult({ tabs });
           exit();
         }}
       />

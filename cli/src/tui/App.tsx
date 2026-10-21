@@ -14,6 +14,7 @@ import { SIDEBAR_WIDTH, Sidebar } from "./Sidebar.js";
 import { CommandMenu, MAX_MENU_ROWS } from "./CommandMenu.js";
 import { Popup, MAX_POPUP_ROWS, type PopupItem } from "./Popup.js";
 import { HelpOverlay } from "./HelpOverlay.js";
+import { TabBar, type TabInfo } from "./TabBar.js";
 import { type AgentChoice } from "./AgentsOverlay.js";
 import { LoginScreen } from "./LoginScreen.js";
 import { CATALOG } from "../catalog.js";
@@ -45,12 +46,91 @@ export type SessionInfo = {
   authenticated?: boolean;
 };
 
-export type TuiResult = { messages: ChatMessage[]; title: string; files: TrackedFile[] };
+/** Una scheda (tab) chiusa: cosa viene salvato su disco all'uscita. */
+export type TuiTabResult = {
+  agent: string;
+  agentName: string;
+  messages: ChatMessage[];
+  title: string;
+  files: TrackedFile[];
+};
+
+export type TuiResult = { tabs: TuiTabResult[] };
 
 export type TuiFocus = "input" | "sidebar";
 
 /** Sito AgentCloud: i link dei messaggi (attivazione agenti, marketplace). */
 const SITE = "https://www.agentcloud.agency";
+
+/**
+ * Stato di UNA scheda. Ogni scheda ha la sua conversazione, i suoi file, il
+ * suo stack di undo/redo e il suo streaming: due schede possono girare
+ * insieme e restano indipendenti.
+ *
+ * I campi sono mutabili e non sono React state: durante lo streaming gli
+ * update arrivano da callback async e uno state React sarebbe stale.
+ * Il re-render è forzato da `touch()` (tick), come già faceva `msgsRef`.
+ */
+type Tab = {
+  id: string;
+  agent: string;
+  agentName: string;
+  title: string;
+  titleTouched: boolean;
+  messages: ChatMessage[];
+  files: TrackedFile[];
+  undo: FileTransition[];
+  redo: FileTransition[];
+  streaming: boolean;
+  activity: string | null;
+  online: boolean | null;
+  confirm: ConfirmState;
+  pending: { toolName: string; token: string } | null;
+  confirmResolve: ((yes: boolean) => void) | null;
+  abort: AbortController | null;
+  notice: string | null;
+  /** Bozza del testo: resta nella scheda, si riprende tornandoci. */
+  draft: string;
+  /** Testo imposto dall'esterno (argomento suggerito, cambio scheda). */
+  preset: { text: string; key: number } | null;
+  menuOpen: boolean;
+  menuSelected: number;
+  /** Voce selezionata nella sidebar dei file. */
+  selected: number;
+};
+
+function makeTab(init: {
+  agent: string;
+  agentName: string;
+  messages?: ChatMessage[];
+  title?: string;
+  files?: TrackedFile[];
+}): Tab {
+  return {
+    id: crypto.randomUUID(),
+    agent: init.agent,
+    agentName: init.agentName,
+    title: init.title || init.agentName,
+    titleTouched: Boolean(init.title),
+    messages: init.messages ?? [],
+    files: init.files ?? [],
+    undo: [],
+    redo: [],
+    streaming: false,
+    activity: null,
+    online: null,
+    confirm: null,
+    pending: null,
+    confirmResolve: null,
+    abort: null,
+    notice: null,
+    draft: "",
+    preset: null,
+    menuOpen: false,
+    menuSelected: 0,
+    selected: 0,
+  };
+}
 
 /**
  * Popup di selezione mostrato sopra la chat.
@@ -76,11 +156,12 @@ function leaveAltScreen(): void {
 }
 
 /**
- * Avvia la TUI chat e risolve con i messaggi finali all'uscita.
+ * Avvia la TUI chat e risolve con le schede finali all'uscita.
  *
  * Lo schermo alternativo si lascia in `finally`: anche con Ctrl+C o crash
- * il terminale torna come prima. Il chiamante stampa dopo (codice di ripresa
- * sessione), quando lo schermo è già ripristinato e il testo resta visibile.
+ * il terminale torna come prima. Il chiamante stampa dopo (codici di ripresa
+ * delle sessioni), quando lo schermo è già ripristinato e il testo resta
+ * visibile.
  */
 export async function runChatTui(opts: {
   agent: string;
@@ -91,7 +172,7 @@ export async function runChatTui(opts: {
 }): Promise<TuiResult> {
   enterAltScreen();
   try {
-    let result: TuiResult = { messages: opts.initial, title: opts.initialTitle ?? "", files: opts.initialFiles ?? [] };
+    let result: TuiResult = { tabs: [] };
     const { waitUntilExit } = render(
       <App
         agent={opts.agent}
@@ -99,8 +180,8 @@ export async function runChatTui(opts: {
         initial={opts.initial}
         initialTitle={opts.initialTitle}
         initialFiles={opts.initialFiles}
-        onExit={(messages, title, files) => {
-          result = { messages, title, files };
+        onExit={(tabs) => {
+          result = { tabs };
         }}
       />,
       { exitOnCtrlC: false },
@@ -161,39 +242,36 @@ export function App({
   /** Info utente per header e status (facoltativa: la chat classica non ce l'ha). */
   session?: SessionInfo;
   showHeader?: boolean;
-  onExit: (messages: ChatMessage[], title: string, files: TrackedFile[]) => void;
+  onExit: (tabs: TuiTabResult[]) => void;
 }) {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const rows = stdout?.rows ?? 24;
   const columns = stdout?.columns ?? 80;
 
-  // Agente come stato: /agents cambia agente a caldo senza ripartire la chat.
-  const [agent, setAgent] = useState(initialAgent);
-  const [agentName, setAgentName] = useState(initialAgentName);
-
-  // Cronologia in ref + tick di render: gli append dello streaming non devono
-  // passare per chiusure stale dei setState dentro callback asincrone.
-  const msgsRef = useRef<ChatMessage[]>(initial);
+  // Le schede: stato per sessione. La prima è quella di partenza.
+  const tabsRef = useRef<Tab[]>([
+    makeTab({
+      agent: initialAgent,
+      agentName: initialAgentName,
+      messages: initial,
+      title: initialTitle,
+      files: initialFiles,
+    }),
+  ]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [, setTick] = useState(0);
   const touch = () => setTick((t) => t + 1);
 
-  // Titolo sidebar: auto-generato dopo il primo scambio, /rename (passo 4) lo
-  // cambia a mano. Resta quello iniziale se si riprende una sessione vecchia.
-  const [title, setTitle] = useState(initialTitle || agentName);
-  const titleTouchedRef = useRef(Boolean(initialTitle));
-
-  // File tracciati + stack undo/redo (per sessione TUI, in memoria).
-  const filesRef = useRef<TrackedFile[]>(initialFiles ?? []);
-  const undoRef = useRef<FileTransition[]>([]);
-  const redoRef = useRef<FileTransition[]>([]);
+  // Chiavi dei preset: contatore monotono (Date.now() può ripetersi).
+  const presetKeyRef = useRef(0);
+  const nextPreset = () => ++presetKeyRef.current;
 
   // Sidebar: visibile solo se aperta E il terminale è largo abbastanza.
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const sidebarVisible = sidebarOpen && columns >= 100;
   const [focus, setFocus] = useState<TuiFocus>("input");
   const effectiveFocus: TuiFocus = sidebarVisible ? focus : "input";
-  const [selected, setSelected] = useState(0);
 
   // Overlay: un solo livello alla volta (help > sessioni > diff > agents/login).
   const [helpOpen, setHelpOpen] = useState(false);
@@ -202,67 +280,68 @@ export function App({
   const [loginOpen, setLoginOpen] = useState(false);
   const [liveInfo, setLiveInfo] = useState<SessionInfo | null>(null);
   const info = liveInfo ?? session;
-  // Budget freemium dell'agente: se non è "unlimited" l'utente è in prova
-  // gratuita e in chat vuota compare il link per abbonarsi.
-  const [limit, setLimit] = useState<AgentLimit | null>(null);
+  // Budget freemium per agente: la stessa tariffa per ogni scheda con lo
+  // stesso agente, quindi si tiene in mappa per slug.
+  const limitsRef = useRef<Map<string, AgentLimit>>(new Map());
   // Sessione presente? Se il sito non risponde 401 restiamo "forse": la CLI
   // storica non faceva il whoami, e non vogliamo bloccare la chat senza prove.
   const [loggedIn, setLoggedIn] = useState<boolean>(session?.authenticated !== false);
-  const [notice, setNotice] = useState<string | null>(
-    session?.authenticated === false
-      ? "Non sei autenticato: usa /login per accedere (oppure incolla un token con /login → token)."
-      : null,
-  );
-
-  // Menu comandi "/": aperto mentre la bozza inizia per "/", filtrato dal
-  // primo token. suppressMenuRef evita la riapertura quando il testo viene
-  // impostato programmaticamente (suggerimento argomento).
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuSelected, setMenuSelected] = useState(0);
-  const [draft, setDraft] = useState("");
-  const [preset, setPreset] = useState<{ text: string; key: number } | null>(null);
-  const menuOpenRef = useRef(false);
-  menuOpenRef.current = menuOpen;
-  const suppressMenuRef = useRef(false);
 
   // Popup di selezione sopra la chat: la conversazione resta visibile
   // sotto, il popup scompare appena si sceglie (o si annulla con Esc).
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [popupSelected, setPopupSelected] = useState(0);
 
-  const handleDraftChange = useCallback(
-    (text: string) => {
-      setDraft(text);
-      if (suppressMenuRef.current) {
-        suppressMenuRef.current = false;
-        return;
-      }
-      const opens = text.startsWith("/") && !text.includes("\n");
-      if (!opens) {
-        if (menuOpenRef.current) setMenuOpen(false);
-        return;
-      }
-      // La selezione torna in alto a ogni digitazione: il comando
-      // evidenziato corrisponde sempre a quello che l'utente sta scrivendo.
-      // Le frecce la spostano senza più modificare la bozza.
-      setMenuSelected(0);
-      if (!menuOpenRef.current) setMenuOpen(true);
-    },
-    [],
-  );
-
-  const [streaming, setStreaming] = useState(false);
-  const [confirm, setConfirm] = useState<ConfirmState>(null);
-  const pendingRef = useRef<{ toolName: string; token: string } | null>(null);
-  const confirmResolve = useRef<((yes: boolean) => void) | null>(null);
-  const [activity, setActivity] = useState<string | null>(null);
-  const [online, setOnline] = useState<boolean | null>(null);
   const [inputHeight, setInputHeight] = useState(3);
-  const abortRef = useRef<AbortController | null>(null);
   const finishedRef = useRef(false);
 
+  // La scheda attiva: tutto ciò che legge e scrive lo stato di sessione
+  // passa di qui, così il resto del codice non cambia.
+  const tab = tabsRef.current[Math.min(activeIndex, tabsRef.current.length - 1)];
+  const tabs = tabsRef.current;
+  // L'agente è della scheda: due schede possono parlare con agenti diversi.
+  const agent = tab.agent;
+  const agentName = tab.agentName;
+
+  const suppressMenuRef = useRef(false);
+
+  // La scheda attiva in un ref: `handleDraftChange` deve avere un'identità
+  // stabile, altrimenti l'effetto dell'Input che segnala la bozza si
+  // rieseguirebbe a ogni cambio scheda e riverserebbe il testo vecchio in
+  // quella nuova.
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
+
+  const handleDraftChange = useCallback((text: string) => {
+    const list = tabsRef.current;
+    const current = list[Math.min(activeIndexRef.current, list.length - 1)];
+    if (!current) return;
+    current.draft = text;
+    if (suppressMenuRef.current) {
+      suppressMenuRef.current = false;
+      touch();
+      return;
+    }
+    const opens = text.startsWith("/") && !text.includes("\n");
+    if (!opens) {
+      if (current.menuOpen) {
+        current.menuOpen = false;
+        touch();
+      }
+      return;
+    }
+    // La selezione torna in alto a ogni digitazione: il comando
+    // evidenziato corrisponde sempre a quello che l'utente sta scrivendo.
+    // Le frecce la spostano senza più modificare la bozza.
+    current.menuSelected = 0;
+    if (!current.menuOpen) {
+      current.menuOpen = true;
+      touch();
+    }
+  }, []);
+
   const pushMsg = (m: ChatMessage) => {
-    msgsRef.current = [...msgsRef.current, m];
+    tab.messages = [...tab.messages, m];
     touch();
   };
   /** Output di un comando `/`: resta a schermo, non entra nella cronologia. */
@@ -270,34 +349,117 @@ export function App({
     const content = Array.isArray(body) ? body.join("\n") : body;
     pushMsg({ role: "assistant", content, system: title });
   };
-  const patchLast = (fn: (m: ChatMessage) => ChatMessage) => {
-    const arr = [...msgsRef.current];
+  /**
+   * Modifica l'ultimo messaggio di UNA scheda.
+   *
+   * Il parametro è esplicito e non implicito: durante lo streaming la
+   * scheda che lavora può non essere quella attiva (l'utente ha cambiato
+   * scheda), e la risposta deve finire dove è partita.
+   */
+  const patchLastOf = (t: Tab, fn: (m: ChatMessage) => ChatMessage) => {
+    const arr = [...t.messages];
     arr[arr.length - 1] = fn(arr[arr.length - 1]);
-    msgsRef.current = arr;
+    t.messages = arr;
     touch();
   };
-  const dropLast = () => {
-    msgsRef.current = msgsRef.current.slice(0, -1);
+  const dropLastOf = (t: Tab) => {
+    t.messages = t.messages.slice(0, -1);
     touch();
   };
 
   const finish = () => {
     if (finishedRef.current) return;
     finishedRef.current = true;
-    abortRef.current?.abort();
+    // tutte le schede aperte smettono di fare richieste
+    for (const t of tabsRef.current) t.abort?.abort();
     onExit(
-      msgsRef.current
-        .filter((m) => !m.system)
-        .map(({ role, content }) => ({ role, content })),
-      titleRef.current,
-      filesRef.current,
+      tabsRef.current.map((t) => ({
+        agent: t.agent,
+        agentName: t.agentName,
+        messages: t.messages.filter((m) => !m.system).map(({ role, content }) => ({ role, content })),
+        title: t.title,
+        files: t.files,
+      })),
     );
     exit();
   };
 
-  // Titolo in ref per la finish (lo state sarebbe stale nella chiusura).
-  const titleRef = useRef(title);
-  titleRef.current = title;
+  // --- Schede -------------------------------------------------------------
+
+  /**
+   * Attiva una scheda: l'editor torna a quello della scheda (bozza
+   * inclusa). Il testo scritto nella scheda che si lascia resta lì.
+   */
+  const activateTab = (index: number) => {
+    const target = tabsRef.current[index];
+    if (!target) return;
+    target.menuOpen = false;
+    // La chiave del preset è univoca, così l'Input applica la bozza anche
+    // tornando a una scheda già visitata.
+    target.preset = { text: target.draft, key: nextPreset() };
+    setActiveIndex(index);
+    touch();
+  };
+
+  /** Nuova scheda con lo stesso agente di quella attiva. */
+  const newTab = () => {
+    const current = activeTab();
+    const fresh = makeTab({ agent: current.agent, agentName: current.agentName });
+    tabsRef.current = [...tabsRef.current, fresh];
+    setActiveIndex(tabsRef.current.length - 1);
+    // L'editor della nuova scheda parte vuoto.
+    fresh.preset = { text: "", key: nextPreset() };
+    touch();
+  };
+
+  /** Chiude la scheda attiva: all'ultima scheda si esce dalla chat. */
+  const closeTab = () => {
+    const list = tabsRef.current;
+    if (list.length <= 1) {
+      finish();
+      return;
+    }
+    const idx = Math.min(activeIndex, list.length - 1);
+    const closing = list[idx];
+    closing.abort?.abort();
+    tabsRef.current = list.filter((_, i) => i !== idx);
+    // Dopo la chiusura si resta su una scheda vicina, con il suo editor.
+    const next = Math.min(idx, tabsRef.current.length - 1);
+    const target = tabsRef.current[next];
+    target.menuOpen = false;
+    target.preset = { text: target.draft, key: nextPreset() };
+    setActiveIndex(next);
+    touch();
+  };
+
+  const activeTab = () => tabsRef.current[Math.min(activeIndex, tabsRef.current.length - 1)];
+
+  /** Popup con le schede aperte: Invio ci va. */
+  const openTabPicker = () => {
+    const list = tabsRef.current;
+    openPopup({
+      title: "Schede",
+      hint: "↑↓ · Invio",
+      items: [
+        ...list.map((t, i) => ({
+          key: t.id,
+          label: `${i + 1}. ${t.title}`,
+          hint: `${t.agentName}${t.id === activeTab().id ? " · attiva" : ""}${t.streaming ? " · in corso" : ""}`,
+        })),
+        { key: "__new__", label: "+ Nuova scheda", hint: "Ctrl+T" },
+      ],
+      onSelect: (item) => {
+        if (item.key === "__new__") {
+          newTab();
+          return;
+        }
+        const idx = list.findIndex((t) => t.id === item.key);
+        if (idx >= 0) activateTab(idx);
+      },
+    });
+  };
+
+  // --- Tasti globali ------------------------------------------------------
 
   useInput((input, key) => {
     if (key.ctrl && input === "c") {
@@ -308,7 +470,29 @@ export function App({
       setSidebarOpen((o) => !o);
       return;
     }
-    // Popup aperto: possiede i tasti (frecce, Invio, Esc). L'editor del
+    // Ctrl+T nuova scheda, Ctrl+W chiude la scheda attiva.
+    if (key.ctrl && input === "t") {
+      newTab();
+      return;
+    }
+    if (key.ctrl && input === "w") {
+      closeTab();
+      return;
+    }
+    // Alt+1..9: vai alla scheda N.
+    if (key.meta && /^[1-9]$/.test(input)) {
+      activateTab(Number(input) - 1);
+      return;
+    }
+    // Alt+freccia: scheda precedente/successiva.
+    if (key.meta && key.leftArrow) {
+      activateTab((activeIndex - 1 + tabsRef.current.length) % tabsRef.current.length);
+      return;
+    }
+    if (key.meta && key.rightArrow) {
+      activateTab((activeIndex + 1) % tabsRef.current.length);
+      return;
+    }    // Popup aperto: possiede i tasti (frecce, Invio, Esc). L'editor del
     // testo è disattivato finché il popup è aperto (vedi `focused`).
     if (popup) {
       const items = popup.items;
@@ -337,40 +521,45 @@ export function App({
     }
     // Overlay aperti (help/sessioni/diff): possiedono i loro tasti.
     if (helpOpen || diffView || loginOpen) return;
-    if (menuOpen) {
-      const body = commandBody(draft);
+    if (tab.menuOpen) {
+      const body = commandBody(tab.draft);
       const list = menuList;
       if (key.upArrow) {
-        setMenuSelected((s) => (list.length ? (s - 1 + list.length) % list.length : 0));
+        tab.menuSelected = list.length ? (tab.menuSelected - 1 + list.length) % list.length : 0;
+        touch();
         return;
       }
       if (key.downArrow) {
-        setMenuSelected((s) => (list.length ? (s + 1) % list.length : 0));
+        tab.menuSelected = list.length ? (tab.menuSelected + 1) % list.length : 0;
+        touch();
         return;
       }
       if (key.tab || key.return) {
         const def = list[menuSel];
 
         if (!def) {
-          setMenuOpen(false);
-          setPreset({ text: "", key: Date.now() });
-          if (body) setNotice(`Comando sconosciuto: /${body} — /help per l'elenco.`);
+          tab.menuOpen = false;
+          tab.preset = { text: "", key: nextPreset() };
+          if (body) tab.notice = `Comando sconosciuto: /${body} — /help per l'elenco.`;
+          touch();
           return;
         }
         const { args, rest } = commandArgs(def, body);
         if (!def.picker && def.args.some((a) => a.required) && args.length === 0) {
           // Suggerimento argomento: precompila e chiudi il menu.
           suppressMenuRef.current = true;
-          setPreset({ text: `/${def.name} `, key: Date.now() });
-          setMenuOpen(false);
+          tab.preset = { text: `/${def.name} `, key: nextPreset() };
+          tab.menuOpen = false;
+          touch();
           return;
         }
         runSlashCommand(def, args, rest);
         return;
       }
       if (key.escape) {
-        setMenuOpen(false);
-        setPreset({ text: draft.startsWith("/") ? draft.slice(1) : draft, key: Date.now() });
+        tab.menuOpen = false;
+        tab.preset = { text: tab.draft.startsWith("/") ? tab.draft.slice(1) : tab.draft, key: nextPreset() };
+        touch();
         return;
       }
       return;
@@ -380,21 +569,27 @@ export function App({
       return;
     }
     if (effectiveFocus !== "sidebar") return;
-    const files = filesRef.current.filter((f) => f.head >= 0);
+    const files = tab.files.filter((f) => f.head >= 0);
     if (key.escape) {
       setFocus("input");
       return;
     }
     if (key.upArrow) {
-      if (files.length > 0) setSelected((s) => (s - 1 + files.length) % files.length);
+      if (files.length > 0) {
+        tab.selected = (tab.selected - 1 + files.length) % files.length;
+        touch();
+      }
       return;
     }
     if (key.downArrow) {
-      if (files.length > 0) setSelected((s) => (s + 1) % files.length);
+      if (files.length > 0) {
+        tab.selected = (tab.selected + 1) % files.length;
+        touch();
+      }
       return;
     }
     if (key.return) {
-      const f = files[selected];
+      const f = files[tab.selected];
       if (f) openSingleDiff(f.filename);
       return;
     }
@@ -409,14 +604,15 @@ export function App({
 
   /** Esegue un comando del registro e pulisce l'input. */
   function runSlashCommand(def: CommandDef, args: string[], rest: string) {
-    setMenuOpen(false);
-    setPreset({ text: "", key: Date.now() });
+    tab.menuOpen = false;
+    tab.preset = { text: "", key: nextPreset() };
     const ctx = buildCommandContext();
     void Promise.resolve()
       .then(() => def.handler(ctx, args, rest))
-      .catch((error) =>
-        setNotice(`Comando /${def.name}: ${error instanceof Error ? error.message : String(error)}`),
-      );
+      .catch((error) => {
+        tab.notice = `Comando /${def.name}: ${error instanceof Error ? error.message : String(error)}`;
+        touch();
+      });
   }
 
   function buildCommandContext(): CommandContext {
@@ -424,27 +620,29 @@ export function App({
       agent,
       agentName,
       getMessages: () =>
-        msgsRef.current
+        activeTab().messages
           .filter((m) => !m.system)
           .map(({ role, content }) => ({ role, content })),
       resetAll: () => {
-        msgsRef.current = [];
-        filesRef.current = [];
-        undoRef.current = [];
-        redoRef.current = [];
-        setSelected(0);
-        setTitle(agentName);
-        titleTouchedRef.current = false;
+        const t = activeTab();
+        t.messages = [];
+        t.files = [];
+        t.undo = [];
+        t.redo = [];
+        t.selected = 0;
+        t.title = t.agentName;
+        t.titleTouched = false;
         touch();
       },
       clearMessages: () => {
-        msgsRef.current = [];
+        activeTab().messages = [];
         touch();
       },
-      getTitle: () => titleRef.current,
+      getTitle: () => activeTab().title,
       setTitle: (t: string) => {
-        titleTouchedRef.current = true;
-        setTitle(t);
+        activeTab().titleTouched = true;
+        activeTab().title = t;
+        touch();
       },
       undo: () => undoLastChange(),
       redo: () => redoChange(),
@@ -456,13 +654,17 @@ export function App({
       pickAgent: (onPicked: (slug: string) => void) => void openAgentPicker("owned", onPicked),
       preset: (text: string) => applyPreset(text),
       openLogin: () => setLoginOpen(true),
+      openTabs: () => openTabPicker(),
       onLogout: () => {
         setLoggedIn(false);
         setLiveInfo({ email: null, plan: null, messagesRemaining: null, authenticated: false });
         touch();
       },
       exit: () => finish(),
-      notice: (msg: string) => setNotice(msg),
+      notice: (msg: string) => {
+        activeTab().notice = msg;
+        touch();
+      },
       system: (title: string, body: string | string[]) => pushSystem(title, body),
       runAgent: (slug: string, prompt: string) => runIsolatedAgent(slug, prompt),
     };
@@ -473,7 +675,9 @@ export function App({
    * senza che il prompt entri nella conversazione corrente.
    */
   async function runIsolatedAgent(slug: string, prompt: string): Promise<string> {
-    setActivity(`run ${slug}…`);
+    const t = activeTab();
+    t.activity = `run ${slug}…`;
+    touch();
     let out = "";
     try {
       await streamAgent(
@@ -483,7 +687,8 @@ export function App({
           if (event.type === "text" && typeof event.content === "string") {
             out += event.content;
           } else if (event.type === "tool_start") {
-            setActivity(`sto lavorando: ${String(event.toolName || "tool")}…`);
+            t.activity = `sto lavorando: ${String(event.toolName || "tool")}…`;
+            touch();
           } else if (event.type === "error") {
             throw new Error(String(event.message || "Errore agente"));
           }
@@ -491,13 +696,14 @@ export function App({
       );
       return out;
     } finally {
-      setActivity(null);
+      t.activity = null;
+      touch();
     }
   }
 
   /** Apre un popup sopra la chat (la chat resta visibile sotto). */
   function openPopup(state: PopupState) {
-    setMenuOpen(false);
+    tab.menuOpen = false;
     setPopupSelected(0);
     setPopup(state);
   }
@@ -505,7 +711,8 @@ export function App({
   /** Scrive un testo nell'input senza riaprire il menu dei comandi. */
   function applyPreset(text: string) {
     suppressMenuRef.current = true;
-    setPreset({ text, key: Date.now() });
+    tab.preset = { text, key: nextPreset() };
+    touch();
   }
 
   /**
@@ -519,16 +726,16 @@ export function App({
     scope: "owned" | "catalog",
     onPicked?: (slug: string) => void,
   ) {
-    setNotice(null);
+    tab.notice = null;
+    touch();
     let owned: AgentChoice[] = [];
     try {
       owned = await fetchAgentChoices();
     } catch (error) {
       // Senza rete o senza sessione si mostra comunque il catalogo: la
       // scelta resta possibile (e l'errore resta visibile).
-      setNotice(
-        `Elenco dei tuoi agenti non disponibile: ${error instanceof Error ? error.message : String(error)} — mostro il catalogo.`,
-      );
+      tab.notice = `Elenco dei tuoi agenti non disponibile: ${error instanceof Error ? error.message : String(error)} — mostro il catalogo.`;
+      touch();
     }
     const ownedSlugs = new Set(owned.map((c) => c.slug));
     const catalogItems: PopupItem[] = CATALOG.filter((c) => !c.comingSoon).map((c) => ({
@@ -556,9 +763,8 @@ export function App({
         const isOwned = ownedSlugs.has(item.key);
         if (!isOwned) {
           const cat = CATALOG.find((c) => c.slug === item.key);
-          setNotice(
-            `"${cat?.name ?? item.key}" non è attivo sul tuo account: attivalo su ${SITE}/agents/${item.key}`,
-          );
+          tab.notice = `"${cat?.name ?? item.key}" non è attivo sul tuo account: attivalo su ${SITE}/agents/${item.key}`;
+          touch();
           return;
         }
         switchAgent(item.key);
@@ -568,7 +774,8 @@ export function App({
 
   /** Popup con le chat precedenti: Invio riprende quella scelta. */
   function openSessionPicker() {
-    const sessions = listSessions().filter((s) => s.agent === agent);
+    const t = activeTab();
+    const sessions = listSessions().filter((s) => s.agent === t.agent);
     openPopup({
       title: "Chat precedenti",
       hint: "↑↓ · Invio",
@@ -588,20 +795,23 @@ export function App({
    * OpenCode), altrimenti mostra l'unico diff.
    */
   function openDiff(filename?: string) {
-    const files = filesRef.current.filter((f) => f.head >= 0);
+    const t = activeTab();
+    const files = t.files.filter((f) => f.head >= 0);
     if (filename) {
       const f =
         files.find((x) => x.filename === filename) ??
         files.find((x) => x.filename.includes(filename));
       if (!f) {
-        setNotice(`File non trovato: ${filename}`);
+        t.notice = `File non trovato: ${filename}`;
+        touch();
         return;
       }
       openSingleDiff(f.filename);
       return;
     }
     if (files.length === 0) {
-      setNotice("Nessuna modifica in sessione.");
+      t.notice = "Nessuna modifica in sessione.";
+      touch();
       return;
     }
     if (files.length === 1) {
@@ -636,14 +846,15 @@ export function App({
       lines.push(...unifiedDiff(f.filename, oldText, newText));
     }
     if (lines.length === 0) {
-      setNotice("Nessuna modifica in sessione.");
+      activeTab().notice = "Nessuna modifica in sessione.";
+      touch();
       return;
     }
     setDiffView({ title: `Modifiche (${files.length} file)`, lines });
   }
 
   function openSingleDiff(filename: string) {
-    const f = filesRef.current.find((x) => x.filename === filename);
+    const f = activeTab().files.find((x) => x.filename === filename);
     if (!f || f.head < 0) return;
     const oldText = f.head > 0 ? (f.versions[f.head - 1] ?? "") : "";
     setDiffView({ title: filename, lines: unifiedDiff(filename, oldText, f.versions[f.head] ?? "") });
@@ -653,23 +864,27 @@ export function App({
   function resumeSession(code: string) {
     try {
       const s = loadChatSession(code);
-      if (s.agent !== agent) {
-        setNotice(`La sessione è dell'agente "${s.agent}".`);
+      const t = activeTab();
+      if (s.agent !== t.agent) {
+        t.notice = `La sessione è dell'agente "${s.agent}".`;
+        touch();
         return;
       }
-      msgsRef.current = s.messages.map((m) => ({ role: m.role, content: m.content }));
-      filesRef.current = Array.isArray(s.files) ? s.files : [];
-      undoRef.current = [];
-      redoRef.current = [];
+      t.messages = s.messages.map((m) => ({ role: m.role, content: m.content }));
+      t.files = Array.isArray(s.files) ? s.files : [];
+      t.undo = [];
+      t.redo = [];
       if (typeof s.title === "string" && s.title) {
-        setTitle(s.title);
-        titleTouchedRef.current = true;
+        t.title = s.title;
+        t.titleTouched = true;
       }
-      setSelected(0);
+      t.selected = 0;
       touch();
-      setNotice(`Sessione ${s.code} ripresa.`);
+      t.notice = `Sessione ${s.code} ripresa.`;
+      touch();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : String(error));
+      activeTab().notice = error instanceof Error ? error.message : String(error);
+      touch();
     }
   }
 
@@ -704,10 +919,11 @@ export function App({
    */
   const loadLimit = useCallback(async (slug: string) => {
     try {
-      setLimit(await agentLimit(slug));
+      limitsRef.current.set(slug, await agentLimit(slug));
     } catch {
-      setLimit(null);
+      limitsRef.current.set(slug, { unlimited: true } as AgentLimit);
     }
+    touch();
   }, []);
 
   // Al cambio agente (e all'avvio) il budget va ricaricato.
@@ -715,7 +931,6 @@ export function App({
     const timer = setTimeout(() => void loadLimit(agent), 0);
     return () => clearTimeout(timer);
   }, [agent, loadLimit]);
-
   /** Carica (una volta) gli agenti posseduti per il popup /agents. */
   const fetchAgentChoices = async (): Promise<AgentChoice[]> => {
     if (agentChoices) return agentChoices;
@@ -731,111 +946,122 @@ export function App({
 
   /** /agents → Invio: cambia agente e riparte pulito (nuova conversazione). */
   const switchAgent = (slug: string) => {
-    const cat = CATALOG.find((a) => a.slug === slug);
-    setAgent(slug);
-    setAgentName(cat?.name ?? slug);
-    msgsRef.current = [];
-    filesRef.current = [];
-    undoRef.current = [];
-    redoRef.current = [];
-    setSelected(0);
-    setTitle(cat?.name ?? slug);
-    titleTouchedRef.current = false;
+    const cat = CATALOG.find((c) => c.slug === slug);
+    const t = activeTab();
+    t.agent = slug;
+    t.agentName = cat?.name ?? slug;
+    t.messages = [];
+    t.files = [];
+    t.undo = [];
+    t.redo = [];
+    t.selected = 0;
+    t.title = cat?.name ?? slug;
+    t.titleTouched = false;
     touch();
-    setNotice(`Agente attivo: ${cat?.name ?? slug}. Nuova conversazione pronta.`);
+    t.notice = `Agente attivo: ${cat?.name ?? slug}. Nuova conversazione pronta.`;
+    touch();
   };
 
-  /** Carica (una volta) gli agenti posseduti per l'overlay /agents. */
-
   /** Registra un evento `file` dallo stream + persistenza best-effort. */
-  const recordFileEvent = (filename: string, content: string) => {
-    const { files, transition } = applyFileEvent(filesRef.current, filename, content);
+  const recordFileEvent = (t: Tab, filename: string, content: string) => {
+    const { files, transition } = applyFileEvent(t.files, filename, content);
     if (!transition) return;
-    filesRef.current = files;
-    undoRef.current.push(transition);
-    redoRef.current = [];
-    setSelected((s) => Math.min(s, Math.max(0, files.filter((f) => f.head >= 0).length - 1)));
+    t.files = files;
+    t.undo.push(transition);
+    t.redo = [];
+    t.selected = Math.min(t.selected, Math.max(0, files.filter((f) => f.head >= 0).length - 1));
     touch();
     // Parità col web client: il file resta disponibile su altri dispositivi.
     // Mai bloccante, mai un errore in faccia: la sidebar è già aggiornata.
-    void saveAgentFiles(agent, [{ name: filename, content }]).then((ok) => {
-      if (!ok) setNotice(`Salvataggio server di ${filename} fallito: resta solo in questa sessione.`);
+    void saveAgentFiles(t.agent, [{ name: filename, content }]).then((ok) => {
+      if (!ok) {
+        t.notice = `Salvataggio server di ${filename} fallito: resta solo in questa sessione.`;
+        touch();
+      }
     });
   };
 
   /** Sincronizza il server dopo undo/redo: POST del contenuto o DELETE. */
   const syncFileToServer = async (filename: string, head: number, versions: string[]): Promise<boolean> => {
     if (head < 0) return deleteAgentFile(filename);
-    return saveAgentFiles(agent, [{ name: filename, content: versions[head] ?? "" }]);
+    return saveAgentFiles(activeTab().agent, [{ name: filename, content: versions[head] ?? "" }]);
   };
 
   const undoLastChange = async () => {
-    const t = undoRef.current.pop();
-    if (!t) {
-      setNotice("Niente da annullare.");
+    const t = activeTab();
+    const change = t.undo.pop();
+    if (!change) {
+      t.notice = "Niente da annullare.";
+      touch();
       return;
     }
-    const inverse: FileTransition = { filename: t.filename, from: t.to, to: t.from };
-    filesRef.current = applyTransition(filesRef.current, inverse);
-    redoRef.current.push(t);
+    const inverse: FileTransition = { filename: change.filename, from: change.to, to: change.from };
+    t.files = applyTransition(t.files, inverse);
+    t.redo.push(change);
     touch();
-    const f = filesRef.current.find((x) => x.filename === t.filename);
-    const ok = f ? await syncFileToServer(t.filename, inverse.to, f.versions) : false;
-    setNotice(ok ? `Annullata modifica a ${t.filename}.` : `Annullata in locale, sincronizzazione di ${t.filename} fallita.`);
+    const f = t.files.find((x) => x.filename === change.filename);
+    const ok = f ? await syncFileToServer(change.filename, inverse.to, f.versions) : false;
+    t.notice = ok ? `Annullata modifica a ${change.filename}.` : `Annullata in locale, sincronizzazione di ${change.filename} fallita.`;
+    touch();
   };
 
   const redoChange = async () => {
-    const t = redoRef.current.pop();
-    if (!t) {
-      setNotice("Niente da ripristinare.");
+    const t = activeTab();
+    const change = t.redo.pop();
+    if (!change) {
+      t.notice = "Niente da ripristinare.";
+      touch();
       return;
     }
-    filesRef.current = applyTransition(filesRef.current, t);
-    undoRef.current.push({ filename: t.filename, from: t.to, to: t.from });
+    t.files = applyTransition(t.files, change);
+    t.undo.push({ filename: change.filename, from: change.to, to: change.from });
     touch();
-    const f = filesRef.current.find((x) => x.filename === t.filename);
-    const ok = f ? await syncFileToServer(t.filename, t.to, f.versions) : false;
-    setNotice(ok ? `Ripristinata modifica a ${t.filename}.` : `Ripristinata in locale, sincronizzazione di ${t.filename} fallita.`);
+    const f = t.files.find((x) => x.filename === change.filename);
+    const ok = f ? await syncFileToServer(change.filename, change.to, f.versions) : false;
+    t.notice = ok ? `Ripristinata modifica a ${change.filename}.` : `Ripristinata in locale, sincronizzazione di ${change.filename} fallita.`;
+    touch();
   };
 
-  const askConfirm = (toolName: string): Promise<boolean> =>
+  const askConfirm = (t: Tab, toolName: string): Promise<boolean> =>
     new Promise((resolve) => {
-      confirmResolve.current = resolve;
-      setConfirm({ toolName });
+      t.confirmResolve = resolve;
+      t.confirm = { toolName };
+      touch();
     });
 
   const answerConfirm = (yes: boolean) => {
-    const resolve = confirmResolve.current;
-    confirmResolve.current = null;
-    setConfirm(null);
+    const resolve = tab.confirmResolve;
+    tab.confirmResolve = null;
+    tab.confirm = null;
+    touch();
     resolve?.(yes);
   };
 
-  const handleStreamEvent = (event: Record<string, unknown>) => {
+  const handleStreamEvent = (t: Tab) => (event: Record<string, unknown>) => {
     if (event.type === "text" && typeof event.content === "string") {
       const chunk = event.content;
-      patchLast((m) => ({ ...m, content: m.content + chunk }));
+      patchLastOf(t, (m) => ({ ...m, content: m.content + chunk }));
     } else if (event.type === "tool_start") {
       const name = String(event.toolName || "tool");
-      setActivity(`sto lavorando: ${name}…`);
-      patchLast((m) => ({ ...m, tools: upsertTool(m.tools, { name, state: "running" }) }));
+      t.activity = `sto lavorando: ${name}…`;
+      patchLastOf(t, (m) => ({ ...m, tools: upsertTool(m.tools, { name, state: "running" }) }));
     } else if (event.type === "tool_done") {
       const name = String(event.toolName || "tool");
-      setActivity(null);
-      patchLast((m) => ({ ...m, tools: upsertTool(m.tools, { name, state: "done" }) }));
+      t.activity = null;
+      patchLastOf(t, (m) => ({ ...m, tools: upsertTool(m.tools, { name, state: "done" }) }));
     } else if (event.type === "file" && typeof event.filename === "string") {
       const filename = String(event.filename);
       const content = typeof event.content === "string" ? event.content : "";
-      setActivity(`sto scrivendo: ${filename}…`);
-      patchLast((m) => {
+      t.activity = `sto scrivendo: ${filename}…`;
+      patchLastOf(t, (m) => {
         const tools = upsertTool(m.tools, { name: `file: ${filename}`, state: "running" });
         return { ...m, tools };
       });
-      recordFileEvent(filename, content);
-      patchLast((m) => ({ ...m, tools: m.tools?.map((t) => (t.name === `file: ${filename}` ? { ...t, state: "done" as const } : t)) }));
+      recordFileEvent(t, filename, content);
+      patchLastOf(t, (m) => ({ ...m, tools: m.tools?.map((x) => (x.name === `file: ${filename}` ? { ...x, state: "done" as const } : x)) }));
     } else if (event.type === "connection" && typeof event.provider === "string") {
-      setActivity(null);
-      patchLast((m) => ({
+      t.activity = null;
+      patchLastOf(t, (m) => ({
         ...m,
         tools: [
           ...(m.tools ?? []),
@@ -843,89 +1069,96 @@ export function App({
         ],
       }));
     } else if (event.type === "tool_confirm") {
-      pendingRef.current = {
+      t.pending = {
         token: typeof event.token === "string" ? event.token : "",
         toolName: String(event.toolName || "tool"),
       };
-      setActivity("in attesa di conferma…");
+      t.activity = "in attesa di conferma…";
     } else if (event.type === "error") {
       throw new Error(String(event.message || "Errore agente"));
     }
   };
 
   const runTurn = async (text: string) => {
-    setNotice(null);
-    setActivity(null);
+    // La run appartiene alla scheda da cui è partita: anche se l'utente
+    // cambia scheda mentre l'agente lavora, la risposta finisce lì.
+    const t = activeTab();
+    t.notice = null;
+    t.activity = null;
     // Nessuna sessione: non parte nessuna run, si spiega come entrare.
     if (!loggedIn) {
-      setNotice(
-        "Non sei autenticato: usa /login per accedere col browser (consigliato) o incolla un token. Poi riprova il messaggio.",
-      );
+      t.notice =
+        "Non sei autenticato: usa /login per accedere col browser (consigliato) o incolla un token. Poi riprova il messaggio.";
+      touch();
       return;
     }
-    pushMsg({ role: "user", content: text });
-    pushMsg({ role: "assistant", content: "", streaming: true });
-    setStreaming(true);
+    t.messages = [...t.messages, { role: "user", content: text }];
+    t.messages = [...t.messages, { role: "assistant", content: "", streaming: true }];
+    t.streaming = true;
+    touch();
     const ctrl = new AbortController();
-    abortRef.current = ctrl;
+    t.abort = ctrl;
     try {
       let approvalToken: string | undefined;
       // Come runWithApproval della CLI classica: max 5 conferme per run.
       for (let round = 0; round < 5; round++) {
-        pendingRef.current = null;
+        t.pending = null;
         await streamAgent(
-          agent,
-          stripFlags(msgsRef.current),
-          handleStreamEvent,
+          t.agent,
+          stripFlags(t.messages),
+          handleStreamEvent(t),
           approvalToken ? { approvalToken, signal: ctrl.signal } : { signal: ctrl.signal },
         );
-        const pending = pendingRef.current as { toolName: string; token: string } | null;
+        const pending = t.pending as { toolName: string; token: string } | null;
         if (!pending) break;
-        const yes = await askConfirm(pending.toolName);
+        const yes = await askConfirm(t, pending.toolName);
         if (!yes) {
-          patchLast((m) => ({ ...m, content: `${m.content}\n_(operazione annullata)_` }));
+          patchLastOf(t, (m) => ({ ...m, content: `${m.content}\n_(operazione annullata)_` }));
           break;
         }
         approvalToken = pending.token;
       }
-      setOnline(true);
+      t.online = true;
     } catch (error) {
       if ((error as Error)?.name === "AbortError" || ctrl.signal.aborted) {
-        patchLast((m) => ({
+        patchLastOf(t, (m) => ({
           ...m,
           content: `${m.content}\n_(interrotto)_`,
-          tools: m.tools?.map((t) => (t.state === "running" ? { ...t, state: "error" as const } : t)),
+          tools: m.tools?.map((x) => (x.state === "running" ? { ...x, state: "error" as const } : x)),
         }));
       } else if (error instanceof ApiError) {
         // Come la CLI classica: l'errore non entra in cronologia, resta il
         // messaggio utente e si mostra l'avviso. Il server ha risposto:
         // la connessione c'è.
-        dropLast();
-        setNotice(friendlyApiError(error.status, error.message));
-      setOnline(true);
-      // Titolo automatico dopo il primo scambio riuscito (max ~6 parole dal
-      // primo messaggio). Una sola volta: /rename (passo 4) lo cambia a mano.
-      if (!titleTouchedRef.current) {
-        const firstUser = msgsRef.current.find((m) => m.role === "user");
-        if (firstUser) {
-          titleTouchedRef.current = true;
-          const auto = makeTitle(firstUser.content);
-          if (auto) setTitle(auto);
+        dropLastOf(t);
+        t.notice = friendlyApiError(error.status, error.message);
+        t.online = true;
+        // Titolo automatico dopo il primo scambio riuscito (max ~6 parole dal
+        // primo messaggio). Una sola volta: /rename (passo 4) lo cambia a mano.
+        if (!t.titleTouched) {
+          const firstUser = t.messages.find((m) => m.role === "user");
+          if (firstUser) {
+            t.titleTouched = true;
+            const auto = makeTitle(firstUser.content);
+            if (auto) t.title = auto;
+          }
         }
-      }
+        touch();
       } else {
-        dropLast();
-        setNotice(`Errore di connessione: ${(error as Error)?.message || String(error)}`);
-        setOnline(false);
+        dropLastOf(t);
+        t.notice = `Errore di connessione: ${(error as Error)?.message || String(error)}`;
+        t.online = false;
+        touch();
       }
     } finally {
-      patchLast((m) => ({ ...m, streaming: false }));
-      setStreaming(false);
-      abortRef.current = null;
-      setActivity(null);
+      patchLastOf(t, (m) => ({ ...m, streaming: false }));
+      t.streaming = false;
+      t.abort = null;
+      t.activity = null;
+      touch();
       // Ogni risposta consuma un messaggio gratuito: il contatore va
       // aggiornato (footer e link di abbonamento).
-      void loadLimit(agent);
+      void loadLimit(t.agent);
     }
   };
 
@@ -939,11 +1172,12 @@ export function App({
     );
   }
 
-  const liveFiles = filesRef.current.filter((f) => f.head >= 0);
-  const safeSelected = Math.min(selected, Math.max(0, liveFiles.length - 1));
-  const totals = fileTotals(filesRef.current);
-  const menuList = matchCommands(draft);
-  const menuSel = Math.min(menuSelected, Math.max(0, menuList.length - 1));
+  const liveFiles = tab.files.filter((f) => f.head >= 0);
+  const safeSelected = Math.min(tab.selected, Math.max(0, liveFiles.length - 1));
+  const totals = fileTotals(tab.files);
+  const menuList = matchCommands(tab.draft);
+  const menuSel = Math.min(tab.menuSelected, Math.max(0, menuList.length - 1));
+  const limit = limitsRef.current.get(agent) ?? null;
 
   // Riga della prova gratuita: solo con la chat vuota e senza abbonamento
   // attivo. Va a piena larghezza della colonna (non dentro la colonna
@@ -951,7 +1185,7 @@ export function App({
   // scritta è volutamente corta: resta su una riga anche con la sidebar
   // aperta (colonna da 68 caratteri a un terminale da 100).
   const trialLine =
-    limit && limit.unlimited === false && msgsRef.current.length === 0
+    limit && limit.unlimited === false && tab.messages.length === 0
       ? {
           label: `Prova ${limit.remaining}/${limit.limit}`,
           url: `${SITE}/agents/${agent}`,
@@ -961,13 +1195,13 @@ export function App({
   // Header: logo(1) + separatore(1) + stato(1). Il margine interno è gestito
   // da paddingX senza righe extra.
   const headerH = showHeader ? 3 : 0;
-  const chrome = headerH + 1 + (notice ? 1 : 0) + (activity ? 1 : 0) + inputHeight + (trialLine ? 1 : 0);
+  const chrome = headerH + 1 + 1 + (tab.notice ? 1 : 0) + (tab.activity ? 1 : 0) + inputHeight + (trialLine ? 1 : 0);
   // Il menu occupa righe fisse: va tolto dal budget della chat, altrimenti
   // il layout sfora e Ink taglia righe a caso.
-  const menuRowsShown = menuOpen
+  const menuRowsShown = tab.menuOpen
     ? Math.min(menuList.length, MAX_MENU_ROWS) + (menuList.length > MAX_MENU_ROWS ? 1 : 0)
     : 0;
-  const menuH = menuOpen ? menuRowsShown + 2 : 0; // +2 bordi
+  const menuH = tab.menuOpen ? menuRowsShown + 2 : 0; // +2 bordi
   // Il popup di selezione sta sopra l'input, come il menu: le sue righe
   // escono dal budget della chat, altrimenti il layout sfora.
   const popupRowsShown = popup
@@ -978,6 +1212,14 @@ export function App({
   const chatWidth = sidebarVisible ? Math.max(20, columns - SIDEBAR_WIDTH - 1) : columns;
   // Input centrato: larghezza comoda (max 100 colonne) e allineato al centro.
   const inputWidth = Math.max(30, Math.min(chatWidth, 100));
+
+  const tabInfos: TabInfo[] = tabs.map((t) => ({
+    id: t.id,
+    title: t.title,
+    agentName: t.agentName,
+    streaming: t.streaming,
+    pending: Boolean(t.pending),
+  }));
 
   // Diff a tutto schermo: possiede i tasti, il resto resta sotto.
   if (diffView) {
@@ -1025,6 +1267,9 @@ export function App({
         {showHeader ? (
           <Header version={localVersion()} email={info?.email} plan={info?.plan} agentName={agentName} />
         ) : null}
+        <Box flexDirection="row">
+          <TabBar tabs={tabInfos} activeId={tab.id} width={chatWidth} />
+        </Box>
         {trialLine ? (
           <Box>
             <Text color={theme.muted}>
@@ -1037,26 +1282,26 @@ export function App({
         <Box flexDirection="column" height={chatHeight} alignItems="center">
           <Box width={inputWidth} flexDirection="column">
             <Chat
-              messages={msgsRef.current}
-              agentName={agentName}
+              messages={tab.messages}
+              agentName={tab.agentName}
               width={inputWidth}
               maxHeight={chatHeight}
             />
           </Box>
         </Box>
-        {notice ? (
+        {tab.notice ? (
           <Box>
             <Text color={theme.warning} wrap="truncate">
-              {notice}
+              {tab.notice}
             </Text>
           </Box>
         ) : null}
-        {activity ? (
+        {tab.activity ? (
           <Box>
-            <Spinner label={activity} />
+            <Spinner label={tab.activity} />
           </Box>
         ) : null}
-        {menuOpen ? (
+        {tab.menuOpen ? (
           <Box alignItems="center">
             <Box width={inputWidth} flexDirection="column">
               <CommandMenu commands={menuList} selected={menuSel} width={inputWidth} />
@@ -1082,26 +1327,29 @@ export function App({
           <Box width={inputWidth} flexDirection="column">
             <ChatInput
               onSubmit={(text) => void runTurn(text)}
-              streaming={streaming}
-              onInterrupt={() => abortRef.current?.abort()}
-              confirm={confirm}
+              streaming={tab.streaming}
+              onInterrupt={() => tab.abort?.abort()}
+              confirm={tab.confirm}
               onConfirm={answerConfirm}
-              placeholder={`Scrivi a ${agentName}… (Invio invia, / comandi)`}
+              placeholder={`Scrivi a ${tab.agentName}… (Invio invia, / comandi)`}
               onHeightChange={setInputHeight}
               // Con il popup aperto l'editor si spegne: i tasti sono del
               // popup (frecce, Invio, Esc), non della bozza.
               focused={!popup && effectiveFocus === "input"}
-              menuActive={menuOpen || Boolean(popup)}
-              preset={preset}
+              menuActive={tab.menuOpen || Boolean(popup)}
+              preset={tab.preset}
               onDraftChange={handleDraftChange}
+              // Cambiando scheda l'editor torna a quello della nuova
+              // scheda (bozza inclusa).
+              resetKey={tab.id}
             />
           </Box>
         </Box>
-        <StatusBar agent={agent} cwd={path.basename(process.cwd()) || process.cwd()} online={online} session={info} limit={limit} />
+        <StatusBar agent={agent} cwd={path.basename(process.cwd()) || process.cwd()} online={tab.online} session={info} limit={limit} />
       </Box>
       {sidebarVisible ? (
         <Sidebar
-          title={title}
+          title={tab.title}
           files={liveFiles}
           totals={totals}
           selected={safeSelected}

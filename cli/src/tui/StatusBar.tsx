@@ -48,7 +48,7 @@ export function StatusBar({
         {remaining !== null ? (
           <> · msg gratuiti residui: <Text color={remaining > 0 ? theme.success : theme.error}>{remaining}</Text></>
         ) : null}
-        <> · Ctrl+C esci · Esc interrompe · / comandi</>
+        <> · Ctrl+C esci · Esc interrompe · / comandi · Ctrl+T nuova scheda</>
       </Text>
     </Box>
   );

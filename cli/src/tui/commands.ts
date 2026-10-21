@@ -1,5 +1,4 @@
 import { adminRequest, agentLimit, userRequest, userWhoAmI } from "../api.js";
-import { CATALOG } from "../catalog.js";
 import { clearCredentials, loadConfig, loadCredentials } from "../config.js";
 import { compareVersions, latestVersion, localVersion } from "../update.js";
 import { currentThemeName } from "./theme.js";
@@ -44,6 +43,8 @@ export type CommandContext = {
   preset: (text: string) => void;
   /** /login: overlay di login (browser o token) dentro la chat. */
   openLogin: () => void;
+  /** /tabs: popup con le schede aperte, Invio ne cambia. */
+  openTabs: () => void;
   /** /logout: credenziali rimosse, la chat resta aperta ma non autenticata. */
   onLogout: () => void;
   exit: () => void;
@@ -154,6 +155,13 @@ export const COMMANDS: CommandDef[] = [
         `API ${loadConfig().apiUrl}`,
         "Equivalente: agentcloud --version",
       ]),
+  },
+  {
+    name: "tabs",
+    description: "Elenco delle schede aperte (Invio ne cambia)",
+    usage: "/tabs",
+    args: [],
+    handler: (ctx) => ctx.openTabs(),
   },
   {
     name: "new",

@@ -26,6 +26,7 @@ export function ChatInput({
   menuActive,
   preset,
   onDraftChange,
+  resetKey,
 }: {
   onSubmit: (text: string) => void;
   streaming: boolean;
@@ -42,6 +43,11 @@ export function ChatInput({
   preset: { text: string; key: number } | null;
   /** Bozza corrente a ogni modifica (l'App apre/filtra il menu). */
   onDraftChange: (text: string) => void;
+  /**
+   * Cambia quando il contesto cambia (es. cambio scheda): l'editor si
+   * svuota, così il testo della scheda precedente non resta a schermo.
+   */
+  resetKey?: string;
 }) {
   const [lines, setLines] = useState<string[]>([""]);
   const [row, setRow] = useState(0);
@@ -62,6 +68,15 @@ export function ChatInput({
     setRow(parts.length - 1);
     setCol((parts[parts.length - 1] ?? "").length);
   }, [preset]);
+
+  // Cambio di contesto (nuova scheda): la cronologia degli invii non
+  // viene più riproposta (appartiene all'altra scheda). Il testo invece
+  // lo imposta il `preset` con la bozza della scheda di destinazione.
+  useEffect(() => {
+    historyRef.current = [];
+    historyIdxRef.current = null;
+    draftRef.current = "";
+  }, [resetKey]);
 
   // Bozza all'App a ogni modifica (menu comandi).
   useEffect(() => {
@@ -217,7 +232,6 @@ export function ChatInput({
     }
     if (key.tab) return; // menu comandi (passo 4)
     if (!key.ctrl && !key.meta && input) {
-      const current = lines[row] ?? "";
       setLines(lines.map((l, i) => (i === row ? l.slice(0, col) + input + l.slice(col) : l)));
       setCol(col + input.length);
     }
