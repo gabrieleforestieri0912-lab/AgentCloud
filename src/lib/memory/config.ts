@@ -29,6 +29,14 @@ export type MemoryConfig = {
   lowImportanceThreshold: number;
   /** Days after which a low importance item expires if never used. */
   lowImportanceTtlDays: number;
+  /**
+   * Days after which the memory of an anonymous widget session expires.
+   *
+   * The visitor has no account: the session memory is a convenience
+   * (continuity inside the widget), not a durable archive. A short TTL keeps
+   * the table clean without any maintenance job.
+   */
+  anonTtlDays: number;
 };
 
 function num(value: string | undefined, fallback: number): number {
@@ -57,6 +65,7 @@ export function defaultMemoryConfig(): MemoryConfig {  return {
     defaultImportance: num(process.env.MEMORY_DEFAULT_IMPORTANCE, 0.5),
     lowImportanceThreshold: num(process.env.MEMORY_LOW_IMPORTANCE, 0.3),
     lowImportanceTtlDays: num(process.env.MEMORY_LOW_IMPORTANCE_TTL_DAYS, 14),
+    anonTtlDays: num(process.env.MEMORY_ANON_TTL_DAYS, 7),
   };
 }
 

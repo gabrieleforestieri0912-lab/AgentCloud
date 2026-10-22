@@ -61,7 +61,11 @@ import {
   getMemoryExtractor,
   getMemoryService,
 } from "@/lib/memory/runtime";
-import { createScope } from "@/lib/memory/scope";
+import {
+  anonymousSubjectId,
+  createScope,
+  isValidAnonSessionId,
+} from "@/lib/memory/scope";
 import type { MemoryMessage } from "@/lib/memory/types";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
@@ -124,6 +128,16 @@ export async function POST(req: Request) {
     githubRepo?: { owner?: string; repo?: string; branch?: string };
     /** Ricerca web accesa dal menu "+": espone il tool `web_search`. */
     webSearch?: boolean;
+    /**
+     * Sessione del widget anonimo (pagina pubblica / embed).
+     *
+     * Generata dal client e stabile nel localStorage del visitatore: senza
+     * un soggetto stabile la memoria anonima sarebbe condivisa da chiunque,
+     * con una sessione resta isolata come un utente. Il server non si
+     * fida del valore: lo valida nella forma, e al visitatore autenticato
+     * lo ignora.
+     */
+    anonSessionId?: string;
   };
   try {
     body = await req.json();
@@ -134,7 +148,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { agentId, messages, files, approval, ephemeral, githubRepo, webSearch } = body;
+  const { agentId, messages, files, approval, ephemeral, githubRepo, webSearch, anonSessionId } = body;
   // Modalità Ghost: nessuna persistenza della conversazione.
   const isEphemeral = ephemeral === true;
 
@@ -356,8 +370,23 @@ export async function POST(req: Request) {
   // La configurazione è per tenant: il flag `memory_enabled` e i parametri
   // arrivano dalla configurazione del tenant per quell'agente (default del
   // progetto quando non c'è un override).
+  //
+  // Per un utente autenticato il soggetto è l'utente stesso. Per un
+  // visitatore anonimo il soggetto è la sessione del widget (`anon:<id>`).
+  // Senza una sessione valida l'anonimo non ha memoria: una memoria senza
+  // soggetto sarebbe condivisa da chiunque, e non farla è più sicuro.
+  const anonSubject =
+    userId === "anonymous" &&
+    typeof anonSessionId === "string" &&
+    isValidAnonSessionId(anonSessionId)
+      ? anonymousSubjectId(anonSessionId)
+      : null;
   const memoryScope =
-    userId !== "anonymous" ? createScope(userId, agentId, userId) : null;
+    userId !== "anonymous"
+      ? createScope(userId, agentId, userId)
+      : anonSubject
+        ? createScope("anonymous", agentId, anonSubject)
+        : null;
   const userText = lastUserText(initialMessages) ?? "";
   const [microsoftConnected, outlookConnected, skillsRun, memoryRuntime] =
     await Promise.all([
@@ -371,7 +400,7 @@ export async function POST(req: Request) {
         userText,
       }),
       memoryScope
-        ? getMemoryService(agentId, userId)
+        ? getMemoryService(agentId, memoryScope.tenantId)
             .then(async (runtime) => ({
               config: runtime.config,
               hits: runtime.config.enabled
@@ -814,15 +843,16 @@ export async function POST(req: Request) {
         // Memoria a lungo termine: dalla conversazione appena conclusa si
         // estraggono i fatti da ricordare e si scrivono come memory item.
         //
-        // La memoria è per utente autenticato: per gli anonimi non c'è un
-        // soggetto stabile (senza sessione la memoria sarebbe condivisa fra
-        // tutti gli ospiti), quindi il widget usa le API REST con l'id di
-        // sessione (fase 5).
+        // La memoria mantiene le stesse regole del retrieval: per un utente
+        // autenticato il soggetto è l'utente, per un visitatore anonimo con
+        // una sessione widget valida è `anon:<session>` (isolata e con un
+        // TTL breve). Senza soggetto stabile non si estrae nulla: una
+        // memoria condivisa da tutti gli ospiti sarebbe una fuga di dati.
         //
         // Modalità Ghost: niente memoria, niente tracce.
         // Fall-safe: se l'estrazione fallisce l'agente ha già risposto e la
         // run è già finita.
-        if (!isEphemeral && memoryConfig.enabled && userId !== "anonymous") {
+        if (!isEphemeral && memoryConfig.enabled && memoryScope) {
           try {
             const memoryMessages: MemoryMessage[] = [];
             for (const message of conversationMessages) {
@@ -835,13 +865,24 @@ export async function POST(req: Request) {
               memoryMessages.push({ role: "assistant", content: answer });
             }
             if (memoryMessages.length > 0) {
-              const { service } = await getMemoryService(agentId, userId);
+              const { service } = await getMemoryService(agentId, memoryScope.tenantId);
+              // La memoria di una sessione anonima scade presto: non è un
+              // archivio, è la continuità della conversazione del widget.
+              const anonExpiresAt =
+                memoryConfig.anonTtlDays > 0
+                  ? new Date(
+                      Date.now() + memoryConfig.anonTtlDays * 86_400_000,
+                    ).toISOString()
+                  : null;
               await ingestConversationMemory({
                 service,
                 extractor: getMemoryExtractor(config.model),
-                scope: createScope(userId, agentId, userId),
+                scope: memoryScope,
                 messages: memoryMessages,
                 conversationId,
+                expiresAt: memoryScope.tenantId === "anonymous"
+                  ? anonExpiresAt
+                  : undefined,
               });
             }
           } catch (error) {

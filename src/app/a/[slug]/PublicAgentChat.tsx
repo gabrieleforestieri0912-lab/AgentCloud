@@ -59,6 +59,34 @@ function formatTime(d: Date) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+/**
+ * Id di sessione stabile del visitatore, per la memoria del widget.
+ *
+ * Generata una volta e conservata nel localStorage: l'agente ricorda la
+ * conversazione fra una visita e l'altra. La chiave è la stessa per tutti
+ * gli agenti: l'isolamento è fatto dal server per (agente, sessione),
+ * quindi una singola chiave per il browser è sufficiente e non moltiplica
+ * gli storage.
+ */
+function getPublicChatSessionId(): string {
+  try {
+    const key = "agentcloud.public.session";
+    let sessionId = window.localStorage.getItem(key) ?? "";
+    if (!/^[A-Za-z0-9_-]{8,64}$/.test(sessionId)) {
+      sessionId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      window.localStorage.setItem(key, sessionId);
+    }
+    return sessionId;
+  } catch {
+    // Storage non disponibile (privacy estrema / iframe): la chat funziona
+    // uguale, solo senza memoria di sessione.
+    return "";
+  }
+}
+
 export default function PublicAgentChat({ slug, name, description, agent, enrichment }: Props) {
   const { dict } = useLanguage();
   const attachLabels = chatAttachLabels(dict);
@@ -152,6 +180,10 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
           agentId: slug,
           messages: apiMessages,
           files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
+          // Memoria del widget: la sessione anonima è generata una volta per
+          // visitatore e resta nel localStorage, così l'agente ricorda la
+          // conversazione anche tra una visita e l'altra (senza account).
+          anonSessionId: getPublicChatSessionId(),
         }),
       });
 

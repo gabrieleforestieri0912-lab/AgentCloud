@@ -23,6 +23,21 @@ export function isAnonymousSubject(userId: string): boolean {
   return userId.startsWith("anon:");
 }
 
+/**
+ * Pattern of the session id accepted by the widget.
+ *
+ * The client generates it (`crypto.randomUUID()` or equivalent): letters,
+ * digits, dash and underscore, 8-64 chars. Anything else is refused: the
+ * session id travels in an unauthenticated request, so a permissive pattern
+ * would become a free-form injection point in the scope.
+ */
+export const ANON_SESSION_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
+
+/** True when a widget session id has a shape we accept. */
+export function isValidAnonSessionId(sessionId: string): boolean {
+  return ANON_SESSION_ID_PATTERN.test(sessionId);
+}
+
 /** Builds a scope, validating that the three ids are present. */
 export function createScope(
   tenantId: string,

@@ -44,6 +44,13 @@ export type IngestOptions = {
    * chiamata al modello non vale la pena.
    */
   minUserChars?: number;
+  /**
+   * Scadenza esplicita per gli item di questa conversazione.
+   *
+   * Serve alle sessioni anonime: la memoria di un visitatore senza account
+   * dura pochi giorni, non i 90 di un utente registrato.
+   */
+  expiresAt?: string | null;
   /** Audit logger. */
   logger?: (event: string, payload: Record<string, unknown>) => void;
 };
@@ -88,6 +95,9 @@ export async function ingestConversationMemory(
         content: fact.content,
         importance: fact.importance,
         sourceConversationId: options.conversationId ?? null,
+        ...(options.expiresAt !== undefined
+          ? { expiresAt: options.expiresAt }
+          : {}),
       });
       if (saved) result.stored++;
       else result.rejected++;
