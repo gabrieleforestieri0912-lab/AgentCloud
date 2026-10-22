@@ -103,15 +103,23 @@ export function Chat({
           <SystemBlock key={start + i} title={fitted.system} content={fitted.content} />
         ) : fitted.role === "user" ? (
           <Box key={start + i} flexDirection="column" marginBottom={0}>
-            <Text bold color={theme.primary}>
-              ❯ tu
+            <Text>
+              <Text backgroundColor={theme.selectBg} color={theme.selectFg}>
+                {" "}
+                tu
+                {" "}
+              </Text>
             </Text>
             <Text>{fitted.content}</Text>
           </Box>
         ) : (
           <Box key={start + i} flexDirection="column" marginBottom={0}>
-            <Text bold color={theme.success}>
-              ● {agentName}
+            <Text>
+              <Text backgroundColor={theme.chipBg} color={theme.chipFg}>
+                {" "}
+                ● {agentName}
+                {" "}
+              </Text>
             </Text>
             {fitted.tools && fitted.tools.length > 0 ? (
               <Box flexDirection="column" marginBottom={0}>
@@ -174,10 +182,24 @@ function fitMessage(m: ChatMessage, allowed: number, width: number): ChatMessage
  * questa area.
  */
 function EmptyState({ agentName }: { agentName: string }) {
+  return <Welcome agentName={agentName} />;
+}
+
+/**
+ * Benvenuto: badge dell'agente (riempimento pieno) + frase di apertura.
+ *
+ * Nella schermata iniziale l'App lo centra insieme all'input; nella chat
+ * normale resta in alto a sinistra.
+ */
+export function Welcome({ agentName, centered = false }: { agentName: string; centered?: boolean }) {
   return (
-    <Box flexDirection="column">
-      <Text bold color={theme.success}>
-        ● {agentName}
+    <Box flexDirection="column" alignItems={centered ? "center" : "flex-start"}>
+      <Text>
+        <Text backgroundColor={theme.chipBg} color={theme.chipFg}>
+          {" "}
+          ● {agentName}
+          {" "}
+        </Text>
       </Text>
       <Text color={theme.text}>Ciao! Sono {agentName}. Dimmi cosa ti serve e ci penso io.</Text>
     </Box>
@@ -191,7 +213,7 @@ function EmptyState({ agentName }: { agentName: string }) {
  */
 function SystemBlock({ title, content }: { title: string; content: string }) {
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor={theme.border} paddingX={1}>
+    <Box flexDirection="column" borderStyle="single" borderColor={theme.border} backgroundColor={theme.panelBg} paddingX={1}>
       <Text bold color={theme.accent}>
         ▌ {title}
       </Text>

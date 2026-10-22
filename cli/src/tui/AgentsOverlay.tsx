@@ -43,7 +43,14 @@ export function AgentsOverlay({
 
   return (
     <Box flexDirection="column" height={height}>
-      <Box borderStyle="single" borderColor={theme.primary} paddingX={1} flexDirection="column" flexGrow={1}>
+      <Box
+        borderStyle="single"
+        borderColor={theme.primary}
+        backgroundColor={theme.panelBg}
+        paddingX={1}
+        flexDirection="column"
+        flexGrow={1}
+      >
         <Text bold>
           I tuoi agenti <Text color={theme.muted}>(Esc chiudi — Invio cambia agente)</Text>
         </Text>
@@ -52,16 +59,26 @@ export function AgentsOverlay({
             (nessun agente attivo — guarda il catalogo su www.agentcloud.agency/agents)
           </Text>
         ) : (
-          agents.slice(0, Math.max(1, height - 4)).map((a, i) => (
-            <Text key={a.slug} wrap="truncate">
-              {i === index ? <Text color={theme.primary}>&gt; </Text> : <Text>  </Text>}
-              <Text bold={i === index}>{a.name}</Text>
-              <Text color={theme.muted}>
-                {" "}
-                {a.slug === current ? "· attivo" : ""} {a.category && a.price ? `· ${a.category} · ${a.price}` : a.category ? `· ${a.category}` : ""}
+          agents.slice(0, Math.max(1, height - 4)).map((a, i) => {
+            const detail = `${a.slug === current ? "· attivo" : ""} ${a.category && a.price ? `· ${a.category} · ${a.price}` : a.category ? `· ${a.category}` : ""}`;
+            return (
+              <Text key={a.slug} wrap="truncate">
+                {i === index ? (
+                  // Riga selezionata: riempimento pieno (stile OpenCode).
+                  <Text backgroundColor={theme.selectBg} color={theme.selectFg}>
+                    {" "}
+                    {a.name} {detail}
+                  </Text>
+                ) : (
+                  <>
+                    <Text>  </Text>
+                    <Text bold>{a.name}</Text>
+                    <Text color={theme.muted}> {detail}</Text>
+                  </>
+                )}
               </Text>
-            </Text>
-          ))
+            );
+          })
         )}
       </Box>
     </Box>

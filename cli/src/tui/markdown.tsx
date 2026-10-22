@@ -201,7 +201,7 @@ function BlockView({ block }: { block: Block }) {
       );
     case "code":
       return (
-        <Box flexDirection="column" borderStyle="single" borderColor={theme.border} paddingX={1}>
+        <Box flexDirection="column" borderStyle="single" borderColor={theme.border} backgroundColor={theme.panelBg} paddingX={1}>
           {block.lang ? <Text color={theme.muted}>{block.lang}</Text> : null}
           <CodeText code={block.code} />
         </Box>

@@ -287,9 +287,18 @@ OpenCode: conversazione con markdown e streaming, input multilinea centrato
 (agente · cartella · online · scorciatoie), sidebar con titolo e modifiche ai
 file (Ctrl+B per mostrarla/nasconderla, sparisce sotto i 100 colonne).
 
+All'avvio la schermata è "vuota e centrata": il benvenuto dell'agente e
+l'input multilinea stanno al centro dello schermo. Appena parte il primo
+messaggio l'input scende in basso e la chat parte da li.
+
 I colori seguono la palette del sito (bg #0A0A0F, brand #038BFE) e degradano
 da soli: truecolor → 256 → 16 colori, e si spengono del tutto con
 `NO_COLOR=1` o quando l'output non è un terminale.
+
+Lo stile è "a riempimento", come in OpenCode: la voce selezionata (menu dei
+comandi, popup, sidebar dei file) è un blocco pieno brand con il testo
+bianco sopra, i pannelli (input, menu, popup, overlay) hanno uno sfondo
+proprio e i nomi (agente, stato della connessione) sono chip colorati.
 
 Senza terminale interattivo (pipe, CI) o con `AGENTCLOUD_NO_TUI=1` gira il
 loop classico riga per riga. I colori si spengono da soli fuori dal

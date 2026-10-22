@@ -54,7 +54,14 @@ export function Popup({
   );
 
   return (
-    <Box borderStyle="single" borderColor={theme.primary} paddingX={1} flexDirection="column">
+    <Box
+      width={width}
+      borderStyle="single"
+      borderColor={theme.primary}
+      backgroundColor={theme.panelBg}
+      paddingX={1}
+      flexDirection="column"
+    >
       <Text bold color={theme.primary}>
         {title} {hint ? <Text color={theme.muted}>({hint})</Text> : null}
       </Text>
@@ -67,18 +74,23 @@ export function Popup({
             const index = start + i;
             const label = item.label.padEnd(labelWidth);
             const detail = item.hint ?? "";
+            const shownDetail = truncate(detail, Math.max(0, inner - label.length - 1));
+            // " etichetta dettaglio": 1 (spazio) + etichetta + 1 (spazio) + dettaglio
+            const rowLength = label.length + shownDetail.length + 2;
             return (
               <Text key={item.key} wrap="truncate">
                 {index === selected ? (
-                  <Text backgroundColor={theme.primary} color="#FFFFFF">
+                  // Riga selezionata: riempimento pieno su tutta la larghezza
+                  // del pannello (stile OpenCode), testo bianco sopra.
+                  <Text backgroundColor={theme.selectBg} color={theme.selectFg}>
                     {" "}
-                    {truncate(label, inner)} {truncate(detail, Math.max(0, inner - label.length))}
-                    {" "}
+                    {truncate(label, inner)} {shownDetail}
+                    {" ".repeat(Math.max(0, inner - rowLength))}
                   </Text>
                 ) : (
                   <>
                     <Text color={theme.accent}>{truncate(label, inner)}</Text>
-                    {detail ? <Text color={theme.muted}> {truncate(detail, Math.max(0, inner - label.length))}</Text> : null}
+                    {detail ? <Text color={theme.muted}> {shownDetail}</Text> : null}
                   </>
                 )}
               </Text>

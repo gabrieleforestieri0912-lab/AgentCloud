@@ -41,7 +41,10 @@ export function Sidebar({
   focused: boolean;
   maxRows: number;
 }) {
-  const inner = SIDEBAR_WIDTH - 2;
+  // Larghezza utile: il pannello è di 32 colonne, ma dentro ci sono i due
+  // bordi e i due padding: il testo può occupare 28 colonne, non 30 (con 30
+  // le righe più lunghe venivano tagliate dal riquadro).
+  const inner = SIDEBAR_WIDTH - 4;
   const headerRows = 6; // titolo(2) + label(1) + totali(1) + hint(2)
   const listBudget = Math.max(1, maxRows - headerRows);
   const start =
@@ -73,10 +76,22 @@ export function Sidebar({
           const active = start + i === selected && focused;
           return (
             <Text key={f.filename} wrap="truncate">
-              {active ? <Text color={theme.primary}>&gt; </Text> : <Text>  </Text>}
-              <Text color={mark.color}>{mark.symbol} </Text>
-              {name} <Text color={theme.success}>+{f.added}</Text>{" "}
-              <Text color={theme.error}>-{f.removed}</Text>
+              {active ? (
+                // Riga selezionata: riempimento pieno (stile OpenCode).
+                // " +file +aggiunto -rimosso": 1 + 1 + 1 + nome + 1 + "+n" + 1 + "-n"
+                <Text backgroundColor={theme.selectBg} color={theme.selectFg}>
+                  {" "}
+                  {mark.symbol} {name} +{f.added} -{f.removed}
+                  {" ".repeat(Math.max(0, inner - (name.length + stats.length + 4)))}
+                </Text>
+              ) : (
+                <>
+                  {start + i === selected ? <Text color={theme.primary}>&gt; </Text> : <Text>  </Text>}
+                  <Text color={mark.color}>{mark.symbol} </Text>
+                  {name} <Text color={theme.success}>+{f.added}</Text>{" "}
+                  <Text color={theme.error}>-{f.removed}</Text>
+                </>
+              )}
             </Text>
           );
         })

@@ -23,13 +23,26 @@ export function StatusBar({
   /** Budget freemium: la fonte autorevole dei messaggi gratuiti residui. */
   limit?: AgentLimit | null;
 }) {
+  // Stato della connessione: chip con sfondo pieno (stile OpenCode).
   const conn =
     online === null ? (
-      <Text color={theme.muted}>connessione…</Text>
+      <Text backgroundColor={theme.chipBg} color={theme.muted}>
+        {" "}
+        connessione…
+        {" "}
+      </Text>
     ) : online ? (
-      <Text color={theme.success}>online</Text>
+      <Text backgroundColor={theme.chipBg} color={theme.success}>
+        {" "}
+        online
+        {" "}
+      </Text>
     ) : (
-      <Text color={theme.error}>offline</Text>
+      <Text backgroundColor={theme.chipBg} color={theme.error}>
+        {" "}
+        offline
+        {" "}
+      </Text>
     );
   // Residuo: prima il dato dell'API, altrimenti il budget freemium.
   const remaining =

@@ -27,6 +27,7 @@ export function ChatInput({
   preset,
   onDraftChange,
   resetKey,
+  minLines = 1,
 }: {
   onSubmit: (text: string) => void;
   streaming: boolean;
@@ -48,6 +49,8 @@ export function ChatInput({
    * svuota, così il testo della scheda precedente non resta a schermo.
    */
   resetKey?: string;
+  /** Righe vuote minime del riquadro (schermata iniziale: input multilinea). */
+  minLines?: number;
 }) {
   const [lines, setLines] = useState<string[]>([""]);
   const [row, setRow] = useState(0);
@@ -83,7 +86,10 @@ export function ChatInput({
     onDraftChange(lines.join("\n"));
   }, [lines, onDraftChange]);
 
-  const height = confirm ? 3 : lines.length + 2;
+  // Righe visibili: almeno `minLines` (schermata iniziale), poi il numero
+  // reale di righe scritte.
+  const visibleLines = Math.max(minLines, lines.length);
+  const height = confirm ? 3 : visibleLines + 2;
   useEffect(() => {
     onHeightChange?.(height);
   }, [height, onHeightChange]);
@@ -239,7 +245,7 @@ export function ChatInput({
 
   if (confirm) {
     return (
-      <Box borderStyle="single" borderColor={focused ? theme.warning : theme.border} paddingX={1}>
+      <Box borderStyle="single" borderColor={focused ? theme.warning : theme.border} backgroundColor={theme.panelBg} paddingX={1}>
         <Text>
           Confermi l&apos;esecuzione di &quot;{confirm.toolName}&quot;? <Text color={theme.muted}>[y/N]</Text>
         </Text>
@@ -248,12 +254,18 @@ export function ChatInput({
   }
 
   return (
-    <Box borderStyle="single" borderColor={focused ? theme.primary : theme.border} paddingX={1} flexDirection="column">
+    <Box
+      borderStyle="single"
+      borderColor={focused ? theme.primary : theme.border}
+      backgroundColor={theme.panelBg}
+      paddingX={1}
+      flexDirection="column"
+    >
       {streaming ? (
         <Text color={theme.muted}>L&apos;agente sta rispondendo… (Esc per interrompere)</Text>
       ) : (
-        lines.map((line, i) => (
-          <CursorLine key={i} line={line} col={i === row ? col : -1} placeholder={placeholder} />
+        Array.from({ length: visibleLines }, (_, i) => (
+          <CursorLine key={i} line={lines[i] ?? ""} col={i === row ? col : -1} placeholder={placeholder} />
         ))
       )}
     </Box>

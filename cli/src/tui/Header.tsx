@@ -39,7 +39,12 @@ export function Header({
         <Text color={theme.muted}>
           {email ? <><Text color={theme.text}>{email}</Text> · </> : null}
           {plan ? <>piano <Text color={theme.primary}>{plan}</Text> · </> : null}
-          agente <Text color={theme.success}>{agentName}</Text>
+          agente{" "}
+          <Text backgroundColor={theme.chipBg} color={theme.chipFg}>
+            {" "}
+            {agentName}
+            {" "}
+          </Text>
         </Text>
       </Box>
     </Box>

@@ -27,7 +27,14 @@ export function HelpOverlay({ height, onClose }: { height: number; onClose: () =
 
   return (
     <Box flexDirection="column" height={height}>
-      <Box borderStyle="single" borderColor={theme.primary} paddingX={1} flexDirection="column" flexGrow={1}>
+      <Box
+        borderStyle="single"
+        borderColor={theme.primary}
+        backgroundColor={theme.panelBg}
+        paddingX={1}
+        flexDirection="column"
+        flexGrow={1}
+      >
         <Text bold>
           Comandi <Text color={theme.muted}>(Esc chiudi, ↑↓ scorri)</Text>
         </Text>

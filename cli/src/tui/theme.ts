@@ -31,6 +31,17 @@ export type Theme = {
   error: string;
   warning: string;
   border: string;
+  /**
+   * Sfondo pieno della voce selezionata (stile OpenCode): il riempimento
+   * è il colore brand, il testo sopra diventa bianco.
+   */
+  selectBg: string;
+  selectFg: string;
+  /** Sfondo pieno dei pannelli (input, riquadri di output). */
+  panelBg: string;
+  /** Sfondo pieno dei badge piccoli (nome agente, stato connessione). */
+  chipBg: string;
+  chipFg: string;
 };
 
 export const agentCloudTheme: Theme = {
@@ -45,6 +56,13 @@ export const agentCloudTheme: Theme = {
   error: "#F87171",
   warning: "#FBBF24",
   border: "#27272A",
+  // Stile "a riempimento": la selezione è un blocco brand pieno, i pannelli
+  // hanno uno sfondo proprio e i badge sono chip scuri con testo colorato.
+  selectBg: "#038BFE",
+  selectFg: "#FFFFFF",
+  panelBg: "#15151D",
+  chipBg: "#10304F",
+  chipFg: "#7CC4FF",
 };
 
 /** Temi disponibili per `/theme`. Oggi solo dark: il chiaro arriverà quando

@@ -4,7 +4,7 @@ import path from "node:path";
 import { ApiError, agentLimit, deleteAgentFile, saveAgentFiles, streamAgent, userRequest, userWhoAmI, type AgentLimit } from "../api.js";
 import { localVersion } from "../update.js";
 import { theme } from "./theme.js";
-import { Chat, type ChatMessage, type ToolStep } from "./Chat.js";
+import { Chat, Welcome, type ChatMessage, type ToolStep } from "./Chat.js";
 import { ChatInput, type ConfirmState } from "./Input.js";
 import { Header } from "./Header.js";
 import { Spinner } from "./Spinner.js";
@@ -1213,6 +1213,17 @@ export function App({
   // Input centrato: larghezza comoda (max 100 colonne) e allineato al centro.
   const inputWidth = Math.max(30, Math.min(chatWidth, 100));
 
+  // Schermata iniziale: conversazione vuota e nessun overlay aperto. Invece
+  // della chat con l'input in fondo, il benvenuto e l'input multilinea sono
+  // centrati (stile OpenCode). Appena parte un messaggio si torna al layout
+  // normale con l'input in basso. Il menu dei comandi e i popup restano
+  // dentro la schermata iniziale: non devono far saltare il layout.
+  const startView =
+    tab.messages.length === 0 && !tab.streaming && !tab.notice && !tab.activity;
+  // Nella schermata iniziale l'input è una scatola centrata, non a tutta
+  // larghezza: si vede che è "al centro" anche a terminale largo.
+  const startInputWidth = Math.max(30, Math.min(chatWidth, 72));
+
   const tabInfos: TabInfo[] = tabs.map((t) => ({
     id: t.id,
     title: t.title,
@@ -1220,6 +1231,32 @@ export function App({
     streaming: t.streaming,
     pending: Boolean(t.pending),
   }));
+
+  /**
+   * L'editor del testo: usato sia dalla schermata iniziale (input multilinea
+   * centrato) sia dal layout normale (input in fondo).
+   */
+  const renderInput = (minLines: number) => (
+    <ChatInput
+      onSubmit={(text) => void runTurn(text)}
+      streaming={tab.streaming}
+      onInterrupt={() => tab.abort?.abort()}
+      confirm={tab.confirm}
+      onConfirm={answerConfirm}
+      placeholder={`Scrivi a ${tab.agentName}… (Invio invia, / comandi)`}
+      onHeightChange={setInputHeight}
+      // Con il popup aperto l'editor si spegne: i tasti sono del
+      // popup (frecce, Invio, Esc), non della bozza.
+      focused={!popup && effectiveFocus === "input"}
+      menuActive={tab.menuOpen || Boolean(popup)}
+      preset={tab.preset}
+      onDraftChange={handleDraftChange}
+      // Cambiando scheda l'editor torna a quello della nuova
+      // scheda (bozza inclusa).
+      resetKey={tab.id}
+      minLines={minLines}
+    />
+  );
 
   // Diff a tutto schermo: possiede i tasti, il resto resta sotto.
   if (diffView) {
@@ -1279,72 +1316,88 @@ export function App({
             </Text>
           </Box>
         ) : null}
-        <Box flexDirection="column" height={chatHeight} alignItems="center">
-          <Box width={inputWidth} flexDirection="column">
-            <Chat
-              messages={tab.messages}
-              agentName={tab.agentName}
-              width={inputWidth}
-              maxHeight={chatHeight}
-            />
-          </Box>
-        </Box>
-        {tab.notice ? (
-          <Box>
-            <Text color={theme.warning} wrap="truncate">
-              {tab.notice}
-            </Text>
-          </Box>
-        ) : null}
-        {tab.activity ? (
-          <Box>
-            <Spinner label={tab.activity} />
-          </Box>
-        ) : null}
-        {tab.menuOpen ? (
-          <Box alignItems="center">
-            <Box width={inputWidth} flexDirection="column">
-              <CommandMenu commands={menuList} selected={menuSel} width={inputWidth} />
+        {startView ? (
+          // Schermata iniziale: benvenuto e input multilinea al centro dello
+          // schermo (stile OpenCode). Nessuna chat da mostrare ancora.
+          <Box flexDirection="column" flexGrow={1} alignItems="center" justifyContent="center">
+            <Box width={startInputWidth} flexDirection="column" alignItems="center">
+              <Welcome agentName={tab.agentName} centered />
+              {tab.menuOpen ? (
+                <Box width={startInputWidth} flexDirection="column" marginTop={1}>
+                  <CommandMenu commands={menuList} selected={menuSel} width={startInputWidth} />
+                </Box>
+              ) : null}
+              {popup ? (
+                <Box width={startInputWidth} flexDirection="column" marginTop={1}>
+                  <Popup
+                    title={popup.title}
+                    hint={popup.hint}
+                    items={popup.items}
+                    selected={Math.min(popupSelected, Math.max(0, popup.items.length - 1))}
+                    width={startInputWidth}
+                    emptyText={popup.emptyText}
+                    footer={popup.footer}
+                  />
+                </Box>
+              ) : null}
+              <Box marginTop={2} width={startInputWidth}>
+                {renderInput(3)}
+              </Box>
             </Box>
           </Box>
-        ) : null}
-        {popup ? (
-          <Box alignItems="center">
-            <Box width={inputWidth} flexDirection="column">
-              <Popup
-                title={popup.title}
-                hint={popup.hint}
-                items={popup.items}
-                selected={Math.min(popupSelected, Math.max(0, popup.items.length - 1))}
-                width={inputWidth}
-                emptyText={popup.emptyText}
-                footer={popup.footer}
-              />
+        ) : (
+          <>
+            <Box flexDirection="column" height={chatHeight} alignItems="center">
+              <Box width={inputWidth} flexDirection="column">
+                <Chat
+                  messages={tab.messages}
+                  agentName={tab.agentName}
+                  width={inputWidth}
+                  maxHeight={chatHeight}
+                />
+              </Box>
             </Box>
-          </Box>
-        ) : null}
-        <Box alignItems="center">
-          <Box width={inputWidth} flexDirection="column">
-            <ChatInput
-              onSubmit={(text) => void runTurn(text)}
-              streaming={tab.streaming}
-              onInterrupt={() => tab.abort?.abort()}
-              confirm={tab.confirm}
-              onConfirm={answerConfirm}
-              placeholder={`Scrivi a ${tab.agentName}… (Invio invia, / comandi)`}
-              onHeightChange={setInputHeight}
-              // Con il popup aperto l'editor si spegne: i tasti sono del
-              // popup (frecce, Invio, Esc), non della bozza.
-              focused={!popup && effectiveFocus === "input"}
-              menuActive={tab.menuOpen || Boolean(popup)}
-              preset={tab.preset}
-              onDraftChange={handleDraftChange}
-              // Cambiando scheda l'editor torna a quello della nuova
-              // scheda (bozza inclusa).
-              resetKey={tab.id}
-            />
-          </Box>
-        </Box>
+            {tab.notice ? (
+              <Box>
+                <Text color={theme.warning} wrap="truncate">
+                  {tab.notice}
+                </Text>
+              </Box>
+            ) : null}
+            {tab.activity ? (
+              <Box>
+                <Spinner label={tab.activity} />
+              </Box>
+            ) : null}
+            {tab.menuOpen ? (
+              <Box alignItems="center">
+                <Box width={inputWidth} flexDirection="column">
+                  <CommandMenu commands={menuList} selected={menuSel} width={inputWidth} />
+                </Box>
+              </Box>
+            ) : null}
+            {popup ? (
+              <Box alignItems="center">
+                <Box width={inputWidth} flexDirection="column">
+                  <Popup
+                    title={popup.title}
+                    hint={popup.hint}
+                    items={popup.items}
+                    selected={Math.min(popupSelected, Math.max(0, popup.items.length - 1))}
+                    width={inputWidth}
+                    emptyText={popup.emptyText}
+                    footer={popup.footer}
+                  />
+                </Box>
+              </Box>
+            ) : null}
+            <Box alignItems="center">
+              <Box width={inputWidth} flexDirection="column">
+                {renderInput(1)}
+              </Box>
+            </Box>
+          </>
+        )}
         <StatusBar agent={agent} cwd={path.basename(process.cwd()) || process.cwd()} online={tab.online} session={info} limit={limit} />
       </Box>
       {sidebarVisible ? (

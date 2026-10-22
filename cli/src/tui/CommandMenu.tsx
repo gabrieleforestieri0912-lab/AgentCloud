@@ -33,7 +33,14 @@ export function CommandMenu({
   const below = commands.length - (start + visible);
 
   return (
-    <Box borderStyle="single" borderColor={theme.primary} paddingX={1} flexDirection="column">
+    <Box
+      width={width}
+      borderStyle="single"
+      borderColor={theme.primary}
+      backgroundColor={theme.panelBg}
+      paddingX={1}
+      flexDirection="column"
+    >
       {commands.length === 0 ? (
         <Text color={theme.muted}>(nessun comando — Esc per chiudere)</Text>
       ) : (
@@ -41,17 +48,23 @@ export function CommandMenu({
           {above > 0 ? <Text color={theme.muted}>↑ altri {above} sopra</Text> : null}
           {window.map((c, i) => {
             const index = start + i;
+            const description = truncate(c.description, Math.max(0, inner - c.name.length - 3));
+            // " /nome descrizione": 1 (spazio) + 1 (/) + nome + 1 (spazio) + desc
+            const rowLength = c.name.length + description.length + 3;
             return (
               <Text key={c.name} wrap="truncate">
                 {index === selected ? (
-                  <Text backgroundColor={theme.primary} color="#FFFFFF">
+                  // Riga selezionata: riempimento pieno su tutta la larghezza
+                  // del pannello (stile OpenCode), testo bianco sopra.
+                  <Text backgroundColor={theme.selectBg} color={theme.selectFg}>
                     {" "}
-                    /{c.name} <Text color="#FFFFFF">{truncate(c.description, Math.max(0, inner - c.name.length - 3))}</Text>{" "}
+                    /{c.name} {description}
+                    {" ".repeat(Math.max(0, inner - rowLength))}
                   </Text>
                 ) : (
                   <>
                     <Text color={theme.accent}>/{c.name}</Text>
-                    <Text color={theme.muted}> {truncate(c.description, Math.max(0, inner - c.name.length - 3))}</Text>
+                    <Text color={theme.muted}> {description}</Text>
                   </>
                 )}
               </Text>

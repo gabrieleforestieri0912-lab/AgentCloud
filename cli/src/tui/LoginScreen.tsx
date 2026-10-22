@@ -122,13 +122,21 @@ export function LoginScreen({ onDone, onExit }: { onDone: () => void; onExit: ()
             { label: "Incolla un token di accesso", hint: "generali in /account → Token API" },
             { label: "Esci", hint: "Ctrl+C" },
           ].map((o, i) => (
-            <Box key={o.label}>
-              <Text color={i === menuIndex ? theme.primary : theme.muted}>{i === menuIndex ? "> " : "  "}</Text>
-              <Text bold={i === menuIndex} color={i === menuIndex ? theme.text : theme.muted}>
-                {o.label}
-              </Text>
-              {o.hint ? <Text color={theme.muted}> — {o.hint}</Text> : null}
-            </Box>
+            <Text key={o.label}>
+              {i === menuIndex ? (
+                // Riga selezionata: riempimento pieno (stile OpenCode).
+                <Text backgroundColor={theme.selectBg} color={theme.selectFg}>
+                  {" "}
+                  {o.label} — {o.hint}
+                </Text>
+              ) : (
+                <>
+                  <Text>  </Text>
+                  <Text color={theme.muted}>{o.label}</Text>
+                  {o.hint ? <Text color={theme.border}> — {o.hint}</Text> : null}
+                </>
+              )}
+            </Text>
           ))}
         </Box>
       ) : null}
