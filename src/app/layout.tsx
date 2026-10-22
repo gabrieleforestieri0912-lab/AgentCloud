@@ -13,6 +13,7 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import { CartProvider } from "@/components/CartProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import AppShortcuts from "@/components/AppShortcuts";
+import KeyboardShortcutsProvider from "@/components/KeyboardShortcutsProvider";
 import { themeInitScript } from "@/lib/theme-script";
 import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { LOCALE_LABELS } from "@/lib/i18n/constants";
@@ -283,7 +284,9 @@ export default async function RootLayout({
             chiama router.refresh() così i contenuti server si aggiornano. */}
         <LanguageProvider initialLocale={locale}>
           <ThemeProvider>
-            <CartProvider>{children}</CartProvider>
+            <KeyboardShortcutsProvider>
+              <CartProvider>{children}</CartProvider>
+            </KeyboardShortcutsProvider>
           </ThemeProvider>
         </LanguageProvider>
         <AppShortcuts />

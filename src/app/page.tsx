@@ -11,9 +11,12 @@ import AppsSection from "@/components/AppsSection";
 import SecuritySection from "@/components/SecuritySection";
 import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
+import ChiSiamoSection from "@/components/ChiSiamoSection";
 import Footer from "@/components/Footer";
 import FloatingBrandBubbles from "@/components/FloatingBrandBubbles";
 import type { FloatingBubble } from "@/components/FloatingBrandBubbles";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 const LANDING_BUBBLES: FloatingBubble[] = [
   { top: "4%", left: "18%", size: "w-11 h-11", brand: "google", delay: "0.6s", anim: "animate-float-gentle" },
@@ -31,6 +34,8 @@ const LANDING_BUBBLES: FloatingBubble[] = [
 // Homepage: landing — layer fixed con gradiente (dark-gradient-main, ha l'override
 // per il tema chiaro in globals.css) + radiali + hairline, coerente con palette Ink/Paper.
 export default async function Home() {
+  const dict = getDictionary(await getLocale());
+  const w = dict.waitlist;
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-hidden bg-neutral-950">
       {/* Sfondo landing — fixed: background scuro (base near-black) */}
@@ -64,6 +69,21 @@ export default async function Home() {
         <SecuritySection />
         <FAQSection />
         <CTASection />
+        {/* "Chi siamo" — la stessa sezione dei fondatori della waitlist, qui
+            sotto la CTA: è il punto in cui l'utente legge chi ha costruito
+            AgentCloud prima di decidere. Ancorata con id="chi-siamo". */}
+        <ChiSiamoSection
+          labels={{
+            badge: w.chiSiamoBadge,
+            title: w.chiSiamoTitle,
+            sub: w.chiSiamoSub,
+            gabBio: w.foundersGabBio,
+            alleBio: w.foundersAlleBio,
+            matteoBio: w.foundersMatteoBio,
+            photosNote: w.teamPhotosNote,
+            photosLink: w.teamPhotosLink,
+          }}
+        />
       </main>
       <Footer />
     </div>

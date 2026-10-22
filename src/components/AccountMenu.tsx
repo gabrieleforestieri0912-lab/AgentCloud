@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "./LanguageProvider";
+import { useKeyboardShortcuts } from "./KeyboardShortcutsProvider";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/constants";
 
 export type AccountMenuProps = {
@@ -70,6 +71,7 @@ export default function AccountMenu({
   const [langOpen, setLangOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const { dict, locale, setLocale } = useLanguage();
+  const { openShortcuts } = useKeyboardShortcuts();
 
   // Comportamento controllato se il padre passa `open`, altrimenti autonomo.
   const open = openProp ?? internalOpen;
@@ -93,6 +95,7 @@ export default function AccountMenu({
     () => typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent),
   );
   const shortcut = isMac ? "⌘⇧," : "Ctrl+Shift+,";
+  const shortcutsShortcut = isMac ? "⌘/" : "Ctrl+/";
 
   const toggle = useCallback(() => setOpen(!open), [open, setOpen]);
   const close = useCallback(() => setOpen(false), [setOpen]);
@@ -119,11 +122,15 @@ export default function AccountMenu({
     "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-semibold text-neutral-200 transition-colors hover:bg-white/[0.07] hover:text-white";
   const iconBase = "shrink-0 text-neutral-400";
 
+  // "Scopri di più": link alle informazioni sul servizio. Le ancore
+  // corrispondono alle sezioni generate da src/app/{privacy,terms}/page.tsx
+  // (id="sezione-N").
   const learnMoreItems = [
-    { href: "/agents", label: dict.accountMenu.marketplace },
-    { href: "/integrations", label: dict.accountMenu.integrations },
-    { href: "/skills", label: dict.accountMenu.skills },
-    { href: "/about", label: dict.accountMenu.about },
+    { href: "/#chi-siamo", label: dict.accountMenu.about },
+    { href: "/terms#sezione-7", label: dict.accountMenu.usagePolicy },
+    { href: "/privacy", label: dict.accountMenu.privacyPolicy },
+    { href: "/terms", label: dict.accountMenu.termsOfService },
+    { href: "/privacy#sezione-8", label: dict.accountMenu.privacyChoices },
   ];
 
   return (
@@ -168,7 +175,7 @@ export default function AccountMenu({
             <div
               role="menu"
               style={isDesktop && sidebarWidth ? { left: sidebarWidth + 12 } : undefined}
-              className="fixed z-50 w-64 overflow-hidden rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl shadow-black/60 left-[268px] bottom-4 max-lg:left-4 max-lg:right-4 max-lg:w-auto max-lg:bottom-28"
+              className="fixed z-50 w-72 overflow-hidden rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl shadow-black/60 left-[268px] bottom-4 max-lg:left-4 max-lg:right-4 max-lg:w-auto max-lg:bottom-28"
             >
               <div className="px-2.5 py-2">
                 <p
@@ -291,7 +298,7 @@ export default function AccountMenu({
                 />
               </button>
               {moreOpen && (
-                <div className="mb-1 ml-7 border-l border-white/[0.08] pl-1.5">
+                <div className="mb-1 ml-6 border-l border-white/[0.08] pl-1.5">
                   {learnMoreItems.map((item) => (
                     <Link
                       key={item.href}
@@ -303,6 +310,21 @@ export default function AccountMenu({
                       <span className="truncate">{item.label}</span>
                     </Link>
                   ))}
+                  <div className="my-1 h-px bg-white/[0.08]" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      close();
+                      openShortcuts();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] font-semibold text-neutral-400 transition-colors hover:bg-white/[0.07] hover:text-white"
+                  >
+                    <span className="flex-1 truncate">{dict.accountMenu.keyboardShortcuts}</span>
+                    <span className="ml-auto shrink-0 font-mono text-[11px] font-medium text-neutral-500">
+                      {shortcutsShortcut}
+                    </span>
+                  </button>
                 </div>
               )}
 

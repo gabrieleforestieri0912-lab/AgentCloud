@@ -35,8 +35,7 @@ import Image from "next/image";
 import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
 import CountdownTimer from "@/components/CountdownTimer";
 import BrandLogo from "@/components/BrandLogo";
-import BrandIcon from "@/components/BrandIcon";
-import { BRANDS } from "@/lib/brands";
+import ChiSiamoSection from "@/components/ChiSiamoSection";
 import Footer from "@/components/Footer";
 import LanguageToggle from "@/components/LanguageToggle";
 import InstagramFollowCard from "@/components/InstagramFollowCard";
@@ -1315,52 +1314,18 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </section>
 
       {/* CHI SIAMO — founders — in fondo come richiesto — 3xl: container largo, card più spaziose */}
-      <section className="relative z-10 mx-auto max-w-6xl 3xl:max-w-420 4xl:max-w-460 px-4 py-10 sm:px-6 3xl:px-8 3xl:py-16">
-        <div className="mx-auto max-w-3xl 3xl:max-w-4xl text-center">
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs 3xl:text-sm font-semibold tracking-widest text-neutral-400">{w.chiSiamoBadge as string}</span>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl 3xl:text-4xl">{w.chiSiamoTitle as string}</h2>
-          <p className="mx-auto mt-3 max-w-2xl 3xl:max-w-3xl text-sm 3xl:text-base leading-relaxed text-neutral-400">{w.chiSiamoSub as string}</p>
-        </div>
-        <div className="mt-8 3xl:mt-10 grid gap-6 3xl:gap-8 sm:grid-cols-3">
-          {[
-            {
-              name: "Gabriele Forestieri",
-              role: "Developer",
-              img: "/founders/gabriele_forestieri.jpg",
-              bio: w.foundersGabBio as string,
-              instagram: "https://www.instagram.com/gabrieleforestieri_/",
-            },
-            {
-              name: "Alle Cerchiari",
-              role: "Social & Marketing",
-              img: "/founders/alle_cerchiari.jpeg",
-              bio: w.foundersAlleBio as string,
-              instagram: "https://www.instagram.com/_allespy_/",
-            },
-            {
-              name: "Matteo Parubi",
-              role: "Stripe & Pricing",
-              sub: "Paru",
-              img: "/founders/matteo_parubi.jpeg",
-              bio: w.foundersMatteoBio as string,
-              instagram: "https://www.instagram.com/matteo.parubi/",
-            },
-          ].map((m) => (
-            <div key={m.name} className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur">
-              <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border border-white/10 bg-neutral-800">
-                <Image src={m.img} alt={m.name} fill sizes="96px" className="object-cover" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-white">{m.name} {m.sub ? <span className="font-normal text-neutral-400">· {m.sub}</span> : null}</h3>
-              <p className="mt-1 text-xs font-bold uppercase tracking-widest text-brand-300">{m.role}</p>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-400">{m.bio}</p>
-              <a href={m.instagram} target="_blank" rel="noopener noreferrer" aria-label={`Instagram di ${m.name}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white">
-                <BrandIcon brand={BRANDS.instagram} size={16} color="currentColor" /> Instagram
-              </a>
-            </div>
-          ))}
-        </div>
-        <p className="mt-6 text-center text-xs text-neutral-500">{w.teamPhotosNote as string} <a href="/about" className="font-semibold text-brand-400 hover:text-brand-300">{w.teamPhotosLink as string}</a>.</p>
-      </section>
+      <ChiSiamoSection
+        labels={{
+          badge: w.chiSiamoBadge as string,
+          title: w.chiSiamoTitle as string,
+          sub: w.chiSiamoSub as string,
+          gabBio: w.foundersGabBio as string,
+          alleBio: w.foundersAlleBio as string,
+          matteoBio: w.foundersMatteoBio as string,
+          photosNote: w.teamPhotosNote as string,
+          photosLink: w.teamPhotosLink as string,
+        }}
+      />
 
       {/* Footer — riempito con colore primario piattaforma, non trasparente */}
       <div className="relative z-10 bg-[#1e1e24] border-t border-white/10">
