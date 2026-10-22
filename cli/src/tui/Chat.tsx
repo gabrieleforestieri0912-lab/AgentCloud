@@ -22,6 +22,17 @@ export type ChatMessage = {
    * cronologia inviata all'agente, resta solo a schermo.
    */
   system?: string;
+  /**
+   * Compattazione al cambio agente: la conversazione precedente è stata
+   * riepilogata dall'agente che lascia il posto e questo messaggio la
+   * sostituisce. `stripFlags` la mappa come contesto utente per il nuovo
+   * agente, quindi NON è un normale turno della chat.
+   */
+  kind?: "compaction";
+  /** Nome dell'agente che ha scritto il riepilogo. */
+  prevAgent?: string;
+  /** Quanti messaggi sono finiti nel riepilogo. */
+  prevCount?: number;
 };
 
 /** Cursore animato a fine stream: lampeggia su/sotto. */
@@ -101,6 +112,21 @@ export function Chat({
         const fitted = isLast ? fitMessage(m, allowed, width) : m;
         return fitted.system ? (
           <SystemBlock key={start + i} title={fitted.system} content={fitted.content} />
+        ) : fitted.kind === "compaction" ? (
+          // Blocco di compattazione (stile OpenCode al cambio modello):
+          // separatore a tutta larghezza, chip con l'agente che ha lasciato
+          // il posto e il riepilogo che entra nel nuovo contesto.
+          <Box key={start + i} flexDirection="column" marginBottom={0}>
+            <Text color={theme.border}>{compactionRule(width, " chat compattata ")}</Text>
+            <Text>
+              <Text backgroundColor={theme.chipBg} color={theme.chipFg}>
+                {" "}
+                ● {fitted.prevAgent ?? "agente precedente"}{" "}
+              </Text>
+              <Text color={theme.muted}> riepilogo di {fitted.prevCount ?? 0} messaggi</Text>
+            </Text>
+            <Text color={theme.muted}>{fitted.content}</Text>
+          </Box>
         ) : fitted.role === "user" ? (
           <Box key={start + i} flexDirection="column" marginBottom={0}>
             <Text>
@@ -138,9 +164,18 @@ export function Chat({
   );
 }
 
+/** Separatore del blocco di compattazione: label centrata tra trattini. */
+function compactionRule(width: number, label: string): string {
+  const inner = Math.max(0, width - 2 - label.length);
+  const left = Math.floor(inner / 2);
+  return `${"─".repeat(left)}${label}${"─".repeat(inner - left)}`;
+}
+
 /** Righe occupate da un messaggio (con blocchi di sistema e card tool). */
 function heightOf(m: ChatMessage, width: number): number {
   if (m.system) return estimateLines(m.content, Math.max(10, width - 6)) + 3;
+  // Compattazione: separatore + chip sopra il testo del riepilogo.
+  if (m.kind === "compaction") return estimateLines(m.content, Math.max(10, width - 2)) + 4;
   return estimateLines(m.content, width) + 2 + (m.tools ? m.tools.length : 0);
 }
 
@@ -165,7 +200,7 @@ function fitMessage(m: ChatMessage, allowed: number, width: number): ChatMessage
     };
   }
 
-  const overhead = 2 + (m.tools ? m.tools.length : 0);
+  const overhead = 2 + (m.tools ? m.tools.length : 0) + (m.kind === "compaction" ? 4 : 0);
   const room = Math.max(1, allowed - overhead);
   const lines = m.content.split("\n");
   const kept = lines.slice(Math.max(0, lines.length - room));

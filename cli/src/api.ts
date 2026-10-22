@@ -199,11 +199,12 @@ export async function streamAgent(
   agentId: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   onEvent: (event: Record<string, unknown>) => void,
-  options: { approvalToken?: string; signal?: AbortSignal } = {},
+  options: { approvalToken?: string; signal?: AbortSignal; ephemeral?: boolean } = {},
 ) {
   const token = await getValidUserToken();
   const body: Record<string, unknown> = { agentId, messages };
   if (options.approvalToken) body.approval = { token: options.approvalToken };
+  if (options.ephemeral) body.ephemeral = true;
   const response = await fetch(`${baseUrl()}/api/agent/run`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "text/event-stream" },

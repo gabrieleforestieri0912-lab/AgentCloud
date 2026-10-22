@@ -82,6 +82,8 @@ type Tab = {
   undo: FileTransition[];
   redo: FileTransition[];
   streaming: boolean;
+  /** true mentre la compattazione prepara il cambio agente. */
+  compacting: boolean;
   activity: string | null;
   online: boolean | null;
   confirm: ConfirmState;
@@ -117,6 +119,7 @@ function makeTab(init: {
     undo: [],
     redo: [],
     streaming: false,
+    compacting: false,
     activity: null,
     online: null,
     confirm: null,
@@ -196,10 +199,31 @@ export async function runChatTui(opts: {
 function stripFlags(messages: ChatMessage[]): Array<{ role: "user" | "assistant"; content: string }> {
   // I messaggi di sistema (output dei comandi `/`) non vanno all'agente:
   // sono roba della CLI, non della conversazione.
+  // Il riepilogo della compattazione sì, ma come contesto utente (con
+  // l'intestazione che spiega da dove viene), non come turno della chat.
   return messages
     .filter((m) => !m.system)
-    .map(({ role, content }) => ({ role, content }));
+    .map((m) =>
+      m.kind === "compaction"
+        ? {
+            role: "user" as const,
+            content: `[Riepilogo della conversazione precedente con l'agente "${m.prevAgent ?? "precedente"}"]\n${m.content}`,
+          }
+        : { role: m.role, content: m.content },
+    );
 }
+
+/**
+ * Richiesta di riepilogo alla compattazione: la risponde l'agente che
+ * lascia il posto. Solo testo: niente tool, niente modifiche a file.
+ */
+const SWITCH_SUMMARY_PROMPT = (prevAgentName: string): string =>
+  [
+    `Sto passando a un altro agente e ho bisogno di un riepilogo della nostra conversazione (l'hai avuta tu, "${prevAgentName}", con l'utente),`,
+    "così chi subentra non perde il filo. Massimo 200 parole, solo testo: obiettivo dell'utente,",
+    "decisioni prese, stato dei lavori, file toccati, prossimi passi.",
+    "Non usare strumenti e non modificare alcun file: rispondi esclusivamente con il testo del riepilogo.",
+  ].join(" ");
 
 /** Upsert di una card tool per nome: aggiorna lo stato o la aggiunge. */
 function upsertTool(tools: ToolStep[] | undefined, step: ToolStep): ToolStep[] {
@@ -333,11 +357,13 @@ export function App({
     // La selezione torna in alto a ogni digitazione: il comando
     // evidenziato corrisponde sempre a quello che l'utente sta scrivendo.
     // Le frecce la spostano senza più modificare la bozza.
+    // `touch()` va fatto SEMPRE: il filtro del menu (`matchCommands`) è
+    // calcolato a livello App, e senza il tick l'App non ridisegna — con il
+    // menu già aperto la lista restava quella del primo "/" e Invio
+    // eseguiva il comando sbagliato.
     current.menuSelected = 0;
-    if (!current.menuOpen) {
-      current.menuOpen = true;
-      touch();
-    }
+    current.menuOpen = true;
+    touch();
   }, []);
 
   const pushMsg = (m: ChatMessage) => {
@@ -376,7 +402,15 @@ export function App({
       tabsRef.current.map((t) => ({
         agent: t.agent,
         agentName: t.agentName,
-        messages: t.messages.filter((m) => !m.system).map(({ role, content }) => ({ role, content })),
+        messages: t.messages
+          .filter((m) => !m.system)
+          .map((m) =>
+            // Il riepilogo della compattazione sopravvive come turno
+            // ordinario (contiene il contesto che serve alla ripresa).
+            m.kind === "compaction"
+              ? { role: "assistant", content: m.content }
+              : { role: m.role, content: m.content },
+          ),
         title: t.title,
         files: t.files,
       })),
@@ -749,10 +783,13 @@ export function App({
       hint: `${c.category ?? ""}${c.price ? ` · ${c.price}` : ""}${c.slug === agent ? " · attivo" : ""}`,
     }));
     const items = scope === "catalog" ? catalogItems : [...ownedItems, ...catalogItems.filter((c) => !ownedSlugs.has(c.key))];
+    // Con una conversazione in corso il cambio agente compatta: meglio dirlo
+    // nel footer del popup, dove l'utente sta guardando prima di confermare.
+    const hint = `↑↓ · Invio${activeTab().messages.some((m) => !m.system) ? " · la chat viene compattata" : ""}`;
 
     openPopup({
       title: scope === "catalog" ? "Catalogo agenti" : "Scegli l'agente",
-      hint: "↑↓ · Invio",
+      hint,
       items,
       emptyText: "(nessun agente: accedi con /login)",
       onSelect: (item) => {
@@ -944,22 +981,113 @@ export function App({
     return result;
   };
 
-  /** /agents → Invio: cambia agente e riparte pulito (nuova conversazione). */
-  const switchAgent = (slug: string) => {
-    const cat = CATALOG.find((c) => c.slug === slug);
+  /**
+   * /agents → Invio: cambia agente.
+   *
+   * Con una conversazione in corso non si riparte pulito: la chat precedente
+   * viene compattata, come OpenCode fa al cambio modello. Il riepilogo lo
+   * scrive l'agente che lascia il posto, appare a schermo come blocco
+   * "chat compattata" e sostituisce il trascrito nel contesto del nuovo
+   * agente. Se la compattazione fallisce (rete, piano esaurito, timeout)
+   * niente va perso in silenzio: la conversazione resta visibile e va per
+   * intero al nuovo agente, con l'avviso che spiega perché.
+   */
+  const switchAgent = async (slug: string) => {
     const t = activeTab();
-    t.agent = slug;
-    t.agentName = cat?.name ?? slug;
-    t.messages = [];
-    t.files = [];
-    t.undo = [];
-    t.redo = [];
-    t.selected = 0;
-    t.title = cat?.name ?? slug;
-    t.titleTouched = false;
+    if (t.streaming) {
+      t.notice = "Attendi che l'agente finisca (o premi Esc per interrompere) prima di cambiare agente.";
+      touch();
+      return;
+    }
+    if (t.compacting) return;
+    if (slug === t.agent) {
+      t.notice = `Agente già attivo: ${t.agentName}. La conversazione continua.`;
+      touch();
+      return;
+    }
+    const newName = CATALOG.find((c) => c.slug === slug)?.name ?? slug;
+
+    const turns = t.messages.filter((m) => !m.system);
+    if (turns.length === 0) {
+      // Nessuna conversazione in corso: ripartenza pulita (comportamento
+      // di prima, senza riepilogo da compilare).
+      t.agent = slug;
+      t.agentName = newName;
+      t.files = [];
+      t.undo = [];
+      t.redo = [];
+      t.selected = 0;
+      t.title = newName;
+      t.titleTouched = false;
+      t.notice = `Agente attivo: ${newName}. Nuova conversazione pronta.`;
+      touch();
+      return;
+    }
+
+    const prevAgent = t.agent;
+    const prevAgentName = t.agentName;
+    t.compacting = true;
+    t.activity = `Sto compattando la conversazione con ${prevAgentName}…`;
     touch();
-    t.notice = `Agente attivo: ${cat?.name ?? slug}. Nuova conversazione pronta.`;
-    touch();
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 90_000);
+    try {
+      let summary = "";
+      await streamAgent(
+        prevAgent,
+        [...stripFlags(t.messages), { role: "user", content: SWITCH_SUMMARY_PROMPT(prevAgentName) }],
+        (event) => {
+          if (event.type === "text" && typeof event.content === "string") summary += event.content;
+        },
+        { signal: ctrl.signal, ephemeral: true },
+      );
+      summary = summary.trim();
+      if (!summary) throw new Error("risposta vuota");
+      // La conversazione precedente lascia il posto al riepilogo: a schermo
+      // resta solo il blocco "chat compattata" e nella cronologia il solo
+      // riepilogo, come contesto per il nuovo agente.
+      t.messages = [
+        {
+          role: "assistant",
+          kind: "compaction",
+          prevAgent: prevAgentName,
+          prevCount: turns.length,
+          content: summary,
+        },
+      ];
+      t.agent = slug;
+      t.agentName = newName;
+      // I file restano: è lo stesso lavoro, cambia solo chi ci lavora.
+      // Best-effort: al server vanno riproposti sotto il nuovo agente (lì
+      // le copie delle chat sono per agente).
+      for (const f of t.files.filter((x) => x.head >= 0)) {
+        void saveAgentFiles(slug, [{ name: f.filename, content: f.versions[f.head] ?? "" }]);
+      }
+      void loadLimit(prevAgent);
+      void loadLimit(slug);
+      t.notice = `Agente attivo: ${newName}. Il riepilogo della chat precedente entra nel nuovo contesto.`;
+      touch();
+    } catch (error) {
+      const why =
+        (error as Error)?.name === "AbortError"
+          ? "tempo scaduto"
+          : error instanceof ApiError
+            ? `errore ${error.status}`
+            : error instanceof Error
+              ? error.message
+              : String(error);
+      // Compattazione fallita: il trascrito integrale continua a valere.
+      t.agent = slug;
+      t.agentName = newName;
+      t.notice = `Agente attivo: ${newName}. Compattazione fallita (${why}): la conversazione precedente resta visibile e passa per intero al nuovo agente.`;
+      void loadLimit(slug);
+      touch();
+    } finally {
+      clearTimeout(timer);
+      t.compacting = false;
+      t.activity = null;
+      touch();
+    }
   };
 
   /** Registra un evento `file` dallo stream + persistenza best-effort. */
@@ -1085,6 +1213,13 @@ export function App({
     const t = activeTab();
     t.notice = null;
     t.activity = null;
+    // Durante la compattazione l'agente cambia: un messaggio partito ora
+    // finirebbe a chi non deve. Meglio fermarlo e spiegare.
+    if (t.compacting) {
+      t.notice = "Sto già cambiando agente: aspetta la fine della compattazione.";
+      touch();
+      return;
+    }
     // Nessuna sessione: non parte nessuna run, si spiega come entrare.
     if (!loggedIn) {
       t.notice =

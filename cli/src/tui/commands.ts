@@ -182,7 +182,7 @@ export const COMMANDS: CommandDef[] = [
   },
   {
     name: "agents",
-    description: "Scegli l'agente attivo (popup con i tuoi agenti)",
+    description: "Scegli l'agente attivo (con una chat in corso la compatta)",
     usage: "/agents",
     args: [],
     handler: (ctx) => ctx.openAgents(),

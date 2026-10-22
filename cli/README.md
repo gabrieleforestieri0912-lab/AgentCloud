@@ -168,6 +168,18 @@ sotto, scegli con `↑`/`↓`, confermi con Invio, annulli con Esc.
 | `/diff` | i file modificati (+ "tutte le modifiche") |
 | `/run` (senza agente) | gli agenti: scelto uno, scrivi il prompt |
 
+### Cambio agente a conversazione in corso
+
+Se scegli un agente diverso mentre ne stai usando un altro, la conversazione
+non si azzera: viene **compattata**, come OpenCode fa al cambio modello.
+L'agente che lascia il posto scrive un riepilogo (obiettivo, decisioni,
+stato, prossimi passi), la chat mostra il blocco `chat compattata` e il
+riepilogo entra nel contesto del nuovo agente al posto del trascrito.
+Se la compattazione non riesce (rete, piano esaurito), la conversazione
+precedente resta visibile e passa per intero al nuovo agente, con
+l'avviso che lo spiega. I file tracciati sopravvivono al cambio: è lo
+stesso lavoro, cambia solo chi ci lavora.
+
 ## Login
 
 ```bash
