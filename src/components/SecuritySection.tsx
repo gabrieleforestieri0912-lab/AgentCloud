@@ -2,13 +2,15 @@
 /**
  * Fiducia e sicurezza in linguaggio cliente: dati separati, connessioni
  * cifrate, pagamenti sicuri, controllo GDPR.
- * Visual: diagramma SVG inline del percorso Tu → AgentCloud → I tuoi strumenti.
  *
- * Anche le etichette dentro l'SVG vengono dal dizionario: un diagramma con
- * testo italiano su una pagina in tedesco era la incoerenza più visibile della
- * sezione, perché è l'unico punto in cui il testo fa parte dell'immagine.
+ * Le sei card spiegano i punti; il link porta alla privacy per i dettagli.
+ * Qui non c'è più il diagramma "come viaggiano i tuoi dati": era un'immagine
+ * (un SVG con testo dentro) e su una pagina in un'altra lingua il testo
+ * dell'immagine restava in italiano — l'incoerenza più visibile della sezione,
+ * e un'immagine non è leggibile dagli screen reader.
  */
 import Link from "next/link";
+import { reveal } from "@/lib/motion";
 import { motion } from "framer-motion";
 import { ShieldCheck, Lock, KeyRound, Server, Database, EyeOff } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
@@ -19,17 +21,13 @@ const POINT_ICONS = [Database, Lock, Server, KeyRound, EyeOff, ShieldCheck];
 export default function SecuritySection() {
   const { dict } = useLanguage();
   const sec = dict.security;
-  const d = sec.diagram;
 
   return (
     <section id="sicurezza" className="py-16 sm:py-20">
       <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
         <motion.div
           className="mx-auto max-w-3xl text-center"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...reveal(16, 0.5)}
         >
           <div className="mb-4 flex items-center justify-center gap-2">
             <ShieldCheck size={14} className="text-emerald-400" />
@@ -54,33 +52,6 @@ export default function SecuritySection() {
             );
           })}
         </div>
-
-        {/* Visual SVG — come viaggiano i tuoi dati */}
-        <motion.div className="mx-auto mt-8 max-w-5xl overflow-hidden rounded-2xl border border-white/5 bg-neutral-900 p-4" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-          <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">{sec.diagramTitle}</p>
-          <svg viewBox="0 0 800 140" className="mt-3 w-full" role="img" aria-label={sec.diagramLabel}>
-            <rect x="10" y="20" width="170" height="100" rx="12" fill="#18181b" stroke="rgba(255,255,255,0.08)" />
-            <text x="95" y="55" textAnchor="middle" fill="#e4e4e7" fontSize="12" fontWeight="700">{d.you}</text>
-            <text x="95" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="10">{d.youSub}</text>
-            <text x="95" y="92" textAnchor="middle" fill="#52525b" fontSize="9">{d.youFoot}</text>
-            <rect x="210" y="20" width="170" height="100" rx="12" fill="#18181b" stroke="rgba(255,255,255,0.08)" />
-            <text x="295" y="55" textAnchor="middle" fill="#e4e4e7" fontSize="12" fontWeight="700">{d.platform}</text>
-            <text x="295" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="10">{d.platformSub}</text>
-            <text x="295" y="92" textAnchor="middle" fill="#52525b" fontSize="9">{d.platformFoot}</text>
-            <rect x="410" y="20" width="170" height="100" rx="12" fill="#0a2e22" stroke="rgba(16,185,129,0.25)" />
-            <text x="495" y="55" textAnchor="middle" fill="#6ee7b7" fontSize="12" fontWeight="700">{d.onlyYou}</text>
-            <text x="495" y="75" textAnchor="middle" fill="#a7f3d0" fontSize="10">{d.onlyYouSub}</text>
-            <text x="495" y="92" textAnchor="middle" fill="#6ee7b7" fontSize="9">{d.onlyYouFoot}</text>
-            <rect x="610" y="20" width="170" height="100" rx="12" fill="#18181b" stroke="rgba(255,255,255,0.08)" />
-            <text x="695" y="55" textAnchor="middle" fill="#e4e4e7" fontSize="12" fontWeight="700">{d.tools}</text>
-            <text x="695" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="10">{d.toolsSub}</text>
-            <text x="695" y="92" textAnchor="middle" fill="#52525b" fontSize="9">{d.toolsFoot}</text>
-            <line x1="180" y1="70" x2="210" y2="70" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" markerEnd="url(#arr)" />
-            <line x1="380" y1="70" x2="410" y2="70" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" markerEnd="url(#arr)" />
-            <line x1="580" y1="70" x2="610" y2="70" stroke="rgba(16,185,129,0.5)" strokeWidth="1.5" markerEnd="url(#arr2)" />
-            <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="rgba(255,255,255,0.35)" /></marker><marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="rgba(16,185,129,0.6)" /></marker></defs>
-          </svg>
-        </motion.div>
 
         <div className="mt-8 text-center">
           <Link href="/privacy" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-bold text-white hover:bg-white/10">{sec.cta}</Link>

@@ -6,6 +6,7 @@
  * sessione, ovunque.
  */
 import Link from "next/link";
+import { reveal, enter } from "@/lib/motion";
 import { MonitorDown, Smartphone, TerminalSquare, PanelRight, Sparkles, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
@@ -24,10 +25,7 @@ export default function AppsSection() {
       <div className="max-w-7xl 3xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center mb-10"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          {...reveal(20, 0.6)}
         >
           <div className="mb-4 flex items-center justify-center gap-2">
             <Sparkles size={13} className="text-brand-400" />

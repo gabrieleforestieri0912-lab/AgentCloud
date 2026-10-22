@@ -12,6 +12,7 @@
  */
 
 import { useMemo, useState } from "react";
+import { reveal, enter } from "@/lib/motion";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import BrandLogo from "@/components/BrandLogo";
@@ -270,10 +271,7 @@ function PluginCard({
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.32), ease: "easeOut" }}
+      {...reveal(18, 0.35)}
       className="flex flex-col rounded-xl border border-white/5 bg-neutral-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-500/30 hover:shadow-2xl hover:shadow-brand-500/10"
     >
       <div className="flex items-start gap-3">

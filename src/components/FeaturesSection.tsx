@@ -11,6 +11,7 @@
  * intero.
  */
 import Link from "next/link";
+import { reveal, enter } from "@/lib/motion";
 import { motion } from "framer-motion";
 import {
   Bot,
@@ -38,10 +39,7 @@ export default function FeaturesSection() {
       <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
         <motion.div
           className="mx-auto max-w-3xl text-center"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...reveal(16, 0.5)}
         >
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
@@ -73,10 +71,7 @@ export default function FeaturesSection() {
               <motion.div
                 key={f.title}
                 className="flex flex-col rounded-2xl border border-white/5 bg-neutral-900 p-5"
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.35 }}
+                {...reveal(10, 0.35)}
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
                   <Icon size={18} />

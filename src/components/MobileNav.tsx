@@ -6,6 +6,7 @@
  * stare sopra ogni contenuto. Chiude su click di un link o del backdrop.
  */
 import { useState, useEffect } from "react";
+import { panel } from "@/lib/motion";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -211,10 +212,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
 
             {/* Menu panel */}
             <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              {...panel("100%", 0.3)}
               className="fixed inset-y-0 right-0 z-50 h-dvh w-80 max-w-[85vw] bg-neutral-950 border-l border-white/10 lg:hidden overflow-y-auto"
             >
               {/* Header */}
@@ -268,7 +266,7 @@ export default function MobileNav({ marketplaceAgents }: MobileNavProps) {
                         <AnimatePresence>
                           {activeSection === section.id && (
                             <motion.div
-                              initial={{ opacity: 0, y: -8 }}
+                              initial={{ opacity: 0, y: 8 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -8 }}
                               transition={{ duration: 0.15 }}

@@ -5,6 +5,7 @@
  * e CTA per attivazione.
  */
 import { useState } from "react";
+import { reveal } from "@/lib/motion";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Check, Sparkles, Clock, Tag, Shield } from "lucide-react";

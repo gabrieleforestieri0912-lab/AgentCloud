@@ -5,6 +5,7 @@
  * con animazione di apertura/chiusura e link di supporto.
  */
 import { useState } from "react";
+import { reveal, enter } from "@/lib/motion";
 import Link from "next/link";
 import { ChevronDown, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,10 +45,7 @@ export default function FAQSection() {
         {/* Header */}
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          {...reveal(30, 0.6)}
         >
           <div className="mb-6 flex items-center justify-center gap-2">
             <Sparkles size={13} className="text-brand-400" />

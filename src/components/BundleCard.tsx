@@ -13,6 +13,7 @@
  * risparmio scale-in.
  */
 import { useState } from "react";
+import { reveal, enter } from "@/lib/motion";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Sparkles, Clock, Tag, Zap } from "lucide-react";
@@ -169,9 +170,9 @@ export default function BundleCard({ bundle }: BundleCardProps) {
             <AnimatePresence>
               {savingsPercent > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.8, x: -8 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, x: -8 }}
+                  initial={{ opacity: 0, scale: 0.8, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 8 }}
                   transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.05 }}
                   className="mt-2 flex items-center gap-2"
                 >
@@ -219,9 +220,7 @@ export default function BundleCard({ bundle }: BundleCardProps) {
           {agents.map((agent, i) => (
             <motion.div
               key={agent.slug}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.05 * i, duration: 0.3 }}
+              {...enter(8, 0.3, 0.05 * i)}
               className="flex items-center gap-2.5 text-sm"
             >
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">

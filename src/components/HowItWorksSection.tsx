@@ -9,6 +9,7 @@
  * quindi non è scritto a schivo nel componente.
  */
 import Link from "next/link";
+import { reveal, enter } from "@/lib/motion";
 import { motion } from "framer-motion";
 import { Bot, PlugZap, MessageSquare, LayoutDashboard, ArrowRight, Check } from "lucide-react";
 import BrandLogo from "./BrandLogo";
@@ -33,10 +34,7 @@ export default function HowItWorksSection() {
       <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
         <motion.div
           className="mx-auto max-w-3xl text-center"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
+          {...reveal(20, 0.6)}
         >
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
@@ -68,10 +66,7 @@ export default function HowItWorksSection() {
               <motion.div
                 key={s.title}
                 className="relative rounded-2xl border border-white/5 bg-neutral-900 p-5"
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4 }}
+                {...reveal(12, 0.4)}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-black tracking-widest text-brand-400">{STEP_NUMBERS[idx]}</span>

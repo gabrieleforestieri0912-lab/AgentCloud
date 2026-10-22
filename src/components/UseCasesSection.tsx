@@ -7,6 +7,7 @@
  * contenuto: icone, colori d’accento e gli href verso le pagine agente.
  */
 import Link from "next/link";
+import { reveal } from "@/lib/motion";
 import { motion } from "framer-motion";
 import { ShoppingBag, CalendarDays, UserPlus, Star, ArrowRight } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
@@ -29,7 +30,7 @@ export default function UseCasesSection() {
   return (
     <section id="casi" className="py-16 sm:py-20">
       <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
-        <motion.div className="mx-auto max-w-3xl text-center" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+        <motion.div className="mx-auto max-w-3xl text-center" {...reveal(16, 0.5)}>
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
             <span className="text-xs font-bold uppercase tracking-widest text-brand-400">{uc.badge}</span>
@@ -46,7 +47,7 @@ export default function UseCasesSection() {
             const Icon = CASE_ICONS[idx] ?? ShoppingBag;
             const accent = CASE_ACCENTS[idx] ?? "bg-brand-500";
             return (
-              <motion.div key={c.title} className="rounded-2xl border border-white/5 bg-neutral-900 p-5" initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35 }}>
+              <motion.div key={c.title} className="rounded-2xl border border-white/5 bg-neutral-900 p-5" {...reveal(10, 0.35)}>
                 <div className="flex items-center gap-2">
                   <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${accent} text-white`}><Icon size={16} /></span>
                   <span className="text-xs font-bold uppercase tracking-wide text-neutral-500">{c.eyebrow}</span>

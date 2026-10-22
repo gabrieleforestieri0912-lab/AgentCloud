@@ -104,7 +104,7 @@ function TimerCard({
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={formatted}
-              initial={{ y: -18, opacity: 0, scale: 0.94, filter: "blur(2px)" }}
+              initial={{ y: 18, opacity: 0, scale: 0.94, filter: "blur(2px)" }}
               animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
               exit={{ y: 18, opacity: 0, scale: 0.94, filter: "blur(2px)" }}
               transition={{ type: "spring", stiffness: 420, damping: 28 }}

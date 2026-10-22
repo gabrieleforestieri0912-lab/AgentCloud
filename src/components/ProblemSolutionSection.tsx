@@ -8,6 +8,7 @@
  * restano qui perché dipendono dagli slug reali degli agenti, non dalla lingua.
  */
 import Link from "next/link";
+import { reveal } from "@/lib/motion";
 import { motion } from "framer-motion";
 import { Clock3, TrendingDown, MessageCircleWarning, ArrowRight } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
@@ -38,7 +39,7 @@ export default function ProblemSolutionSection() {
   return (
     <section id="soluzioni" className="py-16 sm:py-20">
       <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
-        <motion.div className="mx-auto max-w-3xl text-center" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+        <motion.div className="mx-auto max-w-3xl text-center" {...reveal(16, 0.5)}>
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             <span className="text-xs font-bold uppercase tracking-widest text-amber-300">{ps.badge}</span>
@@ -54,7 +55,7 @@ export default function ProblemSolutionSection() {
           {ps.items.map((it, idx) => {
             const Icon = ITEM_ICONS[idx] ?? Clock3;
             return (
-              <motion.div key={it.agent} className="rounded-2xl border border-white/5 bg-neutral-900 p-5" initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
+              <motion.div key={it.agent} className="rounded-2xl border border-white/5 bg-neutral-900 p-5" {...reveal(12, 0.4)}>
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 text-amber-300"><Icon size={16} /></div>
                 <p className="mt-3 text-xs font-bold uppercase tracking-wide text-red-300">{ps.problemLabel}</p>
                 <p className="mt-1 text-sm font-semibold leading-5 text-neutral-300">{it.problem}</p>

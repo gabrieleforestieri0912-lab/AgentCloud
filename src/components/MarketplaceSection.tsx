@@ -5,6 +5,7 @@
  * evidenza e CTA verso /agents. Solo presentazione.
  */
 import Link from "next/link";
+import { reveal, enter } from "@/lib/motion";
 import { Puzzle, ShoppingCart, Zap, Clock3, Tag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageProvider";
@@ -25,10 +26,7 @@ export default function MarketplaceSection() {
         {/* Header animation */}
         <motion.div
           className="mb-14 grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-end"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          {...reveal(30, 0.6)}
         >
           <div>
             <div className="mb-5 flex items-center gap-2">
@@ -158,10 +156,7 @@ export default function MarketplaceSection() {
         {/* Box agente personalizzato */}
         <motion.div
           className="mt-14 overflow-hidden rounded-2xl border border-brand-500/20 bg-linear-to-br from-brand-950/50 via-neutral-900 to-purple-950/30 p-6 shadow-sm shadow-brand-500/5 sm:flex sm:items-center sm:justify-between sm:gap-6"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          {...reveal(30, 0.6)}
         >
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand-500 to-purple-500 text-white shadow-md shadow-brand-500/20">

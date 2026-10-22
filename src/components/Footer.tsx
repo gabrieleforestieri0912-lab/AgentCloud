@@ -72,9 +72,9 @@ export default function Footer() {
       />
 
       <div className="relative mx-auto max-w-7xl 3xl:max-w-[1720px] px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8 py-20 border-b border-white/10">
+        <div className="grid grid-cols-2 gap-8 py-12 border-b border-white/10 md:grid-cols-4 lg:grid-cols-6 lg:gap-6">
           {/* Colonna brand */}
-          <div className="flex flex-col items-start gap-4 lg:col-span-2">
+          <div className="col-span-2 flex flex-col items-start gap-3">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="relative h-8 w-8">
                 <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="32px" />
@@ -84,13 +84,15 @@ export default function Footer() {
             <p className="text-sm font-semibold text-neutral-400 select-none">{dict.footer.tagline}</p>
           </div>
 
-          {/* Colonna prodotto — pagine della piattaforma */}
-          <div className="flex flex-col gap-3.5">
+          {/* Colonna prodotto — pagine della piattaforma.
+              I link sono su due colonne: su una sola colonna la lista
+              faceva il footer troppo alto. */}
+          <div className="col-span-2 md:col-span-1 lg:col-span-2 flex flex-col gap-2">
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.navbar.marketplace}</span>
-            <ul className="flex flex-col gap-3">
+            <ul className="grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2">
               {productLinks.map(({ label, href }) => (
                 <li key={label}>
-                  <Link href={href} className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                  <Link href={href} className="block py-1 text-sm font-bold text-neutral-300 hover:text-white transition-colors">
                     {label}
                   </Link>
                 </li>
@@ -99,12 +101,12 @@ export default function Footer() {
           </div>
 
           {/* Colonna azienda */}
-          <div className="flex flex-col gap-3.5">
+          <div className="flex flex-col gap-2">
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.footer.company}</span>
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-0.5">
               {companyLinks.map(({ label, href }) => (
                 <li key={label}>
-                  <Link href={href} className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                  <Link href={href} className="block py-1 text-sm font-bold text-neutral-300 hover:text-white transition-colors">
                     {label}
                   </Link>
                 </li>
@@ -112,74 +114,62 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Colonna contatti — solo link di contatto */}
-          <div className="flex flex-col gap-3.5">
+          {/* Colonna contatti — solo link di contatto.
+              I social stanno nella barra qui sotto: averli anche qui
+              duplicava gli stessi tre link. */}
+          <div className="flex flex-col gap-2">
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.footer.contact}</span>
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-0.5">
               <li>
-                <a href="tel:+393519863021" className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                <a href="tel:+393519863021" className="block py-1 text-sm font-bold text-neutral-300 hover:text-white transition-colors">
                   {dict.footer.phone}
                 </a>
               </li>
               <li>
-                <a href="mailto:info@agentcloud.agency" className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
+                <a href="mailto:info@agentcloud.agency" className="block py-1 text-sm font-bold text-neutral-300 hover:text-white transition-colors">
                   {dict.footer.email}
                 </a>
               </li>
             </ul>
           </div>
-
-          {/* Colonna social — contatti social */}
-          <div className="flex flex-col gap-3.5">
-            <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{dict.footer.follow}</span>
-            <ul className="flex flex-col gap-3">
-              {socialLinks.map(({ label, href }) => (
-                <li key={label}>
-                  <Link href={href} target="_blank" rel="noopener noreferrer" className="block py-2.5 text-base font-bold text-neutral-300 hover:text-white transition-colors">
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
-        <div className="py-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-neutral-500">
+        <div className="py-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm font-semibold text-neutral-500">
             <span className="select-none">{dict.footer.rights}</span>
             <Link
               href="/mobile"
-              className="block py-3 text-neutral-400 hover:text-brand-400 transition-colors"
+              className="block py-1.5 text-neutral-400 hover:text-brand-400 transition-colors"
             >
               {dict.mobile.badge}
             </Link>
             <Link
               href="/privacy"
-              className="block py-3 text-neutral-400 hover:text-brand-400 transition-colors"
+              className="block py-1.5 text-neutral-400 hover:text-brand-400 transition-colors"
             >
               {dict.footer.privacy}
             </Link>
             <Link
               href="/terms"
-              className="block py-3 text-neutral-400 hover:text-brand-400 transition-colors"
+              className="block py-1.5 text-neutral-400 hover:text-brand-400 transition-colors"
             >
               {dict.footer.terms}
             </Link>
             <Link
               href="/refunds"
-              className="block py-3 text-neutral-400 hover:text-brand-400 transition-colors"
+              className="block py-1.5 text-neutral-400 hover:text-brand-400 transition-colors"
             >
               {dict.footer.refunds}
             </Link>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {socialLinks.map(({ label, href, brand }) => (
               <Link
                 key={label}
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group inline-flex h-11 w-11 items-center justify-center text-neutral-500 hover:text-white transition-colors"
+                className="group inline-flex h-10 w-10 items-center justify-center text-neutral-500 hover:text-white transition-colors"
                 aria-label={label}
               >
                 <span className="sr-only">{label}</span>

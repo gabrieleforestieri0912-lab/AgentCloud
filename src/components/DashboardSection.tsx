@@ -7,6 +7,7 @@
  * tempo era demo/mock è stata ripulita dai dati finti.
  */
 import Link from "next/link";
+import { reveal, enter } from "@/lib/motion";
 import Image from "next/image";
 import {
   Activity,
@@ -115,10 +116,7 @@ export default function DashboardSection() {
       <div className="mx-auto max-w-7xl 3xl:max-w-[1720px] px-4 sm:px-6 lg:px-8">
         <motion.div
           className="mb-8 text-center"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          {...reveal(30, 0.6)}
         >
           <div className="mb-4 flex items-center justify-center gap-2">
             <Activity size={13} className="text-brand-400" />
@@ -144,10 +142,7 @@ export default function DashboardSection() {
 
         <motion.div
           className="mx-auto w-full max-w-5xl 3xl:max-w-7xl overflow-x-auto rounded-2xl border border-white/5 bg-neutral-900 p-3 shadow-2xl shadow-brand-500/10"
-          initial={{ opacity: 0, x: 50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          {...reveal(50, 0.7)}
         >
           {/* Browser chrome */}
           <div className="flex items-center gap-2 border-b border-white/5 px-2 pb-3">

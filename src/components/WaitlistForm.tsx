@@ -3,6 +3,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { enter } from "@/lib/motion";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Mail,
@@ -1178,7 +1179,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
               mock: (
                 <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4 space-y-2">
                   {[w.step2Check1, w.step2Check2, w.step2Check3].map((c, i) => (
-                    <motion.div key={String(c)} initial={{ opacity: 0, x: -8 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.2 }} className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-300">
+                    <motion.div key={String(c)} {...enter(8, 0.35, i * 0.2)} className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-300">
                       <Check className="h-4 w-4" /> {c as string}
                     </motion.div>
                   ))}

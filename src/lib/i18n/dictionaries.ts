@@ -429,8 +429,6 @@ howItWorks: {
     titleB: "restano tuoi",
     subtitle:
       "Protezione di livello aziendale, senza pensieri: tu lavori, alla sicurezza pensiamo noi.",
-    diagramTitle: "Come viaggiano i tuoi dati",
-    diagramLabel: "Tu → AgentCloud protetto → I tuoi strumenti",
     cta: "Vedi privacy & termini →",
     points: [
       {
@@ -458,20 +456,6 @@ howItWorks: {
         desc: "Esporta o cancella i tuoi dati quando vuoi dalle impostazioni, in linea con il GDPR.",
       },
     ],
-    diagram: {
-      you: "Tu",
-      youSub: "chat sicura",
-      youFoot: "dal tuo account",
-      platform: "AgentCloud",
-      platformSub: "dati separati e cifrati",
-      platformFoot: "solo i tuoi",
-      onlyYou: "Solo tu",
-      onlyYouSub: "controllo completo",
-      onlyYouFoot: "esporta • cancella",
-      tools: "I tuoi strumenti",
-      toolsSub: "Shopify • Gmail • Stripe",
-      toolsFoot: "connessioni revocabili",
-    },
   },
 
   integrations: {
@@ -2940,8 +2924,6 @@ howItWorks: {
     titleB: "stays yours",
     subtitle:
       "Enterprise-grade protection, no worries: you do the work, we handle the security.",
-    diagramTitle: "How your data travels",
-    diagramLabel: "You → protected AgentCloud → your tools",
     cta: "See privacy & terms →",
     points: [
       {
@@ -2969,20 +2951,6 @@ howItWorks: {
         desc: "Export or delete your data whenever you want from settings, in line with GDPR.",
       },
     ],
-    diagram: {
-      you: "You",
-      youSub: "secure chat",
-      youFoot: "from your account",
-      platform: "AgentCloud",
-      platformSub: "separated, encrypted data",
-      platformFoot: "yours only",
-      onlyYou: "Only you",
-      onlyYouSub: "full control",
-      onlyYouFoot: "export • delete",
-      tools: "Your tools",
-      toolsSub: "Shopify • Gmail • Stripe",
-      toolsFoot: "revocable connections",
-    },
   },
 
   integrations: {
@@ -5426,8 +5394,6 @@ howItWorks: {
     titleB: "siguen siendo tuyos",
     subtitle:
       "Protección de nivel empresarial, sin preocupaciones: tú trabajas, de la seguridad nos ocupamos nosotros.",
-    diagramTitle: "Cómo viajan tus datos",
-    diagramLabel: "Tú → AgentCloud protegido → tus herramientas",
     cta: "Ver privacidad y términos →",
     points: [
       {
@@ -5455,20 +5421,6 @@ howItWorks: {
         desc: "Exporta o borra tus datos cuando quieras desde los ajustes, de acuerdo con el RGPD.",
       },
     ],
-    diagram: {
-      you: "Tú",
-      youSub: "chat seguro",
-      youFoot: "desde tu cuenta",
-      platform: "AgentCloud",
-      platformSub: "datos separados y cifrados",
-      platformFoot: "solo los tuyos",
-      onlyYou: "Solo tú",
-      onlyYouSub: "control total",
-      onlyYouFoot: "exportar • borrar",
-      tools: "Tus herramientas",
-      toolsSub: "Shopify • Gmail • Stripe",
-      toolsFoot: "conexiones revocables",
-    },
   },
 
   integrations: {
@@ -7909,8 +7861,6 @@ howItWorks: {
     titleB: "bleiben deine",
     subtitle:
       "Schutz auf Enterprise-Niveau, ohne Sorgen: Du arbeitest, um die Sicherheit kümmern wir uns.",
-    diagramTitle: "So kommen deine Daten zu uns",
-    diagramLabel: "Du → geschütztes AgentCloud → deine Tools",
     cta: "Datenschutz & Bedingungen ansehen →",
     points: [
       {
@@ -7938,20 +7888,6 @@ howItWorks: {
         desc: "Exportiere oder lösche deine Daten jederzeit in den Einstellungen, gemäß DSGVO.",
       },
     ],
-    diagram: {
-      you: "Du",
-      youSub: "sicherer Chat",
-      youFoot: "von deinem Konto",
-      platform: "AgentCloud",
-      platformSub: "getrennte, verschlüsselte Daten",
-      platformFoot: "nur deine",
-      onlyYou: "Nur du",
-      onlyYouSub: "volle Kontrolle",
-      onlyYouFoot: "exportieren • löschen",
-      tools: "Deine Tools",
-      toolsSub: "Shopify • Gmail • Stripe",
-      toolsFoot: "widerrufbare Verbindungen",
-    },
   },
 
   integrations: {
@@ -10392,8 +10328,6 @@ howItWorks: {
     titleB: "restent les vôtres",
     subtitle:
       "Protection de niveau entreprise, sans souci : vous travaillez, nousVeillons à la sécurité.",
-    diagramTitle: "Comment vos données circulent",
-    diagramLabel: "Vous → AgentCloud protégé → vos outils",
     cta: "Voir confidentialité et conditions →",
     points: [
       {
@@ -10421,20 +10355,6 @@ howItWorks: {
         desc: "Exportez ou supprimez vos données quand vous le voulez dans les paramètres, conformément au RGPD.",
       },
     ],
-    diagram: {
-      you: "Vous",
-      youSub: "chat sécurisé",
-      youFoot: "depuis votre compte",
-      platform: "AgentCloud",
-      platformSub: "données séparées et chiffrées",
-      platformFoot: "les vôtres seulement",
-      onlyYou: "Vous seul",
-      onlyYouSub: "contrôle total",
-      onlyYouFoot: "exporter • supprimer",
-      tools: "Vos outils",
-      toolsSub: "Shopify • Gmail • Stripe",
-      toolsFoot: "connexions révocables",
-    },
   },
 
   integrations: {
