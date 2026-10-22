@@ -148,11 +148,13 @@ export default function CartPageClient() {
       </div>
       <FloatingBrandBubbles bubbles={CART_BUBBLES} />
       <section className="relative z-10 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+        {/* Torna alla home: allineato al bordo sinistro della pagina, non
+            alla colonna del contenuto. */}
+        <Link href="/" className="mb-8 inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-500 hover:text-white transition-colors">
+          <ArrowRight size={14} className="rotate-180" />
+          {dict.cartPage.backToHome}
+        </Link>
         <div className="mx-auto max-w-4xl">
-          <Link href="/" className="mb-8 inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-500 hover:text-white transition-colors">
-            <ArrowRight size={14} className="rotate-180" />
-            {dict.cartPage.backToHome}
-          </Link>
           <div className="mb-8 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/15 text-brand-400">
               <ShoppingCart size={20} />

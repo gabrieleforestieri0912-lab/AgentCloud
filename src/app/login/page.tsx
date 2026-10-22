@@ -499,8 +499,9 @@ export default function LoginPage() {
 
       <section className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-6 sm:py-10">
         <div className="w-full max-w-md">
-          {/* Torna alla home — su questa pagina la navbar non è renderizzata */}
-          <div className="mb-6 flex justify-center">
+          {/* Torna alla home — su questa pagina la navbar non è renderizzata.
+              Allineato a sinistra, non centrato. */}
+          <div className="mb-6 flex justify-start">
             <Link
               href="/"
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/60 px-4 py-2 text-xs font-bold text-neutral-300 transition-colors hover:border-white/25 hover:text-white"

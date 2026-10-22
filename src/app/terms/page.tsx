@@ -41,13 +41,15 @@ export default async function TermsPage() {
 
       <Navbar />
       <section className="relative z-10 px-4 pb-20 pt-28 sm:px-6 lg:px-8">
+        {/* Torna alla home: allineato al bordo sinistro della pagina, non
+            alla colonna del testo. */}
+        <Link
+          href="/"
+          className="mb-8 inline-flex text-sm font-semibold text-neutral-400 hover:text-white"
+        >
+          &larr; {legal.backHome}
+        </Link>
         <div className="mx-auto max-w-3xl">
-          <Link
-            href="/"
-            className="mb-8 inline-flex text-sm font-semibold text-neutral-400 hover:text-white"
-          >
-            &larr; {legal.backHome}
-          </Link>
           <h1 className="mb-8 text-4xl font-bold tracking-tight text-white">
             {legal.title}
           </h1>

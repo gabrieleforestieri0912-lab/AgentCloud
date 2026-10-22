@@ -57,14 +57,15 @@ export default async function AboutPage() {
               "radial-gradient(circle at 20% 0%, rgba(3,139,254,0.10), transparent 45%), radial-gradient(circle at 85% 10%, rgba(217,70,239,0.06), transparent 50%)",
           }}
         />
+        {/* Torna alla home: allineato al bordo sinistro della pagina, non
+            alla colonna del contenuto. */}
+        <Link
+          href="/"
+          className="mb-8 inline-flex text-sm font-semibold text-neutral-400 hover:text-white"
+        >
+          &larr; {about.backHome}
+        </Link>
         <div className="relative mx-auto max-w-4xl">
-          <Link
-            href="/"
-            className="mb-8 inline-flex text-sm font-semibold text-neutral-400 hover:text-white"
-          >
-            &larr; {about.backHome}
-          </Link>
-
           <span className="inline-block rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-1 text-xs font-bold uppercase tracking-widest text-brand-300">
             {about.badge}
           </span>

@@ -175,14 +175,20 @@ function CliLoginInner() {
 
   return (
     <main className="min-h-dvh flex items-center justify-center bg-[#0A0A0F] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-red-500/20 bg-[#13131A] p-8 text-center">
-        <AlertTriangle className="mx-auto h-10 w-10 text-red-400" />
-        <h1 className="mt-3 text-lg font-bold text-white">Errore</h1>
-        <p className="mt-2 text-sm text-red-300">{errorMsg ?? "Parametri non validi."}</p>
-        <p className="mt-4 text-xs text-[#6B7280]">Al terminale: [R] riprova browser · [T] incolla token.</p>
-        <Link href="/" className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
-          Torna alla home
-        </Link>
+      <div className="w-full max-w-md">
+        <div className="rounded-2xl border border-red-500/20 bg-[#13131A] p-8 text-center">
+          <AlertTriangle className="mx-auto h-10 w-10 text-red-400" />
+          <h1 className="mt-3 text-lg font-bold text-white">Errore</h1>
+          <p className="mt-2 text-sm text-red-300">{errorMsg ?? "Parametri non validi."}</p>
+          <p className="mt-4 text-xs text-[#6B7280]">Al terminale: [R] riprova browser · [T] incolla token.</p>
+        </div>
+        {/* Torna alla home: allineato a sinistra (bordo del riquadro), non
+            centrato dentro. */}
+        <div className="mt-6">
+          <Link href="/" className="inline-flex rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
+            Torna alla home
+          </Link>
+        </div>
       </div>
     </main>
   );

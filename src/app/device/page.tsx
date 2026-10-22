@@ -135,7 +135,8 @@ function DeviceInner() {
         <p className="mt-6 text-center text-xs text-[#6B7280]">
           Non hai un codice? Esegui <code className="text-[#9CA3AF]">agentcloud login --device</code> nel terminale.
         </p>
-        <p className="mt-2 text-center text-xs">
+        {/* Torna alla home: allineato a sinistra, non centrato. */}
+        <p className="mt-2 text-left text-xs">
           <Link href="/" className="text-[#038BFE] hover:underline">Torna alla home</Link>
         </p>
       </div>

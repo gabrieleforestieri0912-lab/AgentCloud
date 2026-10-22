@@ -65,14 +65,15 @@ export default async function MobileAppPage() {
               "radial-gradient(circle at 20% 0%, rgba(3,139,254,0.10), transparent 45%), radial-gradient(circle at 85% 10%, rgba(217,70,239,0.06), transparent 50%)",
           }}
         />
+        {/* Torna alla home: allineato al bordo sinistro della pagina, non
+            alla colonna del contenuto. */}
+        <Link
+          href="/"
+          className="mb-8 inline-flex text-sm font-semibold text-neutral-400 hover:text-white"
+        >
+          &larr; {mobile.backHome}
+        </Link>
         <div className="relative mx-auto max-w-4xl">
-          <Link
-            href="/"
-            className="mb-8 inline-flex text-sm font-semibold text-neutral-400 hover:text-white"
-          >
-            &larr; {mobile.backHome}
-          </Link>
-
           <div className="grid grid-cols-1 items-center gap-10 sm:grid-cols-[1fr_auto]">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-1 text-xs font-bold uppercase tracking-widest text-brand-300">

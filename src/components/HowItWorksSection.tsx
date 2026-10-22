@@ -99,29 +99,40 @@ export default function HowItWorksSection() {
             <span className="text-xs font-bold text-neutral-400">{hw.demoTitle}</span>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/5 bg-neutral-950 p-3">
+            {/* I tre passi dell'esempio hanno la STESSA anatomia: etichetta
+                sopra, riquadro dentro con icona + testo, stessa altezza.
+                Prima ogni scheda aveva un impianto diverso (una riga con
+                logo, un chip verde, un chip arancione) e non si allineavano. */}
+            <div className="flex flex-col rounded-xl border border-white/5 bg-neutral-950 p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">{hw.demoStep1}</p>
-              <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/5 bg-neutral-900 p-2.5">
+              <div className="mt-2 flex min-h-14 flex-1 items-center gap-2 rounded-lg border border-white/5 bg-neutral-900 p-2.5">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20">
                   <BrandLogo slug="shopify" size={20} />
                 </span>
-                <div>
-                  <p className="text-xs font-bold text-white">{hw.demoAgentName}</p>
-                  <p className="text-xs text-neutral-500">{hw.demoAgentPrice} • {hw.demoAgentReady}</p>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold text-white">{hw.demoAgentName}</p>
+                  <p className="truncate text-xs text-neutral-500">{hw.demoAgentPrice} • {hw.demoAgentReady}</p>
                 </div>
-                <Check size={12} className="ml-auto text-emerald-400" />
+                <Check size={12} className="ml-auto shrink-0 text-emerald-400" />
               </div>
             </div>
-            <div className="rounded-xl border border-white/5 bg-neutral-950 p-3">
+            <div className="flex flex-col rounded-xl border border-white/5 bg-neutral-950 p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">{hw.demoStep2}</p>
-              <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-xs font-bold text-emerald-300">
-                <Check size={12} className="mr-1 inline-block -translate-y-px" />
-                {hw.demoConnected}
+              <div className="mt-2 flex min-h-14 flex-1 items-center gap-2 rounded-lg border border-white/5 bg-neutral-900 p-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+                  <PlugZap size={15} />
+                </span>
+                <p className="min-w-0 text-xs font-bold text-white">{hw.demoConnected}</p>
               </div>
             </div>
-            <div className="rounded-xl border border-white/5 bg-neutral-950 p-3">
+            <div className="flex flex-col rounded-xl border border-white/5 bg-neutral-950 p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">{hw.demoStep3}</p>
-              <div className="mt-2 rounded-lg bg-brand-500 p-2.5 text-xs font-bold text-white">{hw.demoResult}</div>
+              <div className="mt-2 flex min-h-14 flex-1 items-center gap-2 rounded-lg border border-white/5 bg-neutral-900 p-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-500/20 text-brand-300">
+                  <MessageSquare size={15} />
+                </span>
+                <p className="min-w-0 text-xs font-bold text-white">{hw.demoResult}</p>
+              </div>
             </div>
           </div>
         </motion.div>
