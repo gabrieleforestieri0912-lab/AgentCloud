@@ -18,7 +18,7 @@
  */
 
 /** Kind of memory item. */
-export type MemoryType = "fact" | "preference" | "summary" | "event";
+export type MemoryType = "fact" | "preference" | "summary" | "event" | "meta";
 
 /** All the memory types, in the order used by the UI filters. */
 export const MEMORY_TYPES: readonly MemoryType[] = [
@@ -27,6 +27,16 @@ export const MEMORY_TYPES: readonly MemoryType[] = [
   "summary",
   "event",
 ];
+
+/**
+ * Internal, non-user-visible types.
+ *
+ * `meta` holds bookkeeping (for now only the watermark of what the
+ * extraction has already processed). These items are never retrieved, are
+ * excluded from the list API and are only returned by the GDPR export,
+ * where every byte stored about the user is returned.
+ */
+export const INTERNAL_MEMORY_TYPES: readonly MemoryType[] = ["meta"];
 
 /** True when `value` is a valid memory type. */
 export function isMemoryType(value: unknown): value is MemoryType {

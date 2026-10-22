@@ -20,7 +20,7 @@ create table if not exists public.agent_memory_items (
   tenant_id text not null,
   agent_id text not null,
   user_id text not null,
-  type text not null check (type in ('fact', 'preference', 'summary', 'event')),
+  type text not null check (type in ('fact', 'preference', 'summary', 'event', 'meta')),
   content text not null,
   embedding jsonb,
   importance real not null default 0.5 check (importance >= 0 and importance <= 1),

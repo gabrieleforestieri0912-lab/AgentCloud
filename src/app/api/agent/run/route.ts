@@ -883,6 +883,11 @@ export async function POST(req: Request) {
                 expiresAt: memoryScope.tenantId === "anonymous"
                   ? anonExpiresAt
                   : undefined,
+                // L'esito dell'estrazione è una voce di audit (soprattutto
+                // il "mode", che dice su quanto della storia ha lavorato il
+                // modello): è il modo economico di controllare che il
+                // watermark stia risparmiando davvero.
+                logger: logAudit,
               });
             }
           } catch (error) {

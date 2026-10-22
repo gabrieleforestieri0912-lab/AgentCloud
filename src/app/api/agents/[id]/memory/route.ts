@@ -75,10 +75,19 @@ export async function GET(
     limit,
   });
 
-  auditMemoryApi("memory_api_list", context, { count: items.length, type: type ?? null });
+  auditMemoryApi("memory_api_list", context, {
+    count: items.length,
+    type: type ?? null,
+  });
+
+  // Gli item `meta` sono dati di consegna interna (il watermark
+  // dell'estrazione): non sono memoria richiamabile e contengono solo il
+  // conteggio e l'impronta, quindi non escono nella lista. Restano coperti
+  // dall'export GDPR completo, che comprende tutto ciò che è conservato.
+  const visible = items.filter((item) => item.type !== "meta");
 
   return NextResponse.json(
-    { items: items.map(toPublicItem), count: items.length },
+    { items: visible.map(toPublicItem), count: visible.length },
     { status: 200 },
   );
 }
