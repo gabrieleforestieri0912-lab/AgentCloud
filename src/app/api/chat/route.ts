@@ -523,11 +523,12 @@ export async function POST(req: Request) {
           // Il contatore del dispositivo va letto +1: il messaggio appena
           // consumato l'ha già incrementato, e la quota mostrata deve
           // riflettere quello (non il valore di prima della richiesta).
+          const guestUsed = readGuestUsed(req);
           const quota = isSubscriber
             ? null
             : await checkFreeUsage(userId, {
                 ip: ip ?? undefined,
-                guestUsed: readGuestUsed(req) + 1,
+                guestUsed: guestUsed === null ? null : guestUsed + 1,
               });
           send({
             type: "done",
