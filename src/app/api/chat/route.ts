@@ -36,7 +36,6 @@ import { apiErrorMessage, apiErrorMessageForLocale } from "@/lib/i18n/api-errors
 import { getClientIp } from "@/lib/request-ip";
 import { RATE_LIMIT_WINDOWS, rateLimit } from "@/lib/rate-limit";
 import { checkFreeUsage, consumeFreeUsage } from "@/lib/billing/free-usage";
-import { getFreeMessagesUsed } from "@/lib/billing/free-limit";
 import { guestUsageCookie, readGuestUsed } from "@/lib/billing/guest-counter";
 import {
   assertPrimaryPoolAllowed,
