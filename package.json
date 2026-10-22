@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "lint:naming": "node check-naming.mjs",
-    "test:memory": "node --test --import ./test-resolve-hooks.mjs \"src/lib/memory/tests/*.test.mts\""
+    "lint:naming": "node check-naming.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

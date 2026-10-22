@@ -137,7 +137,17 @@ del progetto girano così come sono.
 | 3 | estrazione dei fatti, dedup, lungo termine | ✅ |
 | 4 | retrieval e injection nel prompt | ✅ |
 | 5 | endpoint REST, flag per agente, TTL, GDPR | ✅ |
-| 6 | test (unitari, multi-tenant, injection, scadenza, fallback) | ⏳ |
+| 6 | test (unitari, multi-tenant, injection, scadenza, fallback) | ✅ |
+
+## Verifica
+
+I file di test sono usa-e-getta (`.opencode/rules.md`), quindi sono stati
+eliminati a fine lavoro. La procedura di verifica è rimasta **documentata**
+in [`VERIFICATION.md`](./VERIFICATION.md): il banco di prova (senza
+dipendenze, con `node --test`), la suite di accettazione completa (9 casi,
+uno per criterio di accettazione) e la procedura manuale sul sistema vero
+(server di produzione + LLM reale, due utenti per l'isolamento).
+
 
 ## Memoria a breve termine (fase 2)
 
