@@ -57,26 +57,31 @@ function safeEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-/** Il contatore del dispositivo, letto dal cookie firmato (0 se assente). */
-export function readGuestUsed(req: Request): number {
-  if (!signingSecret()) return 0;
+/**
+ * Il contatore del dispositivo, letto dal cookie firmato.
+ *
+ * `null` = nessun cookie valido (il visitatore non ne ha uno, o non lo
+ * conserva): in quel caso decide il contatore per IP.
+ */
+export function readGuestUsed(req: Request): number | null {
+  if (!signingSecret()) return null;
   const header = req.headers.get("cookie") ?? "";
   const match = header
     .split(";")
     .map((part) => part.trim())
     .find((part) => part.startsWith(`${COOKIE_NAME}=`));
-  if (!match) return 0;
+  if (!match) return null;
   const raw = decodeURIComponent(match.slice(COOKIE_NAME.length + 1));
   const dot = raw.lastIndexOf(".");
-  if (dot <= 0) return 0;
+  if (dot <= 0) return null;
   const payload = raw.slice(0, dot);
   const signature = raw.slice(dot + 1);
-  if (!safeEqual(signature, sign(payload))) return 0;
+  if (!safeEqual(signature, sign(payload))) return null;
   try {
     const count = Number(Buffer.from(payload, "base64url").toString("utf8"));
     return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
   } catch {
-    return 0;
+    return null;
   }
 }
 
