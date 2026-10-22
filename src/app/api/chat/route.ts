@@ -207,6 +207,9 @@ export async function POST(req: Request) {
         guestUsed,
       });
       if (!free.allowed) {
+        // Il dispositivo viene "registrato" anche quando il messaggio è
+        // rifiutato: così il visitatore dietro una NAT non resta bloccato
+        // dall'IP condiviso al tentativo successivo.
         return Response.json(
           {
             error: apiErrorMessageForLocale(locale, "freeLimitReached"),
@@ -214,7 +217,12 @@ export async function POST(req: Request) {
             remaining: free.remaining,
             limit: free.limit,
           },
-          { status: 402 },
+          {
+            status: 402,
+            headers: {
+              "Set-Cookie": guestUsageCookie(guestUsed ?? 0),
+            },
+          },
         );
       }
     } else if (!isDemoSurface) {
