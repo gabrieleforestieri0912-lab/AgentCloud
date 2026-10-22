@@ -226,6 +226,13 @@ export function createMemoryService(deps: MemoryServiceDeps): MemoryService {
           store.touch(scope, hit.item.id, new Date(now).toISOString()),
         ),
       );
+      logger("memory_retrieval", {
+        tenantId: scope.tenantId,
+        agentId: scope.agentId,
+        userId: scope.userId,
+        found: hits.length,
+        topScore: Number((hits[0]?.score ?? 0).toFixed(3)),
+      });
       return hits;
     },
 

@@ -33,6 +33,11 @@ export interface MemoryStore {
   delete(scope: MemoryScope, id: string): Promise<boolean>;
   /** Deletes the items of the scope. Returns the number of deleted rows. */
   deleteMany(scope: MemoryScope, filter?: MemoryListFilter): Promise<number>;
+  /**
+   * Verifies that the storage is usable (the table exists, the backend
+   * risponde). When it returns false the caller degrades to another store.
+   */
+  probe?(): Promise<boolean>;
 }
 
 /** True when the item is expired at the given moment. */

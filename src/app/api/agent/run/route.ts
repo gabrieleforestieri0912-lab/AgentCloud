@@ -56,6 +56,7 @@ import {
 import { createLlmConversationSummarizer } from "@/lib/memory/summarizer";
 import { resolveMemoryConfig } from "@/lib/memory/config";
 import { ingestConversationMemory } from "@/lib/memory/ingest";
+import { buildMemoryBlock } from "@/lib/memory/prompt";
 import {
   getMemoryExtractor,
   getMemoryService,
@@ -348,17 +349,39 @@ export async function POST(req: Request) {
   //    l'indice (nome + descrizione + rischio); il corpo della SKILL.md entra
   //    nel contesto solo se la richiesta corrisponde a una description. Vedi
   //    `lib/skills/runtime.ts` e `lib/skills/installed.ts`.
-  const [microsoftConnected, outlookConnected, skillsRun] = await Promise.all([
-    isMicrosoftConnected(effectiveTenant),
-    isOutlookConnected(effectiveTenant),
-    prepareSkillsForRun({
-      accountId: userId !== "anonymous" ? userId : null,
-      agentSlug: agentId,
-      // `lastUserText` può tornare undefined (nessun messaggio utente): in
-      // quel caso non c'è nulla su cui abbinare una skill.
-      userText: lastUserText(initialMessages) ?? "",
-    }),
-  ]);
+  //  - memoria a lungo termine: i fatti più rilevanti per la richiesta
+  //    entrano nel prompt come blocco `<memoria>`. Se la memoria non è
+  //    disponibile la richiesta va avanti senza (fail-safe).
+  const memoryConfig = resolveMemoryConfig(agentId);
+  const memoryScope =
+    userId !== "anonymous" ? createScope(userId, agentId, userId) : null;
+  const userText = lastUserText(initialMessages) ?? "";
+  const [microsoftConnected, outlookConnected, skillsRun, memoryHits] =
+    await Promise.all([
+      isMicrosoftConnected(effectiveTenant),
+      isOutlookConnected(effectiveTenant),
+      prepareSkillsForRun({
+        accountId: userId !== "anonymous" ? userId : null,
+        agentSlug: agentId,
+        // `lastUserText` può tornare undefined (nessun messaggio utente): in
+        // quel caso non c'è nulla su cui abbinare una skill.
+        userText,
+      }),
+      memoryScope && memoryConfig.enabled
+        ? getMemoryService(agentId)
+            .then(({ service }) =>
+              service.search(memoryScope, userText, {
+                limit: memoryConfig.retrievalK,
+              }),
+            )
+            .catch(() => [])
+        : Promise.resolve([]),
+    ]);
+  // Blocco di memoria per il prompt. `null` quando non c'è niente da
+  // ricordare: un blocco vuoto sarebbe solo rumore.
+  const memoryBlock = buildMemoryBlock(memoryHits, {
+    tokenBudget: memoryConfig.tokenBudget,
+  });
   if (!microsoftConnected) {
     enabledToolNames = enabledToolNames.filter((t) => !isMicrosoftToolName(t));
   }
@@ -466,7 +489,6 @@ export async function POST(req: Request) {
         //
         // Il riassunto entra nel system prompt come blocco delimitato e
         // marcato come dato (non come istruzioni).
-        const memoryConfig = resolveMemoryConfig(agentId);
         let summaryBlock: string | null = null;
         if (memoryConfig.enabled && initialMessages.length > 0) {
           const shortTerm = new ShortTermMemory({
@@ -566,6 +588,7 @@ export async function POST(req: Request) {
               // prompt (connect guidance, formato, identità, consegna, lingua).
               system: buildAgentSystemPrompt(config.systemPrompt, replyLocale, undefined, skillsIndex) +
                 (repoContext ? `\n\n${repoContext}` : "") +
+                (memoryBlock ? `\n\n${memoryBlock}` : "") +
                 (summaryBlock ? `\n\n${summaryBlock}` : ""),
               messages: conversationMessages,
               tools: enabledTools,

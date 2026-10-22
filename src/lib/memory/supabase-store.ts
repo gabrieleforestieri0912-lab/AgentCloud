@@ -207,6 +207,18 @@ export function createSupabaseMemoryStore(): MemoryStore | null {
       if (error || !data) return 0;
       return data.length;
     },
+
+    /**
+     * Verifica che la tabella esista.
+     *
+     * Serve a degradare pulitamente quando la migrazione non è stata
+     * applicata: senza tabella ogni scrittura fallirebbe, e la memoria
+     * deve comunque poter funzionare (in memoria, per la sessione).
+     */
+    async probe(): Promise<boolean> {
+      const { error } = await table().select("id").limit(1);
+      return !error;
+    },
   };
 }
 
@@ -214,13 +226,21 @@ export function createSupabaseMemoryStore(): MemoryStore | null {
  * Returns the Supabase storage when available, otherwise the in-memory one.
  *
  * The fallback keeps the agent alive (no memory, but answers), which is the
- * "fail safe" rule of the feature.
+ * "fail safe" rule of the feature. The fallback is used in two cases: the
+ * service role key is missing, or the migration has not been applied yet
+ * (the table does not exist).
  */
 export async function createMemoryStore(): Promise<{
   store: MemoryStore;
   persistent: boolean;
 }> {
   const supabase = createSupabaseMemoryStore();
-  if (supabase) return { store: supabase, persistent: true };
+  if (supabase) {
+    const usable = await supabase.probe?.();
+    if (usable !== false) return { store: supabase, persistent: true };
+    console.warn(
+      "memory: table agent_memory_items is not available, using the in-memory store. Apply supabase/schema-agent-memory.sql.",
+    );
+  }
   return { store: createInMemoryMemoryStore(), persistent: false };
 }
