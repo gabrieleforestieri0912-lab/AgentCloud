@@ -12,6 +12,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { CartProvider } from "@/components/CartProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import AppShortcuts from "@/components/AppShortcuts";
 import { themeInitScript } from "@/lib/theme-script";
 import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { LOCALE_LABELS } from "@/lib/i18n/constants";
@@ -285,6 +286,7 @@ export default async function RootLayout({
             <CartProvider>{children}</CartProvider>
           </ThemeProvider>
         </LanguageProvider>
+        <AppShortcuts />
         <Analytics />
         <SpeedInsights />
       </body>

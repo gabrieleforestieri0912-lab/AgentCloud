@@ -13,7 +13,6 @@
  * dell'hero e gestione errori con link al supporto.
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -32,10 +31,6 @@ import {
   ChevronDown,
   FileText,
   Bot,
-  ShoppingCart,
-  User,
-  Settings,
-  LogOut,
   CheckCircle2,
   ArrowRight,
   ArrowDown,
@@ -59,6 +54,7 @@ import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
 import InlineConnectCard from "@/components/InlineConnectCard";
 import InlineCartCard from "@/components/InlineCartCard";
+import AccountMenu from "@/components/AccountMenu";
 import ChatOnboarding from "./ChatOnboarding";
 import {
   AttachmentChips,
@@ -383,7 +379,8 @@ export default function ChatInterface({
     };
   }, [mobileSidebarOpen]);
   const [sidebarSession, setSidebarSession] = useState<import("@supabase/supabase-js").Session | null>(null);
-  // Popup gestione account: si apre dal bottone account in sidebar.
+  // Menu account: si apre dal bottone account in sidebar. Lo stato vive qui
+  // perché la sidebar ristretta deve chiuderlo.
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   // L'identità arriva dal server (prop `account`): la sidebar mostra subito
   // l'account reale e non i segnaposto "?"/"..." mentre la sessione del browser
@@ -3263,100 +3260,18 @@ export default function ChatInterface({
           )}
         </div>
 
-        {/* Account: il click apre un menu di fianco alla sidebar */}
+        {/* Account: il click apre il menu account di fianco alla sidebar */}
         <div data-onboard="account" className="relative p-2 border-t border-white/[0.06]">
-          <button
-            onClick={() => setAccountMenuOpen((v) => !v)}
-            aria-expanded={accountMenuOpen}
-            aria-haspopup="menu"
-            className="w-full flex items-center gap-2.5 rounded-2xl p-2 hover:bg-white/[0.05] transition-all"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 text-xs font-bold text-brand-300 shrink-0 overflow-hidden ring-2 ring-white/[0.06]">
-              {accountAvatarUrl ? (
-                <img src={accountAvatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
-              ) : accountLabelBase ? (
-                accountLabelBase
-                  .split(/[\s@.]+/)
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((s: string) => s[0]?.toUpperCase())
-                  .join("") || "?"
-              ) : (
-                <span className="animate-pulse">...</span>
-              )}
-            </div>
-            <p className="min-w-0 flex-1 truncate text-left text-sm font-bold text-white">
-              {accountEmail || "..."}
-            </p>
-          </button>
-          {/* Menu account di fianco alla sidebar (sopra il bottone su mobile) */}
-          {accountMenuOpen && createPortal(
-            <>
-              <button
-                type="button"
-                aria-label={dict.chat.close}
-                tabIndex={-1}
-                onClick={() => setAccountMenuOpen(false)}
-                className="fixed inset-0 z-40 cursor-default"
-              />
-              <div
-                role="menu"
-                style={sidebarResize.isDesktop ? { left: sidebarResize.width + 12 } : undefined}
-                className="fixed z-50 w-60 rounded-2xl border border-white/10 bg-neutral-900 p-2 shadow-2xl shadow-black/60 left-[268px] bottom-4 max-lg:left-4 max-lg:right-4 max-lg:w-auto max-lg:bottom-28"
-              >
-                <div className="flex items-center gap-2.5 px-2 pt-1 pb-2">
-                  <p className="min-w-0 flex-1 truncate text-xs font-bold text-white" title={accountTooltip ?? undefined}>
-                    {accountEmail || "..."}
-                  </p>
-                </div>
-                <Link
-                  href="/account"
-                  role="menuitem"
-                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
-                >
-                  <User size={14} className="shrink-0 text-neutral-400" />
-                  Account
-                </Link>
-                <Link
-                  href="/settings"
-                  role="menuitem"
-                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
-                >
-                  <Settings size={14} className="shrink-0 text-neutral-400" />
-                  {dict.navbar.settings}
-                </Link>
-                <Link
-                  href="/cart"
-                  role="menuitem"
-                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
-                >
-                  <ShoppingCart size={14} className="shrink-0 text-neutral-400" />
-                  {dict.sidebarAccount.cart}
-                </Link>
-                <Link
-                  href="/dashboard"
-                  role="menuitem"
-                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-white hover:bg-white/10 transition-all"
-                >
-                  <Home size={14} className="shrink-0 text-neutral-400" />
-                  Dashboard
-                </Link>
-                <button
-                  role="menuitem"
-                  onClick={async () => {
-                    try { await createClient().auth.signOut(); } catch {}
-                    window.location.replace("/login");
-                  }}
-                  className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-bold text-red-300 hover:bg-red-500/15 transition-all"
-                >
-                  <LogOut size={14} className="shrink-0" />
-                  {dict.sidebarAccount.signOut}
-                </button>
-              </div>
-            </>
-            ,
-            document.body
-          )}
+          <AccountMenu
+            email={accountEmail}
+            avatarUrl={accountAvatarUrl}
+            labelBase={accountLabelBase}
+            tooltip={accountTooltip}
+            sidebarWidth={sidebarResize.width}
+            isDesktop={sidebarResize.isDesktop}
+            open={accountMenuOpen}
+            onOpenChange={setAccountMenuOpen}
+          />
         </div>
       </aside>
         {/* Maniglia di ridimensionamento: si trascina il bordo destro (solo
