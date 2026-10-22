@@ -39,9 +39,23 @@ e `npm run dev` qui dentro.
 
 ### Login
 
-Gli URL di autenticazione **restano nella finestra** (non vengono aperti nel
-browser di sistema): è il cookie jar dell'app a ricevere la sessione Supabase.
-Tutto il resto si apre nel browser come sempre.
+Il login Google **passa dal browser di sistema**, come in ogni app desktop:
+Google (e gli altri provider) rifiutano l'OAuth dentro una webview incorporata
+("This browser or app may not be secure").
+
+Il flusso:
+
+1. la pagina `/login` del web app, accorgendosi del ponte `window.agentcloud`,
+   avvia l'OAuth con `redirectTo: agentcloud://auth` e `skipBrowserRedirect`;
+2. l'URL di autorizzazione viene aperto nel browser di sistema;
+3. l'utente si autentica e Supabase risponde sul deep link `agentcloud://auth`
+   con i token;
+4. il desktop intercetta il deep link e lo inoltra alla finestra;
+5. la pagina rimette la sessione (`setSession`) e prosegue come dopo un
+   accesso normale.
+
+Nel web (senza app desktop) il flusso è quello di sempre: redirect a
+`/auth/callback`.
 
 ## Sviluppo
 

@@ -44,16 +44,21 @@ function createWindow(): void {
     },
   });
 
-  // Link esterni (OAuth, integrazioni, marketplace) nel browser di sistema.
-  // ECCEZIONE: gli URL di autenticazione restano nella finestra, altrimenti
-  // la sessione Supabase finirebbe nel browser e l'app resterebbe fuori.
+  // I link esterni (marketplace, integrazioni, documenti) si aprono nel browser
+  // di sistema, mai nella finestra.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (isAuthUrl(url)) {
-      void mainWindow?.loadURL(url);
-      return { action: "deny" };
-    }
     void shell.openExternal(url);
     return { action: "deny" };
+  });
+
+  // Anche le NAVIGAZIONI verso l'autenticazione vanno nel browser di sistema:
+  // Google (e gli altri provider) rifiutano l'OAuth dentro una webview
+  // incorporata ("This browser or app may not be secure"). Il ritorno arriva
+  // con il deep link agentcloud://auth, che il main inoltra alla finestra.
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    if (!isAuthUrl(url)) return;
+    event.preventDefault();
+    void shell.openExternal(url);
   });
 
   const web = targetUrl();

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Home, Loader2, Mail } from "lucide-react";
@@ -19,6 +19,7 @@ import {
   resetClientAttemptThrottle,
   HONEYPOT_FIELD_NAME,
 } from "@/lib/forms-security";
+import type { DesktopBridge } from "@/types/desktop";
 
 // Pagina di login (client): applica difese anti-bot/anti-brute-force prima di
 // chiamare Supabase Auth, e riprende i flussi OAuth in sospeso (intent=...).
@@ -90,6 +91,16 @@ export default function LoginPage() {
   const [resetting, setResetting] = useState(false);
 
   const a = dict.auth;
+
+  // App desktop (Electron): la finestra carica questo web app e il login
+  // Google DEVE passare dal browser di sistema (Google rifiuta l'OAuth dentro
+  // una webview incorporata). Il ritorno arriva con il deep link
+  // agentcloud://auth, che il desktop inoltra alla pagina.
+  const [desktop, setDesktop] = useState<DesktopBridge | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDesktop(window.agentcloud ?? null);
+  }, []);
 
   // Precompila l'email quando il proxy rimanda qui un waitlist-user
   // (?reason=complete_account&email=...): non conosce la password provvisoria,
@@ -348,6 +359,32 @@ export default function LoginPage() {
     try {
       const supabase = createClient();
       const next = getNextParam();
+
+      // App desktop: il login parte nel browser di sistema e il ritorno
+      // arriva con il deep link (l'uso effettivo è gestito da
+      // completeSignInFromDeepLink).
+      if (desktop) {
+        const redirectTo = `agentcloud://auth${
+          next ? `?next=${encodeURIComponent(next)}` : ""
+        }`;
+        const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+            // L'URL torna a noi invece di navigare: lo apriamo noi nel browser.
+            skipBrowserRedirect: true,
+            scopes: "email profile",
+            queryParams: { access_type: "offline", prompt: "consent" },
+          },
+        });
+        if (oauthError || !data?.url) {
+          setError(a.errors.googleFailed);
+          return;
+        }
+        await desktop.openExternal(data.url);
+        return;
+      }
+
       const redirectTo = `${window.location.origin}/auth/callback${
         next ? `?next=${encodeURIComponent(next)}` : ""
       }`;
@@ -366,6 +403,84 @@ export default function LoginPage() {
       setGoogleLoading(false);
     }
   }
+
+  /**
+   * Ritorno del login dal browser di sistema (app desktop).
+   *
+   * Il desktop inoltra il deep link `agentcloud://auth` con i token nel
+   * fragmento (`#access_token=...&refresh_token=...`, lo stesso formato del
+   * client nativo). Qui si rimette la sessione e si prosegue come dopo un
+   * accesso normale.
+   */
+  const completeSignInFromDeepLink = useCallback(
+    async (deepLinkUrl: string) => {
+      const supabase = createClient();
+      // I token stanno nel fragmento; il "next" nella query.
+      const hash = deepLinkUrl.split("#")[1] ?? "";
+      const hashParams = new URLSearchParams(hash.replace(/&/g, "&"));
+      let queryParams: URLSearchParams;
+      try {
+        queryParams = new URL(deepLinkUrl).searchParams;
+      } catch {
+        queryParams = new URLSearchParams();
+      }
+
+      const accessToken = hashParams.get("access_token") ?? "";
+      const refreshToken = hashParams.get("refresh_token") ?? "";
+      if (!accessToken) {
+        // Fallback PKCE: se il provider ha restituito un codice invece dei
+        // token, si scambia il codice per la sessione.
+        const authCode = queryParams.get("code");
+        if (!authCode) return;
+        setGoogleLoading(true);
+        setError("");
+        try {
+          const { error: exchangeError } =
+            await supabase.auth.exchangeCodeForSession(authCode);
+          if (exchangeError) {
+            setError(a.errors.googleFailed);
+            return;
+          }
+          await completeSignIn();
+        } catch {
+          setError(a.errors.network);
+        } finally {
+          setGoogleLoading(false);
+        }
+        return;
+      }
+
+      setGoogleLoading(true);
+      setError("");
+      try {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (sessionError) {
+          setError(a.errors.googleFailed);
+          return;
+        }
+        await completeSignIn();
+      } catch {
+        setError(a.errors.network);
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    // completeSignIn è ricreato a ogni render ma usa solo funzioni stabili.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [a.errors.googleFailed, a.errors.network],
+  );
+
+  // Ascolta il deep link finché la pagina è viva.
+  useEffect(() => {
+    if (!desktop) return;
+    const unsubscribe = desktop.onDeepLink((url) => {
+      void completeSignInFromDeepLink(url);
+    });
+    return unsubscribe;
+  }, [desktop, completeSignInFromDeepLink]);
 
   return (
     <main className="relative min-h-dvh overflow-x-hidden dark-gradient-main">
