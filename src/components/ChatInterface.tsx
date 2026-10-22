@@ -55,6 +55,7 @@ import AppHeader from "./AppHeader";
 import InlineConnectCard from "@/components/InlineConnectCard";
 import InlineCartCard from "@/components/InlineCartCard";
 import AccountMenu from "@/components/AccountMenu";
+import LinkAwareTextarea from "@/components/LinkAwareTextarea";
 import ChatOnboarding from "./ChatOnboarding";
 import {
   AttachmentChips,
@@ -3636,15 +3637,16 @@ export default function ChatInterface({
                     />
                     {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
                     <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-                      <textarea
-                        ref={inputRef}
+                      <LinkAwareTextarea
+                        inputRef={inputRef}
                         value={input}
-                        onChange={(e) => handleInputChange(e.target.value)}
+                        onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
                         onPaste={attach.makePaste(attachLabels)}
                         placeholder={dict.chat.placeholder}
                         rows={2}
-                        className="w-full bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none px-4 pt-3 pb-16 leading-relaxed"
+                        wrapperClassName="w-full"
+                        className="px-4 pt-3 pb-16"
                         style={{ minHeight: "84px", maxHeight: "280px" } as React.CSSProperties}
                       />
                       {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
@@ -4161,15 +4163,16 @@ export default function ChatInterface({
                   onToggleWebSearch={setWebSearchEnabled}
                 />
               </div>
-              <textarea
-                ref={inputRef}
+              <LinkAwareTextarea
+                inputRef={inputRef}
                 value={input}
-                onChange={(e) => handleInputChange(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 onPaste={attach.makePaste(attachLabels)}
                 placeholder={dict.chat.placeholder}
                 rows={1}
-                className="min-w-0 flex-1 bg-transparent text-[15px] text-white placeholder-neutral-500 resize-none outline-none py-2.5 leading-relaxed"
+                wrapperClassName="flex-1"
+                className="py-2.5"
                 style={{ fieldSizing: "content", maxHeight: "160px" } as React.CSSProperties}
               />
               <div className="flex shrink-0 items-center gap-2">
