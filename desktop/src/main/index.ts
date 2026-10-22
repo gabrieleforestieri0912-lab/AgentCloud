@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell } from "electron";
 import { join } from "node:path";
+import { isAuthUrl, resolveTargetUrl } from "./target";
 
 /**
  * Processo main: una finestra, navigazione esterna nel browser di sistema,
@@ -7,10 +8,24 @@ import { join } from "node:path";
  *
  * Niente credenziali qui: la sessione vive nel renderer (Supabase, come una
  * SPA). Il main inoltra solo l'URL di callback OAuth alla finestra.
+ *
+ * LA FINESTRA CARICA IL WEB APP (di default): il prodotto è il sito, quindi il
+ * desktop non ne reimplementa l'interfaccia — la ottiene per costruzione, senza
+ * doppia manutenzione. Il renderer nativo resta disponibile come "client
+ * leggero" con AGENTCLOUD_DESKTOP_MODE=native.
  */
 
 const PROTOCOL = "agentcloud";
 let mainWindow: BrowserWindow | null = null;
+
+/** L'URL da caricare: il web app, o null per il renderer nativo. */
+function targetUrl(): string | null {
+  return resolveTargetUrl({
+    mode: process.env.AGENTCLOUD_DESKTOP_MODE,
+    webUrl: process.env.AGENTCLOUD_WEB_URL,
+    isDev: Boolean(process.env["ELECTRON_RENDERER_URL"]),
+  });
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -30,12 +45,27 @@ function createWindow(): void {
   });
 
   // Link esterni (OAuth, integrazioni, marketplace) nel browser di sistema.
+  // ECCEZIONE: gli URL di autenticazione restano nella finestra, altrimenti
+  // la sessione Supabase finirebbe nel browser e l'app resterebbe fuori.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAuthUrl(url)) {
+      void mainWindow?.loadURL(url);
+      return { action: "deny" };
+    }
     void shell.openExternal(url);
     return { action: "deny" };
   });
 
-  if (process.env["ELECTRON_RENDERER_URL"]) {
+  const web = targetUrl();
+  if (web) {
+    // Il web app: se non si carica (rete assente, sito giù) si apre nel
+    // browser di sistema invece di lasciare una finestra vuota.
+    mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
+      console.error("Caricamento del web app fallito:", errorCode, errorDescription);
+      void shell.openExternal(web);
+    });
+    void mainWindow.loadURL(web);
+  } else if (process.env["ELECTRON_RENDERER_URL"]) {
     void mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
   } else {
     void mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
@@ -60,7 +90,7 @@ if (!gotLock) {
     const url = argv.find((a) => a.startsWith(`${PROTOCOL}://`));
     if (url) handleDeepLink(url);
   });
-  // macOS: protocollo invocato ad app già aperta.
+  // macOS: protocollo invocato da app già aperto.
   app.on("open-url", (event, url) => {
     event.preventDefault();
     handleDeepLink(url);
