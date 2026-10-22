@@ -1,0 +1,20 @@
+name: naming
+
+# Il naming (file, cartelle, componenti, variabili) è in inglese; i commenti
+# e i testi restano in italiano. Il guard lo tiene vero a ogni PR.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: naming in inglese
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run lint:naming
