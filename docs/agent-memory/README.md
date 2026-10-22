@@ -108,6 +108,15 @@ Default in `src/lib/memory/config.ts`, override per agente in fase 5.
 La tabella si crea con `supabase/schema-agent-memory.sql` (la stessa DDL è
 anche in `supabase/schema.sql`, che è la fonte di verità del progetto).
 
+> **Stato del database di sviluppo (2026-10-22):** lo schema è stato
+> **applicato**, la persistenza è attiva. Verificato sul sistema vero: il
+> processo del server ucciso e riavviato, la memoria recuperata dal database
+> (`memory_retrieval found≈4-5`); dedup funzionante su righe reali
+> (`memory_update` con similarità 0.83-0.87 invece di duplicare); `PATCH`
+> della configurazione operativo (poi 500 solo se la tabella manca); GDPR
+> `delete_all` azzera le righe del tenant (`deleted: 7` → 0). Le verifiche
+> sono descritte in [`VERIFICATION.md`](./VERIFICATION.md).
+
 ```bash
 # incolla il file nel SQL editor del progetto, oppure
 psql "$DATABASE_URL" -f supabase/schema-agent-memory.sql
