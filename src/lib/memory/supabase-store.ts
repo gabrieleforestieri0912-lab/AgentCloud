@@ -25,7 +25,7 @@ import type {
   MemoryScope,
   MemoryType,
 } from "./types";
-import { isMemoryType } from "./types";
+import { isStoredMemoryType } from "./types";
 
 /** Row of the table `agent_memory_items`. */
 export type MemoryItemRow = {
@@ -50,7 +50,7 @@ export function rowToMemoryItem(row: MemoryItemRow): MemoryItem {
     tenantId: row.tenant_id,
     agentId: row.agent_id,
     userId: row.user_id,
-    type: (isMemoryType(row.type) ? row.type : "fact") as MemoryType,
+    type: (isStoredMemoryType(row.type) ? row.type : "fact") as MemoryType,
     content: row.content,
     embedding: Array.isArray(row.embedding) ? row.embedding : null,
     importance: typeof row.importance === "number" ? row.importance : 0.5,

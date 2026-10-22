@@ -45,6 +45,22 @@ export function isMemoryType(value: unknown): value is MemoryType {
   );
 }
 
+/**
+ * True when `value` is a valid memory type of a stored item.
+ *
+ * A differenza di {@link isMemoryType} comprende anche i tipi interni (`meta`):
+ * le righe del database possono contenerli e il mapping riga→item non deve
+ * travisarli (un `meta` riportato come `fact` sparirebbe dai filtri per tipo,
+ * e con lui il watermark dell'estrazione incrementale).
+ */
+export function isStoredMemoryType(value: unknown): value is MemoryType {
+  return (
+    typeof value === "string" &&
+    ((MEMORY_TYPES as readonly string[]).includes(value) ||
+      (INTERNAL_MEMORY_TYPES as readonly string[]).includes(value))
+  );
+}
+
 /** A single memory item. */
 export type MemoryItem = {
   /** Stable identifier (uuid in Supabase). */
