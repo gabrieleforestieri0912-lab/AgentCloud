@@ -202,19 +202,11 @@ export async function POST(req: Request) {
     const isSubscriber = Boolean(primaryPool);
 
     if (!isSubscriber) {
+      const guestUsed = readGuestUsed(req);
       const free = await checkFreeUsage(userId, {
         ip: ip ?? undefined,
-        guestUsed: readGuestUsed(req),
+        guestUsed,
       });
-      console.log(
-        "[debug ghost-free] userId=%s ip=%s guestUsed=%s ipUsed=%s remaining=%s allowed=%s",
-        userId,
-        ip,
-        readGuestUsed(req),
-        await getFreeMessagesUsed(userId, ip ?? undefined),
-        free.remaining,
-        free.allowed,
-      );
       if (!free.allowed) {
         return Response.json(
           {
