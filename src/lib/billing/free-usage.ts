@@ -37,19 +37,28 @@ export type FreeUsage = {
  * Quanti messaggi gratuiti ha ancora l'utente oggi.
  *
  * `ip` serve per gli anonimi (il contatore è per indirizzo).
- * `guestUsed` è il contatore del DISPOSITIVO (cookie firmato): per gli ospiti
- * si tiene il più generoso fra IP e dispositivo, così chi sta dietro una NAT
- * non paga per i colleghi (vedi lib/billing/guest-counter.ts).
+ *
+ * Per l'ospite contano DUE contatori:
+ *   - il contatore del DISPOSITIVO (cookie firmato dal server): è esatto e
+ *     non penalizza chi sta dietro una NAT (vedi lib/billing/guest-counter.ts);
+ *   - il contatore per IP: rete di sicurezza per chi non ha il cookie (bot,
+ *     client che non lo conserva) e per chi lo cancella per ripartire da zero.
+ *
+ * Quando il dispositivo ha un contatore proprio, quello fa autorità: il
+ * contatore per IP arriva dal DB e soffre di replica-lag (una richiesta può
+ * leggere un valore di una richiesta precedente), quindi usarlo come metro
+ * renderebbe l'arbitragrio anche per i browser normali. Chi non ha il cookie
+ * viene giudicato dall'IP.
  */
 export async function checkFreeUsage(
   userId: string,
-  opts: { ip?: string; guestUsed?: number } = {},
+  opts: { ip?: string; guestUsed?: number | null } = {},
 ): Promise<FreeUsage> {
   const limit = FREE_MESSAGES_PER_DAY;
   const ipUsed = await getFreeMessagesUsed(userId, opts.ip);
   const ipRemaining = Math.max(0, limit - ipUsed);
 
-  // Solo per gli ospiti ha senso il contatore del dispositivo.
+  // Utente autenticato: contatore unico (le run di oggi).
   if (userId !== "anonymous") {
     return {
       allowed: ipUsed < limit,
@@ -59,13 +68,22 @@ export async function checkFreeUsage(
     };
   }
 
-  const guestUsed = opts.guestUsed ?? 0;
-  const guestRemaining = Math.max(0, limit - guestUsed);
-  const remaining = Math.max(ipRemaining, guestRemaining);
+  // Ospite con contatore del dispositivo: fa autorità (esatto, NAT-friendly).
+  if (typeof opts.guestUsed === "number") {
+    const guestRemaining = Math.max(0, limit - opts.guestUsed);
+    return {
+      allowed: guestRemaining > 0,
+      used: opts.guestUsed,
+      remaining: guestRemaining,
+      limit,
+    };
+  }
+
+  // Ospite senza contatore del dispositivo: metro l'IP.
   return {
-    allowed: remaining > 0,
-    used: limit - remaining,
-    remaining,
+    allowed: ipUsed < limit,
+    used: ipUsed,
+    remaining: ipRemaining,
     limit,
   };
 }
