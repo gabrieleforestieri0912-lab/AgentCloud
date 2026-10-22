@@ -1,11 +1,11 @@
 /**
- * Uso gratuito: il contitore UNICO dei messaggi gratuiti al giorno.
+ * Uso gratuito: il contatore UNICO dei messaggi gratuiti al giorno.
  *
  * Il freemium è un solo piano, non tre limiti diversi: 5 messaggi al giorno
  * IN TOTALE (demo della home, chat generica, agenti), con reset alla
  * mezzanotte UTC. Un utente che spende i suoi 5 messaggi nella demo non ne
  * ha più per gli agenti, e viceversa: è quello che la copy promette ("in
- * totale su tutti gli agenti") e quello che il contatore deve misurare.
+ * totale") e quello che il contatore deve misurare.
  *
  * PRIMA c'erano tre buchi diversi:
  *   - la demo home aveva 10 messaggi contati lato CLIENT (un refresh li
@@ -14,9 +14,20 @@
  *   - gli agenti avevano 5/giorno, server-side.
  * Adesso il limite è uno solo ed è enforced dal server.
  *
- * Il meccanismo di conteggio resta quello esistente:
- *   - utente autenticato → numero di run di oggi su `agent_runs`;
- *   - anonimo → bucket "free-chat" su `rate_limits`, chiave = IP.
+ * IL METRO
+ * --------
+ *   - utente autenticato → le run di oggi (`agent_runs`);
+ *   - ospite con il contatore del DISPOSITIVO (cookie firmato dal server) →
+ *     il contatore del dispositivo: è esatto e non penalizza chi sta dietro
+ *     una NAT (vedi lib/billing/guest-counter.ts);
+ *   - ospite senza contatore del dispositivo → il contatore per IP, che è la
+ *     rete di sicurezza per bot e client che non conservano i cookie.
+ *
+ * Perché il dispositivo vince quando c'è: il contatore per IP arriva dal DB
+ * e soffre di replica-lag (una richiesta può leggere il valore di una
+ * richiesta precedente), quindi usarlo come metro renderebbe l'arbitragrio
+ * anche per i browser normali. Il cookie, invece, è letto dalla richiesta:
+ * è esatto.
  */
 
 import {
@@ -28,7 +39,9 @@ import {
 export type FreeUsage = {
   /** false quando i messaggi gratuiti del giorno sono finiti. */
   allowed: boolean;
+  /** Messaggi già consumati (dal metro "vero": dispositivo o IP). */
   used: number;
+  /** Messaggi ancora disponibili. */
   remaining: number;
   limit: number;
 };
@@ -37,18 +50,8 @@ export type FreeUsage = {
  * Quanti messaggi gratuiti ha ancora l'utente oggi.
  *
  * `ip` serve per gli anonimi (il contatore è per indirizzo).
- *
- * Per l'ospite contano DUE contatori:
- *   - il contatore del DISPOSITIVO (cookie firmato dal server): è esatto e
- *     non penalizza chi sta dietro una NAT (vedi lib/billing/guest-counter.ts);
- *   - il contatore per IP: rete di sicurezza per chi non ha il cookie (bot,
- *     client che non lo conserva) e per chi lo cancella per ripartire da zero.
- *
- * Quando il dispositivo ha un contatore proprio, quello fa autorità: il
- * contatore per IP arriva dal DB e soffre di replica-lag (una richiesta può
- * leggere un valore di una richiesta precedente), quindi usarlo come metro
- * renderebbe l'arbitragrio anche per i browser normali. Chi non ha il cookie
- * viene giudicato dall'IP.
+ * `guestUsed` è il contatore del DISPOSITIVO: `null` se il visitatore non ha
+ * un cookie valido (prima messaggio, o cookie perso/cancellato).
  */
 export async function checkFreeUsage(
   userId: string,
@@ -68,20 +71,24 @@ export async function checkFreeUsage(
     };
   }
 
-  // Ospite con contatore del dispositivo: fa autorità (esatto, NAT-friendly).
-  if (typeof opts.guestUsed === "number") {
-    const guestRemaining = Math.max(0, limit - opts.guestUsed);
+  // Ospite: se ha il contatore del dispositivo, quello è il metro (esatto,
+  // e la NAT non penalizza nessuno). Altrimenti decide l'IP.
+  const deviceRemaining =
+    typeof opts.guestUsed === "number"
+      ? Math.max(0, limit - opts.guestUsed)
+      : null;
+
+  if (deviceRemaining !== null) {
     return {
-      allowed: guestRemaining > 0,
-      used: opts.guestUsed,
-      remaining: guestRemaining,
+      allowed: deviceRemaining > 0,
+      used: limit - deviceRemaining,
+      remaining: deviceRemaining,
       limit,
     };
   }
 
-  // Ospite senza contatore del dispositivo: metro l'IP.
   return {
-    allowed: ipUsed < limit,
+    allowed: ipRemaining > 0,
     used: ipUsed,
     remaining: ipRemaining,
     limit,
