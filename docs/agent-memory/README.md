@@ -136,7 +136,7 @@ del progetto girano così come sono.
 | 2 | memoria a breve termine con riassunto automatico | ✅ |
 | 3 | estrazione dei fatti, dedup, lungo termine | ✅ |
 | 4 | retrieval e injection nel prompt | ✅ |
-| 5 | endpoint REST, flag per agente, TTL, GDPR | ⏳ |
+| 5 | endpoint REST, flag per agente, TTL, GDPR | ✅ |
 | 6 | test (unitari, multi-tenant, injection, scadenza, fallback) | ⏳ |
 
 ## Memoria a breve termine (fase 2)
@@ -283,4 +283,72 @@ se non c'è, cade sullo store in memoria (e lo dice nel log):
 memory: table agent_memory_items is not available, using the in-memory store.
 Apply supabase/schema-agent-memory.sql.
 ```
+
+## API REST, configurazione per agente e GDPR (fase 5)
+
+### Endpoint
+
+Tutti sotto `/api/agents/[id]/memory`, dove `[id]` è lo **slug** dell'agente
+(es. `personal-assistant`). L'autenticazione è la sessione risolta dal
+server; il tenant è **sempre** l'utente autenticato, mai un id arrivato dal
+client.
+
+| Metodo | Endpoint | Cosa fa |
+|---|---|---|
+| `GET` | `/api/agents/[id]/memory?user_id=&type=&limit=` | lista la memoria del soggetto (di default l'utente autenticato), con filtro per tipo |
+| `DELETE` | `/api/agents/[id]/memory/{memory_id}` | cancella un singolo item |
+| `DELETE` | `/api/agents/[id]/memory?user_id=` | cancella tutta la memoria del soggetto (GDPR) |
+| `GET` | `/api/agents/[id]/memory/export?user_id=` | esporta la memoria in JSON (GDPR, diritto alla portabilità) |
+| `GET` | `/api/agents/[id]/memory/config` | configurazione effettiva dell'agente per quel tenant |
+| `PATCH` | `/api/agents/[id]/memory/config` | accende/spegne la memoria e ne cambia i parametri |
+
+Le regole comuni a tutte le rotte (`src/lib/memory/api.ts`):
+
+- **401** senza sessione;
+- **404** se l'agente non esiste;
+- **403** se l'utente non possiede l'agente, oppure se prova a puntare alla
+  memoria di un altro utente autenticato (i soggetti `anon:<session>` del
+  widget sono invece ammessi, perché appartengono al tenant);
+- **429** oltre il rate limit per tenant (60 letture e 20 scritture al
+  minuto, conteggio distribuito con `rateLimit`, quindi vale su tutte le
+  istanze);
+- ogni operazione lascia una traccia di audit (`memory_api_list`,
+  `memory_api_delete`, `memory_api_delete_all`, `memory_api_export`,
+  `memory_api_config_get/update`) **senza il contenuto** della memoria.
+
+Nella risposta l'embedding non esce: è interno al motore di retrieval.
+
+### Configurazione per agente (per tenant)
+
+La tabella `agent_memory_config` ha una riga per (tenant, agente):
+
+```sql
+create table public.agent_memory_config (
+  tenant_id text not null,
+  agent_id text not null,
+  enabled boolean not null default true,
+  ttl_days integer,
+  retrieval_k integer,
+  token_budget integer,
+  short_term_token_threshold integer,
+  dedupe_threshold real,
+  updated_at timestamptz not null default now(),
+  primary key (tenant_id, agent_id)
+);
+```
+
+Le colonne NULL ereditano il default del progetto: si cambia solo quello che
+serve. `enabled = false` spegne completamente la memoria di quell'agente per
+quel tenant (niente estrazione, niente retrieval, niente compressione), e la
+configurazione accettata vale **anche per gli agenti condivisi**: due account
+che usano lo stesso agente possono regolarsi la memoria come vogliono.
+
+### TTL e decadimento
+
+La scadenza è calcolata quando l'item viene scritto (`computeExpiry`): gli
+item poco importanti (`importance < MEMORY_LOW_IMPORTANCE`) scadono dopo
+`MEMORY_LOW_IMPORTANCE_TTL_DAYS` giorni (default 14), gli altri dopo
+`MEMORY_TTL_DAYS` (default 90). Gli item scaduti non vengono più restituiti
+né recuperati; restano nel database finché non vengono cancellati (l'export
+li include, perché sono comunque dati dell'utente).
 

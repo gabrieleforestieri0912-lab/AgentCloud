@@ -352,11 +352,14 @@ export async function POST(req: Request) {
   //  - memoria a lungo termine: i fatti più rilevanti per la richiesta
   //    entrano nel prompt come blocco `<memoria>`. Se la memoria non è
   //    disponibile la richiesta va avanti senza (fail-safe).
-  const memoryConfig = resolveMemoryConfig(agentId);
+  //
+  // La configurazione è per tenant: il flag `memory_enabled` e i parametri
+  // arrivano dalla configurazione del tenant per quell'agente (default del
+  // progetto quando non c'è un override).
   const memoryScope =
     userId !== "anonymous" ? createScope(userId, agentId, userId) : null;
   const userText = lastUserText(initialMessages) ?? "";
-  const [microsoftConnected, outlookConnected, skillsRun, memoryHits] =
+  const [microsoftConnected, outlookConnected, skillsRun, memoryRuntime] =
     await Promise.all([
       isMicrosoftConnected(effectiveTenant),
       isOutlookConnected(effectiveTenant),
@@ -367,19 +370,23 @@ export async function POST(req: Request) {
         // quel caso non c'è nulla su cui abbinare una skill.
         userText,
       }),
-      memoryScope && memoryConfig.enabled
-        ? getMemoryService(agentId)
-            .then(({ service }) =>
-              service.search(memoryScope, userText, {
-                limit: memoryConfig.retrievalK,
-              }),
-            )
-            .catch(() => [])
-        : Promise.resolve([]),
+      memoryScope
+        ? getMemoryService(agentId, userId)
+            .then(async (runtime) => ({
+              config: runtime.config,
+              hits: runtime.config.enabled
+                ? await runtime.service.search(memoryScope, userText, {
+                    limit: runtime.config.retrievalK,
+                  })
+                : [],
+            }))
+            .catch(() => null)
+        : Promise.resolve(null),
     ]);
+  const memoryConfig = memoryRuntime?.config ?? resolveMemoryConfig(agentId);
   // Blocco di memoria per il prompt. `null` quando non c'è niente da
   // ricordare: un blocco vuoto sarebbe solo rumore.
-  const memoryBlock = buildMemoryBlock(memoryHits, {
+  const memoryBlock = buildMemoryBlock(memoryRuntime?.hits ?? [], {
     tokenBudget: memoryConfig.tokenBudget,
   });
   if (!microsoftConnected) {
@@ -828,7 +835,7 @@ export async function POST(req: Request) {
               memoryMessages.push({ role: "assistant", content: answer });
             }
             if (memoryMessages.length > 0) {
-              const { service } = await getMemoryService(agentId);
+              const { service } = await getMemoryService(agentId, userId);
               await ingestConversationMemory({
                 service,
                 extractor: getMemoryExtractor(config.model),

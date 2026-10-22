@@ -11,6 +11,8 @@
  */
 
 import { resolveMemoryConfig } from "./config";
+import type { MemoryConfig } from "./config";
+import { getAgentMemoryConfig } from "./config-store";
 import { getEmbeddingProvider } from "./embeddings";
 import { createLlmMemoryExtractor } from "./extraction";
 import type { MemoryExtractor } from "./extraction";
@@ -20,31 +22,54 @@ import { createLlmConversationSummarizer } from "./summarizer";
 import type { ConversationSummarizer } from "./summarizer";
 import { createMemoryStore } from "./supabase-store";
 
-/** Servizi costruiti in questo processo, per agente. */
-const services = new Map<string, { service: MemoryService; persistent: boolean }>();
+/** Servizi costruiti in questo processo, per (tenant, agente). */
+const services = new Map<
+  string,
+  { service: MemoryService; persistent: boolean; config: MemoryConfig }
+>();
 
 /**
  * Restituisce il servizio della memoria di un agente.
+ *
+ * La configurazione è per tenant: due account che usano lo stesso agente
+ * possono avere parametri diversi, quindi il servizio è memorizzato per
+ * (tenant, agente).
  *
  * `persistent` dice se la memoria sopravvive al processo: con `false` il
  * servizio usa lo store in memoria (modalità degradata).
  */
 export async function getMemoryService(
   agentId: string,
-): Promise<{ service: MemoryService; persistent: boolean }> {
-  const cached = services.get(agentId);
+  tenantId?: string,
+): Promise<{ service: MemoryService; persistent: boolean; config: MemoryConfig }> {
+  const key = `${tenantId ?? ""}:${agentId}`;
+  const cached = services.get(key);
   if (cached) return cached;
 
   const { store, persistent } = await createMemoryStore();
+  const overrides = tenantId
+    ? await getAgentMemoryConfig(tenantId, agentId)
+    : null;
+  const config = resolveMemoryConfig(agentId, overrides);
   const service = createMemoryService({
     store,
-    config: resolveMemoryConfig(agentId),
+    config,
     embeddings: getEmbeddingProvider(),
     summarizer: createLlmConversationSummarizer(),
   });
-  const entry = { service, persistent };
-  services.set(agentId, entry);
+  const entry = { service, persistent, config };
+  services.set(key, entry);
   return entry;
+}
+
+/**
+ * Dimentica il servizio in cache di un agente.
+ *
+ * Va chiamata quando la configurazione cambia: il servizio tiene dentro la
+ * configurazione con cui è stato costruito.
+ */
+export function resetMemoryService(tenantId: string, agentId: string): void {
+  services.delete(`${tenantId}:${agentId}`);
 }
 
 /** Crea l'estrattore dei fatti. */

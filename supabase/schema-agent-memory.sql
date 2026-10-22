@@ -61,3 +61,38 @@ create policy "Service role can manage agent_memory_items"
   to service_role
   using (true)
   with check (true);
+
+-- ---------------------------------------------------------------------------
+-- Configurazione della memoria per agente (per tenant).
+--
+-- Una riga per (tenant, agente): accende o spegne la memoria e ne regola i
+-- parametri. Le colonne NULL ereditano il default del progetto
+-- (variabili d'ambiente), così si cambia solo quello che serve.
+-- ---------------------------------------------------------------------------
+create table if not exists public.agent_memory_config (
+  tenant_id text not null,
+  agent_id text not null,
+  enabled boolean not null default true,
+  ttl_days integer,
+  retrieval_k integer,
+  token_budget integer,
+  short_term_token_threshold integer,
+  dedupe_threshold real,
+  updated_at timestamptz not null default now(),
+  primary key (tenant_id, agent_id)
+);
+
+alter table public.agent_memory_config enable row level security;
+
+drop policy if exists "Users manage own agent_memory_config" on public.agent_memory_config;
+create policy "Users manage own agent_memory_config"
+  on public.agent_memory_config for all
+  using (auth.uid()::text = tenant_id)
+  with check (auth.uid()::text = tenant_id);
+
+drop policy if exists "Service role can manage agent_memory_config" on public.agent_memory_config;
+create policy "Service role can manage agent_memory_config"
+  on public.agent_memory_config for all
+  to service_role
+  using (true)
+  with check (true);
