@@ -543,7 +543,10 @@ export async function POST(req: Request) {
               ? { remaining: quota.remaining, limit: quota.limit }
               : null,
           });
-        } catch {
+        } catch (streamError) {
+          // L'errore va loggato: senza, un provider che fallisce è
+          // indistinguibile da una risposta vuota.
+          console.error("Chat stream error:", streamError);
           emitter.stop();
           send({ type: "error", message: streamErrorMessage });
         } finally {
