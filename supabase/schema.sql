@@ -521,6 +521,56 @@ create policy "Service role can manage cart_items"
 
 
 -- =============================================================================
+-- Memoria degli agenti (a lungo termine).
+--
+-- Ogni riga appartiene a un solo ambito: tenant + agente + soggetto. Il
+-- codice server filtra sempre sui tre id, quindi un tenant non legge mai la
+-- memoria di un altro e due agenti dello stesso tenant non la condividono.
+-- L'embedding è in jsonb e la similarità è calcolata in application layer
+-- (nessuna estensione pgvector richiesta).
+-- =============================================================================
+create table if not exists public.agent_memory_items (
+  id uuid default gen_random_uuid() primary key,
+  tenant_id text not null,
+  agent_id text not null,
+  user_id text not null,
+  type text not null check (type in ('fact', 'preference', 'summary', 'event')),
+  content text not null,
+  embedding jsonb,
+  importance real not null default 0.5 check (importance >= 0 and importance <= 1),
+  created_at timestamptz not null default now(),
+  last_accessed_at timestamptz not null default now(),
+  expires_at timestamptz,
+  source_conversation_id text
+);
+
+create index if not exists idx_agent_memory_scope
+  on public.agent_memory_items (tenant_id, agent_id, user_id, created_at desc);
+
+create index if not exists idx_agent_memory_type
+  on public.agent_memory_items (tenant_id, agent_id, user_id, type);
+
+create index if not exists idx_agent_memory_expires
+  on public.agent_memory_items (expires_at)
+  where expires_at is not null;
+
+alter table public.agent_memory_items enable row level security;
+
+drop policy if exists "Users manage own agent_memory_items" on public.agent_memory_items;
+create policy "Users manage own agent_memory_items"
+  on public.agent_memory_items for all
+  using (auth.uid()::text = tenant_id)
+  with check (auth.uid()::text = tenant_id);
+
+drop policy if exists "Service role can manage agent_memory_items" on public.agent_memory_items;
+create policy "Service role can manage agent_memory_items"
+  on public.agent_memory_items for all
+  to service_role
+  using (true)
+  with check (true);
+
+
+-- =============================================================================
 -- Optional: bootstrap agents_registry from the application catalog.
 --
 -- This block is idempotent (uses on conflict do update). You can safely
