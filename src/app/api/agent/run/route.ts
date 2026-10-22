@@ -47,6 +47,13 @@ import {
   GITHUB_REPO_TOOL_DEFINITIONS,
   buildGithubRepoContext,
 } from "@/lib/agents/github-repo-tools";
+import {
+  ShortTermMemory,
+  buildConversationSummaryBlock,
+  shortTermEntryFromLlmMessage,
+} from "@/lib/memory/short-term";
+import { createLlmConversationSummarizer } from "@/lib/memory/summarizer";
+import { resolveMemoryConfig } from "@/lib/memory/config";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -442,6 +449,42 @@ export async function POST(req: Request) {
 
       try {
         let conversationMessages = [...initialMessages];
+
+        // Memoria a breve termine: quando la cronologia della conversazione
+        // supera la soglia di token, i messaggi più vecchi vengono compressi
+        // in un riassunto e il riassunto li sostituisce nel contesto del
+        // modello. Se il riassunto non è disponibile, la cronologia resta
+        // quella che è: l'agente risponde comunque.
+        //
+        // Il riassunto entra nel system prompt come blocco delimitato e
+        // marcato come dato (non come istruzioni).
+        const memoryConfig = resolveMemoryConfig(agentId);
+        let summaryBlock: string | null = null;
+        if (memoryConfig.enabled && initialMessages.length > 0) {
+          const shortTerm = new ShortTermMemory({
+            tokenThreshold: memoryConfig.shortTermTokenThreshold,
+            summarizer: createLlmConversationSummarizer({ model: config.model }),
+          });
+          shortTerm.push(initialMessages.map(shortTermEntryFromLlmMessage));
+          if (shortTerm.needsCompaction()) {
+            const compacted = await shortTerm.compact();
+            if (compacted) {
+              const kept = shortTerm
+                .getEntries()
+                .map((entry) => entry.payload as LLMMessage)
+                .filter(Boolean);
+              conversationMessages = kept;
+              summaryBlock = buildConversationSummaryBlock(shortTerm.getSummary());
+              logAudit("memory_summarize", {
+                userId,
+                agent: agentId,
+                messagesBefore: initialMessages.length,
+                messagesAfter: kept.length,
+                summaryChars: shortTerm.getSummary()?.length ?? 0,
+              });
+            }
+          }
+        }
         // Skill caricate in questo turno: precedono l'ultimo messaggio
         // dell'utente, così l'utente non può sovrascriverle.
         if (skillsRun.turnMessage) {
@@ -511,7 +554,8 @@ export async function POST(req: Request) {
               // lib/agents/system-prompt.ts, così route e test usano lo stesso
               // prompt (connect guidance, formato, identità, consegna, lingua).
               system: buildAgentSystemPrompt(config.systemPrompt, replyLocale, undefined, skillsIndex) +
-                (repoContext ? `\n\n${repoContext}` : ""),
+                (repoContext ? `\n\n${repoContext}` : "") +
+                (summaryBlock ? `\n\n${summaryBlock}` : ""),
               messages: conversationMessages,
               tools: enabledTools,
               maxTokens: MAX_TOKENS,
