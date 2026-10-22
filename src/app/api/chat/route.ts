@@ -202,11 +202,6 @@ export async function POST(req: Request) {
 
     if (!isSubscriber) {
       const guestUsed = readGuestUsed(req);
-      console.log(
-        "[dbg] cookie=%s guestUsed=%s",
-        req.headers.get("cookie"),
-        guestUsed,
-      );
       const free = await checkFreeUsage(userId, {
         ip: ip ?? undefined,
         guestUsed,
