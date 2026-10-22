@@ -102,6 +102,13 @@ browser normali. Il cookie è letto dalla richiesta: è esatto.
 Limite noto: chi cancella i cookie **e** cambia IP aggira il contatore. Il
 danno è limitato dal provider economico della demo.
 
+Un dettaglio che sembra un difetto ma non lo è: **il primo messaggio di un
+ospite che ha ancora l'IP condiviso con altri (albergo, ufficio) è giudicato
+dall'IP**, quindi può essere rifiutato se l'IP è già esaurito. La risposta
+`402` registra comunque il cookie del dispositivo: al tentativo successivo
+l'ospite è giudicato dal proprio contatore e non è più penalizzato dai
+colleghi. Un solo messaggio perso, non cinque.
+
 ### 6. Gli agenti: 5/giorno, invariato
 
 Il free tier degli agenti era già 5 messaggi al giorno con reset a mezzanotte
