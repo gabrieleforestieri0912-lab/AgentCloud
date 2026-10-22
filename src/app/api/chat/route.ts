@@ -558,7 +558,9 @@ export async function POST(req: Request) {
         // Contatore del dispositivo per l'ospite: così chi sta dietro una
         // NAT non consuma la quota dei colleghi (vedi guest-counter.ts).
         ...(userId === "anonymous" && !isSubscriber
-          ? { "Set-Cookie": guestUsageCookie(readGuestUsed(req) + 1) }
+          ? {
+              "Set-Cookie": guestUsageCookie((readGuestUsed(req) ?? 0) + 1),
+            }
           : {}),
       },
     });
