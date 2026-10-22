@@ -36,15 +36,24 @@ function num(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-/** Default configuration, overridable with the environment. */
-export function defaultMemoryConfig(): MemoryConfig {
-  return {
+/**
+ * Default configuration, overridable with the environment.
+ *
+ * `dedupeThreshold` è tarata sull'embedding locale (lessicale): due frasi
+ * identiche stanno a ~1.0, la stessa frase riscritta a ~0.82-0.93, due fatti
+ * diversi che condividono parole a ~0.1-0.7. Con 0.8 il duplicato viene
+ * unificato e i fatti diversi restano separati.
+ *
+ * Se un giorno si usa un provider di embeddings semantico, la soglia va
+ * ritarata: la distribuzione dei punteggi è diversa.
+ */
+export function defaultMemoryConfig(): MemoryConfig {  return {
     enabled: (process.env.MEMORY_ENABLED ?? "true").toLowerCase() !== "false",
     ttlDays: num(process.env.MEMORY_TTL_DAYS, 90),
     retrievalK: num(process.env.MEMORY_RETRIEVAL_K, 5),
     tokenBudget: num(process.env.MEMORY_TOKEN_BUDGET, 800),
     shortTermTokenThreshold: num(process.env.MEMORY_SHORT_TERM_TOKENS, 4000),
-    dedupeThreshold: num(process.env.MEMORY_DEDUPE_THRESHOLD, 0.92),
+    dedupeThreshold: num(process.env.MEMORY_DEDUPE_THRESHOLD, 0.8),
     defaultImportance: num(process.env.MEMORY_DEFAULT_IMPORTANCE, 0.5),
     lowImportanceThreshold: num(process.env.MEMORY_LOW_IMPORTANCE, 0.3),
     lowImportanceTtlDays: num(process.env.MEMORY_LOW_IMPORTANCE_TTL_DAYS, 14),

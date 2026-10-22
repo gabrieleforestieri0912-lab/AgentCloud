@@ -134,7 +134,7 @@ del progetto girano così come sono.
 |---|---|---|
 | 1 | modello dati, storage, interfaccia `MemoryService` | ✅ |
 | 2 | memoria a breve termine con riassunto automatico | ✅ |
-| 3 | estrazione dei fatti, dedup, lungo termine | ⏳ |
+| 3 | estrazione dei fatti, dedup, lungo termine | ✅ |
 | 4 | retrieval e injection nel prompt | ⏳ |
 | 5 | endpoint REST, flag per agente, TTL, GDPR | ⏳ |
 | 6 | test (unitari, multi-tenant, injection, scadenza, fallback) | ⏳ |
@@ -178,4 +178,62 @@ più semplice per verificare che la compressione stia succedendo davvero.
 Il wiring è in `src/app/api/agent/run/route.ts`: la compressione avviene una
 volta per richiesta, prima del loop modello→strumenti, e il blocco di
 riassunto viene aggiunto al system prompt dell'agente.
+
+## Memoria a lungo termine (fase 3)
+
+Il percorso di un fatto, dalla conversazione alla memoria:
+
+```
+conversazione → filtro secreti → estrazione (LLM, JSON) → controllo
+secreti → deduplica → scrittura
+```
+
+**Filtro dei secreti** (`src/lib/memory/redaction.ts`) — due volte:
+
+1. **prima** dell'estrazione: la trascrizione viene ripulita, così il modello
+   non vede la credenziale (nel testo inviato compare `[REDACTED]`);
+2. **dopo** l'estrazione: un fatto che contiene un segreto viene *scartato*,
+   non ripulito.
+
+Le regole riconoscono chiavi API (OpenAI, GitHub, Slack, AWS, Google), JWT,
+bearer token, chiavi private, IBAN, password dichiarate e numeri di carta
+(checksum Luhn + prefisso noto, così un numero di fattura non viene scambiato
+per una carta).
+
+**Estrazione** (`src/lib/memory/extraction.ts`) — una chiamata LLM con output
+JSON strutturato:
+
+```json
+[{"type":"preference","content":"Prefers to be contacted in the afternoon.","importance":0.8}]
+```
+
+Il prompt chiede solo fatti che serviranno in una conversazione futura
+(preferenze, dati ricorrenti, decisioni, richieste ancora aperte), di
+ignorare la chiacchiera, e di non riprodurre credenziali. Il parser è
+tollerante (code fence, testo attorno) e scarta gli elementi non conformi
+invece di far fallire tutto. Se il provider non risponde, l'estrazione
+restituisce una lista vuota: la memoria è un extra.
+
+**Deduplica** (`src/lib/memory/service.ts`) — prima di salvare, il servizio
+cerca nell'ambito l'item più simile: se la similarità supera
+`MEMORY_DEDUPE_THRESHOLD` (default 0.8) **l'item esistente viene
+aggiornato** (contenuto più recente, importanza al massimo, ultimo accesso
+aggiornato) invece di creare un duplicato. La soglia è tarata sull'embedding
+locale (lessicale): due frasi identiche stanno a ~1.0, la stessa frase
+riscritta a ~0.82-0.93, due fatti diversi che condividono parole a ~0.1-0.7.
+
+**Importanza e decadimento** — ogni item ha un'importanza 0-1 e una scadenza:
+gli item poco importanti (`importance < MEMORY_LOW_IMPORTANCE`) scadono dopo
+`MEMORY_LOW_IMPORTANCE_TTL_DAYS` giorni (default 14), gli altri dopo
+`MEMORY_TTL_DAYS` (default 90). Un item recuperato aggiorna
+`last_accessed_at`, che alimenta il segnale di recency del retrieval.
+
+**Ingestione** (`src/lib/memory/ingest.ts`) — dopo ogni run l'orchestratore
+estrae i fatti e li scrive. È tutto fail-safe (un errore non rompe la run) e
+salta le conversazioni troppo corte (`minUserChars`, default 120 caratteri
+dell'utente). In modalità Ghost (chat incognito) non viene scritto niente.
+
+La memoria a lungo termine vale solo per gli utenti autenticati: per gli
+anonimi non c'è un soggetto stabile, e il widget usa le API REST con l'id di
+sessione (fase 5).
 

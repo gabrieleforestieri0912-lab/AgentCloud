@@ -50,10 +50,18 @@ import {
 import {
   ShortTermMemory,
   buildConversationSummaryBlock,
+  llmMessageText,
   shortTermEntryFromLlmMessage,
 } from "@/lib/memory/short-term";
 import { createLlmConversationSummarizer } from "@/lib/memory/summarizer";
 import { resolveMemoryConfig } from "@/lib/memory/config";
+import { ingestConversationMemory } from "@/lib/memory/ingest";
+import {
+  getMemoryExtractor,
+  getMemoryService,
+} from "@/lib/memory/runtime";
+import { createScope } from "@/lib/memory/scope";
+import type { MemoryMessage } from "@/lib/memory/types";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 4096);
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -540,6 +548,9 @@ export async function POST(req: Request) {
         }
 
         let iterations = 0;
+        // Testo delle risposte del modello: serve alla memoria a lungo
+        // termine, che guarda lo scambio completo (domande + risposte).
+        const assistantAnswers: string[] = [];
 
         while (iterations < MAX_ITERATIONS) {
           iterations++;
@@ -571,6 +582,7 @@ export async function POST(req: Request) {
           await emitter.flush();
 
           if (response.stopReason === "end_turn") {
+            if (response.text) assistantAnswers.push(response.text);
             // Eventi `connection` solo per i marker che l'utente ha chiesto:
             // `emitConnectCard` filtra da solo sui provider richiesti.
             for (const provider of extractConnectMarkers(response.text)) {
@@ -768,6 +780,44 @@ export async function POST(req: Request) {
         }
 
         emitter.stop();
+
+        // Memoria a lungo termine: dalla conversazione appena conclusa si
+        // estraggono i fatti da ricordare e si scrivono come memory item.
+        //
+        // La memoria è per utente autenticato: per gli anonimi non c'è un
+        // soggetto stabile (senza sessione la memoria sarebbe condivisa fra
+        // tutti gli ospiti), quindi il widget usa le API REST con l'id di
+        // sessione (fase 5).
+        //
+        // Modalità Ghost: niente memoria, niente tracce.
+        // Fall-safe: se l'estrazione fallisce l'agente ha già risposto e la
+        // run è già finita.
+        if (!isEphemeral && memoryConfig.enabled && userId !== "anonymous") {
+          try {
+            const memoryMessages: MemoryMessage[] = [];
+            for (const message of conversationMessages) {
+              if (message.role !== "user" && message.role !== "assistant") continue;
+              const text = llmMessageText(message);
+              if (!text) continue;
+              memoryMessages.push({ role: message.role, content: text });
+            }
+            for (const answer of assistantAnswers) {
+              memoryMessages.push({ role: "assistant", content: answer });
+            }
+            if (memoryMessages.length > 0) {
+              const { service } = await getMemoryService(agentId);
+              await ingestConversationMemory({
+                service,
+                extractor: getMemoryExtractor(config.model),
+                scope: createScope(userId, agentId, userId),
+                messages: memoryMessages,
+                conversationId,
+              });
+            }
+          } catch (error) {
+            console.error("memory: ingestion skipped", error);
+          }
+        }
 
         // Registra la run (conversazione + token) a fine esecuzione.
         // Anche i possessori del codice registrano l'uso sotto l'identità del tenant
