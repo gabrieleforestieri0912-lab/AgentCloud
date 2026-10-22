@@ -772,7 +772,7 @@ export async function POST(req: Request) {
       Connection: "keep-alive",
       // Contatore del dispositivo per l'ospite (NAT-friendly).
       ...(userId === "anonymous" && enforceFree
-        ? { "Set-Cookie": guestUsageCookie(readGuestUsed(req) + 1) }
+        ? { "Set-Cookie": guestUsageCookie((readGuestUsed(req) ?? 0) + 1) }
         : {}),
     },
   });
