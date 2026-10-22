@@ -29,6 +29,9 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "cli/dist/**",
+    // Output compilato di Electron (build artifact, gitignored da
+    // desktop/.gitignore): non è sorgente, va ignorato come gli altri.
+    "desktop/out/**",
     // Script usa-e-getta gitignorati (.tmp-g è in .gitignore).
     ".tmp-g/**",
   ]),
