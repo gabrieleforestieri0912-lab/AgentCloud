@@ -36,6 +36,7 @@ import { apiErrorMessage, apiErrorMessageForLocale } from "@/lib/i18n/api-errors
 import { getClientIp } from "@/lib/request-ip";
 import { RATE_LIMIT_WINDOWS, rateLimit } from "@/lib/rate-limit";
 import { checkFreeUsage, consumeFreeUsage } from "@/lib/billing/free-usage";
+import { guestUsageCookie, readGuestUsed } from "@/lib/billing/guest-counter";
 import {
   assertPrimaryPoolAllowed,
   recordUsage,
@@ -58,17 +59,18 @@ import {
  * `provider` è un override esplicito ("xt" | "anthropic") usato da UNA sola
  * superficie: la demo hero invia `provider: "xt"` così usa sempre la chiave
  * economica xKiro. Tutto il resto (chat con agente, agent/run) usa il default
- * di configurazione (Anthropic in produzione). Valori non riconosciuti
- * vengono ignorati.
+ * di configurazione (`AGENT_LLM_PROVIDER`: `xt`/xKiro o `anthropic`).
+ * Valori non riconosciuti vengono ignorati.
  *
  * `ephemeral: true` marca la richiesta come "chat fantasma" (modalità Ghost):
  * la risposta non viene conservata da nessuna parte e la run non lascia tracce
  * nei log. Questa route non scrive MAI messaggi su DB (la cronologia vive nel
  * browser), ma in modalità Ghost disattiva anche il log di audit: nessun
  * metadata della conversazione deve uscire dal server.
- * Il backend del modello è risolto con `getLLMProvider()` — quello Anthropic
- * (Claude) quando `ANTHROPIC_API_KEY` è configurata. Il modello predefinito è
- * `claude-sonnet-5` (sovrascrivibile con `AGENT_LLM_MODEL`).
+ * Il backend del modello è risolto con `getLLMProvider()`: xKiro
+ * (OpenAI-compatible, `XT_API_KEY`) quando è configurato, Anthropic (Claude)
+ * altrimenti. Il modello predefinito è quello del backend scelto
+ * (`XT_MODEL` su xKiro, `AGENT_LLM_MODEL` su Anthropic).
  *
  * `webSearch: true` espone il tool `web_search` (acceso dal menu "+" della
  * chat): senza quel flag la chat resta senza ricerca sul web.
@@ -199,7 +201,19 @@ export async function POST(req: Request) {
     const isSubscriber = Boolean(primaryPool);
 
     if (!isSubscriber) {
-      const free = await checkFreeUsage(userId, ip ?? undefined);
+      const free = await checkFreeUsage(userId, {
+        ip: ip ?? undefined,
+        guestUsed: readGuestUsed(req),
+      });
+      console.log(
+        "[debug ghost-free] userId=%s ip=%s guestUsed=%s ipUsed=%s remaining=%s allowed=%s",
+        userId,
+        ip,
+        readGuestUsed(req),
+        await getFreeMessagesUsed(userId, ip ?? undefined),
+        free.remaining,
+        free.allowed,
+      );
       if (!free.allowed) {
         return Response.json(
           {
@@ -512,9 +526,16 @@ export async function POST(req: Request) {
 
           // Quota residua: la UI (la demo della home) mostra "3/5 rimasti"
           // senza dover ricontare i messaggi da sola.
+          //
+          // Il contatore del dispositivo va letto +1: il messaggio appena
+          // consumato l'ha già incrementato, e la quota mostrata deve
+          // riflettere quello (non il valore di prima della richiesta).
           const quota = isSubscriber
             ? null
-            : await checkFreeUsage(userId, ip ?? undefined);
+            : await checkFreeUsage(userId, {
+                ip: ip ?? undefined,
+                guestUsed: readGuestUsed(req) + 1,
+              });
           send({
             type: "done",
             quota: quota
@@ -540,6 +561,11 @@ export async function POST(req: Request) {
         // Modalità Ghost: niente cache, niente memorizzazione intermediate.
         "Cache-Control": isEphemeral ? "no-store" : "no-cache",
         Connection: "keep-alive",
+        // Contatore del dispositivo per l'ospite: così chi sta dietro una
+        // NAT non consuma la quota dei colleghi (vedi guest-counter.ts).
+        ...(userId === "anonymous" && !isSubscriber
+          ? { "Set-Cookie": guestUsageCookie(readGuestUsed(req) + 1) }
+          : {}),
       },
     });
   } catch (error) {

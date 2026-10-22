@@ -29,6 +29,8 @@ import {
   getFreeMessagesUsed,
   incrementAnonymousFreeCount,
 } from "@/lib/billing/free-limit";
+import { checkFreeUsage } from "@/lib/billing/free-usage";
+import { guestUsageCookie, readGuestUsed } from "@/lib/billing/guest-counter";
 import { extractConnectMarkers, requestedConnectProviders } from "@/lib/integrations";
 import { isMicrosoftTool as isMicrosoftToolName } from "@/lib/agents/microsoft-tools";
 import { isOutlookTool as isOutlookToolName } from "@/lib/agents/outlook-tools";
@@ -197,8 +199,11 @@ export async function POST(req: Request) {
   // Freemium: 5 messaggi gratuiti AL GIORNO in totale (tutti gli agenti) per chi
   // non ha abbonamento attivo. Admin e beta bypassano. Gli abbonati attivi non
   // passano da qui.
+  //
+  // `enforceFree` vive fuori dal blocco: serve anche dopo, per impostare il
+  // cookie del contatore del dispositivo all'ospite.
+  let enforceFree = false;
   if (!isAdmin && !isBeta) {
-    let enforceFree = false;
     if (userId === "anonymous") {
       enforceFree = true;
     } else if (
@@ -211,14 +216,20 @@ export async function POST(req: Request) {
     }
 
     if (enforceFree) {
-      const used = await getFreeMessagesUsed(userId, ipForFree);
-      if (used >= FREE_MESSAGES_PER_DAY) {
+      // Contatore unico del piano gratuito: per gli ospiti si tiene il più
+      // generoso fra IP e dispositivo (chi sta dietro una NAT non paga per i
+      // colleghi), per gli autenticati le run di oggi.
+      const free = await checkFreeUsage(userId, {
+        ip: ipForFree ?? undefined,
+        guestUsed: readGuestUsed(req),
+      });
+      if (!free.allowed) {
         return Response.json(
           {
             error: apiErrorMessageForLocale(locale, "freeLimitReached"),
             code: "FREE_LIMIT_REACHED",
             remaining: 0,
-            limit: FREE_MESSAGES_PER_DAY,
+            limit: free.limit,
           },
           { status: 402 },
         );
@@ -759,6 +770,10 @@ export async function POST(req: Request) {
       // Modalità Ghost: niente cache, niente memorizzazione intermediate.
       "Cache-Control": isEphemeral ? "no-store" : "no-cache",
       Connection: "keep-alive",
+      // Contatore del dispositivo per l'ospite (NAT-friendly).
+      ...(userId === "anonymous" && enforceFree
+        ? { "Set-Cookie": guestUsageCookie(readGuestUsed(req) + 1) }
+        : {}),
     },
   });
 }

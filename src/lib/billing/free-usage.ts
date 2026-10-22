@@ -37,17 +37,36 @@ export type FreeUsage = {
  * Quanti messaggi gratuiti ha ancora l'utente oggi.
  *
  * `ip` serve per gli anonimi (il contatore è per indirizzo).
+ * `guestUsed` è il contatore del DISPOSITIVO (cookie firmato): per gli ospiti
+ * si tiene il più generoso fra IP e dispositivo, così chi sta dietro una NAT
+ * non paga per i colleghi (vedi lib/billing/guest-counter.ts).
  */
 export async function checkFreeUsage(
   userId: string,
-  ip?: string,
+  opts: { ip?: string; guestUsed?: number } = {},
 ): Promise<FreeUsage> {
-  const used = await getFreeMessagesUsed(userId, ip);
+  const limit = FREE_MESSAGES_PER_DAY;
+  const ipUsed = await getFreeMessagesUsed(userId, opts.ip);
+  const ipRemaining = Math.max(0, limit - ipUsed);
+
+  // Solo per gli ospiti ha senso il contatore del dispositivo.
+  if (userId !== "anonymous") {
+    return {
+      allowed: ipUsed < limit,
+      used: ipUsed,
+      remaining: ipRemaining,
+      limit,
+    };
+  }
+
+  const guestUsed = opts.guestUsed ?? 0;
+  const guestRemaining = Math.max(0, limit - guestUsed);
+  const remaining = Math.max(ipRemaining, guestRemaining);
   return {
-    allowed: used < FREE_MESSAGES_PER_DAY,
-    used,
-    remaining: Math.max(0, FREE_MESSAGES_PER_DAY - used),
-    limit: FREE_MESSAGES_PER_DAY,
+    allowed: remaining > 0,
+    used: limit - remaining,
+    remaining,
+    limit,
   };
 }
 
