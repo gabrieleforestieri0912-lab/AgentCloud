@@ -221,13 +221,15 @@
 
 ---
 
-## 🛠 Development (GitHub)
+## 🛠 Development (GitHub) — In arrivo
 
-### 11. WebDev Code Agent ✅ Disponibile
+### 11. WebDev Code Agent 🚧 In arrivo
 
-**Prezzo:** €9,99/mese  
+**Prezzo (previsto):** €9,99/mese  
 **Categoria:** Development  
 **Descrizione:** Agente di programmazione per progetti web: esplora il codice reale, pianifica, modifica i file su un branch dedicato, esegue lint/build/test e consegna tramite pull request su GitHub.
+
+> 🚧 Agente in anteprima: appare nella sezione "Prossimamente" del marketplace con card e pagina di dettaglio complete. Il runtime non è attivo (nessuna entry in `src/lib/agents/registry.ts`): quando verrà promosso ad agente disponibile si aggiunge di nuovo la sua entry (già pronta nella history del branch), lo slug nei feature flag e la riga nel bootstrap `agents_registry`.
 
 **Funzionalità principali:**
 
