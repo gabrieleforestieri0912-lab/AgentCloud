@@ -221,6 +221,39 @@
 
 ---
 
+## 🛠 Development (GitHub)
+
+### 11. WebDev Code Agent ✅ Disponibile
+
+**Prezzo:** €9,99/mese  
+**Categoria:** Development  
+**Descrizione:** Agente di programmazione per progetti web: esplora il codice reale, pianifica, modifica i file su un branch dedicato, esegue lint/build/test e consegna tramite pull request su GitHub.
+
+**Funzionalità principali:**
+
+- Esplorazione del repository collegato (README, struttura, file coinvolti) prima di scrivere codice
+- Piano breve e esplicito (3-7 passi, file toccati e perché) prima di ogni modifica
+- Modifiche piccole e mirate su branch dedicato, con commit in stile Conventional Commits
+- Verifica con gli strumenti del progetto (lint, type-check, build, test) e resoconto onesto dei risultati
+- Pull request come unica via di consegna: mai push diretto su main/master, ogni scrittura passa dalla conferma dell'utente
+
+**Tools attivi (default):**
+
+- `github_repo_info` / `github_repo_list_files` / `github_repo_read_file` - Esplorazione del repository collegato
+- `github_repo_write_file` / `github_repo_create_branch` - Modifiche su branch dedicato (con conferma utente)
+- `github_repo_create_pull_request` - Consegna via pull request (con conferma utente)
+
+**Tools opzionali (disattivati):**
+
+- `web_search` / `scrape_page` - Documentazione, issue e messaggi d'errore
+- `read_file` / `write_file` - Note e deliverable nel workspace
+
+**Ideale per:** Founder solos, indie maker e piccoli team senza sviluppatori dedicati che vogliono modifiche fatte per bene e verificate su repository GitHub
+
+>Nota: i tool `github_repo_*` sono dinamici — funzionano solo con un repository collegato dalla chat (menu "+" → Repository GitHub).
+
+---
+
 ## 📊 Confronto Piani
 
 | Piano                 | Prezzo    | Token/Mese | Agenti Inclusi | Tools               |
