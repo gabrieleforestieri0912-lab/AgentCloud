@@ -590,6 +590,37 @@ const SEEDS: AgentSeed[] = [
     ],
     accent: "bg-fuchsia-600",
   },
+  {
+    slug: "webdev-agent",
+    name: "WebDev Code Agent",
+    shortName: "WebDev",
+    category: "Development",
+    industry: "Solo founders, indie makers and small teams without dedicated developers",
+    icon: "code",
+    price: "€9,99/mo",
+    priceCents: 999,
+    stripePriceId: "price_webdev_agent",
+    setupTime: "Same day",
+    badge: "New",
+    description:
+      "Explores your code, plans, edits files and delivers changes as a pull request on GitHub.",
+    longDescription:
+      "The WebDev Code Agent is a coding teammate for your web project. Link a GitHub repository from the chat and it reads the README and the real source files, proposes a short plan, makes small focused edits on a dedicated branch, runs the project's lint, build and tests, and opens a pull request with a clear description. You approve every write before it touches your code — and nothing lands on the default branch without a review. No repository linked? It still reviews code, explains errors and drafts functions, snippets and refactoring plans in chat.",
+    tasks: [
+      "Codebase exploration and short implementation plans",
+      "Focused edits on a dedicated branch",
+      "Lint, type-check, build and test runs before delivery",
+      "Pull request with what, why, how to test and risks",
+    ],
+    integrations: ["GitHub"],
+    workflow: [
+      "Link the repository and describe the change",
+      "The agent explores the code and proposes a plan",
+      "Edits land on a feature branch, one confirmation at a time",
+      "The agent verifies and opens the pull request",
+    ],
+    accent: "bg-slate-500",
+  },
 
   // ─── Agenti futuri (coming soon) ─────────────────────────────────────────
   // Non sono inclusi nei feature flag: appaiono automaticamente nella sezione
