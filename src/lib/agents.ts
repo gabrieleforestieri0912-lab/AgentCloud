@@ -590,6 +590,10 @@ const SEEDS: AgentSeed[] = [
     ],
     accent: "bg-fuchsia-600",
   },
+
+  // ─── Agenti futuri (coming soon) ─────────────────────────────────────────
+  // Non sono inclusi nei feature flag: appaiono automaticamente nella sezione
+  // "Prossimamente" del marketplace con card e pagina di anteprima complete.
   {
     slug: "webdev-agent",
     name: "WebDev Code Agent",
@@ -621,10 +625,6 @@ const SEEDS: AgentSeed[] = [
     ],
     accent: "bg-slate-500",
   },
-
-  // ─── Agenti futuri (coming soon) ─────────────────────────────────────────
-  // Non sono inclusi nei feature flag: appaiono automaticamente nella sezione
-  // "Prossimamente" del marketplace con card e pagina di anteprima complete.
   {
     slug: "email-agent",
     name: "Email Agent",
