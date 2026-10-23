@@ -46,11 +46,12 @@ export const ACTIVE_10_AGENTS = [
 ];
 
 /** Agenti abilitati di default: i 10 della verticale Shopify + 6 trasversali
- *  (finanza, HR, social, inventory, network, assistente personale). Il numero
- *  nel nome deve riflettere il conteggio REALE della lista (10 + 6 = 16): se
- *  se ne aggiunge uno, si aggiorna anche qui. Il catalogo completo — compresi
- *  gli agenti "in arrivo" — vive in src/lib/agents.ts. */
-export const ACTIVE_16_AGENTS = [
+ *  (finanza, HR, social, inventory, network, assistente personale) + il
+ *  WebDev Code Agent. Il numero nel nome deve riflettere il conteggio REALE
+ *  della lista (10 + 7 = 17): se se ne aggiunge uno, si aggiorna anche qui.
+ *  Il catalogo completo — compresi gli agenti "in arrivo" — vive in
+ *  src/lib/agents.ts. */
+export const ACTIVE_17_AGENTS = [
   ...ACTIVE_10_AGENTS,
   "finance-manager",
   "personal-assistant",
@@ -58,6 +59,7 @@ export const ACTIVE_16_AGENTS = [
   "social-media-agent",
   "inventory-logistics",
   "network-marketing",
+  "webdev-agent",
 ];
 
 export const ALL_TOOLS_LIST = [
@@ -226,7 +228,7 @@ export const ALL_TOOLS_LIST = [
  * Configurazione di default per il lancio verticale Shopify e-commerce.
  */
 export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
-  enabledAgents: [...ACTIVE_16_AGENTS],
+  enabledAgents: [...ACTIVE_17_AGENTS],
   enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
   enableOptionalToolsByDefault: true,
@@ -236,7 +238,7 @@ export const SHOPIFY_LAUNCH_CONFIG: FeatureFlags = {
  * Configurazione per la verticale servizi (ristoranti, professionisti, immobiliare)
  */
 export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
-  enabledAgents: [...ACTIVE_16_AGENTS],
+  enabledAgents: [...ACTIVE_17_AGENTS],
   enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
   enableOptionalToolsByDefault: true,
@@ -244,11 +246,11 @@ export const SERVICES_LAUNCH_CONFIG: FeatureFlags = {
 
 /**
  * Configurazione piattaforma completa (tutti gli agenti attivi abilitati:
- * gli stessi di ACTIVE_16_AGENTS, elencati da capo perché ogni verticale
+ * gli stessi di ACTIVE_17_AGENTS, elencati da capo perché ogni verticale
  * possa tagliare la lista che le serve)
  */
 export const FULL_PLATFORM_CONFIG: FeatureFlags = {
-  enabledAgents: [...ACTIVE_16_AGENTS],
+  enabledAgents: [...ACTIVE_17_AGENTS],
   enabledTools: ALL_TOOLS_LIST,
   agentToolOverrides: {},
   enableOptionalToolsByDefault: true,
