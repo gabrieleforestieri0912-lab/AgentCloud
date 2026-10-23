@@ -488,13 +488,64 @@ minuto.
 richieste): la sua lista è vuota e cancellare un id del primo utente risponde
 `404` senza toccare i dati del primo.
 
+---
+
+## 5. Verifica dell'estrazione incrementale (server reale)
+
+La modalità incrementale si verifica nel vivo, con LLM vero, perché la sua
+difficoltà è proprio la coincidenza byte-per-byte dell'invio. Procedura
+usata (2026-10-23), riproducibile con un solo script Node:
+
+**Preparazione**: server di produzione (`npm run build`, poi
+`AGENT_LLM_PROVIDER=anthropic PORT=<porta> npm run start`) e un utente di
+prova che possiede l'agente (come nel §4).
+
+**Lo script** (usa-e-getta; qui resta la forma completa):
+
+- login via `POST /auth/v1/token?grant_type=password` (il token salvato può
+  essere scaduto);
+- `run(messages)`: `POST /api/agent/run` e ricostruzione del testo dalla
+  risposta SSE: ogni riga `data: {...}` viene parso con `JSON.parse` e i
+  `type:"text"` concatenati. La concatenazione dei tipi emessi dal word
+  emitter coincide **byte-per-byte** con `response.text` del provider
+  (verificato dal digest, vedi sotto);
+- `digestOf(messages)`: stesso calcolo dell'ingestione —
+  `sha256(ruolo+"\0"+contenuto, concatenati con "\1")`;
+- lettura della watermark via PostgREST con il service key:
+  `agent_memory_items?tenant_id=eq.<id>&type=eq.meta`.
+
+**Run A** — solo `msgA` (l'"intervista" utente, oltre la soglia di caratteri).
+Atteso: nel log `mode:"full"`; nel DB **una sola** riga `meta`,
+`expires_at` nullo, contenuto `extraction-watermark <hex> <count>`. Poi si
+ricomputa in locale `digestOf([msgA, rispostaA])`: deve **coincidere** col
+digest salvato — è la prova che la ricostruzione SSE è byte-per-byte
+(nessuna variante `trim` necessaria; semmai, provare `trimEnd` in loop sulle
+varianti come fa lo script).
+
+**Run B** — `[msgA, rispostaA, msgB]` con la risposta A esattamente come
+ricostruita. Atteso: nel log `mode:"incremental"`; nel DB una sola riga
+`meta` con `count > 3` (ri-letta finché non compaia). L'audit dell'ingestione
+mostra `extracted/stored` ridotti ai messaggi nuovi.
+
+**Run C (storia che cresce ancora)** — aggiunge `msgC`. Atteso:
+`mode:"incremental"`. Se nella run precedente ci sono state chiamate a tool,
+la storia ricostruita dal client non coincide più byte-per-byte (le risposte
+testuali delle singole iterazioni non si riescono a separare a valle) — in
+quel caso l'audit mostra `mode:"full"`: è il comportamento di fallback
+previsto, non un errore.
+
+**Vantaggio economico**: gli audit `memory_ingest` di una sequenza A→B→C
+mostrano `extracted/stored` riferiti solo ai messaggi nuovi, invece di
+rielaborare ogni volta l'intera conversazione.
+
 **Pulizia:** eliminare l'utente di prova e la sua riga in `user_agents`
 (`user_agents` non ha foreign key su `auth.users`: cancellare l'utente **non**
-cancella la riga).
+cancella la riga). Eliminare anche le righe di `agent_memory_items`,
+`agent_memory_config` e `rate_limits` del tenant di prova.
 
 ---
 
-## 5. Cosa resta come verifica permanente
+## 6. Cosa resta come verifica permanente
 
 I file di test sono usa-e-getta, quindi nel repository restano i controlli
 che valgono sempre:

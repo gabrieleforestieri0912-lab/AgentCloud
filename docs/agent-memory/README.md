@@ -49,7 +49,7 @@ orchestratore (route /api/agent/run)
 | `tenant_id` | string | account proprietario (in questo progetto un utente = un tenant) |
 | `agent_id` | string | agente proprietario della memoria |
 | `user_id` | string | soggetto: id utente, oppure sessione anonima del widget |
-| `type` | `fact \| preference \| summary \| event` | |
+| `type` | `fact \| preference \| summary \| event \| meta` | `meta` è interno (vedi sotto) |
 | `content` | string | mai secreti (vedi filtro) |
 | `embedding` | number[] | similarità calcolata in application layer |
 | `importance` | 0-1 | |
@@ -81,6 +81,15 @@ richiede chiavi e non aggiunge dipendenze.
 Il provider è innestabile: basta impostare `EMBEDDINGS_API_KEY` (con
 `EMBEDDINGS_BASE_URL` e `EMBEDDINGS_MODEL` opzionali) per passare a un
 provider OpenAI-compatible via HTTP, senza toccare il resto del codice.
+
+**Embeddings in batch**: l'ingestione di una conversazione fa **una sola
+chiamata HTTP** per tutto il lotto di fatti estratti (`service.addMany`),
+invece di una chiamata per item. Gli item già in memoria con embedding di
+dimensione diversa dal provider corrente vengono esclusi dai candidati di
+dedup (`compatible`): cambia provider, cambia la dimensione del vettore, e
+confrontare vettori incompatibili produrrebbe similarità senza senso (una
+sola segnalazione di avviso per istanza). Con il provider locale la
+dimensione è fissa e il guard non interviene.
 
 Il vector store è la tabella `agent_memory_items`: l'embedding è in `jsonb`
 e la similarità (cosine) è calcolata in application layer, così la feature
@@ -126,6 +135,19 @@ Nel repo esiste anche la migrazione `supabase/migrations/20260101000004_agent_me
 per `supabase db push`: la cartella `supabase/migrations/` è gitignored in
 questo progetto, quindi il file tracciato è `supabase/schema-agent-memory.sql`.
 
+> **Aggiornamento dello schema per database esistenti (2026-10-23):** la
+> DDL di `agent_memory_items` ora ammette il tipo `meta` nell'constraint
+> `agent_memory_items_type_check` (serve al watermark dell'estrazione
+> incrementale). Se il database è stato creato con una versione precedente,
+> riesegui il file o applica l'ALTER a mano:
+>
+> ```sql
+> alter table public.agent_memory_items
+>   drop constraint agent_memory_items_type_check,
+>   add constraint agent_memory_items_type_check
+>     check (type in ('fact','preference','summary','event','meta'));
+> ```
+
 ## Test
 
 ```bash
@@ -147,6 +169,12 @@ del progetto girano così come sono.
 | 4 | retrieval e injection nel prompt | ✅ |
 | 5 | endpoint REST, flag per agente, TTL, GDPR | ✅ |
 | 6 | test (unitari, multi-tenant, injection, scadenza, fallback) | ✅ |
+| 7 | memoria persistente per il widget anonimo (scope `anon:<sessione>`, TTL) | ✅ |
+| 8 | estrazione incrementale a watermark + embeddings in batch | ✅ |
+
+**Nota di comportamento**: il watermark usa il tipo `meta`; su un database
+creato prima, applica l'ALTER indicato nella sezione Database, altrimenti
+ogni ingestione ricade su `full` (funziona, ma senza risparmio).
 
 ## Verifica
 
@@ -214,6 +242,10 @@ secreti → deduplica → scrittura
 2. **dopo** l'estrazione: un fatto che contiene un segreto viene *scartato*,
    non ripulito.
 
+Ogni scarto lascia una traccia di audit `memory_rejected` con le **etichette
+delle regole** infrante (per esempio "chiave API", "IBAN") — mai il valore
+che le ha fatte scattare.
+
 Le regole riconoscono chiavi API (OpenAI, GitHub, Slack, AWS, Google), JWT,
 bearer token, chiavi private, IBAN, password dichiarate e numeri di carta
 (checksum Luhn + prefisso noto, così un numero di fattura non viene scambiato
@@ -251,6 +283,31 @@ gli item poco importanti (`importance < MEMORY_LOW_IMPORTANCE`) scadono dopo
 estrae i fatti e li scrive. È tutto fail-safe (un errore non rompe la run) e
 salta le conversazioni troppo corte (`minUserChars`, default 120 caratteri
 dell'utente). In modalità Ghost (chat incognito) non viene scritto niente.
+
+**Estrazione incrementale a watermark** — ripassare ogni volta l'intera
+conversazione all'estrattore costerebbe in token e rischierebbe di
+riscrivere fatti già ricordati. Invece, a fine di ogni ingestione la
+conversazione vista finora viene riassunta in un **watermark**: un item di
+tipo `meta` (contabile, mai estratto/iniettato nel prompt, escluso dalla
+lista API, incluso solo nell'export GDPR) con contenuto
+`extraction-watermark <sha256> <numero di messaggi>`, dove il digest è
+calcolato su `ruolo\0contenuto` di ogni messaggio, concatenati con `\1`.
+
+Alla run successiva:
+
+- se i primi `count` messaggi combaciano col digest (prefisso), l'estrattore
+  vede **solo i messaggi nuovi** (`mode: "incremental"`);
+- se i messaggi combaciano esattamente (nessuno nuovo), **non viene fatta
+  nessuna chiamata LLM** (`mode: "unchanged"`);
+- se lo storico è diverso dal prefisso (truncamento, chat diversa, o la
+  risposta del modello non coincide byte-per-byte), si ricade su estrazione
+  completa (`mode: "full"`): sempre corretto, solo meno economico.
+
+Il watermark **non sfrutta la deduplica** (il suo digest cambia a ogni run)
+e non è un dato dell'utente: prima di riscriverla la precedente viene
+semplicemente cancellata; ne resta sempre una sola per scope, senza
+scadenza. La verifica E2E sul server reale è in
+[`VERIFICATION.md`](./VERIFICATION.md).
 
 La memoria a lungo termine vale solo per gli utenti autenticati: per gli
 anonimi non c'è un soggetto stabile, e il widget usa le API REST con l'id di
