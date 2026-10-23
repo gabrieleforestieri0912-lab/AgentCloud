@@ -616,7 +616,8 @@ insert into public.agents_registry (slug, name, short_name, category, price_cent
   ('support-agent',        'Support Agent',               'Support Agent',        'Customer Service',      1499,  'price_support_agent',        '€14,99/mo',  true),
   ('copywriter',           'Copywriter',                  'Copywriter',           'Design & Content',      1499,  'price_copywriter',           '€14,99/mo',  true),
   ('finance-manager',      'Finance Manager Agent',       'Finance Manager',      'E-commerce & Finance',  1499,  'price_finance_manager',      '€14,99/mo',  true),
-  ('shopify-agent',        'Shopify Agent',               'Shopify Agent',        'E-commerce & Finance',  999,   'price_shopify_agent',        '€9,99/mo',  true)
+  ('shopify-agent',        'Shopify Agent',               'Shopify Agent',        'E-commerce & Finance',  999,   'price_shopify_agent',        '€9,99/mo',  true),
+  ('webdev-agent',         'WebDev Code Agent',           'WebDev',               'Development',           999,   'price_webdev_agent',         '€9,99/mo',  true)
 on conflict (slug) do update set
   name           = excluded.name,
   short_name     = excluded.short_name,
