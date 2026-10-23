@@ -341,4 +341,26 @@ export const AGENT_LOCALIZATIONS_ES: Record<string, AgentLocalization> = {
       "Redacta el pedido al proveedor",
     ],
   },
+  "webdev-agent": {
+    name: "WebDev Code Agent",
+    shortName: "WebDev",
+    category: "Development",
+    description:
+      "Explora tu código, planifica, edita archivos y entrega los cambios como pull request en GitHub.",
+    longDescription:
+      "El WebDev Code Agent es un compañero de programación para tu proyecto web. Vincula un repositorio de GitHub desde el chat y lee el README y el código real, propone un plan breve, hace cambios pequeños y focalizados en una rama dedicada, ejecuta el lint, el build y los tests del proyecto, y abre un pull request con una descripción clara. Apruebas cada escritura antes de que toque tu código: nada llega a la rama principal sin revisión. ¿Sin repositorio vinculado? Igual revisa código, explica errores y redacta funciones, fragmentos y planes de refactorización en el chat.",
+    industry: "Fundadores en solitario, makers independientes y equipos pequeños sin desarrolladores dedicados",
+    tasks: [
+      "Exploración del código y planes de implementación breves",
+      "Cambios focalizados en una rama dedicada",
+      "Lint, type-check, build y tests antes de entregar",
+      "Pull request con qué, por qué, cómo probarlo y riesgos",
+    ],
+    workflow: [
+      "Vincula el repositorio y describe el cambio",
+      "El agente explora el código y propone un plan",
+      "Los cambios aterrizan en una rama de feature, confirmación a confirmación",
+      "El agente verifica y abre el pull request",
+    ],
+  },
 };
