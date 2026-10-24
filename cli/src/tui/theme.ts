@@ -19,6 +19,8 @@
  * logo) usa `colorLevel()` / `gradient()` qui sotto, che replicano la stessa
  * logica: truecolor se supportato, altrimenti colore piatto del tema.
  */
+import chalk from "chalk";
+
 export type Theme = {
   primary: string;
   primaryHi: string;
@@ -31,6 +33,11 @@ export type Theme = {
   error: string;
   warning: string;
   border: string;
+  /**
+   * Tinta scura dell'ombra (banner e profondità): derivata da primary
+   * rimescolata col background, non un grigio neutro.
+   */
+  shadow: string;
   /**
    * Sfondo pieno della voce selezionata (stile OpenCode): il riempimento
    * è il colore brand, il testo sopra diventa bianco.
@@ -45,8 +52,7 @@ export type Theme = {
 };
 
 export const agentCloudTheme: Theme = {
-  primary: "#038BFE",
-  primaryHi: "#2EA3FF",
+  primary: "#038BFE",  primaryHi: "#2EA3FF",
   accent: "#5CB8FF",
   background: "#0A0A0F",
   panel: "#13131A",
@@ -56,6 +62,10 @@ export const agentCloudTheme: Theme = {
   error: "#F87171",
   warning: "#FBBF24",
   border: "#27272A",
+  // Ombra del banner: primary spento al 25% sul background. Il valore qui
+  // sotto è la derivazione armata a macchina (mixHex), ricalcolata a fine
+  // oggetto se la palette cambia (vedi sotto).
+  shadow: "#082A4B",
   // Stile "a riempimento": la selezione è un blocco brand pieno, i pannelli
   // hanno uno sfondo proprio e i badge sono chip scuri con testo colorato.
   selectBg: "#038BFE",
@@ -64,6 +74,10 @@ export const agentCloudTheme: Theme = {
   chipBg: "#10304F",
   chipFg: "#7CC4FF",
 };
+
+// L'ombra resta derivata dalla palette reale: se primary/background cambiano,
+// questa riga la ricalcola (il valore fisso sopra è solo per l'inizializzazione).
+agentCloudTheme.shadow = mixHex(agentCloudTheme.primary, agentCloudTheme.background, 0.75);
 
 /** Temi disponibili per `/theme`. Oggi solo dark: il chiaro arriverà quando
  *  anche il sito lo supporterà davvero (ora produrrebbe testo illeggibile). */
@@ -83,13 +97,33 @@ export function colorLevel(): 0 | 1 | 2 | 3 {
   if (Number.isInteger(force)) return Math.max(0, Math.min(3, force)) as 0 | 1 | 2 | 3;
   const colorterm = (process.env.COLORTERM || "").toLowerCase();
   if (colorterm === "truecolor" || colorterm === "24bit") return 3;
+  const termProgram = (process.env.TERM_PROGRAM || "").toLowerCase();
+  // Windows Terminal dichiara WT_SESSION e supporta truecolor ma spesso
+  // non imposta COLORTERM; idem VS Code (vscode), iTerm e Terminology.
+  if (process.env.WT_SESSION || termProgram === "vscode" || termProgram === "iterm.app" || termProgram === "terminology") {
+    return 3;
+  }
   const term = (process.env.TERM || "").toLowerCase();
   if (term.includes("direct") || term.includes("truecolor")) return 3;
   if (!process.stdout.isTTY && !colorterm && !term) return 0;
-  if (term.includes("256") || process.env.WT_SESSION || process.env.TERMINAL_EMULATOR) return 2;
-  // Windows Terminal e i moderni Windows 11 supportano truecolor ma non sempre
-  // dichiarano COLORTERM: WT_SESSION è il marker affidabile (gestito sopra).
+  if (term.includes("256") || process.env.TERMINAL_EMULATOR) return 2;
   return term ? 1 : 0;
+}
+
+/**
+ * Normativa colore all'ingresso della TUI: il chalk venduto con il progetto
+ * legge FORCE_COLOR ma NON NO_COLOR; senza questa policy header, chip e
+ * status resterebbero colorati mentre il banner (che usa colorLevel()) è
+ * già spento — un NO_COLOR=1 applicato a metà.
+ */
+export function applyEnvColorPolicy(): void {
+  const force = process.env.FORCE_COLOR;
+  if (process.env.NO_COLOR && force === undefined) {
+    chalk.level = 0;
+  } else if (force !== undefined) {
+    const n = Number.parseInt(force, 10);
+    if (Number.isInteger(n) && n >= 0 && n <= 3) chalk.level = n as 0 | 1 | 2 | 3;
+  }
 }
 
 /**
@@ -101,6 +135,37 @@ export function colorLevel(): 0 | 1 | 2 | 3 {
 function hexToRgb(hex: string): [number, number, number] {
   const n = Number.parseInt(hex.replace("#", ""), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/**
+ * Mescola due hex: 0 = a, 1 = b. Puro, per derivate della palette
+ * (l'ombra del banner, le tinte attenuate) senza aggiungere colori nuovi.
+ */
+export function mixHex(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = hexToRgb(a);
+  const [r2, g2, b2] = hexToRgb(b);
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const blue = Math.round(b1 + (b2 - b1) * t);
+  return `#${((r << 16) | (g << 8) | blue).toString(16).padStart(6, "0").toUpperCase()}`;
+}
+
+/**
+ * Il terminale gestisce Unicode (box drawing, blocchi, ombre)?
+ * - Windows Terminal / VS Code / termini moderni: sempre sì;
+ * - POSIX: chiedo a LANG/LC_ALL; WSL di default esporta C.UTF-8;
+ * - senza indicazioni (conhost con font legacy): no → fallback ASCII.
+ * Puro sui sorgenti richiesti: serve isolatamente a banner e bordi.
+ */
+export function supportsUnicode(): boolean {
+  const termProgram = (process.env.TERM_PROGRAM || "").toLowerCase();
+  if (process.env.WT_SESSION || termProgram === "vscode" || termProgram === "iterm.app" || termProgram === "apple_terminal" || termProgram === "terminology") {
+    return true;
+  }
+  const lang = `${process.env.LC_ALL || ""} ${process.env.LC_CTYPE || ""} ${process.env.LANG || ""}`.toLowerCase();
+  if (lang.includes("utf-8") || lang.includes("utf8")) return true;
+  if (process.platform === "win32") return false; // conhost senza LC_*: ASCII
+  return false;
 }
 
 export function trueColor(hex: string): string {

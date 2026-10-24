@@ -3,7 +3,7 @@ import { Box, Text, render, useApp, useInput } from "ink";
 import { ApiError, userRequest, userWhoAmI } from "../api.js";
 import { loadConfig } from "../config.js";
 import { localVersion } from "../update.js";
-import { theme } from "./theme.js";
+import { theme, applyEnvColorPolicy } from "./theme.js";
 import { Spinner } from "./Spinner.js";
 import { AgentsOverlay } from "./AgentsOverlay.js";
 import { App, type TuiResult } from "./App.js";
@@ -36,6 +36,7 @@ function leaveAltScreen(): void {
  * sessione e stampare il codice di ripresa.
  */
 export async function runWelcomeTui(): Promise<TuiResult> {
+  applyEnvColorPolicy();
   enterAltScreen();
   try {
     let result: TuiResult | null = null;
