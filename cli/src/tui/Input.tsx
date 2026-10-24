@@ -245,7 +245,7 @@ export function ChatInput({
 
   if (confirm) {
     return (
-      <Box borderStyle="single" borderColor={focused ? theme.warning : theme.border} backgroundColor={theme.panelBg} paddingX={1}>
+      <Box borderStyle="round" borderColor={focused ? theme.warning : theme.border} backgroundColor={theme.panelBg} paddingX={1}>
         <Text>
           Confermi l&apos;esecuzione di &quot;{confirm.toolName}&quot;? <Text color={theme.muted}>[y/N]</Text>
         </Text>
@@ -255,7 +255,7 @@ export function ChatInput({
 
   return (
     <Box
-      borderStyle="single"
+      borderStyle="round"
       borderColor={focused ? theme.primary : theme.border}
       backgroundColor={theme.panelBg}
       paddingX={1}

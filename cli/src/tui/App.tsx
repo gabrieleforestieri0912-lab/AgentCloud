@@ -3,8 +3,9 @@ import { Box, Text, render, useApp, useInput, useStdout } from "ink";
 import path from "node:path";
 import { ApiError, agentLimit, deleteAgentFile, saveAgentFiles, streamAgent, userRequest, userWhoAmI, type AgentLimit } from "../api.js";
 import { localVersion } from "../update.js";
-import { theme } from "./theme.js";
-import { Chat, Welcome, type ChatMessage, type ToolStep } from "./Chat.js";
+import { theme, applyEnvColorPolicy } from "./theme.js";
+import { Chat, type ChatMessage, type ToolStep } from "./Chat.js";
+import { StartScreen, InputHints } from "./StartScreen.js";
 import { ChatInput, type ConfirmState } from "./Input.js";
 import { Header } from "./Header.js";
 import { Spinner } from "./Spinner.js";
@@ -173,6 +174,7 @@ export async function runChatTui(opts: {
   initialTitle?: string;
   initialFiles?: TrackedFile[];
 }): Promise<TuiResult> {
+  applyEnvColorPolicy();
   enterAltScreen();
   try {
     let result: TuiResult = { tabs: [] };
@@ -272,6 +274,19 @@ export function App({
   const { stdout } = useStdout();
   const rows = stdout?.rows ?? 24;
   const columns = stdout?.columns ?? 80;
+  // Il ridimensionamento live: Ink rinfresca il layout cached ma NON ri-renderizza
+  // React, quindi le dimensioni restano quelle del primo frame (sidebar visibile con
+  // 80 colonne, input largo 72 in una colonna da 47: cornice fusa). Il tick forza
+  // un render con le colonne vere.
+  const [, setResizeTick] = useState(0);
+  useEffect(() => {
+    if (!stdout) return;
+    const onResize = () => setResizeTick((t) => t + 1);
+    stdout.on("resize", onResize);
+    return () => {
+      stdout.off("resize", onResize);
+    };
+  }, [stdout]);
 
   // Le schede: stato per sessione. La prima è quella di partenza.
   const tabsRef = useRef<Tab[]>([
@@ -1378,7 +1393,7 @@ export function App({
       onInterrupt={() => tab.abort?.abort()}
       confirm={tab.confirm}
       onConfirm={answerConfirm}
-      placeholder={`Scrivi a ${tab.agentName}… (Invio invia, / comandi)`}
+      placeholder="Scrivi un messaggio o / per i comandi"
       onHeightChange={setInputHeight}
       // Con il popup aperto l'editor si spegne: i tasti sono del
       // popup (frecce, Invio, Esc), non della bozza.
@@ -1452,11 +1467,20 @@ export function App({
           </Box>
         ) : null}
         {startView ? (
-          // Schermata iniziale: benvenuto e input multilinea al centro dello
-          // schermo (stile OpenCode). Nessuna chat da mostrare ancora.
-          <Box flexDirection="column" flexGrow={1} alignItems="center" justifyContent="center">
-            <Box width={startInputWidth} flexDirection="column" alignItems="center">
-              <Welcome agentName={tab.agentName} centered />
+          // Schermata iniziale: banner, benvenuto e input multilinea al centro
+          // dello schermo (stile OpenCode). Il contenitore interno NON usa
+          // alignItems="center": i figli si allargano alla larghezza fissata.
+          // Con center il riquadro dell'input resta largo come il placeholder
+          // e tutto il blocco risulta sfalsato a sinistra. Il banner, più
+          // stretto dell'input, si centra da solo con alignSelf.
+          <Box flexDirection="column" flexGrow={1} justifyContent="center" alignItems="center">
+            <Box width={startInputWidth} flexDirection="column">
+              <Box alignSelf="center">
+                {/* La variante del banner dipende dalla larghezza della
+                    colonna di contenuto, non del terminale: con la sidebar
+                    aperta lo spazio è meno (altrimenti sfora il bordo). */}
+                <StartScreen columns={chatWidth} />
+              </Box>
               {tab.menuOpen ? (
                 <Box width={startInputWidth} flexDirection="column" marginTop={1}>
                   <CommandMenu commands={menuList} selected={menuSel} width={startInputWidth} />
@@ -1475,8 +1499,11 @@ export function App({
                   />
                 </Box>
               ) : null}
-              <Box marginTop={2} width={startInputWidth}>
+              <Box marginTop={2} width={startInputWidth} flexDirection="column">
                 {renderInput(3)}
+              </Box>
+              <Box marginTop={1} width={startInputWidth} flexDirection="column">
+                <InputHints />
               </Box>
             </Box>
           </Box>

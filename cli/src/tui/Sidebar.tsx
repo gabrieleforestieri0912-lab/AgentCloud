@@ -56,6 +56,7 @@ export function Sidebar({
   return (
     <Box
       width={SIDEBAR_WIDTH}
+      flexShrink={0}
       flexDirection="column"
       borderStyle="single"
       borderColor={focused ? theme.primary : theme.border}
