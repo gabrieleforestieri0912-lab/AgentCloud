@@ -8,11 +8,14 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "lint:naming": "node check-naming.mjs"
+    "lint:naming": "node check-naming.mjs",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "@opennextjs/cloudflare": "^1.20.13",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "@vercel/analytics": "^2.0.1",
@@ -27,7 +30,7 @@
     "lucide-react": "^1.17.0",
     "mammoth": "^1.13.0",
     "mermaid": "^12.2.0",
-    "next": "16.2.9",
+    "next": "^16.4.3",
     "pptxgenjs": "^4.0.1",
     "puppeteer-core": "^25.10.0",
     "react": "19.2.4",
@@ -45,6 +48,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.152.0"
   }
 }
