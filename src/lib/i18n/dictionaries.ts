@@ -466,12 +466,8 @@ howItWorks: {
       "AgentCloud si collega alle piattaforme su cui gira la tua azienda - dagli strumenti di produttività ai CRM, dalle app di comunicazione ai workflow di automazione.",
     cta: "Esplora le integrazioni AgentCloud",
     summary: "{live} già disponibili • si collegano in 2 click, in modo sicuro.",
-    liveBadge: "Live",
     liveHeading: "Live — pronte all’uso",
-    comingBadge: "In arrivo",
-    comingHeading: "In arrivo — roadmap",
-    roadmapShow: "Mostra la roadmap",
-    roadmapHide: "Nascondi la roadmap",
+    comingShort: "altre {count} in arrivo",
     points: [
       {
         title: "Connessione sicura",
@@ -2961,12 +2957,8 @@ howItWorks: {
       "AgentCloud connects with the platforms your business runs on - from productivity tools to CRMs, communication apps to automation workflows.",
 cta: "Explore AgentCloud Integrations",
     summary: "{live} already available • they connect in 2 clicks, securely.",
-    liveBadge: "Live",
     liveHeading: "Live — ready to use",
-    comingBadge: "Coming soon",
-    comingHeading: "Coming soon — roadmap",
-    roadmapShow: "Show the roadmap",
-    roadmapHide: "Hide the roadmap",
+    comingShort: "{count} more coming soon",
     points: [
       {
         title: "Secure connection",
@@ -5431,12 +5423,8 @@ howItWorks: {
       "AgentCloud se conecta con las plataformas en las que funciona tu empresa - desde herramientas de productividad hasta CRM, pasando por apps de comunicación y flujos de automatización.",
     cta: "Explora las integraciones de AgentCloud",
     summary: "{live} ya disponibles • se conectan en 2 clics, de forma segura.",
-    liveBadge: "Live",
     liveHeading: "Live — listas para usar",
-    comingBadge: "Próximamente",
-    comingHeading: "Próximamente — roadmap",
-    roadmapShow: "Mostrar el roadmap",
-    roadmapHide: "Ocultar el roadmap",
+    comingShort: "{count} más próximamente",
     points: [
       {
         title: "Conexión segura",
@@ -7898,12 +7886,8 @@ howItWorks: {
       "AgentCloud verbindet sich mit den Plattformen, auf denen dein Unternehmen läuft - von Produktivitätstools über CRMs bis zu Kommunikations-Apps und Automatisierungs-Workflows.",
     cta: "AgentCloud-Integrationen entdecken",
     summary: "{live} bereits verfügbar • sie verbinden sich in 2 Klicks, sicher.",
-    liveBadge: "Live",
     liveHeading: "Live — sofort einsatzbereit",
-    comingBadge: "Demnächst",
-    comingHeading: "Demnächst — Roadmap",
-    roadmapShow: "Roadmap anzeigen",
-    roadmapHide: "Roadmap ausblenden",
+    comingShort: "{count} weitere in Kürze",
     points: [
       {
         title: "Sichere Verbindung",
@@ -10365,12 +10349,8 @@ howItWorks: {
       "AgentCloud se connecte aux plateformes qui font tourner votre entreprise - des outils de productivité aux CRM, des applis de communication aux workflows d'automatisation.",
     cta: "Explorer les intégrations AgentCloud",
     summary: "{live} déjà disponibles • elles se connectent en 2 clics, en toute sécurité.",
-    liveBadge: "Live",
     liveHeading: "Live — prêtes à l’emploi",
-    comingBadge: "Bientôt",
-    comingHeading: "Bientôt — feuille de route",
-    roadmapShow: "Afficher la feuille de route",
-    roadmapHide: "Masquer la feuille de route",
+    comingShort: "{count} autres bientôt disponibles",
     points: [
       {
         title: "Connexion sécurisée",
