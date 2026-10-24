@@ -77,7 +77,11 @@ export default function IntegrationsSection() {
             un marchio assieme agli altri dice "funziona" meglio di dieci
             badge "Live". Oltre i 20 slot non c'entra: vedi GRID_SLOTS. */}
         <motion.ul
-          className="grid grid-cols-4 sm:grid-cols-5 gap-3 w-full max-w-5xl 3xl:max-w-7xl mx-auto mb-6"
+          // w-fit: la griglia restringe al contenuto, così le celle sono
+          // larghe quanto i tile e la sola distanza laterale è il gap
+          // (altrimenti max-w la allarga e i tile "galleggiano" da soli
+          // a 130px di distanza l'uno dall'altro).
+          className="grid grid-cols-4 sm:grid-cols-5 gap-3 w-fit mx-auto mb-6"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
