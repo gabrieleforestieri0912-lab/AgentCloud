@@ -20,11 +20,13 @@ function shortName(name: string, max: number): string {
 }
 
 /**
- * Pannello destro: titolo chat + modifiche della sessione + totali.
+ * Pannello destro senza bordo (stile OpenCode): titolo della chat in cima,
+ * poi l'elenco delle modifiche della sessione con i totali.
  *
  * Righe a budget fisso (maxRows): la lista è finestrata attorno alla
- * selezione così non rompe mai il layout. `focused` colora il bordo e abilita
- * i tasti (↑↓ seleziona, Invio diff, u/r undo/redo) gestiti a livello App.
+ * selezione così non rompe mai il layout. `focused` evidenzia il titolo
+ * (colore primario) e abilita i tasti (↑↓ seleziona, Invio diff, u/r
+ * undo/redo) gestiti a livello App.
  */
 export function Sidebar({
   title,
@@ -41,11 +43,12 @@ export function Sidebar({
   focused: boolean;
   maxRows: number;
 }) {
-  // Larghezza utile: il pannello è di 32 colonne, ma dentro ci sono i due
-  // bordi e i due padding: il testo può occupare 28 colonne, non 30 (con 30
-  // le righe più lunghe venivano tagliate dal riquadro).
+  // Larghezza utile: senza bordo ci sono padding sinistro (2) e destro (1),
+  // più uno scarto di sicurezza per i caratteri wide.
   const inner = SIDEBAR_WIDTH - 4;
-  const headerRows = 6; // titolo(2) + label(1) + totali(1) + hint(2)
+  // Righe fisse fuori dalla lista: titolo + riga vuota + label + totali +
+  // hint (2), più le due righe vuote di separazione = 8.
+  const headerRows = 8;
   const listBudget = Math.max(1, maxRows - headerRows);
   const start =
     files.length <= listBudget
@@ -58,15 +61,17 @@ export function Sidebar({
       width={SIDEBAR_WIDTH}
       flexShrink={0}
       flexDirection="column"
-      borderStyle="single"
-      borderColor={focused ? theme.primary : theme.border}
-      paddingX={1}
+      paddingLeft={2}
+      paddingRight={1}
     >
-      <Text color={theme.muted}>CHAT</Text>
-      <Text bold wrap="truncate">
+      <Text bold color={focused ? theme.primary : theme.text} wrap="truncate">
         {shortName(title, inner * 2)}
       </Text>
-      <Text color={theme.muted}>MODIFICHE ({files.length})</Text>
+      {/* riga di respiro tra il titolo e la sezione */}
+      <Text> </Text>
+      <Text bold color={focused ? theme.primary : theme.muted}>
+        MODIFICHE ({files.length})
+      </Text>
       {visible.length === 0 ? (
         <Text color={theme.muted}>(nessuna modifica)</Text>
       ) : (
@@ -97,6 +102,7 @@ export function Sidebar({
           );
         })
       )}
+      <Text> </Text>
       <Text>
         <Text bold>{totals.count} file</Text>
         <Text color={theme.muted}> · </Text>
@@ -104,6 +110,7 @@ export function Sidebar({
         <Text color={theme.muted}> </Text>
         <Text color={theme.error}>-{totals.removed}</Text>
       </Text>
+      <Text> </Text>
       <Text color={theme.muted}>Tab focus · Invio diff</Text>
       <Text color={theme.muted}>u annulla · r ripristina</Text>
     </Box>

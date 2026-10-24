@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, Text } from "ink";
-import { theme } from "./theme.js";
+import { theme, supportsUnicode } from "./theme.js";
 import { estimateLines, visibleFromEnd } from "./measure.js";
 import { Markdown } from "./markdown.js";
 
@@ -33,6 +33,25 @@ export type ChatMessage = {
   prevAgent?: string;
   /** Quanti messaggi sono finiti nel riepilogo. */
   prevCount?: number;
+  /** Durata della run che ha prodotto la risposta (misurata dalla CLI). */
+  meta?: string;
+};
+
+/**
+ * Il bordo "solo sinistro" del messaggio utente (stile OpenCode): mezzo
+ * blocco colorato come l'input, barra verticale nei terminali senza Unicode.
+ * I lati disattivati da borderTop={false} ecc. non vengono disegnati: i
+ * caratteri qui sopra servono solo a soddisfare il tipo BoxStyle di cli-boxes.
+ */
+const MESSAGE_BAR = {
+  topLeft: " ",
+  topRight: " ",
+  bottomLeft: " ",
+  bottomRight: " ",
+  top: " ",
+  right: " ",
+  bottom: " ",
+  left: supportsUnicode() ? "▌" : "|",
 };
 
 /** Cursore animato a fine stream: lampeggia su/sotto. */
@@ -128,15 +147,21 @@ export function Chat({
             <Text color={theme.muted}>{fitted.content}</Text>
           </Box>
         ) : fitted.role === "user" ? (
-          <Box key={start + i} flexDirection="column" marginBottom={0}>
-            <Text>
-              <Text backgroundColor={theme.selectBg} color={theme.selectFg}>
-                {" "}
-                tu
-                {" "}
-              </Text>
-            </Text>
-            <Text>{fitted.content}</Text>
+          // Messaggio utente (stile OpenCode): barra d'accento a sinistra che
+          // copre tutto il blocco, testo rientrato. Il bordo è reale (Ink
+          // ripete il carattere per ogni riga), non un prefisso finto.
+          <Box
+            key={start + i}
+            flexDirection="column"
+            marginBottom={0}
+            borderStyle={MESSAGE_BAR}
+            borderColor={theme.accent}
+            borderTop={false}
+            borderRight={false}
+            borderBottom={false}
+            paddingX={1}
+          >
+            <Text wrap="wrap">{fitted.content}</Text>
           </Box>
         ) : (
           <Box key={start + i} flexDirection="column" marginBottom={0}>
@@ -146,6 +171,7 @@ export function Chat({
                 ● {agentName}
                 {" "}
               </Text>
+              {fitted.meta ? <Text color={theme.muted}> · {fitted.meta}</Text> : null}
             </Text>
             {fitted.tools && fitted.tools.length > 0 ? (
               <Box flexDirection="column" marginBottom={0}>
@@ -176,6 +202,10 @@ function heightOf(m: ChatMessage, width: number): number {
   if (m.system) return estimateLines(m.content, Math.max(10, width - 6)) + 3;
   // Compattazione: separatore + chip sopra il testo del riepilogo.
   if (m.kind === "compaction") return estimateLines(m.content, Math.max(10, width - 2)) + 4;
+  // Utente: barra a sinistra e padding, il testo si stringe di 2 colonne.
+  // +1 di scarto: sul confine del viewport meglio far entrare qualcosa
+  // in meno che tagliaresi la coda del blocco.
+  if (m.role === "user") return estimateLines(m.content, Math.max(10, width - 2)) + 1;
   return estimateLines(m.content, width) + 2 + (m.tools ? m.tools.length : 0);
 }
 
@@ -200,7 +230,10 @@ function fitMessage(m: ChatMessage, allowed: number, width: number): ChatMessage
     };
   }
 
-  const overhead = 2 + (m.tools ? m.tools.length : 0) + (m.kind === "compaction" ? 4 : 0);
+  // Overhead del wrapper: chip+meta per l'agente, lo scarto di stima per
+  // l'utente (la barra occupa colonne, non righe).
+  const overhead =
+    (m.role === "user" ? 1 : 2) + (m.tools ? m.tools.length : 0) + (m.kind === "compaction" ? 4 : 0);
   const room = Math.max(1, allowed - overhead);
   const lines = m.content.split("\n");
   const kept = lines.slice(Math.max(0, lines.length - room));

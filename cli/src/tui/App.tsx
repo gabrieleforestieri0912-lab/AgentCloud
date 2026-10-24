@@ -1222,6 +1222,18 @@ export function App({
     }
   };
 
+/** Durata compatta per la meta della risposta: "34s", "2m 41s", "1h 02m". */
+function formatDuration(ms: number): string {
+  const s = Math.max(1, Math.round(ms / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  if (m < 60) return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  const mrem = m % 60;
+  return `${h}h ${String(mrem).padStart(2, "0")}m`;
+}
+
   const runTurn = async (text: string) => {
     // La run appartiene alla scheda da cui è partita: anche se l'utente
     // cambia scheda mentre l'agente lavora, la risposta finisce lì.
@@ -1248,6 +1260,9 @@ export function App({
     touch();
     const ctrl = new AbortController();
     t.abort = ctrl;
+    // Durata della run: la misuriamo qui, l'API non la espone. Stampata
+    // nella meta del messaggio agente a fine risposta.
+    const startedAt = Date.now();
     try {
       let approvalToken: string | undefined;
       // Come runWithApproval della CLI classica: max 5 conferme per run.
@@ -1301,7 +1316,17 @@ export function App({
         touch();
       }
     } finally {
-      patchLastOf(t, (m) => ({ ...m, streaming: false }));
+      // Lo streaming si chiude sul messaggio agente SOLO se è ancora l'ultimo:
+      // nei rami d'errore il messaggio è già stato tolto (dropLastOf) e
+      // l'ultimo della lista è la richiesta utente — non va toccata.
+      const last = t.messages[t.messages.length - 1];
+      if (last && last.role === "assistant") {
+        patchLastOf(t, (m) => ({
+          ...m,
+          streaming: false,
+          meta: formatDuration(Date.now() - startedAt),
+        }));
+      }
       t.streaming = false;
       t.abort = null;
       t.activity = null;
