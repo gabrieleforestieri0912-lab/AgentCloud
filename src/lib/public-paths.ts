@@ -69,6 +69,11 @@ export const PUBLIC_PATHS = [
   "/privacy",
   "/terms",
   "/refunds",
+  // Immagini social dinamiche di Next (og:image / twitter:image): i crawler
+  // (Facebook, LinkedIn, Slack…) le chiedono SENZA sessione — con un redirect
+  // a /login le anteprime dei link restano senza immagine. Le varianti sotto
+  // prefissi già pubblici (/bundles/…) passano comunque da lì.
+  "/opengraph-image",
   // Webhook (chiamati da terze parti)
   "/api/email/webhook",
   "/api/email/send",
