@@ -87,10 +87,16 @@ export default function IntegrationsSection() {
           {live.map((int) => (
             <motion.li
               key={int.name}
-              className="aspect-square shrink-0 rounded-2xl bg-neutral-900 border border-white/10 hover:border-white/25 transition-colors flex items-center justify-center"
+              // La cella riempie la griglia, ma il tile visibile resta
+              // compatto (64px, 56 su mobile): senza il quadratino interno
+              // la cella era grande quanto l'intera colonna.
+              className="flex items-center justify-center"
               variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}
             >
-              <span title={int.name} className="flex items-center justify-center">
+              <span
+                title={int.name}
+                className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-neutral-900 border border-white/10 hover:border-white/25 transition-colors"
+              >
                 <BrandLogo slug={int.brand} size={28} className="max-w-[70%] max-h-[70%]" />
               </span>
             </motion.li>
