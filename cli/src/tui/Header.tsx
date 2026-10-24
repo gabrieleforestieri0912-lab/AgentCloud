@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text } from "ink";
+import { Box, Text, useStdout } from "ink";
 import { gradientHexes, theme } from "./theme.js";
 
 /**
@@ -18,6 +18,10 @@ export function Header({
   plan?: string | null;
   agentName: string;
 }) {
+  const { stdout } = useStdout();
+  // Separatore responsive: segue la larghezza reale del terminale (più
+  // stretto, si accorcia; più largo, non sfora mai oltre il 3/4).
+  const ruleWidth = Math.max(10, Math.min(60, Math.floor((stdout?.columns ?? 80) / 2)));
   const title = "AgentCloud";
   // Per-lettera: al truecolor copro tutta la striscia col gradiente
   // brand-500 → brand-400; sotto truecolor un solo colore (primary).
@@ -34,7 +38,7 @@ export function Header({
         <Text> </Text>
         <Text color={theme.muted}>v{version}</Text>
       </Box>
-      <Text color={theme.border}>{"─".repeat(40)}</Text>
+      <Text color={theme.border}>{"─".repeat(ruleWidth)}</Text>
       <Box flexDirection="row">
         <Text color={theme.muted}>
           {email ? <><Text color={theme.text}>{email}</Text> · </> : null}
