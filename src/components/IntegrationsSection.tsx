@@ -22,7 +22,11 @@ import { INTEGRATIONS as REGISTRY } from "@/lib/integrations";
 export default function IntegrationsSection() {
   const { dict } = useLanguage();
   const ig = dict.integrations;
-  const live = REGISTRY.filter((i) => i.available);
+  // Griglia fissa 5 colonne × 4 righe = 20 slot: oltre le 20, i loghi non
+  // entrano qui (restano elencati sulla pagina /integrations). L'ordine è
+  // quello del registro, quindi "in eccesso" = gli ultimi disseminati.
+  const GRID_SLOTS = 20;
+  const live = REGISTRY.filter((i) => i.available).slice(0, GRID_SLOTS);
   const coming = REGISTRY.filter((i) => !i.available);
   // Icone allineate per indice con `dict.integrations.points`.
   const POINT_ICONS = [PlugZap, Lock, ShieldCheck];
@@ -69,10 +73,11 @@ export default function IntegrationsSection() {
           })}
         </div>
 
-        {/* Disponibili — solo i loghi, senza etichette: un marchio assieme
-            agli altri dice "funziona" meglio di dieci badge "Live". */}
+        {/* Disponibili — griglia 5×4 (mobile 4×5), solo loghi senza etichette:
+            un marchio assieme agli altri dice "funziona" meglio di dieci
+            badge "Live". Oltre i 20 slot non c'entra: vedi GRID_SLOTS. */}
         <motion.ul
-          className="flex flex-wrap justify-center gap-3 max-w-5xl 3xl:max-w-7xl mx-auto mb-6"
+          className="grid grid-cols-4 sm:grid-cols-5 gap-3 w-full max-w-5xl 3xl:max-w-7xl mx-auto mb-6"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
@@ -82,7 +87,7 @@ export default function IntegrationsSection() {
           {live.map((int) => (
             <motion.li
               key={int.name}
-              className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-neutral-900 border border-white/10 hover:border-white/25 transition-colors flex items-center justify-center"
+              className="aspect-square shrink-0 rounded-2xl bg-neutral-900 border border-white/10 hover:border-white/25 transition-colors flex items-center justify-center"
               variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}
             >
               <span title={int.name} className="flex items-center justify-center">
