@@ -1,8 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { theme } from "./theme.js";
+import { theme, supportsUnicode } from "./theme.js";
 
 export type ConfirmState = { toolName: string } | null;
+
+/**
+ * La barra d'accento a sinistra dell'input (stile OpenCode): mezzo blocco
+ * colorato al posto del bordo a scatola; barra verticale nei terminali che
+ * non fanno Unicode.
+ */
+function inputBar(focused: boolean): { ch: string; color: string } {
+  return { ch: supportsUnicode() ? "▌" : "|", color: focused ? theme.accent : theme.border };
+}
 
 /**
  * Editor multilinea dell'input.
@@ -21,6 +30,8 @@ export function ChatInput({
   confirm,
   onConfirm,
   placeholder,
+  example,
+  meta,
   onHeightChange,
   focused,
   menuActive,
@@ -35,6 +46,10 @@ export function ChatInput({
   confirm: ConfirmState;
   onConfirm: (yes: boolean) => void;
   placeholder: string;
+  /** Esempio attenuato nel placeholder, in stile OpenCode: «…». */
+  example?: string;
+  /** Riga meta sotto l'input (nome dell'agente destinatario). */
+  meta?: { label: string; hint?: string };
   onHeightChange?: (height: number) => void;
   /** False quando il focus è sulla sidebar: l'editor ignora tutti i tasti. */
   focused: boolean;
@@ -87,9 +102,10 @@ export function ChatInput({
   }, [lines, onDraftChange]);
 
   // Righe visibili: almeno `minLines` (schermata iniziale), poi il numero
-  // reale di righe scritte.
+  // reale di righe scritte. Senza bordo: le righe contano da sole, la riga
+  // meta aggiunge una colonna quando c'è.
   const visibleLines = Math.max(minLines, lines.length);
-  const height = confirm ? 3 : visibleLines + 2;
+  const height = confirm ? 1 : visibleLines + (meta ? 1 : 0);
   useEffect(() => {
     onHeightChange?.(height);
   }, [height, onHeightChange]);
@@ -253,38 +269,86 @@ export function ChatInput({
     );
   }
 
+  // Senza scatola: barra d'accento per riga + contenuto indentato, come
+  // OpenCode. La riga meta (se c'è) si aggiunge sotto, allineata al testo.
   return (
-    <Box
-      borderStyle="round"
-      borderColor={focused ? theme.primary : theme.border}
-      backgroundColor={theme.panelBg}
-      paddingX={1}
-      flexDirection="column"
-    >
+    <Box flexDirection="column">
       {streaming ? (
-        <Text color={theme.muted}>L&apos;agente sta rispondendo… (Esc per interrompere)</Text>
+        <StreamingRow focused={focused} />
       ) : (
         Array.from({ length: visibleLines }, (_, i) => (
-          <CursorLine key={i} line={lines[i] ?? ""} col={i === row ? col : -1} placeholder={placeholder} />
+          <CursorLine
+            key={i}
+            line={lines[i] ?? ""}
+            col={i === row ? col : -1}
+            placeholder={placeholder}
+            example={example}
+            focused={focused}
+          />
         ))
       )}
+      {meta ? (
+        <Box paddingLeft={2}>
+          <Text color={theme.accent} bold>
+            {meta.label}
+          </Text>
+          {meta.hint ? <Text color={theme.muted}> · {meta.hint}</Text> : null}
+        </Box>
+      ) : null}
     </Box>
   );
 }
 
-/** Riga con cursore a blocco; col < 0 = riga non attiva. */
-function CursorLine({ line, col, placeholder }: { line: string; col: number; placeholder: string }) {
-  if (col < 0) return <Text>{line === "" ? " " : line}</Text>;
+/** Riga dell'attesa risposta: barrata come le altre, testo attenuato. */
+function StreamingRow({ focused }: { focused: boolean }) {
+  const bar = inputBar(focused);
+  return (
+    <Text>
+      <Text color={bar.color}>{bar.ch} </Text>
+      <Text color={theme.muted}>L&apos;agente sta rispondendo… (Esc per interrompere)</Text>
+    </Text>
+  );
+}
+
+/** Riga con barra d'accento e cursore a blocco; col < 0 = riga non attiva. */
+function CursorLine({
+  line,
+  col,
+  placeholder,
+  example,
+  focused,
+}: {
+  line: string;
+  col: number;
+  placeholder: string;
+  example?: string;
+  focused: boolean;
+}) {
+  const bar = inputBar(focused);
+  if (col < 0) {
+    return (
+      <Text>
+        <Text color={bar.color}>{bar.ch} </Text>
+        {line}
+      </Text>
+    );
+  }
   const c = Math.min(col, line.length);
   const before = line.slice(0, c);
   const at = line.slice(c, c + 1) || " ";
   const after = line.slice(c + 1);
   return (
     <Text>
+      <Text color={bar.color}>{bar.ch} </Text>
       {before}
       <Text inverse>{at}</Text>
       {after}
-      {line === "" && placeholder ? <Text color={theme.muted}> {placeholder}</Text> : null}
+      {line === "" && placeholder ? (
+        <>
+          <Text color={theme.muted}> {placeholder}</Text>
+          {example ? <Text color={theme.border}> «{example}»</Text> : null}
+        </>
+      ) : null}
     </Text>
   );
 }

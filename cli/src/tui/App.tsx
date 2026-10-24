@@ -1393,7 +1393,9 @@ export function App({
       onInterrupt={() => tab.abort?.abort()}
       confirm={tab.confirm}
       onConfirm={answerConfirm}
-      placeholder="Scrivi un messaggio o / per i comandi"
+      placeholder="Chiedi qualsiasi cosa…"
+      example="riepiloga le modifiche non committate"
+      meta={{ label: tab.agentName }}
       onHeightChange={setInputHeight}
       // Con il popup aperto l'editor si spegne: i tasti sono del
       // popup (frecce, Invio, Esc), non della bozza.
@@ -1502,7 +1504,7 @@ export function App({
               <Box marginTop={2} width={startInputWidth} flexDirection="column">
                 {renderInput(3)}
               </Box>
-              <Box marginTop={1} width={startInputWidth} flexDirection="column">
+              <Box marginTop={1} paddingLeft={2} width={startInputWidth} flexDirection="column">
                 <InputHints />
               </Box>
             </Box>
