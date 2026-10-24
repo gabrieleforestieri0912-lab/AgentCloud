@@ -22,6 +22,8 @@ const MULTICOLOR = new Set([
   "gmail",
   "googlecalendar",
   "googlesheets",
+  "googledocs",
+  "googleforms",
   "googlemeet",
   "googleads",
   "googleanalytics",

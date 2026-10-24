@@ -5,15 +5,14 @@
  * (Shopify, Google, Stripe...) con link alla pagina integrazioni. I loghi
  * vengono dal registry brand condiviso.
  *
- * Ordine di lettura pensato per la conversione: prima tutte le integrazioni
- * già funzionanti, poi — in fondo, chiuso — quello che non è ancora
- * disponibile. Un elenco in cui metà degli strumenti è etichettato "non
- * ancora" legge come una lista di limiti; come roadmap in fondo legge come
- * quello che è, senza nascondere nulla.
+ * Disposizione pensata per la conversione: prima solo i loghi di ciò che è
+ * già live — niente etichette "disponibile": l'assenza di segni dice già che
+ * funziona — poi una sola riga che conta quello che arriva, senza esporre
+ * tutta la roadmap (resta sulla pagina /integrations).
  */
 import Link from "next/link";
-import { reveal, enter } from "@/lib/motion";
-import { Sparkles, ShieldCheck, PlugZap, Lock, ChevronDown } from "lucide-react";
+import { reveal } from "@/lib/motion";
+import { Sparkles, ShieldCheck, PlugZap, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import BrandLogo from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
@@ -70,73 +69,34 @@ export default function IntegrationsSection() {
           })}
         </div>
 
-        {/* Disponibili — elenco completo, non una selezione */}
-        <p className="mx-auto mb-3 max-w-5xl text-xs font-bold uppercase tracking-widest text-emerald-300">
-          {ig.liveHeading} · {live.length}
-        </p>
-        <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-5xl 3xl:max-w-7xl mx-auto mb-10"
+        {/* Disponibili — solo i loghi, senza etichette: un marchio assieme
+            agli altri dice "funziona" meglio di dieci badge "Live". */}
+        <motion.ul
+          className="flex flex-wrap justify-center gap-3 max-w-5xl 3xl:max-w-7xl mx-auto mb-6"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }}
+          aria-label={ig.liveHeading}
         >
           {live.map((int) => (
-            <motion.div
+            <motion.li
               key={int.name}
-              className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-900 border border-emerald-500/15 hover:border-emerald-500/30 transition-colors group"
+              className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-neutral-900 border border-white/10 hover:border-white/25 transition-colors flex items-center justify-center"
               variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}
             >
-              <div className="w-12 h-12 shrink-0 bg-neutral-950 rounded-xl border border-white/5 flex items-center justify-center">
-                <BrandLogo slug={int.brand} size={24} />
-              </div>
-              <div className="min-w-0">
-                <span className="block text-sm font-bold text-white truncate">{int.name}</span>
-                <span className="block text-xs font-semibold text-emerald-300">{ig.liveBadge}</span>
-              </div>
-            </motion.div>
+              <span title={int.name} className="flex items-center justify-center">
+                <BrandLogo slug={int.brand} size={28} className="max-w-[70%] max-h-[70%]" />
+              </span>
+            </motion.li>
           ))}
-        </motion.div>
+        </motion.ul>
 
-        {/* Roadmap — in fondo e chiuso: niente da clic, si apre se serve */}
-        <details className="group mx-auto max-w-5xl 3xl:max-w-7xl">
-          <summary className="flex cursor-pointer list-none flex-wrap items-center justify-center gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-center transition-colors hover:border-amber-500/40 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none">
-            <span className="text-xs font-bold uppercase tracking-widest text-amber-300">
-              {ig.comingHeading} · {coming.length}
-            </span>
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 group-open:hidden">
-              {ig.roadmapShow}
-              <ChevronDown size={14} aria-hidden="true" />
-            </span>
-            <span className="hidden items-center gap-1 text-xs font-semibold text-neutral-400 group-open:inline">
-              {ig.roadmapHide}
-              <ChevronDown size={14} aria-hidden="true" className="rotate-180" />
-            </span>
-          </summary>
-          <motion.div
-            className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }}
-          >
-            {coming.map((int) => (
-              <motion.div
-                key={int.name}
-                className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-900/50 border border-white/5 opacity-90"
-                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}
-              >
-                <div className="w-12 h-12 shrink-0 bg-neutral-900 rounded-xl border border-white/5 flex items-center justify-center">
-                  <BrandLogo slug={int.brand} size={24} />
-                </div>
-                <div className="min-w-0">
-                  <span className="block text-sm font-bold text-white truncate">{int.name}</span>
-                  <span className="inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-300">{ig.comingBadge}</span>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </details>
+        {/* Le altre esistono, ma senza esporre l'elenco: la roadmap completa
+            vive sulla pagina integrazioni. */}
+        <p className="text-center text-xs font-semibold text-neutral-500 mx-auto max-w-5xl mb-8">
+          {t(ig.comingShort, { count: coming.length })}
+        </p>
 
         <motion.div
           className="text-center mt-8"
