@@ -138,7 +138,7 @@ embedded = true
 application_url = "https://www.agentcloud.agency/shopify"
 
 [access_scopes]
-scopes = "read_products,write_products,read_orders,read_all_orders,read_inventory,write_inventory,read_customers,write_discounts"
+scopes = "read_products,write_products,read_orders,read_inventory,write_inventory,read_customers,write_discounts"
 use_legacy_install_flow = false
 ```
 

@@ -24,14 +24,16 @@ embedded = true
 #   minano la fiducia del merchant in fase di installazione.
 # - write_discounts aggiunto: shopify_create_discount chiama
 #   discountCodeBasicCreate, che lo richiede esplicitamente.
-# - read_all_orders incluso ma SOGGETTO AD APPROVAZIONE: read_orders copre
-#   solo gli ultimi 60 giorni; se il deploy o l'installazione fallisce con
-#   invalid_scope, rimuovere read_all_orders finché Shopify non ha approvato
-#   la richiesta di accesso completo alla cronologia ordini.
+# - read_all_orders NON è qui: è un scope protetto soggetto ad approvazione
+#   Shopify e il rilascio viene rifiutato finché l'approvazione non è in
+#   essere (verificato in deploy del 2026-10-25, errore di validazione su
+#   `scopes: read_all_orders`). Quando la richiesta di accesso completo alla
+#   cronologia ordini sarà approvata, riaggiungerlo QUI e nell'env
+#   SHOPIFY_SCOPES, altrimenti read_orders copre solo gli ultimi 60 giorni.
 # L'env SHOPIFY_SCOPES (URL di consenso OAuth) deve contenere la STESSA
 # lista, altrimenti il flusso parte con invalid_scope.
 [access_scopes]
-scopes = "read_products,write_products,read_orders,read_all_orders,read_inventory,write_inventory,read_customers,write_discounts"
+scopes = "read_products,write_products,read_orders,read_inventory,write_inventory,read_customers,write_discounts"
 use_legacy_install_flow = false
 
 [auth]

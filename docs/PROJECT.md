@@ -377,8 +377,8 @@ installabile da qualsiasi merchant. Passi manuali nel **Shopify Partner Dashboar
    "non si può collegare".
 3. Imposta la **distribuzione su "Public"** e invia l'app per la **review Shopify**.
 4. **Scopes**: sono dichiarati in `shopify.app.toml` e la CLI li sincronizza
-   al deploy (8, comma-separated):
-   `read_products,write_products,read_orders,read_all_orders,read_inventory,write_inventory,read_customers,write_discounts`.
+   al deploy (7, comma-separated):
+   `read_products,write_products,read_orders,read_inventory,write_inventory,read_customers,write_discounts`.
    L'env `SHOPIFY_SCOPES` (usata per l'URL di consenso OAuth) deve contenere
    **esattamente la stessa lista**, altrimenti il flusso non parte e appare
    `invalid_scope`. Sono rimossi tutti gli scope non usati da alcun tool
@@ -388,10 +388,12 @@ installabile da qualsiasi merchant. Passi manuali nel **Shopify Partner Dashboar
    Due note:
    - `write_discounts` serve a `shopify_create_discount`
      (`discountCodeBasicCreate` lo richiede esplicitamente);
-   - `read_all_orders` è **soggetto ad approvazione Shopify**: se il deploy
-     o l'installazione falliscono con `invalid_scope`, rimuoverlo finché
-     la richiesta di accesso alla cronologia ordini completa non è stata
-     approvata (senza di esso `read_orders` copre solo gli ultimi 60 giorni).
+   - `read_all_orders` è **protetto e soggetto ad approvazione Shopify**:
+     finché l'approvazione della richiesta di accesso alla cronologia
+     completa degli ordini non è stata concessa, il rilascio della versione
+     app con quel scope viene rifiutato (verificato: errore di validazione
+     CLI del 2026-10-25). Quando approvato, riaggiungerlo nel toml e
+     nell'env; senza di esso `read_orders` copre solo gli ultimi 60 giorni.
 5. **Webhook**: l'endpoint `SHOPIFY_WEBHOOK_ADDRESS`
    (`https://www.agentcloud.agency/api/shopify/webhooks`) è **auto-registrato** a
    ogni install (`app/uninstalled` via GraphQL). I 3 topic GDPR

@@ -47,14 +47,15 @@ export const SHOPIFY_AGENT_SLUG =
  * La lista contiene solo ciò che i tool dell'agente usano davvero:
  * nessuno scrive ordini o clienti né produce contenuto, mentre
  * `shopify_create_discount` richiede `write_discounts`.
- * `read_all_orders` è soggetto a approvazione e supplementare rispetto a
- * `read_orders`, che senza di esso copre solo gli ultimi 60 giorni.
+ * `read_all_orders` NON va aggiunto finché Shopify non ha approvato la
+ * richiesta di accesso completo agli ordini: il rilascio della versione
+ * app viene rifiutato (scope protetto) e il consenso OAuth fallisce —
+ * senza approvazione, `read_orders` copre soltanto gli ultimi 60 giorni.
  */
 const DEFAULT_SCOPES = [
   "read_products",
   "write_products",
   "read_orders",
-  "read_all_orders",
   "read_inventory",
   "write_inventory",
   "read_customers",
