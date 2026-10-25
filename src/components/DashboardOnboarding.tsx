@@ -20,6 +20,10 @@ interface StepConfig {
 export default function DashboardOnboarding({ onComplete }: DashboardOnboardingProps) {
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(true);
+  // Rect del target oppure null quando il target manca / non è visibile
+  // (sezione sotto il fold, sidebar chiusa su mobile): in quel caso il tooltip
+  // diventa una card centrata invece di sparire — l'onboarding non si blocca
+  // mai e l'ultimo passo arriva sempre.
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const { dict } = useLanguage();
@@ -38,6 +42,12 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
       position: "right",
     },
     {
+      target: "[data-onboard='dashboard-skills']",
+      title: dict.dashboardOnboarding.skills,
+      desc: dict.dashboardOnboarding.skillsDesc,
+      position: "bottom",
+    },
+    {
       target: "[data-onboard='dashboard-agents']",
       title: dict.dashboardOnboarding.agents,
       desc: dict.dashboardOnboarding.agentsDesc,
@@ -54,58 +64,80 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
   const current = steps[step];
   const isLast = step === steps.length - 1;
   const isFirst = step === 0;
+  // Card centrata quando il target non è agganciabile: sempre visibile.
+  const centered = targetRect === null;
 
   const updateTargetRect = useCallback(() => {
     const el = document.querySelector(current.target);
     if (el) {
       const rect = el.getBoundingClientRect();
-      setTargetRect(rect);
+      // Rettangoli a area zero (sidebar chiusa su mobile, pannello nascosto):
+      // trattali come target mancante così appare la card centrata.
+      if (rect.width > 0 && rect.height > 0) {
+        // Porta il target in vista prima di misurare: senza questo, le
+        // sezioni sotto il fold (competenze, agenti) e l'ultimo passo
+        // (account in fondo alla sidebar) venivano misurati fuori viewport
+        // e il tooltip usciva dallo schermo — per l'utente il tour pareva
+        // "sparito" prima della fine.
+        try {
+          el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        } catch {}
+        const fresh = el.getBoundingClientRect();
+        setTargetRect(fresh.width > 0 && fresh.height > 0 ? fresh : null);
+        return;
+      }
     }
+    setTargetRect(null);
   }, [current.target]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     updateTargetRect();
     window.addEventListener("resize", updateTargetRect);
-    return () => window.removeEventListener("resize", updateTargetRect);
+    // Lo scroll (pagina, sidebar) sposta i target: rimisura sempre.
+    window.addEventListener("scroll", updateTargetRect, true);
+    return () => {
+      window.removeEventListener("resize", updateTargetRect);
+      window.removeEventListener("scroll", updateTargetRect, true);
+    };
   }, [updateTargetRect]);
 
-  // Il tour è stato effettivamente mostrato (il bersaglio è agganciabile):
-  // lo segniamo come visto subito. Prima il flag veniva scritto solo alla
-  // chiusura, quindi un tour abbandonato — o un reload a metà — ricompariva
-  // a ogni visita, anche a mesi di distanza.
+  // Il tour è in mostra (anche come card centrata quando il bersaglio non è
+  // agganciabile): lo segniamo come visto subito, così non ricompare a ogni
+  // visita. Prima il flag veniva scritto solo alla chiusura e un tour
+  // abbandonato tornava alla visita successiva.
   useEffect(() => {
-    if (!targetRect) return;
     markOnboardingSeen("dashboard");
-  }, [targetRect]);
+  }, []);
 
   const getTooltipPosition = () => {
     if (!targetRect) return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
 
     const padding = 12;
     const tooltipWidth = 320;
-    const tooltipHeight = 180;
+    const tooltipHeight = 200;
+    const maxLeft = Math.max(window.innerWidth - tooltipWidth - 20, 20);
 
     switch (current.position) {
       case "right":
         return {
-          top: `${Math.min(targetRect.top, window.innerHeight - tooltipHeight - 20)}px`,
-          left: `${Math.min(targetRect.right + padding, window.innerWidth - tooltipWidth - 20)}px`,
+          top: `${Math.min(Math.max(targetRect.top, 20), Math.max(window.innerHeight - tooltipHeight - 20, 20))}px`,
+          left: `${Math.min(targetRect.right + padding, maxLeft)}px`,
         };
       case "left":
         return {
-          top: `${Math.min(targetRect.top, window.innerHeight - tooltipHeight - 20)}px`,
+          top: `${Math.min(Math.max(targetRect.top, 20), Math.max(window.innerHeight - tooltipHeight - 20, 20))}px`,
           left: `${Math.max(targetRect.left - tooltipWidth - padding, 20)}px`,
         };
       case "top":
         return {
           top: `${Math.max(targetRect.top - tooltipHeight - padding, 20)}px`,
-          left: `${Math.min(Math.max(targetRect.left, 20), window.innerWidth - tooltipWidth - 20)}px`,
+          left: `${Math.min(Math.max(targetRect.left, 20), maxLeft)}px`,
         };
       case "bottom":
         return {
-          top: `${targetRect.bottom + padding}px`,
-          left: `${Math.min(Math.max(targetRect.left, 20), window.innerWidth - tooltipWidth - 20)}px`,
+          top: `${Math.min(targetRect.bottom + padding, Math.max(window.innerHeight - tooltipHeight - 20, 20))}px`,
+          left: `${Math.min(Math.max(targetRect.left, 20), maxLeft)}px`,
         };
       default:
         return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
@@ -113,7 +145,7 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
   };
 
   const getArrowStyle = () => {
-    if (!targetRect) return {};
+    if (!targetRect) return { display: "none" };
     const tooltipPos = getTooltipPosition();
     const tooltipLeft = parseInt(tooltipPos.left as string) || 0;
     const tooltipTop = parseInt(tooltipPos.top as string) || 0;
@@ -174,7 +206,7 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
     onComplete();
   };
 
-  if (!visible || !targetRect) return null;
+  if (!visible) return null;
 
   return (
     <AnimatePresence>
@@ -187,16 +219,18 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
         {/* Highlight overlay */}
         <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
 
-        {/* Highlight target */}
-        <div
-          className="absolute rounded-lg ring-2 ring-brand-500/50 ring-offset-2 ring-offset-transparent"
-          style={{
-            top: targetRect.top - 4,
-            left: targetRect.left - 4,
-            width: targetRect.width + 8,
-            height: targetRect.height + 8,
-          }}
-        />
+        {/* Highlight target (solo quando agganciato a un elemento visibile) */}
+        {!centered && targetRect && (
+          <div
+            className="absolute rounded-lg ring-2 ring-brand-500/50 ring-offset-2 ring-offset-transparent"
+            style={{
+              top: targetRect.top - 4,
+              left: targetRect.left - 4,
+              width: targetRect.width + 8,
+              height: targetRect.height + 8,
+            }}
+          />
+        )}
 
         {/* Tooltip */}
         <motion.div
@@ -206,7 +240,7 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="absolute z-10 w-80 rounded-2xl border border-white/[0.08] bg-neutral-900 p-5 shadow-2xl"
+          className="absolute z-10 w-80 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-white/[0.08] bg-neutral-900 p-5 shadow-2xl"
           style={getTooltipPosition()}
         >
           {/* Arrow */}
