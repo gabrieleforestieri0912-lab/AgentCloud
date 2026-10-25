@@ -6,8 +6,9 @@
  * query con l'identità dell'utente loggato. Server-only: usa `next/headers`.
  */
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { User } from "@supabase/supabase-js";
+import { SUPABASE_USER_HEADER } from "./session-header";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -30,12 +31,28 @@ export async function createClient() {
 }
 
 /**
- * Server-only: risolve l'utente autenticato dai cookie di sessione
- * OPPURE da header Authorization Bearer (per CLI e app mobile che usano
- * lo stesso DB Supabase). Restituisce null quando non è loggato.
- * Non lancia mai eccezioni — i chiamanti possono trattare null come "anonymous".
+ * Server-only: risolve l'utente autenticato. Percorso veloce (zero rete): il
+ * proxy ha già fatto `auth.getUser()` per la stessa richiesta e l'utente
+ * arriva nell'header interno `x-ac-supabase-user`. Header assente → fallback
+ * storico (getUser via cookie o Bearer per CLI/mobile): serve per le richieste
+ * fuori dai path del proxy e per robustezza se il proxy non gira.
+ * Restituisce null quando non è loggato. Non lancia mai eccezioni.
  */
 export async function getSessionUser(): Promise<User | null> {
+  try {
+    const headerStore = await headers();
+    const forwarded = headerStore.get(SUPABASE_USER_HEADER);
+    if (forwarded) {
+      const parsed: unknown = JSON.parse(forwarded);
+      if (parsed && typeof parsed === "object" && "id" in (parsed as object)) {
+        return parsed as User;
+      }
+      return null;
+    }
+  } catch {
+    // header non disponibile in questo contesto → fallback sotto
+  }
+
   try {
     const supabase = await createClient();
     const {
@@ -53,9 +70,7 @@ export async function getSessionUser(): Promise<User | null> {
   // NOTA: le API key `ack_…` (scope per-agente, solo POST /api/v1/run) NON sono
   // accettate qui: usarle come sessione account-wide aggirerebbe lo scope.
   try {
-    const { headers } = await import("next/headers");
-    const headerStore = await headers();
-    const auth = headerStore.get("authorization") ?? headerStore.get("Authorization");
+    const auth = (await headers()).get("authorization") ?? null;
     if (auth?.startsWith("Bearer ")) {
       const token = auth.slice(7).trim();
       if (token.length > 20) {

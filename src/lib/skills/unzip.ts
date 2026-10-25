@@ -10,7 +10,6 @@
  * è il formato che gli utenti producono con più facilità.
  */
 
-import JSZip from "jszip";
 import { getCatalogSkill } from "./catalog";
 import {
   LIMITS,
@@ -21,6 +20,10 @@ import {
   type ValidatedSkill,
   type ValidationIssue,
 } from "./validate";
+import type JSZipInstance from "jszip";
+
+// jszip valutato solo alla lettura reale del pacchetto: modulo pesante che a
+// cold start sul Worker pagherebbe la sua eval a ogni richiesta di upload.
 
 export type UnzippedSkill = {
   skill: ValidatedSkill;
@@ -54,7 +57,8 @@ export async function readSkillZip(buffer: ArrayBuffer | Uint8Array): Promise<Un
     return { ok: false, issues };
   }
 
-  let zip: JSZip;
+  const JSZip = (await import("jszip")).default;
+  let zip: JSZipInstance;
   try {
     zip = await JSZip.loadAsync(bytes);
   } catch {

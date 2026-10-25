@@ -10,7 +10,6 @@
  * Nessun import da `@/`.
  */
 
-import PptxGenJS from "pptxgenjs";
 import type { GraphClient, GraphResult } from "./graph";
 
 export const PPTX_MIME =
@@ -35,6 +34,9 @@ export async function buildPresentation(
   if (slides.length > MAX_SLIDES) {
     throw new Error(`Troppe slide (${slides.length}): il massimo per chiamata è ${MAX_SLIDES}.`);
   }
+  // pptxgenjs valutato solo alla generazione del deck: modulo pesante che a
+  // cold start sul Worker pagherebbe la sua eval a ogni richiesta.
+  const PptxGenJS = (await import("pptxgenjs")).default;
   const pptx = new PptxGenJS();
   if (opts.title) pptx.title = opts.title;
 

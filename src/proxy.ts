@@ -1,15 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isPublicPath } from "@/lib/public-paths";
-import {
-  DEFAULT_LOCALE,
-  detectLocale,
-  isLocale,
-  LOCALE_COOKIE,
-} from "@/lib/i18n/constants";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { DEFAULT_LOCALE, detectLocale, isLocale, LOCALE_COOKIE, type Locale } from "@/lib/i18n/constants";
 import { hasLaunched } from "@/lib/waitlist-constants";
 import { ensureAdminRole, isAdminEmail } from "@/lib/admin-access";
+import { SUPABASE_USER_HEADER } from "@/lib/supabase/session-header";
+
+// getDictionary NON viene importato a livello di modulo: pullisce l'intero
+// modulo dei dizionari (~670 KB, 5 lingue) nella valutazione del proxy a ogni
+// cold start del Worker. Qui serve un solo campo (apiErrors.unauthorized) su
+// tre percorsi di errore → import dinamico lazy.
+async function unauthorizedMessage(locale: Locale): Promise<string> {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+  return getDictionary(locale).apiErrors.unauthorized;
+}
 
 function getLocaleForRequest(request: NextRequest) {
   const cookieVal = request.cookies.get(LOCALE_COOKIE)?.value;
@@ -34,7 +38,15 @@ function withLocaleCookie(response: NextResponse, locale: string) {
 }
 
 async function resolveSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  // Il client Supabase viene creato UNA volta per richiesta; i cookie di
+  // refresh eventualmente scritti da Auth durante getUser vengono raccolti qui
+  // e applicati una sola volta alla response finale (prima ogni write
+  // ricreava la response: stesso risultato, più lavoro inutile).
+  const cookieWrites: Array<{
+    name: string;
+    value: string;
+    options?: Record<string, unknown>;
+  }> = [];
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -44,13 +56,8 @@ async function resolveSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookieWrites.push(...cookiesToSet);
         },
       },
     },
@@ -65,7 +72,7 @@ async function resolveSession(request: NextRequest) {
   // Le API key `ack_…` sono escluse: hanno scope per-agente e valgono solo su /api/v1/run.
   if (!user) {
     const auth = request.headers.get("authorization") ?? request.headers.get("Authorization");
-    if (auth?.startsWith("Bearer ")) {
+    if (typeof auth === "string" && auth.startsWith("Bearer ")) {
       const token = auth.slice(7).trim();
       if (token.length > 20) {
         try {
@@ -88,7 +95,18 @@ async function resolveSession(request: NextRequest) {
     }
   }
 
-  return { user, response: supabaseResponse };
+  // Propaga l'utente risolto a pagina/route handler via header interno: così
+  // `getSessionUser()` lato pagina NON rifà `auth.getUser()` (un solo giro di
+  // Auth per richiesta, metà delle chiamate di prima). L'header è interno al
+  // worker: viene stabilito qui a ogni richiesta e non è spoofabile dall'esterno.
+  const requestHeaders = new Headers(request.headers);
+  if (user) requestHeaders.set(SUPABASE_USER_HEADER, JSON.stringify(user));
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  for (const { name, value, options } of cookieWrites) {
+    response.cookies.set(name, value, options as never);
+  }
+
+  return { user, response, supabase };
 }
 
 export async function proxy(request: NextRequest) {
@@ -137,6 +155,8 @@ export async function proxy(request: NextRequest) {
     const hasWaitlistBypass =
       /^wl_[0-9a-f]{32}_[0-9a-z]+$/.test(waitlistSession) ||
       waitlistSession.startsWith("wl_admin_");
+    // Promozione admin usando il client della resolveSession: un solo client
+    // per richiesta, stessa semantica della versione precedente.
     if (hasWaitlistBypass) {
       let res: NextResponse = NextResponse.next();
       try {
@@ -144,7 +164,16 @@ export async function proxy(request: NextRequest) {
         res = resolved.response;
         if (resolved.user && isAdminEmail(resolved.user.email)) {
           try {
-            await ensureAdminRole(resolved.user.id, resolved.user.email);
+            const { data: profile } = await resolved.supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", resolved.user.id)
+              .maybeSingle();
+            await ensureAdminRole(
+              resolved.user.id,
+              resolved.user.email,
+              (profile as { role?: string | null } | null)?.role,
+            );
           } catch {}
         }
       } catch {
@@ -162,19 +191,19 @@ export async function proxy(request: NextRequest) {
     const isExtensionSessionApi = pathname.startsWith("/api/extension/");
     const isExtensionRuntimeApi = pathname === "/api/agent/run";
     if (isExtensionSessionApi || isExtensionRuntimeApi) {
-      const runtimeUnauthorized = () => {
+      const runtimeUnauthorized = async () => {
         const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
         return NextResponse.json(
-          { error: getDictionary(locale).apiErrors.unauthorized },
+          { error: await unauthorizedMessage(locale) },
           { status: 401 },
         );
       };
       try {
         const { user, response } = await resolveSession(request);
-        if (isExtensionRuntimeApi && !user) return runtimeUnauthorized();
+        if (isExtensionRuntimeApi && !user) return await runtimeUnauthorized();
         return needsCookie ? withLocaleCookie(response, detectedLocale) : response;
       } catch {
-        if (isExtensionRuntimeApi) return runtimeUnauthorized();
+        if (isExtensionRuntimeApi) return await runtimeUnauthorized();
         const res = NextResponse.next();
         return needsCookie ? withLocaleCookie(res, detectedLocale) : res;
       }
@@ -218,13 +247,12 @@ export async function proxy(request: NextRequest) {
     // prima del lancio. Questo preserva la logica di src/lib/admin-access.ts
     // e permette all'admin di lavorare su dashboard/agents/integrations.
     try {
-      const { user, response } = await resolveSession(request);
+      const { user, response, supabase } = await resolveSession(request);
       if (user) {
         if (isAdminEmail(user.email)) {
-          // Promozione best-effort anche pre-lancio (idempotente)
+          // Promozione best-effort anche pre-lancio (idempotente), con il
+          // client unico della richiesta
           try {
-            const { createClient } = await import("@/lib/supabase/server");
-            const supabase = await createClient();
             const { data: profile } = await supabase
               .from("profiles")
               .select("role")
@@ -236,8 +264,6 @@ export async function proxy(request: NextRequest) {
         }
         // Fallback: admin già promosso in DB ma non più in ADMIN_EMAILS (role = 'admin')
         try {
-          const { createClient } = await import("@/lib/supabase/server");
-          const supabase = await createClient();
           const { data: profile } = await supabase
             .from("profiles")
             .select("role")
@@ -299,12 +325,12 @@ export async function proxy(request: NextRequest) {
 
   // ─── Post-lancio: Rotte protette che richiedono sessione ─
   try {
-    const { response, user } = await resolveSession(request);
+    const { response, user, supabase } = await resolveSession(request);
     if (!user) {
       if (pathname.startsWith("/api/")) {
         const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
         return NextResponse.json(
-          { error: getDictionary(locale).apiErrors.unauthorized },
+          { error: await unauthorizedMessage(locale) },
           { status: 401 },
         );
       }
@@ -319,10 +345,11 @@ export async function proxy(request: NextRequest) {
     // ─── Force Full Auth gate: waitlist-only accounts must complete auth ─
     // Check if user has auth_method_completed = false in profiles.
     // If so, redirect to /login?reason=complete_account (unless already on auth pages).
+    // Riusa il client della resolveSession (uno per richiesta): prima ricreava
+    // un secondo client con `cookies()` di next/headers, che nel proxy NON è
+    // disponibile — la query falliva ogni volta e il check girava a vuoto.
     if (!isAuthRoute && !pathname.startsWith("/api/")) {
       try {
-        const { createClient } = await import("@/lib/supabase/server");
-        const supabase = await createClient();
         const { data: profile } = await supabase
           .from("profiles")
           .select("auth_method_completed, role")
@@ -332,15 +359,15 @@ export async function proxy(request: NextRequest) {
         // Punto unico di promozione ad admin: ogni richiesta di pagina
         // autenticata passa da qui, quindi vale per tutti i metodi di accesso
         // (password, Google, link email). Idempotente: con un'email fuori da
-        // ADMIN_EMAILS non tocca nulla, e chi ha gia' ruolo admin non produce
-        // nessuna scrittura. Mai bloccante per la navigazione.
+        // ADMIN_EMAILS non tocca nulla (zero query), e chi ha gia' ruolo admin
+        // non produce nessuna scrittura. Mai bloccante per la navigazione.
         await ensureAdminRole(
           user.id,
           user.email,
           (profile as { role?: string | null } | null)?.role,
         );
 
-        if (profile && profile.auth_method_completed === false) {
+        if (profile && (profile as { auth_method_completed?: boolean }).auth_method_completed === false) {
           const url = request.nextUrl.clone();
           url.pathname = "/login";
           // Precompila l'email del waitlist-user: deve poter richiedere in un
@@ -361,7 +388,7 @@ export async function proxy(request: NextRequest) {
     if (pathname.startsWith("/api/")) {
       const locale = isLocale(detectedLocale) ? detectedLocale : DEFAULT_LOCALE;
       return NextResponse.json(
-        { error: getDictionary(locale).apiErrors.unauthorized },
+        { error: await unauthorizedMessage(locale) },
         { status: 401 },
       );
     }
@@ -375,8 +402,13 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Il proxy serve SOLO a decidere auth/redirect su pagine HTML e API: tutti
+  // gli asset statici (img, font, css, js, manifest, sitemap, robots) girano
+  // direttamente nel binding ASSETS di Cloudflare senza passare dal proxy.
+  // L'ultima riga esclude ogni path con estensione di asset noto: ogni
+  // richiesta risparmiata è CPU che non si brucia dove non serve.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|google[a-z0-9]+\\.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|google[a-z0-9]+\\.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|txt|xml|json|js|css|woff2?|ttf|otf|eot|mp4|webm|mp3|wav|wasm|map|webmanifest|md|docx|xlsx|pptx|zip)$).*)",
   ],
 };
 

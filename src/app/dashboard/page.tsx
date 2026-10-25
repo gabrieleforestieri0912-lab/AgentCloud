@@ -122,14 +122,19 @@ export default async function DashboardPage({
     const [{ data: userAgents }, { data: runs }] = await Promise.all([
       db
         .from("user_agents")
-        .select("*")
+        // Solo le colonne usate dal rendering: `select("*")` porterebbe in
+        // memoria (e quindi in CPU di serializzazione) campi grossi come
+        // `config` JSON per certificarsi di non usarli.
+        .select("agent_slug, status, activated_at, config")
         .eq("user_id", userId)
         .order("activated_at", { ascending: false }),
       db
         .from("agent_runs")
-        .select("agent_slug, input_tokens, output_tokens, started_at, finished_at")
+        .select("agent_slug, input_tokens, output_tokens, started_at")
         .eq("user_id", userId)
-        .gte("started_at", periodStart),
+        .gte("started_at", periodStart)
+        // Tetto difensivo: l'aggregazione mensile non serve da 5.000 righe.
+        .limit(5000),
     ]);
 
     const runsByAgent = new Map<

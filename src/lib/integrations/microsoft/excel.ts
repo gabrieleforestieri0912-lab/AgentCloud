@@ -12,9 +12,12 @@
  * Nessun import da `@/`: il client Graph arriva già risolto.
  */
 
-import ExcelJS from "exceljs";
 import type { GraphClient, GraphResult } from "./graph";
 
+// exceljs viene valutato solo quando si genera davvero un workbook: il suo
+// modulo è molto grande e a cold start sul Worker (limite 10 ms di CPU) un
+// import di top-level lo farebbe pagare a ogni richiesta, anche a chi non lo
+// usa mai.
 export const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -24,6 +27,7 @@ export type CellValue = string | number | boolean | null;
 export type SheetSpec = { name: string; rows: CellValue[][] };
 
 export async function buildWorkbook(sheets: SheetSpec[]): Promise<Uint8Array> {
+  const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   for (const s of sheets) {
     // Excel limita il nome del foglio a 31 caratteri.

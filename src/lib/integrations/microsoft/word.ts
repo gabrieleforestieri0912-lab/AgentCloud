@@ -15,11 +15,14 @@
  * Così è testabile e non duplica token/refresh.
  */
 
-import { Document, Packer, Paragraph, HeadingLevel } from "docx";
-import mammoth from "mammoth";
-import JSZip from "jszip";
+import type { Paragraph } from "docx";
+import type JSZipInstance from "jszip";
 import type { GraphClient, GraphResult } from "./graph";
 
+// docx / mammoth / jszip valutati solo al primo uso reale: i tre moduli sono
+// pesanti e a cold start sul Worker (limite 10 ms di CPU) un import di
+// top-level farebbe pagare la loro eval a ogni richiesta, anche a chi non li
+// usa mai. Gli `import type` qui sopra non generano codice runtime.
 export const DOCX_MIME =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -37,6 +40,7 @@ export type WordFile = {
 export async function buildDocx(opts: {
   blocks: DocBlock[];
 }): Promise<Uint8Array> {
+  const { Document, Packer, Paragraph, HeadingLevel } = await import("docx");
   const children = opts.blocks.flatMap((b) => {
     const out: Paragraph[] = [];
     if (b.heading) {
@@ -52,6 +56,7 @@ export async function buildDocx(opts: {
 
 /** Estrae il testo da un .docx. Funzione pura. */
 export async function extractDocxText(bytes: Uint8Array): Promise<string> {
+  const mammoth = (await import("mammoth")).default;
   const result = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
   return result.value;
 }
@@ -73,7 +78,8 @@ export async function appendParagraphsToDocx(
   bytes: Uint8Array,
   paragraphs: string[],
 ): Promise<Uint8Array> {
-  let zip: JSZip;
+  const JSZip = (await import("jszip")).default;
+  let zip: JSZipInstance;
   try {
     zip = await JSZip.loadAsync(bytes);
   } catch {

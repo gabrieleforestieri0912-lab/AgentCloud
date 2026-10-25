@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['127.0.0.1'],
   images: {
+    // Su Cloudflare Workers (OpenNext) l'ottimizzazione immagini di Next
+    // girerebbe nel Worker: ogni `/_next/image` brucia CPU di ridimensionamento
+    // sul piano free (limite 10 ms) e causa il 1102. Serviamo le immagini
+    // originali: la resa visiva è identica e gli host listati sotto sono tutti
+    // già ottimizzati alla fonte.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "*.googleusercontent.com" },

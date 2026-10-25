@@ -18,11 +18,14 @@
  * la cache del browser e i link condivisi restano coerenti.
  */
 
-import JSZip from "jszip";
 import type { SkillEntry, SkillPlugin } from "./catalog";
 import { resolvePluginIntegrations } from "./catalog";
 import type { Locale } from "@/lib/i18n/constants";
 import { getZipStrings } from "@/lib/i18n/skillCatalog";
+
+// jszip viene valutato solo quando si crea davvero un pacchetto: modulo pesante
+// che a cold start sul Worker (limite 10 ms di CPU) pagherebbe la sua eval a
+// ogni richiesta che tocca le route di download, anche solo per un 410.
 
 /** Limite del formato: oltre, la skill non è più caricabile dagli agenti. */
 const MAX_LINES = 500;
@@ -227,6 +230,7 @@ export async function buildPluginZip(
   plugin: SkillPlugin,
   locale: Locale = "it",
 ): Promise<Uint8Array> {
+  const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
   for (const skill of plugin.skills) {
     zip.file(`${plugin.slug}/${skill.slug}/SKILL.md`, buildSkillMarkdown(skill, plugin, locale));
@@ -242,6 +246,7 @@ export async function buildSkillZip(
   plugin: SkillPlugin,
   locale: Locale = "it",
 ): Promise<Uint8Array> {
+  const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
   zip.file(`${skill.slug}/SKILL.md`, buildSkillMarkdown(skill, plugin, locale));
   zip.file(`${skill.slug}/README.md`, pluginReadme(plugin, locale));
