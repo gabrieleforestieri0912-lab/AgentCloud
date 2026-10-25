@@ -377,15 +377,21 @@ installabile da qualsiasi merchant. Passi manuali nel **Shopify Partner Dashboar
    "non si può collegare".
 3. Imposta la **distribuzione su "Public"** e invia l'app per la **review Shopify**.
 4. **Scopes**: sono dichiarati in `shopify.app.toml` e la CLI li sincronizza
-   al deploy (10, comma-separated):
-   `read_products,write_products,read_orders,write_orders,read_inventory,write_inventory,read_customers,write_customers,read_content,write_content`.
+   al deploy (8, comma-separated):
+   `read_products,write_products,read_orders,read_all_orders,read_inventory,write_inventory,read_customers,write_discounts`.
    L'env `SHOPIFY_SCOPES` (usata per l'URL di consenso OAuth) deve contenere
    **esattamente la stessa lista**, altrimenti il flusso non parte e appare
-   `invalid_scope`. Gli scope tema (`read_themes`/`write_themes`) sono stati
-   rimossi: la theme app extension `extensions/agentcloud-theme` non ne ha
-   bisogno e l'app non scrive mai nei file del tema. Chiedere meno scope
-   riduce anche l'impegno di review (i `*_customers` sono *protected customer
-   data*).
+   `invalid_scope`. Sono rimossi tutti gli scope non usati da alcun tool
+   (`write_orders`, `write_customers`, `read_content`/`write_content` e —
+   prima ancora — `read_themes`/`write_themes`): chiedere meno scope riduce
+   l'impegno di review (i `*_customers` sono *protected customer data*).
+   Due note:
+   - `write_discounts` serve a `shopify_create_discount`
+     (`discountCodeBasicCreate` lo richiede esplicitamente);
+   - `read_all_orders` è **soggetto ad approvazione Shopify**: se il deploy
+     o l'installazione falliscono con `invalid_scope`, rimuoverlo finché
+     la richiesta di accesso alla cronologia ordini completa non è stata
+     approvata (senza di esso `read_orders` copre solo gli ultimi 60 giorni).
 5. **Webhook**: l'endpoint `SHOPIFY_WEBHOOK_ADDRESS`
    (`https://www.agentcloud.agency/api/shopify/webhooks`) è **auto-registrato** a
    ogni install (`app/uninstalled` via GraphQL). I 3 topic GDPR

@@ -18,13 +18,20 @@ name = "AgentCloud"
 application_url = "https://www.agentcloud.agency/shopify"
 embedded = true
 
-# Scope: solo ciò che i tool dell'agente usano davvero. Gli scope tema
-# (read_themes/write_themes) sono stati rimossi: l'app non ha mai scritto nei
-# file del tema e la theme app extension (extensions/agentcloud-theme) non
-# richiede alcuno scope sul tema. L'env SHOPIFY_SCOPES (URL di consenso OAuth)
-# deve contenere la STESSA lista, altrimenti il flusso parte con invalid_scope.
+# Scope: solo ciò che i tool dell'agente usano davvero.
+# - write_orders/write_customers/read_content/write_content rimossi: nessun
+#   tool scrive ordini o clienti né produca contenuto, e permessi inutili
+#   minano la fiducia del merchant in fase di installazione.
+# - write_discounts aggiunto: shopify_create_discount chiama
+#   discountCodeBasicCreate, che lo richiede esplicitamente.
+# - read_all_orders incluso ma SOGGETTO AD APPROVAZIONE: read_orders copre
+#   solo gli ultimi 60 giorni; se il deploy o l'installazione fallisce con
+#   invalid_scope, rimuovere read_all_orders finché Shopify non ha approvato
+#   la richiesta di accesso completo alla cronologia ordini.
+# L'env SHOPIFY_SCOPES (URL di consenso OAuth) deve contenere la STESSA
+# lista, altrimenti il flusso parte con invalid_scope.
 [access_scopes]
-scopes = "read_products,write_products,read_orders,write_orders,read_inventory,write_inventory,read_customers,write_customers,read_content,write_content"
+scopes = "read_products,write_products,read_orders,read_all_orders,read_inventory,write_inventory,read_customers,write_discounts"
 use_legacy_install_flow = false
 
 [auth]

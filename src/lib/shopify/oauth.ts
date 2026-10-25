@@ -43,18 +43,22 @@ export const SHOPIFY_AGENT_SLUG =
  * richiesti dal flusso OAuth devono essere esattamente quelli dichiarati
  * nell'app. Qui sono separati da spazi ( formato del parametro `scope`),
  * nel toml da virgole.
+ *
+ * La lista contiene solo ciò che i tool dell'agente usano davvero:
+ * nessuno scrive ordini o clienti né produce contenuto, mentre
+ * `shopify_create_discount` richiede `write_discounts`.
+ * `read_all_orders` è soggetto a approvazione e supplementare rispetto a
+ * `read_orders`, che senza di esso copre solo gli ultimi 60 giorni.
  */
 const DEFAULT_SCOPES = [
   "read_products",
   "write_products",
   "read_orders",
-  "write_orders",
+  "read_all_orders",
   "read_inventory",
   "write_inventory",
   "read_customers",
-  "write_customers",
-  "read_content",
-  "write_content",
+  "write_discounts",
 ].join(" ");
 
 /**

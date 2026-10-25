@@ -43,6 +43,10 @@ tsconfig.tsbuildinfo
 
 # build artifacts
 .esbuild-test-out.mjs
+# output di build di OpenNext (include un next-env.mjs con gli env inline, mai committare)
+.open-next/
+# cache e artefatti locali di Wrangler
+.wrangler/
 # probe dei tool degli agenti: bundle generato da tools-probe/build.cjs
 tools-probe/probe.mjs
 # test del carrello: bundle generato da cart-probe/build.cjs
