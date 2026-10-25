@@ -57,7 +57,6 @@ export default function FeatureDetailPage({
               "radial-gradient(circle at 20% 8%, rgba(3,139,254,.18), transparent 34%), radial-gradient(circle at 85% 12%, rgba(217,70,239,.12), transparent 30%), radial-gradient(circle at 50% 90%, rgba(234,67,53,.10), transparent 36%)",
           }}
         />
-        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
       </div>
 
       <Navbar />

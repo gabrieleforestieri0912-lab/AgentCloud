@@ -144,7 +144,6 @@ export default function CartPageClient() {
               "radial-gradient(circle at 15% 10%, rgba(3,139,254,.18), transparent 32%), radial-gradient(circle at 85% 12%, rgba(234,67,53,.14), transparent 28%), radial-gradient(circle at 50% 85%, rgba(168,85,247,.12), transparent 36%)",
           }}
         />
-        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/20 to-transparent" />
       </div>
       <FloatingBrandBubbles bubbles={CART_BUBBLES} />
       <section className="relative z-10 px-4 pb-16 pt-8 sm:px-6 lg:px-8">

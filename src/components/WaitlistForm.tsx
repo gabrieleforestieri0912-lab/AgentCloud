@@ -503,7 +503,6 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
           }}
         />
         <div className="absolute inset-0 bg-linear-to-t from-transparent via-transparent to-white/3" />
-        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/25 to-transparent" />
       </div>
       <FloatingBrandBubbles bubbles={FLOATING_BUBBLES} />
 
