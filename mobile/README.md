@@ -16,7 +16,9 @@ Contratti e cataloghi seguono la fonte di verità web (`src/`):
 - catalogo agenti → `src/lib/agents.ts`, modello in `lib/src/models/agent.dart`;
 - catalogo integrazioni → `src/lib/integrations.ts`, modello in `lib/src/models/integration.dart`.
 
-Il test `node scripts/test-clients-alignment.mjs` (dalla root del repo) fallisce se il mobile diverge.
+Non esiste un test automatico di allineamento: dopo ogni modifica al catalogo
+web (`src/lib/agents.ts`, `src/lib/i18n/agentCatalog.it.ts`, `src/lib/integrations.ts`)
+aggiorna i rispettivi modelli Dart tenendo identici slug, ordine, prezzi e stato `active`/`available`.
 
 ## Requisiti
 - Flutter SDK `>=3.10.0`
