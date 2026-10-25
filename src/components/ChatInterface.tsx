@@ -101,7 +101,9 @@ import {
 import {
   chatTextZoom,
   CHAT_SIDEBAR_WIDTH_KEY,
+  clearChatAccountData,
   readActiveConversation,
+  readChatAccountOwner,
   readChatDrafts,
   readChatTextSize,
   readDefaultAgent,
@@ -111,6 +113,7 @@ import {
   saveChatTextSize,
   saveDefaultAgent,
   saveSidebarOpen,
+  writeChatAccountOwner,
   type ChatTextSize,
 } from "@/lib/chat-settings";
 import { useResizableSidebar, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/lib/useResizableSidebar";
@@ -380,6 +383,13 @@ export default function ChatInterface({
     };
   }, [mobileSidebarOpen]);
   const [sidebarSession, setSidebarSession] = useState<import("@supabase/supabase-js").Session | null>(null);
+  // Proprietà dei dati locali: la cronologia/bozze/progetti vivono in
+  // localStorage, che è del BROWSER e non dell'account. Quando entra un
+  // utente diverso dall'ultimo che ha usato la chat qui, i dati vecchi non
+  // devono comparire (né essere ereditati). La hydrate parte solo DOPO che
+  // l'identità è risolta e l'eventuale cambio account ripulito.
+  const [chatAccountReady, setChatAccountReady] = useState(false);
+  const chatOwnerPreparedRef = useRef<string | null>(null);
   // Menu account: si apre dal bottone account in sidebar. Lo stato vive qui
   // perché la sidebar ristretta deve chiuderlo.
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -446,12 +456,15 @@ export default function ChatInterface({
     setMobileSidebarOpen(false);
   }
   // Solo client (localStorage): si legge al mount per non divergere dal server.
+  // Gate: solo dopo il check di proprietà (cambio account) — progetti e repo
+  // GitHub sono contenuti dell'account.
   useEffect(() => {
+    if (!chatAccountReady) return;
     setProjects(readProjects());
     setGithubRepos(readGithubRepos());
     setActiveGithubRepo(readActiveGithubRepo());
     // eslint-disable-next-line react-hooks/set-state-in-effect
-  }, []);
+  }, [chatAccountReady]);
 
   // GitHub collegato come integrazione? Il menu lo mostra: un repository
   // collegato senza account GitHub non può essere usato dai tool.
@@ -1324,6 +1337,32 @@ export default function ChatInterface({
     };
   }, []);
 
+  // Proprietà dei dati locali: prima di idratare la cronologia si stabilisce
+  // CHI la sta usando. Se l'id utente è diverso dall'owner salvato, tutto il
+  // contenuto localStorage della chat (cronologia, bozze, progetti, repo
+  // GitHub, conversazioni demo dell'hero) appartiene all'account precedente e
+  // viene CANCELLATO, non ereditato: il nuovo utente parte dalla chat vuota.
+  // Se non c'è owner (primo utilizzo dopo questa correzione) si eredita: sono
+  // i dati dello stesso utente scritti prima che l'owner venisse tracciato.
+  const chatAccount = sidebarSession?.user?.id ?? null;
+  useEffect(() => {
+    if (!chatAccount) return;
+    if (chatOwnerPreparedRef.current === chatAccount) return;
+    chatOwnerPreparedRef.current = chatAccount;
+    const owner = readChatAccountOwner();
+    if (owner && owner !== chatAccount) {
+      clearChatAccountData([CHAT_HISTORY_KEY]);
+      // Stato in memoria: non deve sopravvivere nemmeno un giro prima del
+      // re-render — la hydrate parte da storage pulito.
+      setConversations([]);
+      setActiveId(null);
+      draftsRef.current = {};
+      draftsRestoredRef.current = new Set();
+    }
+    writeChatAccountOwner(chatAccount);
+    setChatAccountReady(true);
+  }, [chatAccount]);
+
   // Check onboarding state
   useEffect(() => {
     fetch("/api/user/onboarding")
@@ -1334,8 +1373,12 @@ export default function ChatInterface({
       .catch(() => {});
   }, []);
 
-  // Cronologia persistente: admin e utenti normali gestiti allo stesso modo
+  // Cronologia persistente: admin e utenti normali gestiti allo stesso modo.
+  // Gate: parte solo quando l'account è risolto e il cambio account (se c'è
+  // stato) ha già cancellato i dati dell'utente precedente — la cronologia
+  // letta qui è per forza del chiamante.
   useEffect(() => {
+    if (!chatAccountReady) return;
     try {
       const raw = localStorage.getItem(CHAT_HISTORY_KEY);
       if (raw) {
@@ -1383,7 +1426,7 @@ export default function ChatInterface({
     } catch {
       // ignora
     }
-  }, []);
+  }, [chatAccountReady]);
 
   // Bozze dell'input persistite in localStorage: il testo scritto sopravvive a
   // un reload. Si idratano al mount (prima che `activeId` venga risolto) e si
@@ -1404,6 +1447,9 @@ export default function ChatInterface({
   }, []);
 
   useEffect(() => {
+    // Gate: l'idratazione parte solo dopo il check di proprietà, altrimenti
+    // le bozze dell'account precedente verrebbero lette prima della pulizia.
+    if (!chatAccountReady) return;
     const saved = readChatDrafts();
     for (const [id, text] of Object.entries(saved)) {
       draftsRef.current[id] = {
@@ -1412,7 +1458,7 @@ export default function ChatInterface({
       };
     }
     draftsHydratedRef.current = true;
-  }, []);
+  }, [chatAccountReady]);
 
   // Ripristina la bozza della conversazione che diventa attiva, una sola volta:
   // da lì in poi il testo live è la fonte di verità. Non sovrascrive ciò che
@@ -1567,6 +1613,10 @@ export default function ChatInterface({
   }, [conversationFiles, activeId]);
 
   useEffect(() => {
+    // Gate come la hydrate: con l'identità ancora da risolvere la conversazione
+    // deep-link potrebbe anticipare la cronologia e impedirne il caricamento
+    // (il check `prev.length > 0` non la caricerebbe più).
+    if (!chatAccountReady) return;
     if (initialQuery && !initializedRef.current) {
       initializedRef.current = true;
       const conv: LocalConversation = {
@@ -1582,13 +1632,19 @@ export default function ChatInterface({
       setInput("");
       setTimeout(() => handleSendWithText(initialQuery, conv.id), 100);
     }
-  }, [initialQuery]);
+  }, [initialQuery, chatAccountReady]);
 
   // Importa come conversazioni ciò che la chat demo dell'hero ha salvato in
   // localStorage: la bozza live (chat hero in corso) più ogni conversazione che
   // il bottone reset dell'hero ha archiviato. Entrambe le chiavi vengono
   // consumate all'import.
+  //
+  // Gate: al cambio di account le chiavi hero vengono già cancellate dalla
+  // pulizia di proprietà — senza gate l'import leggerebbe i messaggi demo
+  // dell'account PRECEDENTE. Dopo il gate, quello che sopravvive è la chat
+  // anonima fatta SOLO dall'utente appena entrato.
   useEffect(() => {
+    if (!chatAccountReady) return;
     try {      type StoredMsg = {
         id?: string;
         role: "user" | "assistant";
@@ -1683,7 +1739,7 @@ export default function ChatInterface({
     } catch {
       // Storage malformato — si riparte da zero.
     }
-  }, []);
+  }, [chatAccountReady]);
 
   // Salva la bozza della chat che sta per essere lasciata (testo + allegati):
   // `attach.take()` svuota gli allegati live restituendoli come snapshot.

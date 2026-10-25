@@ -136,6 +136,67 @@ export function saveActiveConversation(id: string): void {
 }
 
 /**
+ * Proprietario dei dati locali della chat (cronologia, bozze, progetti,
+ * repo GitHub): l'id dell'ultimo utente che ha usato la chat in QUESTO
+ * browser.
+ *
+ * Perché esiste: questi dati vivono in localStorage, che è del browser e NON
+ * dell'account — uscendo e rientrando con un altro utente la cronologia
+ * (inclusi messaggi precedentemente "di" un altro account) sarebbe rimasta
+ * visibile. L'owner permette a ChatInterface di riconoscere il cambio
+ * account e cancellare i dati prima che la chat la mostri.
+ */
+export const CHAT_ACCOUNT_OWNER_KEY = "agentcloud_chat_account_owner";
+
+export function readChatAccountOwner(): string | null {
+  try {
+    return localStorage.getItem(CHAT_ACCOUNT_OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function writeChatAccountOwner(userId: string): void {
+  try {
+    localStorage.setItem(CHAT_ACCOUNT_OWNER_KEY, userId);
+  } catch {
+    // Storage non disponibile: la protezione anti-leak resta attiva via
+    // controllo in memoria di ChatInterface.
+  }
+}
+
+/**
+ * Cancella tutti i contenuti di chat già persi nel browser quando cambia
+ * l'account: cronologia (chiave passata, dichiarata in ChatInterface), bozze,
+ * conversazione attiva, progetti, repo GitHub e le conversazioni demo
+ * dell'hero (che altrimenti verrebbero importate dal nuovo account).
+ *
+ * Le chiavi di progetti/repo/hero sono ripetute qui a lettera: vivono in
+ * `projects.ts`, `github-repos.ts` e `HeroSection.tsx` che non vengono
+ * importati per non trascinare componenti (e librerie UI) in un modulo di
+ * preferenze. Se cambi quelle chiavi, cambia anche qui.
+ */
+export function clearChatAccountData(extraKeys: string[] = []): void {
+  try {
+    const keys = [
+      CHAT_DRAFTS_KEY,
+      CHAT_ACTIVE_CONV_KEY,
+      "agentcloud_projects_v1", // vedi PROJECTS_KEY in lib/projects.ts
+      "agentcloud_github_repos_v1", // vedi REPOS_KEY in lib/github-repos.ts
+      "agentcloud_github_active_repo_v1", // vedi ACTIVE_KEY in lib/github-repos.ts
+      "agentcloud_hero_conv", // vedi HERO_CONVERSATION_STORAGE_KEY in HeroSection.tsx
+      "agentcloud_hero_conv_history", // vedi HERO_CONVERSATION_HISTORY_KEY in HeroSection.tsx
+      ...extraKeys,
+    ];
+    for (const key of keys) {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // Storage non disponibile: niente da pulire.
+  }
+}
+
+/**
  * Sidebar aperta su desktop. Default `true`: una sidebar già ristretta è una
  * scelta dell'utente, una sidebar vuota all'ingresso è solo una sorpresa.
  */
