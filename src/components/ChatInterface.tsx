@@ -3645,8 +3645,9 @@ export default function ChatInterface({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.15 } }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="flex-1 flex flex-col items-center justify-center px-4"
+              className="relative flex-1 flex flex-col px-4"
             >
+              <div className="flex flex-1 flex-col items-center justify-center py-4">
               {/* Welcome message */}
               <div className="mb-6 flex items-center justify-center gap-3 text-center">
                 <Image
@@ -3656,14 +3657,9 @@ export default function ChatInterface({
                   height={36}
                   className="h-9 w-9 shrink-0"
                 />
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className="text-3xl sm:text-4xl font-bold text-white">
                   {dict.chat.emptyTitle}
                 </h2>
-              </div>
-              <div className="mb-6 text-center -mt-4">
-                <p className="text-sm text-neutral-400 max-w-lg leading-relaxed">
-                  {dict.chat.emptySubtitle}
-                </p>
               </div>
 
               {/* Input ridotto centrato */}
@@ -3743,7 +3739,6 @@ export default function ChatInterface({
                       </div>
                     </div>
                   </div>
-                  <p className="text-[10px] text-neutral-600 text-center mt-2">{dict.chat.disclaimer}</p>
                 </div>
               </div>
 
@@ -3775,6 +3770,8 @@ export default function ChatInterface({
                   {dict.chat.discoverAgentsSuffix}
                 </p>
               )}
+              </div>
+              <p className="shrink-0 text-[10px] text-neutral-600 text-center pb-3">{dict.chat.disclaimer}</p>
             </motion.div>
           ) : (
             <motion.div
