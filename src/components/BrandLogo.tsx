@@ -17,6 +17,7 @@ import { BRANDS } from "@/lib/brands";
  */
 const MULTICOLOR = new Set([
   "clickup",
+  "airtable",
   "google",
   "googledrive",
   "gmail",
