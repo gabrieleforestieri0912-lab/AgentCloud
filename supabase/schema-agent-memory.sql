@@ -1,20 +1,3 @@
--- Memoria degli agenti: item di memoria a lungo termine.
---
--- Ogni riga è un "memory item" (fatto, preferenza, riassunto, evento)
--- appartenente a UN ambito: tenant (l'utente proprietario), agente e
--- soggetto (l'utente loggato, oppure la sessione anonima del widget).
---
--- ISOLAMENTO: la tabella è filtrata sempre dai tre id. La RLS permette
--- all'utente autenticato di vedere solo le righe del proprio tenant; il
--- codice server (service role) filtra comunque in modo esplicito su
--- tenant_id + agent_id + user_id, quindi un errore del chiamante non
--- diventa mai una lettura cross-tenant.
---
--- EMBEDDING: salvati come jsonb e la similarità (cosine) è calcolata
--- nell'application layer. Così la feature funziona su ogni progetto
--- Supabase, senza dover attivare l'estensione pgvector. Lo schema è
--- compatibile con una futura colonna `vector`.
-
 create table if not exists public.agent_memory_items (
   id uuid default gen_random_uuid() primary key,
   tenant_id text not null,
