@@ -1,0 +1,15 @@
+# Cache-Control per gli asset statici serviti dal binding ASSETS di Cloudflare
+# (performance tip OpenNext: le risorse immutabili di Next non devono mai
+# essere riscaricate; senza queste righe il CDN non le tiene in cache).
+# Le risorse di `_next/static` sono content-hashed: valido 1 anno immutabile.
+
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Loghi brand e favicon: cambiano raramente, un giorno di cache è più che
+# sufficiente e resta garantito il rinfresco dopo un deploy.
+/brand-logos/*
+  Cache-Control: public, max-age=86400
+
+/agentcloud.png
+  Cache-Control: public, max-age=604800
