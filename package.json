@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint:naming": "node check-naming.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "deploy": "opennextjs-cloudflare build && node scripts/safe-deploy.mjs",
+    "deploy:publish": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
