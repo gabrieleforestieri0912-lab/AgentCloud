@@ -42,6 +42,17 @@ function readWranglerToken() {
   return toml.match(/oauth_token\s*=\s*"([^"]+)"/)?.[1] ?? "";
 }
 
+/** Rinfresca il token OAuth di wrangler (scade ogni poche ore). Senza questo
+ *  il deploy fallisce su una macchina che non ha usato wrangler da tempo:
+ *  `wrangler whoami` innesca il refresh e riscrive default.toml in silenzio. */
+async function refreshWranglerToken() {
+  await new Promise((resolve) => {
+    const child = spawn("npx", ["wrangler", "whoami"], { shell: true, stdio: "ignore" });
+    child.on("exit", resolve);
+    child.on("error", resolve);
+  });
+}
+
 async function cfApi(path, init = {}) {
   const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/${path}`, {
     ...init,
@@ -69,6 +80,8 @@ function run(cmd, args) {
 }
 
 async function main() {
+  console.log("▸ safe-deploy: rinfresco il token OAuth di wrangler...");
+  await refreshWranglerToken();
   console.log("▸ safe-deploy: leggo la versione attiva...");
   const before = activeVersionId(await cfApi("workers/scripts/agentcloud/deployments"));
   console.log(`  versione attiva: ${before.versionId}`);
