@@ -6,14 +6,17 @@ import { getLocale } from "@/lib/i18n/locale";
 /**
  * POST+GET /api/billing/notify-expiring
  *
- * Cron giornaliero (Vercel Cron): invia una email e una notifica in-app a
+ * Cron giornaliero (Cloudflare Cron Trigger, configurato in wrangler.jsonc
+ * e invocato dall'handler `scheduled` di custom-worker.ts): invia una email
+ * e una notifica in-app a
  * ogni utente con un abbonamento in scadenza entro la finestra di preavviso
  * (7 giorni) o impostato per la cancellazione a fine periodo. Idempotente per
  * abbonamento grazie a `config.renewalNotifiedAt`: le riesecuzioni non inviano
  * email doppie.
  *
- * Auth: Vercel Cron invia `Authorization: Bearer $CRON_SECRET` (e i cron
- * invocano con GET); per invocazioni manuali accettiamo anche POST con
+ * Auth: il cron invia `Authorization: Bearer $CRON_SECRET` (custom-worker.ts
+ * lo passa per le invocazioni via evento `scheduled`; i cron Vercel invocano
+ * con GET); per invocazioni manuali accettiamo anche POST con
  * `Bearer $ADMIN_API_TOKEN`. Il secret viaggia SOLO nell'header: il token in
  * query `?token=` è disabilitato (finirebbe nei log/proxy).
  */

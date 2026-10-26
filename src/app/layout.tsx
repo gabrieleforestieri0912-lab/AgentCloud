@@ -1,14 +1,13 @@
 /* eslint-disable @next/next/no-page-custom-font */
 /**
  * Layout radice dell'app: imposta lingua, metadati SEO (title/OG/Twitter),
- * dati strutturati JSON-LD e i provider globali (LanguageProvider + analytics
- * Vercel). L'html/lang segue la locale rilevata per richiesta, così ogni
+ * dati strutturati JSON-LD e i provider globali (LanguageProvider + ThemeProvider).
+ * L'html/lang segue la locale rilevata per richiesta, così ogni pagina eredita
+ * gli stessi meta e lo stesso sfondo.
  * pagina eredita gli stessi meta e lo stesso sfondo.
  */
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { CartProvider } from "@/components/CartProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -290,8 +289,6 @@ export default async function RootLayout({
           </ThemeProvider>
         </LanguageProvider>
         <AppShortcuts />
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

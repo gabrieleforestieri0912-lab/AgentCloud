@@ -1,13 +1,23 @@
 {
   // Configurazione Wrangler per il deploy su Cloudflare Workers
   // (output OpenNext di Next.js: worker + assets statici).
+  // `custom-worker.ts` aggiunge l'handler `scheduled` per i Cron Trigger.
   "name": "agentcloud",
-  "main": ".open-next/worker.js",
+  "main": "custom-worker.ts",
   "compatibility_date": "2026-10-24",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "triggers": {
+    // Crono giornaliero /api/billing/notify-expiring (era il cron Vercel)
+    "crons": ["27 8 * * *"]
+  },
+  // Smart Placement: riduce lo round-trip verso Supabase, tenendo le isolate
+  // vicino al backend invece che distribuite al bordo di ogni PoP.
+  "placement": {
+    "mode": "smart"
   },
   "observability": {
     "enabled": true
