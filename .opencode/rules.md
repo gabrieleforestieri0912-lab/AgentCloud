@@ -9,6 +9,13 @@ opencode le carica a ogni avvio (vedi `opencode.json` → `instructions`).
 
 A fine blocco di lavoro — non dopo ogni singolo file — committa e spingi.
 
+**Tutto va su `main`, sempre.** Non si committa su branch di lavoro e non si
+lasciano modifiche su branch: se il checkout è su un altro branch, si torna
+su `main` *prima* di iniziare a lavorare. I branch di feature esistenti
+restano solo come riferimenti; non vanno usati come destinazione di lavoro.
+Se un deploy non esce, la prima cosa da controllare è che il commit sia su
+`main`: la produzione esce da lì.
+
 1. `git status` e `git diff` **prima** di committare: guarda cosa stai per
    includere.
 2. `git add` dei file intenzionali, per nome. **Non** usare `git add -A` né
