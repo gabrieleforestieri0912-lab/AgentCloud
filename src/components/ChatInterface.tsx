@@ -49,7 +49,7 @@ import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
-import { expandedHeroChip } from "@/lib/i18n/hero-chips";
+import { chatChipsFor, type ChatChip } from "@/lib/i18n/chat-chips";
 import MarkdownText from "./MarkdownText";
 import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
@@ -716,19 +716,11 @@ export default function ChatInterface({
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Suggerimenti sotto il campo vuoto: gli stessi chip della chat demo
-  // dell'hero (dict.hero.chips). Pillola identica e stessa espansione in
-  // frase completa al click: comportamento condiviso in hero-chips.ts.
-  const heroChips = dict.hero.chips;
-  function handleHeroChipClick(chip: string) {
-    setInput(
-      expandedHeroChip(
-        locale,
-        heroChips,
-        chip,
-        t(dict.hero.askAboutChip, { chip }),
-      ),
-    );
+  // Suggerimenti sotto il campo vuoto: chip propri della chat, diversi da
+  // quelli della hero. Pillola → frase completa e specifica nell'input.
+  const chatChips = chatChipsFor(locale);
+  function handleHeroChipClick(chip: ChatChip) {
+    setInput(chip.prompt);
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
@@ -3630,15 +3622,17 @@ export default function ChatInterface({
               transition={{ duration: 0.25, ease: "easeOut" }}
               className="relative flex-1 flex flex-col px-4"
             >
-              <div className="flex flex-1 flex-col items-center justify-center py-4">
+              {/* Contenuto spinto un po' più in basso rispetto al centro:
+                  il padding top asimmetrico abbassa input, chip e titolo. */}
+              <div className="flex flex-1 flex-col items-center justify-center py-4 pt-16">
               {/* Welcome message */}
               <div className="mb-6 flex items-center justify-center gap-3 text-center">
                 <Image
                   src="/agentcloud.png"
                   alt="AgentCloud"
-                  width={36}
-                  height={36}
-                  className="h-9 w-9 shrink-0"
+                  width={56}
+                  height={56}
+                  className="h-14 w-14 shrink-0"
                 />
                 <h2 className="text-3xl sm:text-4xl font-bold text-white">
                   {dict.chat.emptyTitle}
@@ -3725,43 +3719,32 @@ export default function ChatInterface({
                 </div>
               </div>
 
-              {/* Suggerimenti: le stesse pill della chat demo dell'hero
-                  (stessi chip, stessa forma, stessa espansione al click).
-                  Comportamento condiviso: src/lib/i18n/hero-chips.ts. */}
+              {/* Suggerimenti: chip propri della chat, più specifici di quelli
+                  dell'hero. Etichetta e frase in src/lib/i18n/chat-chips.ts. */}
               <div className="mt-8 flex w-full max-w-3xl flex-col items-center gap-3.5 px-4">
                 <div className="flex flex-wrap justify-center gap-3">
-                  {heroChips.slice(0, 3).map((chip) => (
+                  {chatChips.slice(0, 3).map((chip) => (
                     <button
-                      key={chip}
+                      key={chip.label}
                       onClick={() => handleHeroChipClick(chip)}
                       className="cursor-pointer rounded-full border border-white/10 bg-neutral-900 px-4.5 py-2 text-sm font-semibold text-neutral-300 shadow-sm transition-all hover:border-brand-500/50 hover:bg-neutral-800 hover:text-white"
                     >
-                      {chip}
+                      {chip.label}
                     </button>
                   ))}
                 </div>
                 <div className="flex flex-wrap justify-center gap-3">
-                  {heroChips.slice(3).map((chip) => (
+                  {chatChips.slice(3).map((chip) => (
                     <button
-                      key={chip}
+                      key={chip.label}
                       onClick={() => handleHeroChipClick(chip)}
                       className="cursor-pointer rounded-full border border-white/10 bg-neutral-900 px-4.5 py-2 text-sm font-semibold text-neutral-300 shadow-sm transition-all hover:border-brand-500/50 hover:bg-neutral-800 hover:text-white"
                     >
-                      {chip}
+                      {chip.label}
                     </button>
                   ))}
                 </div>
               </div>
-              {/* Prompt marketplace per utenti senza agenti */}
-              {availableAgents.filter((a) => a.slug !== "").length === 0 && (
-                <p className="mt-4 text-xs text-neutral-500 text-center">
-                  {dict.chat.orBrowsePrefix}
-                  <Link href="/agents" className="text-brand-400 hover:text-brand-300 underline underline-offset-2 transition-colors">
-                    {dict.chat.browseMarketplace}
-                  </Link>
-                  {dict.chat.discoverAgentsSuffix}
-                </p>
-              )}
               </div>
               <p className="shrink-0 text-[10px] text-neutral-600 text-center pb-3">{dict.chat.disclaimer}</p>
             </motion.div>
