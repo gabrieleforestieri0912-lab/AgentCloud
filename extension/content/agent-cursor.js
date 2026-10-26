@@ -93,6 +93,50 @@
         animation: ac-caret-blink 0.9s step-end infinite;
       }
       @keyframes ac-caret-blink { 50% { opacity: 0; } }
+      /* Barra di avanzamento della scansione pagina */
+      #ac-scan-progress {
+        position: fixed;
+        left: 0; top: 0; right: 0;
+        height: 3px;
+        background: rgba(255,255,255,0.08);
+        z-index: 2147483646;
+        display: none;
+        pointer-events: none;
+      }
+      #ac-scan-progress.ac-on { display: block; }
+      #ac-scan-progress .ac-scan-fill {
+        height: 100%; width: 0%;
+        background: linear-gradient(90deg, #038bfe, #8b5cf6);
+        transition: width 0.25s ease;
+      }
+      /* Badge percentuale: sempre leggibile anche se la barra è sottile */
+      #ac-scan-badge {
+        position: fixed;
+        top: 12px; right: 12px;
+        z-index: 2147483646;
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(139,92,246,0.5);
+        background: rgba(16,19,26,0.92);
+        color: #e4ebf5;
+        font: 700 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+        pointer-events: none;
+      }
+      #ac-scan-badge.ac-on { display: inline-flex; }
+      #ac-scan-badge .ac-scan-dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: #038bfe;
+        box-shadow: 0 0 0 3px rgba(3,139,254,0.18);
+      }
+      /* prefers-reduced-motion: niente animazioni del cursore, della barra e del badge */
+      #${CURSOR_ID}.ac-reduce { transition: none !important; }
+      #${CURSOR_ID}.ac-reduce .ac-cursor-dot { transition: none !important; }
+      #ac-scan-progress.ac-reduce .ac-scan-fill { transition: none !important; }
+      #ac-scan-badge.ac-reduce .ac-scan-dot { animation: none !important; }
     `;
     (document.head || document.documentElement).appendChild(style);
   }
@@ -149,6 +193,11 @@
     visible = false;
     cursor.classList.remove("ac-visible", "ac-has-label");
     clearHighlight();
+    // Se l'analisi viene interrotta, non lasciare barra/badge orfani.
+    const bar = document.getElementById("ac-scan-progress");
+    if (bar) bar.classList.remove("ac-on");
+    const badge = document.getElementById("ac-scan-badge");
+    if (badge) badge.classList.remove("ac-on");
   }
 
   function moveTo(x, y, label) {
@@ -196,6 +245,90 @@
       highlightEl.classList.remove(HIGHLIGHT_CLASS);
       highlightEl = null;
     }
+  }
+
+  // ——— Modalità analisi pagina (scansione completa dall'alto al basso) ———
+  // Lo scan è pilotato dal service worker step per step: qui il cursore mostra
+  // la barra di avanzamento, segue la posizione di lettura e sospende il drift
+  // casuale. Esc notifica al background la richiesta di interruzione.
+  const BAR_ID = "ac-scan-progress";
+  const BADGE_ID = "ac-scan-badge";
+  let scanActive = false;
+  const reduceMq = (typeof window.matchMedia === "function") ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  const prefersReducedMotion = () => !!(reduceMq && reduceMq.matches);
+
+  function ensureProgressBar() {
+    let bar = document.getElementById(BAR_ID);
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = BAR_ID;
+      bar.innerHTML = `<div class="ac-scan-fill"></div>`;
+      document.documentElement.appendChild(bar);
+    }
+    return bar.querySelector(".ac-scan-fill");
+  }
+
+  function ensureScanBadge() {
+    let badge = document.getElementById(BADGE_ID);
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.id = BADGE_ID;
+      badge.innerHTML = `<span class="ac-scan-dot"></span><span class="ac-scan-text">Analisi 0%</span>`;
+      document.documentElement.appendChild(badge);
+    }
+    return badge;
+  }
+
+  function setScanPercent(percent) {
+    const value = Math.max(0, Math.min(100, Math.round(percent || 0)));
+    const bar = document.getElementById(BAR_ID);
+    const fill = bar && bar.querySelector(".ac-scan-fill");
+    if (fill) fill.style.width = `${value}%`;
+    const badge = ensureScanBadge();
+    const text = badge.querySelector(".ac-scan-text");
+    if (text) text.textContent = `Analisi ${value}%`;
+    return value;
+  }
+
+  function scanStart() {
+    ensureCursor();
+    ensureProgressBar();
+    const bar = document.getElementById(BAR_ID);
+    const badge = ensureScanBadge();
+    bar.classList.add("ac-on");
+    badge.classList.add("ac-on");
+    if (prefersReducedMotion()) {
+      bar.classList.add("ac-reduce");
+      badge.classList.add("ac-reduce");
+      cursor.classList.add("ac-reduce");
+    }
+    setScanPercent(0);
+    scanActive = true;
+    show("Analisi della pagina…");
+  }
+
+  function scanProgress(payload) {
+    const percent = setScanPercent(payload.percent);
+    moveTo(
+      typeof payload.x === "number" ? payload.x : lastX,
+      typeof payload.y === "number" ? payload.y : lastY,
+      payload.label || `Analisi: ${percent}%`,
+    );
+  }
+
+  function scanEnd(payload = {}) {
+    scanActive = false;
+    const bar = document.getElementById(BAR_ID);
+    if (bar) bar.classList.remove("ac-on", "ac-reduce");
+    const badge = document.getElementById(BADGE_ID);
+    if (badge) badge.classList.remove("ac-on", "ac-reduce");
+    setScanPercent(0);
+    cursor.classList.remove("ac-reduce");
+    const label = payload.label || "Analisi completata";
+    cursor.querySelector(".ac-cursor-label").textContent = label;
+    cursor.classList.add("ac-has-label");
+    // Al termine torna allo stato normale: cursore nascosto.
+    setTimeout(() => { if (!scanActive) hide(); }, 1200);
   }
 
   function typeInto(selector, text) {
@@ -279,6 +412,15 @@
           case "AC_CURSOR_CLEAR":
             clearHighlight();
             break;
+          case "AC_CURSOR_SCAN_START":
+            scanStart();
+            break;
+          case "AC_CURSOR_SCAN_STEP":
+            scanProgress(msg);
+            break;
+          case "AC_CURSOR_SCAN_END":
+            scanEnd(msg);
+            break;
         }
       } catch (e) {
         // ignora errori di DOM su pagine non standard
@@ -288,12 +430,20 @@
     });
   }
 
+  // ——— Esc durante la scansione: interruzione verso il background ———
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && scanActive) {
+      try { api?.runtime?.sendMessage?.({ action: "AC_SCAN_ABORT" }); } catch {}
+    }
+  }, true);
+
   // ——— Auto-demo quando mostrato senza comandi: movimento dolce a onda ———
   let idleTimer = null;
   function startIdleMotion() {
     if (idleTimer) clearInterval(idleTimer);
     idleTimer = setInterval(() => {
-      if (!visible) return;
+      // Durante la scansione il cursore segue la lettura: niente drift casuale.
+      if (!visible || scanActive) return;
       // piccolo drift casuale attorno alla posizione attuale
       const dx = (Math.random() - 0.5) * 40;
       const dy = (Math.random() - 0.5) * 24;
@@ -303,7 +453,7 @@
   startIdleMotion();
 
   // Esponi API globale per debug / fallback executeScript
-  window.__acCursor = { show, hide, moveTo, clickEffect, highlight, clearHighlight, typeInto, scrollTo, setPosition };
+  window.__acCursor = { show, hide, moveTo, clickEffect, highlight, clearHighlight, typeInto, scrollTo, setPosition, scanStart, scanProgress, scanEnd };
 
   // Notifica background che il cursore è pronto
   try { api?.runtime?.sendMessage?.({ action: "AC_CURSOR_READY" }); } catch {}

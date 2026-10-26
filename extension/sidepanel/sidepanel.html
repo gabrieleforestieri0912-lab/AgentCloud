@@ -146,11 +146,12 @@
       <form id="composer" class="composer">
         <textarea id="prompt" rows="3" placeholder="Chiedi al tuo agente…"></textarea>
         <div class="composer-actions">
-          <button type="button" id="selectionBtn" class="secondary-btn">Usa selezione</button>
+          <button type="button" id="selectionBtn" class="secondary-btn">Analizza pagina</button>
+          <button type="button" id="stopScanBtn" class="secondary-btn hidden">Stop analisi</button>
           <button type="submit" id="sendBtn" class="send-btn">Invia</button>
         </div>
       </form>
-      <p class="privacy-note">Viene inviato solo il testo che selezioni, insieme a titolo e URL della pagina.</p>
+      <p class="privacy-note">L'analisi percorre l'intera pagina e invia all'agente il contenuto letto (titoli, testo, link, immagini, form e tabelle) insieme a titolo e URL. Puoi interromperla con Stop o Esc.</p>
     </section>
   </main>
 

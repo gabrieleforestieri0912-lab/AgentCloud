@@ -26,6 +26,7 @@ const messagesEl = document.getElementById("messages");
 const promptEl = document.getElementById("prompt");
 const sendBtn = document.getElementById("sendBtn");
 const selectionBtn = document.getElementById("selectionBtn");
+const stopScanBtn = document.getElementById("stopScanBtn");
 const typingEl = document.getElementById("typing");
 const approvalCard = document.getElementById("approvalCard");
 const approvalText = document.getElementById("approvalText");
@@ -38,6 +39,7 @@ let context = null;
 let messages = [];
 let requestId = null;
 let loading = false;
+let scanning = false;
 // Conferma umana: il server mette in pausa la run (`tool_confirm`) quando un tool
 // modifica contenuto esistente. `lastRequest` è il body originale da rimandare
 // con il token firmato per riprendere (stessa semantica della chat web).
@@ -338,7 +340,19 @@ function addMessage(role, content, extra = "") {
 
 function renderContext(value) {
   context = value;
-  contextCard.textContent = `Selezione inclusa: ${value.selection ? value.selection.slice(0, 150) : "nessuna selezione"} · ${value.title || value.url}`;
+  if (value.scan) {
+    // Scansione completa: la card riassume ciò che il cursore ha percorso e
+    // cosa non è stato raggiungibile.
+    const s = value.scan;
+    const parts = [`Pagina analizzata: ${s.sections.length} blocchi, ${s.steps} passi, copertura ${s.coveragePercent ?? 100}%`];
+    if (s.aborted) parts.push("interrotta prima del fondo (Stop/Esc)");
+    else if (s.limited) parts.push(`ferma prima del fondo (${s.limited})`);
+    if (s.warnings?.length) parts.push(`${s.warnings.length} contenuti non raggiungibili`);
+    if (value.selection) parts.push(`selezione: ${value.selection.slice(0, 100)}`);
+    contextCard.textContent = parts.join(" · ");
+  } else {
+    contextCard.textContent = `Selezione inclusa: ${value.selection ? value.selection.slice(0, 150) : "nessuna selezione"} · ${value.title || value.url}`;
+  }
   contextCard.classList.remove("hidden");
 }
 
@@ -350,7 +364,7 @@ function resetContext() {
 function renderWelcome() {
   if (!messagesEl) return;
   messagesEl.innerHTML = "";
-  addMessage("assistant", `Ciao! Sono ${getAgentName()}. Posso lavorare sulla pagina che stai visualizzando: seleziona del testo oppure scrivimi cosa vuoi fare.`);
+  addMessage("assistant", `Ciao! Sono ${getAgentName()}. Posso analizzare l'intera pagina che stai visualizzando o operarci sopra: premi "Analizza pagina" (o scrivi "analizza la pagina") oppure dimmi cosa vuoi fare.`);
 }
 
 function setComposerEnabled(enabled) {
@@ -502,20 +516,89 @@ safeOn("openSiteBtn", "click", () => {
   fn({ url: SITE });
 });
 
-if (selectionBtn) selectionBtn.addEventListener("click", async () => {
+function setScanning(on) {
+  scanning = !!on;
+  if (selectionBtn) selectionBtn.disabled = scanning;
+  if (stopScanBtn) stopScanBtn.classList.toggle("hidden", !scanning);
+  if (sendBtn) sendBtn.disabled = scanning || loading;
+}
+
+/**
+ * Percorre tutta la pagina con il cursore e allega la scansione al prossimo
+ * messaggio. Il service worker estrae ogni fascia di viewport; qui mostriamo
+ * l'avanzamento e lasciamo sempre una via d'uscita (Stop o Esc).
+ */
+async function scanCurrentPage() {
+  const tabs = await (api.tabs?.query ? api.tabs.query({ active: true, currentWindow: true }) : Promise.resolve([]));
+  const tabId = tabs[0]?.id;
+  if (tabId == null) throw new Error("Nessuna scheda attiva da analizzare.");
+
+  setScanning(true);
+  setNotice("Analisi della pagina in corso — il cursore percorre l'intera pagina. Premi Stop o Esc per interrompere.");
+  try {
+    const response = await send({ action: "SCAN_PAGE", tabId });
+    if (!response?.success) throw new Error(response?.error || "Scansione non riuscita.");
+    const scan = response.data;
+    if (!scan?.sections?.length) {
+      context = null;
+      contextCard.classList.add("hidden");
+      setNotice("La pagina non presenta contenuti leggibili (o è bloccata da login/permessi).");
+      return null;
+    }
+    context = { title: scan.title, url: scan.url, selection: scan.selection || "", scan };
+    renderContext(context);
+    const parts = [`Analisi completata: ${scan.sections.length} blocchi, ${scan.steps} passi, copertura ${scan.coveragePercent ?? 100}%`];
+    if (scan.aborted) parts.push("interrotta prima del fondo");
+    else if (scan.limited) parts.push(`ferma prima del fondo (${scan.limited})`);
+    if (scan.warnings?.length) parts.push(`${scan.warnings.length} contenuti non raggiungibili`);
+    setNotice(parts.join(" · "));
+    return scan;
+  } finally {
+    setScanning(false);
+  }
+}
+
+/** Fallback storico: titolo, URL e selezione se la scansione non parte. */
+async function useSelectionFallback(error) {
   try {
     const tabs = await (api.tabs?.query ? api.tabs.query({ active: true, currentWindow: true }) : Promise.resolve([]));
     const response = await send({ action: "GET_PAGE_CONTEXT", tabId: tabs[0]?.id });
-    if (!response?.success) {
-      setNotice(response?.error || "Impossibile leggere la selezione della pagina attiva.");
+    if (response?.success) {
+      renderContext(response.data);
+      setNotice(`Analisi completa non disponibile (${error?.message || "errore"}): inviati solo titolo, URL e selezione.`);
       return;
     }
-    renderContext(response.data);
-    setNotice(response.data.selection ? "" : "Nessun testo selezionato: verranno inviati titolo e URL della pagina.");
-  } catch (e) {
-    setNotice(e?.message || "Impossibile leggere la selezione.");
+    setNotice(response?.error || error?.message || "Impossibile analizzare la pagina.");
+  } catch (e2) {
+    setNotice(e2?.message || error?.message || "Impossibile analizzare la pagina.");
   }
+}
+
+if (selectionBtn) selectionBtn.addEventListener("click", async () => {
+  if (scanning) return;
+  try { await scanCurrentPage(); }
+  catch (e) { await useSelectionFallback(e); }
 });
+
+if (stopScanBtn) stopScanBtn.addEventListener("click", async () => {
+  if (!scanning) return;
+  stopScanBtn.disabled = true;
+  setNotice("Interruzione richiesta: ripristino scroll e cursore…");
+  try { await send({ action: "AC_SCAN_ABORT" }); }
+  catch (e) { setNotice(e?.message || "Impossibile interrompere l'analisi."); }
+  finally { setTimeout(() => { stopScanBtn.disabled = false; }, 600); }
+});
+
+/**
+ * Riconosce una richiesta in linguaggio naturale del tipo "analizza la pagina
+ * corrente" (IT/EN) per avviare la scansione completa anche senza il bottone.
+ */
+function isPageAnalysisRequest(text) {
+  const t = String(text || "").toLowerCase();
+  const verb = /(analizz|analisi|scansion|esamin|riassum|riassunto|legg|studi|summar|analy[sz]|scan|read|inspect)/.test(t);
+  const target = /(pagina|page|sito|site|documento|document|articolo|article|contenut|content|schermata|screen)/.test(t);
+  return verb && target;
+}
 
 const composerEl = document.getElementById("composer");
 if (composerEl) composerEl.addEventListener("submit", async (event) => {
@@ -527,6 +610,20 @@ if (composerEl) composerEl.addEventListener("submit", async (event) => {
   const history = [...messages, { role: "user", content: text }];
   messages.push({ role: "user", content: text });
   addMessage("user", text);
+
+  // Se l'utente chiede di analizzare la pagina percorriamo TUTTA la pagina
+  // prima di passare la richiesta. Una scansione interrotta o limitata non
+  // vale come "pagina già analizzata": va rifatta per non mandare all'agente
+  // un contesto parziale spacciandolo per completo.
+  const existingScan = context?.scan;
+  const scanIncomplete = !existingScan || existingScan.aborted || existingScan.limited;
+  if (scanIncomplete && isPageAnalysisRequest(text)) {
+    try {
+      await scanCurrentPage();
+    } catch (e) {
+      setNotice(`Analisi completa non riuscita (${e?.message || "errore"}): procedo con il contesto disponibile.`);
+    }
+  }
 
   // Recupera tab attiva per far operare il cursore AgentCloud sulla pagina affianco (la apre se non è aperta)
   let tabId = null;

@@ -464,6 +464,9 @@ async function sendCursor(tabId, action, payload = {}) {
             else if (act === "AC_CURSOR_MOVE") c.moveTo(pl.x, pl.y, pl.label);
             else if (act === "AC_CURSOR_CLICK") { if (pl.x) c.moveTo(pl.x, pl.y, pl.label); c.clickEffect(); }
             else if (act === "AC_CURSOR_LABEL") c.show(pl.label);
+            else if (act === "AC_CURSOR_SCAN_START") c.scanStart();
+            else if (act === "AC_CURSOR_SCAN_STEP") c.scanProgress(pl);
+            else if (act === "AC_CURSOR_SCAN_END") c.scanEnd(pl);
           }
         },
         args: [action, payload],
@@ -622,6 +625,683 @@ async function getPageContext(tabId) {
   }
 }
 
+// ─── Scansione completa della pagina ───────────────────────────────────────
+// L'analisi richiesta dall'utente copre l'INTERA pagina: il cursore attraversa
+// visibilmente la pagina dall'alto al basso mentre ogni fascia di viewport
+// estrae testo, titoli, link, immagini, form e tabelle. Solo lettura e scroll:
+// mai click, submit o altre azioni con effetti collaterali.
+
+// Limiti configurabili: pagina enorme = stop con nota esplicita nell'analisi.
+const SCAN_MAX_STEPS = 30;
+const SCAN_MAX_MS = 60_000;
+const SCAN_SETTLE_MAX_MS = 1_500;
+const SCAN_SETTLE_MIN_MS = 280;
+const SCAN_SWEEP_MS = 150;
+let scanAbort = false;
+let scanRunning = false;
+
+function acExec(tabId, func, args = []) {
+  return api.scripting.executeScript({ target: { tabId }, func, args: [...args] }).then((r) => r?.[0]?.result);
+}
+
+/** Stato iniziale: scroll da ripristinare, viewport, altezza, reduced-motion. */
+function acPrepareScan() {
+  // Nota: questa funzione viene serializzata e iniettata nella pagina, quindi
+  // non può usare helper definiti nel service worker.
+  const docHeight = () => Math.max(
+    document.documentElement ? document.documentElement.scrollHeight : 0,
+    document.body ? document.body.scrollHeight : 0,
+  );
+  const docWidth = () => Math.max(
+    document.documentElement ? document.documentElement.scrollWidth : 0,
+    document.body ? document.body.scrollWidth : 0,
+  );
+  return {
+    scrollY0: Math.max(0, Math.round(window.scrollY)),
+    scrollX0: Math.max(0, Math.round(window.scrollX)),
+    vh: window.innerHeight,
+    vw: window.innerWidth,
+    scrollHeight: docHeight(),
+    scrollWidth: docWidth(),
+    title: document.title || "",
+    url: (window.location && window.location.href) || "",
+    selection: (() => { try { return window.getSelection()?.toString().trim() || ""; } catch { return ""; } })(),
+    reduced: !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches),
+  };
+}
+
+/**
+ * Un passo di scansione: scrolla alla posizione, attende che il contenuto si
+ * stabilizzi (lazy-load, infinite scroll, immagini) e poi estrae SOLO gli
+ * elementi che ricadono nella fascia corrente — non i primi N della pagina.
+ * Rientra iframe same-origin, contenitori scrollabili e shadow DOM aperti.
+ * Restituisce anche i punti su cui il cursore deve passare mentre legge.
+ */
+function acScanStep(y, stepH, settleMaxMs, settleMinMs) {
+  return new Promise((resolve) => {
+    const t0 = Date.now();
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const pad = Math.max(40, Math.round(vh * 0.06));
+    let finished = false;
+    // Helper locali: la funzione viene serializzata nella pagina.
+    const docHeight = () => Math.max(
+      document.documentElement ? document.documentElement.scrollHeight : 0,
+      document.body ? document.body.scrollHeight : 0,
+    );
+    const docWidth = () => Math.max(
+      document.documentElement ? document.documentElement.scrollWidth : 0,
+      document.body ? document.body.scrollWidth : 0,
+    );
+
+    try { window.scrollTo({ top: y, left: window.scrollX || 0, behavior: "instant" }); }
+    catch { try { window.scrollTo(0, y); } catch {} }
+
+    const cap = (s, n) => (s || "").replace(/\s+/g, " ").trim().slice(0, n || 200);
+    const rectOf = (el) => { try { return el.getBoundingClientRect(); } catch { return null; } };
+    const inBand = (el, extra) => {
+      const r = rectOf(el);
+      if (!r || r.width < 2 || r.height < 2) return false;
+      const slack = extra == null ? pad : extra;
+      return r.bottom > -slack && r.top < vh + slack;
+    };
+    const isRendered = (el) => {
+      try {
+        const cs = getComputedStyle(el);
+        if (cs.display === "none" || cs.visibility === "hidden" || cs.opacity === "0") return false;
+        if (el.getAttribute && el.getAttribute("aria-hidden") === "true") return false;
+        return true;
+      } catch { return false; }
+    };
+    const addFocus = (points, el) => {
+      if (points.length >= 4) return;
+      const r = rectOf(el);
+      if (!r || r.width < 2 || r.height < 2) return;
+      const py = Math.max(26, Math.min(vh - 52, Math.round(r.top + Math.min(r.height, 48) / 2)));
+      const px = Math.max(24, Math.min(vw - 24, Math.round(r.left + Math.min(r.width, 260) / 2)));
+      points.push({ x: px, y: py });
+    };
+
+    // Raccoglie tutti i nodi rilevanti una sola volta, attraversando anche gli
+    // shadow DOM aperti (con un tetto per non bloccare pagine enormi).
+    // I contenitori scrollabili sono raccolti a parte: devono essere quelli
+    // della fascia corrente, non i primi N della pagina.
+    const collectRelevant = () => {
+      const sel = "h1,h2,h3,h4,h5,h6,p,li,blockquote,dd,figcaption,a[href],img,form,table,iframe";
+      const containerSel = "div,section,aside,main,ul,ol,pre,article,nav";
+      const out = [];
+      const containers = [];
+      const visited = new Set();
+      const walk = (root) => {
+        if (!root || visited.has(root) || out.length >= 12000) return;
+        visited.add(root);
+        try { for (const el of root.querySelectorAll(sel)) out.push(el); } catch {}
+        try {
+          for (const el of root.querySelectorAll(containerSel)) {
+            if (containers.length >= 24) break;
+            const r = rectOf(el);
+            if (!r || r.width < 2 || r.height < 2) continue;
+            if (r.bottom < -pad || r.top > vh + pad) continue;
+            try {
+              const cs = getComputedStyle(el);
+              const oy = cs.overflowY || "visible";
+              if (/(auto|scroll|overlay)/.test(oy) && el.scrollHeight > el.clientHeight + 60 && el.clientHeight > 50) {
+                containers.push(el);
+              }
+            } catch {}
+          }
+        } catch {}
+        try {
+          if (out.length < 12000) {
+            for (const el of root.querySelectorAll("*")) {
+              if (el.shadowRoot && !visited.has(el.shadowRoot)) walk(el.shadowRoot);
+              if (out.length >= 12000) break;
+            }
+          }
+        } catch {}
+      };
+      walk(document);
+      return { nodes: out, containers };
+    };
+
+    const extract = () => {
+      const section = {
+        y: Math.round(window.scrollY),
+        headings: [], paragraphs: [], links: [], images: [],
+        forms: [], tables: [], extras: [], focus: [],
+      };
+      const collected = collectRelevant();
+      const nodes = collected.nodes;
+      const focus = section.focus;
+
+      // Titoli nella fascia corrente (non i primi N della pagina).
+      const hSeen = new Set();
+      for (const h of nodes) {
+        if (!/^H[1-6]$/.test(h.tagName)) continue;
+        if (!isRendered(h) || !inBand(h)) continue;
+        const text = cap(h.innerText || h.textContent, 160);
+        if (!text || hSeen.has(text)) continue;
+        hSeen.add(text);
+        if (section.headings.length < 8) section.headings.push({ tag: h.tagName.toLowerCase(), text });
+        addFocus(focus, h);
+      }
+
+      // Paragrafi, liste, citazioni e didascalie nella fascia. I <p> hanno
+      // priorità sulla voce di menu, ma l'ordine di lettura resta quello del DOM.
+      const pSeen = new Set();
+      const paragraphs = [];
+      for (const el of nodes) {
+        if (!/^(P|LI|BLOCKQUOTE|DD|FIGCAPTION)$/.test(el.tagName)) continue;
+        if (!isRendered(el) || !inBand(el, 30)) continue;
+        const text = cap(el.innerText || el.textContent, 320);
+        if (text.length < 12 || pSeen.has(text)) continue;
+        pSeen.add(text);
+        paragraphs.push({ text, weight: el.tagName === "P" ? 0 : 1, el });
+      }
+      paragraphs.sort((a, b) => a.weight - b.weight);
+      for (const p of paragraphs.slice(0, 18)) {
+        section.paragraphs.push(p.text);
+        if (focus.length < 4 && section.paragraphs.length <= 2) addFocus(focus, p.el);
+      }
+
+      // Link visibili nella fascia.
+      const lSeen = new Set();
+      for (const a of nodes) {
+        if (a.tagName !== "A" || !a.getAttribute("href")) continue;
+        if (section.links.length >= 20) break;
+        if (!isRendered(a) || !inBand(a, 20)) continue;
+        const img = a.querySelector("img");
+        const text = cap(a.innerText || a.textContent || a.getAttribute("aria-label") || a.getAttribute("title") || (img && img.alt), 90);
+        const href = a.href || a.getAttribute("href");
+        const key = `${text}|${href}`;
+        if (lSeen.has(key)) continue;
+        lSeen.add(key);
+        section.links.push({ text, href });
+      }
+
+      // Immagini con alt (solo quelle della fascia, non i primi N globali).
+      const iSeen = new Set();
+      for (const img of nodes) {
+        if (img.tagName !== "IMG" || section.images.length >= 12) continue;
+        if (!isRendered(img) || !inBand(img)) continue;
+        const r = rectOf(img);
+        if (r && (r.width < 24 || r.height < 24)) continue;
+        const alt = cap(img.alt || img.getAttribute("aria-label") || "", 120);
+        const src = String(img.currentSrc || img.src || "").split("/").pop().slice(0, 70);
+        const key = `${alt}|${src}`;
+        if (iSeen.has(key)) continue;
+        iSeen.add(key);
+        section.images.push({ alt, src });
+        if (focus.length < 4) addFocus(focus, img);
+      }
+
+      // Form: solo lettura (campi e azione, nessun submit).
+      for (const f of nodes) {
+        if (f.tagName !== "FORM" || section.forms.length >= 4) continue;
+        if (!isRendered(f) || !inBand(f)) continue;
+        try {
+          const fields = Array.from(f.querySelectorAll("input,textarea,select")).slice(0, 10)
+            .map((i) => `${i.tagName.toLowerCase()}${i.getAttribute("type") ? ":" + i.getAttribute("type") : ""}${i.getAttribute("name") ? ":" + i.getAttribute("name") : ""}${i.getAttribute("placeholder") ? ":" + cap(i.getAttribute("placeholder"), 30) : ""}`);
+          const submit = f.querySelector("button,input[type='submit'],[role='button']");
+          const submitT = cap((submit && (submit.innerText || submit.value)) || "", 40);
+          const action = cap(f.getAttribute("action") || "", 80);
+          section.forms.push(`${fields.join(",") || "(nessun campo)"}${submitT ? " · submit:" + submitT : ""}${action ? " · action:" + action : ""}`);
+          if (focus.length < 4) addFocus(focus, f);
+        } catch {}
+      }
+
+      // Tabelle: didascalia, intestazioni e prime righe.
+      for (const t of nodes) {
+        if (t.tagName !== "TABLE" || section.tables.length >= 3) continue;
+        if (!isRendered(t) || !inBand(t)) continue;
+        try {
+          const caption = cap((t.caption && t.caption.innerText) || "", 90);
+          const heads = Array.from(t.querySelectorAll("th")).slice(0, 8).map((th) => cap(th.innerText, 36));
+          const rows = Array.from(t.querySelectorAll("tr")).slice(0, 3)
+            .map((tr) => Array.from(tr.querySelectorAll("td")).slice(0, 8).map((td) => cap(td.innerText, 40)).join(" | "))
+            .filter(Boolean);
+          section.tables.push(`${caption || "(senza titolo)"} [${heads.join("|")}]${rows.length ? " righe: " + rows.join(" ; ") : ""}`);
+          if (focus.length < 4) addFocus(focus, t);
+        } catch {}
+      }
+
+      // Iframe: testo se same-origin, avviso esplicito se cross-origin.
+      for (const f of nodes) {
+        if (f.tagName !== "IFRAME" || section.extras.length >= 6) continue;
+        if (!inBand(f, 40)) continue;
+        let host = "";
+        try { host = new URL(f.src || "", location.href).host; } catch {}
+        try {
+          const doc = f.contentDocument;
+          const txt = doc && doc.body ? cap(doc.body.innerText, 600) : "";
+          if (txt) section.extras.push(`iframe same-origin: ${txt}`);
+          else if (!doc) section.extras.push(`iframe cross-origin non leggibile${host ? " (" + host + ")" : ""}`);
+        } catch {
+          section.extras.push(`iframe cross-origin non leggibile${host ? " (" + host + ")" : ""}`);
+        }
+      }
+
+      // Contenitori con scroll interno: il testo scorrevole è nella pagina ma
+      // non entra nel flusso normale, quindi va letto esplicitamente.
+      try {
+        for (const el of collected.containers) {
+          if (section.extras.length >= 12) break;
+          // textContent cattura anche la parte scorrevole non visibile.
+          const txt = cap(el.textContent || el.innerText, 700);
+          if (!txt) continue;
+          section.extras.push(`contenitore scorrevole (${el.scrollHeight}px in ${el.clientHeight}px): ${txt}`);
+        }
+      } catch {}
+
+      // Punto di ripiego se la fascia non contiene elementi agganciabili.
+      if (!focus.length) focus.push({ x: Math.round(vw * 0.5), y: Math.round(vh * 0.42) });
+      focus.sort((a, b) => a.y - b.y);
+      return section;
+    };
+
+    // Attende stabilizzazione reale: mutation observer + altezza + immagini.
+    let lastH = docHeight();
+    let stable = 0;
+    let lastMutation = Date.now();
+    let mo = null;
+    try {
+      mo = new MutationObserver(() => { lastMutation = Date.now(); });
+      mo.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+    } catch {}
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearInterval(iv);
+      try { if (mo) mo.disconnect(); } catch {}
+      let section = null;
+      try { section = extract(); } catch {}
+      if (!section) {
+        resolve({ ok: false, error: "estrazione non riuscita", heightNow: docHeight(), yNow: Math.round(window.scrollY) });
+        return;
+      }
+      resolve({
+        ok: true,
+        yNow: Math.round(window.scrollY),
+        heightNow: docHeight(),
+        widthNow: docWidth(),
+        section,
+        focus: section.focus,
+      });
+    };
+
+    // Valori letterali: la funzione è serializzata e non vede le costanti del
+    // service worker. I chiamanti passano comunque entrambi i parametri.
+    const maxMs = Math.max(400, settleMaxMs || 1500);
+    const minMs = Math.max(0, Math.min(settleMinMs == null ? 280 : settleMinMs, maxMs));
+    const iv = setInterval(() => {
+      try {
+        const h = docHeight();
+        if (h === lastH) stable++; else { stable = 0; lastH = h; }
+        const elapsed = Date.now() - t0;
+        const quiet = Date.now() - lastMutation;
+        let pending = 0;
+        try {
+          for (const img of document.images) {
+            if (img.complete || !img.getAttribute("src")) continue;
+            const r = img.getBoundingClientRect();
+            if (r.bottom > 0 && r.top < vh) pending++;
+          }
+        } catch {}
+        if (elapsed >= minMs && stable >= 2 && quiet >= 180 && pending === 0) finish();
+        else if (elapsed >= maxMs) finish();
+      } catch {
+        finish();
+      }
+    }, 100);
+  });
+}
+
+/** Sonda il fondo pagina: aspetta che l'infinite scroll aggiunga contenuto. */
+function acProbeBottom(waitMs) {
+  return new Promise((resolve) => {
+    // Anche questa funzione viene serializzata nella pagina.
+    const docHeight = () => Math.max(
+      document.documentElement ? document.documentElement.scrollHeight : 0,
+      document.body ? document.body.scrollHeight : 0,
+    );
+    const before = docHeight();
+    const maxY = Math.max(0, before - window.innerHeight);
+    try { window.scrollTo({ top: maxY, behavior: "instant" }); } catch { try { window.scrollTo(0, maxY); } catch {} }
+    const t0 = Date.now();
+    let mo = null;
+    const finish = () => {
+      clearInterval(iv);
+      try { if (mo) mo.disconnect(); } catch {}
+      const after = docHeight();
+      resolve({ heightNow: after, grew: after > before + 24, scrolledTo: Math.round(window.scrollY) });
+    };
+    try {
+      mo = new MutationObserver(() => {});
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+    } catch {}
+    const iv = setInterval(() => {
+      try {
+        if (docHeight() > before + 24 || Date.now() - t0 >= Math.max(300, waitMs || 1200)) finish();
+      } catch { finish(); }
+    }, 120);
+  });
+}
+
+/** Passo orizzontale: solo se c'è overflow orizzontale reale. */
+function acScanSide(scrollWidth, vw, y) {
+  try {
+    const startY = typeof y === "number" ? y : window.scrollY;
+    try { window.scrollTo({ top: startY, left: 0, behavior: "instant" }); } catch { try { window.scrollTo(0, startY); } catch {} }
+    const per = Math.max(1, Math.floor((scrollWidth - vw) / Math.max(1, Math.min(3, Math.ceil((scrollWidth - vw) / vw)))));
+    const cols = [];
+    const cap = (s, n) => (s || "").replace(/\s+/g, " ").trim().slice(0, n || 150);
+    for (let x = vw; x < scrollWidth - 20; x += Math.max(per, 1)) {
+      if (cols.length >= 3) break;
+      try { window.scrollTo({ top: startY, left: x, behavior: "instant" }); } catch { try { window.scrollTo(x, startY); } catch {} }
+      cols.push({ x, text: cap(document.body ? document.body.innerText : "", 300) });
+    }
+    try { window.scrollTo({ top: startY, left: 0, behavior: "instant" }); } catch { try { window.scrollTo(0, startY); } catch {} }
+    return { cols };
+  } catch (e) {
+    return { cols: [], error: String(e) };
+  }
+}
+
+/** Ripristina lo scroll esatto dell'utente (posizione e orizzontale). */
+function acRestoreScan(y, x) {
+  try { window.scrollTo({ top: y, left: x || 0, behavior: "instant" }); } catch { try { window.scrollTo(0, y); } catch {} }
+  return { restored: Math.round(window.scrollY) };
+}
+
+async function scanPageFull(tabId) {
+  if (tabId == null) throw new Error("Nessuna scheda attiva da analizzare.");
+  if (scanRunning) throw new Error("Un'analisi della pagina è già in corso: attendi o premi Stop.");
+  scanRunning = true;
+  scanAbort = false;
+
+  let info = null;
+  let y = 0;
+  let totalH = 0;
+  let steps = 0;
+  let aborted = false;
+  let limited = "";
+  let limitedCode = "";
+  let restored = false;
+  let result = null;
+  const t0 = Date.now();
+  const blocks = [];
+  const seen = new Set();
+  const warnings = new Set();
+
+  const merge = (section) => {
+    if (!section) return false;
+    const b = {
+      index: blocks.length + 1, y: section.y,
+      headings: [], paragraphs: [], links: [], images: [], forms: [], tables: [], extras: [],
+    };
+    const into = (list, items, keyOf) => {
+      for (const it of items || []) {
+        const k = keyOf(it);
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        list.push(it);
+      }
+    };
+    into(b.headings, section.headings, (h) => `h:${h.text}`);
+    into(b.paragraphs, section.paragraphs, (p) => `p:${p}`);
+    into(b.links, section.links, (l) => `l:${l.text}|${l.href}`);
+    into(b.images, section.images, (i) => `i:${i.alt}|${i.src}`);
+    into(b.forms, section.forms, (f) => `f:${f}`);
+    into(b.tables, section.tables, (t) => `t:${t}`);
+    into(b.extras, section.extras, (x) => `x:${x}`);
+    for (const x of b.extras) {
+      if (/non leggibile|non raggiungibile/i.test(x)) warnings.add(x);
+    }
+    const hasContent = b.headings.length || b.paragraphs.length || b.links.length || b.images.length ||
+      b.forms.length || b.tables.length || b.extras.length;
+    if (hasContent) blocks.push(b);
+    return hasContent;
+  };
+
+  try {
+    await injectCursor(tabId);
+    sendCursor(tabId, "AC_CURSOR_SCAN_START", {}).catch(() => {});
+    sendCursor(tabId, "AC_CURSOR_SHOW", { label: "AgentCloud sta analizzando l'intera pagina…" }).catch(() => {});
+
+    try {
+      info = await acExec(tabId, acPrepareScan);
+    } catch (error) {
+      throw new Error(`Impossibile accedere alla scheda per l'analisi (${error?.message || "accesso negato"}). Assicurati che la pagina sia http/https e riprova.`);
+    }
+    if (!info) throw new Error("Impossibile inizializzare l'analisi della pagina.");
+
+    totalH = Math.max(1, info.scrollHeight || 1);
+    const stepH = Math.max(200, Math.floor(info.vh * 0.9)); // 10% di sovrapposizione
+
+    while (steps < SCAN_MAX_STEPS && Date.now() - t0 < SCAN_MAX_MS) {
+      if (scanAbort) { aborted = true; break; }
+
+      let res;
+      try {
+        res = await acExec(tabId, acScanStep, [y, stepH, SCAN_SETTLE_MAX_MS, SCAN_SETTLE_MIN_MS]);
+      } catch {
+        // Pagina che naviga via / viene chiusa a metà analisi: si chiude con
+        // ciò che è stato raccolto, senza bloccare il flusso.
+        limited = "la pagina è cambiata o è stata chiusa durante l'analisi";
+        limitedCode = "changed";
+        break;
+      }
+      if (!res || res.ok === false) {
+        limited = "uno dei passi non è riuscito a leggere la pagina";
+        limitedCode = "error";
+        break;
+      }
+
+      if (res.heightNow > totalH + 1) totalH = res.heightNow; // lazy-load/infinite scroll
+      if ((res.widthNow || 0) > (info.scrollWidth || 0)) info.scrollWidth = res.widthNow;
+      merge(res.section);
+
+      const percent = Math.max(2, Math.min(99, Math.round(((y + stepH) / Math.max(1, totalH)) * 100)));
+      const points = Array.isArray(res.focus) && res.focus.length
+        ? res.focus.slice(0, 3)
+        : [{ x: Math.round(info.vw / 2), y: Math.round(info.vh * 0.42) }];
+
+      // Sweep visibile: il cursore passa su titolo → paragrafo → immagine/
+      // tabella/form della fascia, così si vede cosa sta leggendo.
+      for (const point of points) {
+        if (scanAbort) break;
+        sendCursor(tabId, "AC_CURSOR_SCAN_STEP", {
+          percent,
+          x: point.x,
+          y: point.y,
+          label: `Analisi: ${percent}%`,
+        }).catch(() => {});
+        await new Promise((r) => setTimeout(r, info.reduced ? 40 : SCAN_SWEEP_MS));
+      }
+      if (scanAbort) { aborted = true; break; }
+
+      steps++;
+      // Il massimo scroll raggiungibile è totalH - vh: il confronto deve usare
+      // il viewport intero, altrimenti l'ultima fascia non attiva il probe.
+      const reachedBottom = res.yNow + info.vh >= totalH - 8;
+      if (reachedBottom) {
+        // Infinite scroll: il fondo potrebbe allungarsi dopo un attimo.
+        let probe = null;
+        try { probe = await acExec(tabId, acProbeBottom, [1200]); } catch {}
+        if (probe && probe.heightNow > totalH + 24) {
+          totalH = probe.heightNow;
+          y += stepH;
+          continue;
+        }
+        break;
+      }
+      y += stepH;
+      if (y > totalH - 40) break; // ultima fascia già coperta
+    }
+    if (scanAbort) aborted = true;
+
+    // Overflow orizzontale reale: una passata sulla fascia in cui si trova
+    // l'utente, poi si torna alla posizione originale.
+    if ((info.scrollWidth || 0) > info.vw + 40 && !aborted && !scanAbort) {
+      try {
+        const horizontal = await acExec(tabId, acScanSide, [info.scrollWidth, info.vw, info.scrollY0]);
+        if (horizontal?.cols?.length) {
+          blocks.push({
+            index: blocks.length + 1, y: info.scrollY0,
+            headings: [], paragraphs: [], links: [], images: [], forms: [], tables: [],
+            extras: horizontal.cols.map((c) => `colonna orizzontale x=${c.x}: ${c.text}`),
+          });
+        }
+      } catch {}
+    }
+
+    const scannedHeight = Math.min(totalH, Math.max(0, y) + info.vh);
+    if (!aborted && !limited && scannedHeight < totalH - 24) {
+      if (steps >= SCAN_MAX_STEPS) { limited = `limite di ${SCAN_MAX_STEPS} passi`; limitedCode = "steps"; }
+      else if (Date.now() - t0 >= SCAN_MAX_MS) { limited = `limite di ${Math.round(SCAN_MAX_MS / 1000)} secondi`; limitedCode = "time"; }
+      else { limited = "il fondo pagina non è stato raggiunto"; limitedCode = "incomplete"; }
+    }
+
+    result = {
+      title: info.title,
+      url: info.url,
+      selection: info.selection || "",
+      reducedMotion: Boolean(info.reduced),
+      totalHeight: totalH,
+      scannedHeight,
+      coveragePercent: Math.round((scannedHeight / Math.max(1, totalH)) * 100),
+      viewport: { h: info.vh, w: info.vw, horizontalOverflow: (info.scrollWidth || 0) > info.vw + 40 },
+      steps,
+      aborted,
+      limited,
+      limitedCode,
+      scrollRestored: false,
+      warnings: [...warnings],
+      sections: blocks,
+    };
+  } finally {
+    if (info) {
+      try { await acExec(tabId, acRestoreScan, [info.scrollY0, info.scrollX0]); restored = true; } catch {}
+    }
+    sendCursor(tabId, "AC_CURSOR_SCAN_END", { label: aborted ? "Analisi interrotta" : "Analisi completata" }).catch(() => {});
+    scanRunning = false;
+  }
+
+  // Il ripristino avviene nel finally: aggiorna il flag prima di consegnare
+  // il risultato a chi ha richiesto l'analisi.
+  if (result) result.scrollRestored = restored;
+  return result;
+}
+
+/**
+ * Riduzione per blocchi (map-reduce locale) del contenuto raccolto.
+ * Se la pagina supera il budget di contesto non si tronca solo la coda: ogni
+ * blocco riceve un budget, e se i blocchi sono troppi se ne campionano alcuni
+ * mantenendo sempre il primo, l'ultimo e quindi il fondo pagina.
+ */
+function summarizeScanForContext(scan) {
+  if (!scan?.sections?.length) return "";
+  const CAP_TOTAL = 14_000;
+  const blocks = scan.sections;
+
+  // In modalità compatta mantiene inizio e FINE di ogni blocco: è l'unico modo
+  // per non perdere il contenuto in fondo alla pagina quando il budget stringe.
+  const linesOf = (b, compact) => {
+    const out = [];
+    const cut = (s, n) => String(s || "").slice(0, n);
+    if (b.headings?.length) out.push(`Titoli: ${b.headings.map((h) => `${h.tag}: "${h.text}"`).join(" | ")}`);
+    if (b.paragraphs?.length) {
+      let ps = b.paragraphs;
+      if (compact) {
+        if (ps.length > 3) ps = [cut(ps[0], 120), cut(ps[1], 120), "…", cut(ps[ps.length - 1], 180)];
+        else ps = ps.map((p) => cut(p, 160));
+      }
+      out.push(`Testo: ${ps.join(" ⏎ ")}`);
+    }
+    if (b.links?.length) {
+      let ls = b.links;
+      if (compact && ls.length > 5) ls = [...ls.slice(0, 4), { text: "…", href: "" }, ls[ls.length - 1]];
+      out.push(`Link: ${ls.slice(0, compact ? 6 : 8).map((l) => `"${l.text}" → ${l.href}`).join(" ; ")}`);
+    }
+    if (b.images?.length) out.push(`Immagini: ${b.images.map((i) => (i.alt ? `"${i.alt}"` : i.src ? `[${i.src}]` : "")).filter(Boolean).join(" ; ")}`);
+    if (b.forms?.length) out.push(`Form: ${b.forms.join(" ; ")}`);
+    if (b.tables?.length) out.push(`Tabelle: ${b.tables.join(" ; ")}`);
+    if (b.extras?.length) {
+      let xs = b.extras;
+      if (compact && xs.length > 3) xs = [...xs.slice(0, 2), "…", xs[xs.length - 1]];
+      out.push(`Altro: ${xs.map((x) => cut(x, compact ? 180 : 300)).join(" ; ")}`);
+    }
+    return out;
+  };
+
+  const total = Math.round(scan.totalHeight || 0);
+  const scanned = scan.scannedHeight != null ? Math.round(scan.scannedHeight) : total;
+  const pct = scan.coveragePercent != null ? scan.coveragePercent : Math.round((scanned / Math.max(1, total)) * 100);
+  let header = `Analisi della pagina dall'alto al basso con il cursore: ${blocks.length} blocchi, ${scan.steps || blocks.length} passi, altezza ${total}px, copertura ${pct}% (fino a ${scanned}px).\n`;
+  if (scan.aborted) header += "Nota: scansione interrotta dall'utente PRIMA del fondo pagina.\n";
+  else if (scan.limited) header += `Nota: scansione ferma prima del fondo pagina (${scan.limited}).\n`;
+  const warnings = [...new Set((scan.warnings || []).map((w) => String(w).slice(0, 220)))].slice(0, 6);
+  if (warnings.length) header += `Contenuti non raggiungibili: ${warnings.join(" ; ")}.\n`;
+  header += "Ogni blocco è numerato e posizionato in px dall'alto; il fondo pagina è incluso quando raggiunto.\n";
+
+  const render = (block, budget) => {
+    let out = `[blocco ${block.index} · y≈${Math.round(block.y)}px]\n`;
+    for (const line of linesOf(block, budget < 2000)) {
+      const room = budget - out.length;
+      if (room <= 24) { out += "…\n"; break; }
+      out += (line.length > room ? line.slice(0, Math.max(24, room - 1)) + "…" : line) + "\n";
+    }
+    return out;
+  };
+
+  let full = header;
+  for (const b of blocks) full += render(b, Number.POSITIVE_INFINITY) + "\n";
+  if (full.length <= CAP_TOTAL) return full;
+
+  // Campiona i blocchi se sono davvero troppi, mantenendo sempre l'ultimo.
+  const available = Math.max(400, CAP_TOTAL - header.length - 300);
+  const maxBlocks = Math.max(1, Math.floor(available / 130));
+  let list = blocks;
+  let sampledNote = "";
+  if (list.length > maxBlocks) {
+    const stride = list.length / maxBlocks;
+    const sampled = [];
+    for (let i = 0; i < maxBlocks; i++) {
+      sampled.push(list[Math.min(list.length - 1, Math.round(i * stride))]);
+    }
+    sampled[sampled.length - 1] = list[list.length - 1];
+    list = sampled.filter((b, i, arr) => i === 0 || b.index !== arr[i - 1].index);
+    sampledNote = `(Campionati ${list.length} blocchi su ${blocks.length}; il fondo pagina è incluso.)\n`;
+  }
+
+  // L'ultimo blocco è il fondo pagina: gli si riserva un budget maggiore e,
+  // se serve, i blocchi intermedi vengono saltati prima di tagliare lui.
+  const lastBudget = 460;
+  const perBlock = Math.max(110, Math.floor(
+    (CAP_TOTAL - header.length - sampledNote.length - lastBudget - 120) / Math.max(1, list.length - 1),
+  ));
+  let out = header + sampledNote + `(Contenuto ridotto per blocchi: ~${perBlock} caratteri per blocco; l'ultimo blocco mantiene più spazio per il fondo pagina.)\n`;
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i];
+    const isLast = i === list.length - 1;
+    const chunk = render(b, isLast ? Math.max(perBlock, lastBudget) : perBlock);
+    if (out.length + chunk.length + 1 > CAP_TOTAL) {
+      if (!isLast) {
+        out += `… (${list.length - i - 1} blocchi intermedi omessi per limite di contesto)\n`;
+        const lastRoom = CAP_TOTAL - out.length - 1;
+        if (lastRoom > 80) out += render(list[list.length - 1], lastRoom);
+      } else {
+        const room = CAP_TOTAL - out.length - 1;
+        if (room > 80) out += render(b, room);
+      }
+      break;
+    }
+    out += chunk + "\n";
+  }
+  return out;
+}
+
 // ─── Esecuzione agente in streaming (SSE) ──────────────────────────────────
 
 async function runAgent({ agentId, messages, context, requestId, tabId: requestedTabId, approvalToken }) {
@@ -682,6 +1362,21 @@ async function runAgent({ agentId, messages, context, requestId, tabId: requeste
 
   let answer = "";
   try {
+  // Contexto pagina arricchito: con la scansione completa il modello riceve
+  // tutti i blocchi raccolti (ordinati per posizione), non solo il viewport.
+  let contextPrompt = "";
+  if (context) {
+    contextPrompt =
+      `Contesto pagina (fornito dall'utente):\nTitolo: ${context.title}\nURL: ${context.url}\nSelezione: ${context.selection || "(nessuna selezione)"}`;
+    const scanSummary = context.scan ? summarizeScanForContext(context.scan) : "";
+    if (scanSummary) {
+      contextPrompt += `\n\n${scanSummary}`;
+      // L'analisi deve dire cosa è stato coperto e cosa no, invece di
+      // presentare come completo ciò che il cursore non ha potuto leggere.
+      contextPrompt += "\nNella risposta finale indica esplicitamente quali parti della pagina hai analizzato (dall'alto al basso, blocchi/percentuale di copertura) e segnala ciò che non era raggiungibile (iframe cross-origin, contenuti dietro login o permessi, sezioni non caricate).";
+    }
+  }
+
   const response = await request(RUN_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -690,7 +1385,7 @@ async function runAgent({ agentId, messages, context, requestId, tabId: requeste
       messages: context
         ? [...messages.slice(0, -1), {
             role: "user",
-            content: `${messages[messages.length - 1]?.content || ""}\n\nContesto pagina (fornito dall'utente):\nTitolo: ${context.title}\nURL: ${context.url}\nSelezione: ${context.selection || "(nessuna selezione)"}`,
+            content: `${messages[messages.length - 1]?.content || ""}\n\n${contextPrompt}`,
           }]
         : messages,
       // Ripresa dopo la conferma umana: il token è firmato dal server, quindi
@@ -859,6 +1554,21 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === "GET_PAGE_CONTEXT") {
         const tabId = message.tabId ?? sender.tab?.id;
         sendResponse({ success: true, data: await getPageContext(tabId) });
+        return;
+      }
+      if (message.action === "SCAN_PAGE") {
+        let tabId = message.tabId ?? sender.tab?.id ?? null;
+        if (tabId == null) {
+          const active = await getActiveTab();
+          tabId = active?.id ?? null;
+        }
+        sendResponse({ success: true, data: await scanPageFull(tabId) });
+        return;
+      }
+      if (message.action === "AC_SCAN_ABORT") {
+        // Dal cursore (Esc sulla pagina): interrompe la scansione al passo dopo.
+        scanAbort = true;
+        sendResponse({ success: true });
         return;
       }
       if (message.action === "RUN_AGENT") {
