@@ -49,6 +49,7 @@ import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
+import { expandedHeroChip } from "@/lib/i18n/hero-chips";
 import MarkdownText from "./MarkdownText";
 import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
@@ -714,6 +715,23 @@ export default function ChatInterface({
 
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Suggerimenti sotto il campo vuoto: gli stessi chip della chat demo
+  // dell'hero (dict.hero.chips). Pillola identica e stessa espansione in
+  // frase completa al click: comportamento condiviso in hero-chips.ts.
+  const heroChips = dict.hero.chips;
+  function handleHeroChipClick(chip: string) {
+    setInput(
+      expandedHeroChip(
+        locale,
+        heroChips,
+        chip,
+        t(dict.hero.askAboutChip, { chip }),
+      ),
+    );
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
   // Copia sincronizzata delle conversazioni: dentro sendMessage (async) lo
   // stato React è quello del render precedente, quindi la cronologia va letta
   // da qui per restare corretta anche quando parte un messaggio in coda.
@@ -870,44 +888,6 @@ export default function ChatInterface({
     },
     [pushFileVersion],
   );
-
-  // Suggerimenti dinamici basati sugli agenti posseduti dall'utente.
-  // I task sono localizzati (localizeAgent): con lingua italiana i chip escono
-  // in italiano, non in inglese dal catalogo canonico.
-  const dynamicSuggestions = useMemo(() => {
-    const owned = availableAgents.filter((a) => a.slug !== "");
-    if (owned.length > 0) {
-      // Prendi 4 task da agenti diversi (o ripeti se ne hai meno di 4)
-      const tasks: string[] = [];
-      for (const agent of owned) {
-        const agentData = AGENTS.find((a) => a.slug === agent.slug);
-        if (agentData) {
-          for (const task of localizeAgent(agentData, locale).tasks) {
-            if (tasks.length < 4 && !tasks.includes(task)) tasks.push(task);
-          }
-        }
-      }
-      // Se non abbastanza task, aggiungi quelli generici
-      const fallback = [
-        dict.chat.suggestion1,
-        dict.chat.suggestion2,
-        dict.chat.suggestion3,
-        dict.chat.suggestion4,
-      ];
-      while (tasks.length < 4) {
-        const f = fallback[tasks.length];
-        if (f && !tasks.includes(f)) tasks.push(f); else break;
-      }
-      return tasks.slice(0, 4);
-    }
-    // Nessun agente posseduto: suggerimenti generici
-    return [
-      dict.chat.suggestion1,
-      dict.chat.suggestion2,
-      dict.chat.suggestion3,
-      dict.chat.suggestion4,
-    ];
-  }, [availableAgents, dict.chat, locale]);
 
   // Titolo dell'intestazione: il nome dell'agente attivo quando ne è selezionato
   // uno (CTA marketplace o selettore in sidebar), altrimenti il nome generico
@@ -2883,7 +2863,7 @@ export default function ChatInterface({
           />
           <div
             ref={agentDropdownRef}
-            className={`absolute bottom-full z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl shadow-black/40 backdrop-blur-xl overflow-hidden ${
+            className={`absolute bottom-full z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl shadow-black/40 overflow-hidden ${
               align === "right" ? "right-0" : "left-0"
             }`}
           >
@@ -2922,7 +2902,10 @@ export default function ChatInterface({
                   {dict.chat.noAgentsAvailable}
                 </p>
               ) : (
-                <div className="max-h-72 overflow-y-auto">
+                <div className="max-h-52 overflow-y-auto">
+                  {/* Solo ~5 agenti visibili per limiti di spazio (l'utente medio
+                      ha pochi messaggi al giorno e non serve un elenco lungo a
+                      vista): il resto si trova scorrendo la barra. */}
                   {filteredAgents.length === 0 ? (
                     <p className="px-2 py-2 text-xs text-neutral-500 text-center">{dict.chat.noSearchResults}</p>
                   ) : (
@@ -3742,23 +3725,32 @@ export default function ChatInterface({
                 </div>
               </div>
 
-              {/* Suggerimenti dinamici */}
-              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-3xl px-4">
-                {dynamicSuggestions.map((suggestion, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setInput(suggestion);
-                      setTimeout(() => inputRef.current?.focus(), 0);
-                    }}
-                    className="group flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-2.5 text-left text-[13px] text-neutral-300 hover:bg-white/[0.06] hover:border-brand-500/30 hover:text-white transition-all duration-200"
-                  >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-400 group-hover:bg-brand-500/20 transition-colors">
-                      <MessageSquare size={12} />
-                    </span>
-                    <span className="truncate leading-snug">{suggestion}</span>
-                  </button>
-                ))}
+              {/* Suggerimenti: le stesse pill della chat demo dell'hero
+                  (stessi chip, stessa forma, stessa espansione al click).
+                  Comportamento condiviso: src/lib/i18n/hero-chips.ts. */}
+              <div className="mt-8 flex w-full max-w-3xl flex-col items-center gap-3.5 px-4">
+                <div className="flex flex-wrap justify-center gap-3">
+                  {heroChips.slice(0, 3).map((chip) => (
+                    <button
+                      key={chip}
+                      onClick={() => handleHeroChipClick(chip)}
+                      className="cursor-pointer rounded-full border border-white/10 bg-neutral-900 px-4.5 py-2 text-sm font-semibold text-neutral-300 shadow-sm transition-all hover:border-brand-500/50 hover:bg-neutral-800 hover:text-white"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap justify-center gap-3">
+                  {heroChips.slice(3).map((chip) => (
+                    <button
+                      key={chip}
+                      onClick={() => handleHeroChipClick(chip)}
+                      className="cursor-pointer rounded-full border border-white/10 bg-neutral-900 px-4.5 py-2 text-sm font-semibold text-neutral-300 shadow-sm transition-all hover:border-brand-500/50 hover:bg-neutral-800 hover:text-white"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
               </div>
               {/* Prompt marketplace per utenti senza agenti */}
               {availableAgents.filter((a) => a.slug !== "").length === 0 && (
