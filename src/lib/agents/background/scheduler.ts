@@ -22,6 +22,7 @@ import type { AgentScheduleRow } from "@/types/agents-db";
 import { nextRuns } from "@/lib/agents/cron";
 import { createBackgroundRun } from "./enqueue";
 import { maskSecrets } from "./mask";
+import { sendSchedulePausedEmail } from "./schedule-email";
 
 export type SchedulerScanResult = {
   /** Schedule esaminati (dove next_run_at era scaduto). */
@@ -126,4 +127,106 @@ export async function scanSchedules(
     }
   }
   return result;
+}
+
+/** Fail-uri consecutivi di uno schedule prima della pausa automatica (Fase 7). */
+export const SCHEDULE_PAUSED_AFTER_FAILURES = 3;
+
+/**
+ * Aggiorna `consecutive_failures` dello schedule che ha prodotto il run.
+ * Successo → reset; fallimento → incremento e, alla soglia, AUTO-PAUSA
+ * dello schedule + email Resend best-effort (D2 visione: pausa pulita,
+ * l'utente la riattiva dopo aver letto l'errore nel Replay).
+ */
+export async function handleScheduleOutcome(
+  runId: string,
+  outcome: "succeeded" | "failed",
+  errore?: string | null,
+): Promise<void> {
+  const client = createAdminClient();
+  if (!client) return;
+  try {
+    const { data: run } = (await client
+      .from("agent_runs")
+      .select("schedule_id, user_id, agent_slug")
+      .eq("id", runId)
+      .maybeSingle()) as {
+      data: {
+        schedule_id: string | null;
+        user_id: string;
+        agent_slug: string;
+      } | null;
+    };
+    if (!run?.schedule_id) return;
+
+    if (outcome === "succeeded") {
+      await client
+        .from("agent_schedules")
+        .update({ consecutive_failures: 0 })
+        .eq("id", run.schedule_id);
+      return;
+    }
+
+    const { data: schedule } = (await client
+      .from("agent_schedules")
+      .select("consecutive_failures, name")
+      .eq("id", run.schedule_id)
+      .maybeSingle()) as {
+      data: { consecutive_failures: number; name: string } | null
+    };
+    const failures = (schedule?.consecutive_failures ?? 0) + 1;
+    const pause = failures >= SCHEDULE_PAUSED_AFTER_FAILURES;
+    await client
+      .from("agent_schedules")
+      .update({
+        consecutive_failures: failures,
+        ...(pause ? { status: "paused" as const } : {}),
+      })
+      .eq("id", run.schedule_id);
+    if (pause) {
+      await sendSchedulePausedEmail({
+        userId: run.user_id,
+        scheduleName: schedule?.name ?? "Elemento pianificato",
+        agentSlug: run.agent_slug,
+        failures,
+        errore: errore ?? null,
+      });
+    }
+  } catch {
+    // best-effort: la contabilità dei fallimenti non deve mai far fallire il run
+  }
+}
+
+/**
+ * Retention (D9): pulizia dei payload vecchi. `agent_run_steps` si cancella
+ * a 30 giorni; i run terminali oltre 90 giorni scompaiono del tutto (buffer
+ * extra di 2 mesi rispetto alla somma billing, che per costruzione guarda
+ * solo il periodo in corso).
+ *
+ * Chiamata a spizzico dal worker tick (~5% dei tick) per non moltiplicare
+ * i costi di query su un cron che scatta ogni minuto.
+ */
+export async function purgeExpiredRuns(): Promise<void> {
+  const client = createAdminClient();
+  if (!client) return;
+  try {
+    const stepsCutoff = new Date(
+      Date.now() - 30 * 24 * 3_600_000,
+    ).toISOString();
+    await client
+      .from("agent_run_steps")
+      .delete()
+      .lt("created_at", stepsCutoff);
+
+    const runsCutoff = new Date(
+      Date.now() - 90 * 24 * 3_600_000,
+    ).toISOString();
+    await client
+      .from("agent_runs")
+      .delete()
+      .in("status", ["succeeded", "failed", "cancelled", "completed"])
+      .lt("finished_at", runsCutoff);
+  } catch {
+    // best-effort
+  }
 }

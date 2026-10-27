@@ -19,6 +19,8 @@ function siteOrigin(): string {
   return `https://${raw}`;
 }
 
+export { siteOrigin };
+
 export function approvalsUrl(): string {
   return `${siteOrigin()}/dashboard/approvals`;
 }

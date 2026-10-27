@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
 import { getSessionUser, createClient } from "@/lib/supabase/server";
 import { createBackgroundRun } from "@/lib/agents/background/enqueue";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
- * POST /api/agents/schedules/[id]/run-now (Fase 3)
+ * POST /api/agents/schedules/[id]/run-now (Fase 3/7)
  *
  * Trigger manuale di uno schedule: crea un run collegato allo schedule (così
  * il Replay mantiene la tracciabilità) ma con trigger='manual' — è l'utente
- * che lo chiede, non il calendario. State `active` non è richiesto: anche uno
- * schedule in pausa si può provare a mano (incluso cancellato? NO: qui lo
- * schedule deve ancora esistere, per il payload delle istruzioni).
+ * che lo chiede, non il calendario. Uno schedule in pausa si può comunque
+ * provare a mano (le istruzioni servono solo della riga ancora esistente).
  *
  * Il run parte subito (job scheduled_for = now()).
+ *
+ * Fase 7 (hardening): rate limite distribuito sui trigger manuali, 10/ora
+ * e per utente — una tabella corrotta o un client che martella il bottone
+ * non può inondare la coda (e i token) di run.
  */
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -31,6 +35,18 @@ export async function POST(_request: Request, context: RouteContext) {
   const client = await createClient();
   if (!client) {
     return NextResponse.json({ error: "db_unavailable" }, { status: 500 });
+  }
+
+  // Fase 7: 10 trigger manuali per ora, fail-open (regola del modulo).
+  const limit = await rateLimit("agents-run-now", user.id, {
+    limit: 10,
+    windowMs: 3_600_000,
+  });
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited", retryAfter: limit.retryAfterSeconds },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+    );
   }
 
   const { data: schedule, error } = await client

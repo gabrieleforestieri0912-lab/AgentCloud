@@ -4,7 +4,11 @@ import {
   executeBackgroundRun,
   finalizeAbandonedRun,
 } from "@/lib/agents/background/runner";
-import { scanSchedules } from "@/lib/agents/background/scheduler";
+import {
+  scanSchedules,
+  handleScheduleOutcome,
+  purgeExpiredRuns,
+} from "@/lib/agents/background/scheduler";
 import {
   claimJob,
   completeJob,
@@ -116,6 +120,9 @@ async function handle(request: Request): Promise<NextResponse> {
   // run. Fallito o vuoto, il worker prosegue comunque sui job esistenti.
   const scan = await scanSchedules();
 
+  // Fase 7 (D9): retention dei payload vecchi, a spizzico (≈1 tick su 20).
+  if (Math.random() < 0.05) void purgeExpiredRuns();
+
   while (claimed < maxJobs && Date.now() < deadline) {
     const job = await claimJob(workerId, leaseSeconds);
     if (!job) break;
@@ -124,6 +131,7 @@ async function handle(request: Request): Promise<NextResponse> {
     // Il claim ha trovato i tentativi già esauriti: chiude il run appeso.
     if (job.stato === "failed") {
       await finalizeAbandonedRun(job.run_id, job.ultimo_errore ?? "tentativi esauriti");
+      void handleScheduleOutcome(job.run_id, "failed", job.ultimo_errore);
       outcomes.push({ runId: job.run_id, outcome: "failed", error: job.ultimo_errore ?? undefined });
       continue;
     }
@@ -161,6 +169,15 @@ async function handle(request: Request): Promise<NextResponse> {
         await finalizeAbandonedRun(job.run_id, result.error ?? "tentativi esauriti");
       }
     }
+
+    // Fase 7: contabilità dei fallimenti degli schedule (pausa automatica a
+    // 3 fallimenti di fila + email). Sui manuali non ha effetto (no schedule);
+    // waiting/requeue non toccano il contatore: il run è ancora vivo.
+    if (result.outcome === "succeeded" || result.outcome === "noop") {
+      void handleScheduleOutcome(job.run_id, "succeeded");
+    } else if (result.outcome === "failed") {
+      void handleScheduleOutcome(job.run_id, "failed", result.error);
+    };
 
     outcomes.push({
       runId: job.run_id,
