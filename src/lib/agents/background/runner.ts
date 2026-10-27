@@ -63,6 +63,11 @@ import {
   consumeApprovedApproval,
 } from "./approvals";
 import { sendApprovalRequestedEmail } from "./approval-email";
+import {
+  DELEGATION_TOOL,
+  delegateToAgent,
+  delegationOutputText,
+} from "@/lib/agents/delegation";
 import type { AgentApprovalRow } from "@/types/agents-db";
 import type { AgentRunRow, AgentRunStepRow } from "@/types/agents-db";
 import { maskJson, maskSecrets, truncateForStep } from "./mask";
@@ -398,9 +403,14 @@ export async function executeBackgroundRun(
   let toolNames = getEnabledToolsForAgent(run.agent_slug);
   if (!microsoftConnected) toolNames = toolNames.filter((t) => !isMicrosoftTool(t));
   if (!outlookConnected) toolNames = toolNames.filter((t) => !isOutlookTool(t));
-  const tools: LLMTool[] = toolNames
-    .map((name) => TOOL_DEFINITIONS[name])
-    .filter((tool): tool is LLMTool => Boolean(tool));
+  const tools: LLMTool[] = [
+    ...toolNames
+      .map((name) => TOOL_DEFINITIONS[name])
+      .filter((tool): tool is LLMTool => Boolean(tool)),
+    // Fase 6: l'orchestratore può delegare parti della missione ad altri
+    // agenti attivi dell'account (catena max 2, budget condiviso).
+    DELEGATION_TOOL,
+  ];
 
   const locale = replyLanguage(DEFAULT_LOCALE, instructions);
   const system = buildAgentSystemPrompt(config.systemPrompt, locale);
@@ -413,6 +423,54 @@ export async function executeBackgroundRun(
     { ok: true; output: string }
     | { ok: false; reason: string; fatal?: boolean }
   > => {
+    // ── Fase 6: delega a un altro agente ────────────────────────────────
+    // Interceptor PRIMA del gate di autonomia: la delega non tocca il mondo
+    // esterno (crea lavoro interno, budget già vincolato), si traccia con
+    // tipo 'delegation' nel journal e può sempre fallire leggibile.
+    if (use.name === "delegate_to_agent") {
+      const result = await delegateToAgent(
+        {
+          id: runId,
+          user_id: run.user_id,
+          agent_slug: run.agent_slug,
+          budget_max_crediti: run.budget_max_crediti ?? BUDGET_DEFAULT_MAX_CREDITS,
+          crediti_usati: totals().crediti_usati,
+        },
+        {
+          agentSlug: String(use.input.agentSlug ?? ""),
+          instructions: String(use.input.instructions ?? ""),
+          title: typeof use.input.title === "string" ? use.input.title : undefined,
+        },
+        totals().crediti_usati,
+      );
+      const stepResult = await store.insertStep({
+        runId,
+        tenantId,
+        indice: takeIndice(),
+        tipo: "delegation",
+        input: maskJson({ toolUseId: use.id, args: use.input }),
+        toolName: use.name,
+        output: delegationOutputText(result),
+        crediti: 0,
+      });
+      if (!stepResult.ok) {
+        if (stepResult.reason !== "duplicate") lastIndice--;
+        return { ok: false, reason: stepResult.reason, fatal: false };
+      }
+      if (result.ok) {
+        logAudit("agent_delegation", {
+          userId: run.user_id,
+          agent: run.agent_slug,
+          tool: use.name,
+          runId,
+          childRunId: result.childRunId,
+          taskId: result.taskId,
+          background: true,
+        });
+      }
+      return { ok: true, output: delegationOutputText(result) };
+    }
+
     // ── Fase 4: gate dell'Autonomy Ladder ───────────────────────────────
     // L0: il tool con effetti NON parte; il journal registra "avrei fatto".
     // L1: se c'è un'approvazione approvata da consumare viene eseguita (con
