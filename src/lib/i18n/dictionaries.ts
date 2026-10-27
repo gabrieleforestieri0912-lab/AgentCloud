@@ -323,6 +323,16 @@ howItWorks: {
         ],
         cta: "Vai alla dashboard",
       },
+      {
+        title: "Agenti autonomi",
+        desc: "Orari programmati, esecuzione in background, approvazioni dove conta e Replay passo a passo: lavori anche quando non ci sei.",
+        details: [
+          "Schedule con orari e fuso orario scelti da te",
+          "Scala di autonomia L0–L3: l'ultimo livello è tua scelta",
+          "Replay del run: ogni azione ripassabile passo per passo",
+        ],
+        cta: "Scopri l'autonomia",
+      },
     ],
   },
 
@@ -2944,6 +2954,16 @@ howItWorks: {
         ],
         cta: "Go to dashboard",
       },
+      {
+        title: "Autonomous agents",
+        desc: "Scheduled times, background execution, approvals where it counts and step-by-step replay: work gets done even when you are away.",
+        details: [
+          "Schedules with times and time zone you choose",
+          "Autonomy ladder L0–L3: the last level is your call",
+          "Run replay: every action can be walked again step by step",
+        ],
+        cta: "Discover autonomy",
+      },
     ],
   },
 
@@ -5539,6 +5559,16 @@ howItWorks: {
         ],
         cta: "Ir al panel",
       },
+      {
+        title: "Agentes autónomos",
+        desc: "Horarios programados, ejecución en segundo plano, aprobaciones donde importa y replay paso a paso: el trabajo avanza incluso cuando no estás.",
+        details: [
+          "Programaciones con horarios y zona horaria elegidos por ti",
+          "Escala de autonomía L0–L3: el último nivel lo eliges tú",
+          "Replay del run: cada acción repasa paso a paso",
+        ],
+        cta: "Descubre la autonomía",
+      },
     ],
   },
 
@@ -8132,6 +8162,16 @@ howItWorks: {
         ],
         cta: "Zum Dashboard",
       },
+      {
+        title: "Autonome Agenten",
+        desc: "Geplante Zeiten, Ausführung im Hintergrund, Freigaben, wo es zählt, und Replay Schritt für Schritt: Es wird gearbeitet, auch wenn Sie nicht da sind.",
+        details: [
+          "Zeitpläne mit von Ihnen gewählten Zeiten und Zeitzone",
+          "Autonomieleiter L0–L3: die letzte Stufe entscheiden Sie",
+          "Run-Replay: jede Aktion ist Schritt für Schritt wieder ansehbar",
+        ],
+        cta: "Autonomie entdecken",
+      },
     ],
   },
 
@@ -10724,6 +10764,16 @@ howItWorks: {
           "Gestion des abonnements et de l'utilisation",
         ],
         cta: "Aller au tableau de bord",
+      },
+      {
+        title: "Agents autonomes",
+        desc: "Horaires planifiés, exécution en arrière-plan, approbations là où ça compte et replay pas à pas : le travail avance même en votre absence.",
+        details: [
+          "Planifications avec horaires et fuseau horaire choisis par vous",
+          "Échelle d'autonomie L0–L3 : le dernier niveau se décide par vous",
+          "Replay du run : chaque action repassable pas à pas",
+        ],
+        cta: "Découvrir l'autonomie",
       },
     ],
   },

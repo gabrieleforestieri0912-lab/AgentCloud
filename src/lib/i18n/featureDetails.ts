@@ -17,11 +17,17 @@
 
 import type { Locale } from "./constants";
 
-export type FeatureSlug = "agents" | "integrations" | "chat" | "dashboard";
+export type FeatureSlug =
+  | "agents"
+  | "agents-autonomous"
+  | "integrations"
+  | "chat"
+  | "dashboard";
 
 /** L'ordine combacia con `dict.features.items` (vedi nota in testa al file). */
 export const FEATURE_SLUGS: readonly FeatureSlug[] = [
   "agents",
+  "agents-autonomous",
   "integrations",
   "chat",
   "dashboard",
@@ -29,6 +35,7 @@ export const FEATURE_SLUGS: readonly FeatureSlug[] = [
 
 export const FEATURE_PATHS: Record<FeatureSlug, string> = {
   agents: "/features/agents",
+  "agents-autonomous": "/features/agents-autonomous",
   integrations: "/features/integrations",
   chat: "/features/chat",
   dashboard: "/features/dashboard",
@@ -279,6 +286,60 @@ const it: Record<FeatureSlug, FeatureDetailContent> = {
     ctaLabel: "Vai alla dashboard",
     ctaHref: "/dashboard",
   },
+  "agents-autonomous": {
+    metaTitle: "Agenti autonomi: lavorano anche quando non ci sei",
+    metaDescription:
+      "AgentCloud agisce da solo: pianifichi orari e contenuti, l'agente esegue in background, chiede l'approvazione dove serve e ripassa ogni azione passo a passo nel Replay.",
+    badge: "Autonomia",
+    titleA: "Agenti che lavorano",
+    titleB: "anche senza di te",
+    subtitle:
+      "Programmazione a orari scelti, esecuzione in background, approvazioni a filo e Replay passo a passo: la delega dura davvero, non solo in chat.",
+    intro:
+      "Finora l'agente lavorava solo mentre eri in chat. Da oggi decidi tu quanto cambia: gli mandi un piano e lui lo esegue nei momenti che scegli, mostra ogni azione con la sua scala di autonomia, si ferma e chiede dove gli effetti servono a te. E se qualcosa va storto, il Replay ti fa ripassare l'esecuzione passo a passo, adesso che tutto è accaduto.",
+    homeLink: "Torna alla home",
+    benefitsTitle: "Cosa cambia",
+    benefits: [
+      {
+        title: "Lavora a orari tuoi",
+        text: "Ogni ora o ogni giorno: l'agente esegue le istruzioni che gli dai, esattamente nel fuso orario che scegli, ora legale inclusa.",
+      },
+      {
+        title: "Scala di autonomia L0–L3",
+        text: "L0 osserva, L1 propone, L2 agisce e notifica, L3 autonomo entro il budget: ogni livello è tua scelta, mai del sistema.",
+      },
+      {
+        title: "Approvazione dove conta",
+        text: "Le azioni con effetti reali — email, ordini, fatture — passano da te: approvi la proposta, la correggi o la rifiuti.",
+      },
+      {
+        title: "Replay completo",
+        text: "Ogni run resta nel journal: ripassi la timeline passo per passo, con token e crediti esatti contati per il run.",
+      },
+    ],
+    stepsTitle: "Come funziona",
+    steps: [
+      {
+        title: "Crea lo schedule",
+        text: "Scegli l'agente, scrivi le istruzioni e il calendario (preset o cron avanzato): le prossime 5 esecuzioni vengono mostrate subito.",
+      },
+      {
+        title: "Decidi l'autonomia",
+        text: "Default: lettura libera, scrittura in approvazione. Dopo 10 approvazioni di fila senza correzioni il sistema suggerisce la promozione a L2 — ma decidi sempre tu.",
+      },
+      {
+        title: "Guarda e ripassa",
+        text: "Mission Control mostra lo stato dei run in tempo reale e il Replay ti fa ripassare ogni passo dopo il fatto.",
+      },
+    ],
+    highlightsTitle: "In sintesi",
+    relatedTitle: "Le altre funzionalità",
+    ctaTitle: "Prova l'autonomia",
+    ctaText:
+      "Attivi un agente, crei il primo schedule e lo provi subito con un trigger manuale.",
+    ctaLabel: "Vai agli agenti",
+    ctaHref: "/agents",
+  },
 };
 
 // ─── English ─────────────────────────────────────────────────────────────────
@@ -499,6 +560,60 @@ const en: Record<FeatureSlug, FeatureDetailContent> = {
       "If you do not have an account yet, you can create one and activate your first agent in a few minutes.",
     ctaLabel: "Go to the dashboard",
     ctaHref: "/dashboard",
+  },
+  "agents-autonomous": {
+    metaTitle: "Autonomous agents: they work even when you are not there",
+    metaDescription:
+      "AgentCloud acts on its own: you schedule times and content, the agent runs in the background, asks for approval where needed, and replays every action step by step.",
+    badge: "Autonomy",
+    titleA: "Agents that work",
+    titleB: "even without you",
+    subtitle:
+      "Scheduled runs, background execution, per-action approvals and step-by-step replay: delegation that lasts, not just inside a chat.",
+    intro:
+      "Until now an agent only worked while you were in the chat. Now you decide how far it goes: you hand it a plan and it runs at the times you choose, shows every action on its autonomy ladder, and stops to ask wherever real-world effects are yours to approve. And when something goes wrong, the Replay lets you walk the execution again, step by step.",
+    homeLink: "Back to home",
+    benefitsTitle: "What changes",
+    benefits: [
+      {
+        title: "Works on your schedule",
+        text: "Hourly or daily: the agent runs the instructions you gave it, in the time zone you pick, daylight saving included.",
+      },
+      {
+        title: "Autonomy ladder L0–L3",
+        text: "L0 observes, L1 proposes, L2 acts and notifies, L3 autonomous within budget: every level is your choice, never the system's.",
+      },
+      {
+        title: "Approval where it counts",
+        text: "Actions with real effects — emails, orders, invoices — go through you: approve the proposal, edit it, or reject it.",
+      },
+      {
+        title: "Full replay",
+        text: "Every run stays in the journal: walk the timeline step by step, with exact token and credit counts per run.",
+      },
+    ],
+    stepsTitle: "How it works",
+    steps: [
+      {
+        title: "Create the schedule",
+        text: "Pick the agent, write the instructions and the calendar (preset or advanced cron): the next 5 runs show up right away.",
+      },
+      {
+        title: "Set the autonomy",
+        text: "Default: free reads, approved writes. After 10 consecutive approvals without edits the system suggests a promotion to L2 — but you always decide.",
+      },
+      {
+        title: "Watch, then replay",
+        text: "Mission Control shows run states live and the Replay walks you through every step after the fact.",
+      },
+    ],
+    highlightsTitle: "In short",
+    relatedTitle: "Other capabilities",
+    ctaTitle: "Try the autonomy",
+    ctaText:
+      "Activate an agent, create your first schedule and test it right away with a manual run.",
+    ctaLabel: "Go to the agents",
+    ctaHref: "/agents",
   },
 };
 
@@ -721,6 +836,60 @@ const es: Record<FeatureSlug, FeatureDetailContent> = {
     ctaLabel: "Ir al panel",
     ctaHref: "/dashboard",
   },
+  "agents-autonomous": {
+    metaTitle: "Agentes autónomos: trabajan incluso cuando no estás",
+    metaDescription:
+      "AgentCloud actúa por su cuenta: programas horarios y contenidos, el agente ejecuta en segundo plano, pide tu aprobación donde hace falta y repasa cada acción paso a paso.",
+    badge: "Autonomía",
+    titleA: "Agentes que trabajan",
+    titleB: "incluso sin ti",
+    subtitle:
+      "Programación a tu horario, ejecución en segundo plano, aprobaciones por acción y replay paso a paso: delegación que dura, no solo dentro del chat.",
+    intro:
+      "Hasta ahora el agente trabajaba solo mientras estabas en el chat. Ahora decides hasta dónde llega: le das un plan y lo ejecuta en los momentos que elijas, muestra cada acción en su escala de autonomía y se detiene a pedir aprobación donde los efectos reales te corresponden a ti. Y si algo va mal, el Replay te permite recorrer la ejecución de nuevo, paso a paso.",
+    homeLink: "Volver a la portada",
+    benefitsTitle: "Qué cambia",
+    benefits: [
+      {
+        title: "Trabaja a tu horario",
+        text: "Cada hora o cada día: el agente ejecuta las instrucciones que le das, en la zona horaria que elijas, con el cambio de hora incluido.",
+      },
+      {
+        title: "Escala de autonomía L0–L3",
+        text: "L0 observa, L1 propone, L2 actúa y notifica, L3 autónomo dentro del presupuesto: cada nivel lo eliges tú, nunca el sistema.",
+      },
+      {
+        title: "Aprobación donde importa",
+        text: "Las acciones con efectos reales — correos, pedidos, facturas — pasan por ti: apruebas la propuesta, la editas o la rechazas.",
+      },
+      {
+        title: "Replay completo",
+        text: "Cada run queda en el diario: recorres la línea de tiempo paso a paso, con el recuento exacto de tokens y créditos por run.",
+      },
+    ],
+    stepsTitle: "Cómo funciona",
+    steps: [
+      {
+        title: "Crea la programación",
+        text: "Elige el agente, escribe las instrucciones y el calendario (preset o cron avanzado): las próximas 5 ejecuciones se muestran enseguida.",
+      },
+      {
+        title: "Define la autonomía",
+        text: "Por defecto: lectura libre, escritura con aprobación. Tras 10 aprobaciones seguidas sin cambios el sistema sugiere la promoción a L2 — pero siempre decides tú.",
+      },
+      {
+        title: "Mira y repasa",
+        text: "Mission Control muestra el estado de los runs en directo y el Replay te deja recorrer cada paso después del hecho.",
+      },
+    ],
+    highlightsTitle: "En resumen",
+    relatedTitle: "Otras capacidades",
+    ctaTitle: "Prueba la autonomía",
+    ctaText:
+      "Activa un agente, crea tu primera programación y pruébala al momento con un run manual.",
+    ctaLabel: "Ir a los agentes",
+    ctaHref: "/agents",
+  },
 };
 
 // ─── Deutsch ─────────────────────────────────────────────────────────────────
@@ -942,6 +1111,60 @@ const de: Record<FeatureSlug, FeatureDetailContent> = {
     ctaLabel: "Zum Dashboard",
     ctaHref: "/dashboard",
   },
+  "agents-autonomous": {
+    metaTitle: "Autonome Agenten: arbeiten auch ohne Sie",
+    metaDescription:
+      "AgentCloud handelt aus eigener Kraft: Sie planen Zeiten und Inhalte, der Agent führt im Hintergrund aus, holt Freigaben ein, wo nötig, und Sie können jede Aktion Schritt für Schritt wieder ansehen.",
+    badge: "Autonomie",
+    titleA: "Agenten, die auch",
+    titleB: "ohne Sie arbeiten",
+    subtitle:
+      "Geplante Läufe, Ausführung im Hintergrund, Freigaben pro Aktion und Replay Schritt für Schritt: Delegation, die anhält — nicht nur im Chat.",
+    intro:
+      "Bisher arbeitete ein Agent nur, während Sie im Chat waren. Jetzt entscheiden Sie, wie weit er geht: Sie geben ihm einen Plan, er führt ihn zu den von Ihnen gewählten Zeiten aus, zeigt jede Aktion auf seiner Autonomieleiter und hält an, wo reale Wirkungen Ihre Freigabe brauchen. Und wenn etwas schiefläuft, lässt Sie das Replay die Ausführung erneut durchgehen, Schritt für Schritt.",
+    homeLink: "Zurück zur Startseite",
+    benefitsTitle: "Was sich ändert",
+    benefits: [
+      {
+        title: "Arbeitet zu Ihrer Zeit",
+        text: "Stündlich oder täglich: Der Agent führt die Anweisungen aus, die Sie ihm geben — in der Zeitzone Ihrer Wahl, Sommerzeit inklusive.",
+      },
+      {
+        title: "Autonomieleiter L0–L3",
+        text: "L0 beobachtet, L1 schlägt vor, L2 handelt und benachrichtigt, L3 autonom innerhalb des Budgets: Jede Stufe entscheiden Sie, nie das System.",
+      },
+      {
+        title: "Freigabe, wo es zählt",
+        text: "Aktionen mit realen Wirkungen — E-Mails, Bestellungen, Rechnungen — laufen über Sie: freigeben, ändern oder ablehnen.",
+      },
+      {
+        title: "Vollständiges Replay",
+        text: "Jeder Lauf bleibt im Journal: Sie gehen die Zeitleiste Schritt für Schritt wieder durch, mit exakten Token- und Credit-Zahlen pro Lauf.",
+      },
+    ],
+    stepsTitle: "So funktioniert es",
+    steps: [
+      {
+        title: "Zeitplan anlegen",
+        text: "Agenten wählen, Anweisungen und Kalender festlegen (Preset oder erweiterter Cron): Die nächsten 5 Läufe erscheinen sofort.",
+      },
+      {
+        title: "Autonomie festlegen",
+        text: "Standard: freies Lesen, Schreiben mit Freigabe. Nach 10 aufeinanderfolgenden Freigaben ohne Änderungen schlägt das System die Stufe L2 vor — Sie entscheiden aber immer.",
+      },
+      {
+        title: "Ansehen, dann wiederholen",
+        text: "Mission Control zeigt die Laufzustände live, das Replay führt Sie nachträglich durch jeden Schritt.",
+      },
+    ],
+    highlightsTitle: "Kurz gesagt",
+    relatedTitle: "Weitere Funktionen",
+    ctaTitle: "Autonomie ausprobieren",
+    ctaText:
+      "Aktivieren Sie einen Agenten, legen Sie den ersten Zeitplan an und testen Sie ihn sofort mit einem manuellen Lauf.",
+    ctaLabel: "Zu den Agenten",
+    ctaHref: "/agents",
+  },
 };
 
 // ─── Français ────────────────────────────────────────────────────────────────
@@ -1162,6 +1385,60 @@ const fr: Record<FeatureSlug, FeatureDetailContent> = {
       "Si vous n'avez pas encore de compte, vous pouvez en créer un et activer votre premier agent en quelques minutes.",
     ctaLabel: "Aller au tableau de bord",
     ctaHref: "/dashboard",
+  },
+  "agents-autonomous": {
+    metaTitle: "Agents autonomes : ils travaillent même en votre absence",
+    metaDescription:
+      "AgentCloud agit de lui-même : vous planifiez horaires et contenus, l'agent s'exécute en arrière-plan, demande votre approbation là où il faut et permet de repasser chaque action pas à pas.",
+    badge: "Autonomie",
+    titleA: "Des agents qui travaillent",
+    titleB: "même sans vous",
+    subtitle:
+      "Planification à vos horaires, exécution en arrière-plan, approbations par action et replay pas à pas : une délégation qui dure, pas seulement dans le chat.",
+    intro:
+      "Jusqu'ici l'agent ne travaillait que pendant que vous étiez dans le chat. Maintenant vous décidez jusqu'où il va : vous lui donnez un plan, il l'exécute aux moments que vous choisissez, affiche chaque action sur son échelle d'autonomie et s'arrête pour demander l'approbation là où les effets réels vous appartiennent. Et si quelque chose tourne mal, le Replay vous permet de refaire défiler l'exécution, pas à pas.",
+    homeLink: "Retour à l'accueil",
+    benefitsTitle: "Ce qui change",
+    benefits: [
+      {
+        title: "Travaille à vos heures",
+        text: "Chaque heure ou chaque jour : l'agent exécute les instructions que vous lui donnez, dans le fuseau horaire de votre choix, heure d'été comprise.",
+      },
+      {
+        title: "Échelle d'autonomie L0–L3",
+        text: "L0 observe, L1 propose, L2 agit et notifie, L3 autonome dans le budget : chaque niveau se décide par vous, jamais par le système.",
+      },
+      {
+        title: "Approbation là où ça compte",
+        text: "Les actions à effet réel — e-mails, commandes, factures — passent par vous : approuvez la proposition, modifiez-la ou refusez-la.",
+      },
+      {
+        title: "Replay complet",
+        text: "Chaque run reste dans le journal : défilez la chronologie pas à pas, avec le décompte exact de tokens et de crédits par run.",
+      },
+    ],
+    stepsTitle: "Comment ça marche",
+    steps: [
+      {
+        title: "Créez la planification",
+        text: "Choisissez l'agent, écrivez les instructions et le calendrier (preset ou cron avancé) : les 5 prochaines exécutions s'affichent aussitôt.",
+      },
+      {
+        title: "Définissez l'autonomie",
+        text: "Par défaut : lecture libre, écriture soumise à approbation. Après 10 approbations consécutives sans modification, le système suggère la promotion en L2 — mais vous décidez toujours.",
+      },
+      {
+        title: "Regardez, puis repassez",
+        text: "Mission Control montre l'état des runs en direct et le Replay vous fait repasser chaque étape après coup.",
+      },
+    ],
+    highlightsTitle: "En bref",
+    relatedTitle: "Autres capacités",
+    ctaTitle: "Essayez l'autonomie",
+    ctaText:
+      "Activez un agent, créez votre première planification et testez-la aussitôt avec un run manuel.",
+    ctaLabel: "Voir les agents",
+    ctaHref: "/agents",
   },
 };
 

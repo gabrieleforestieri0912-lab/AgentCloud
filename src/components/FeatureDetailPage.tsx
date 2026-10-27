@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   MessagesSquare,
   PlugZap,
+  Timer,
 } from "lucide-react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
@@ -27,6 +28,7 @@ import type { FeatureDetailContent, FeatureSlug } from "@/lib/i18n/featureDetail
 // Icone allineate per slug con la sezione Funzionalità della home.
 const ICONS: Record<FeatureSlug, LucideIcon> = {
   agents: Bot,
+  "agents-autonomous": Timer,
   integrations: PlugZap,
   chat: MessagesSquare,
   dashboard: LayoutDashboard,

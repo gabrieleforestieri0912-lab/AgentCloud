@@ -15,6 +15,7 @@ import { reveal, enter } from "@/lib/motion";
 import { motion } from "framer-motion";
 import {
   Bot,
+  Timer,
   PlugZap,
   MessagesSquare,
   LayoutDashboard,
@@ -26,7 +27,7 @@ import { AGENTS } from "@/lib/agents";
 import { FEATURE_PATHS, FEATURE_SLUGS } from "@/lib/i18n/featureDetails";
 
 // Icone allineate per indice con `dict.features.items`.
-const FEATURE_ICONS = [Bot, PlugZap, MessagesSquare, LayoutDashboard];
+const FEATURE_ICONS = [Bot, Timer, PlugZap, MessagesSquare, LayoutDashboard];
 
 export default function FeaturesSection() {
   const { dict } = useLanguage();
