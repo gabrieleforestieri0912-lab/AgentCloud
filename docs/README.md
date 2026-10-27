@@ -14,6 +14,7 @@ Piattaforma di **agenti AI** per le aziende: marketplace di agenti pronti al lan
 - 🛡️ **Rate limiting distribuito** — Supabase (`rate_limits` + RPC), fail-open
 - 🔌 **Shopify OAuth multi-tenant** — App pubblica installabile da qualsiasi merchant (install/callback/webhooks, token cifrati AES-256-GCM)
 - 🔗 **Integrazioni generiche multi-tenant** — 7 provider (Notion, Slack, HubSpot, Google Sheets, GitHub, ClickUp, Asana) con OAuth e token cifrati in `tenant_integrations`; **10 app live** nel catalogo. Tool agente per GitHub/ClickUp/Asana (`lib/integrations/api-proxy.ts`) e Google Sheets (`lib/google/sheets.ts`) con chiamate **dirette** alle API: nessuna Edge Function proxy per le integrazioni
+- 🤖 **Agenti autonomi** — run in background, schedulazione cron (pg_cron + pg_net su Supabase), Autonomy Ladder L0–L3 con approvazioni umane, Replay passo-passo + Mission Control, orchestrazione multi-agente (vedi [docs/autonomous-agents.md](docs/autonomous-agents.md))
 
 ## Stack
 
@@ -84,7 +85,9 @@ Esegui lo schema scelto (Supabase SQL Editor o `supabase db push`) — **riesegu
 
 Tutta la documentazione del progetto è raccolta in **`docs/`**:
 
-- **[docs/PROJECT.md](docs/PROJECT.md)** — architettura complessiva, routes, stack tecnologico, billing, rate limiting, env vars
+- **[docs/README.md](docs/README.md)** — indice e funzionalità
+- **[docs/autonomous-agents.md](docs/autonomous-agents.md)** — agenti autonomi: worker, schedulazione cron, Autonomy Ladder, approvazioni, Replay/Mission Control, multi-agente, setup Supabase (pg_cron/pg_net + vault) e env su Vercel
+- **[docs/PROJECT.md](docs/PROJECT.md)** - architettura complessiva, routes, stack tecnologico, billing, rate limiting, env vars
 - **[docs/ECOSYSTEM.md](docs/ECOSYSTEM.md)** — architettura dell'ecosistema multi-piattaforma (Web, Mobile Flutter, Chrome Extension, CLI)
 - **[docs/installazione.md](docs/installazione.md)** — installazione della CLI e risoluzione dei problemi per sistema operativo (Node troppo vecchio, EACCES, PATH, proxy, Windows/WSL2)
 - **[docs/AGENT_CATALOG.md](docs/AGENT_CATALOG.md)** — catalogo completo degli agenti AI e relative capacità
