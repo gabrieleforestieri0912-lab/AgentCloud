@@ -136,7 +136,7 @@ export default function AccountClient({
   return (
     <div className="space-y-6">
       {/* Profilo */}
-      <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
+      <div id="profile" className="scroll-mt-24 rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <div className="flex items-start gap-4">
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand-500/15 text-brand-300 text-lg font-bold">
             <span>{initials}</span>
@@ -209,7 +209,7 @@ export default function AccountClient({
       </div>
 
       {/* Piano */}
-      <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
+      <div id="plan" className="scroll-mt-24 rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h3 className="flex items-center gap-2 text-lg font-bold text-white">
           <CreditCard size={16} className="text-brand-400" />
           {dict.chat.accountPlanBilling}
@@ -234,7 +234,7 @@ export default function AccountClient({
       </div>
 
       {/* Connessioni */}
-      <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
+      <div id="connections" className="scroll-mt-24 rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h3 className="flex items-center gap-2 text-lg font-bold text-white">
           <Plug size={16} className="text-purple-400" />
           {dict.chat.accountConnections}
@@ -266,7 +266,7 @@ export default function AccountClient({
       </div>
 
       {/* Sicurezza */}
-      <div className="rounded-2xl border border-white/5 bg-neutral-900 p-6">
+      <div id="security" className="scroll-mt-24 rounded-2xl border border-white/5 bg-neutral-900 p-6">
         <h3 className="flex items-center gap-2 text-lg font-bold text-white">
           <Shield size={16} className="text-emerald-400" />
           {dict.chat.accountSecurity}
@@ -282,7 +282,7 @@ export default function AccountClient({
       </div>
 
       {/* Danger zone */}
-      <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
+      <div id="danger" className="scroll-mt-24 rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
         <h3 className="flex items-center gap-2 text-lg font-bold text-red-300">
           <Trash2 size={16} />
           {dict.chat.accountDangerZone}
