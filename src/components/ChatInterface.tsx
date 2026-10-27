@@ -453,6 +453,24 @@ export default function ChatInterface({
     return out;
   }, [conversations]);
 
+  /** File generati nelle conversazioni DEL PROGETTO selezionato: sono il
+      "contesto" mostrato nella home del progetto (a destra dell'input). */
+  const projectFiles = useMemo(() => {
+    if (!selectedProjectId) return [];
+    const out: { convId: string; record: ChatFileRecord }[] = [];
+    for (const c of conversations) {
+      if (c.deleted_at || c.projectId !== selectedProjectId) continue;
+      for (const m of c.messages) {
+        if (m.role !== "assistant" || !m.files) continue;
+        for (const f of m.files) {
+          if (!f.versions || f.versions.length === 0) continue;
+          out.push({ convId: c.id, record: f });
+        }
+      }
+    }
+    return out;
+  }, [conversations, selectedProjectId]);
+
   /** Apri un artefatto: vai alla sua conversazione e apri l'anteprima. */
   function openArtifact(convId: string, slug: string) {
     if (convId !== activeId) switchConversation(convId);
@@ -2841,6 +2859,91 @@ export default function ChatInterface({
   // `align` serve ad ancorare il menu: a destra per il picker esterno (con
   // `left-0` il menu w-72 uscirebbe dal contenitore), a sinistra per quello
   // nella toolbar, che è sulla sinistra.
+  /** Input della chat (budget token, drop, textarea, toolbar con "+" e
+      selettore agente): identifico in una funzione perché lo stesso identico
+      blocco vive sia nella home della chat vuota sia nella home del
+      progetto — l'utente deve trovare lo stesso input ovunque. */
+  const renderChatInput = () => (
+    <div>
+      {/* Budget di token: anche nella chat vuota l'utente deve
+          vedere quanto gliene resta. */}
+      {tokenBudgetLine && (
+        <TokenBudgetLine
+          ratio={tokenBudgetLine.ratio}
+          level={tokenBudgetLine.level}
+          text={tokenBudgetLine.text}
+        />
+      )}
+      <div
+        onDragEnter={attach.onDragEnter}
+        onDragOver={attach.onDragOver}
+        onDragLeave={attach.onDragLeave}
+        onDrop={attach.makeDrop(attachLabels)}
+      >
+        <div className="relative">
+          <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
+          <AttachmentChips
+            items={attach.attachments}
+            onRemove={attach.remove}
+            removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
+            imageAlt={dict.common.imageAttached}
+          />
+          {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
+          <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+            <LinkAwareTextarea
+              inputRef={inputRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onPaste={attach.makePaste(attachLabels)}
+              placeholder={dict.chat.placeholder}
+              rows={2}
+              wrapperClassName="w-full"
+              className="px-4 pt-3 pb-16"
+              style={{ minHeight: "84px", maxHeight: "280px" } as React.CSSProperties}
+            />
+            {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
+            <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm rounded-b-2xl">
+              <ChatPlusMenu
+                labels={plusLabels}
+                disabled={isTyping}
+                onFiles={(files) => attach.addFiles(files, attachLabels)}
+                onScreenshot={(file) => attach.addFiles([file], attachLabels)}
+                projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+                onSelectProject={addToProject}
+                repos={githubRepos}
+                activeRepo={activeGithubRepo}
+                onSelectRepo={selectGithubRepo}
+                onUnlinkRepo={unlinkGithubRepo}
+                onLinkRepo={linkGithubRepo}
+                githubConnected={githubConnected}
+                webSearch={webSearchEnabled}
+                onToggleWebSearch={setWebSearchEnabled}
+              />
+              {renderAgentPicker("left")}
+              <div className="flex-1 flex items-center justify-end gap-2">
+                <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
+                <button
+                  onClick={handleSend}
+                  disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
+                  aria-label={dict.chat.sendMessage}
+                  title={dict.chat.sendMessage}
+                  className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
+                    (!input.trim() && attach.attachments.length === 0) || isTyping || !activeId
+                      ? "bg-neutral-800 text-neutral-600 shadow-none"
+                      : "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_16px_rgba(3,139,254,0.45),0_4px_12px_rgba(0,0,0,0.3)] hover:brightness-110 hover:scale-105 hover:shadow-[0_0_22px_rgba(3,139,254,0.6),0_4px_12px_rgba(0,0,0,0.3)] active:scale-95"
+                  }`}
+                >
+                  <ArrowUp size={18} strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderAgentPicker = (align: "left" | "right") => (
     <div className="relative shrink-0" data-onboard="agent-picker">
       {/* Bottone con avatar + nome dell'agente. */}
@@ -3685,7 +3788,102 @@ export default function ChatInterface({
         {/* ── Chat panel ────────────────────────────────────── */}
         {sidebarView === "chat" && (
         <AnimatePresence mode="wait" initial={false}>
-          {messages.length === 0 && !isTyping ? (
+          {/* ── Project home: progetto selezionato e chat attiva vuota.
+              Come i Progetti di Claude: titolo del progetto, lo stesso input
+              della chat (un solo sorgente), le chat recenti del progetto e a
+              destra le card Istruzioni + Contesto (file del progetto). */}
+          {sidebarView === "chat" && selectedProjectId && messages.length === 0 && !isTyping ? (
+            (() => {
+              const project = projects.find((p) => p.id === selectedProjectId);
+              const projectChats = conversations.filter(
+                (c) => c.projectId === selectedProjectId && !c.deleted_at && c.messages.length > 0,
+              );
+              return (
+                <motion.div
+                  key="project-home"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.15 } }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="relative flex flex-1 min-h-0 gap-6 px-4 pt-16 pb-4 sm:px-6"
+                >
+                  {/* Colonna principale: titolo, input, recenti */}
+                  <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6 truncate">
+                      {project?.name ?? dict.chat.projects}
+                    </h2>
+                    <div className="w-full max-w-3xl">
+                      {renderChatInput()}
+                    </div>
+                    <div className="mt-8 w-full max-w-3xl">
+                      <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                        {dict.chat.projectRecent}
+                      </p>
+                      <div className="space-y-0.5">
+                        {projectChats.map((conv) => (
+                          <button
+                            key={conv.id}
+                            onClick={() => switchConversation(conv.id)}
+                            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-neutral-400 transition-all hover:bg-white/[0.03] hover:text-white"
+                          >
+                            <MessageSquare size={12} className="shrink-0 text-neutral-500" />
+                            <span className="min-w-0 flex-1 truncate font-medium">{conv.title}</span>
+                            <span className="shrink-0 text-[11px] text-neutral-600">{formatTime(conv.created_at)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Colonna destra (desktop): istruzioni e contesto */}
+                  <aside className="hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto lg:flex">
+                    {/* Istruzioni del progetto */}
+                    <section className="rounded-2xl border border-white/10 bg-neutral-900 p-4 shadow-xl shadow-black/25">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-bold text-white">{dict.chat.projectInstructions}</p>
+                        <button
+                          type="button"
+                          onClick={() => openProjectEdit(selectedProjectId)}
+                          aria-label={dict.chat.projectEdit}
+                          title={dict.chat.projectEdit}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-all hover:bg-white/10 hover:text-white"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      <p className="mt-2 text-xs leading-4 text-neutral-500">
+                        {project?.instructions ? project.instructions : dict.chat.projectInstructionsEmpty}
+                      </p>
+                    </section>
+                    {/* Contesto: i file generati nelle chat del progetto */}
+                    <section className="min-h-0 rounded-2xl border border-white/10 bg-neutral-900 p-4 shadow-xl shadow-black/25">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-white">{dict.chat.projectContext}</p>
+                        {projectFiles.length > 0 && (
+                          <span className="text-sm text-neutral-500">· {projectFiles.length}</span>
+                        )}
+                      </div>
+                      {projectFiles.length === 0 ? (
+                        <p className="mt-2 text-xs leading-4 text-neutral-500">{dict.chat.projectContextEmpty}</p>
+                      ) : (
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          {projectFiles.map(({ convId, record }) => (
+                            <FileCard
+                              key={record.slug}
+                              record={record}
+                              onOpen={(slug) => openArtifact(convId, slug)}
+                              onRetry={retryFile}
+                              disabled={isTyping}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  </aside>
+                </motion.div>
+              );
+            })()
+          ) : messages.length === 0 && !isTyping ? (
             <motion.div
               key="centered"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -3711,84 +3909,9 @@ export default function ChatInterface({
                 </h2>
               </div>
 
-              {/* Input ridotto centrato */}
+              {/* Input: direttamente la chat (identico, un solo sorgente). */}
               <div className="w-full max-w-3xl px-4">
-                {/* Budget di token: anche nella chat vuota l'utente deve
-                    vedere quanto gliene resta. */}
-                {tokenBudgetLine && (
-                  <TokenBudgetLine
-                    ratio={tokenBudgetLine.ratio}
-                    level={tokenBudgetLine.level}
-                    text={tokenBudgetLine.text}
-                  />
-                )}
-                <div
-                  onDragEnter={attach.onDragEnter}
-                  onDragOver={attach.onDragOver}
-                  onDragLeave={attach.onDragLeave}
-                  onDrop={attach.makeDrop(attachLabels)}
-                >
-                  <div className="relative">
-                    <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
-                    <AttachmentChips
-                      items={attach.attachments}
-                      onRemove={attach.remove}
-                      removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
-                      imageAlt={dict.common.imageAttached}
-                    />
-                    {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
-                    <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-                      <LinkAwareTextarea
-                        inputRef={inputRef}
-                        value={input}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyDown}
-                        onPaste={attach.makePaste(attachLabels)}
-                        placeholder={dict.chat.placeholder}
-                        rows={2}
-                        wrapperClassName="w-full"
-                        className="px-4 pt-3 pb-16"
-                        style={{ minHeight: "84px", maxHeight: "280px" } as React.CSSProperties}
-                      />
-                      {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
-                      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm rounded-b-2xl">
-                        <ChatPlusMenu
-                          labels={plusLabels}
-                          disabled={isTyping}
-                          onFiles={(files) => attach.addFiles(files, attachLabels)}
-                          onScreenshot={(file) => attach.addFiles([file], attachLabels)}
-                          projects={projects.map((p) => ({ id: p.id, name: p.name }))}
-                          onSelectProject={addToProject}
-                          repos={githubRepos}
-                          activeRepo={activeGithubRepo}
-                          onSelectRepo={selectGithubRepo}
-                          onUnlinkRepo={unlinkGithubRepo}
-                          onLinkRepo={linkGithubRepo}
-                          githubConnected={githubConnected}
-                          webSearch={webSearchEnabled}
-                          onToggleWebSearch={setWebSearchEnabled}
-                        />
-                        {renderAgentPicker("left")}
-                        <div className="flex-1 flex items-center justify-end gap-2">
-                          <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
-                          <button
-                            onClick={handleSend}
-                            disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
-                            aria-label={dict.chat.sendMessage}
-                            title={dict.chat.sendMessage}
-                            className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
-                              (!input.trim() && attach.attachments.length === 0) || isTyping || !activeId
-                                ? "bg-neutral-800 text-neutral-600 shadow-none"
-                                : "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_16px_rgba(3,139,254,0.45),0_4px_12px_rgba(0,0,0,0.3)] hover:brightness-110 hover:scale-105 hover:shadow-[0_0_22px_rgba(3,139,254,0.6),0_4px_12px_rgba(0,0,0,0.3)] active:scale-95"
-                            }`}
-                          >
-                            <ArrowUp size={18} strokeWidth={2.5} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {renderChatInput()}
               </div>
 
               {/* Suggerimenti: chip propri della chat, più specifici di quelli
