@@ -1,5 +1,15 @@
 # Deployment sicuro su Cloudflare Workers (piano Free)
 
+> **Stato attuale (ottobre 2026): la produzione gira su Vercel.**
+> Il progetto ha rimigrato su Vercel: le variabili d'ambiente vanno salvate
+> anche lì (dashboard Vercel o `vercel env add <nome> production`), perché
+> l'environment di produzione vero è quello di Vercel, non `.env`.
+> **Tutto il contenuto Cloudflare di questa pagina si conserva di proposito**
+> (`wrangler.jsonc`, `open-next.config.ts`, `scripts/safe-deploy.mjs`,
+> `scripts/check-cloudflare.mjs`, gli script `deploy`/`deploy:publish` in
+> `package.json`): su Cloudflare si potrebbe tornare, quindi niente va
+> eliminato né "ripulito" come obsoleto.
+
 ## Il problema
 
 L'account è sul **piano Workers Free**: il limite è **10 ms di CPU per

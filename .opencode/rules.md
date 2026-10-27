@@ -37,6 +37,31 @@ Vincoli:
 
 ---
 
+## 1-bis. La produzione è su Vercel; le configurazioni Cloudflare si conservano
+
+Il progetto **ha rimigrato su Vercel**: la produzione gira lì, non più su
+Cloudflare Workers. Da qui tre regole permanenti:
+
+1. **Ogni variabile d'ambiente va salvata anche su Vercel.** Quando aggiungi
+   o modifichi una variabile (in `.env`/`.env.local`, in un nuovo file di codice
+   o in `docs/PROJECT.md` → Environment Variables), la rispecchi in Vercel
+   (dashboard o `vercel env add <nome> production`): un env var che esiste solo
+   in locale è un deploy che parte ma non funziona — l'environment vero della
+   produzione è quello di Vercel, non `.env`.
+2. **Le configurazioni Cloudflare NON si eliminano.** `wrangler.jsonc`,
+   `open-next.config.ts`, `scripts/safe-deploy.mjs`, `scripts/check-cloudflare.mjs`,
+   `wrangler` tra le devDependencies e i contenuti di `docs/DEPLOY.md` restano
+   intatti anche se la produzione è su Vercel: potrebbe tornarci in futuro.
+   Non rimuoverle, non "pulirle", non riscriverle come se fossero obsolete.
+3. **Deploy destinazione: Vercel.** Gli script `deploy` e `deploy:publish` in
+   `package.json` puntano ancora a Cloudflare (volontariamente): non si
+   commettano su `main` manutenzioni pensate solo per Cloudflare, e un deploy
+   di produzione va fatto con il canale Vercel (dashboard o `vercel` CLI).
+   Se serve introdurre uno script deploy Vercel, si aggiunge *di fianco*, non
+   al posto di quello esistente.
+
+---
+
 ## 2. I test che crei vengono eliminati quando passano
 
 I test in questo repository sono uno strumento di verifica usa-e-getta, non un
