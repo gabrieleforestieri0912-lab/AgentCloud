@@ -38,6 +38,7 @@ import {
   Archive,
   RotateCcw,
   MoreVertical,
+  Pin,
   Square,
   Share2,
   Link2,
@@ -188,6 +189,9 @@ type LocalConversation = {
   shareToken?: string;
   // Progetto di appartenenza (organizzazione locale, come i Projects di Claude).
   projectId?: string;
+  // Chat fissata in cima all'elenco della sidebar: persistente insieme alla
+  // conversazione, le fissate precedono sempre le altre a parità di ordine.
+  pinned?: boolean;
   // Chat fantasma (modalità incognito): questa conversazione vive solo in
   // memoria. NON viene mai scritta in localStorage, non viene inviata al
   // backend per essere conservata e non genera notifiche né log.
@@ -1016,6 +1020,29 @@ export default function ChatInterface({
         a.category.toLowerCase().includes(q),
     );
   }, [agentSearch, selectableAgents]);
+
+  /** Conversazioni visibili nella sidebar: stesse regole di prima (archivio e
+      filtro progetto) ma con le chat fissate sempre per prime, subito sopra
+      le altre così restano raggiungibili a un colpo d'occhio. */
+  const visibleConversations = useMemo(() => {
+    const list = conversations.filter(
+      (c) =>
+        (showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at) &&
+        (!selectedProjectId || c.projectId === selectedProjectId),
+    );
+    // Sort stabile: solo le fissate risalgono, il resto conserva l'ordine.
+    return list
+      .map((c, i) => ({ c, i }))
+      .sort((a, b) => Number(!!b.c.pinned) - Number(!!a.c.pinned) || a.i - b.i)
+      .map(({ c }) => c);
+  }, [conversations, showArchived, selectedProjectId]);
+
+  /** Fissa o sfissa una conversazione in cima all'elenco della sidebar. */
+  function toggleConversationPin(convId: string) {
+    setConversations((prev) =>
+      prev.map((c) => (c.id === convId ? { ...c, pinned: !c.pinned } : c)),
+    );
+  }
 
   /** Cambia l'agente della chat: il nuovo SOSTITUISCE il precedente (un solo
       agente per chat), mai in aggiunta. Il cambio resta NELLA STESSA
@@ -3088,6 +3115,40 @@ export default function ChatInterface({
           </button>
         </nav>
 
+        {/* Progetti: sempre visibili nella sidebar (non richiedono di aprire la
+            vista dedicata), così uno appena creato si vede subito. Click =
+            filtro delle conversazioni su quel progetto; ricliccare il progetto
+            attivo cancella il filtro. È solo un promemoria compatto: gestione
+            completa nella vista "Progetti". */}
+        {projects.length > 0 && (
+          <div className="px-2.5 pb-1">
+            <div className="max-h-40 overflow-y-auto space-y-0.5">
+              {projects.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    const turningOn = selectedProjectId !== p.id;
+                    setSelectedProjectId(turningOn ? p.id : null);
+                    if (turningOn) setSidebarView("chat");
+                    setMobileSidebarOpen(false);
+                  }}
+                  className={`flex h-8 w-full items-center gap-2 rounded-lg px-2.5 text-xs font-medium transition-all ${
+                    selectedProjectId === p.id
+                      ? "bg-brand-500/15 text-brand-300"
+                      : "text-neutral-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <Folder size={12} className="shrink-0" />
+                  <span className="min-w-0 flex-1 truncate text-left">{p.name}</span>
+                  <span className="shrink-0 text-[10px] text-neutral-600">
+                    {conversations.filter((c) => c.projectId === p.id && !c.deleted_at).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Conversations list */}
         <div data-onboard="conversations" className="flex-1 overflow-y-auto px-2.5 py-2 space-y-0.5">
           <div className="flex items-center justify-between px-3 py-2">
@@ -3101,13 +3162,12 @@ export default function ChatInterface({
               {showArchived ? dict.chat.activeTab : dict.chat.archived}
             </button>
           </div>
-          {conversations.filter((c) => (showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at) && (!selectedProjectId || c.projectId === selectedProjectId)).length === 0 ? (
+          {visibleConversations.length === 0 ? (
             <p className="text-xs text-neutral-600 px-3 py-6 text-center">
               {showArchived ? dict.chat.noArchivedConversations : dict.chat.noConversations}
             </p>
           ) : (
-            conversations
-              .filter((c) => (showArchived ? c.archived_at && !c.deleted_at : !c.archived_at && !c.deleted_at) && (!selectedProjectId || c.projectId === selectedProjectId))
+            visibleConversations
               .map((conv) => (
               <div
                 key={conv.id}
@@ -3151,6 +3211,9 @@ export default function ChatInterface({
                   ) : (
                     <span className="truncate flex-1 font-medium">{conv.title}</span>
                   )}
+                  {conv.pinned && (
+                    <Pin size={10} className="shrink-0 text-brand-400" fill="currentColor" aria-label={dict.chat.pinToTop} />
+                  )}
                   <div className="relative shrink-0">
                     <button
                       onClick={(e) => {
@@ -3182,6 +3245,14 @@ export default function ChatInterface({
                           role="menu"
                           className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-white/10 bg-neutral-900/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl"
                         >
+                          <button
+                            role="menuitem"
+                            onClick={(e) => { e.stopPropagation(); toggleConversationPin(conv.id); }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-all"
+                          >
+                            <Pin size={12} className={conv.pinned ? "text-brand-400" : ""} fill={conv.pinned ? "currentColor" : "none"} />
+                            {conv.pinned ? dict.chat.unpinFromTop : dict.chat.pinToTop}
+                          </button>
                           <button
                             role="menuitem"
                             onClick={(e) => { e.stopPropagation(); startRename(conv.id, conv.title); }}
