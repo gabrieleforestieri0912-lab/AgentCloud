@@ -209,7 +209,11 @@ create policy "Service role can manage agent_run_steps"
   using (true)
   with check (true);
 
--- Immutabilità assoluta della journal: nessuna modifica, nemmeno dal server.
+-- Immutabilità della journal con eccezione "fill-once" (Fase 2): il runner
+-- pre-inserisce il passo di un tool come CLAIM di idempotenza (output NULL) e
+-- poi lo compila una sola volta con l'esito. Consentito SOLO il transito
+-- output NULL → NON NULL, con tutte le altre colonne identiche: ogni altra
+-- modifica resta vietata, nemmeno dal service_role.
 -- La retention (D9) elimina righe con DELETE, che resta consentita al
 -- service_role tramite la policy qui sopra.
 create or replace function public.reject_agent_run_step_update()
@@ -217,6 +221,20 @@ returns trigger
 language plpgsql
 as $$
 begin
+  if old.output is null
+     and new.output is not null
+     and new.id = old.id
+     and new.run_id = old.run_id
+     and new.tenant_id = old.tenant_id
+     and new.indice = old.indice
+     and new.tipo = old.tipo
+     and new.tool_name is not distinct from old.tool_name
+     and new.input is not distinct from old.input
+     and new.created_at = old.created_at
+     and new.crediti >= old.crediti
+  then
+    return new;
+  end if;
   raise exception 'agent_run_steps e'' immutabile (solo insert): %', tg_op;
 end;
 $$;

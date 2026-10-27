@@ -83,6 +83,10 @@ export const PUBLIC_PATHS = [
   // con `Authorization: Bearer $CRON_SECRET` / `$ADMIN_API_TOKEN`, quindi deve
   // essere raggiungibile senza sessione utente.
   "/api/billing/notify-expiring",
+  // Worker della coda agenti (Fase 2): stesso schema del cron qui sopra,
+  // autenticato dall'header `Bearer $CRON_SECRET` / `$ADMIN_API_TOKEN`.
+  // Prefisso esatto: NON apre le altre rotte sotto `/api/agents/...`.
+  "/api/agents/worker",
   // Admin API — autenticata con `Authorization: Bearer <ADMIN_API_TOKEN>`
   // dentro l'handler (nessuna sessione richiesta: il chiamante è uno script/server).
   "/api/admin/tenants",

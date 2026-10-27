@@ -199,6 +199,66 @@ exception
 end;
 $$;
 
+-- (L) Fill-once (Fase 2): il runner pre-inserisce il passo di un tool come
+--     claim di idempotenza (output NULL) e lo compila una sola volta. Deve
+--     riuscire la PRIMA compilazione, fallire la seconda e fallire anche una
+--     compilazione che altera i dati del claim (input/indice/tenant).
+do $$
+declare
+  v_claim uuid;
+  v_alters uuid;
+begin
+  insert into public.agent_run_steps
+    (run_id, tenant_id, indice, tipo, input, tool_name)
+  values ('20000000-0000-4000-8000-000000000002',
+          'bbbbbbbb-0000-4000-8000-000000000002', 7, 'tool',
+          '{"toolUseId":"t1","name":"web_search"}', 'web_search')
+  returning id into v_claim;
+
+  -- Prima (e unica) compilazione: ammessa dal trigger.
+  update public.agent_run_steps
+  set output = 'esito del tool', durata_ms = 12
+  where id = v_claim;
+
+  begin
+    update public.agent_run_steps
+    set output = 'seconda scrittura'
+    where id = v_claim;
+    raise exception 'FALLITO: doppia compilazione del passo accettata';
+  exception
+    when raise_exception then
+      if sqlerrm like 'FALLITO:%' then raise; end if;
+      raise notice 'PASS: fill-once (seconda scrittura respinta dal trigger)';
+  end;
+
+  -- Compilazione che altera i dati del claim: vietata, e il passo resta
+  -- compilabile in seguito (l'update rifiutato non consuma la fill).
+  insert into public.agent_run_steps
+    (run_id, tenant_id, indice, tipo, input, tool_name)
+  values ('20000000-0000-4000-8000-000000000002',
+          'bbbbbbbb-0000-4000-8000-000000000002', 8, 'tool',
+          '{"toolUseId":"t2","name":"web_search"}', 'web_search')
+  returning id into v_alters;
+
+  begin
+    update public.agent_run_steps
+    set output = 'con input alterato', input = '{"toolUseId":"t3"}'
+    where id = v_alters;
+    raise exception 'FALLITO: fill con input alterato accettata';
+  exception
+    when raise_exception then
+      if sqlerrm like 'FALLITO:%' then raise; end if;
+      raise notice 'PASS: fill-once non altera i dati del claim (update rifiutato)';
+  end;
+
+  -- Il rifiuto precedente non ha consumato la fill: ora si può compilare.
+  update public.agent_run_steps
+  set output = 'esito corretto'
+  where id = v_alters;
+  raise notice 'PASS: claim ancora compilabile dopo un update rifiutato';
+end;
+$$;
+
 -- -----------------------------------------------------------------------------
 -- Switch a tenant A (ruolo autenticato + JWT claims, come in produzione)
 -- -----------------------------------------------------------------------------

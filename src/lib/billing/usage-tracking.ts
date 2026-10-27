@@ -302,6 +302,55 @@ export async function recordUsageAndReportOverage(usage: UsageRecord): Promise<v
   });
 }
 
+/**
+ * Overage per i run in background (Fase 2), dove la riga `agent_runs` è
+ * ESISTENTE ed è già il record di consumo (D13): nessun INSERT come fa
+ * `recordUsage` — qui i token vengono scritti sulla riga del run a ogni
+ * checkpoint, e questo chiamante reporta solo la parte Stripe.
+ *
+ * Ordine chiamata: prima `finishRun`/`checkpointTotals` con i totali finali,
+ * poi questa funzione: il pool INCLUDE la riga di questo run, quindi il
+ * consumo degli altri va ottenuto sottraendo i token di QUESTO run.
+ * `idempotencyKey` è il runId: le ripetizioni (doppia chiusura, retry) non
+ * fatturano due volte.
+ */
+export async function reportOverageForExistingRun(usage: {
+  user_id: string;
+  agent_slug: string;
+  run_id: string;
+  tokens_input: number;
+  tokens_output: number;
+}): Promise<void> {
+  if (!usage.user_id || usage.user_id === "anonymous") return;
+
+  const userAgent = await getUserAgent(usage.user_id, usage.agent_slug);
+  const subscriptionId = userAgent?.stripe_subscription_id ?? null;
+  const stripeCustomerId = userAgent?.stripe_customer_id ?? null;
+  if (!subscriptionId || !stripeCustomerId || !isOverageBillingEnabled()) return;
+
+  const pool = await getTokenPoolForAgent(usage.user_id, usage.agent_slug);
+  const tokenLimit =
+    pool?.tokenLimit ??
+    (userAgent ? resolveTokenLimit(userAgent.config) : DEFAULT_TOKEN_LIMIT);
+  const runTokens = (usage.tokens_input || 0) + (usage.tokens_output || 0);
+  const usedBefore = Math.max(0, (pool?.used ?? 0) - runTokens);
+  const remainingAllowance = Math.max(0, tokenLimit - usedBefore);
+  const overageTokens = Math.max(0, runTokens - remainingAllowance);
+  if (overageTokens <= 0) return;
+
+  const storedItemId = userAgent?.config?.stripeSubscriptionItemId;
+  const meterItemId =
+    (typeof storedItemId === "string" && storedItemId.length > 0 ? storedItemId : null) ??
+    (await getOrCreateMeterItem(subscriptionId));
+  if (!meterItemId) return;
+
+  await reportOverageUsage({
+    stripeCustomerId,
+    overageTokens,
+    idempotencyKey: usage.run_id,
+  });
+}
+
 export function resolveTokenLimitCompat(_config: Record<string, unknown>): number {
   return Number.MAX_SAFE_INTEGER;
 }
