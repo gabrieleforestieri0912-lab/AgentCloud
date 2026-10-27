@@ -4,6 +4,7 @@ import {
   executeBackgroundRun,
   finalizeAbandonedRun,
 } from "@/lib/agents/background/runner";
+import { scanSchedules } from "@/lib/agents/background/scheduler";
 import {
   claimJob,
   completeJob,
@@ -13,12 +14,15 @@ import {
 } from "@/lib/agents/background/store";
 
 /**
- * POST+GET /api/agents/worker — consumatore della coda `agent_jobs` (D1).
+ * POST+GET /api/agents/worker — consumatore della coda `agent_jobs` (D1) e
+ * schedulatore degli `agent_schedules` (Fase 3).
  *
  * Invocato ogni minuto dal Cron Trigger di Cloudflare (custom-worker.ts →
  * `scheduled()`, header `Authorization: Bearer $CRON_SECRET`) o manualmente
  * con `Bearer $ADMIN_API_TOKEN`. Il worker:
  *
+ *  0. (Fase 3) avanza gli schedule dovuti: crea run+job per ogni schedule
+ *     attivo con `next_run_at <= now()` (CAS anti-doppio-tick);
  *  1. rivendica fino a `maxJobs` job con `claim_agent_job` (SKIP LOCKED +
  *     lease: un worker morto lascia il job agli altri dopo 180s);
  *  2. esegue il run (`executeBackgroundRun`);
@@ -44,11 +48,15 @@ function authorized(request: Request): boolean {
   const cronToken = process.env.CRON_SECRET;
   const adminToken = process.env.ADMIN_API_TOKEN;
   const authHeader = request.headers.get("authorization") || "";
-
+  // Vercel Cron invoca i suoi endpoint con questo header (non con Bearer):
+  // accettato SE il valore combacia con CRON_SECRET — stesso segreto, canale
+  // diverso (la produzione gira su Vercel, il cron può arrivare da lì).
+  const vercelCron = request.headers.get("x-vercel-cron-authorization") || "";
   return (
     (cronToken !== undefined &&
       cronToken !== "" &&
       authHeader === `Bearer ${cronToken}`) ||
+    (cronToken !== undefined && cronToken !== "" && vercelCron === cronToken) ||
     (adminToken !== undefined &&
       adminToken !== "" &&
       authHeader === `Bearer ${adminToken}`)
@@ -104,6 +112,10 @@ async function handle(request: Request): Promise<NextResponse> {
   }> = [];
   let claimed = 0;
 
+  // Fase 3: prima di consumare la coda, gli schedule dovuti generano i loro
+  // run. Fallito o vuoto, il worker prosegue comunque sui job esistenti.
+  const scan = await scanSchedules();
+
   while (claimed < maxJobs && Date.now() < deadline) {
     const job = await claimJob(workerId, leaseSeconds);
     if (!job) break;
@@ -153,7 +165,7 @@ async function handle(request: Request): Promise<NextResponse> {
     });
   }
 
-  return NextResponse.json({ ok: true, workerId, claimed, outcomes });
+  return NextResponse.json({ ok: true, workerId, claimed, outcomes, scan });
 }
 
 export async function GET(request: Request) {
