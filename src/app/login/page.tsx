@@ -496,20 +496,20 @@ export default function LoginPage() {
       {/* Costellazioni fluttuanti di app e agenti ai lati del form */}
       <HeroBubbles />
 
+      {/* Torna alla home — fissato in alto a sinistra della pagina.
+          Su questa pagina la navbar non è renderizzata. */}
+      <div className="absolute left-4 top-4 z-20 sm:left-6 sm:top-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/60 px-4 py-2 text-xs font-bold text-neutral-300 transition-colors hover:border-white/25 hover:text-white"
+        >
+          <Home size={14} className="text-brand-400" />
+          {dict.legal.terms.backHome}
+        </Link>
+      </div>
+
       <section className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-6 sm:py-10">
         <div className="w-full max-w-md">
-          {/* Torna alla home — su questa pagina la navbar non è renderizzata.
-              Allineato a sinistra, non centrato. */}
-          <div className="mb-6 flex justify-start">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/60 px-4 py-2 text-xs font-bold text-neutral-300 transition-colors hover:border-white/25 hover:text-white"
-            >
-              <Home size={14} className="text-brand-400" />
-              {dict.legal.terms.backHome}
-            </Link>
-          </div>
-
           <div className="mb-6 text-center">
             <h1 className="text-3xl font-bold tracking-tight text-white">
               {a.login.title}
