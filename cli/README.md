@@ -14,8 +14,19 @@ curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentClo
 ```
 
 Lo script verifica Node 20+, installa il pacchetto globale e controlla che il
-comando `agentcloud` risponda. Se Node manca, dice come installarlo (brew su
-macOS, nodesource su Ubuntu, nodejs.org per il resto).
+comando `agentcloud` risponda (`agentcloud --version`). Se Node manca o è
+troppo vecchio si ferma prima di `npm install` e dice come aggiornarlo (brew su
+macOS, nodesource su Ubuntu, nvm/fnm per il resto). Se `npm install` fallisce
+per permessi (EACCES), stampa direttamente le istruzioni per il prefisso
+utente o per nvm. Con l'opzione `--diagnose` stampa l'ambiente (OS, Node/npm,
+prefisso npm, PATH) da incollare nelle issue:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh -s --diagnose
+```
+
+I problemi d'installazione (permessi, PATH, proxy, Windows/WSL2…) sono trattati
+in [docs/installazione.md](../docs/installazione.md).
 
 Via npm (tutti i sistemi):
 
@@ -267,6 +278,7 @@ AGENTCLOUD_TOKEN=act_... agentcloud run <slug> "ciao"
 
 ```bash
 agentcloud --version
+agentcloud doctor               # diagnostica ambiente (issue): OS, Node/npm, prefisso, PATH
 agentcloud whoami
 agentcloud agents list
 agentcloud agents catalog

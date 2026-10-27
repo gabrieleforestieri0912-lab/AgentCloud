@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { execSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { clearCredentials, loadConfig, loadCredentials, saveConfig } from "./config.js";
@@ -436,6 +439,28 @@ program.command("config").description("Mostra o aggiorna configurazione non sens
   console.log(`Agente predefinito: ${config.defaultAgent}`);
   console.log(`Credenziali utente: ${loadCredentials() ? "presenti" : "assenti"}`);
   console.log("Token admin: solo AGENTCLOUD_ADMIN_TOKEN, mai salvato dalla CLI.");
+});
+
+// Diagnosi dell'ambiente, da incollare nelle issue GitHub: versioni, percorsi
+// e permessi, mai segreti (nessun token né variabile d'ambiente sensibile).
+// Stampa solo ciò che serve a riprodurre un problema d'installazione o di PATH.
+program.command("doctor").description("Stampa l'ambiente per la segnalazione di problemi (versioni, percorsi, permessi; senza segreti)").action(() => {
+  const sh = (cmd: string): string => {
+    try { return execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { return "(non disponibile)"; }
+  };
+  console.log("Diagnostica AgentCloud — incolla tutto questo nella issue.");
+  console.log(`OS: ${os.platform()} ${os.release()} (${os.arch()})`);
+  console.log(`Node: ${process.versions.node} — ${process.execPath}`);
+  console.log(`npm: ${sh("npm -v")}`);
+  console.log(`npm prefix: ${sh("npm config get prefix")}`);
+  console.log(`npm cache: ${sh("npm config get cache")}`);
+  console.log(`PATH: ${process.env.PATH || "(vuota)"}`);
+  console.log(`HOME: ${os.homedir()}`);
+  let homeWritable = "sì";
+  try { fs.accessSync(os.homedir(), fs.constants.W_OK); } catch { homeWritable = "NO"; }
+  console.log(`HOME scrivibile: ${homeWritable}`);
+  console.log(`SHELL: ${process.env.SHELL || "(non impostata)"}`);
+  console.log("Nota: il PATH può contenere nomi di cartelle personali — controlla prima di condividere.");
 });
 
 // Senza argomenti: TUI a schermo intero (alternate screen) che apre subito

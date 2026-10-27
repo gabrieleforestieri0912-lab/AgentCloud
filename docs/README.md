@@ -86,6 +86,7 @@ Tutta la documentazione del progetto è raccolta in **`docs/`**:
 
 - **[docs/PROJECT.md](docs/PROJECT.md)** — architettura complessiva, routes, stack tecnologico, billing, rate limiting, env vars
 - **[docs/ECOSYSTEM.md](docs/ECOSYSTEM.md)** — architettura dell'ecosistema multi-piattaforma (Web, Mobile Flutter, Chrome Extension, CLI)
+- **[docs/installazione.md](docs/installazione.md)** — installazione della CLI e risoluzione dei problemi per sistema operativo (Node troppo vecchio, EACCES, PATH, proxy, Windows/WSL2)
 - **[docs/AGENT_CATALOG.md](docs/AGENT_CATALOG.md)** — catalogo completo degli agenti AI e relative capacità
 - **[docs/integrations-setup.md](docs/integrations-setup.md)** — setup OAuth dei 7 provider generici, tool agente e chiamate dirette alle API (nessun Edge proxy)
 - **[docs/FEATURE_FLAGS.md](docs/FEATURE_FLAGS.md)** — verticali, configurazioni e feature flags di AgentCloud
