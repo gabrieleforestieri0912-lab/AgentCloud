@@ -27,6 +27,7 @@ export const NOTIFICATION_CATEGORIES: NotificationCategory[] = [
 
 /** Categoria di ogni kind di notifica agente (db → UI/settings). */
 const KIND_CATEGORY: Record<string, NotificationCategory> = {
+  approval_requested: "runs",
   file_created: "runs",
   product_created: "commerce",
   discount_created: "commerce",
@@ -72,6 +73,8 @@ export function dedupeKeyFor(
     return null;
   };
   switch (kind) {
+    case "approval_requested":
+      return pick("tool");
     case "file_created":
       return pick("filename");
     case "lead_submitted":

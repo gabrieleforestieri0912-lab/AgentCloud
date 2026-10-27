@@ -155,6 +155,8 @@ export interface AgentApprovalRow {
   decisa_da: string | null;
   decisa_il: string | null;
   modificata: boolean;
+  /** Fase 4: true dopo che la ripresa del run ne ha eseguito l'azione. */
+  consumed: boolean;
   created_at: string;
 }
 

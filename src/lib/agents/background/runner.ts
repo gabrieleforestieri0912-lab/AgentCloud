@@ -53,6 +53,17 @@ import {
   isMicrosoftConnected,
   isOutlookConnected,
 } from "@/lib/integrations/microsoft/tenant";
+import {
+  isSideEffectTool,
+  resolveAutonomy,
+  recordApprovalOutcome,
+} from "@/lib/agents/autonomy";
+import {
+  createPendingApproval,
+  consumeApprovedApproval,
+} from "./approvals";
+import { sendApprovalRequestedEmail } from "./approval-email";
+import type { AgentApprovalRow } from "@/types/agents-db";
 import type { AgentRunRow, AgentRunStepRow } from "@/types/agents-db";
 import { maskJson, maskSecrets, truncateForStep } from "./mask";
 import * as store from "./store";
@@ -72,8 +83,44 @@ export const INTERRUPTED_TOOL_TEXT =
   "Il tool non viene rieseguito per evitare effetti duplicati: " +
   "controlla l'esito manualmente prima di riprovare.]";
 
+/** Fase 4 — il journal registra il tool con effetti bloccato da autonomia L0. */
+export const BLOCKED_BY_L0_TEXT =
+  "[bloccato da autonomia L0 — azione con effetti collaterali non eseguita. " +
+  "Questo è ciò che avrei fatto: chiedi all'utente di alzare il livello " +
+  "di autonomia, oppure procedi con soli tool di lettura.]";
+
+/**
+ * Notifica di approvazione richiesta (D7): in-app (agent_notifications) + email
+ * via Resend. TUTTO best-effort: il run è già in waiting_approval, la notifica
+ * non può più bloccarlo.
+ */
+async function notifyApprovalRequested(
+  run: AgentRunRow,
+  approval: AgentApprovalRow,
+): Promise<void> {
+  try {
+    await createAgentNotification({
+      userId: run.user_id,
+      agentSlug: run.agent_slug,
+      kind: "approval_requested",
+      params: {
+        runId: run.id,
+        tool: approval.azione.tool,
+        label: approval.azione.label ?? approval.azione.tool,
+      },
+    });
+  } catch {
+    // best-effort
+  }
+  try {
+    await sendApprovalRequestedEmail(run, approval);
+  } catch {
+    // best-effort
+  }
+}
+
 export type RunResult = {
-  outcome: "succeeded" | "failed" | "requeue" | "noop";
+  outcome: "succeeded" | "failed" | "requeue" | "noop" | "waiting_approval";
   /** true → il job può essere riprovato con backoff dal worker. */
   retryable?: boolean;
   error?: string;
@@ -362,13 +409,91 @@ export async function executeBackgroundRun(
   // ── passo 4: esecuzione dei tool mai partiti (crash tra LLM e claim) ──
   const executeToolStep = async (
     use: LLMToolUse,
-  ): Promise<{ ok: true; output: string } | { ok: false; reason: string; fatal?: boolean }> => {
+  ): Promise<
+    { ok: true; output: string }
+    | { ok: false; reason: string; fatal?: boolean }
+  > => {
+    // ── Fase 4: gate dell'Autonomy Ladder ───────────────────────────────
+    // L0: il tool con effetti NON parte; il journal registra "avrei fatto".
+    // L1: se c'è un'approvazione approvata da consumare viene eseguita (con
+    //     l'eventuale input modificato dall'utente); altrimenti il run si
+    //     ferma in `waiting_approval` con una_approvazione pending.
+    // L2/L3: esecuzione diretta (L2 notifica già via agent_notifications).
+    const autonomy = await resolveAutonomy(run.user_id, run.agent_slug, use.name);
+    if (autonomy.level === "L0" && isSideEffectTool(use.name)) {
+      // "avrei fatto": il passo del tool entra nel journal con l'esito
+      // di blocco, il modello lo legge e prosegue senza la scrittura.
+      const blocked = await store.insertStep({
+        runId,
+        tenantId,
+        indice: takeIndice(),
+        tipo: "tool",
+        input: maskJson({ toolUseId: use.id, name: use.name, args: use.input }),
+        toolName: use.name,
+        output: BLOCKED_BY_L0_TEXT,
+        crediti: 0,
+      });
+      if (!blocked.ok) {
+        if (blocked.reason !== "duplicate") lastIndice--;
+        return { ok: false, reason: blocked.reason, fatal: false };
+      }
+      logAudit("tool_blocked_l0", {
+        userId: run.user_id,
+        agent: run.agent_slug,
+        tool: use.name,
+        runId,
+        background: true,
+      });
+      return { ok: true, output: BLOCKED_BY_L0_TEXT };
+    }
+
+    // Approvazione già decisa per questo tool in QUESTO run: si consuma.
+    const approvalRow =
+      autonomy.level === "L1"
+        ? await consumeApprovedApproval(runId, tenantId, use.name)
+        : null;
+    let overrideInput: Record<string, unknown> | null = null;
+    let approvalToTrack: AgentApprovalRow | null = null;
+    if (autonomy.level === "L1" && approvalRow) {
+      if (approvalRow.stato === "edited" && approvalRow.azione.input) {
+        overrideInput = approvalRow.azione.input as Record<string, unknown>;
+      }
+      approvalToTrack = approvalRow;
+    }
+
+    if (autonomy.level === "L1" && !approvalRow) {
+      // Nessuna decisione: pending + run in attesa di umanità.
+      const label = await createPendingApproval(
+        runId,
+        tenantId,
+        run.agent_slug,
+        {
+          stepId: null,
+          toolName: use.name,
+          input: (maskJson(use.input) as Record<string, unknown>) ?? {},
+          label: undefined,
+        },
+      );
+      if (!label) {
+        // Senza approvazione UNA scrittura L1 NON si esegue in autonomia:
+        // errore transitorio, riprova alla prossima ripresa (fail-safe).
+        return { ok: false, reason: "approval_unavailable", fatal: false };
+      }
+      await store.checkpointTotals(runId, totals());
+      await store.setRunWaitingApproval(runId, totals());
+      await notifyApprovalRequested(run, label);
+      return { ok: false, reason: "waiting_approval", fatal: false };
+    }
+
+    const actualUse: LLMToolUse = overrideInput
+      ? { ...use, input: overrideInput }
+      : use;
     const claimStep = await store.insertStep({
       runId,
       tenantId,
       indice: takeIndice(),
       tipo: "tool",
-      input: maskJson({ toolUseId: use.id, name: use.name, args: use.input }),
+      input: maskJson({ toolUseId: use.id, name: use.name, args: actualUse.input }),
       toolName: use.name,
       output: null,
       crediti: 0,
@@ -385,7 +510,7 @@ export async function executeBackgroundRun(
     const toolStartedAt = now();
     let result: string;
     try {
-      result = await executeTool(use.name, use.input as Record<string, string>, {
+      result = await executeTool(actualUse.name, actualUse.input as Record<string, string>, {
         userId: run.user_id,
         tenantId,
       });
@@ -405,6 +530,16 @@ export async function executeBackgroundRun(
       return { ok: false, reason: `step_fill_failed: ${use.name}`, fatal: true };
     }
     toolCalls++;
+    // Approvazione consumata: il contatore D12 viene aggiornato (una approv-
+    // azione "modificata" lo azzera). Best-effort, mai fatale per il run.
+    if (approvalToTrack) {
+      await recordApprovalOutcome(
+        run.user_id,
+        run.agent_slug,
+        use.name,
+        approvalToTrack.modificata,
+      );
+    }
     // Notifiche/audit best-effort: non devono mai far fallire il run.
     try {
       const action = buildActionNotification(
@@ -446,6 +581,10 @@ export async function executeBackgroundRun(
       if (budgetBlocked) return budgetBlocked;
       const executed = await executeToolStep(use);
       if (!executed.ok) {
+        if (executed.reason === "waiting_approval") {
+          await store.checkpointTotals(runId, totals());
+          return { outcome: "waiting_approval" };
+        }
         return executed.fatal
           ? failFinal(executed.reason)
           : failRetryable(executed.reason);
@@ -534,6 +673,10 @@ export async function executeBackgroundRun(
     for (const use of response.toolUses) {
       const executed = await executeToolStep(use);
       if (!executed.ok) {
+        if (executed.reason === "waiting_approval") {
+          await store.checkpointTotals(runId, totals());
+          return { outcome: "waiting_approval" };
+        }
         return executed.fatal
           ? failFinal(executed.reason)
           : failRetryable(executed.reason);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X, ChevronDown, Sparkles, Blocks, AppWindow, CalendarClock } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X, ChevronDown, Sparkles, Blocks, AppWindow, CalendarClock, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import SidebarAccount from "./SidebarAccount";
 import type { AccountIdentity } from "@/lib/account-identity";
@@ -53,6 +53,7 @@ export default function DashboardShell({
     { href: "/dashboard", label: ds.navDashboard, icon: LayoutDashboard },
     { href: "/chat", label: ds.navChat, icon: MessageSquare },
     { href: "/dashboard/schedules", label: ds.navSchedules, icon: CalendarClock },
+    { href: "/dashboard/approvals", label: ds.navApprovals, icon: ShieldCheck },
     { href: "/agents", label: ds.navMarketplace, icon: Store },
     { href: "/cart", label: ds.navCart, icon: ShoppingCart },
     { href: "/dashboard/subscriptions", label: ds.navSubscriptions, icon: CreditCard },

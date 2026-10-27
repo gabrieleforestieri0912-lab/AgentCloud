@@ -21,6 +21,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { categoryForKind, dedupeKeyFor } from "@/lib/notification-rules";
 
 export type AgentNotificationKind =
+  | "approval_requested"
   | "file_created"
   | "product_created"
   | "discount_created"

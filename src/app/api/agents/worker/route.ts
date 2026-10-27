@@ -132,6 +132,10 @@ async function handle(request: Request): Promise<NextResponse> {
 
     if (result.outcome === "succeeded" || result.outcome === "noop") {
       await completeJob(job.id);
+    } else if (result.outcome === "waiting_approval") {
+      // Fase 4: il run attende una decisione umana. Il job si chiude SENZA
+      // bruciare tentativi: la decisione dell'utente creerà un job nuovo.
+      await completeJob(job.id);
     } else if (result.outcome === "requeue") {
       await requeueJob(
         job.id,

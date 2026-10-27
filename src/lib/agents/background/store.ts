@@ -184,6 +184,34 @@ export async function setRunQueued(
   }
 }
 
+/**
+ * Run in attesa di una decisione umana (Fase 4): tocca i soli stati vivi e
+ * totali; il job viene chiuso dal worker (nessun retry da bruciare), la
+ * decisione dell'utente rimette il run in coda con un nuovo job.
+ */
+export async function setRunWaitingApproval(
+  runId: string,
+  totals: RunTotals,
+): Promise<boolean> {
+  const client = db();
+  if (!client) return false;
+  try {
+    const { data, error } = await client
+      .from("agent_runs")
+      .update({ status: "waiting_approval", ...totals })
+      .eq("id", runId)
+      .in("status", ["queued", "running"])
+      .select("id");
+    if (error) {
+      console.error("agents: setRunWaitingApproval fallito", error.message);
+      return false;
+    }
+    return Boolean(data && data.length > 0);
+  } catch {
+    return false;
+  }
+}
+
 // ── journal dei passi ───────────────────────────────────────────────────
 
 export async function listSteps(runId: string): Promise<AgentRunStepRow[]> {
