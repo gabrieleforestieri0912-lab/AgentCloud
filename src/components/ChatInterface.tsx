@@ -2882,7 +2882,7 @@ export default function ChatInterface({
           />
           <div
             ref={agentDropdownRef}
-            className={`absolute bottom-full z-50 mb-2 w-72 rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl shadow-black/40 overflow-hidden ${
+            className={`absolute bottom-full z-50 mb-2 w-72 rounded-2xl border border-white/15 bg-neutral-800 shadow-2xl shadow-black/60 overflow-hidden ${
               align === "right" ? "right-0" : "left-0"
             }`}
           >
@@ -2921,10 +2921,11 @@ export default function ChatInterface({
                   {dict.chat.noAgentsAvailable}
                 </p>
               ) : (
-                <div className="max-h-52 overflow-y-auto">
-                  {/* Solo ~5 agenti visibili per limiti di spazio (l'utente medio
-                      ha pochi messaggi al giorno e non serve un elenco lungo a
-                      vista): il resto si trova scorrendo la barra. */}
+                <div className="max-h-40 overflow-y-auto">
+                  {/* Solo ~3 agenti a vista per limiti di spazio: l'utente ha un
+                      budget di 5 messaggi al giorno e non serve un elenco lungo.
+                      Tutti gli agenti disponibili si raggiungono scorrendo la
+                      barra di scorrimento, con ricerca sempre in cima. */}
                   {filteredAgents.length === 0 ? (
                     <p className="px-2 py-2 text-xs text-neutral-500 text-center">{dict.chat.noSearchResults}</p>
                   ) : (
