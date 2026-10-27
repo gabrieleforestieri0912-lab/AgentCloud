@@ -45,6 +45,7 @@ import {
   Copy,
   Check,
   Ghost,
+  Settings,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -57,6 +58,7 @@ import AppHeader from "./AppHeader";
 import InlineConnectCard from "@/components/InlineConnectCard";
 import InlineCartCard from "@/components/InlineCartCard";
 import AccountMenu from "@/components/AccountMenu";
+import SettingsDialog from "@/components/SettingsDialog";
 import LinkAwareTextarea from "@/components/LinkAwareTextarea";
 import ChatOnboarding from "./ChatOnboarding";
 import {
@@ -398,6 +400,9 @@ export default function ChatInterface({
   // Menu account: si apre dal bottone account in sidebar. Lo stato vive qui
   // perché la sidebar ristretta deve chiuderlo.
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  // Impostazioni in-modal: aperte da menu account o dalla rotella nella
+  // topbar, senza navigare fuori dalla chat.
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // L'identità arriva dal server (prop `account`): la sidebar mostra subito
   // l'account reale e non i segnaposto "?"/"..." mentre la sessione del browser
   // si carica in background.
@@ -3478,6 +3483,7 @@ export default function ChatInterface({
             isDesktop={sidebarResize.isDesktop}
             open={accountMenuOpen}
             onOpenChange={setAccountMenuOpen}
+            onOpenSettings={() => setSettingsOpen(true)}
           />
         </div>
       </aside>
@@ -3550,6 +3556,17 @@ export default function ChatInterface({
               label={isGhostMode ? dict.chat.ghost.exit : dict.chat.ghost.enter}
               onToggle={handleGhostToggle}
             />
+            {/* Rotella impostazioni: apre la modale in-chat invece di navigare
+                fuori dalla pagina. */}
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              aria-label={dict.accountMenu.settings}
+              title={dict.accountMenu.settings}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white"
+            >
+              <Settings size={15} />
+            </button>
             {/* Condividere una chat vuota non ha senso: il bottone compare
                 solo quando la conversazione è iniziata. */}
             {messages.length > 0 && (
@@ -4672,6 +4689,9 @@ export default function ChatInterface({
           }
           agentSlug={paywallSlug}
         />
+      )}
+      {settingsOpen && (
+        <SettingsDialog email={accountEmail} onClose={() => setSettingsOpen(false)} />
       )}
     </div>
   );

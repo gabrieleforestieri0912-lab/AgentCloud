@@ -55,6 +55,9 @@ export type AccountMenuProps = {
   open?: boolean;
   /** Notifica apertura/chiusura (usato dalla chat per lo stato del menu). */
   onOpenChange?: (open: boolean) => void;
+  /** Se passato, la voce "Impostazioni" apre una modale invece di navigare:
+      usato in chat per non far uscire l'utente dalla pagina. */
+  onOpenSettings?: () => void;
 };
 
 export default function AccountMenu({
@@ -66,6 +69,7 @@ export default function AccountMenu({
   isDesktop = false,
   open: openProp,
   onOpenChange,
+  onOpenSettings,
 }: AccountMenuProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -186,21 +190,42 @@ export default function AccountMenu({
                 </p>
               </div>
 
-              <Link
-                href="/settings"
-                role="menuitem"
-                onClick={close}
-                className={itemBase}
-              >
-                <Settings size={15} className={iconBase} aria-hidden />
-                <span className="flex-1 truncate">{dict.accountMenu.settings}</span>
-                <span
-                  className="ml-auto shrink-0 font-mono text-[11px] font-medium text-neutral-500"
-                  suppressHydrationWarning
+              {onOpenSettings ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    close();
+                    onOpenSettings();
+                  }}
+                  className={itemBase}
                 >
-                  {shortcut}
-                </span>
-              </Link>
+                  <Settings size={15} className={iconBase} aria-hidden />
+                  <span className="flex-1 truncate">{dict.accountMenu.settings}</span>
+                  <span
+                    className="ml-auto shrink-0 font-mono text-[11px] font-medium text-neutral-500"
+                    suppressHydrationWarning
+                  >
+                    {shortcut}
+                  </span>
+                </button>
+              ) : (
+                <Link
+                  href="/settings"
+                  role="menuitem"
+                  onClick={close}
+                  className={itemBase}
+                >
+                  <Settings size={15} className={iconBase} aria-hidden />
+                  <span className="flex-1 truncate">{dict.accountMenu.settings}</span>
+                  <span
+                    className="ml-auto shrink-0 font-mono text-[11px] font-medium text-neutral-500"
+                    suppressHydrationWarning
+                  >
+                    {shortcut}
+                  </span>
+                </Link>
+              )}
 
               <button
                 type="button"
