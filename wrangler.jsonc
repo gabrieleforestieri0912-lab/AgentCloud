@@ -11,8 +11,9 @@
     "binding": "ASSETS"
   },
   "triggers": {
-    // Crono giornaliero /api/billing/notify-expiring (era il cron Vercel)
-    "crons": ["27 8 * * *"]
+    // Cron: "27 8 * * *" notifiche abbonamenti in scadenza (era il cron
+    // Vercel); "* * * * *" worker della coda agenti (Fase 2: agent_jobs).
+    "crons": ["27 8 * * *", "* * * * *"]
   },
   // Smart Placement: riduce lo round-trip verso Supabase, tenendo le isolate
   // vicino al backend invece che distribuite al bordo di ogni PoP.
