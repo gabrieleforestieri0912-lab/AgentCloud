@@ -22,7 +22,12 @@ import YouTubeLink, { isYouTubePreviewUrl } from "./YouTubeLink";
  * così `**grassetto**` e `• elenchi` vengono visualizzati formattati invece
  * che come testo grezzo. Il parsing arriva da src/lib/markdown.ts.
  */
-function Inline({ segments }: { segments: InlineSegment[] }) {
+/**
+ * Segmenti inline già pronti (`parseInline`): esportato per etichette e
+ * testi singola-riga (label e detail dell'attività agente) che devono
+ * rispettare lo stesso cargo di `**grassetto**` e `` `codice` ``.
+ */
+export function Inline({ segments }: { segments: InlineSegment[] }) {
   return (
     <>
       {segments.map((seg, i) => {

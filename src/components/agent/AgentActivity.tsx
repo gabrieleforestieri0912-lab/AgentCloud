@@ -27,11 +27,13 @@ import {
 import BrandLogo from "../BrandLogo";
 import InlineConnectCard from "../InlineConnectCard";
 import { useLanguage } from "../LanguageProvider";
+import MarkdownText, { Inline } from "../MarkdownText";
 import {
   stepDurationSecs,
   type AgentStatus,
   type AgentStep,
 } from "@/lib/agent-activity";
+import { parseInline } from "@/lib/markdown";
 
 /* ─── Status system ───────────────────────────────────────────────
    Stati: pending, running, completed, attention, failed, paused, approval.
@@ -81,7 +83,7 @@ export function WorkingIndicator({ label }: { label?: string }) {
       className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-1 text-xs font-bold text-brand-300"
     >
       <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" aria-hidden />
-      {label || dict.chat.activity.working}
+      {label ? <Inline segments={parseInline(label)} /> : dict.chat.activity.working}
     </p>
   );
 }
@@ -113,7 +115,7 @@ function ToolStepRow({ step }: { step: AgentStep }) {
               step.status === "failed" ? "text-red-300" : "text-neutral-200"
             } ${hasDetail ? "cursor-pointer hover:text-white" : "cursor-default"}`}
           >
-            {step.label}
+            <Inline segments={parseInline(step.label)} />
           </button>
           {step.impact === "high" && (
             <span
@@ -133,7 +135,7 @@ function ToolStepRow({ step }: { step: AgentStep }) {
         </div>
         {open && hasDetail && (
           <div className="mt-1 space-y-1 pl-6 text-xs text-neutral-400">
-            {step.detail && <p className="break-words">“{step.detail}”</p>}
+            {step.detail && <p className="break-words">“<Inline segments={parseInline(step.detail)} />”</p>}
             {step.impact === "high" && <p>{dict.chat.activity.modifiesData}</p>}
           </div>
         )}
@@ -252,7 +254,11 @@ export function AgentErrorCard({ message, supportEmail }: { message: string; sup
         <CircleX size={15} className="shrink-0" aria-hidden />
         {dict.chat.activity.errorTitle}
       </p>
-      <p className="mt-1 text-[13px] leading-relaxed text-neutral-300">{message}</p>
+      {/* Il messaggio d'errore arriva dal modello e può contenere markdown
+          (**grassetto**, elenchi): non va mai mostrato come testo grezzo. */}
+      <div className="mt-1 text-[13px] leading-relaxed text-neutral-300 [&_p:last-child]:mb-0">
+        <MarkdownText text={message} />
+      </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <a
           href={`mailto:${supportEmail}`}
