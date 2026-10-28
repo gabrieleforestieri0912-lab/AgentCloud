@@ -56,6 +56,9 @@ export async function POST() {
     // 4c. Revoca le API keys (le integrazioni esterne smettono di funzionare)
     await admin.from("api_keys").delete().eq("user_id", userId);
 
+    // 4d. Preferenze dell'account (sidebar, togghe notifica, ...)
+    await admin.from("user_preferences").delete().eq("user_id", userId);
+
     // 5. Elimina l'utente Supabase Auth
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
     if (deleteError) {

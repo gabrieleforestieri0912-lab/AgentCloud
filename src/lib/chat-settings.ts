@@ -4,8 +4,11 @@
  * Vivono in localStorage perché servono a due componenti distinti: il pannello
  * (AppHeader) le modifica, la chat (ChatInterface) le applica — l'agente
  * predefinito alle nuove conversazioni, la dimensione del testo all'area
- * messaggi. Nessuna scrittura su DB: sono preferenze del browser.
+ * messaggi. Ogni scrittura viene anche rispecchiata su DB (`pushPreference`):
+ * cambiare device o svuotare lo storage non perde le preferenze.
  */
+
+import { pushPreference } from "@/lib/preferences-sync";
 
 export type ChatTextSize = "sm" | "md" | "lg";
 
@@ -24,7 +27,7 @@ export const CHAT_SIDEBAR_OPEN_KEY = "agentcloud_chat_sidebar_open";
 /**
  * Larghezza della sidebar della chat su desktop, in px. Stessa logica di
  * `CHAT_SIDEBAR_OPEN_KEY`: è una scelta dell'utente (trascinamento del bordo)
- * e deve sopravvivere al reload. La legge e la scrive `useResizableSidebar`.
+ * che sopravvive al reload e ora anche al cambio device, via `pushPreference`.
  */
 export const CHAT_SIDEBAR_WIDTH_KEY = "agentcloud_chat_sidebar_width";
 
@@ -58,6 +61,7 @@ export function saveDefaultAgent(slug: string): void {
   } catch {
     // Storage non disponibile: la preferenza resta valida per la sessione.
   }
+  pushPreference(CHAT_DEFAULT_AGENT_KEY, slug);
 }
 
 export function readChatTextSize(): ChatTextSize {
@@ -75,6 +79,7 @@ export function saveChatTextSize(size: ChatTextSize): void {
   } catch {
     // Storage non disponibile: la preferenza resta valida per la sessione.
   }
+  pushPreference(CHAT_TEXT_SIZE_KEY, size);
 }
 
 /**
@@ -214,4 +219,5 @@ export function saveSidebarOpen(open: boolean): void {
   } catch {
     // Storage non disponibile: la preferenza resta valida per la sessione.
   }
+  pushPreference(CHAT_SIDEBAR_OPEN_KEY, open);
 }

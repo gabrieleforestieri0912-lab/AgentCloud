@@ -8,6 +8,7 @@ import { t } from "@/lib/i18n/dictionaries";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/constants";
 import { useTheme, type Theme } from "@/components/ThemeProvider";
 import { NOTIFICATION_CATEGORIES, type NotificationCategory } from "@/lib/notification-rules";
+import { hydrateMissingPreferences, pushPreference } from "@/lib/preferences-sync";
 
 // Client delle impostazioni: preferenze locali di lingua, notifiche e dati.
 // Le preferenze (toggle ecc.) sono per ora simulabili lato client — nessuna
@@ -35,13 +36,24 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
           setEmailNotif(parsed.emailNotif);
         }
         if (typeof parsed.productUpdates === "boolean") {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setProductUpdates(parsed.productUpdates);
         }
       }
     } catch {}
-    // Categorie agente dal server (una riga = abilitata; assente = abilitata).
-    queueMicrotask(() => {
+    // Preferenze server: riempono i buchi del browser (nuovo device, storage
+    // svuotato). Poi le categorie agente (una riga = abilitata; assente = abilitata).
+    queueMicrotask(async () => {
+      const prefs = await hydrateMissingPreferences();
+      const email = prefs["agentcloud_pref_email_notif"];
+      const products = prefs["agentcloud_pref_product_updates"];
+      let hasLocal = false;
+      try {
+        hasLocal = localStorage.getItem("agentcloud_settings") !== null;
+      } catch {}
+      if (!hasLocal) {
+        if (typeof email === "boolean") setEmailNotif(email);
+        if (typeof products === "boolean") setProductUpdates(products);
+      }
       fetch("/api/notifications/preferences", { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
         .then((d: { preferences?: { category: string; enabled: boolean }[] } | null) => {
@@ -72,6 +84,10 @@ export default function SettingsClient({ isMock, email }: { isMock: boolean; ema
     try {
       localStorage.setItem("agentcloud_settings", JSON.stringify({ emailNotif, productUpdates }));
     } catch {}
+    // Copia su DB: la scelta sopravvive a un cambio device o a uno svuotamento
+    // dello storage.
+    pushPreference("agentcloud_pref_email_notif", emailNotif);
+    pushPreference("agentcloud_pref_product_updates", productUpdates);
     // lingua e tema sono già persistiti via cookie/localStorage dai loro toggle,
     // ma il bottone unico conferma tutte le modifiche insieme
     setSaving(false);

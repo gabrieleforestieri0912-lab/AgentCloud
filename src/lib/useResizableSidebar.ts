@@ -15,6 +15,7 @@
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
+import { pushPreference } from "@/lib/preferences-sync";
 
 /** Larghezze in px permesse nel trascinamento. */
 export const SIDEBAR_MIN_WIDTH = 216;
@@ -57,6 +58,9 @@ function writeWidth(storageKey: string, value: number): number {
   } catch {
     // Storage non disponibile: la larghezza resta valida per la sessione.
   }
+  // Copia su DB (account): la larghezza sopravvive anche a un cambio
+  // device/browser, dove il localStorage è vuoto.
+  pushPreference(storageKey, next);
   window.dispatchEvent(new CustomEvent(WIDTH_CHANGED_EVENT, { detail: storageKey }));
   return next;
 }

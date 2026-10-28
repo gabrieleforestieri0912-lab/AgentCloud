@@ -121,6 +121,7 @@ import {
   type ChatTextSize,
 } from "@/lib/chat-settings";
 import { useResizableSidebar, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/lib/useResizableSidebar";
+import { hydrateMissingPreferences } from "@/lib/preferences-sync";
 import { formatTokens } from "@/lib/format-tokens";
 import TokenBudgetLine from "./TokenBudgetLine";
 import FileCard from "./FileCard";
@@ -379,6 +380,13 @@ export default function ChatInterface({
   // Larghezza della sidebar: regolabile trascinando il bordo destro (come su
   // Claude), persistita in localStorage. Solo desktop: su mobile è un drawer.
   const sidebarResize = useResizableSidebar(CHAT_SIDEBAR_WIDTH_KEY, 256);
+
+  // Sync preferenze: ciò che manca nel browser (nuovo device, storage
+  // svuotato) arriva dal DB — larghezza sidebar, sidebar aperta, size testo,
+  // agente predefinito. Gira una volta per mount, è un solo GET.
+  useEffect(() => {
+    void hydrateMissingPreferences();
+  }, []);
 
   // Scroll lock del body mentre il drawer della cronologia è aperto su mobile.
   useEffect(() => {

@@ -11,6 +11,7 @@ import AppHeader from "./AppHeader";
 import DashboardOnboarding from "./DashboardOnboarding";
 import { useLanguage } from "./LanguageProvider";
 import { useResizableSidebar, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/lib/useResizableSidebar";
+import { hydrateMissingPreferences } from "@/lib/preferences-sync";
 
 /** Larghezza della sidebar del dashboard in px (preferenza, vedi il hook). */
 const SIDEBAR_WIDTH_KEY = "agentcloud_dashboard_sidebar_width";
@@ -75,6 +76,11 @@ export default function DashboardShell({
   // Larghezza della sidebar: regolabile trascinando il bordo destro (come su
   // Claude), persistita in localStorage. Solo desktop: su mobile è un drawer.
   const sidebarResize = useResizableSidebar(SIDEBAR_WIDTH_KEY, 288);
+  // Sync preferenze uguale alla chat: le larghezze e i toggle della shell
+  // arrivano dal DB se mancano nel browser.
+  useEffect(() => {
+    void hydrateMissingPreferences();
+  }, []);
   return (
     <div className="flex h-dvh bg-neutral-950">
       {showOnboarding && (
