@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, X, ArrowUp } from "lucide-react";
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { useLanguage } from "./LanguageProvider";
 import {
   insertSentenceBreaks,
@@ -78,16 +79,78 @@ export function Inline({ segments }: { segments: InlineSegment[] }) {
   );
 }
 
+/** Payload di un suggerimento su una riga del blocco di codice. */
+export type CodeCommentPayload = {
+  /** Numero di riga (1-based) dentro il blocco. */
+  line: number;
+  /** Contenuto testuale della riga citata. */
+  code: string;
+  /** Nota scritta dall'utente (cosa cambiare). */
+  note: string;
+};
+
 /**
  * Blocco di codice fenced con header lingua + bottone "Copia" (Claude-style).
  * Il codice viene colorato per linguaggio con highlight.js (caricato in lazy:
  * finché non arriva resta incoloro, così server e primo render client
  * coincidono). Il copia usa la clipboard diagnostica con fallback
  * `execCommand` per i contesti non-secure; il feedback "Copiato!" resta 2s.
+ *
+ * In più, come su Claude: passando su una riga appare nel gutter un'icona;
+ * cliccandola si apre un input inline subito sotto la riga per chiedere una
+ * modifica a quella riga all'AI. La nota non parte da qui: risale al
+ * genitore via `onCodeComment` che la attacca al composer (con la riga
+ * citata, così la richiesta ha il contesto).
  */
-function CodeBlock({ lang, value }: { lang: string; value: string }) {
+function CodeBlock({
+  lang,
+  value,
+  onCodeComment,
+}: {
+  lang: string;
+  value: string;
+  onCodeComment?: (payload: CodeCommentPayload) => void;
+}) {
   const { dict } = useLanguage();
   const [copied, setCopied] = useState(false);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [note, setNote] = useState("");
+  const [barPos, setBarPos] = useState<{ top: number; left: number; right: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const preRef = useRef<HTMLPreElement>(null);
+  const noteInputRef = useRef<HTMLInputElement>(null);
+  const gutterRef = useRef<HTMLDivElement>(null);
+
+  // Le righe di `value` coincidono con le righe dell'HTML evidenziato
+  // (hljs preserva i newline), quindi il numero sempre allineato alla riga.
+  const lines = useMemo(() => value.split("\n"), [value]);
+
+  /** Invia la nota risalendo al genitore (che la attacca al composer). */
+  const submitSuggestion = useCallback(() => {
+    if (activeIdx === null || !onCodeComment) return;
+    const text = note.trim();
+    const code = lines[activeIdx]?.trim();
+    if (!text || !code) return;
+    onCodeComment({ line: activeIdx + 1, code, note: text });
+    setActiveIdx(null);
+    setHoverIdx(null);
+    setNote("");
+  }, [activeIdx, lines, note, onCodeComment]);
+
+  const handleNoteKeyDown = useCallback(
+    (e: ReactKeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitSuggestion();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setActiveIdx(null);
+        setHoverIdx(null);
+      }
+    },
+    [submitSuggestion],
+  );
 
   const [hljs, setHljs] = useState<Highlighter | null>(null);
   useEffect(() => {
@@ -108,9 +171,81 @@ function CodeBlock({ lang, value }: { lang: string; value: string }) {
     [hljs, lang, value],
   );
 
-  // Le righe di `value` coincidono con le righe dell'HTML evidenziato
-  // (hljs preserva i newline), quindi il numero sempre allineato alla riga.
-  const lines = value.split("\n");
+  // Streaming: se il blocco si accorcia, la riga commentata può sparire —
+  // il guard `activeIdx < lines.length` nel render evita barre e note fantasme
+  // senza bisogno di setState in un effect.
+
+  /**
+   * Altezza di una riga di codice in px, misurata sul <pre> vero: tutte le
+   * righe hanno la stessa altezza (il pre non wrappa, scorre in orizzontale),
+   * quindi height / numero di righe è esatto anche quando il row-height
+   * dipende da font/zoom/leading della chat.
+   */
+  const measureRowH = useCallback((): number | null => {
+    const pre = preRef.current;
+    if (!pre || lines.length === 0) return null;
+    const rect = pre.getBoundingClientRect();
+    if (rect.height === 0) return null;
+    return rect.height / lines.length;
+  }, [lines.length]);
+
+  /** Indice di riga (0-based) dalla coordinata Y del puntatore, o null. */
+  const lineFromPointer = useCallback(
+    (e: ReactPointerEvent): number | null => {
+      const pre = preRef.current;
+      const wrap = wrapRef.current;
+      if (!pre || !wrap) return null;
+      const preRect = pre.getBoundingClientRect();
+      const rowH = measureRowH();
+      if (!rowH) return null;
+      if (e.clientY < preRect.top || e.clientY > preRect.bottom) return null;
+      let idx = Math.floor((e.clientY - preRect.top) / rowH);
+      idx = Math.max(0, Math.min(idx, lines.length - 1));
+      return idx;
+    },
+    [lines.length, measureRowH],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: ReactPointerEvent) => {
+      if (process.env.NODE_ENV !== "production") {
+        // TEST-ONLY trace, rimosso dopo la verifica
+        (window as unknown as { __dbgMove?: string[] }).__dbgMove ??= [];
+        (window as unknown as { __dbgMove?: string[] }).__dbgMove!.push(
+          `move@${e.clientX},${e.clientY}`,
+        );
+      }
+      if (activeIdx !== null) return;
+      const idx = lineFromPointer(e);
+      setHoverIdx(idx === hoverIdx ? hoverIdx : idx);
+    },
+    [activeIdx, hoverIdx, lineFromPointer],
+  );
+
+  const handlePointerLeave = useCallback(() => setHoverIdx(null), []);
+
+  const openSuggestion = useCallback(
+    (idx: number) => {
+      // La geometria si misura AL CLICK (handler, non render): la barra è
+      // assoluta dentro il wrapper, quindi uno scroll della pagina non la
+      // sposta rispetto al blocco.
+      const wrap = wrapRef.current;
+      const pre = preRef.current;
+      const gutter = gutterRef.current;
+      if (!wrap || !pre) return;
+      const rowH = measureRowH() ?? 0;
+      const preRect = pre.getBoundingClientRect();
+      const wrapRect = wrap.getBoundingClientRect();
+      const top = preRect.top - wrapRect.top + (idx + 1) * rowH - 2;
+      const left = gutter ? gutter.offsetLeft + gutter.offsetWidth + 8 : 44;
+      setActiveIdx(idx);
+      setHoverIdx(idx);
+      setNote("");
+      setBarPos({ top, left, right: 8 });
+      setTimeout(() => noteInputRef.current?.focus(), 0);
+    },
+    [measureRowH],
+  );
 
   const handleCopy = useCallback(async () => {
     const text = value;
@@ -166,31 +301,106 @@ function CodeBlock({ lang, value }: { lang: string; value: string }) {
       {/* Numeri di riga in una colonna separata fuori da <pre>: non finiscono
           nella copia e restano fissi mentre il codice scorre in orizzontale.
           Stesso font/ritmo di riga del pre così ogni numero si allinea alla
-          propria riga. */}
-      <div className="flex">
+          propria riga. Hover su una riga → icona di suggerimento nel gutter. */}
+      <div
+        ref={wrapRef}
+        className="relative flex"
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+      >
         <div
-          aria-hidden="true"
+          ref={gutterRef}
           className="shrink-0 select-none border-r border-white/5 py-2.5 pr-2.5 pl-3 text-right font-mono text-xs leading-relaxed text-neutral-500 tabular-nums"
         >
           {lines.map((_, i) => (
-            <div key={i}>{i + 1}</div>
+            <div key={i} className={i === hoverIdx || i === activeIdx ? "text-brand-300" : undefined}>
+              {onCodeComment ? (
+                <span className="relative">
+                  {i === hoverIdx && i !== activeIdx && (
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={() => openSuggestion(i)}
+                      aria-label={dict.common.codeSuggestPlaceholder}
+                      title={dict.common.codeSuggestPlaceholder}
+                      className="absolute top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded border border-white/10 bg-neutral-800 text-neutral-300 shadow-md transition-colors hover:bg-brand-500 hover:text-white"
+                      style={{ left: 3 }}
+                    >
+                      <ArrowUp size={9} />
+                    </button>
+                  )}
+                  <span className="inline-block">{i + 1}</span>
+                </span>
+              ) : (
+                <span className="inline-block">{i + 1}</span>
+              )}
+            </div>
           ))}
         </div>
-        <pre className="min-w-0 flex-1 overflow-x-auto px-3 py-2.5 text-xs leading-relaxed text-brand-100">
+        <pre
+          ref={preRef}
+          className="min-w-0 flex-1 overflow-x-auto px-3 py-2.5 text-xs leading-relaxed text-brand-100"
+        >
           {html !== null ? (
             <code className="hljs" dangerouslySetInnerHTML={{ __html: html }} />
           ) : (
             <code>{value}</code>
           )}
         </pre>
+        {onCodeComment && activeIdx !== null && activeIdx < lines.length && barPos && (
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            className="absolute z-20 flex min-w-[220px] items-center gap-2 rounded-lg border border-white/10 bg-neutral-900 px-2.5 py-1.5 shadow-xl"
+            style={{
+              top: barPos.top,
+              left: barPos.left,
+              right: barPos.right,
+            }}
+          >
+            <input
+              ref={noteInputRef}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onKeyDown={handleNoteKeyDown}
+              placeholder={dict.common.codeSuggestPlaceholder}
+              className="min-w-0 flex-1 bg-transparent text-sm text-neutral-100 outline-none placeholder:text-neutral-500"
+            />
+            <button
+              type="button"
+              onClick={submitSuggestion}
+              disabled={!note.trim()}
+              aria-label={dict.chat.sendMessage}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-brand-500 text-white transition-opacity hover:bg-brand-400 disabled:opacity-40"
+            >
+              <ArrowUp size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveIdx(null);
+                setHoverIdx(null);
+              }}
+              aria-label={dict.common.close}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-white/10 hover:text-white"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function Block({ block }: { block: MarkdownBlock }) {
+function Block({
+  block,
+  onCodeComment,
+}: {
+  block: MarkdownBlock;
+  onCodeComment?: (payload: CodeCommentPayload) => void;
+}) {
   if (block.type === "code") {
-    return <CodeBlock lang={block.lang} value={block.value} />;
+    return <CodeBlock lang={block.lang} value={block.value} onCodeComment={onCodeComment} />;
   }
 
   if (block.type === "table") {
@@ -269,9 +479,12 @@ function Block({ block }: { block: MarkdownBlock }) {
 export default function MarkdownText({
   text,
   onReply,
+  onCodeComment,
 }: {
   text: string;
   onReply?: (phrase: string) => void;
+  /** Suggerimento su una riga di un blocco di codice (icona nel gutter). */
+  onCodeComment?: (payload: CodeCommentPayload) => void;
 }) {
   // Per i messaggi AI: vai a capo dopo il punto (ogni frase su nuova riga),
   // ma mai dentro i blocchi di codice fenced — vedi insertSentenceBreaks.
@@ -340,7 +553,7 @@ export default function MarkdownText({
       onMouseDown={clearSel}
     >
       {blocks.map((block, i) => (
-        <Block key={i} block={block} />
+        <Block key={i} block={block} onCodeComment={onCodeComment} />
       ))}
       {sel && onReply && (
         <button

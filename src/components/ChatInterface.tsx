@@ -52,7 +52,7 @@ import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 import { chatChipsFor, type ChatChip } from "@/lib/i18n/chat-chips";
-import MarkdownText from "./MarkdownText";
+import MarkdownText, { type CodeCommentPayload } from "./MarkdownText";
 import VoiceInput from "./VoiceInput";
 import AppHeader from "./AppHeader";
 import InlineConnectCard from "@/components/InlineConnectCard";
@@ -2867,6 +2867,18 @@ export default function ChatInterface({
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
+  /**
+   * Suggerimento su una riga di un blocco di codice (icona nel gutter).
+   * Come "Rispondi": non invia da solo, attacca al composer la nota con la
+   * riga citata — il contesto (codice + posizione) viaggia insieme alla
+   * richiesta, e l'utente può ancora rivederla prima dell'invio.
+   */
+  function handleCodeComment({ line, code, note }: CodeCommentPayload) {
+    const quoted = `> \`${code}\` (riga ${line}) — ${note.trim()}\n`;
+    setInput((prev) => (prev ? prev + "\n" + quoted : quoted));
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
   // Selettore agente. Nella chat vuota resta nella toolbar accanto al "+";
   // durante la conversazione vive fuori dall'input, nella riga sopra a destra.
   // `align` serve ad ancorare il menu: a destra per il picker esterno (con
@@ -4117,7 +4129,7 @@ export default function ChatInterface({
                           <>
                             {isLive && <WorkingIndicator label={runningStep.label} />}
                             {steps.length > 0 && <ActivityFeed steps={steps} />}
-                            {parsedFiles.text && <MarkdownText text={parsedFiles.text} onReply={handleReplyToPhrase} />}
+                            {parsedFiles.text && <MarkdownText text={parsedFiles.text} onReply={handleReplyToPhrase} onCodeComment={handleCodeComment} />}
                             {cardProvider && (
                               <InlineConnectCard provider={cardProvider} />
                             )}
