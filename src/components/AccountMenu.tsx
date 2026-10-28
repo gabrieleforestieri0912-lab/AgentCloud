@@ -11,9 +11,12 @@
  *   ───────────
  *   Esci
  *
- * "Lingua" e "Scopri di più" sono sotto-menu a espansione inline: cliccandoli
- * si apre la lista subito sotto, così il pannello resta sempre ancorato alla
- * sidebar e non serve calcolare la posizione di un pannello volante.
+ * "Lingua" è un sotto-menu a espansione inline: cliccandolo si apre la lista
+ * subito sotto, così il pannello resta sempre ancorato alla sidebar.
+ *
+ * "Scopri di più" invece apre un **secondo pannello** a destra del menu
+ * (su desktop): più ordinato che allungare il pannello già aperto. Su mobile
+ * non c'è spazio a lato, quindi lì resta l'espansione inline.
  *
  * Il menu è renderizzato in un portale su `document.body`: la sidebar ha
  * `overflow` nascosti, quindi un pannello posizionato dentro verrebbe
@@ -126,9 +129,7 @@ export default function AccountMenu({
     "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-semibold text-neutral-200 transition-colors hover:bg-white/[0.07] hover:text-white";
   const iconBase = "shrink-0 text-neutral-400";
 
-  // "Scopri di più": link alle informazioni sul servizio. Le ancore
-  // corrispondono alle sezioni generate da src/app/{privacy,terms}/page.tsx
-  // (id="sezione-N").
+  // "Scopri di più": link alle informazioni sul servizio.
   const learnMoreItems = [
     { href: "/#chi-siamo", label: dict.accountMenu.about },
     { href: "/terms#sezione-7", label: dict.accountMenu.usagePolicy },
@@ -136,6 +137,43 @@ export default function AccountMenu({
     { href: "/terms", label: dict.accountMenu.termsOfService },
     { href: "/privacy#sezione-8", label: dict.accountMenu.privacyChoices },
   ];
+
+  // Su desktop il sotto-menu "Scopri di più" apre un secondo pannello a
+  // destra; su mobile resta l'espansione inline (non c'è spazio a lato).
+  const isDesktopLayout = isDesktop && typeof sidebarWidth === "number";
+
+  // Contenuto condiviso del sotto-menu "Scopri di più": usato nel pannello a
+  // destra (desktop) e nell'espansione inline (mobile).
+  const learnMoreBody = (
+    <>
+      {learnMoreItems.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          role="menuitem"
+          onClick={close}
+          className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-left text-[13px] font-semibold text-neutral-400 transition-colors hover:bg-white/[0.07] hover:text-white"
+        >
+          <span className="truncate">{item.label}</span>
+        </Link>
+      ))}
+      <div className="my-1 h-px bg-white/[0.08]" />
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => {
+          close();
+          openShortcuts();
+        }}
+        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] font-semibold text-neutral-400 transition-colors hover:bg-white/[0.07] hover:text-white"
+      >
+        <span className="flex-1 truncate">{dict.accountMenu.keyboardShortcuts}</span>
+        <span className="ml-auto shrink-0 font-mono text-[11px] font-medium text-neutral-500">
+          {shortcutsShortcut}
+        </span>
+      </button>
+    </>
+  );
 
   return (
     <>
@@ -322,34 +360,9 @@ export default function AccountMenu({
                   }`}
                 />
               </button>
-              {moreOpen && (
+              {!isDesktopLayout && moreOpen && (
                 <div className="mb-1 ml-6 border-l border-white/[0.08] pl-1.5">
-                  {learnMoreItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      role="menuitem"
-                      onClick={close}
-                      className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-left text-[13px] font-semibold text-neutral-400 transition-colors hover:bg-white/[0.07] hover:text-white"
-                    >
-                      <span className="truncate">{item.label}</span>
-                    </Link>
-                  ))}
-                  <div className="my-1 h-px bg-white/[0.08]" />
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      close();
-                      openShortcuts();
-                    }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] font-semibold text-neutral-400 transition-colors hover:bg-white/[0.07] hover:text-white"
-                  >
-                    <span className="flex-1 truncate">{dict.accountMenu.keyboardShortcuts}</span>
-                    <span className="ml-auto shrink-0 font-mono text-[11px] font-medium text-neutral-500">
-                      {shortcutsShortcut}
-                    </span>
-                  </button>
+                  {learnMoreBody}
                 </div>
               )}
 
@@ -372,6 +385,23 @@ export default function AccountMenu({
               </button>
             </div>
           </>,
+          document.body,
+        )}
+
+      {/* Sotto-pannello "Scopri di più": si apre a destra del menu su desktop
+          (stessa base del pannello principale), al posto dell'espansione
+          inline usata su mobile. */}
+      {open &&
+        isDesktopLayout &&
+        moreOpen &&
+        createPortal(
+          <div
+            role="menu"
+            style={{ left: (isDesktop && sidebarWidth ? sidebarWidth + 12 : 268) + 288 + 10 }}
+            className="fixed bottom-4 z-50 w-64 overflow-hidden rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl shadow-black/60"
+          >
+            {learnMoreBody}
+          </div>,
           document.body,
         )}
     </>
