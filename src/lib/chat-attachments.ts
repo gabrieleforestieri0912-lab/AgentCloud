@@ -30,25 +30,35 @@ export const CHAT_ATTACH_VISION_MAX_SIDE = 1600;
 export const CHAT_ATTACH_VISION_KEEP_BYTES = 2 * 1024 * 1024;
 
 /**
- * Prompt dettagliato per l'analisi delle immagini (vision).
- * Usato come testo di fallback / istruzione quando l'utente invia una o più immagini:
- * obbliga il modello a descrivere in modo esaustivo prima di rispondere.
+ * Istruzione quando l'utente invia immagini SENZA scrivere nulla.
+ *
+ * Prima qui c'era un prompt che forzava "descrivi l'immagine in modo
+ * estremamente dettagliato": il modello risponda sempre con un'analisi
+ * visiva — anche davanti a un quiz, dove l'utente vuole LA RISPOSTA, non
+ * la descrizione. Ora il modello deve prima dedurre l'intento dall'immagine
+ * e agire di conseguenza, e descrivere solo come ultima spiaggia.
  */
-export const DETAILED_IMAGE_ANALYSIS_PROMPT = `Analizza l'immagine allegata in modo estremamente dettagliato, preciso ed esaustivo. Descrivi con cura:
-- Soggetti principali e secondari (persone, animali, oggetti, elementi)
-- Colori dominanti, palette, luci, ombre e composizione / prospettiva
-- Testo visibile: trascrivi esattamente ogni scritta, numero, etichetta o watermark presente
-- Contesto, ambiente, sfondo, stile e atmosfera
-- Dettagli rilevanti: espressioni, posture, azioni, marchi, materiali, dimensioni percepite
-- Qualsiasi elemento utile o particolare degno di nota
+const IMAGE_ALONE_PROMPT = `L'utente ha inviato una o più immagini senza scrivere nulla. Dedici cosa vuole guardando cosa mostra l'immagine:
 
-Struttura la descrizione in modo chiaro e ordinato (usa elenchi puntati se utile). Dopo la descrizione dettagliata, rispondi in modo completo e utile alla richiesta dell'utente, collegando esplicitamente l'analisi visiva alla domanda. Sii preciso, non generico, e non omettere dettagli visibili.`;
+- Se contiene una domanda, un quiz, un test o un esercizio: dai SUBITO la risposta giusta — indica chiaramente quale opzione è corretta e spiegala in una o due righe. Se ci sono più domande, rispondi a tutte, in ordine.
+- Se contiene un compito evidente (un errore da correggere, un testo da tradurre o scrivere, un dato da estrarre, un codice da scrivere): esegui il compito.
+- Solo se l'intento non è deducibile (es. una foto senza nessuna richiesta): rispondi con UNA domanda breve e concreta su cosa deve farne ("Vuoi che …?"), senza descrivere l'immagine.
+
+Mai una descrizione/analisi sistematica dell'immagine come risposta: non è ciò che l'utente cerca.`;
+
+/**
+ * Istruzione quando l'utente invia immagini E un testo: il testo è la
+ * richiesta, le immagini sono il contesto a cui si riferisce. Restava
+ * "descrivi in modo esaustivo" che copriva la vera domanda (es. "aiutami
+ * con questo quiz" diventava una descrizione della schermata).
+ */
+const IMAGE_WITH_TEXT_DIRECTIVE = `L'utente ha allegato una o più immagini: sono il contesto della richiesta scritta sopra. Rispondi ESATTAMENTE a ciò che chiede usando le immagini. Se nelle immagini c'è una domanda, un quiz o un esercizio, indica subito la risposta giusta (quale opzione è corretta e perché). Non descrivere l'immagine per intero se non serve a rispondere.`;
 
 export function buildVisionText(userText: string, hasImages: boolean): string {
   if (!hasImages) return userText.trim();
   const trimmed = userText.trim();
-  if (!trimmed) return DETAILED_IMAGE_ANALYSIS_PROMPT;
-  return `${trimmed}\n\n---\nISTRUZIONE ANALISI IMMAGINE: ${DETAILED_IMAGE_ANALYSIS_PROMPT}`;
+  if (!trimmed) return IMAGE_ALONE_PROMPT;
+  return `${trimmed}\n\n---\n${IMAGE_WITH_TEXT_DIRECTIVE}`;
 }
 
 const TEXT_EXT = /\.(txt|csv|md|json|html|htm|xml|log|tsv|yml|yaml|css|js|ts|tsx|py|rb|go|sql)$/i;
