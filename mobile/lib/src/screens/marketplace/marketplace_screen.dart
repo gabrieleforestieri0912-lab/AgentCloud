@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../api/agentcloud_client.dart';
 import '../../models/agent.dart';
 import '../../models/bundle.dart';
 import '../../services/cart_service.dart';
 import '../../theme/theme.dart';
 import '../../widgets/agent_card.dart';
+import '../chat/chat_screen.dart';
 import 'agent_detail_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
@@ -16,6 +18,22 @@ class MarketplaceScreen extends StatefulWidget {
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
   String _query = '';
   String _category = 'Tutti';
+  // Agenti posseduti dall'utente: applica lo stesso contratto della chat
+  // web (/api/user/owned); senza questa chiamata l'app mostrava "Aggiungi"
+  // anche sugli agenti già abbonati.
+  Set<String> _owned = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwned();
+  }
+
+  Future<void> _loadOwned() async {
+    final owned = await AgentCloudClient().fetchOwnedAgents();
+    if (!mounted) return;
+    setState(() => _owned = owned.toSet());
+  }
 
   List<String> get categories => ['Tutti', ...Agent.all.map((a) => a.category).toSet()];
 
@@ -108,8 +126,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   child: AgentCard(
                     agent: agent,
                     inCart: cart.contains(agent.slug),
+                    owned: _owned.contains(agent.slug),
                     onAddToCart: () => cart.add(agent.slug),
-                    onOpenChat: () => Navigator.pushNamed(context, '/chat', arguments: agent.slug),
+                    // pushNamed senza onGenerateRoute falliva: si apre
+                    // direttamente la ChatScreen con lo slug dell'agente.
+                    onOpenChat: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ChatScreen(agentSlug: agent.slug)),
+                    ),
                   ),
                 );
               },

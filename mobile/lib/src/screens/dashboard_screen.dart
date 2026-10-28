@@ -3,13 +3,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/theme.dart';
+import '../api/agentcloud_client.dart';
 import '../models/agent.dart';
 import '../services/cart_service.dart';
 import 'chat/chat_screen.dart';
 import 'install_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  // Agenti posseduti dall'utente, stesso contratto della web chat
+  // (/api/user/owned): badge e comportamento "Apri in chat" solo dove è
+  // realmente abbonato, come sul sito.
+  Set<String> _owned = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwned();
+  }
+
+  Future<void> _loadOwned() async {
+    final owned = await AgentCloudClient().fetchOwnedAgents();
+    if (!mounted) return;
+    setState(() => _owned = owned.toSet());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,18 +172,26 @@ class DashboardScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         color: AgentCloudTheme.textMuted, fontSize: 12)),
-                trailing: Chip(
-                  label: Text(isAvailable ? 'Attivo' : 'Presto',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: isAvailable
-                              ? const Color(0xFF34D399)
-                              : AgentCloudTheme.textMuted)),
-                  backgroundColor: isAvailable
-                      ? const Color(0xFF064E3B).withValues(alpha: 0.5)
-                      : AgentCloudTheme.surface,
-                  padding: EdgeInsets.zero,
-                ),
+                trailing: _owned.contains(agent.slug)
+                    ? const Chip(
+                        label: Text('Tuo',
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.white)),
+                        backgroundColor: Color(0xFF10B981),
+                        padding: EdgeInsets.zero,
+                      )
+                    : Chip(
+                        label: Text(isAvailable ? 'Attivo' : 'Presto',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: isAvailable
+                                    ? const Color(0xFF34D399)
+                                    : AgentCloudTheme.textMuted)),
+                        backgroundColor: isAvailable
+                            ? const Color(0xFF064E3B).withValues(alpha: 0.5)
+                            : AgentCloudTheme.surface,
+                        padding: EdgeInsets.zero,
+                      ),
                 onTap: isAvailable
                     ? () => Navigator.push(
                         context,

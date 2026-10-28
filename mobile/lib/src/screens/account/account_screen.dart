@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../theme/theme.dart';
+import '../auth/login_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../../config/app_config.dart';
 
@@ -33,16 +34,20 @@ class AccountScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          _tile(Icons.settings, 'Impostazioni', 'Lingua, tema, notifiche', onTap: () {}),
+          // Prima i due punti erano onTap vuoti (tile morte): puntano alle
+          // stesse sezioni del web, che restano la surface di gestione.
+          _tile(Icons.settings, 'Impostazioni', 'Lingua, tema, notifiche', onTap: () => launchUrl(Uri.parse('${AppConfig.siteUrl}/settings'), mode: LaunchMode.externalApplication)),
           _tile(Icons.shopping_bag, 'I miei abbonamenti', 'Gestisci fatturazione e rinnovi', onTap: () => launchUrl(Uri.parse('${AppConfig.siteUrl}/dashboard/subscriptions'), mode: LaunchMode.externalApplication)),
-          _tile(Icons.hub, 'Integrazioni', 'Collega GitHub, Notion, Slack...', onTap: () {}),
+          _tile(Icons.hub, 'Integrazioni', 'Collega GitHub, Notion, Slack...', onTap: () => launchUrl(Uri.parse('${AppConfig.siteUrl}/dashboard/integrations'), mode: LaunchMode.externalApplication)),
           _tile(Icons.privacy_tip_outlined, 'Privacy', 'Informativa e GDPR', onTap: () => launchUrl(Uri.parse('${AppConfig.siteUrl}/privacy'), mode: LaunchMode.externalApplication)),
           _tile(Icons.description_outlined, 'Termini', 'Termini di servizio', onTap: () => launchUrl(Uri.parse('${AppConfig.siteUrl}/terms'), mode: LaunchMode.externalApplication)),
           _tile(Icons.support_agent, 'Supporto', AppConfig.supportEmail, onTap: () => launchUrl(Uri.parse('mailto:${AppConfig.supportEmail}'))),
           const SizedBox(height: 20),
           if (user == null)
             ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/login'),
+              // pushNamed '/login' non portava da nessuna parte: non esiste
+              // una route generata. Apertura diretta della schermata login.
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
               style: ElevatedButton.styleFrom(backgroundColor: AgentCloudTheme.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               child: const Text('Accedi / Registrati'),
             ),

@@ -210,6 +210,26 @@ class AgentCloudClient {
     return path.startsWith('http') ? path : '$baseUrl$path';
   }
 
+  /// Agenti posseduti dall'utente (GET /api/user/owned, stesso contratto usato
+  /// dal web per badge "Acquistato"/"Apri in chat"). Empty quando non loggato.
+  Future<List<String>> fetchOwnedAgents() async {
+    final token = await getToken();
+    if (token == null || token.isEmpty) return const [];
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/user/owned'),
+      headers: _headers(token),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      // Non è una condizione bloccante: il marketplace resta comunque
+      // navigabile, solo senza badge "posseduto".
+      return const [];
+    }
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final owned = data['owned'];
+    if (owned is! List) return const [];
+    return owned.whereType<String>().toList();
+  }
+
   /// URL web per collegare un'integrazione dopo un evento `connection`:
   /// si apre nel browser esterno (l'OAuth si completa sul sito). Ritorna
   /// `null` per i provider senza flusso diretto (si apre la pagina integrazioni).

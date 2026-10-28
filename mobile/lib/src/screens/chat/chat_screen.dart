@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -6,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../theme/theme.dart';
 import '../../api/agentcloud_client.dart';
 import '../../chat/chat_files.dart';
+import '../../services/conversation_service.dart';
 import 'file_preview_screen.dart';
 
 /// Messaggio in chat: testo già pulito dai blocchi file + card allegate.
@@ -19,8 +22,11 @@ class _ChatMessage {
 
 class ChatScreen extends StatefulWidget {
   final String agentSlug;
+  /// Conversazione da riprendere: la chat web porta avanti la stessa
+  /// cronologia; qui viene ripopolato lo stesso thread con il suo titolo.
+  final Conversation? resume;
 
-  const ChatScreen({super.key, required this.agentSlug});
+  const ChatScreen({super.key, required this.agentSlug, this.resume});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -28,6 +34,8 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scroll = ScrollController();
+  final ConversationService _conversationStore = ConversationService();
   final List<_ChatMessage> _messages = [];
   // Cronologia dei turni completati: il client invia `history + prompt corrente`.
   final List<Map<String, String>> _history = [];
@@ -42,6 +50,91 @@ class _ChatScreenState extends State<ChatScreen> {
   /// token firmato + il body esatto con cui riprenderla (stessa semantica web).
   Map<String, dynamic>? _pending;
 
+  /// Streaming-like: mentre la run gira accumuliamo qui il testo già
+  /// ricevuto (eventi `text`) e lo mostriamo in una bolla viva — prima la
+  /// risposta compariva solo a run conclusa, a schermo nero per decine di
+  /// secondi. Risorsa come la web che streama token per token.
+  String _streamingText = '';
+
+  /// Generazione in corso: il campo indica che l'utente ha premuto "Interrompi"
+  /// e serve a ignorare i successivi eventi/messaggi della run abbandonata.
+  /// (Il package `http` non espone un abort forzato del body SSE: lo stop è
+  /// "cessate le attività" lato UI, il server completa la sua run in pace.)
+  bool _stopping = false;
+
+  /// Epoca della run corrente: ogni nuovo avvio e ogni stop incrementano il
+  /// contatore. Le Future della run abbandonata (che comunque completa)
+  /// controllano l'epoca prima di toccare lo stato: se è cambiato, sono
+  /// stantie e non aggiungono messaggi doppi. È il modo standard di
+  /// annullare richieste async in Dart senza abort di connessione.
+  int _runEpoch = 0;
+
+  /// Conversazione corrente (solo in RAM finché possibile): con il primo
+  /// messaggio riceve un titolo e viene salvata nel negozio locale.
+  Conversation? _conversation;
+  late final String _agentSlug = widget.resume?.agentSlug ?? widget.agentSlug;
+
+  @override
+  void initState() {
+    super.initState();
+    final resume = widget.resume;
+    if (resume != null) {
+      // Ripresa di una conversazione salvata: cronologia completa.
+      _conversation = resume;
+      for (final m in resume.messages) {
+        final parsed = parseChatFiles(stripConnectMarkers(m.content));
+        _messages.add(_ChatMessage(
+          sender: m.role,
+          text: parsed.text,
+          files: parsed.files,
+        ));
+        _history.add({'role': m.role, 'content': m.content});
+      }
+    }
+    // Scroll al fondo appena il primo frame è pronto (conversazioni riprese).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollDown());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _scrollDown() {
+    if (!_scroll.hasClients) return;
+    _scroll.animateTo(
+      _scroll.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+  }
+
+  String _newConvId() =>
+      'conv_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 32)}';
+
+  /// Salva (o crea) la conversazione corrente nel negozio locale.
+  Future<void> _persistConversation() async {
+    if (_history.isEmpty) return;
+    final now = DateTime.now();
+    final conv = (_conversation ??
+        Conversation(
+          id: _newConvId(),
+          title: ConversationService.titleFrom(_history.first['content'] ?? ''),
+          agentSlug: _agentSlug,
+          messages: const [],
+          createdAt: now,
+          updatedAt: now,
+        ))
+        .copyWith(
+          messages: [for (final m in _history) ConversationMessage(role: m['role']!, content: m['content']!)],
+          updatedAt: now,
+        );
+    _conversation = conv;
+    await _conversationStore.save(conv);
+  }
+
   void _sendMessage() {
     final text = _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
@@ -51,6 +144,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     final history = List<Map<String, String>>.from(_history);
     _history.add({'role': 'user', 'content': text});
+    _scrollDown();
     _run(prompt: text, history: history);
   }
 
@@ -60,20 +154,25 @@ class _ChatScreenState extends State<ChatScreen> {
     required List<Map<String, String>> history,
     String? approvalToken,
   }) async {
+    final epoch = ++_runEpoch;
     setState(() {
       _isLoading = true;
+      _stopping = false;
       _pending = null;
       _activity = null;
       _pendingProvider = null;
+      _streamingText = '';
     });
     try {
       final res = await _client.runAgent(
-        agentSlug: widget.agentSlug,
+        agentSlug: _agentSlug,
         prompt: prompt,
         history: history,
         approvalToken: approvalToken,
         onEvent: _onEvent,
       );
+      // Stop dell'utente: la run abbandonata è tentata, non tocca lo stato.
+      if (epoch != _runEpoch) return;
 
       if (res.pendingApproval != null) {
         // Run in pausa: la UI mostra Approva/Annulla e conserva come riprenderla.
@@ -90,33 +189,85 @@ class _ChatScreenState extends State<ChatScreen> {
         final parsed = parseChatFiles(stripConnectMarkers(res.output));
         setState(() {
           _messages.add(_ChatMessage(sender: 'agent', text: parsed.text, files: parsed.files));
+          _streamingText = '';
         });
         _history.add({'role': 'assistant', 'content': res.output});
       } else if (res.pendingApproval == null) {
         setState(() {
           _messages.add(const _ChatMessage(sender: 'agent', text: 'Azione completata.'));
+          _streamingText = '';
         });
         _history.add({'role': 'assistant', 'content': 'Azione completata.'});
       }
+      await _persistConversation();
     } catch (e) {
+      if (epoch != _runEpoch) return;
       setState(() {
         _messages.add(_ChatMessage(
           sender: 'agent',
           text: 'Errore durante l\'esecuzione: $e',
         ));
+        _streamingText = '';
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-        _activity = null;
-      });
+      // L'aggiornamento "run finita" va solo se questa Future è ancora la
+      // run attiva (uno stop la forza a false da subito, senza aspettare).
+      if (mounted && epoch == _runEpoch) {
+        setState(() {
+          _isLoading = false;
+          _activity = null;
+        });
+        _scrollDown();
+      }
     }
   }
 
-  /// Eventi operativi dello stream: tool in esecuzione e richieste di connessione.
+  /// Interrompe la generazione in corso (come il bottone web "Interrompi").
+  /// Non c'è un abort forzato del body SSE nel package `http`: qui si
+  /// finalizza subito ciò che è arrivato (partial text promosso a messaggio)
+  /// e la run abbandonata, quando chiude, scopre cambia l'epoca e non tocca
+  /// più lo stato.
+  void _stop() {
+    if (!_isLoading) return;
+    // Le Future della run abbandonata vedranno l'epoca cambiata e si
+    // auto-disattiveranno (cfr. _run).
+    _runEpoch++;
+    final partial = _streamingText;
+    setState(() {
+      _stopping = true;
+      _isLoading = false;
+      _activity = null;
+      if (partial.trim().isNotEmpty) {
+        final parsed = parseChatFiles(stripConnectMarkers(partial));
+        _messages.add(_ChatMessage(
+          sender: 'agent',
+          text: '${parsed.text}\n\n*generazione interrotta.*',
+          files: parsed.files,
+        ));
+        _history.add({'role': 'assistant', 'content': partial});
+        _streamingText = '';
+      } else {
+        _messages.add(const _ChatMessage(sender: 'agent', text: 'Generazione interrotta.'));
+        _history.add({'role': 'assistant', 'content': 'Generazione interrotta.'});
+      }
+    });
+    _persistConversation();
+    _scrollDown();
+  }
+
+  /// Eventi operativi dello stream: testo in arrivo, tool in esecuzione e
+  /// richieste di connessione. Dopo uno stop i chunk ancora in arrivo
+  /// vengono ignorati: la bolla finale è già stata promossa.
   void _onEvent(Map<String, dynamic> event) {
+    if (_stopping) return;
     final type = event['type'];
-    if (type == 'tool_start') {
+    if (type == 'text' && event['content'] is String) {
+      // Streaming-like: accodo il chunk in una bolla viva.
+      setState(() {
+        _streamingText += event['content'] as String;
+      });
+      _scrollDown();
+    } else if (type == 'tool_start') {
       setState(() => _activity = 'Uso ${event['toolName'] ?? 'uno strumento'}…');
     } else if (type == 'tool_done') {
       setState(() => _activity = 'Completato ${event['toolName'] ?? 'strumento'}.');
@@ -165,13 +316,13 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _sharing = true);
     try {
       final url = await _client.shareChat(
-        title: 'Chat ${widget.agentSlug}',
+        title: _conversation?.title ?? 'Chat ${_agentNameOrSlug()}',
         messages: [
           for (final m in _messages)
             {
               'role': m.sender == 'user' ? 'user' : 'assistant',
               'content': m.text,
-              if (m.sender != 'user') 'agentSlug': widget.agentSlug,
+              if (m.sender != 'user') 'agentSlug': _agentSlug,
             },
         ],
       );
@@ -194,7 +345,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chat: ${widget.agentSlug}'),
+        title: Text(_conversation?.title ?? 'Chat: ${_agentNameOrSlug()}'),
         actions: [
           if (_messages.isNotEmpty)
             _sharing
@@ -212,7 +363,7 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _messages.isEmpty
+            child: _messages.isEmpty && _streamingText.isEmpty
                 ? const Center(
                     child: Text(
                       'Inizia una conversazione con l\'agente...',
@@ -220,9 +371,45 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   )
                 : ListView.builder(
+                    controller: _scroll,
                     padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
+                    itemCount: _messages.length + 1,
                     itemBuilder: (context, index) {
+                      // Bolla viva di streaming: mentre la run è in corso
+                      // mostriamo i chunk già arrivati (eventi `text`); alla
+                      // chiusura viene sostituita dal messaggio definitivo.
+                      if (index == _messages.length) {
+                        if (_streamingText.trim().isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width * 0.85,
+                            ),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AgentCloudTheme.surfaceCard,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AgentCloudTheme.surfaceBorder),
+                              ),
+                              child: MarkdownBody(
+                                data: _streamingText,
+                                selectable: false,
+                                styleSheet: MarkdownStyleSheet(
+                                  p: const TextStyle(color: AgentCloudTheme.textPrimary, fontSize: 14, height: 1.5),
+                                  listBullet: const TextStyle(color: AgentCloudTheme.textPrimary),
+                                  code: const TextStyle(color: Color(0xFF6EE7B7), fontSize: 12),
+                                  a: const TextStyle(color: AgentCloudTheme.primaryLight),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
                       final msg = _messages[index];
                       final isUser = msg.sender == 'user';
                       return Align(
@@ -361,7 +548,12 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              8 + MediaQuery.of(context).padding.bottom,
+            ),
             decoration: const BoxDecoration(
               color: AgentCloudTheme.surface,
               border: Border(top: BorderSide(color: AgentCloudTheme.surfaceBorder)),
@@ -371,6 +563,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    minLines: 1,
+                    maxLines: 6,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: const TextStyle(color: AgentCloudTheme.textPrimary, fontSize: 15),
                     decoration: InputDecoration(
                       hintText: 'Scrivi un messaggio...',
                       hintStyle: const TextStyle(color: AgentCloudTheme.textMuted),
@@ -394,16 +590,30 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.send_rounded, color: AgentCloudTheme.primary),
-                  onPressed: _isLoading ? null : _sendMessage,
-                ),
+                if (_isLoading)
+                  Tooltip(
+                    message: 'Interrompi',
+                    child: IconButton(
+                      icon: const Icon(Icons.stop_circle_outlined, color: Color(0xFFF97316)),
+                      onPressed: _stop,
+                    ),
+                  )
+                else
+                  IconButton(
+                    icon: const Icon(Icons.send_rounded, color: AgentCloudTheme.primary),
+                    onPressed: _sendMessage,
+                  ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+  /// Titolo mostrato in AppBar: nome dell'agente (senza prefisso) o slug.
+  String _agentNameOrSlug() {
+    if (_agentSlug == 'general') return 'Chat generica';
+    return _agentSlug;
   }
 }
 

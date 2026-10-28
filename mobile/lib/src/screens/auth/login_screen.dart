@@ -34,6 +34,28 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// Email di reset password via Supabase: il redirectTo torna alla stessa
+  /// pagina /reset-password del web, che completa il cambio come da desktop.
+  Future<void> _reset() async {
+    final email = _email.text.trim();
+    if (email.isEmpty) {
+      setState(() => _error = 'Inserisci prima la tua email sopra.');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      await AuthService().resetPassword(email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Email di reset inviata a $email: controlla la casella.')),
+      );
+    } catch (e) {
+      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,8 +72,15 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: _dec('Email', 'tu@azienda.com')),
             const SizedBox(height: 12),
             TextField(controller: _pass, obscureText: true, decoration: _dec('Password', 'Minimo 8 caratteri')),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _reset,
+                child: const Text('Password dimenticata?', style: TextStyle(fontSize: 12, color: AgentCloudTheme.primaryLight)),
+              ),
+            ),
             if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: const TextStyle(color: Colors.redAccent))),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
             ElevatedButton(
               onPressed: _loading ? null : _login,
               style: ElevatedButton.styleFrom(backgroundColor: AgentCloudTheme.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),

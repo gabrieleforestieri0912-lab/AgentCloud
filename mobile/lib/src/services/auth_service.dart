@@ -54,6 +54,15 @@ class AuthService {
         redirectTo: '${AppConfig.siteUrl}/auth/callback');
   }
 
+  /// Invia l'email di reset password; il redirectTo riporta alla pagina
+  /// /reset-password del web, che completa il cambio come su desktop.
+  Future<void> resetPassword(String email) async {
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: '${AppConfig.siteUrl}/reset-password',
+    );
+  }
+
   Future<void> signOut() async {
     await _supabase.auth.signOut();
     await _storage.delete(key: _tokenKey);

@@ -3,9 +3,11 @@
 App mobile ufficiale di **AgentCloud** per iOS e Android.
 
 ## Funzionalità
-- **Dashboard agenti**: panoramica in tempo reale degli agenti attivi nel tuo workspace.
-- **Chat e Task execution**: interazione via chat e trigger di esecuzioni agentiche con le API di AgentCloud.
+- **Dashboard agenti**: panoramica in tempo reale degli agenti attivi nel tuo workspace, con badge "Tuo" sugli agenti realmente abbonati (da `/api/user/owned`).
+- **Chat e Task execution**: interazione via chat e trigger di esecuzioni agentiche con le API di AgentCloud. La risposta arriva in **streaming real-time** (eventi `text` SSE mostrati in bolla viva) e si può **interrompere** a metà generazione (l'arrivo parziale resta in chat).
+- **Conversazioni persistite**: la cronologia vive in locale (SharedPreferences) come la sidebar della chat web vive in localStorage; la lista "Recenti" riprende le chat con titolo, messaggi e agente.
 - **Conferma umana**: quando un tool modifica contenuto esistente, la chat mostra Approva/Annulla e riprende la run con il token firmato (stesso flusso della chat web).
+- **Reset password**: link "Password dimenticata?" col medesimo redirectTo della pagina web `/reset-password`.
 - **Notifiche push**: avvisi istantanei su task completati (in arrivo con Firebase/APNs).
 
 ## Allineamento alla piattaforma web
