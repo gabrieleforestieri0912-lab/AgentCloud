@@ -8,6 +8,7 @@ import { accountIdentityFromUser } from "@/lib/account-identity";
 
 import { pageSeo } from "@/lib/seo";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
+import { getEnabledAgentSlugs } from "@/lib/agents";
 import { getLocalizedAgentInfo } from "@/lib/i18n/agentCatalog";
 import { getOwnedAgentSlugs } from "@/lib/agents/ownership";
 
@@ -36,9 +37,9 @@ export default async function ChatPage(props: {
 
   // Gli admin / possessori del codice senza utente Supabase vedono in chat
   // l'intero catalogo (stessa gestione degli utenti normali, con cronologia).
-  // Solo gli agenti a cui l'utente si è effettivamente abbonato vengono
-  // mostrati nella chat. Un nuovo utente parte con la lista vuota e
-  // aggiunge agenti man mano che li acquista dal marketplace.
+  // Gli agenti posseduti dall'utente (abbonamento attivo in `user_agents`)
+  // hanno la precedenza: chi li ha li vede sempre. Chi non possiede nulla
+  // vede comunque gli agenti abilitati in prova gratuita (5 messaggi/giorno).
   let availableAgents: { slug: string; name: string }[] = [];
   if (user) {
     const ownedSlugs = await getOwnedAgentSlugs(user.id, user);
@@ -47,6 +48,18 @@ export default async function ChatPage(props: {
       name: AGENT_RUNTIME[slug]?.name ?? slug,
     }));
   }
+
+  // Chi non possiede agenti non resta a botte ferme: il freemium di 5 messaggi
+  // al giorno vale per QUALSIASI agente (/api/agent/run non chiede il possesso,
+  // conta solo il budget giornaliero), quindi il selettore mostra l'elenco
+  // ristretto degli agenti abilitati dai feature flag — il gateway vero resta
+  // il contatore dei 5 messaggi, non l'acquisto.
+  if (availableAgents.length === 0) {
+    availableAgents = getEnabledAgentSlugs()
+      .filter((slug) => Boolean(AGENT_RUNTIME[slug]))
+      .map((slug) => ({ slug, name: AGENT_RUNTIME[slug].name }));
+  }
+
   // La chat è sempre usabile con l'assistente generico, anche senza agenti acquistati
   if (availableAgents.length === 0) {
     availableAgents = [{ slug: "", name: dict.chat.assistantName }];
