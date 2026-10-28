@@ -204,7 +204,9 @@ export default function LinkAwareTextarea({
         placeholder={placeholder}
         rows={rows}
         aria-label={ariaLabel}
-        className={`relative z-0 w-full resize-none bg-transparent text-[15px] leading-relaxed text-transparent caret-white placeholder-neutral-500 outline-none ${className}`}
+        // 16px il font del composer: sotto quella soglia Safari iOS applica
+        // l'auto-zoom al focus e la chat "scatta" a ogni tocco dell'input.
+        className={`relative z-0 w-full resize-none bg-transparent text-[16px] leading-relaxed text-transparent caret-white placeholder-neutral-500 outline-none ${className}`}
         style={style}
       />
     </div>

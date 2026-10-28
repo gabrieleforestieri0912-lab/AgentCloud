@@ -21,6 +21,7 @@ import {
   Trash2,
   PanelLeftClose,
   PanelLeftOpen,
+  Menu,
   ArrowUp,
   Home,
   Folder,
@@ -60,6 +61,7 @@ import InlineCartCard from "@/components/InlineCartCard";
 import AccountMenu from "@/components/AccountMenu";
 import SettingsDialog from "@/components/SettingsDialog";
 import LinkAwareTextarea from "@/components/LinkAwareTextarea";
+import { useKeyboardViewport } from "@/hooks/useKeyboardViewport";
 import ChatOnboarding from "./ChatOnboarding";
 import {
   AttachmentChips,
@@ -1276,6 +1278,14 @@ export default function ChatInterface({
   useEffect(() => {
     if (isTyping) pinToBottom(true);
   }, [isTyping, pinToBottom]);
+
+  // Tastiera mobile (iOS): quando la tastiera si apre la root prende
+  // l'altezza visibile reale; il fondo della conversazione va ancorato di
+  // nuovo così l'input resta visibile sopra la tastiera.
+  const { keyboardOpen, visualViewportHeight } = useKeyboardViewport();
+  useEffect(() => {
+    if (keyboardOpen) pinToBottom(true, true);
+  }, [keyboardOpen, pinToBottom]);
 
   // Il contenuto cresce anche senza un nuovo messaggio (blocchi markdown che si
   // assestano, immagini/allegati che caricano, tool call che si espandono):
@@ -2979,7 +2989,7 @@ export default function ChatInterface({
         aria-haspopup="listbox"
         title={dict.chat.changeAgent}
         aria-label={dict.chat.changeAgent}
-        className="flex h-8 max-w-44 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 transition-all hover:border-white/25 hover:bg-white/10"
+        className="flex h-9 sm:h-8 max-w-24 sm:max-w-44 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 transition-all hover:border-white/25 hover:bg-white/10 touch-manipulation"
       >
         {activeAgent ? (
           <AgentAvatar agent={activeAgent} size="sm" circular />
@@ -3010,7 +3020,7 @@ export default function ChatInterface({
           />
           <div
             ref={agentDropdownRef}
-            className={`absolute bottom-full z-50 mb-2 w-72 rounded-2xl border border-white/15 bg-neutral-800 shadow-2xl shadow-black/60 overflow-hidden ${
+            className={`absolute bottom-full z-50 mb-2 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-white/15 bg-neutral-800 shadow-2xl shadow-black/60 overflow-x-hidden overflow-y-auto max-h-[min(24rem,calc(100dvh-8rem))] ${
               align === "right" ? "right-0" : "left-0"
             }`}
           >
@@ -3023,7 +3033,7 @@ export default function ChatInterface({
                 value={agentSearch}
                 onChange={(e) => setAgentSearch(e.target.value)}
                 placeholder={dict.chat.searchAgents}
-                className="flex-1 bg-transparent text-sm text-white placeholder-neutral-500 outline-none"
+                className="flex-1 min-w-0 bg-transparent text-[16px] text-white placeholder-neutral-500 outline-none"
               />
               {agentSearch && (
                 <button
@@ -3133,6 +3143,13 @@ export default function ChatInterface({
           ? "bg-[#0b0913] shadow-[inset_0_0_140px_rgba(139,92,246,0.12)]"
           : "bg-neutral-950"
       }`}
+      // Tastiera mobile: l'alzata visibile reale (iOS) sostituisce 100dvh;
+      // il composer assoluto in fondo resta così sopra la tastiera.
+      style={
+        keyboardOpen && visualViewportHeight
+          ? { height: `${visualViewportHeight}px` }
+          : undefined
+      }
       data-streaming={isTyping ? "true" : "false"}
       data-ghost={isGhostMode ? "true" : "false"}
     >
@@ -3334,7 +3351,7 @@ export default function ChatInterface({
                         if (e.key === "Escape") setRenamingId(null);
                       }}
                       onBlur={() => confirmRename(conv.id)}
-                      className="flex-1 bg-transparent border-b border-brand-500 text-white text-sm outline-none px-0 py-0"
+                      className="flex-1 min-w-0 bg-transparent border-b border-brand-500 text-white text-base outline-none px-0 py-0"
                       onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
@@ -3357,7 +3374,7 @@ export default function ChatInterface({
                           ? "opacity-100 bg-white/10 text-white"
                           : conv.id === activeId
                             ? "opacity-100"
-                            : "opacity-0 group-hover:opacity-100"
+                            : "opacity-40 group-hover:opacity-100"
                       }`}
                       title={dict.chat.conversationOptions}
                     >
@@ -3548,7 +3565,18 @@ export default function ChatInterface({
               : "from-neutral-900 via-neutral-900/70 to-transparent"
           } px-4 pb-5 pt-2 sm:px-6`}
         >
-          <div className={`flex min-w-0 items-center gap-2 ${!sidebarVisible ? "pl-44" : ""}`}>
+          <div className={`flex min-w-0 items-center gap-2 ${!sidebarVisible ? "lg:pl-44" : ""}`}>
+            {/* Trigger drawer cronologia (solo mobile/tablet senza sidebar): */}
+            {!isGhostMode && (
+              <button
+                onClick={() => setMobileSidebarOpen(true)}
+                aria-label={dict.chat.openSidebar}
+                title={dict.chat.openSidebar}
+                className="lg:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-300 transition-all hover:bg-white/10 hover:text-white"
+              >
+                <Menu size={18} />
+              </button>
+            )}
             <p className="truncate text-sm font-bold text-white">
               {activeConv?.title ?? dict.chat.newChat}
             </p>
@@ -3616,19 +3644,10 @@ export default function ChatInterface({
           </div>
         </div>
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
-          {/* Trigger sidebar su mobile: in modalità Ghost il drawer della
-              cronologia resta disabilitato (l'icona fantasma resta visibile
-              nell'header). */}
-          {!isGhostMode && (
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-[calc(1rem+env(safe-area-inset-left))] z-10 w-11 h-11 bg-brand-500 rounded-full flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-400 transition-all"
-              title={dict.chat.openSidebar}
-            >
-              <MessageSquare size={18} className="text-white" />
-            </button>
-          )}
-
+          {/* Il trigger del drawer mobile è nell'header trasparente in alto
+              (bottone menu): un FAB flottante in basso a sinistra si
+              sovrapponeva all'input che su mobile occupa tutta la base dello
+              schermo, intercettando i click sul bottone "+". */}
           {/* Riapertura sidebar su desktop: senza questo, una volta ristretta la
               sidebar restava chiusa fino al reload (era il difetto: esisteva
               solo `setSidebarOpen(false)`).(hidden sotto lg: il mobile usa il
@@ -3991,7 +4010,7 @@ export default function ChatInterface({
             <div
               ref={attachMessages}
               onScroll={handleMessagesScroll}
-              className="flex-1 overflow-y-auto px-4 sm:px-6 pt-14 pb-48"
+              className="flex-1 overflow-y-auto px-3 sm:px-6 pt-14 pb-56 sm:pb-48"
             >
             <div ref={contentRef} className="space-y-6 mx-auto max-w-4xl">
             {messages.map((msg, msgIndex) => {
@@ -4270,30 +4289,10 @@ export default function ChatInterface({
             </div>
         </div>
 
-        {/* Torna in fondo: visibile quando l'utente è risalito a leggere
-            (anche durante la generazione). Riaggancia l'auto-scroll. */}
-        <AnimatePresence>
-          {!isAtBottom && (
-            <motion.button
-              key="go-bottom"
-              type="button"
-              onClick={() => pinToBottom(true, true)}
-              aria-label={dict.chat.goBottom}
-              title={dict.chat.goBottom}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              className="absolute bottom-36 left-1/2 z-20 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-white/10 bg-neutral-800/95 text-neutral-300 shadow-xl shadow-black/40 backdrop-blur transition-colors hover:bg-neutral-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-            >
-              <ArrowDown size={16} />
-            </motion.button>
-          )}
-        </AnimatePresence>
-
         {/* Input in basso: fondo pieno con bordo superiore, niente trasparenza */}
         <div
           data-onboard="chat-input"
-          className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent px-4 sm:px-6 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8"
+          className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-8"
           onDragEnter={attach.onDragEnter}
           onDragOver={attach.onDragOver}
           onDragLeave={attach.onDragLeave}
@@ -4463,8 +4462,30 @@ export default function ChatInterface({
                   )}
               </div>
             </div>
+            {/* Torna in fondo: visibile quando l'utente è risalito a leggere
+                (anche durante la generazione). Riaggancia l'auto-scroll. Il
+                bottone vive DENTRO il wrapper del composer ("bottom-full"):
+                sale e scende con l'input, che su mobile cresce molto (chip,
+                budget, avvisi) e prima sovrapponeva l'input a offset fisso. */}
+                <AnimatePresence>
+                  {!isAtBottom && (
+                    <motion.button
+                      key="go-bottom"
+                      type="button"
+                      onClick={() => pinToBottom(true, true)}
+                      aria-label={dict.chat.goBottom}
+                      title={dict.chat.goBottom}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      className="absolute bottom-full left-1/2 z-20 mb-2 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-white/10 bg-neutral-800/95 text-neutral-300 shadow-xl shadow-black/40 backdrop-blur transition-colors hover:bg-neutral-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                    >
+                      <ArrowDown size={16} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
           </div>
-          <p className="text-[10px] text-neutral-600 text-center mt-2">{dict.chat.disclaimer}</p>
+          <p className="text-[10px] text-neutral-600 text-center mt-1.5 sm:mt-2">{dict.chat.disclaimer}</p>
         </div>
         </motion.div>
           )}
@@ -4622,7 +4643,7 @@ export default function ChatInterface({
                 onChange={(e) => setProjectFormName(e.target.value)}
                 placeholder={dict.chat.projectName}
                 maxLength={80}
-                className="w-full rounded-xl border border-white/10 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 outline-none focus:border-brand-500"
+                className="w-full rounded-xl border border-white/10 bg-neutral-800 px-3 py-2 text-base text-white placeholder-neutral-500 outline-none focus:border-brand-500"
               />
             </label>
             <label className="mt-3 block">
@@ -4635,7 +4656,8 @@ export default function ChatInterface({
                 placeholder={dict.chat.projectInstructionsHint}
                 rows={3}
                 maxLength={4000}
-                className="w-full resize-y rounded-xl border border-white/10 bg-neutral-800 px-3 py-2 text-sm leading-relaxed text-white placeholder-neutral-500 outline-none focus:border-brand-500"
+                style={{ minHeight: "80px" } as React.CSSProperties}
+                className="w-full resize-y rounded-xl border border-white/10 bg-neutral-800 px-3 py-2 text-base leading-relaxed text-white placeholder-neutral-500 outline-none focus:border-brand-500"
               />
             </label>
             {selectableAgents.length > 0 && (

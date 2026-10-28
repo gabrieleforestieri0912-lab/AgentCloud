@@ -108,3 +108,33 @@ Gravità: **bloccante** (impedisce l'uso) / **alta** (uso molto scomodo) /
 
 **PROSSIMO PASSO (dopo tua conferma):** FASE 1 — Fondamenta globali
 (`globals.css`, viewport, `dvh`, target touch, utility condivise).
+
+## §6 FASE 1 — implementazione (Ott 2026)
+
+Stato dopo l'implementazione, modifiche fatte:
+
+- **Viewport**: `layout.tsx` ora emette `viewport-fit=cover` (attiva gli
+  `env(safe-area-inset-*)`; prima erano no-op) e
+  `interactive-widget=resizes-content` (su Chrome/Android la tastiera
+  rimpicciolisce il layout: il composer si solleva nativamente).
+- **Tastiera iOS**: hook `src/hooks/useKeyboardViewport.ts` (visualViewport);
+  quando la tastiera è aperta la radice della chat prende l'altezza visibile
+  reale e il fondo della conversazione resta ancorato.
+- **Anti-zoom iOS (input ≥16px)**: textarea della chat (`LinkAwareTextarea`),
+  input di login/signup/reset-password, ricerca agenti del picker, form repo
+  del menu "+", form progetto e rinomina — prima 13–15px con auto-zoom.
+- **Composer mobile**: trigger flottante in basso a sinistra (si sovrapponeva
+  all'input) sostituito da un pulsante menu nell'header; bottone "torna in
+  fondo" dentro il wrapper del composer (`bottom-full`, offset dinamico);
+  voice-mode nascosto sotto `sm`; target tattili 40px su "+" e mic;
+  padding laterale 12px.
+- **Menu "+" e picker agente**: larghezze `min(ampiezza, 100vw-margine)` e
+  sottomenu in blocco in linea su schermi stretti (prima `left-full` usciva
+  dal viewport).
+- **Menu conversazioni**: pulsante ⋮ non più hover-only su touch (opacità
+  ridotta ma visibile).
+- Verifiche: typecheck/lint/build; Chromium headless a 360px su login e gate
+  `/chat`: nessun overflow orizzontale, meta viewport vivo, input 16px.
+
+Restano aperti: tabelle → card nelle pagine dashboard/admin, riverifica
+scorciatoie hover su altre schermate non chat.

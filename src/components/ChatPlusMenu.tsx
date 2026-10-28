@@ -165,7 +165,7 @@ function MenuPanel({
 
   return (
     <div
-      className="min-w-[15rem] max-w-[22rem] overflow-hidden rounded-xl border border-white/10 bg-neutral-900/95 py-1 shadow-2xl shadow-black/50 backdrop-blur-xl"
+      className="min-w-[15rem] max-w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-white/10 bg-neutral-900/95 py-1 shadow-2xl shadow-black/50 backdrop-blur-xl"
       role="menu"
     >
       {items.map((item) => {
@@ -213,9 +213,10 @@ function MenuPanel({
               {open && (
                 <div
                   className={
-                    depth === 0
-                      ? "absolute left-full top-0 z-20 ml-1"
-                      : "absolute left-full top-0 z-20 ml-1"
+                    // Desktop: il sottomenu apre a fianco della voce. Su
+                    // schermi stretti spaccherebbe il viewport: diventa un
+                    // blocco in linea sotto la voce, dentro il pannello.
+                    "max-sm:static max-sm:mt-1 sm:absolute sm:left-full sm:top-0 sm:z-20 sm:ml-1"
                   }
                 >
                   <MenuPanel items={item.items} onClose={onClose} depth={depth + 1} />
@@ -612,17 +613,17 @@ export default function ChatPlusMenu({
         title={labels.aria}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+        className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 active:scale-95"
       >
         <Plus size={16} strokeWidth={2.25} />
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 z-40 mb-2">
+        <div className="absolute bottom-full left-0 z-40 mb-2 max-w-[calc(100vw-2rem)]">
           {repoFormOpen ? (
             // Il form SOSTITUISCE il menu: metterli insieme spingerebbe il
             // menu fuori dal viewport (il contenitore cresce verso l'alto).
-            <div className="w-[20rem] rounded-xl border border-white/10 bg-neutral-900/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
+            <div className="w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-white/10 bg-neutral-900/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
               <label className="mb-2 block text-[12px] font-semibold text-white">
                 {labels.linkRepoTitle}
               </label>
@@ -637,7 +638,9 @@ export default function ChatPlusMenu({
                   if (e.key === "Enter") submitRepo();
                 }}
                 placeholder={labels.linkRepoPlaceholder}
-                className="w-full rounded-lg border border-white/10 bg-neutral-950 px-3 py-2 text-[13px] text-white outline-none placeholder-neutral-600 focus:border-brand-500/60"
+                // 16px: sotto quella soglia Safari iOS zooma il viewport al
+                // focus, facendo "scattare" tutta l'app (menu poppers inclusi).
+                className="w-full rounded-lg border border-white/10 bg-neutral-950 px-3 py-2 text-[16px] text-white outline-none placeholder-neutral-600 focus:border-brand-500/60"
               />
               {repoError && <p className="mt-1.5 text-[11px] text-red-400">{repoError}</p>}
               {!githubConnected && (
@@ -667,7 +670,7 @@ export default function ChatPlusMenu({
           ) : (
             <MenuPanel items={items} onClose={() => setOpen(false)} />
           )}
-          {notice && <p className="mt-2 w-[20rem] text-[11px] text-amber-400">{notice}</p>}
+          {notice && <p className="mt-2 w-[min(20rem,calc(100vw-2rem))] text-[11px] text-amber-400">{notice}</p>}
         </div>
       )}
     </div>

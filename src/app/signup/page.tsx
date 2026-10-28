@@ -247,7 +247,7 @@ export default function SignupPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={a.signup.namePlaceholder}
-                    className="w-full rounded-xl border border-white/10 bg-neutral-800 py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+                    className="w-full rounded-xl border border-white/10 bg-neutral-800 py-2.5 pl-10 pr-4 text-base text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
                   />
                 </div>
               </label>
@@ -263,7 +263,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={a.signup.emailPlaceholder}
-                  className="w-full rounded-xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+                  className="w-full rounded-xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-base text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
                 />
               </label>
 
@@ -279,7 +279,7 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={a.signup.passwordPlaceholder}
-                  className="w-full rounded-xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
+                  className="w-full rounded-xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-base text-white placeholder-neutral-500 outline-none transition-all focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20"
                 />
               </label>
 

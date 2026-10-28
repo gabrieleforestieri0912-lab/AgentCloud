@@ -53,6 +53,15 @@ const META: Record<Locale, { title: string; description: string }> = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // viewport-fit=cover: le pagine si estendono sotto le "notch"/barre di
+  // sistema di iPhone; senza questa direttiva tutti gli
+  // env(safe-area-inset-*) usati nel sito valgono zero (input e footer
+  // incollati ai bordi arrotondati).
+  viewportFit: "cover",
+  // La tastiera di Chrome/Android rimpicciolisce il layout invece di
+  // sovrapporsi: il composer della chat si solleva sopra la tastiera senza
+  // JavaScript. (iOS lo fa già di suo: gestito lato chat con visualViewport.)
+  interactiveWidget: "resizes-content",
   themeColor: "#0a0a0f",
 };
 

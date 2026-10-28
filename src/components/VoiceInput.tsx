@@ -122,7 +122,7 @@ export default function VoiceInput({
         type="button"
         onClick={toggleDictation}
         disabled={disabled}
-        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 ${
+        className={`w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-95 ${
           isRecording
             ? "bg-red-500/20 text-red-400 animate-pulse"
             : "text-neutral-400 hover:text-white hover:bg-white/5"
@@ -133,13 +133,14 @@ export default function VoiceInput({
         {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
       </button>
 
-      {/* Voice mode toggle */}
+      {/* Voice mode toggle: su smartphone resta nascosto — con mic + send
+          la toolbar del composer (circa 360px di larghezza) non ha spazio. */}
       {onVoiceModeToggle && (
         <button
           type="button"
           onClick={() => onVoiceModeToggle(!isVoiceMode)}
           disabled={disabled}
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 ${
+          className={`max-sm:hidden w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 ${
             isVoiceMode
               ? "bg-brand-500/20 text-brand-400"
               : "text-neutral-400 hover:text-white hover:bg-white/5"
