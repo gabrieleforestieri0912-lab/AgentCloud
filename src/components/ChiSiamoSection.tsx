@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import BrandIcon from "@/components/BrandIcon";
 import { BRANDS } from "@/lib/brands";
 
@@ -91,9 +92,9 @@ export default function ChiSiamoSection({ labels }: { labels: ChiSiamoLabels }) 
       </div>
       <p className="mt-6 text-center text-xs text-neutral-500">
         {labels.photosNote}{" "}
-        <a href="/about" className="font-semibold text-brand-400 hover:text-brand-300">
+        <Link href="/about" className="font-semibold text-brand-400 hover:text-brand-300">
           {labels.photosLink}
-        </a>
+        </Link>
         .
       </p>
     </section>

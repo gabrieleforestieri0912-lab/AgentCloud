@@ -30,6 +30,7 @@ import {
   Sun,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "./LanguageProvider";
 import { useTheme, type Theme } from "./ThemeProvider";
 import { t } from "@/lib/i18n/dictionaries";
@@ -419,28 +420,28 @@ export default function SettingsDialog({
                   <p className="p-3.5 pb-2 text-sm font-bold text-white">{dict.chat.settingsPrivacy}</p>
                   <p className="px-3.5 pb-3 text-xs text-neutral-500">{dict.chat.settingsPrivacyDesc}</p>
                   <div className="flex flex-wrap gap-2 px-3.5 pb-3.5">
-                    <a
+                    <Link
                       href="/privacy"
                       target="_blank"
                       rel="noreferrer"
                       className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white hover:bg-white/10"
                     >
                       Privacy
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/terms"
                       target="_blank"
                       rel="noreferrer"
                       className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white hover:bg-white/10"
                     >
                       {dict.chat.settingsTerms}
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/account"
                       className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white hover:bg-white/10"
                     >
                       Account
-                    </a>
+                    </Link>
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/5 bg-neutral-800">

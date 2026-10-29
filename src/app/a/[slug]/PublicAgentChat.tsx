@@ -322,13 +322,13 @@ export default function PublicAgentChat({ slug, name, description, agent, enrich
               {dict.publicChat.fullCard} <ArrowRight size={12} />
             </Link>
           )}
-          <a
+          <Link
             href="/chat"
             className="text-xs text-neutral-500 hover:text-brand-400 transition-colors hidden sm:flex items-center gap-1.5"
           >
             <MessageSquare size={12} />
             AgentCloud
-          </a>
+          </Link>
         </div>
       </header>
 

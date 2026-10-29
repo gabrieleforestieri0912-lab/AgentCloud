@@ -12,6 +12,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { useLanguage } from "./LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 import HeroBubbles from "./HeroBubbles";
@@ -838,7 +839,7 @@ export default function HeroSection() {
             {/* ── CTA apri chat completa ── */}
             {hasMessages && (
               <div className="mt-3 text-center">
-                <a
+                <Link
                   href="/chat"
                   className="text-xs font-semibold text-neutral-500 hover:text-brand-400 transition-colors inline-flex items-center gap-1.5"
                 >
@@ -855,7 +856,7 @@ export default function HeroSection() {
                   >
                     <path d="M7 17 17 7M17 7H7M17 7v10" />
                   </svg>
-                </a>
+                </Link>
               </div>
             )}
           </motion.div>
