@@ -109,9 +109,13 @@ export default async function SharedChatPage({
               className={`flex items-start gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {msg.role === "assistant" && (
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-                  <Image src="/agentcloud.png" alt="" width={16} height={16} className="w-4 h-4" />
-                </div>
+                <Image
+                  src="/agentcloud.png"
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="mt-0.5 h-7 w-7 shrink-0"
+                />
               )}
               <div className={msg.role === "user" ? "order-1 max-w-[85%]" : "max-w-[85%] w-full"}>
                 {msg.role === "assistant" && msg.agentName && (

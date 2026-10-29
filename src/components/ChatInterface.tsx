@@ -2994,15 +2994,13 @@ export default function ChatInterface({
         {activeAgent ? (
           <AgentAvatar agent={activeAgent} size="sm" circular />
         ) : (
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-            <Image
-              src="/agentcloud.png"
-              alt="AgentCloud"
-              width={14}
-              height={14}
-              className="h-3.5 w-3.5"
-            />
-          </span>
+          <Image
+            src="/agentcloud.png"
+            alt="AgentCloud"
+            width={24}
+            height={24}
+            className="h-6 w-6 shrink-0"
+          />
         )}
         <span className="truncate text-xs font-bold text-neutral-200">
           {activeAgent ? activeAgentDisplayName : dict.chat.assistantName}
@@ -4030,15 +4028,13 @@ export default function ChatInterface({
                       {target ? (
                         <AgentAvatar agent={target} size="sm" />
                       ) : (
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-                          <Image
-                            src="/agentcloud.png"
-                            alt="AgentCloud"
-                            width={14}
-                            height={14}
-                            className="h-3.5 w-3.5"
-                          />
-                        </span>
+                        <Image
+                          src="/agentcloud.png"
+                          alt="AgentCloud"
+                          width={24}
+                          height={24}
+                          className="h-6 w-6 shrink-0"
+                        />
                       )}
                       <span className="min-w-0 text-left">
                         <span className="block truncate font-bold text-neutral-200">
@@ -4073,15 +4069,13 @@ export default function ChatInterface({
                       <AgentAvatar agent={agentForMessage(msg)!} size="sm" />
                     </div>
                   ) : (
-                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/5 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-                      <Image
-                        src="/agentcloud.png"
-                        alt="AgentCloud"
-                        width={16}
-                        height={16}
-                        className="w-4 h-4"
-                      />
-                    </div>
+                    <Image
+                      src="/agentcloud.png"
+                      alt="AgentCloud"
+                      width={28}
+                      height={28}
+                      className="mt-0.5 h-7 w-7 shrink-0"
+                    />
                   ))}
                 <div
                   className={`${
