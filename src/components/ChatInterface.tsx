@@ -4401,8 +4401,8 @@ export default function ChatInterface({
             )}
             {/* Input su una riga: "+" a sinistra, testo al centro, comandi a
                 destra. Il selettore agente è fuori, nella riga sopra. */}
-            <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-neutral-800 px-3 py-2 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-              <div className="flex h-11 shrink-0 items-center">
+            <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-neutral-800 px-3 py-1.5 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
+              <div className="flex h-9 shrink-0 items-center">
                 <ChatPlusMenu
                   labels={plusLabels}
                   disabled={isTyping}
@@ -4429,7 +4429,7 @@ export default function ChatInterface({
                 placeholder={dict.chat.placeholder}
                 rows={1}
                 wrapperClassName="flex-1"
-                className="py-2.5"
+                className="py-2"
                 style={{ fieldSizing: "content", maxHeight: "160px" } as React.CSSProperties}
               />
               <div className="flex shrink-0 items-center gap-2">
@@ -4439,7 +4439,7 @@ export default function ChatInterface({
                       onClick={() => activeId && stopStreaming(activeId)}
                       aria-label={dict.chat.activity.stopGeneration}
                       title={dict.chat.activity.stopGeneration}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center bg-neutral-700 text-white hover:bg-neutral-600 transition-all shrink-0 shadow-lg shadow-black/20"
+                      className="w-9 h-9 rounded-full flex items-center justify-center bg-neutral-700 text-white hover:bg-neutral-600 transition-all shrink-0 shadow-lg shadow-black/20"
                     >
                       <Square size={16} fill="currentColor" />
                     </button>
@@ -4449,13 +4449,13 @@ export default function ChatInterface({
                       disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
                       aria-label={dict.chat.sendMessage}
                       title={dict.chat.sendMessage}
-                      className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
+                      className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
                         (!input.trim() && attach.attachments.length === 0) || isTyping || !activeId
                           ? "bg-neutral-800 text-neutral-600 shadow-none"
                           : "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_16px_rgba(3,139,254,0.45),0_4px_12px_rgba(0,0,0,0.3)] hover:brightness-110 hover:scale-105 hover:shadow-[0_0_22px_rgba(3,139,254,0.6),0_4px_12px_rgba(0,0,0,0.3)] active:scale-95"
                       }`}
                     >
-                      <ArrowUp size={18} strokeWidth={2.5} />
+                      <ArrowUp size={16} strokeWidth={2.5} />
                     </button>
                   )}
               </div>
