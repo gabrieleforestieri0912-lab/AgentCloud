@@ -301,6 +301,13 @@ function generateId() {
   return Math.random().toString(36).substring(2, 15);
 }
 
+/**
+ * Tolleranza (px) nel giudicare se la FINE della conversazione è ancora visibile.
+ * Serve a non far scattare il bottone "Vai in fondo" per uno scarto di sub-pixel
+ * dello scroll o per l'arrotondamento dei rect letti da getBoundingClientRect.
+ */
+const END_VISIBLE_TOL = 8;
+
 type ChatInterfaceProps = {
   initialQuery?: string;
   agentId?: string;
@@ -1176,6 +1183,30 @@ export default function ChatInterface({
   const pinnedScrollTop = useRef(0);
   const lastTouchY = useRef<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  // Il composer è `absolute` sopra il container di scroll: la parte della chat
+  // che l'utente vede davvero finisce al bordo superiore del composer, non al
+  // bordo del box di scroll. Serve a sapere se la coda dei messaggi si vede.
+  const composerRef = useRef<HTMLDivElement>(null);
+  /**
+   * Distanza (px) fra la linea visibile sotto i messaggi e la coda della
+   * conversazione.
+   *
+   * >= 0 → la fine dei messaggi si vede ancora (conversazione corta che sta
+   * tutta nella view, oppure si è in fondo);
+   * < 0 → la coda è fuori dalla vista (sotto il fondo o dietro il composer) e
+   * solo a quel punto il bottone "Vai in fondo" ha senso comparire.
+   */
+  const contentEndGap = useCallback(() => {
+    const el = messagesRef.current;
+    const content = contentRef.current;
+    if (!el || !content) return 0;
+    const elRect = el.getBoundingClientRect();
+    const composerRect = composerRef.current?.getBoundingClientRect();
+    const visibleBottom =
+      composerRect && composerRect.top < elRect.bottom ? composerRect.top : elRect.bottom;
+    return visibleBottom - content.getBoundingClientRect().bottom;
+  }, []);
+
   // Un solo scroll per frame: durante lo streaming arrivano decine di mutazioni
   // al secondo (ogni token) e ognuna chiamava scrollTo + due letture di
   // layout, provocando "scatti" visibili e lavoro inutile.
@@ -1221,13 +1252,26 @@ export default function ChatInterface({
         pendingSmooth.current = false;
 
         const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+        // La coda è fuori dalla vista? Solo in quel caso (e non per il mero
+        // scorrimento del padding in fondo) uno scroll dell'utente è un
+        // "risalito" che deve staccare l'auto-scroll.
+        const endHidden = contentEndGap() < -END_VISIBLE_TOL;
         const movedByUser =
           !force &&
+          endHidden &&
           !atBottom &&
           Date.now() >= smoothScrollUntil.current &&
           el.scrollTop < pinnedScrollTop.current - 24;
         if (movedByUser) {
           unpin();
+          return;
+        }
+        if (!force && !endHidden) {
+          // La fine della conversazione si vede già: non c'è nulla da rivelare.
+          // Scorre qui solo sposterebbe i messaggi senza mostrarne di nuovi (ed
+          // è quello che faceva apparire il bottone su chat che stanno in view).
+          // Aggancia il fondo corrente così lo scarto successivo è quello giusto.
+          pinnedScrollTop.current = el.scrollTop;
           return;
         }
         if (useSmooth) smoothScrollUntil.current = Date.now() + 800;
@@ -1249,24 +1293,34 @@ export default function ChatInterface({
   const handleMessagesScroll = () => {
     const el = messagesRef.current;
     if (!el) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 100) {
-      // L'utente è tornato in fondo: da qui in poi si segue di nuovo lo stream.
-      stickToBottom.current = true;
-      setIsAtBottom(true);
-      return;
-    }
     // Durante l'animazione di avvio gli eventi intermedi non sono dell'utente.
     if (Date.now() < smoothScrollUntil.current) return;
-    // Contenuto cresciuto mentre il pin stava arrivando? scrollTop resta al
-    // fondo precedente: non è l'utente che risale. Si stacca solo quando la
-    // posizione è più in alto del fondo che abbiamo impostato noi.
-    if (el.scrollTop < pinnedScrollTop.current - 24) unpin();
+    const atScrollBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    // La coda della conversazione si vede ancora? Se sì — conversazione corta
+    // che sta tutta nella view, oppure scroll rimasto nel padding in fondo — il
+    // bottone "Vai in fondo" non serve: compare solo quando la coda esce dalla
+    // vista, cioè quando il messaggio è davvero lungo da non starci.
+    const endVisible = atScrollBottom || contentEndGap() >= -END_VISIBLE_TOL;
+    setIsAtBottom(endVisible);
+    if (!endVisible) {
+      // Coda fuori dalla view e posizione più in alto del fondo che abbiamo
+      // impostato NOI: è l'utente che è risalito a leggere, non il contenuto
+      // che è cresciuto. Solo allora l'auto-scroll si stacca.
+      if (el.scrollTop < pinnedScrollTop.current - 24) unpin();
+    } else if (atScrollBottom) {
+      // L'utente è tornato in fondo: da qui in poi si segue di nuovo lo stream.
+      stickToBottom.current = true;
+    }
   };
 
   // Cambio di conversazione: il fondo memorizzato è quello della conversazione
-  // precedente e non va usato per decidere se l'utente si è spostato.
+  // precedente e non va usato per decidere se l'utente si è spostato. Anche lo
+  // stacco preso nella chat vecchia non deve portarsi dietro il bottone in
+  // quella nuova, che si apre agganciata al fondo.
   useEffect(() => {
     pinnedScrollTop.current = 0;
+    stickToBottom.current = true;
+    setIsAtBottom(true);
   }, [activeId]);
 
   // Scroll quando i messaggi cambiano (incluso durante streaming)
@@ -1295,15 +1349,33 @@ export default function ChatInterface({
     const el = messagesNode;
     const content = contentRef.current;
     if (!el || !content || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => pinToBottom());
+    // Il contenuto può crescere o restringersi anche senza uno scroll: in quel
+    // caso nessun evento di scroll arriva ed è qui che il bottone va aggiornato
+    // (es. l'utente è fermo sopra la chat e la risposta che cresce nasconde la
+    // coda). Con l'auto-scroll agganciato non si tocca nulla, così in streaming
+    // il bottone non lampeggia.
+    const syncEndVisibility = () => {
+      const node = messagesRef.current;
+      if (!node) return;
+      const visible =
+        node.scrollHeight - node.scrollTop - node.clientHeight < 100 ||
+        contentEndGap() >= -END_VISIBLE_TOL;
+      if (visible) setIsAtBottom(true);
+      else if (!stickToBottom.current) setIsAtBottom(false);
+    };
+    const onContentChange = () => {
+      pinToBottom();
+      syncEndVisibility();
+    };
+    const observer = new ResizeObserver(onContentChange);
     observer.observe(content);
-    const mutations = new MutationObserver(() => pinToBottom());
+    const mutations = new MutationObserver(onContentChange);
     mutations.observe(content, { childList: true, subtree: true, characterData: true });
     return () => {
       observer.disconnect();
       mutations.disconnect();
     };
-  }, [messagesNode, pinToBottom]);
+  }, [messagesNode, pinToBottom, contentEndGap]);
 
   // Smette un frame di scroll pendente se il componente si smonta.
   useEffect(() => {
@@ -1323,20 +1395,22 @@ export default function ChatInterface({
   useEffect(() => {
     const el = messagesNode;
     if (!el) return;
-    // C'è qualcosa da scorrere? Se il contenuto sta tutta nella view il
-    // gesto (rotella su, dito giù) non è un "risalito": non deve moltiplicare
-    // l'unpin, altrimenti il bottone "Vai in fondo" appare sopra una
-    // conversazione corta che non scrolla.
-    const canScrollUp = () => el.scrollHeight > el.clientHeight + 1;
+    // C'è qualcosa da scorrere davvero? Se la conversazione sta tutta nella
+    // view (messaggio corto, o overflow dovuto solo al padding in fondo) il
+    // gesto (rotella su, dito giù) non è un "risalito": non deve staccare
+    // l'auto-scroll né far comparire il bottone "Vai in fondo". `gap - scrollTop`
+    // è la coda che si avrebbe tornando in cima allo scroll: è costante perché
+    // il contenuto transla tutto di una quantità uguale.
+    const endCanHide = () => contentEndGap() - el.scrollTop < -END_VISIBLE_TOL;
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaY < 0 && canScrollUp()) unpin();
+      if (e.deltaY < 0 && endCanHide()) stickToBottom.current = false;
     };
     const onTouchMove = (e: TouchEvent) => {
       const y = e.touches[0]?.clientY ?? null;
       if (y === null) return;
       const prev = lastTouchY.current;
       lastTouchY.current = y;
-      if (prev !== null && y > prev + 4 && canScrollUp()) unpin();
+      if (prev !== null && y > prev + 4 && endCanHide()) stickToBottom.current = false;
     };
     const onTouchEnd = () => {
       lastTouchY.current = null;
@@ -1349,7 +1423,7 @@ export default function ChatInterface({
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
     };
-  }, [messagesNode, unpin]);
+  }, [messagesNode, contentEndGap]);
 
   // Sidebar account — usa lo stesso pattern affidabile di SidebarAccount:
   // salva l'intero Session object, ha mounted guard, e usa onAuthStateChange
@@ -4295,6 +4369,7 @@ export default function ChatInterface({
         {/* Input in basso: fondo pieno con bordo superiore, niente trasparenza */}
         <div
           data-onboard="chat-input"
+          ref={composerRef}
           className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-8"
           onDragEnter={attach.onDragEnter}
           onDragOver={attach.onDragOver}
@@ -4465,11 +4540,15 @@ export default function ChatInterface({
                   )}
               </div>
             </div>
-            {/* Torna in fondo: visibile quando l'utente è risalito a leggere
-                (anche durante la generazione). Riaggancia l'auto-scroll. Il
-                bottone vive DENTRO il wrapper del composer ("bottom-full"):
-                sale e scende con l'input, che su mobile cresce molto (chip,
-                budget, avvisi) e prima sovrapponeva l'input a offset fisso. */}
+            {/* Torna in fondo: isAtBottom è false solo quando la coda della
+                conversazione è davvero fuori dalla vista, quindi NON compare su
+                una chat corta che sta tutta nella view (basterebbe un overflow
+                del padding in fondo a farlo apparire): serve solo quando il
+                messaggio è lungo abbastanza da nascondere la fine. Riaggancia
+                l'auto-scroll. Il bottone vive DENTRO il wrapper del composer
+                ("bottom-full"): sale e scende con l'input, che su mobile cresce
+                molto (chip, budget, avvisi) e prima sovrapponeva l'input a
+                offset fisso. */}
                 <AnimatePresence>
                   {!isAtBottom && (
                     <motion.button
