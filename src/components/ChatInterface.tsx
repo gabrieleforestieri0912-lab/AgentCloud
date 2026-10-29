@@ -16,6 +16,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
+  LayoutDashboard,
   MessageSquare,
   Plus,
   Trash2,
@@ -23,7 +24,6 @@ import {
   PanelLeftOpen,
   Menu,
   ArrowUp,
-  Home,
   Folder,
   FolderPlus,
   Plug,
@@ -3634,13 +3634,16 @@ export default function ChatInterface({
                 <Share2 size={15} />
               </button>
             )}
+            {/* Torna alla dashboard: pillola bianca come "Nuova chat", con
+                l'etichetta invece della sola icona. */}
             <Link
               href="/dashboard"
               aria-label="Dashboard"
               title="Dashboard"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white"
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-bold text-neutral-900 transition-all hover:bg-neutral-100"
             >
-              <Home size={15} />
+              <LayoutDashboard size={13} strokeWidth={2.25} />
+              {dict.navbar.dashboardLabel}
             </Link>
           </div>
         </div>

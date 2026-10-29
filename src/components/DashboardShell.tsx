@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, X, ChevronDown, Sparkles, Blocks, AppWindow, CalendarClock, ShieldCheck, Activity } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Plug, ShoppingCart, User, CreditCard, Menu, ChevronDown, Sparkles, Blocks, AppWindow, CalendarClock, ShieldCheck, Activity, PanelLeftClose } from "lucide-react";
 import { usePathname } from "next/navigation";
 import SidebarAccount from "./SidebarAccount";
 import type { AccountIdentity } from "@/lib/account-identity";
@@ -100,20 +100,31 @@ export default function DashboardShell({
             ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           `}
         >
-        {/* Header */}
-        <div className="flex h-14 items-center justify-between gap-2 border-b border-white/[0.06] px-4">
-          <Link href="/" className="flex items-center gap-2.5">
+        {/* Header — stesso stile della sidebar della chat: logo a sinistra,
+            pillola di chiusura a destra. */}
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
+            aria-label="AgentCloud"
+          >
             <span className="relative h-7 w-7 overflow-hidden rounded-lg">
               <Image src="/agentcloud.png" alt="AgentCloud" fill className="object-cover" sizes="28px" />
             </span>
             <span className="text-sm font-bold tracking-tight text-white">AgentCloud</span>
           </Link>
-          <button onClick={() => setMobileOpen(false)} className="lg:hidden flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition-all">
-            <X size={16} />
+          <button
+            onClick={() => setMobileOpen(false)}
+            aria-label={dict.chat.closeSidebar}
+            title={dict.chat.closeSidebar}
+            className="lg:hidden flex h-9 w-11 items-center justify-center rounded-full text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
+          >
+            <PanelLeftClose size={16} />
           </button>
         </div>
-        {/* Navigation — clean pill style */}
-        <nav data-onboard="dashboard-nav" className="flex-1 overflow-y-auto p-3 space-y-0.5">
+        {/* Navigation — stile identico alla sidebar della chat: item bassi
+            con solo icona+testo, attivo = pillola bianca. */}
+        <nav data-onboard="dashboard-nav" className="flex-1 overflow-y-auto px-3 pt-3 pb-2 space-y-1">
           {nav.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href !== "/" && pathname.startsWith(href));
             return (
@@ -121,17 +132,13 @@ export default function DashboardShell({
                 key={href}
                 href={href}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
+                className={`flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-bold transition-all ${
                   active
-                    ? "bg-white/[0.06] text-white border border-white/[0.08]"
-                    : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
+                    ? "bg-white text-neutral-900"
+                    : "text-neutral-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                  active ? "bg-brand-500/15" : "bg-white/5"
-                }`}>
-                  <Icon size={14} className={active ? "text-brand-400" : ""} />
-                </div>
+                <Icon size={13} className="shrink-0" />
                 {label}
               </Link>
             );
@@ -140,22 +147,18 @@ export default function DashboardShell({
             type="button"
             onClick={() => setPersonalizationOpen((v) => !v)}
             aria-expanded={personalizationOpen || personalizationActive}
-            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
+            className={`flex h-9 w-full items-center gap-2 rounded-xl px-3 text-xs font-bold transition-all ${
               personalizationActive
-                ? "bg-white/[0.06] text-white border border-white/[0.08]"
-                : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
+                ? "bg-white text-neutral-900"
+                : "text-neutral-400 hover:text-white hover:bg-white/5"
             }`}
           >
-            <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-              personalizationActive ? "bg-brand-500/15" : "bg-white/5"
-            }`}>
-              <Sparkles size={14} className={personalizationActive ? "text-brand-400" : ""} />
-            </div>
+            <Sparkles size={13} className="shrink-0" />
             <span className="flex-1 text-left">{ds.navPersonalization}</span>
-            <ChevronDown size={14} className={`transition-transform duration-200 ${(personalizationOpen || personalizationActive) ? "rotate-180" : ""}`} />
+            <ChevronDown size={13} className={`shrink-0 transition-transform duration-200 ${(personalizationOpen || personalizationActive) ? "rotate-180" : ""}`} />
           </button>
           {(personalizationOpen || personalizationActive) && (
-            <div className="ml-5 space-y-0.5 border-l border-white/[0.06] pl-2">
+            <div className="ml-5 space-y-1 border-l border-white/[0.06] pl-2">
               {personalization.map(({ href, label, icon: Icon }) => {
                 const active = pathname === href || pathname.startsWith(href + "/");
                 return (
@@ -163,13 +166,13 @@ export default function DashboardShell({
                     key={href}
                     href={href}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+                    className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
                       active
-                        ? "bg-white/[0.06] text-white border border-white/[0.08]"
-                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-white"
+                        ? "text-white"
+                        : "text-neutral-400 hover:text-white hover:bg-white/5"
                     }`}
                   >
-                    <Icon size={14} className={active ? "text-brand-400" : ""} />
+                    <Icon size={12} className="shrink-0" />
                     {label}
                   </Link>
                 );
