@@ -17,6 +17,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import BrandLogo from "@/components/BrandLogo";
 import SearchWithSuggestions from "@/components/SearchWithSuggestions";
+import FilterSelect, {
+  FILTER_OPTION_CLASS,
+} from "@/components/skills/FilterSelect";
 import SkillIcon from "./SkillIcon";
 import { Download, Sparkles, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
 import type { ResolvedPlugin } from "@/lib/skills/data";
@@ -148,54 +151,63 @@ export default function PluginsCatalog({
           />
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:flex">
-            <select
+            <FilterSelect
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              aria-label={dict.category}
-              className="w-full rounded-lg border border-white/10 bg-neutral-900 px-2 py-2 text-xs font-bold text-neutral-300 outline-none focus:border-brand-500/50 lg:w-36"
+              onChange={setCategory}
+              ariaLabel={dict.category}
             >
-              <option value="">
+              <option value="" className={FILTER_OPTION_CLASS}>
                 {dict.category}: {dict.allCategories}
               </option>
               {categories.map((c) => (
-                <option key={c.value} value={c.value}>
+                <option
+                  key={c.value}
+                  value={c.value}
+                  className={FILTER_OPTION_CLASS}
+                >
                   {c.value} ({c.count})
                 </option>
               ))}
-            </select>
+            </FilterSelect>
 
-            <select
+            <FilterSelect
               value={agent}
-              onChange={(e) => setAgent(e.target.value)}
-              aria-label={dict.agent}
-              className="w-full rounded-lg border border-white/10 bg-neutral-900 px-2 py-2 text-xs font-bold text-neutral-300 outline-none focus:border-brand-500/50 lg:w-36"
+              onChange={setAgent}
+              ariaLabel={dict.agent}
             >
-              <option value="">
+              <option value="" className={FILTER_OPTION_CLASS}>
                 {dict.agent}: {dict.allCategories}
               </option>
               {agents.map((a) => (
-                <option key={a.slug} value={a.slug}>
+                <option
+                  key={a.slug}
+                  value={a.slug}
+                  className={FILTER_OPTION_CLASS}
+                >
                   {a.slug} ({a.pluginCount})
                 </option>
               ))}
-            </select>
+            </FilterSelect>
 
-            <select
+            <FilterSelect
               value={integration}
-              onChange={(e) => setIntegration(e.target.value)}
-              aria-label={dict.integration}
-              className="w-full rounded-lg border border-white/10 bg-neutral-900 px-2 py-2 text-xs font-bold text-neutral-300 outline-none focus:border-brand-500/50 lg:w-36"
+              onChange={setIntegration}
+              ariaLabel={dict.integration}
             >
-              <option value="">
+              <option value="" className={FILTER_OPTION_CLASS}>
                 {dict.integration}: {dict.allCategories}
               </option>
               {integrations.map((i) => (
-                <option key={i.brand} value={i.brand}>
+                <option
+                  key={i.brand}
+                  value={i.brand}
+                  className={FILTER_OPTION_CLASS}
+                >
                   {i.name}
                   {!i.available ? " ·" : ""}
                 </option>
               ))}
-            </select>
+            </FilterSelect>
           </div>
         </div>
 

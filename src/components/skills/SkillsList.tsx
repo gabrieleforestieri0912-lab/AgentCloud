@@ -2,7 +2,6 @@
 
 /**
  * Griglia delle singole competenze con filtri lato client.
- *
  * Questa griglia mostra SOLO le skill (una card per competenza): i pacchetti
  * vivono in `/plugins` (`PluginsCatalog`). Ogni card rimanda al dettaglio
  * della skill (`/skills/[slug]`) e al pacchetto che la contiene.
@@ -15,6 +14,9 @@ import { motion } from "framer-motion";
 import { Download, ArrowRight, Package } from "lucide-react";
 import { RiskBadge } from "./PluginsCatalog";
 import SearchWithSuggestions from "@/components/SearchWithSuggestions";
+import FilterSelect, {
+  FILTER_OPTION_CLASS,
+} from "@/components/skills/FilterSelect";
 import { getSkillsDictionary, type SkillsDictionary } from "@/lib/i18n/skills";
 import { t } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/constants";
@@ -113,54 +115,51 @@ export default function SkillsList({
           />
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:flex">
-            <select
+            <FilterSelect
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              aria-label={dict.category}
-              className="w-full rounded-lg border border-white/10 bg-neutral-900 px-2 py-2 text-xs font-bold text-neutral-300 outline-none focus:border-brand-500/50 lg:w-36"
+              onChange={setCategory}
+              ariaLabel={dict.category}
             >
-              <option value="">
+              <option value="" className={FILTER_OPTION_CLASS}>
                 {dict.category}: {dict.allCategories}
               </option>
               {categories.map((c) => (
-                <option key={c.value} value={c.value}>
+                <option key={c.value} value={c.value} className={FILTER_OPTION_CLASS}>
                   {c.value} ({c.count})
                 </option>
               ))}
-            </select>
+            </FilterSelect>
 
-            <select
+            <FilterSelect
               value={agent}
-              onChange={(e) => setAgent(e.target.value)}
-              aria-label={dict.agent}
-              className="w-full rounded-lg border border-white/10 bg-neutral-900 px-2 py-2 text-xs font-bold text-neutral-300 outline-none focus:border-brand-500/50 lg:w-36"
+              onChange={setAgent}
+              ariaLabel={dict.agent}
             >
-              <option value="">
+              <option value="" className={FILTER_OPTION_CLASS}>
                 {dict.agent}: {dict.allCategories}
               </option>
               {agents.map((a) => (
-                <option key={a.slug} value={a.slug}>
+                <option key={a.slug} value={a.slug} className={FILTER_OPTION_CLASS}>
                   {a.slug} ({a.pluginCount})
                 </option>
               ))}
-            </select>
+            </FilterSelect>
 
-            <select
+            <FilterSelect
               value={integration}
-              onChange={(e) => setIntegration(e.target.value)}
-              aria-label={dict.integration}
-              className="w-full rounded-lg border border-white/10 bg-neutral-900 px-2 py-2 text-xs font-bold text-neutral-300 outline-none focus:border-brand-500/50 lg:w-36"
+              onChange={setIntegration}
+              ariaLabel={dict.integration}
             >
-              <option value="">
+              <option value="" className={FILTER_OPTION_CLASS}>
                 {dict.integration}: {dict.allCategories}
               </option>
               {integrations.map((i) => (
-                <option key={i.brand} value={i.brand}>
+                <option key={i.brand} value={i.brand} className={FILTER_OPTION_CLASS}>
                   {i.name}
                   {!i.available ? " ·" : ""}
                 </option>
               ))}
-            </select>
+            </FilterSelect>
           </div>
         </div>
 
