@@ -345,15 +345,13 @@ export const INTEGRATIONS: Integration[] = [
   // Roadmap integrazioni richieste dagli utenti — sempre "Prossimamente":
   // solo catalogo, nessuna connessione OAuth ancora implementata. I glifi
   // ufficiali sono in BRANDS (src/lib/brands.ts) dove simple-icons ne
-  // dispone; per Adobe/Canva/Crypto.com e simili (rimossi dai marchi
+  // dispone; per Canva/Crypto.com e simili (rimossi dai marchi
   // simple-icons) la card usa l'iniziale stilizzata di BrandLogo.
-  {
-    name: "Namecheap",
-    brand: "namecheap",
-    category: "Domains",
-    available: false,
-    description: "Domini e DNS",
-  },
+  //
+  // Esclusi di proposito (2026-10): SEMRUSH, APOLLO.IO, FUNNEL.IO, CONSENSUS,
+  // GAMMA, SIGMA COMPUTING, ADOBE, NAMECHEAP, HIGGSFIELD — integrarli richiede
+  // piani/API a pagamento (o imprese enterprise senza API pubblica). Non li
+  // offriamo come "in arrivo" se la connessione non è free.
   {
     name: "Vercel",
     brand: "vercel",
@@ -397,32 +395,11 @@ export const INTEGRATIONS: Integration[] = [
     description: "Migliaia di modelli con un'unica chiave",
   },
   {
-    name: "Adobe",
-    brand: "adobe",
-    category: "Design",
-    available: false,
-    description: "Documenti PDF e Creative Cloud",
-  },
-  {
-    name: "Higgsfield",
-    brand: "higgsfield",
-    category: "AI",
-    available: false,
-    description: "Video e immagini generative",
-  },
-  {
     name: "Agentio",
     brand: "agentio",
     category: "Advertising",
     available: false,
     description: "Video ads su creator",
-  },
-  {
-    name: "Apollo.io",
-    brand: "apolloio",
-    category: "CRM",
-    available: false,
-    description: "Contatti e outbound sales",
   },
   {
     name: "Framer",
@@ -509,13 +486,6 @@ export const INTEGRATIONS: Integration[] = [
     description: "Deploy e build web",
   },
   {
-    name: "Consensus",
-    brand: "consensus",
-    category: "Research",
-    available: false,
-    description: "Rispondi con ricerche scientifiche",
-  },
-  {
     name: "PostHog",
     brand: "posthog",
     category: "Analytics",
@@ -523,25 +493,11 @@ export const INTEGRATIONS: Integration[] = [
     description: "Analisi prodotti e sessioni",
   },
   {
-    name: "Gamma",
-    brand: "gamma",
-    category: "AI Presentations",
-    available: false,
-    description: "Deck generati dall'AI",
-  },
-  {
     name: "Booking.com",
     brand: "bookingcom",
     category: "Travel",
     available: false,
     description: "Viaggi e prenotazioni",
-  },
-  {
-    name: "Semrush",
-    brand: "semrush",
-    category: "SEO",
-    available: false,
-    description: "Posizionamento e keyword",
   },
   {
     name: "Mobbin",
@@ -593,13 +549,6 @@ export const INTEGRATIONS: Integration[] = [
     description: "Wallet e transazioni",
   },
   {
-    name: "Sigma Computing",
-    brand: "sigmacomputing",
-    category: "Analytics",
-    available: false,
-    description: "Fogli di calcolo sui dati",
-  },
-  {
     name: "Tactiq",
     brand: "tactiq",
     category: "Meetings",
@@ -640,13 +589,6 @@ export const INTEGRATIONS: Integration[] = [
     category: "Travel",
     available: false,
     description: "Corse e viaggi",
-  },
-  {
-    name: "Funnel.io",
-    brand: "funnelio",
-    category: "Marketing",
-    available: false,
-    description: "Raccolta dati marketing",
   },
   {
     name: "Ramp Data",

@@ -53,7 +53,6 @@ import {
   siMailchimp,
   siMeta,
   siMongodb,
-  siNamecheap,
   siNetlify,
   siNotion,
   siOpenrouter,
@@ -61,7 +60,6 @@ import {
   siPosthog,
   siPostman,
   siReplit,
-  siSemrush,
   siShopify,
   siSentry,
   siSpotify,
@@ -222,7 +220,6 @@ export const BRANDS: Record<string, Brand> = {
   // Nuove card "Prossimamente" del catalogo integrazioni — glifi ufficiali
   // simple-icons con colore di marca originale.
   cloudflare: official(siCloudflare),
-  namecheap: official(siNamecheap),
   vercel: official(siVercel),
   googleclassroom: official(siGoogleclassroom),
   openrouter: official(siOpenrouter),
@@ -230,7 +227,6 @@ export const BRANDS: Record<string, Brand> = {
   zillow: official(siZillow),
   netlify: official(siNetlify),
   posthog: official(siPosthog),
-  semrush: official(siSemrush),
   unsplash: official(siUnsplash),
   replit: official(siReplit),
   postman: official(siPostman),

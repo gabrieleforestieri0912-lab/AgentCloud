@@ -1,6 +1,6 @@
 # AgentCloud
 
-**v0.5.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing **Stripe + PayPal** (Klarna/Amazon Pay) con overage, **41 integrazioni** (10 disponibili + 31 Prossimamente), backend Claude (Anthropic), **Shopify + Google OAuth multi-tenant + generic integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/ClickUp/Asana)**, account unificato e i miei abbonamenti, i18n IT/EN/ES/DE/FR.
+**v0.5.0** — Piattaforma di agenti AI: marketplace, chat, dashboard, billing **Stripe + PayPal** (Klarna/Amazon Pay) con overage, **79 integrazioni** (22 disponibili + 57 Prossimamente), backend Claude (Anthropic), **Shopify + Google OAuth multi-tenant + generic integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/ClickUp/Asana)**, account unificato e i miei abbonamenti, i18n IT/EN/ES/DE/FR.
 
 ---
 
@@ -60,7 +60,7 @@ src/
     ├── billing/ · stripe/ · paypal/ # pricing, overage, PayPal REST (sandbox/live)
     ├── agents/ · integrations/ # registry, feature-flags, generic providers (notion/slack/hubspot/google_sheets/github/clickup/asana)
     ├── brands.ts            # 42 brand (simple-icons + custom Microsoft)
-    ├── integrations.ts      # Catalogo 41 integrazioni (10 disponibili + 31 Prossimamente: Microsoft/Google suite)
+    ├── integrations.ts      # Catalogo 79 integrazioni (22 disponibili + 57 Prossimamente: Microsoft/Google suite)
     └── site-url.ts          # getSiteUrl()
 ```
 
@@ -325,6 +325,9 @@ Auth: gli utenti sono gestiti da **Supabase Auth** (UUID di `auth.users.id`, col
 | `NOTION_OAUTH_CLIENT_ID/SECRET` (`3d5d87...`), `SLACK_CLIENT_ID/SECRET` + `SLACK_SIGNING_SECRET`, `HUBSPOT_CLIENT_ID/SECRET` (`575f16...`), `GITHUB_CLIENT_ID/SECRET` (+ `GITHUB_SCOPES`), `CLICKUP_CLIENT_ID/SECRET`, `ASANA_CLIENT_ID/SECRET` (+ `ASANA_SCOPES`), `GOOGLE_SHEETS` riusa Google client | Generic 7 provider (`tenant_integrations`, tool agente via `lib/integrations/api-proxy.ts`) — setup in `docs/integrations-setup.md`, redirect `.../api/integrations/<provider>/callback` |
 | `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | JS SDK PayPal (client, non secret) |
 | `LEAD_CAPTURE_ENDPOINT`, `SLACK_WEBHOOK_URL` | Lead capture (opzionale) |
+| `AIRTABLE_CLIENT_ID/SECRET`, `TRELLO_API_KEY` (+ `TRELLO_API_SECRET`), `WOO…`, `MAILCHIMP…`, `MS_…`, `GOOGLE_DOCS_/FORMS_/ANALYTICS_` (riuseranno il Google client se servono override) | Batch 2 (`google_drive`, `airtable`, `trello`, `woocommerce`, `mailchimp`, `microsoft`, `microsoft_outlook`, `google_docs`, `google_forms`, `google_analytics`) — setup in `docs/integrations-setup.md`. `MS_TENANT_ID` default `common`; `MS_SHAREPOINT=1` abilita SharePoint |
+| `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` | WhatsApp Cloud API — webhook `/api/whatsapp/webhook` (`WHATSAPP_VERIFY_TOKEN`) + invio `lib/whatsapp/send.ts` |
+| `META_APP_ID/SECRET`, `TIKTOK_CLIENT_KEY/SECRET`, `CALENDLY…`, `ZENDESK…`, `ATLASSIAN…`, `FIGMA…`, `DROPBOX…`, `STRAVA…`, `SPOTIFY…`, `ZOOM…` + chiavi API semplici (`OPENROUTER_API_KEY`, `GOOGLE_MAPS_API_KEY`, `ELEVENLABS_API_KEY`, `DEEPL_API_KEY`, …) | Prossimamente (placeholder già pronti in `.env`): si riempiono quando il connettore viene implementato. **Esclusi**: Semrush, Apollo.io, Funnel.io, Consensus, Gamma, Sigma Computing, Adobe, Namecheap, Higgsfield (API a pagamento) |
 
 | `TENANT_STORE_KEY` + `INTEGRATIONS_TOKEN_ENCRYPTION_KEY` / `GOOGLE_TOKEN_ENCRYPTION_KEY` | Cifratura AES-256-GCM app-level per `shopify_connections`, `google_connections`, `tenant_integrations` — mai `dev-tenant-key` in prod |
 
@@ -547,7 +550,7 @@ flusso.
 
 ## Generic Integrations (Notion/Slack/HubSpot/Google Sheets/GitHub/ClickUp/Asana) — multi-tenant
 
-Nuovo layer generico (separato da Shopify): tabella `tenant_integrations` (`tenant_id text` per `__tenant__`, `provider`, `status`, `access_token`/`refresh_token` cifrati, `unique(tenant_id,provider)`, RLS) + adapter `lib/integrations/providers/*` con interfaccia `IntegrationProvider` e tool agente (`lib/integrations/api-proxy.ts`, chiamate dirette alle API dei provider). Setup: `docs/integrations-setup.md` — redirect `.../api/integrations/<provider>/callback` (7 provider). UI: `/dashboard/integrations` (41 app, 10 disponibili + 31 Prossimamente, Microsoft/Google suite) e `/agents/[slug]` (card integrazioni con **Già connesso** se già in `tenant_integrations`).
+Nuovo layer generico (separato da Shopify): tabella `tenant_integrations` (`tenant_id text` per `__tenant__`, `provider`, `status`, `access_token`/`refresh_token` cifrati, `unique(tenant_id,provider)`, RLS) + adapter `lib/integrations/providers/*` con interfaccia `IntegrationProvider` e tool agente (`lib/integrations/api-proxy.ts`, chiamate dirette alle API dei provider). Setup: `docs/integrations-setup.md` — redirect `.../api/integrations/<provider>/callback` (7 provider). UI: `/dashboard/integrations` (79 app, 22 disponibili + 57 Prossimamente, Microsoft/Google suite) e `/agents/[slug]` (card integrazioni con **Già connesso** se già in `tenant_integrations`).
 
 Admin via codice (`ACCESS_CODE=T5PMY2R2`, `__tenant__`): nessun `auth.users`, connessioni su tenant condiviso, badge rimosso da `/account`, ma Google/Sheets ora funzionano anche da admin (fix `tenant_id text` + `hasPlatformAccess`).
 
