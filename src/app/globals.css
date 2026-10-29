@@ -305,6 +305,17 @@
   animation-delay: 0.48s;
 }
 
+/* Scrollbar interna nascosta: il contenuto scorre (rotella, tastiera,
+   touch) ma senza barra visibile — usato dove la sezione è già ancorata e
+   una seconda scrollbar con blasto il layout (colonna hero, demo chat). */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 /* ─── Reusable dark gradient classes ─── */
 .dark-gradient-main {
   background: linear-gradient(180deg, #0a0a0f 0%, #12121a 58%, #0a0a0f 100%);

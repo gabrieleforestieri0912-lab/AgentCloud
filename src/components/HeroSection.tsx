@@ -469,7 +469,10 @@ export default function HeroSection() {
       className={`relative overflow-hidden px-4 sm:px-6 flex items-center justify-center ${
         hasMessages
           ? "h-dvh py-6 sm:py-10 lg:py-12"
-          : "h-dvh pt-36 sm:pt-48 lg:pt-64 pb-12 sm:pb-20 lg:pb-28"
+          // A riposo la sezione può superare il viewport: con un altezza
+          // fissa il contenuto (chips dei suggerimenti) veniva tagliato da
+          // un bordo netto e non raggiungibile con lo scroll.
+          : "min-h-dvh pt-36 sm:pt-48 lg:pt-64 pb-12 sm:pb-20 lg:pb-28"
       }`}
     >
       {/* I keyframe di float vivono in globals.css (condivisi con la waitlist). */}
@@ -499,7 +502,7 @@ export default function HeroSection() {
         {/* CONTENUTO CENTRALE DELL'HERO */}
         <motion.div
           ref={heroColumnRef}
-          className={`relative z-10 mx-auto max-w-4xl text-center px-4 ${
+          className={`no-scrollbar relative z-10 mx-auto max-w-4xl text-center px-4 ${
             hasMessages
               ? "max-h-full min-h-0 overflow-y-auto overscroll-contain"
               : ""

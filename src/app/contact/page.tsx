@@ -14,7 +14,6 @@ import {
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import HeroBubbles from "@/components/HeroBubbles";
 import { useLanguage } from "@/components/LanguageProvider";
 import { t } from "@/lib/i18n/dictionaries";
 
@@ -90,12 +89,9 @@ export default function ContactPage() {
         }}
       />
 
-      {/* Icone app (sinistra) e agenti (destra) fluttuanti in background */}
-      <HeroBubbles />
-
       <Navbar />
 
-      <section className="relative z-10 px-4 pb-24 pt-32 sm:px-6 lg:px-8">
+      <section className="relative z-10 px-4 pb-10 pt-32 sm:px-6 lg:px-8 sm:pb-14">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-16 lg:grid-cols-[1fr_480px] lg:items-start">
             {/* Sinistra: informazioni */}
