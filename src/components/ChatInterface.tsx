@@ -1323,15 +1323,20 @@ export default function ChatInterface({
   useEffect(() => {
     const el = messagesNode;
     if (!el) return;
+    // C'è qualcosa da scorrere? Se il contenuto sta tutta nella view il
+    // gesto (rotella su, dito giù) non è un "risalito": non deve moltiplicare
+    // l'unpin, altrimenti il bottone "Vai in fondo" appare sopra una
+    // conversazione corta che non scrolla.
+    const canScrollUp = () => el.scrollHeight > el.clientHeight + 1;
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaY < 0) unpin();
+      if (e.deltaY < 0 && canScrollUp()) unpin();
     };
     const onTouchMove = (e: TouchEvent) => {
       const y = e.touches[0]?.clientY ?? null;
       if (y === null) return;
       const prev = lastTouchY.current;
       lastTouchY.current = y;
-      if (prev !== null && y > prev + 4) unpin();
+      if (prev !== null && y > prev + 4 && canScrollUp()) unpin();
     };
     const onTouchEnd = () => {
       lastTouchY.current = null;
