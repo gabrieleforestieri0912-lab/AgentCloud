@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// Catalogo agenti dell'app, specchio di `src/lib/agents.ts` (fonte web).
@@ -408,4 +410,46 @@ class Agent {
       return null;
     }
   }
+}
+
+/// Punteggio di pertinenza di un agente per una ricerca (0 = escluso).
+///
+/// Specchio di `scoreSuggestion` della ricerca web (SearchWithSuggestions):
+/// ogni parola della query deve trovare casa da qualche parte, e il match
+/// a inizio parola pesa più di uno a metà testo — così "shopify" batte un
+/// agente che lo cita solo nella descrizione lunga. Pubblica perché la
+/// barra marketplace la usa per l'autocompletamento e i test la verificano.
+int agentMatchScore(Agent agent, String rawQuery) {
+  final tokens =
+      rawQuery.toLowerCase().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+  if (tokens.isEmpty) return 0;
+  final name = agent.name.toLowerCase();
+  final shortName = agent.shortName.toLowerCase();
+  final category = agent.category.toLowerCase();
+  final description = agent.description.toLowerCase();
+  final capabilities = agent.capabilities.map((c) => c.toLowerCase()).join(' ');
+
+  int inField(String field, String token, int weight) {
+    if (field.startsWith(token)) return weight * 3;
+    if (field.contains(' $token')) return weight * 2;
+    if (field.contains(token)) return weight;
+    return 0;
+  }
+
+  int total = 0;
+  for (final token in tokens) {
+    final best = math.max(
+      inField(name, token, 10),
+      math.max(
+        inField(shortName, token, 5),
+        math.max(
+          inField(category, token, 3),
+          math.max(inField(capabilities, token, 3), inField(description, token, 2)),
+        ),
+      ),
+    );
+    if (best == 0) return 0;
+    total += best;
+  }
+  return total;
 }
