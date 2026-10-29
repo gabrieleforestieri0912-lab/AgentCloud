@@ -36,7 +36,7 @@ import Image from "next/image";
 import FloatingBrandBubbles, { type FloatingBubble } from "@/components/FloatingBrandBubbles";
 import CountdownTimer from "@/components/CountdownTimer";
 import BrandLogo from "@/components/BrandLogo";
-import ChiSiamoSection from "@/components/ChiSiamoSection";
+import AboutSection from "@/components/AboutSection";
 import Footer from "@/components/Footer";
 import LanguageToggle from "@/components/LanguageToggle";
 import InstagramFollowCard from "@/components/InstagramFollowCard";
@@ -1314,7 +1314,7 @@ export default function WaitlistForm({ initialTotal }: { initialTotal: number })
       </section>
 
       {/* CHI SIAMO — founders — in fondo come richiesto — 3xl: container largo, card più spaziose */}
-      <ChiSiamoSection
+      <AboutSection
         labels={{
           badge: w.chiSiamoBadge as string,
           title: w.chiSiamoTitle as string,

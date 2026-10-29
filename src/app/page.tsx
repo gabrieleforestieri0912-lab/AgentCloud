@@ -11,7 +11,7 @@ import AppsSection from "@/components/AppsSection";
 import SecuritySection from "@/components/SecuritySection";
 import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
-import ChiSiamoSection from "@/components/ChiSiamoSection";
+import AboutSection from "@/components/AboutSection";
 import Footer from "@/components/Footer";
 import FloatingBrandBubbles from "@/components/FloatingBrandBubbles";
 import type { FloatingBubble } from "@/components/FloatingBrandBubbles";
@@ -71,7 +71,7 @@ export default async function Home() {
         {/* "Chi siamo" — la stessa sezione dei fondatori della waitlist, qui
             sotto la CTA: è il punto in cui l'utente legge chi ha costruito
             AgentCloud prima di decidere. Ancorata con id="chi-siamo". */}
-        <ChiSiamoSection
+        <AboutSection
           labels={{
             badge: w.chiSiamoBadge,
             title: w.chiSiamoTitle,

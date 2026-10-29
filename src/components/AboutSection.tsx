@@ -10,7 +10,7 @@ import { BRANDS } from "@/lib/brands";
  * (`/#chi-siamo`) e la pagina di waitlist. L'id `chi-siamo` è l'ancora a cui
  * punta la voce "Chi siamo" del menu account.
  */
-export type ChiSiamoLabels = {
+export type AboutLabels = {
   badge: string;
   title: string;
   sub: string;
@@ -46,7 +46,7 @@ const FOUNDERS = [
   },
 ];
 
-export default function ChiSiamoSection({ labels }: { labels: ChiSiamoLabels }) {
+export default function AboutSection({ labels }: { labels: AboutLabels }) {
   return (
     <section
       id="chi-siamo"
