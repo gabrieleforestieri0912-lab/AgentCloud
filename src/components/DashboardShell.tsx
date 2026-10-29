@@ -208,6 +208,7 @@ export default function DashboardShell({
         <div className="pointer-events-none sticky top-0 z-40 -mb-[60px] flex items-start justify-start px-4 pt-3 lg:hidden">
           <button
             onClick={() => setMobileOpen(true)}
+            data-onboard="dashboard-mobile-menu"
             aria-label={dict.navbar.menu}
             className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-neutral-900/80 text-neutral-400 backdrop-blur hover:text-white"
           >

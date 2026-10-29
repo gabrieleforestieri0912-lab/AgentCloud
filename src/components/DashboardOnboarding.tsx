@@ -27,14 +27,46 @@ export default function DashboardOnboarding({ onComplete }: DashboardOnboardingP
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const { dict } = useLanguage();
+  // Su schermo < lg la sidebar è un drawer chiuso: nav e account non sono
+  // agganciabili. Il tour mobile segue il menu fluttuante e le sezioni della
+  // pagina davvero visibili.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
-  const steps: StepConfig[] = [
-    {
-      target: "[data-onboard='dashboard-stats']",
-      title: dict.dashboardOnboarding.stats,
-      desc: dict.dashboardOnboarding.statsDesc,
-      position: "bottom",
-    },
+  const steps: StepConfig[] = isMobile
+    ? [
+        {
+          target: "[data-onboard='dashboard-mobile-menu']",
+          title: dict.dashboardOnboarding.mobileMenu,
+          desc: dict.dashboardOnboarding.mobileMenuDesc,
+          position: "bottom",
+        },
+        {
+          target: "[data-onboard='dashboard-stats']",
+          title: dict.dashboardOnboarding.stats,
+          desc: dict.dashboardOnboarding.statsDesc,
+          position: "bottom",
+        },
+        {
+          target: "[data-onboard='dashboard-agents']",
+          title: dict.dashboardOnboarding.agents,
+          desc: dict.dashboardOnboarding.agentsDesc,
+          position: "bottom",
+        },
+      ]
+    : [
+        {
+          target: "[data-onboard='dashboard-stats']",
+          title: dict.dashboardOnboarding.stats,
+          desc: dict.dashboardOnboarding.statsDesc,
+          position: "bottom",
+        },
     {
       target: "[data-onboard='dashboard-nav']",
       title: dict.dashboardOnboarding.navigation,

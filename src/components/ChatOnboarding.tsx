@@ -26,14 +26,46 @@ export default function ChatOnboarding({ onComplete }: ChatOnboardingProps) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const { dict } = useLanguage();
+  // Su schermo < lg (1024px) la sidebar è un drawer chiuso: i target desktop
+  // (nav, conversazioni, account) sono nascosti. Il tour segue invece gli
+  // elementi davvero visibili: menu fluttuante, selettore agenti, composer.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
-  const steps: StepConfig[] = [
-    {
-      target: "[data-onboard='nav']",
-      title: dict.chatOnboarding.navigation,
-      desc: dict.chatOnboarding.navigationDesc,
-      position: "right",
-    },
+  const steps: StepConfig[] = isMobile
+    ? [
+        {
+          target: "[data-onboard='mobile-menu']",
+          title: dict.chatOnboarding.mobileMenu,
+          desc: dict.chatOnboarding.mobileMenuDesc,
+          position: "bottom",
+        },
+        {
+          target: "[data-onboard='agent-picker']",
+          title: dict.chatOnboarding.agentPicker,
+          desc: dict.chatOnboarding.agentPickerDesc,
+          position: "bottom",
+        },
+        {
+          target: "[data-onboard='chat-input']",
+          title: dict.chatOnboarding.message,
+          desc: dict.chatOnboarding.messageDesc,
+          position: "top",
+        },
+      ]
+    : [
+        {
+          target: "[data-onboard='nav']",
+          title: dict.chatOnboarding.navigation,
+          desc: dict.chatOnboarding.navigationDesc,
+          position: "right",
+        },
     {
       target: "[data-onboard='agent-picker']",
       title: dict.chatOnboarding.agentPicker,

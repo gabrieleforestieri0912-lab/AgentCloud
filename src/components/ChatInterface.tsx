@@ -3570,6 +3570,7 @@ export default function ChatInterface({
             {!isGhostMode && (
               <button
                 onClick={() => setMobileSidebarOpen(true)}
+                data-onboard="mobile-menu"
                 aria-label={dict.chat.openSidebar}
                 title={dict.chat.openSidebar}
                 className="lg:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-300 transition-all hover:bg-white/10 hover:text-white"
