@@ -3,7 +3,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FloatingBrandBubbles from "@/components/FloatingBrandBubbles";
-import SkillsList, { type FlatSkill } from "@/components/skills/SkillsList";
+import SkillsList from "@/components/skills/SkillsList";
 import SkillUploader from "@/components/skills/SkillUploader";
 import { getLocale } from "@/lib/i18n/locale";
 import { getSessionUser } from "@/lib/supabase/server";
@@ -11,10 +11,10 @@ import { pageSeo } from "@/lib/seo";
 import { getSkillsDictionary } from "@/lib/i18n/skills";
 import {
   agentOptions,
+  flattenSkills,
   getPlugins,
   integrationOptions,
   pluginCategories,
-  type ResolvedPlugin,
 } from "@/lib/skills/data";
 import { ArrowRight, Sparkles } from "lucide-react";
 
@@ -36,29 +36,6 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/skills",
     locale,
   });
-}
-
-/** Appiattisce i plugin in skill singole con il contesto del padre. */
-function flattenSkills(plugins: ResolvedPlugin[]): FlatSkill[] {
-  const liveSlugs = new Set(
-    plugins
-      .filter((p) => p.resolvedIntegrations.some((i) => i.available))
-      .map((p) => p.slug),
-  );
-  return plugins.flatMap((p) =>
-    p.skills.map((s) => ({
-      slug: s.slug,
-      name: s.name,
-      description: s.description,
-      risk: s.risk,
-      pluginSlug: p.slug,
-      pluginName: p.name,
-      category: p.category,
-      agentSlugs: p.agents.map((a) => a.slug),
-      integrationBrands: p.resolvedIntegrations.map((i) => i.brand),
-      live: liveSlugs.has(p.slug),
-    })),
-  );
 }
 
 export default async function SkillsPage() {

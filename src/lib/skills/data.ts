@@ -268,4 +268,46 @@ export function totalSkillCount(plugins: ResolvedPlugin[]): number {
   return plugins.reduce((sum, p) => sum + p.skillCount, 0);
 }
 
+/**
+ * Una skill appiattita dal catalogo, con il contesto del plugin padre.
+ * Structuralmente identica a `FlatSkill` (components/skills/SkillsList.tsx):
+ * resta qui e non nel componente perché è logica dati, non UI — la usano
+ * la pagina pubblica /skills e la sezione di dashboard/integrations.
+ */
+export type FlattenedSkill = {
+  slug: string;
+  name: string;
+  description: string;
+  risk: string;
+  pluginSlug: string;
+  pluginName: string;
+  category: string;
+  agentSlugs: string[];
+  integrationBrands: string[];
+  live: boolean;
+};
+
+/** Appiattisce i plugin in skill singole con il contesto del padre. */
+export function flattenSkills(plugins: ResolvedPlugin[]): FlattenedSkill[] {
+  const liveSlugs = new Set(
+    plugins
+      .filter((p) => p.resolvedIntegrations.some((i) => i.available))
+      .map((p) => p.slug),
+  );
+  return plugins.flatMap((p) =>
+    p.skills.map((s) => ({
+      slug: s.slug,
+      name: s.name,
+      description: s.description,
+      risk: s.risk,
+      pluginSlug: p.slug,
+      pluginName: p.name,
+      category: p.category,
+      agentSlugs: p.agents.map((a) => a.slug),
+      integrationBrands: p.resolvedIntegrations.map((i) => i.brand),
+      live: liveSlugs.has(p.slug),
+    })),
+  );
+}
+
 export { getCatalogPlugin };

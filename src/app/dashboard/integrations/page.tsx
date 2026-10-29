@@ -1,14 +1,25 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSessionUser } from "@/lib/supabase/server";
 import { accountIdentityFromUser } from "@/lib/account-identity";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { TENANT_SHOPIFY_ID, listShopifyConnections } from "@/lib/shopify/connections";
-import { TENANT_GOOGLE_ID, getGoogleConnectionSummary } from "@/lib/google/connections";
+import { listShopifyConnections } from "@/lib/shopify/connections";
+import { getGoogleConnectionSummary } from "@/lib/google/connections";
 import DashboardShell from "@/components/DashboardShell";
 import IntegrationsGrid from "@/components/IntegrationsGrid";
+import PluginsCatalog from "@/components/skills/PluginsCatalog";
+import SkillsList from "@/components/skills/SkillsList";
 import { INTEGRATIONS, BRAND_TO_PROVIDER } from "@/lib/integrations";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getSkillsDictionary } from "@/lib/i18n/skills";
+import {
+  agentOptions,
+  flattenSkills,
+  getPlugins,
+  integrationOptions,
+  pluginCategories,
+} from "@/lib/skills/data";
+import { ArrowRight, GraduationCap, Puzzle } from "lucide-react";
 
 export default async function DashboardIntegrationsPage({
   searchParams,
@@ -48,6 +59,23 @@ export default async function DashboardIntegrationsPage({
   const googleConnection = googleOwner ? await getGoogleConnectionSummary(googleOwner).catch(() => null) : null;
 
   const email = user?.email ?? "";
+
+  // Catalogo plugin + skill: stessa sorgente delle pagine pubbliche (/plugins
+  // e /skills), già risolta e localizzata. Le sezioni qui sotto riutilizzano
+  // i cataloghi interattivi completi (filtri, ricerca, card) invece di
+  // duplicare una versione ridotta che diverrebbe subito.
+  const skillDict = getSkillsDictionary(locale);
+  const plugins = await getPlugins(locale);
+  const skillCategories = pluginCategories(plugins);
+  const skillAgents = agentOptions(plugins);
+  const skillIntegrations = integrationOptions(plugins);
+  const liveSlugs = plugins
+    .filter((p) => p.resolvedIntegrations.some((i) => i.available))
+    .map((p) => p.slug);
+  const comingSoonRequiredSlugs = plugins
+    .filter((p) => p.resolvedIntegrations.some((i) => i.status === "required" && !i.available))
+    .map((p) => p.slug);
+  const skills = flattenSkills(plugins);
 
   return (
     <DashboardShell email={email} account={accountIdentityFromUser(user)}>
@@ -124,6 +152,75 @@ export default async function DashboardIntegrationsPage({
           )}
 
           <IntegrationsGrid rows={rows} locale={locale} shopifyConnections={shopifyConnections} googleConnection={googleConnection} />
+
+          {/* ── Plugin ──────────────────────────────────────────────────────
+              Pacchetti di competenze: la sezione vive qui perché dai
+              connettori si passa ai lavori che li usano — chi collega
+              Notion/Slack vuole anche vedere cosa può automatizzare. */}
+          <section id="plugins" aria-labelledby="plugins-title" className="mt-16">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Puzzle size={18} className="text-brand-400" aria-hidden />
+                  <h2 id="plugins-title" className="text-2xl font-bold tracking-tight text-white">
+                    {skillDict.pluginsHeroTitle}
+                  </h2>
+                </div>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-400">
+                  {skillDict.pluginsHeroSubtitle}
+                </p>
+              </div>
+              <Link
+                href="/plugins"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-white/10"
+              >
+                {skillDict.browsePlugins}
+                <ArrowRight size={13} aria-hidden />
+              </Link>
+            </div>
+            <PluginsCatalog
+              plugins={plugins}
+              categories={skillCategories}
+              agents={skillAgents}
+              integrations={skillIntegrations}
+              locale={locale}
+              liveSlugs={liveSlugs}
+              comingSoonRequiredSlugs={comingSoonRequiredSlugs}
+            />
+          </section>
+
+          {/* ── Skills ──────────────────────────────────────────────────────
+              Le singole competenze (figlie dei plugin): stessa divisione
+              delle pubbliche — plugin = pacchetti, skill = competenze. */}
+          <section id="skills" aria-labelledby="skills-title" className="mt-16 border-t border-white/5 pt-12">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <GraduationCap size={18} className="text-brand-400" aria-hidden />
+                  <h2 id="skills-title" className="text-2xl font-bold tracking-tight text-white">
+                    {skillDict.heroTitle}
+                  </h2>
+                </div>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-400">
+                  {skillDict.heroSubtitle}
+                </p>
+              </div>
+              <Link
+                href="/skills"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-white/10"
+              >
+                {skillDict.browseSkills}
+                <ArrowRight size={13} aria-hidden />
+              </Link>
+            </div>
+            <SkillsList
+              skills={skills}
+              categories={skillCategories}
+              agents={skillAgents}
+              integrations={skillIntegrations}
+              locale={locale}
+            />
+          </section>
         </div>
       </section>
     </DashboardShell>
