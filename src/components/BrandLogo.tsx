@@ -70,5 +70,30 @@ export default function BrandLogo({
   }
 
   const brand = BRANDS[slug];
-  return brand ? <BrandIcon brand={brand} size={size} className={className} /> : null;
+  if (!brand) {
+    // Fallback: alcuni marchi (Adobe, Canva, AWS...) non hanno un glifo
+    // disponibile in simple-icons — non usiamo loghi "fatti a mano" che
+    // sbagliano il marchio ufficiale, ma una tessera con l'iniziale.
+    const initial = (slug[0] ?? "?").toUpperCase();
+    return (
+      <span
+        aria-label={slug}
+        className={`inline-flex items-center justify-center ${className}`}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 4,
+          background: "rgba(255,255,255,0.07)",
+          color: "#a3a3a3",
+          fontSize: Math.max(size * 0.55, 8),
+          fontWeight: 800,
+          lineHeight: 1,
+          userSelect: "none",
+        }}
+      >
+        {initial}
+      </span>
+    );
+  }
+  return <BrandIcon brand={brand} size={size} className={className} />;
 }
