@@ -3025,8 +3025,8 @@ export default function ChatInterface({
             imageAlt={dict.common.imageAttached}
           />
           {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
-          <div className="flex items-center gap-0.5 rounded-[28px] border border-white/10 bg-neutral-800 px-1.5 py-1.5 shadow-xl shadow-black/25 transition-all focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5">
-            <div className="flex h-10 shrink-0 items-center">
+          <div className="flex items-center gap-0.5 rounded-xl border border-white/10 bg-neutral-800 px-1.5 py-1 shadow-lg shadow-black/25 transition-all focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5">
+            <div className="flex h-8 shrink-0 items-center">
               <ChatPlusMenu
                 labels={plusLabels}
                 disabled={isTyping}
@@ -3053,10 +3053,10 @@ export default function ChatInterface({
               placeholder={dict.chat.placeholder}
               rows={1}
               wrapperClassName="flex-1"
-              className="px-1 py-2 leading-[24px]"
-              style={{ fieldSizing: "content", minHeight: "40px", maxHeight: "160px" } as React.CSSProperties}
+              className="px-1 py-1 leading-[24px]"
+              style={{ fieldSizing: "content", minHeight: "32px", maxHeight: "160px" } as React.CSSProperties}
             />
-            <div className="flex h-10 shrink-0 items-center gap-0.5">
+            <div className="flex h-8 shrink-0 items-center gap-0.5">
               <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
               {isTyping ? (
                 <button
