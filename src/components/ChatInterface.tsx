@@ -175,6 +175,9 @@ type LocalMessage = {
   // Cambio agente: da dove si proviene (per il testo "da X a Y").
   switchFromSlug?: string;
   switchFromName?: string;
+  // Divisore di ENTRATA in collaborazione ("+" nel selettore): cambia solo
+  // la frase di accompagnamento, il layout resta quello del cambio.
+  addedAgent?: boolean;
   // Traccia operativa dell'esecuzione (task, strumenti, approvazioni):
   // deriva dagli eventi SSE, mai dal ragionamento del modello.
   activity?: AgentStep[];
@@ -581,6 +584,10 @@ export default function ChatInterface({
   const [renameValue, setRenameValue] = useState("");
   const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [agentSearch, setAgentSearch] = useState("");
+  // Modalità "aggiungi agente": il "+" in basso nel picker la attiva — le
+  // row della lista passano da sostituire a AGGIUNGERE, così si lavora con
+  // più agenti nella stessa chat (collaborazione multi-agente).
+  const [addingAgent, setAddingAgent] = useState(false);
   const agentDropdownRef = useRef<HTMLDivElement>(null);
   const agentSearchRef = useRef<HTMLInputElement>(null);
   // Freemium giornaliero: il blocco autoritativo arriva dal server (402) — vedi banner limite sopra l'input
@@ -686,6 +693,9 @@ export default function ChatInterface({
   // Preferenze rapide (pannello della rotella): agente usato dalle nuove chat e
   // dimensione del testo dell'area messaggi. Persistite in localStorage.
   const [defaultAgentSlug, setDefaultAgentSlug] = useState("");
+  // Default salvato che punta a un agente NON più esistente/online: si parte
+  // puliti (nessuna selezione) e si avvisa in modo discreto, MAI con errori.
+  const [defaultAgentFallback, setDefaultAgentFallback] = useState<string | null>(null);
   const [chatTextSize, setChatTextSize] = useState<ChatTextSize>("md");
   const initializedRef = useRef(false);
   const CHAT_HISTORY_KEY = "agentcloud_chat_history_v2";
@@ -1036,15 +1046,18 @@ export default function ChatInterface({
       if (agentDropdownRef.current && !agentDropdownRef.current.contains(e.target as Node)) {
         setShowAgentPicker(false);
         setAgentSearch("");
+        setAddingAgent(false);
       }
     }
     if (showAgentPicker) document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [showAgentPicker]);
 
-  // Focus sulla search quando si apre il dropdown
+  // Focus sulla search quando si apre il dropdown: l'ingresso nel selettore
+  // riparte sempre in modalità radio (l'aggiunta è un gesto esplicito del "+").
   useEffect(() => {
     if (showAgentPicker) {
+      setAddingAgent(false);
       setTimeout(() => agentSearchRef.current?.focus(), 50);
     }
   }, [showAgentPicker]);
@@ -1137,6 +1150,66 @@ export default function ChatInterface({
     };
     setSelectedAgentSlugs(next);
     setActiveAgentId(next[0] ?? "");
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === activeConv.id
+          ? { ...c, agentSlugs: [...next], messages: [...c.messages, divider] }
+          : c,
+      ),
+    );
+    setMobileSidebarOpen(false);
+  }
+
+  /** Collaborare: AGGIUNGE un agente alla selezione senza sostituire quelli
+      già presenti (il send loopa su tutti). Attivato dal "+" in basso nel
+      selettore; la scelta di una riga in modalità normale resta radio
+      (chiude il selettore, cambia agente). Se la chat ha già messaggi,
+      un divisore di sistema avvisa che l'agente entra in collaborazione. */
+  function addAgentToChat(slug: string) {
+    // Niente duplicati: l'agente potrebbe essere già nella chat.
+    if (selectedAgentSlugs.includes(slug)) {
+      setAddingAgent(false);
+      setShowAgentPicker(false);
+      setAgentSearch("");
+      return;
+    }
+    setAddingAgent(false);
+    setShowAgentPicker(false);
+    setAgentSearch("");
+    const resolveName = (s: string) =>
+      effectiveAvailableAgents.find((a) => a.slug === s)?.name ??
+      agentsBySlug.get(s)?.name ??
+      (agentLabel && selectedAgentSlugs.includes(s) ? agentLabel : undefined) ??
+      s;
+    const next = [...selectedAgentSlugs, slug];
+    const activeConv = conversationsRef.current.find((c) => c.id === activeId);
+    if (!activeConv) {
+      setSelectedAgentSlugs(next);
+      return;
+    }
+    // Unisco l'agente alla selezione: il "primario" resta il primo.
+    // Con la chat ancora vuota non serve divisore.
+    if (activeConv.messages.length === 0) {
+      setSelectedAgentSlugs(next);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConv.id ? { ...c, agentSlugs: [...next] } : c,
+        ),
+      );
+      return;
+    }
+    const divider: LocalMessage = {
+      id: generateId(),
+      role: "system",
+      content: "",
+      created_at: new Date().toISOString(),
+      systemKind: "agent-switch",
+      agentSlug: slug,
+      agentName: resolveName(slug),
+      switchFromName: resolveName(selectedAgentSlugs[0] ?? ""),
+      addedAgent: true,
+    };
+    setSelectedAgentSlugs(next);
     setConversations((prev) =>
       prev.map((c) =>
         c.id === activeConv.id
@@ -1637,9 +1710,17 @@ export default function ChatInterface({
   }, [activeId]);
 
   // Preferenze rapide salvate: si leggono al mount (solo client, localStorage)
-  // per non far divergere l'HTML server-rendered da quello idratato.
+  // per non far divergere l'HTML server-rendered da quello idratato. Il default
+  // viene VALIDATO sul pool offerto: un agente rimosso o disattivato non deve
+  // mai diventare una conversazione rotta — si azzera e si avvisa con calma.
   useEffect(() => {
-    setDefaultAgentSlug(readDefaultAgent());
+    const preset = readDefaultAgent();
+    if (preset && !availableAgents.some((a) => a.slug === preset)) {
+      setDefaultAgentSlug("");
+      setDefaultAgentFallback(preset);
+    } else {
+      setDefaultAgentSlug(preset);
+    }
     setChatTextSize(readChatTextSize());
     setSidebarOpen(readSidebarOpen());
   }, []);
@@ -3167,7 +3248,7 @@ export default function ChatInterface({
                 {dict.chat.agentsInChat}
               </p>
               <p className="px-2 pb-1.5 text-[11px] font-semibold leading-4 text-neutral-500">
-                {dict.chat.agentSwitchNewChat}
+                {addingAgent ? dict.chat.chooseAgentToAdd : dict.chat.agentSwitchNewChat}
               </p>
               {selectableAgents.length === 0 ? (
                 <p className="px-2 py-2 text-xs text-neutral-500">
@@ -3184,28 +3265,72 @@ export default function ChatInterface({
                   ) : (
                     filteredAgents.map((a) => {
                       const isSelected = selectedAgentSlugs.includes(a.slug);
+                      const isAddMode = addingAgent && !isSelected;
                       return (
                         <button
                           key={a.slug}
                           type="button"
-                          onClick={() => toggleAgent(a.slug)}
+                          // Modalità radio: la riga SOSTITUISCE la selezione.
+                          // Modalità "+" (in basso): la riga AGGIUNGE l'agente
+                          // a quelli già in chat (collaborazione).
+                          onClick={() =>
+                            addingAgent ? addAgentToChat(a.slug) : toggleAgent(a.slug)
+                          }
                           className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-all ${
-                            isSelected ? "bg-white/10" : "hover:bg-white/5"
+                            isSelected
+                              ? "bg-white/10"
+                              : isAddMode
+                                ? "hover:bg-brand-500/10"
+                                : "hover:bg-white/5"
                           }`}
                         >
                           <AgentAvatar agent={a} size="sm" />
                           <span className="min-w-0 flex-1 truncate text-xs font-bold text-white">
                             {a.name}
                           </span>
-                          {isSelected && (
+                          {isSelected ? (
                             <CheckCircle2 size={14} className="shrink-0 text-emerald-400" />
-                          )}
+                          ) : isAddMode ? (
+                            <Plus size={14} className="shrink-0 text-brand-300" />
+                          ) : null}
                         </button>
                       );
                     })
                   )}
                 </div>
               )}
+
+              {/* Collaborazione: il "+" in basso aggiunge un altro agente al
+                  lavoro su quelli già selezionati. In modalità aggiunta la
+                  lista passa da sostituire a aggiungere (le righe mostrano
+                  il "+" al posto del segno di spunta). */}
+              <div className="mt-2 border-t border-white/8 px-1 pt-2">
+                <button
+                  type="button"
+                  aria-pressed={addingAgent}
+                  onClick={() => setAddingAgent((v) => !v)}
+                  className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left text-xs font-bold transition-all ${
+                    addingAgent
+                      ? "bg-brand-500/15 text-brand-300"
+                      : "text-neutral-400 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-all ${
+                      addingAgent
+                        ? "border-brand-400/40 bg-brand-500/20"
+                        : "border-white/10 bg-white/[0.04]"
+                    }`}
+                  >
+                    {addingAgent ? (
+                      <Check size={14} className="text-brand-300" />
+                    ) : (
+                      <Plus size={14} />
+                    )}
+                  </span>
+                  {addingAgent ? dict.chat.addAgentCancel : dict.chat.addAgent}
+                </button>
+              </div>
             </div>
           </div>
         </>
@@ -3271,6 +3396,17 @@ export default function ChatInterface({
       {/* Chat onboarding tour */}
       {showOnboarding && (
         <ChatOnboarding onComplete={() => setShowOnboarding(false)} />
+      )}
+
+      {/* Default non più valido: avviso discreto e dismissibile, senza errori */}
+      {defaultAgentFallback && (
+        <DefaultAgentFallbackNotice
+          agentName={(() => {
+            const catalog = AGENTS.find((a) => a.slug === defaultAgentFallback);
+            return catalog ? localizeAgent(catalog, locale).name : defaultAgentFallback;
+          })()}
+          onDismiss={() => setDefaultAgentFallback(null)}
+        />
       )}
 
       {/* Overlay sidebar mobile */}
@@ -4138,7 +4274,7 @@ export default function ChatInterface({
                 const target = msg.agentSlug ? agentForMessage(msg) : null;
                 const toName = msg.agentName ?? dict.chat.assistantName;
                 return (
-                  <div key={msg.id} className="flex items-center gap-3 py-1" role="separator" aria-label={t(dict.chat.nowChattingWith, { name: toName })}>
+                  <div key={msg.id} className="flex items-center gap-3 py-1" role="separator" aria-label={msg.addedAgent ? t(dict.chat.agentJoinedTitle, { name: toName }) : t(dict.chat.nowChattingWith, { name: toName })}>
                     <span className="h-px flex-1 bg-white/10" />
                     <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs">
                       {target ? (
@@ -4154,10 +4290,14 @@ export default function ChatInterface({
                       )}
                       <span className="min-w-0 text-left">
                         <span className="block truncate font-bold text-neutral-200">
-                          {t(dict.chat.nowChattingWith, { name: toName })}
+                          {msg.addedAgent
+                            ? t(dict.chat.agentJoinedTitle, { name: toName })
+                            : t(dict.chat.nowChattingWith, { name: toName })}
                         </span>
                         <span className="block text-[11px] font-medium text-neutral-500">
-                          {dict.chat.agentSwitchHint}
+                          {msg.addedAgent
+                            ? dict.chat.collaborationHint
+                            : dict.chat.agentSwitchHint}
                         </span>
                       </span>
                     </span>
