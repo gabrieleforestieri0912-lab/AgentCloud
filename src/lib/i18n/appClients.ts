@@ -13,24 +13,16 @@
  *
  * La pagina mobile ha già la sua sezione (`dict.mobile`) perché è nata prima.
  *
- * Onestà di stato: la CLI è pubblicata su npm (`agentcloud-cli`) quindi è
- * "available"; estensione, desktop e mobile sono annunciate ma non ancora
- * scaricabili, e il testo lo dice senza suggerire installazioni finte.
+ * Onestà di stato: la CLI è IN ARRIVO su npm (`agentcloud-cli` non è ancora
+ * pubblica) e la pagina la presenta come "prossimamente"; estensione, desktop
+ * e mobile sono annunciate ma non ancora scaricabili: il testo lo dice senza
+ * suggerire installazioni finte.
  */
 
 import type { Locale } from "./constants";
 
 /** I client con una pagina dedicata propria (mobile vive in `dict.mobile`). */
 export type DocumentedClientSlug = "cli" | "extension" | "desktop";
-
-/**
- * Comandi di installazione della CLI: veri e verificati (vedi `cli/README.md`).
- * Stanno qui come costanti perché la pagina CLI li usa nei passi di
- * installazione.
- */
-export const CLI_INSTALL_NPM = "npm i -g agentcloud-cli";
-export const CLI_INSTALL_CURL =
-  "curl -fsSL https://raw.githubusercontent.com/gabrieleforestieri0912-lab/AgentCloud/main/cli/install.sh | sh";
 
 export type InstallStep = {
   /** Cosa fa il passo, in linguaggio naturale. */
@@ -66,29 +58,28 @@ export type ClientPageContent = {
 
 
 const cliIt: ClientPageContent = {
-  metaTitle: "CLI AgentCloud: gli agenti AI nel terminale",
+  metaTitle: "CLI AgentCloud: in arrivo",
   metaDescription:
-    "Installa la CLI di AgentCloud con npm o con lo script: agenti in script, cron e pipeline CI/CD, login dal browser e sessioni riprendibili.",
+    "La CLI di AgentCloud sta arrivando: agenti in script, cron e pipeline CI/CD, login dal browser e sessioni riprendibili. Scopri come funzionerà.",
   badge: "Terminale",
   titleA: "Agenti AI",
   titleB: "nel tuo terminale",
   subtitle:
     "Un solo binario per tutti i tuoi agenti: chatti in una TUI a schermo intero, lanci task dagli script e riprendi la sessione di ieri.",
-  available: true,
-  statusLabel: "Disponibile ora",
+  available: false,
+  statusLabel: "In arrivo",
   statusNote:
-    "Pubblicata su npm come agentcloud-cli. Richiede Node 18 o superiore e funziona su Linux, macOS e Windows.",
+    "Non è ancora pubblicata su npm: sta arrivando. Qui trovi come funzionerà, senza scaricare nulla a mano.",
   backLabel: "App ed estensioni",
-  installTitle: "Installazione",
+  installTitle: "Come si installerà",
   installNote:
-    "Scegli npm o lo script: installano lo stesso comando agentcloud. Lo script dice anche come installare Node se manca.",
+    "Con npm o con lo script: installeranno lo stesso comando agentcloud, con login dal browser e sessioni riprendibili.",
   installSteps: [
-    { label: "Installa con npm (tutti i sistemi)", code: CLI_INSTALL_NPM },
-    { label: "oppure con lo script (macOS e Linux)", code: CLI_INSTALL_CURL },
-    { label: "Accedi dal browser, senza digitare password", code: "agentcloud login" },
-    { label: "Apri la chat e scegli l'agente", code: "agentcloud chat" },
+    { label: "Installa con npm o con lo script" },
+    { label: "Accedi dal browser, senza digitare password" },
+    { label: "Apri la chat e scegli l'agente" },
   ],
-  featuresTitle: "Cosa ci fai",
+  featuresTitle: "Cosa saprà fare",
   features: [
     {
       title: "Risposte in streaming",
@@ -107,10 +98,10 @@ const cliIt: ClientPageContent = {
       text: "Senza terminale interattivo i colori si spengono da soli e i token API act_ autenticano senza browser.",
     },
   ],
-  ctaTitle: "Prova la CLI con il tuo account",
+  ctaTitle: "Vuoi sapere quando esce?",
   ctaText:
-    "Gli stessi agenti della piattaforma web, con la prova gratuita di 5 messaggi al giorno in totale.",
-  ctaLabel: "Crea un account",
+    "Nel frattempo puoi usare gli stessi agenti dal sito: stesso account, stesse integrazioni.",
+  ctaLabel: "Scrivici",
 };
 
 const extensionIt: ClientPageContent = {
@@ -212,29 +203,28 @@ const desktopIt: ClientPageContent = {
 
 
 const cliEn: ClientPageContent = {
-  metaTitle: "AgentCloud CLI: AI agents in your terminal",
+  metaTitle: "AgentCloud CLI: coming soon",
   metaDescription:
-    "Install the AgentCloud CLI with npm or a script: agents in scripts, cron and CI/CD pipelines, browser login and resumable sessions.",
+    "The AgentCloud CLI is coming: agents in scripts, cron and CI/CD pipelines, browser login and resumable sessions. See how it will work.",
   badge: "Terminal",
   titleA: "AI agents",
   titleB: "in your terminal",
   subtitle:
     "One binary for all your agents: chat in a full-screen TUI, run tasks from scripts and resume yesterday's session.",
-  available: true,
-  statusLabel: "Available now",
+  available: false,
+  statusLabel: "Coming soon",
   statusNote:
-    "Published on npm as agentcloud-cli. Requires Node 18 or newer and runs on Linux, macOS and Windows.",
+    "It is not published on npm yet: it is heading there. Here is how it will work, with nothing to download today.",
   backLabel: "Apps & extensions",
-  installTitle: "Installation",
+  installTitle: "How it will install",
   installNote:
-    "Pick npm or the script: both install the same agentcloud command. The script also tells you how to install Node if it is missing.",
+    "With npm or the script: both will install the same agentcloud command, with browser login and resumable sessions.",
   installSteps: [
-    { label: "Install with npm (every system)", code: CLI_INSTALL_NPM },
-    { label: "or with the script (macOS and Linux)", code: CLI_INSTALL_CURL },
-    { label: "Sign in from the browser, no password to type", code: "agentcloud login" },
-    { label: "Open the chat and pick an agent", code: "agentcloud chat" },
+    { label: "Install with npm or the script" },
+    { label: "Sign in from the browser, no password to type" },
+    { label: "Open the chat and pick an agent" },
   ],
-  featuresTitle: "What you can do",
+  featuresTitle: "What it will do",
   features: [
     {
       title: "Streamed answers",
@@ -253,10 +243,10 @@ const cliEn: ClientPageContent = {
       text: "Outside an interactive terminal colours turn off by themselves and act_ API tokens authenticate without a browser.",
     },
   ],
-  ctaTitle: "Try the CLI with your account",
+  ctaTitle: "Want to know when it ships?",
   ctaText:
-    "The same agents as the web platform, with the free trial of 5 messages a day in total.",
-  ctaLabel: "Create an account",
+    "In the meantime you can use the same agents from the website: same account, same integrations.",
+  ctaLabel: "Get in touch",
 };
 
 const extensionEn: ClientPageContent = {
@@ -358,29 +348,28 @@ const desktopEn: ClientPageContent = {
 
 
 const cliEs: ClientPageContent = {
-  metaTitle: "CLI de AgentCloud: agentes de IA en la terminal",
+  metaTitle: "CLI de AgentCloud: muy pronto",
   metaDescription:
-    "Instala la CLI de AgentCloud con npm o con el script: agentes en scripts, cron y CI/CD, acceso desde el navegador y sesiones recuperables.",
+    "La CLI de AgentCloud está en camino: agentes en scripts, cron y CI/CD, acceso desde el navegador y sesiones recuperables. Descubre cómo funcionará.",
   badge: "Terminal",
   titleA: "Agentes de IA",
   titleB: "en tu terminal",
   subtitle:
     "Un solo binario para todos tus agentes: chatea en una TUI a pantalla completa, lanza tareas desde scripts y retoma la sesión de ayer.",
-  available: true,
-  statusLabel: "Disponible ahora",
+  available: false,
+  statusLabel: "Muy pronto",
   statusNote:
-    "Publicada en npm como agentcloud-cli. Requiere Node 18 o superior y funciona en Linux, macOS y Windows.",
+    "Todavía no está publicada en npm: está en camino. Aquí tienes cómo funcionará, sin descargar nada a mano.",
   backLabel: "Apps y extensiones",
-  installTitle: "Instalación",
+  installTitle: "Cómo se instalará",
   installNote:
-    "Elige npm o el script: ambos instalan el mismo comando agentcloud. El script también explica cómo instalar Node si falta.",
+    "Con npm o con el script: ambos instalarán el mismo comando agentcloud, con acceso desde el navegador y sesiones recuperables.",
   installSteps: [
-    { label: "Instala con npm (todos los sistemas)", code: CLI_INSTALL_NPM },
-    { label: "o con el script (macOS y Linux)", code: CLI_INSTALL_CURL },
-    { label: "Inicia sesión desde el navegador, sin escribir contraseña", code: "agentcloud login" },
-    { label: "Abre el chat y elige el agente", code: "agentcloud chat" },
+    { label: "Instala con npm o con el script" },
+    { label: "Inicia sesión desde el navegador, sin escribir contraseña" },
+    { label: "Abre el chat y elige el agente" },
   ],
-  featuresTitle: "Qué puedes hacer",
+  featuresTitle: "Qué podrá hacer",
   features: [
     {
       title: "Respuestas en streaming",
@@ -399,10 +388,10 @@ const cliEs: ClientPageContent = {
       text: "Fuera de una terminal interactiva los colores se apagan solos y los tokens act_ autentican sin navegador.",
     },
   ],
-  ctaTitle: "Prueba la CLI con tu cuenta",
+  ctaTitle: "¿Quieres saber cuándo saldrá?",
   ctaText:
-    "Los mismos agentes de la plataforma web, con la prueba gratuita de 5 mensajes al día en total.",
-  ctaLabel: "Crear una cuenta",
+    "Mientras tanto puedes usar los mismos agentes desde la web: la misma cuenta, las mismas integraciones.",
+  ctaLabel: "Escríbenos",
 };
 
 const extensionEs: ClientPageContent = {
@@ -504,29 +493,28 @@ const desktopEs: ClientPageContent = {
 
 
 const cliDe: ClientPageContent = {
-  metaTitle: "AgentCloud CLI: KI-Agenten im Terminal",
+  metaTitle: "AgentCloud CLI: demnächst",
   metaDescription:
-    "Installiere die AgentCloud CLI mit npm oder dem Skript: Agenten in Skripten, Cron und CI/CD, Browser-Login und fortsetzbare Sitzungen.",
+    "Die AgentCloud CLI kommt bald: Agenten in Skripten, Cron und CI/CD, Browser-Login und fortsetzbare Sitzungen. So wird sie funktionieren.",
   badge: "Terminal",
   titleA: "KI-Agenten",
   titleB: "in deinem Terminal",
   subtitle:
     "Eine Binary für alle Agenten: chatte in einer bildschirmfüllenden TUI, starte Aufgaben aus Skripten und setze die Sitzung von gestern fort.",
-  available: true,
-  statusLabel: "Jetzt verfügbar",
+  available: false,
+  statusLabel: "Demnächst",
   statusNote:
-    "Als agentcloud-cli auf npm veröffentlicht. Braucht Node 18 oder neuer und läuft unter Linux, macOS und Windows.",
+    "Noch nicht auf npm veröffentlicht: sie ist auf dem Weg. Hier steht, wie sie funktionieren wird – ohne heute etwas herunterzuladen.",
   backLabel: "Apps & Erweiterungen",
-  installTitle: "Installation",
+  installTitle: "So wird sie installiert",
   installNote:
-    "Wähle npm oder das Skript: beide installieren denselben Befehl agentcloud. Das Skript erklärt auch, wie man Node installiert, falls es fehlt.",
+    "Mit npm oder dem Skript: beide werden denselben Befehl agentcloud installieren, mit Browser-Login und fortsetzbaren Sitzungen.",
   installSteps: [
-    { label: "Mit npm installieren (alle Systeme)", code: CLI_INSTALL_NPM },
-    { label: "oder mit dem Skript (macOS und Linux)", code: CLI_INSTALL_CURL },
-    { label: "Im Browser anmelden, ohne Passwort zu tippen", code: "agentcloud login" },
-    { label: "Chat öffnen und Agenten auswählen", code: "agentcloud chat" },
+    { label: "Mit npm oder dem Skript installieren" },
+    { label: "Im Browser anmelden, ohne Passwort zu tippen" },
+    { label: "Chat öffnen und Agenten auswählen" },
   ],
-  featuresTitle: "Was du damit machst",
+  featuresTitle: "Was sie können wird",
   features: [
     {
       title: "Gestreamte Antworten",
@@ -545,10 +533,10 @@ const cliDe: ClientPageContent = {
       text: "Außerhalb eines interaktiven Terminals verschwinden die Farben von selbst und act_-API-Token authentifizieren ohne Browser.",
     },
   ],
-  ctaTitle: "Teste die CLI mit deinem Konto",
+  ctaTitle: "Möchtest du wissen, wann es rauskommt?",
   ctaText:
-    "Dieselben Agenten wie auf der Web-Plattform, mit der kostenlosen Testphase von insgesamt 5 Nachrichten pro Tag.",
-  ctaLabel: "Konto erstellen",
+    "In der Zwischenzeit kannst du dieselben Agenten über die Website nutzen: dasselbe Konto, dieselben Integrationen.",
+  ctaLabel: "Schreib uns",
 };
 
 const extensionDe: ClientPageContent = {
@@ -650,29 +638,28 @@ const desktopDe: ClientPageContent = {
 
 
 const cliFr: ClientPageContent = {
-  metaTitle: "CLI AgentCloud: des agents IA dans votre terminal",
+  metaTitle: "CLI AgentCloud : bientôt disponible",
   metaDescription:
-    "Installez la CLI AgentCloud avec npm ou le script : des agents dans vos scripts, cron et CI/CD, connexion par navigateur et sessions reprenables.",
+    "La CLI AgentCloud arrive : des agents dans vos scripts, cron et CI/CD, connexion par navigateur et sessions reprenables. Découvrez comment elle fonctionnera.",
   badge: "Terminal",
   titleA: "Des agents IA",
   titleB: "dans votre terminal",
   subtitle:
     "Un seul binaire pour tous vos agents : discutez dans une TUI plein écran, lancez des tâches depuis vos scripts et reprenez la session d'hier.",
-  available: true,
-  statusLabel: "Disponible maintenant",
+  available: false,
+  statusLabel: "Bientôt disponible",
   statusNote:
-    "Publiée sur npm sous le nom agentcloud-cli. Nécessite Node 18 ou plus et fonctionne sous Linux, macOS et Windows.",
+    "Pas encore publiée sur npm : elle arrive. Voici comment elle fonctionnera, sans rien télécharger aujourd'hui.",
   backLabel: "Apps et extensions",
-  installTitle: "Installation",
+  installTitle: "Comment elle s'installera",
   installNote:
-    "Choisissez npm ou le script : les deux installent la même commande agentcloud. Le script explique aussi comment installer Node s'il manque.",
+    "Avec npm ou le script : les deux installeront la même commande agentcloud, avec connexion par navigateur et sessions reprenables.",
   installSteps: [
-    { label: "Installez avec npm (tous les systèmes)", code: CLI_INSTALL_NPM },
-    { label: "ou avec le script (macOS et Linux)", code: CLI_INSTALL_CURL },
-    { label: "Connectez-vous par navigateur, sans taper de mot de passe", code: "agentcloud login" },
-    { label: "Ouvrez le chat et choisissez l'agent", code: "agentcloud chat" },
+    { label: "Installez avec npm ou le script" },
+    { label: "Connectez-vous par navigateur, sans taper de mot de passe" },
+    { label: "Ouvrez le chat et choisissez l'agent" },
   ],
-  featuresTitle: "Ce que vous en faites",
+  featuresTitle: "Ce qu'elle saura faire",
   features: [
     {
       title: "Réponses en streaming",
@@ -691,10 +678,10 @@ const cliFr: ClientPageContent = {
       text: "Hors terminal interactif, les couleurs s'éteignent seules et les jetons act_ authentifient sans navigateur.",
     },
   ],
-  ctaTitle: "Essayez la CLI avec votre compte",
+  ctaTitle: "Vous voulez savoir quand elle sortira ?",
   ctaText:
-    "Les mêmes agents que la plateforme web, avec l'essai gratuit de 5 messages par jour au total.",
-  ctaLabel: "Créer un compte",
+    "En attendant, vous pouvez utiliser les mêmes agents depuis le site : même compte, mêmes intégrations.",
+  ctaLabel: "Écrivez-nous",
 };
 
 const extensionFr: ClientPageContent = {

@@ -17,7 +17,7 @@ export default function AppsSection() {
   const cards = [
     { icon: MonitorDown, title: a.desktopTitle, desc: a.desktopDesc, href: "/desktop", soon: true },
     { icon: Smartphone, title: a.mobileTitle, desc: a.mobileDesc, href: "/mobile", soon: true },
-    { icon: TerminalSquare, title: a.cliTitle, desc: a.cliDesc, href: "/cli", soon: false },
+    { icon: TerminalSquare, title: a.cliTitle, desc: a.cliDesc, href: "/cli", soon: true },
     { icon: PanelRight, title: a.extTitle, desc: a.extDesc, href: "/extension", soon: true },
   ];
   return (
@@ -66,8 +66,8 @@ export default function AppsSection() {
         </div>
 
         {/* Ogni card porta alla pagina del suo client. Il bottone in fondo
-            punta alla CLI: è l'unico client installabile oggi, quindi
-            l'unica azione reale da offrire qui. */}
+            punta alla CLI: la pagina dedicata spiega come funzionerà e come
+            essere avvisati quando esce, l'unica azione reale da offrire qui. */}
         <div className="text-center">
           <Link
             href="/cli"

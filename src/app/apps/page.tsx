@@ -15,8 +15,9 @@ import { MonitorDown, Smartphone, TerminalSquare, PanelRight, ArrowRight, ArrowL
  * stanno i dettagli e le istruzioni. Qui non si ripete come si installa
  * (su `/cli`, `/extension`, `/desktop`, `/mobile` c'è tutto).
  *
- * Onestà di stato: la CLI si installa da npm (live), desktop, mobile ed
- * estensione sono in arrivo (badge "In arrivo" / "Prossimamente").
+ * Onestà di stato: la CLI è in arrivo (pagina dedicata impostata come
+ * "prossimamente"), come desktop, mobile ed estensione (badge "In arrivo" /
+ * "Prossimamente"). Nessun client è installabile oggi.
  */
 export const revalidate = 300;
 
@@ -61,7 +62,7 @@ export default async function AppsPage() {
       desc: a.cliDesc,
       cta: a.cliCta,
       href: "/cli",
-      live: true,
+      live: false,
     },
     {
       id: "extension",
