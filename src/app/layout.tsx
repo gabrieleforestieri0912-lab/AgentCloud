@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-page-custom-font */
 /**
  * Layout radice dell'app: imposta lingua, metadati SEO (title/OG/Twitter),
  * dati strutturati JSON-LD e i provider globali (LanguageProvider + ThemeProvider).
@@ -7,6 +6,7 @@
  * pagina eredita gli stessi meta e lo stesso sfondo.
  */
 import type { Metadata, Viewport } from "next";
+import { Inter, Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { CartProvider } from "@/components/CartProvider";
@@ -18,7 +18,36 @@ import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { LOCALE_LABELS } from "@/lib/i18n/constants";
 import { getSiteUrl } from "@/lib/site-url";
 import { SUPPORT_EMAIL } from "@/lib/email-config";
-import { SHOPIFY_CLIENT_ID } from "@/lib/shopify/client";
+
+/** next/font: gli stessi tre family e gli stessi pesi che il vecchio link a
+ * fonts.googleapis.com effettivamente serviva (Inter 400-900, JetBrains Mono
+ * 400/500/700/800, Manrope 400-800; il 900 di Manrope era richiesto ma mai
+ * servito). Scaricati in build, file .woff2 self-hosted con `display: swap`:
+ * niente CSS esterno blocking e la famiglia di fallback è metricamente
+ * modificata (size-adjust), così il testo non si sposta quando il font vero
+ * è pronto. Le classi di variabile giungono su `<html>` (in basso). */
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--ff-inter",
+  display: "swap",
+});
+const manrope = Manrope({
+  subsets: ["latin"],
+  // Niente peso 900: il vecchio URL di Google Fonts lo richiedeva ma la
+  // risposta di css2 non conteneva Manrope 900 (range valido 200-800); il
+  // render reale usava il 800. next/font è rigido e rifiuterebbe il peso.
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--ff-manrope",
+  display: "swap",
+});
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "800"],
+  variable: "--ff-jetbrains-mono",
+  display: "swap",
+});
+const FONT_VARIABLES = `${inter.variable} ${manrope.variable} ${jetbrainsMono.variable}`;
 
 const BASE_URL = getSiteUrl();
 
@@ -237,48 +266,19 @@ export default async function RootLayout({
     // ri-renderizzando l'albero dal boundary, causando un lampo di tema
     // sbagliato e la perdita dello stato client. Vedi
     // node_modules/next/dist/docs/01-app/02-guides/preventing-flash-before-hydration.md
-    <html lang={locale} data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html
+      lang={locale}
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+      className={FONT_VARIABLES}
+    >
       <head>
-        {/* App Bridge (Shopify): deve essere il PRIMO script della pagina e
-            senza async/defer, come richiede Shopify — l'amministratore
-            incapsula l'app in un iframe e usa `shopify.idToken()` per
-            autenticare le richieste. Il client ID è pubblico (stesso di
-            shopify.app.toml); il client secret non finisce mai nel frontend.
-
-            Perché un <script> semplice e NON `next/script` (misurato su
-            Next 16.2.9, build di produzione): con `next/script` +
-            `strategy="beforeInteractive"` l'HTML ricevuto dal browser
-            contiene solo
-              <link rel="preload" href=".../app-bridge.js" as="script"/>
-            e NESSUN tag <script>: il tag viene iniettato dal runtime in
-            fase di hydration, quindi il controllo di Shopify (che legge
-            l'HTML) non lo trova. Con il tag qui sotto l'HTML contiene
-            davvero lo <script src="https://cdn.shopify.com/..."> senza
-            attributi aggiuntivi, senza async/defer/type=module.
-
-            Nota sull'ordine: nell'HTML i chunk di Next (tutti `async`,
-            primo-party) precedono questo tag, perché il framework li
-            emette prima del contenuto del layout. È il massimo
-            ottenibile con l'App Router: questo resta l'unico script
-            bloccante (senza async) e l'unico script Shopify della pagina,
-            e App Bridge è pronto prima che il pannello chieda il session
-            token (che aspetta `window.shopify` con timeout). */}
-        <meta name="shopify-api-key" content={SHOPIFY_CLIENT_ID} />
-        {/* eslint-disable-next-line @next/next/no-sync-scripts -- Requisito di
-            Shopify: App Bridge va caricato con un <script> sincrono e come
-            primo script della pagina. Con async/defer il controllo non lo
-            considera caricato. */}
-        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800;900&display=swap"
-            rel="stylesheet"
-        />
+        {/* I font NON arrivano più dal CSS esterno di Google Fonts: era una
+            risorsa render-blocking su ogni pagina. Ora sono self-hosted via
+            next/font (le variabili --ff-* sono sul <html>, usate in
+            globals.css): niente richiesta cross-origin bloccante e il
+            fallback ha le metriche corrette, quindi niente rimescolamento
+            al rilascio. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
         <script
           type="application/ld+json"

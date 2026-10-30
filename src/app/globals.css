@@ -1,13 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Manrope", "Inter", sans-serif;
-  --font-manrope: "Manrope", "Inter", sans-serif;
+  /* Font self-hosted via next/font (layout.tsx): le variabili --ff-* sono
+      definite sul <html>. Il vecchio link a fonts.googleapis.com era un
+      CSS render-blocking su ogni pagina; qui il fallback resta in coda
+      per la resa prima che il .woff2 locale sia scaricato. */
+  --font-sans: var(--ff-manrope), "Manrope", var(--ff-inter), "Inter",
+    sans-serif;
+  --font-manrope: var(--ff-manrope), "Manrope", var(--ff-inter), "Inter",
+    sans-serif;
 
   /* Tema unico monospace: alimenta sia il preflight di <pre>/<code> (blocchi
      e codice inline della chat) sia tutte le utility `font-mono` del sito. */
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-mono: var(--ff-jetbrains-mono), "JetBrains Mono", ui-monospace,
+    SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
 
   --color-brand-50: #e8f5ff;
   --color-brand-100: #b8e0ff;
@@ -99,7 +106,8 @@
     -webkit-tap-highlight-color: rgba(3, 139, 254, 0.18);
   }
   body {
-    font-family: "Manrope", "Inter", sans-serif;
+    font-family: var(--ff-manrope), "Manrope", var(--ff-inter), "Inter",
+      sans-serif;
   }
 
   [id] {
