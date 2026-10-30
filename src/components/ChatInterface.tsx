@@ -4177,11 +4177,11 @@ export default function ChatInterface({
                     visibile quando il messaggio è completo. */}
                 {msg.role === "assistant" &&
                   (streamingMsgIds.includes(msg.id) ? (
-                    <div className="mt-0.5 shrink-0">
+                    <div className={`${msg.agentName ? "mt-0.5" : "mt-1.5"} shrink-0`}>
                       <TypingDots size="sm" />
                     </div>
                   ) : agentForMessage(msg) ? (
-                    <div className="mt-0.5 shrink-0">
+                    <div className={`${msg.agentName ? "mt-0.5" : "mt-1.5"} shrink-0`}>
                       <AgentAvatar agent={agentForMessage(msg)!} size="sm" />
                     </div>
                   ) : (
@@ -4190,7 +4190,7 @@ export default function ChatInterface({
                       alt="AgentCloud"
                       width={28}
                       height={28}
-                      className="mt-0.5 h-7 w-7 shrink-0"
+                      className={`${msg.agentName ? "mt-0.5" : "mt-1.5"} h-7 w-7 shrink-0`}
                     />
                   ))}
                 <div
@@ -4327,7 +4327,9 @@ export default function ChatInterface({
                 </div>
                 {msg.role === "user" && (
                   <div
-                    className="relative mt-0.5 order-2 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-700"
+                    // Stessa geometria dell'avatar dell'assistente: centro
+                    // allineato alla prima riga della bolla (py-2.5 + ~21px).
+                    className="relative mt-1.5 order-2 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-700"
                     title={accountTooltip ?? undefined}
                     aria-label={accountTooltip ?? undefined}
                   >
