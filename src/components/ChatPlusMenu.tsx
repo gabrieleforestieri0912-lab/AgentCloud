@@ -613,7 +613,7 @@ export default function ChatPlusMenu({
         title={labels.aria}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 active:scale-95"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-all hover:bg-neutral-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 active:scale-95"
       >
         <Plus size={16} strokeWidth={2.25} />
       </button>

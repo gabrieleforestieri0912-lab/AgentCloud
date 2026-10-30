@@ -94,7 +94,6 @@ import {
   HERO_CONVERSATION_STORAGE_KEY,
   HERO_CONVERSATION_HISTORY_KEY,
 } from "./HeroSection";
-import ExportReportButton from "./ExportReportButton";
 import SubscribePaywallModal from "./SubscribePaywallModal";
 import { ActivityFeed, AgentErrorCard, WorkingIndicator } from "./agent/AgentActivity";
 import {
@@ -2994,19 +2993,16 @@ export default function ChatInterface({
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
-  // Selettore agente. Nella chat vuota resta nella toolbar accanto al "+";
-  // durante la conversazione vive fuori dall'input, nella riga sopra a destra.
-  // `align` serve ad ancorare il menu: a destra per il picker esterno (con
-  // `left-0` il menu w-72 uscirebbe dal contenitore), a sinistra per quello
-  // nella toolbar, che è sulla sinistra.
-  /** Input della chat (budget token, drop, textarea, toolbar con "+" e
-      selettore agente): identifico in una funzione perché lo stesso identico
-      blocco vive sia nella home della chat vuota sia nella home del
-      progetto — l'utente deve trovare lo stesso input ovunque. */
-  const renderChatInput = () => (
+  // Selettore agente: sotto l'input a destra (come il modello in Claude),
+  // con il disclaimer a sinistra. `align` ancora il menu a destra così
+  // non esce dal contenitore.
+  /** Barra input unica: riga compatta "+" / testo / invio, disclaimer e
+      selettore agente sotto. Stesso blocco in chat vuota, progetto e thread. */
+  const renderChatInput = () => {
+    const canSend =
+      (input.trim().length > 0 || attach.attachments.length > 0) && !isTyping && !!activeId;
+    return (
     <div>
-      {/* Budget di token: anche nella chat vuota l'utente deve
-          vedere quanto gliene resta. */}
       {tokenBudgetLine && (
         <TokenBudgetLine
           ratio={tokenBudgetLine.ratio}
@@ -3029,21 +3025,8 @@ export default function ChatInterface({
             imageAlt={dict.common.imageAttached}
           />
           {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
-          <div className="relative bg-neutral-800 rounded-2xl border border-white/10 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-            <LinkAwareTextarea
-              inputRef={inputRef}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              onPaste={attach.makePaste(attachLabels)}
-              placeholder={dict.chat.placeholder}
-              rows={2}
-              wrapperClassName="w-full"
-              className="px-4 pt-3 pb-16"
-              style={{ minHeight: "84px", maxHeight: "280px" } as React.CSSProperties}
-            />
-            {/* Bottom toolbar: selettore agente accanto al "+", senza linea sopra */}
-            <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-3 bg-neutral-800/50 backdrop-blur-sm rounded-b-2xl">
+          <div className="flex items-center gap-0.5 rounded-[28px] border border-white/10 bg-neutral-800 px-1.5 py-1.5 shadow-xl shadow-black/25 transition-all focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5">
+            <div className="flex h-10 shrink-0 items-center">
               <ChatPlusMenu
                 labels={plusLabels}
                 disabled={isTyping}
@@ -3060,33 +3043,62 @@ export default function ChatInterface({
                 webSearch={webSearchEnabled}
                 onToggleWebSearch={setWebSearchEnabled}
               />
-              {renderAgentPicker("left")}
-              <div className="flex-1 flex items-center justify-end gap-2">
-                <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
+            </div>
+            <LinkAwareTextarea
+              inputRef={inputRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onPaste={attach.makePaste(attachLabels)}
+              placeholder={dict.chat.placeholder}
+              rows={1}
+              wrapperClassName="flex-1"
+              className="px-1 py-2 leading-[24px]"
+              style={{ fieldSizing: "content", minHeight: "40px", maxHeight: "160px" } as React.CSSProperties}
+            />
+            <div className="flex h-10 shrink-0 items-center gap-0.5">
+              <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
+              {isTyping ? (
                 <button
+                  type="button"
+                  onClick={() => activeId && stopStreaming(activeId)}
+                  aria-label={dict.chat.activity.stopGeneration}
+                  title={dict.chat.activity.stopGeneration}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-700 text-white transition-all hover:bg-neutral-600"
+                >
+                  <Square size={14} fill="currentColor" />
+                </button>
+              ) : (
+                <button
+                  type="button"
                   onClick={handleSend}
-                  disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
+                  disabled={!canSend}
                   aria-label={dict.chat.sendMessage}
                   title={dict.chat.sendMessage}
-                  className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
-                    (!input.trim() && attach.attachments.length === 0) || isTyping || !activeId
-                      ? "bg-neutral-800 text-neutral-600 shadow-none"
-                      : "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_16px_rgba(3,139,254,0.45),0_4px_12px_rgba(0,0,0,0.3)] hover:brightness-110 hover:scale-105 hover:shadow-[0_0_22px_rgba(3,139,254,0.6),0_4px_12px_rgba(0,0,0,0.3)] active:scale-95"
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
+                    canSend
+                      ? "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_12px_rgba(3,139,254,0.4)] hover:brightness-110 hover:scale-105 active:scale-95"
+                      : "bg-transparent text-neutral-500 hover:text-neutral-300"
                   }`}
                 >
-                  <ArrowUp size={18} strokeWidth={2.5} />
+                  <ArrowUp size={16} strokeWidth={2.5} />
                 </button>
-              </div>
+              )}
             </div>
+          </div>
+          <div className="mt-1.5 flex items-center justify-between gap-3 px-1">
+            <p className="min-w-0 flex-1 text-left text-[12px] leading-[18px] text-neutral-500">{dict.chat.disclaimer}</p>
+            {renderAgentPicker("right")}
           </div>
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderAgentPicker = (align: "left" | "right") => (
     <div className="relative shrink-0" data-onboard="agent-picker">
-      {/* Bottone con avatar + nome dell'agente. */}
+      {/* Nome agente sotto l'input, a destra del disclaimer. */}
       <button
         type="button"
         onClick={() => setShowAgentPicker((v) => !v)}
@@ -3094,23 +3106,23 @@ export default function ChatInterface({
         aria-haspopup="listbox"
         title={dict.chat.changeAgent}
         aria-label={dict.chat.changeAgent}
-        className="flex h-9 sm:h-8 max-w-24 sm:max-w-44 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 transition-all hover:border-white/25 hover:bg-white/10 touch-manipulation"
+        className="flex h-7 max-w-[12rem] items-center gap-1 rounded-md py-1 pl-0.5 pr-1 text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white touch-manipulation"
       >
         {activeAgent ? (
-          <AgentAvatar agent={activeAgent} size="sm" circular />
+          <AgentAvatar agent={activeAgent} size="sm" circular className="!h-4 !w-4 !shadow-none" />
         ) : (
           <Image
             src="/agentcloud.png"
             alt="AgentCloud"
-            width={24}
-            height={24}
-            className="h-6 w-6 shrink-0"
+            width={16}
+            height={16}
+            className="h-4 w-4 shrink-0"
           />
         )}
-        <span className="truncate text-xs font-bold text-neutral-200">
+        <span className="truncate text-[12px] font-semibold text-neutral-300">
           {activeAgent ? activeAgentDisplayName : dict.chat.assistantName}
         </span>
-        <ChevronDown size={12} className="shrink-0 text-neutral-500" />
+        <ChevronDown size={11} className="shrink-0 text-neutral-500" />
       </button>
 
       {showAgentPicker && (
@@ -4104,7 +4116,6 @@ export default function ChatInterface({
                 </div>
               </div>
               </div>
-              <p className="shrink-0 text-[10px] text-neutral-600 text-center pb-3">{dict.chat.disclaimer}</p>
             </motion.div>
           ) : (
             <motion.div
@@ -4117,7 +4128,7 @@ export default function ChatInterface({
             <div
               ref={attachMessages}
               onScroll={handleMessagesScroll}
-              className="flex-1 overflow-y-auto px-3 sm:px-6 pt-14 pb-56 sm:pb-48"
+              className="flex-1 overflow-y-auto px-3 sm:px-6 pt-14 pb-44 sm:pb-40"
             >
             <div ref={contentRef} className="space-y-6 mx-auto max-w-4xl">
             {messages.map((msg, msgIndex) => {
@@ -4396,23 +4407,13 @@ export default function ChatInterface({
         <div
           data-onboard="chat-input"
           ref={composerRef}
-          className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-8"
+          className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-6"
           onDragEnter={attach.onDragEnter}
           onDragOver={attach.onDragOver}
           onDragLeave={attach.onDragLeave}
           onDrop={attach.makeDrop(attachLabels)}
         >
           <div ref={composerDockRef} className="relative mx-auto max-w-4xl">
-            {/* Budget di token del piano: quanto hai usato, quanto ti resta e
-                quando il budget si rinnova. È la sola cosa che l'utente deve
-                poter leggere per capire se l'agente può ancora lavorare. */}
-            {tokenBudgetLine && (
-              <TokenBudgetLine
-                ratio={tokenBudgetLine.ratio}
-                level={tokenBudgetLine.level}
-                text={tokenBudgetLine.text}
-              />
-            )}
             {/* Budget giornaliero freemium sopra l'input, con ora locale del reset */}
             {dailyLimit && !dailyLimit.unlimited && limitSlug && (
               <p className="mb-2 text-center text-[11px] font-semibold text-neutral-500">
@@ -4428,32 +4429,6 @@ export default function ChatInterface({
                 })}
               </p>
             )}
-            {/* Riga sopra l'input: comandi (PDF / Looker Studio) a sinistra e
-                selettore agente a destra, fuori dall'input. */}
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                {messages.length > 0 && (
-                  <ExportReportButton
-                    variant="floating"
-                    type="chat"
-                    messages={messages
-                      .filter((m) => m.role !== "system")
-                      .map((m) => ({
-                        role: m.role as "user" | "assistant",
-                        content: m.content,
-                        agentName:
-                          m.role === "assistant"
-                            ? (m.agentName ?? activeAgentDisplayName)
-                            : undefined,
-                        timestamp: m.created_at,
-                      }))}
-                    agentName={activeAgentDisplayName || "AgentCloud"}
-                    agentSlug={activeAgentId || "agent"}
-                  />
-                )}
-              </div>
-              {renderAgentPicker("right")}
-            </div>
             {paywallSlug && (
               <div className="mb-3 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
                 <p className="text-xs font-semibold text-amber-300">
@@ -4467,14 +4442,6 @@ export default function ChatInterface({
                 </button>
               </div>
             )}
-            <DropHint visible={attach.dragOver} text={attachLabels.dropHint} />
-            <AttachmentChips
-              items={attach.attachments}
-              onRemove={attach.remove}
-              removeLabel={(name) => dict.chat.removeAttachment.replace("{name}", name)}
-              imageAlt={dict.common.imageAttached}
-            />
-            {attach.notice && <p className="mb-2 text-center text-xs text-amber-400">{attach.notice}</p>}
             {pendingApproval && pendingApproval.convId === activeId && (
               <div
                 role="alertdialog"
@@ -4505,67 +4472,7 @@ export default function ChatInterface({
                 </div>
               </div>
             )}
-            {/* Input su una riga: "+" a sinistra, testo al centro, comandi a
-                destra. Il selettore agente è fuori, nella riga sopra. */}
-            <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-neutral-800 px-3 py-1.5 shadow-xl shadow-black/25 focus-within:border-brand-500/50 focus-within:shadow-lg focus-within:shadow-brand-500/5 transition-all">
-              <div className="flex h-9 shrink-0 items-center">
-                <ChatPlusMenu
-                  labels={plusLabels}
-                  disabled={isTyping}
-                  onFiles={(files) => attach.addFiles(files, attachLabels)}
-                  onScreenshot={(file) => attach.addFiles([file], attachLabels)}
-                  projects={projects.map((p) => ({ id: p.id, name: p.name }))}
-                  onSelectProject={addToProject}
-                  repos={githubRepos}
-                  activeRepo={activeGithubRepo}
-                  onSelectRepo={selectGithubRepo}
-                  onUnlinkRepo={unlinkGithubRepo}
-                  onLinkRepo={linkGithubRepo}
-                  githubConnected={githubConnected}
-                  webSearch={webSearchEnabled}
-                  onToggleWebSearch={setWebSearchEnabled}
-                />
-              </div>
-              <LinkAwareTextarea
-                inputRef={inputRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                onPaste={attach.makePaste(attachLabels)}
-                placeholder={dict.chat.placeholder}
-                rows={1}
-                wrapperClassName="flex-1"
-                className="py-2"
-                style={{ fieldSizing: "content", maxHeight: "160px" } as React.CSSProperties}
-              />
-              <div className="flex shrink-0 items-center gap-2">
-                  <VoiceInput onTranscript={(text) => setInput((prev) => prev + (prev ? " " : "") + text)} onVoiceModeToggle={setIsVoiceMode} disabled={isTyping || !activeId} isVoiceMode={isVoiceMode} />
-                  {isTyping ? (
-                    <button
-                      onClick={() => activeId && stopStreaming(activeId)}
-                      aria-label={dict.chat.activity.stopGeneration}
-                      title={dict.chat.activity.stopGeneration}
-                      className="w-9 h-9 rounded-full flex items-center justify-center bg-neutral-700 text-white hover:bg-neutral-600 transition-all shrink-0 shadow-lg shadow-black/20"
-                    >
-                      <Square size={16} fill="currentColor" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleSend}
-                      disabled={(!input.trim() && attach.attachments.length === 0) || isTyping || !activeId}
-                      aria-label={dict.chat.sendMessage}
-                      title={dict.chat.sendMessage}
-                      className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed ${
-                        (!input.trim() && attach.attachments.length === 0) || isTyping || !activeId
-                          ? "bg-neutral-800 text-neutral-600 shadow-none"
-                          : "bg-gradient-to-br from-[#038bfe] to-[#0066cc] text-white shadow-[0_0_16px_rgba(3,139,254,0.45),0_4px_12px_rgba(0,0,0,0.3)] hover:brightness-110 hover:scale-105 hover:shadow-[0_0_22px_rgba(3,139,254,0.6),0_4px_12px_rgba(0,0,0,0.3)] active:scale-95"
-                      }`}
-                    >
-                      <ArrowUp size={16} strokeWidth={2.5} />
-                    </button>
-                  )}
-              </div>
-            </div>
+            {renderChatInput()}
             {/* Torna in fondo: visibile solo se il thread è più alto della
                 view e la coda è coperta. Un messaggio corto tutto a schermo
                 non lo fa comparire. Riaggancia l'auto-scroll. Vive DENTRO il
@@ -4589,7 +4496,6 @@ export default function ChatInterface({
                   )}
                 </AnimatePresence>
           </div>
-          <p className="text-[10px] text-neutral-600 text-center mt-1.5 sm:mt-2">{dict.chat.disclaimer}</p>
         </div>
         </motion.div>
           )}
