@@ -13,6 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
+import SetupReminder from "@/components/SetupReminder";
 import DashboardCharts from "@/components/DashboardCharts";
 import DashboardExportBar from "@/components/DashboardExportBar";
 import DashboardSkills from "@/components/skills/DashboardSkills";
@@ -27,9 +28,18 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, t } from "@/lib/i18n/dictionaries";
 import { DATE_LOCALES } from "@/lib/i18n/constants";
 import GeneratedFilesPanel from "@/components/GeneratedFilesPanel";
+import DashboardSections, {
+  type DashboardCustomizeLabels,
+} from "@/components/DashboardSections";
 import { getTokenPoolsForUser, type TokenPool } from "@/lib/billing/token-pool";
 import { getPlan } from "@/lib/billing/pricing";
 import { formatTokens } from "@/lib/format-tokens";
+import { readPreferences } from "@/lib/user-preferences";
+import {
+  parseDashboardLayout,
+  type DashboardSectionId,
+} from "@/lib/dashboard-sections";
+import type { ReactNode } from "react";
 
 /**
  * Nome leggibile del piano di un pool ("Growth", "Starter"…).
@@ -212,14 +222,27 @@ export default async function DashboardPage({
     ? "Admin"
     : typeof user?.user_metadata?.full_name === "string"
       ? user.user_metadata.full_name
-      : "";
-  const firstName = false
+      : "";  const firstName = false
     ? "Admin"
     : fullName.split(" ")[0] || (user?.email ?? "").split("@")[0];
   const greeting = firstName
     ? t(dict.dashboard.welcomeBack, { name: firstName })
     : dict.dashboard.welcomeBackGeneric;
   const email = user?.email ?? "";
+
+  // Invito soft al setup: solo chi non l'ha MAI concluso lo vede, ed è
+  // dismissibile (SetupReminder si occupa del "non rompere più"). Nulla di
+  // bloccante: la dashboard resta pienamente usabile.
+  const setupProfile = db
+    ? (
+        await db
+          .from("profiles")
+          .select("onboarding_completed_at")
+          .eq("id", userId)
+          .maybeSingle()
+      ).data as { onboarding_completed_at?: string | null } | null
+    : null;
+  const showSetupReminder = Boolean(userId && !setupProfile?.onboarding_completed_at);
 
   const statCards: Array<[string, string, typeof Zap]> = [
     [String(installed.length), dict.dashboard.statInstalledAgents, Zap],
@@ -235,6 +258,14 @@ export default async function DashboardPage({
   // Pool di token: il budget dei piani attivi (uno per abbonamento). È il
   // numero che l'utente deve poter leggere per capire quanto ha ancora.
   const tokenPools = userId ? await getTokenPoolsForUser(userId) : [];
+
+  // Layout personalizzato delle sezioni: la preferenza (se esiste) elenca le
+  // sezioni visibili nell'ordine scelto; senza preferenza vale il default.
+  const savedPreferences = user?.id ? await readPreferences(user.id) : {};
+  const savedLayout =
+    typeof savedPreferences.agentcloud_dashboard_sections === "string"
+      ? savedPreferences.agentcloud_dashboard_sections
+      : null;
 
   // ── Grafici: bucket giornalieri degli ultimi 7 giorni + costi ─────────
   // Costruisce i bucket giornalieri (7 giorni) a partire dalle run del mese
@@ -294,10 +325,366 @@ export default async function DashboardPage({
     };
   });
 
+  // ── Sezioni personalizzabili ─────────────────────────────────────────
+  // Ogni sezione della dashboard è un nodo creato qui (lato server, con i
+  // dati già letti): `DashboardSections` decide solo ORDINE e VISIBILITÀ in
+  // base alla preferenza utente. I margini (mb-8) e l'attributa
+  // data-onboard dell'onboarding tour stanno sul wrapper nel client.
+  const sectionNodes: Partial<Record<DashboardSectionId, ReactNode>> = {};
+
+  // Budget token: ha senso solo se l'utente ha almeno un pool attivo.
+  if (tokenPools.length > 0) {
+    sectionNodes.budget = (
+      <section>
+        <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-neutral-500">
+          {dict.dashboard.budgetTitle}
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          {tokenPools.map((pool) => {
+            const pct = Math.min(100, Math.round(pool.ratio * 100));
+            const tone =
+              pool.ratio >= 1
+                ? "bg-red-400"
+                : pool.ratio >= 0.8
+                  ? "bg-amber-400"
+                  : "bg-brand-400";
+            return (
+              <div
+                key={pool.poolId}
+                className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm"
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-white">
+                      {poolPlanLabel(pool)}
+                    </p>
+                    <p className="truncate text-xs text-neutral-500">
+                      {pool.agents
+                        .map(
+                          (slug) =>
+                            AGENTS.find((a) => a.slug === slug)?.name ?? slug,
+                        )
+                        .join(" · ")}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-sm font-bold text-white">
+                    {formatTokens(pool.used)}{" "}
+                    <span className="text-neutral-500">
+                      / {formatTokens(pool.tokenLimit)}
+                    </span>
+                  </p>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className={`h-full rounded-full ${tone}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-[11px] text-neutral-500">
+                  {pool.ratio >= 1
+                    ? dict.dashboard.budgetExhausted
+                    : t(dict.dashboard.budgetRenews, {
+                        date: pool.periodEnd
+                          ? new Date(pool.periodEnd).toLocaleDateString(
+                              DATE_LOCALES[locale],
+                              { day: "numeric", month: "short" },
+                            )
+                          : "—",
+                      })}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
+  sectionNodes.stats = (
+    <div className="grid gap-4 md:grid-cols-4">
+      {statCards.map(([value, label, Icon]) => (
+        <div
+          key={label}
+          className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm"
+        >
+          <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500 text-white">
+            <Icon size={19} />
+          </div>
+          <p className="text-3xl font-bold text-white">{value}</p>
+          <p className="text-sm text-neutral-400">{label}</p>
+        </div>
+      ))}
+    </div>
+  );
+
+  // Competenze installate: stato, ultimo uso, attivazioni, successo
+  sectionNodes.skills = (
+    <DashboardSkills summary={skillsSummary} dict={skillsDict} />
+  );
+
+  // Grafici e costi
+  sectionNodes.charts = (
+    <div>
+      <DashboardCharts
+        daily={dailyBuckets}
+        totalTokens={totalTokens}
+        totalRuns={totalRuns}
+        estimatedCostCents={overageCentsTotal}
+        overageCents={overageCentsTotal}
+        locale={locale}
+        agentUsage={agentUsage}
+      />
+      <div className="mt-4">
+        <DashboardExportBar
+          agentName={installed[0]?.slug || "AgentCloud"}
+          agentSlug={installed[0]?.slug || "agent"}
+          totalRuns={totalRuns}
+          totalTokens={totalTokens}
+          estimatedCostCents={overageCentsTotal}
+          daily={dailyBuckets}
+        />
+      </div>
+    </div>
+  );
+
+  sectionNodes.agents = (
+    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="rounded-lg border border-white/5 bg-neutral-900 shadow-sm">
+        <div className="border-b border-white/5 p-5">
+          <h2 className="text-xl font-bold text-white">
+            {dict.dashboard.installedAgents}
+          </h2>
+        </div>
+
+        {installed.length === 0 ? (
+          <div className="p-10 text-center">
+            {dbAvailable ? (
+              <>
+                <p className="text-base font-bold text-white">
+                  {dict.dashboard.noAgentsTitle}
+                </p>
+                <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-400">
+                  {dict.dashboard.noAgentsSubtitle}
+                </p>
+                <Link
+                  href="/agents"
+                  className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-400"
+                >
+                  <Plus size={16} />
+                  {dict.dashboard.browseAgents}
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="text-base font-bold text-white">
+                  {dict.dashboard.dashboardUnavailable}
+                </p>
+                <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-400">
+                  {dict.dashboard.dashboardUnavailableDesc}
+                </p>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="divide-y divide-white/5 max-md:space-y-3 max-md:divide-none max-md:p-3">
+            {installed.map(
+              ({ agent, slug, status, runs, tokens, lastRun, runtimeName, config }) => {
+                const displayName =
+                  agent?.shortName ?? runtimeName ?? slug;
+                const category = agent?.category ?? "Agent";
+                const accent = agent?.accent ?? "bg-neutral-700";
+                const active = status === "active";
+                const cancelsAtPeriodEnd =
+                  (config as Record<string, unknown> | undefined)
+                    ?.cancelAtPeriodEnd === true;
+                return (
+                  <div
+                    key={slug}
+                    className="grid gap-4 p-5 lg:grid-cols-[1fr_120px_100px_100px_110px_190px] lg:items-center max-md:rounded-lg max-md:border max-md:border-white/5 max-md:bg-neutral-900/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-11 w-11 items-center justify-center rounded-lg ${accent}`}
+                      >
+                        {agent ? (
+                          <AgentIcon
+                            icon={agent.icon}
+                            brand={agent.brand}
+                            size={21}
+                            className="text-white"
+                          />
+                        ) : (
+                          <span className="text-white text-sm font-bold">
+                            {slug.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <Link
+                          href={`/agents/${slug}`}
+                          className="font-bold text-white transition-colors hover:text-brand-400"
+                        >
+                          {displayName}
+                        </Link>
+                        <p className="text-sm text-neutral-500">
+                          {category}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold ${
+                        cancelsAtPeriodEnd
+                          ? "bg-amber-500/20 text-amber-300"
+                          : active
+                            ? "bg-purple-500/20 text-purple-300"
+                            : "bg-neutral-800 text-neutral-400"
+                      }`}
+                    >
+                      {cancelsAtPeriodEnd
+                        ? dict.dashboard.cancelsAtPeriodEnd
+                        : active
+                          ? dict.dashboard.active
+                          : status}
+                    </span>
+                    <p className="text-sm font-bold text-white">
+                      {t(dict.dashboard.runs, { count: runs })}
+                    </p>
+                    <p className="text-sm font-bold text-white">
+                      {t(dict.dashboard.tokens, { count: formatTokens(tokens) })}
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-neutral-400">
+                      <Clock3 size={15} />
+                      {timeAgo(lastRun, dict)}
+                    </div>
+                    {/* Gestione agente: apri in chat + gestisci abbonamento */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href={`/chat?agent=${slug}`}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-brand-400"
+                      >
+                        {dict.dashboard.openInChat}
+                      </Link>
+                      <Link
+                        href="/dashboard/subscriptions"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-bold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
+                      >
+                        {dict.dashboard.manage}
+                      </Link>
+                    </div>
+                  </div>
+                );
+              },
+            )}
+          </div>
+        )}
+      </div>
+
+      <aside className="space-y-6">
+        <GeneratedFilesPanel />
+
+        <div className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm">
+          <h2 className="text-xl font-bold text-white">
+            {dict.dashboard.monthlyUsage}
+          </h2>
+          {installed.length === 0 ? (
+            <p className="mt-4 text-sm leading-6 text-neutral-400">
+              {dbAvailable
+                ? dict.dashboard.usageEmpty
+                : dict.dashboard.usageEmptyDesc}
+            </p>
+          ) : (
+            <div className="mt-4 space-y-4">
+              {(() => {
+                const maxTokens = Math.max(1, ...installed.map((a) => a.tokens));
+                return installed.map(({ agent, slug, tokens, runs, runtimeName }) => {
+                  const displayName = agent?.shortName ?? runtimeName ?? slug;
+                  const pct = Math.min(100, (tokens / maxTokens) * 100);
+                  return (
+                    <div key={slug}>
+                      <div className="mb-1.5 flex items-center justify-between text-sm">
+                        <span className="font-semibold text-neutral-300">{displayName}</span>
+                        <span className="text-neutral-500">{formatTokens(tokens)} tok · {runs} run</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
+                        <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-white/5 bg-linear-to-br from-neutral-900 to-neutral-950 p-5 text-white shadow-sm">
+          <Power size={20} className="mb-4 text-purple-400" />
+          <h2 className="text-xl font-bold">{dict.dashboard.controlCenter}</h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-400">
+            {dict.dashboard.controlCenterDesc}
+          </p>
+
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            {dict.dashboard.gettingStartedIntro}
+          </p>
+
+          <div className="mt-5 space-y-3 border-t border-white/5 pt-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+              {dict.dashboard.gettingStarted}
+            </p>
+            {dict.dashboard.gettingStartedSteps.map((label, i) => (
+              <Link
+                key={label}
+                href={i < 3 ? "/agents" : "/dashboard"}
+                className="flex items-center gap-3 rounded-lg bg-white/5 px-3.5 py-3 text-sm transition-colors hover:bg-white/10"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-xs font-bold text-purple-400">
+                  {i + 1}
+                </span>
+                <span className="text-neutral-300">{label}</span>
+              </Link>
+            ))}
+          </div>
+
+          <Link
+            href="/api/billing/portal"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
+          >
+            <CreditCard size={15} />
+            {dict.dashboard.manageSubscription}
+          </Link>
+        </div>
+      </aside>
+    </div>
+  );
+
+  // Testi del pannello di personalizzazione (etichette in lingua attiva).
+  const sectionLabels: DashboardCustomizeLabels = {
+    open: dict.dashboard.customizeOpen,
+    title: dict.dashboard.customizeTitle,
+    hint: dict.dashboard.customizeHint,
+    done: dict.dashboard.customizeDone,
+    cancel: dict.dashboard.customizeCancel,
+    restore: dict.dashboard.customizeRestore,
+    hiddenTag: dict.dashboard.customizeHiddenTag,
+    moveUp: dict.dashboard.customizeMoveUp,
+    moveDown: dict.dashboard.customizeMoveDown,
+    hide: dict.dashboard.customizeHide,
+    show: dict.dashboard.customizeShow,
+    sectionTitles: {
+      budget: dict.dashboard.sectionBudget,
+      stats: dict.dashboard.sectionStats,
+      skills: dict.dashboard.sectionSkills,
+      charts: dict.dashboard.sectionCharts,
+      agents: dict.dashboard.sectionAgents,
+    },
+  };
+
   return (
     <DashboardShell email={email} account={accountIdentityFromUser(user)}>
       <section className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl 3xl:max-w-[1720px]">
+          <SetupReminder show={showSetupReminder} />
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="mb-4 flex items-center gap-2">
@@ -333,322 +720,13 @@ export default async function DashboardPage({
             </div>
           )}
 
-          {/* Budget di token: un pool per abbonamento, con gli agenti che lo
-              condividono. Il budget è ciò che rende gli agenti utilizzabili,
-              quindi va in evidenza come le statistiche. */}
-          {tokenPools.length > 0 && (
-            <section data-onboard="dashboard-budget" className="mb-8">
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                {dict.dashboard.budgetTitle}
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                {tokenPools.map((pool) => {
-                  const pct = Math.min(100, Math.round(pool.ratio * 100));
-                  const tone =
-                    pool.ratio >= 1
-                      ? "bg-red-400"
-                      : pool.ratio >= 0.8
-                        ? "bg-amber-400"
-                        : "bg-brand-400";
-                  return (
-                    <div
-                      key={pool.poolId}
-                      className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm"
-                    >
-                      <div className="mb-3 flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-white">
-                            {poolPlanLabel(pool)}
-                          </p>
-                          <p className="truncate text-xs text-neutral-500">
-                            {pool.agents
-                              .map(
-                                (slug) =>
-                                  AGENTS.find((a) => a.slug === slug)?.name ??
-                                  slug,
-                              )
-                              .join(" · ")}
-                          </p>
-                        </div>
-                        <p className="shrink-0 text-sm font-bold text-white">
-                          {formatTokens(pool.used)}{" "}
-                          <span className="text-neutral-500">
-                            / {formatTokens(pool.tokenLimit)}
-                          </span>
-                        </p>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                        <div
-                          className={`h-full rounded-full ${tone}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <p className="mt-2 text-[11px] text-neutral-500">
-                        {pool.ratio >= 1
-                          ? dict.dashboard.budgetExhausted
-                          : t(dict.dashboard.budgetRenews, {
-                              date: pool.periodEnd
-                                ? new Date(pool.periodEnd).toLocaleDateString(
-                                    DATE_LOCALES[locale],
-                                    { day: "numeric", month: "short" },
-                                  )
-                                : "—",
-                            })}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          <div data-onboard="dashboard-stats" className="mb-8 grid gap-4 md:grid-cols-4">
-            {statCards.map(([value, label, Icon]) => (
-              <div
-                key={label}
-                className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm"
-              >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500 text-white">
-                  <Icon size={19} />
-                </div>
-                <p className="text-3xl font-bold text-white">{value}</p>
-                <p className="text-sm text-neutral-400">{label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Competenze installate: stato, ultimo uso, attivazioni, successo */}
-          <DashboardSkills summary={skillsSummary} dict={skillsDict} />
-
-          {/* Grafici e costi */}
-          <div className="mb-8">
-            <DashboardCharts
-              daily={dailyBuckets}
-              totalTokens={totalTokens}
-              totalRuns={totalRuns}
-              estimatedCostCents={overageCentsTotal}
-              overageCents={overageCentsTotal}
-              locale={locale}
-              agentUsage={agentUsage}
-            />
-            <div className="mt-4">
-              <DashboardExportBar
-                agentName={installed[0]?.slug || "AgentCloud"}
-                agentSlug={installed[0]?.slug || "agent"}
-                totalRuns={totalRuns}
-                totalTokens={totalTokens}
-                estimatedCostCents={overageCentsTotal}
-                daily={dailyBuckets}
-              />
-            </div>
-          </div>
-
-          <div data-onboard="dashboard-agents" className="grid gap-6 lg:grid-cols-[1fr_360px]">
-            <div className="rounded-lg border border-white/5 bg-neutral-900 shadow-sm">
-              <div className="border-b border-white/5 p-5">
-                <h2 className="text-xl font-bold text-white">
-                  {dict.dashboard.installedAgents}
-                </h2>
-              </div>
-
-              {installed.length === 0 ? (
-                <div className="p-10 text-center">
-                  {dbAvailable ? (
-                    <>
-                      <p className="text-base font-bold text-white">
-                        {dict.dashboard.noAgentsTitle}
-                      </p>
-                      <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-400">
-                        {dict.dashboard.noAgentsSubtitle}
-                      </p>
-                      <Link
-                        href="/agents"
-                        className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-400"
-                      >
-                        <Plus size={16} />
-                        {dict.dashboard.browseAgents}
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-base font-bold text-white">
-                        {dict.dashboard.dashboardUnavailable}
-                      </p>
-                      <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-400">
-                        {dict.dashboard.dashboardUnavailableDesc}
-                      </p>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="divide-y divide-white/5 max-md:space-y-3 max-md:divide-none max-md:p-3">
-                  {installed.map(({ agent, slug, status, runs, tokens, lastRun, runtimeName, config }) => {
-                    const displayName =
-                      agent?.shortName ?? runtimeName ?? slug;
-                    const category = agent?.category ?? "Agent";
-                    const accent = agent?.accent ?? "bg-neutral-700";
-                    const active = status === "active";
-                    const cancelsAtPeriodEnd =
-                      (config as Record<string, unknown> | undefined)
-                        ?.cancelAtPeriodEnd === true;
-                    return (
-                      <div
-                        key={slug}
-                        className="grid gap-4 p-5 lg:grid-cols-[1fr_120px_100px_100px_110px_190px] lg:items-center max-md:rounded-lg max-md:border max-md:border-white/5 max-md:bg-neutral-900/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`flex h-11 w-11 items-center justify-center rounded-lg ${accent}`}
-                          >
-                            {agent ? (
-                              <AgentIcon
-                                icon={agent.icon}
-                                brand={agent.brand}
-                                size={21}
-                                className="text-white"
-                              />
-                            ) : (
-                              <span className="text-white text-sm font-bold">
-                                {slug.charAt(0).toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <Link
-                              href={`/agents/${slug}`}
-                              className="font-bold text-white transition-colors hover:text-brand-400"
-                            >
-                              {displayName}
-                            </Link>
-                            <p className="text-sm text-neutral-500">
-                              {category}
-                            </p>
-                          </div>
-                        </div>
-
-                        <span
-                          className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold ${
-                            cancelsAtPeriodEnd
-                              ? "bg-amber-500/20 text-amber-300"
-                              : active
-                                ? "bg-purple-500/20 text-purple-300"
-                                : "bg-neutral-800 text-neutral-400"
-                          }`}
-                        >
-                          {cancelsAtPeriodEnd
-                            ? dict.dashboard.cancelsAtPeriodEnd
-                            : active
-                              ? dict.dashboard.active
-                              : status}
-                        </span>
-                        <p className="text-sm font-bold text-white">
-                          {t(dict.dashboard.runs, { count: runs })}
-                        </p>
-                        <p className="text-sm font-bold text-white">
-                          {t(dict.dashboard.tokens, { count: formatTokens(tokens) })}
-                        </p>
-                        <div className="flex items-center gap-2 text-sm text-neutral-400">
-                          <Clock3 size={15} />
-                          {timeAgo(lastRun, dict)}
-                        </div>
-                        {/* Gestione agente: apri in chat + gestisci abbonamento */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Link
-                            href={`/chat?agent=${slug}`}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-brand-400"
-                          >
-                            {dict.dashboard.openInChat}
-                          </Link>
-                          <Link
-                            href="/dashboard/subscriptions"
-                            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-bold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
-                          >
-                            {dict.dashboard.manage}
-                          </Link>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <aside className="space-y-6">
-              <GeneratedFilesPanel />
-
-              <div className="rounded-lg border border-white/5 bg-neutral-900 p-5 shadow-sm">
-                <h2 className="text-xl font-bold text-white">
-                  {dict.dashboard.monthlyUsage}
-                </h2>
-                {installed.length === 0 ? (
-                  <p className="mt-4 text-sm leading-6 text-neutral-400">
-                    {dbAvailable
-                      ? dict.dashboard.usageEmpty
-                      : dict.dashboard.usageEmptyDesc}
-                  </p>
-                ) : (
-                  <div className="mt-4 space-y-4">
-                    {(() => {
-                      const maxTokens = Math.max(1, ...installed.map((a) => a.tokens));
-                      return installed.map(({ agent, slug, tokens, runs, runtimeName }) => {
-                        const displayName = agent?.shortName ?? runtimeName ?? slug;
-                        const pct = Math.min(100, (tokens / maxTokens) * 100);
-                        return (
-                          <div key={slug}>
-                            <div className="mb-1.5 flex items-center justify-between text-sm">
-                              <span className="font-semibold text-neutral-300">{displayName}</span>
-                              <span className="text-neutral-500">{formatTokens(tokens)} tok · {runs} run</span>
-                            </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
-                              <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-lg border border-white/5 bg-linear-to-br from-neutral-900 to-neutral-950 p-5 text-white shadow-sm">
-                <Power size={20} className="mb-4 text-purple-400" />
-                <h2 className="text-xl font-bold">{dict.dashboard.controlCenter}</h2>
-                <p className="mt-2 text-sm leading-6 text-neutral-400">
-                  {dict.dashboard.controlCenterDesc}
-                </p>
-
-                <p className="mt-3 text-sm leading-6 text-neutral-400">
-                  {dict.dashboard.gettingStartedIntro}
-                </p>
-
-                <div className="mt-5 space-y-3 border-t border-white/5 pt-5">
-                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                    {dict.dashboard.gettingStarted}
-                  </p>
-                  {dict.dashboard.gettingStartedSteps.map((label, i) => (
-                    <Link
-                      key={label}
-                      href={i < 3 ? "/agents" : "/dashboard"}
-                      className="flex items-center gap-3 rounded-lg bg-white/5 px-3.5 py-3 text-sm transition-colors hover:bg-white/10"
-                    >
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-xs font-bold text-purple-400">
-                        {i + 1}
-                      </span>
-                      <span className="text-neutral-300">{label}</span>
-                    </Link>
-                  ))}
-                </div>
-
-                <Link
-                  href="/api/billing/portal"
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
-                >
-                  <CreditCard size={15} />
-                  {dict.dashboard.manageSubscription}
-                </Link>
-              </div>
-            </aside>
-          </div>
+          {/* Sezioni personalizzabili in ordine e visibilità: il server crea
+              i nodi, il client decide il layout (preferenza salvata). */}
+          <DashboardSections
+            layout={parseDashboardLayout(savedLayout)}
+            labels={sectionLabels}
+            nodes={sectionNodes}
+          />
         </div>
       </section>
     </DashboardShell>

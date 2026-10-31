@@ -7,6 +7,7 @@
  */
 export const PREFERENCE_KEYS = [
   "agentcloud_dashboard_sidebar_width",
+  "agentcloud_dashboard_sections",
   "agentcloud_chat_sidebar_width",
   "agentcloud_chat_sidebar_open",
   "agentcloud_chat_text_size",

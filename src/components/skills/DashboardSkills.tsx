@@ -80,10 +80,7 @@ export default function DashboardSkills({
   }
 
   return (
-    <section
-      className="mb-8 rounded-lg border border-white/5 bg-neutral-900 shadow-sm"
-      data-onboard="dashboard-skills"
-    >
+    <section className="rounded-lg border border-white/5 bg-neutral-900 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 p-5">
         <h2 className="flex items-center gap-2 text-xl font-bold text-white">
           <Sparkles size={18} className="text-brand-400" />
