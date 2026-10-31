@@ -136,7 +136,21 @@ registra completando l'auth partendo dal suo link (`/signup?ref=<codice>`).
   consumano crediti (in quei giorni non c'era alcun limite).
 - **Il link compare nel banner paywall della chat** (`/chat`), quello che
   appare quando i 5 sono finiti: bottone "Copia link" + contatore dei crediti
-  già guadagnati.
+  già guadagnati. Il banner dipende dal limite esaurito, non dal modale di
+  vendita: il modale si apre sopra di esso e, quando l'utente lo chiude, il
+  banner resta (con il blocco inviti cliccabile).
+
+Due trappole risolte durante la verifica end-to-end, entrambe mortali in
+produzione e silenziose in sviluppo:
+
+- `referred_by` è una colonna di `profiles` e lo schema di hardening
+  (`schema-admin-role.sql`) revoca l'UPDATE generico concedendo solo alcune
+  colonne: senza `referred_by` in quella lista ogni PATCH di signup/callback
+  finiva in 403 e il bonus veniva perso. La migrazione fa il grant puntuale.
+- Il trigger di normalizzazione (`profiles_normalize_referred_by`) deve essere
+  `security definer`: altrimenti la sua lookup sul codice del referrer gira
+  sotto la RLS dell'utente (che vede solo la propria riga), non trova mai il
+  codice e azzera `referred_by` sempre.
 
 Il moltiplicatore (3) e il tetto di sicurezza (300 messaggi) vivono in
 `src/lib/billing/referral-bonus.ts`; lo schema è in

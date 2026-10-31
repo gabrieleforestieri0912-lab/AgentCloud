@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { X, Lock, Sparkles } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 
@@ -9,13 +10,30 @@ export default function SubscribePaywallModal({
   onClose,
   agentName,
   agentSlug,
+  remaining,
+  limit,
 }: {
   open: boolean;
   onClose: () => void;
   agentName: string;
   agentSlug: string;
+  /** Messaggi free rimasti e massimo del giorno (sale coi referral: es. 8). */
+  remaining?: number;
+  limit?: number;
 }) {
   const { dict } = useLanguage();
+
+  // Escape per chiudere: senza, l'unico modo era il bottone X o il backdrop,
+  // e l'utente (o un test) restava bloccato dietro l'overlay.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const title = dict.paywallModal.title;
@@ -29,7 +47,7 @@ export default function SubscribePaywallModal({
   const plansHref = `/marketplace`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl">
         <button
@@ -45,7 +63,12 @@ export default function SubscribePaywallModal({
         <h3 className="text-lg font-bold text-white">{title}</h3>
         <p className="mt-2 text-sm leading-6 text-neutral-400">{desc}</p>
         <p className="mt-3 text-xs font-semibold text-amber-300">
-          {dict.paywallModal.limitReached} • 5/5
+          {dict.paywallModal.limitReached}
+          {/* Anche qui il totale non è più sempre 5: con crediti referral
+              il massimo giornaliero sale (es. 0/8). */}
+          {typeof remaining === "number" && typeof limit === "number"
+            ? ` • ${remaining}/${limit}`
+            : " • 5/5"}
         </p>
         <div className="mt-6 flex flex-col gap-3">
           <Link

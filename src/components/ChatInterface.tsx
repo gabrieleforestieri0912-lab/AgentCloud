@@ -2810,8 +2810,14 @@ export default function ChatInterface({
             if (serverMessage) streamErrorMessage = serverMessage;
             if (code) streamErrorCode = code;
             // propagate paywall immediately
-            if (code === "FREE_LIMIT_REACHED" && agent) setPaywallSlug(agent.slug);
-            else if (code === "FREE_LIMIT_REACHED") setPaywallSlug(targetSlugs[0] ?? null);
+            if (code === "FREE_LIMIT_REACHED") {
+              setPaywallSlug(agent?.slug ?? targetSlugs[0] ?? null);
+              // Il limite è davvero finito: ricarica i numeri del budget
+              // giornaliero. Senza questo tick il banner resterebbe con i
+              // valori del caricamento pagina e, una volta chiuso il modale,
+              // non ci sarebbe più nulla che segnali il limite (e l'invito).
+              setLimitTick((n) => n + 1);
+            }
             // Budget di token esaurito: la risposta è "il tuo piano è finito,
             // puoi aggiornarlo" → stessa CTA del piano gratuito (l'utente non
             // ha un errore da capire, ha una quota da ricaricare).
@@ -4802,7 +4808,12 @@ export default function ChatInterface({
                 })}
               </p>
             )}
-            {paywallSlug && (
+            {/* Banner paywall: visibile quando il limite è finito, NON quando
+                il modale è aperto. Prima dipendeva da `paywallSlug` (stato del
+                modale): il modale si apriva coprendolo e chiuderlo lo azzerava,
+                rendendo "Copy link" irraggiungibile per un utente reale
+                (verificato: il click veniva catturato dall'overlay). */}
+            {dailyLimit && !dailyLimit.unlimited && dailyLimit.remaining === 0 && (
               <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold text-amber-300">
@@ -4814,7 +4825,7 @@ export default function ChatInterface({
                       : ""}
                   </p>
                   <button
-                    onClick={() => setPaywallSlug(paywallSlug)}
+                    onClick={() => setPaywallSlug(limitSlug ?? paywallSlug)}
                     className="shrink-0 rounded-full bg-amber-500 px-3 py-1 text-xs font-bold text-white hover:bg-amber-400"
                   >
                     {dict.paywallModal.subscribe}
@@ -5148,6 +5159,8 @@ export default function ChatInterface({
             paywallSlug
           }
           agentSlug={paywallSlug}
+          remaining={dailyLimit && !dailyLimit.unlimited ? dailyLimit.remaining : undefined}
+          limit={dailyLimit && !dailyLimit.unlimited ? dailyLimit.limit : undefined}
         />
       )}
       {settingsOpen && (
