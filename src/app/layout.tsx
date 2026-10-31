@@ -114,9 +114,16 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(BASE_URL),
     title,
     description,
+    // Il favicon è brand/favicon.png (quadrato nero arrotondato, logo
+    // bianco): la versione in public/ è ridimensionata e ottimizzata da
+    // quella sorgente. È l'immagine che Google mostra accanto ai risultati
+    // di ricerca (legge il <link rel="icon"> della home): per aggiornarla
+    // dopo un cambio serve un re-crawl della home da Search Console.
     icons: {
-      icon: "/agentcloud.png",
-      apple: "/agentcloud.png",
+      icon: [
+        { url: "/favicon.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: "/apple-touch-icon.png",
     },
     openGraph: {
       type: "website",
