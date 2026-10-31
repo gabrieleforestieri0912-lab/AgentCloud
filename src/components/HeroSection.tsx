@@ -473,7 +473,7 @@ export default function HeroSection() {
           // A riposo la sezione può superare il viewport: con un altezza
           // fissa il contenuto (chips dei suggerimenti) veniva tagliato da
           // un bordo netto e non raggiungibile con lo scroll.
-          : "min-h-dvh pt-36 sm:pt-48 lg:pt-64 pb-12 sm:pb-20 lg:pb-28"
+          : "min-h-dvh pt-24 sm:pt-32 lg:pt-40 pb-12 sm:pb-20 lg:pb-28"
       }`}
     >
       {/* I keyframe di float vivono in globals.css (condivisi con la waitlist). */}
