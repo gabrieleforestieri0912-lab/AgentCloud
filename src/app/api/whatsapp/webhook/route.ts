@@ -23,8 +23,9 @@ async function isMetaSignatureValid(req: Request, rawBody: string): Promise<bool
 /**
  * Elabora il messaggio in arrivo: lo inoltra a /api/agent/run e ricompone la
  * risposta leggendo lo stream SSE (eventi di tipo "text") per poi rimandarla.
+ * Non è esportata: Next vieta export extra nei file route.ts (typegen).
  */
-export async function processWhatsAppMessage(
+async function processWhatsAppMessage(
   from: string,
   message: string,
   tenantId: string = "default",
