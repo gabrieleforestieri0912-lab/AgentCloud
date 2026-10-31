@@ -96,6 +96,11 @@ export const PUBLIC_PATHS = [
   "/api/embed",
   "/api/chat",
   "/api/agent/run",
+  // API pubblica per integratori: si autentica SOLO via header
+  // `Authorization: Bearer ack_…` (o `act_…`) dentro il route handler. Se il
+  // proxy la trattasse come rotta protetta, ogni chiamata esterna (che non ha
+  // cookie di sessione) morirebbe con 401 prima di arrivare alla route.
+  "/api/v1/run",
   "/api/extension/session",
   "/api/user/usage",
   // Anteprime video YouTube delle bolle chat: ponte server verso l'oEmbed di
