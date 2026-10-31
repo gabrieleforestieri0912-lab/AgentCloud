@@ -71,9 +71,17 @@ create trigger trg_profiles_referral_code
   before insert on public.profiles
   for each row execute function public.profiles_gen_referral_code();
 
+-- SECURITY DEFINER obbligatorio: senza, questa SELECT su profiles gira sotto la
+-- RLS dell'utente che sta facendo l'UPDATE (signup/callback) e l'utente vede
+-- solo la PROPRIA riga → il codice del referrer risulta sempre "inesistente" →
+-- referred_by veniva azzerato SEMPRE (verificato con probe: select su codice
+-- altrui → 0 righe). Con definer la funzione vede tutti i codici e la
+-- normalizzazione fa il suo lavoro (autoreferral/codice fantasma → null).
 create or replace function public.profiles_normalize_referred_by()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 begin
   if old.referred_by is not null and new.referred_by is distinct from old.referred_by then
