@@ -45,16 +45,50 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=auth_callback`);
   }
 
+  // Letto subito perché serve anche al blocco referral qui sotto.
+  const cookieHeader = request.headers.get("cookie") || "";
+
   // --- Set auth_method_completed = true for this user ---
   // Google OAuth = full auth method, so mark as completed.
   // Open Decision #7: referral points awarded only when referred user reaches auth_method_completed=true
   let userEmail: string | null = null;
   let userId: string | null = null;
+  // Referral messaggi: il link di invito (/signup?ref=…) sopravvive al salto
+  // da Google (e alla conferma email, che rientra sempre qui senza query
+  // param) nel cookie `ac_ref` imposto dalla pagina di signup.
+  const acRefMatch = cookieHeader.match(/ac_ref=([^;]+)/);
+  const refCode = acRefMatch ? decodeURIComponent(acRefMatch[1]) : null;
+  const validRefCode = refCode && /^[a-z0-9]{1,16}$/i.test(refCode)
+    ? refCode.toLowerCase()
+    : null;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       userEmail = user.email ?? null;
       userId = user.id;
+      // Referral: referred_by va scritto PRIMA del flip, perché è il passaggio
+      // a completed=true che accredita i 3 messaggi extra al referrer (trigger
+      // nel DB). Solo per chi non ha ancora completato (altrimenti questo è un
+      // semplice re-login: nessun premio a posteriori) e mai col proprio codice.
+      if (validRefCode) {
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("auth_method_completed, referral_code")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (!profile?.auth_method_completed && profile?.referral_code !== validRefCode) {
+            await supabase
+              .from("profiles")
+              .update({ referred_by: validRefCode })
+              .eq("id", user.id)
+              .is("referred_by", null);
+          }
+        } catch {
+          // Best-effort: senza migrazione applicata non si attribuisce, ma
+          // l'accesso deve funzionare comunque.
+        }
+      }
       await supabase
         .from("profiles")
         .update({ auth_method_completed: true })
@@ -68,7 +102,6 @@ export async function GET(request: Request) {
     // Non-blocking: auth gate will catch on next request if needed
   }
 
-  const cookieHeader = request.headers.get("cookie") || "";
   const sessionMatch = cookieHeader.match(/waitlist_session=([^;]+)/);
   const sessionValue = (sessionMatch?.[1] || "").trim();
   const hasAccessBypass =
@@ -86,6 +119,7 @@ export async function GET(request: Request) {
       : "/dashboard";
     const response = NextResponse.redirect(`${origin}${safeNext}`);
     clearWaitlistSessionCookie(response, cookieHeader);
+    clearReferralCookie(response, cookieHeader);
     return response;
   }
 
@@ -98,6 +132,7 @@ export async function GET(request: Request) {
       : "/dashboard";
     const response = NextResponse.redirect(`${origin}${safeNext}`);
     clearWaitlistSessionCookie(response, cookieHeader);
+    clearReferralCookie(response, cookieHeader);
     return response;
   }
 
@@ -124,6 +159,7 @@ export async function GET(request: Request) {
     if (cookieHeader.includes("ac_wl_ref=")) {
       response.cookies.set("ac_wl_ref", "", { maxAge: 0, path: "/", sameSite: "lax" });
     }
+    clearReferralCookie(response, cookieHeader);
     return response;
   }
 
@@ -138,6 +174,7 @@ export async function GET(request: Request) {
   const safeNext = isSafeRedirectPath(next) ? next : defaultDest;
   const response = NextResponse.redirect(`${origin}${safeNext}`);
   clearWaitlistSessionCookie(response, cookieHeader);
+  clearReferralCookie(response, cookieHeader);
   return response;
 }
 
@@ -176,4 +213,15 @@ function clearWaitlistSessionCookie(response: NextResponse, cookieHeader: string
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
   });
+}
+
+/**
+ * Il cookie `ac_ref` è attribuzione monouso: dopo essere passato dal callback
+ * (dove è stato consumato per referred_by) viene cancellato, così il prossimo
+ * account creato da questo browser non viene accreditato per sbaglio a chi ha
+ * inviato il link precedente.
+ */
+function clearReferralCookie(response: NextResponse, cookieHeader: string) {
+  if (!cookieHeader.includes("ac_ref=")) return;
+  response.cookies.set("ac_ref", "", { maxAge: 0, path: "/", sameSite: "lax" });
 }

@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { assertRunAllowed } from "@/lib/billing/usage-tracking";
-import {
-  FREE_MESSAGES_PER_DAY,
-  getFreeMessagesUsed,
-} from "@/lib/billing/free-limit";
+import { checkFreeUsage } from "@/lib/billing/free-usage";
 import { getClientIp } from "@/lib/request-ip";
 import { resolveIsAdmin } from "@/lib/admin-access";
 import { getLocale } from "@/lib/i18n/locale";
@@ -103,15 +100,20 @@ export async function POST(req: NextRequest) {
         check.code === "SUBSCRIPTION_INACTIVE" ||
         check.code === "SUBSCRIPTION_EXPIRED")
     ) {
-      const used = await getFreeMessagesUsed(cred.user.id, getClientIp(req));
-      if (used >= FREE_MESSAGES_PER_DAY) {
+      // Stesso freemium della chat, stesso contatore, stessi crediti da
+      // referral: qui NON si duplica la regola, si chiama checkFreeUsage
+      // (l'unico punto che risponde "posso ancora scrivere?").
+      const free = await checkFreeUsage(cred.user.id, {
+        ip: getClientIp(req) ?? undefined,
+      });
+      if (!free.allowed) {
         return NextResponse.json(
           {
             ok: false,
             code: "FREE_LIMIT_REACHED",
             error: apiErrorMessageForLocale(locale, "freeLimitReached"),
             remaining: 0,
-            limit: FREE_MESSAGES_PER_DAY,
+            limit: free.limit,
           },
           { status: 402 },
         );

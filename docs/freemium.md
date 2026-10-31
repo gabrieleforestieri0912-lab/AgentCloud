@@ -115,6 +115,35 @@ Il free tier degli agenti era già 5 messaggi al giorno con reset a mezzanotte
 UTC e resta così. L'unica novità è che ora lo condivide con la demo e con la
 chat generica.
 
+### 7. Il bonus da referral: 3 messaggi extra per invito
+
+Chi non ha abbonamento attivo e finisce i suoi 5 può continuare a scrivere
+consumando un **pool di crediti una tantum**: 3 messaggi per ogni persona che si
+registra completando l'auth partendo dal suo link (`/signup?ref=<codice>`).
+
+- **Una tantum, non giornaliero**: i crediti non si ricaricano a mezzanotte e
+  non scadono. Con 4 inviti validi il totale è 12 messaggi extra, una volta.
+- **Solo dopo i 5 base**: il limite del giorno diventa `5 + crediti disponibili`
+  (es. 8 con un invito). Il pool si consuma nell'ordine giusto perché è un
+  solo numero, non due code.
+- **Il referral conta alla registrazione completata**: lo scatto è il passaggio
+  del profilo invitato a `auth_method_completed = true` (la stessa soglia del
+  referral della waitlist), non la visita al link. Autoreferral e codici
+  inesistente li normalizza il database, non l'app.
+- **Solo utenti autenticati**: gli ospiti non hanno un profilo su cui
+  accumulare inviti.
+- **Chi si abbona non brucia il pool**: le run fatte con un piano attivo non
+  consumano crediti (in quei giorni non c'era alcun limite).
+- **Il link compare nel banner paywall della chat** (`/chat`), quello che
+  appare quando i 5 sono finiti: bottone "Copia link" + contatore dei crediti
+  già guadagnati.
+
+Il moltiplicatore (3) e il tetto di sicurezza (300 messaggi) vivono in
+`src/lib/billing/referral-bonus.ts`; lo schema è in
+`supabase/schema-referral-message-bonus.sql` (idempotente). Senza la migrazione
+applicata il modulo resta muto e il freemium è identico a prima: 5 messaggi,
+niente inviti.
+
 ## Come si comporta
 
 - **Reset**: a mezzanotte UTC (come prima).
@@ -136,11 +165,17 @@ chat generica.
 | `src/lib/billing/free-window.ts` | la soglia (`FREE_MESSAGES_PER_DAY`, da env) e la finestra giornaliera |
 | `src/lib/billing/free-limit.ts` | il contatore (run di oggi per gli autenticati, bucket per IP per gli ospiti) |
 | `src/lib/billing/free-usage.ts` | la decisione "posso ancora scrivere?" e il residuo |
+| `src/lib/billing/referral-bonus.ts` | il bonus da referral (crediti maturati, spesi, codice invito) |
 | `src/lib/billing/guest-counter.ts` | il contatore del dispositivo (cookie firmato) |
 | `src/lib/billing/token-pool.ts` | il pool di token dei piani (abbonati) |
 | `src/lib/billing/usage-tracking.ts` | l'enforcement (diritto → pool → overage) |
 | `src/app/api/chat/route.ts` | superficie `demo` / `chat`, enforcement, quota residua nel flusso SSE |
 | `src/app/api/agent/run/route.ts` | enforcement del piano gratuito per gli agenti |
+| `src/app/api/v1/run/route.ts` | enforcement della stessa regola per le API key |
+| `src/app/api/agent/limit/route.ts` | residuo + bonus + codice invito per la UI |
+| `src/app/signup/page.tsx` | ?ref= → cookie `ac_ref` → `referred_by` sul profilo |
+| `src/app/auth/callback/route.ts` | stessa attribuzione per Google OAuth e conferma email |
+| `supabase/schema-referral-message-bonus.sql` | colonne, trigger di accredito e RPC di stato |
 | `src/components/HeroSection.tsx` | il contatore viene dal server; il 402 apre il modal |
 
 ## Variabili d'ambiente

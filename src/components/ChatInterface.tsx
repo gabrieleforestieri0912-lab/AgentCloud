@@ -650,7 +650,20 @@ export default function ChatInterface({
   };
   type DailyLimitInfo =
     | { unlimited: true; budget?: TokenBudget }
-    | { unlimited: false; remaining: number; limit: number; resetAt: string };
+    | {
+        unlimited: false;
+        remaining: number;
+        /** Massimo del giorno: base (5) + eventuali crediti da referral. */
+        limit: number;
+        resetAt: string;
+        /** Crediti extra ancora disponibili (0 = niente inviti validi). */
+        bonusAvailable: number;
+        bonusEarned: number;
+        /** Messaggi extra per referral, per il copy del banner inviti. */
+        bonusPerReferral: number;
+        /** Codice invito dell'utente, per costruire /signup?ref=… */
+        inviteCode: string | null;
+      };
   const [dailyLimit, setDailyLimit] = useState<DailyLimitInfo | null>(null);
   // Bump per ricaricare il contatore dopo ogni risposta completata.
   const [limitTick, setLimitTick] = useState(0);
@@ -720,6 +733,10 @@ export default function ChatInterface({
             remaining: data.remaining,
             limit: data.limit ?? 5,
             resetAt: data.resetAt,
+            bonusAvailable: Number(data.bonus?.available) || 0,
+            bonusEarned: Number(data.bonus?.earned) || 0,
+            bonusPerReferral: Number(data.bonus?.perReferral) || 3,
+            inviteCode: typeof data.inviteCode === "string" ? data.inviteCode : null,
           });
         }
       })
@@ -729,6 +746,41 @@ export default function ChatInterface({
     };
   }, [limitSlug, limitTick]);
   const [paywallSlug, setPaywallSlug] = useState<string | null>(null);
+  // Feedback "copiato" del link di invito nel banner paywall.
+  const [inviteCopied, setInviteCopied] = useState(false);
+
+  /**
+   * Copia il link di invito personale (/signup?ref=…): ogni persona che si
+   * registra da quel link completando l'auth dà 3 messaggi extra al posto dei
+   * 5 giornalieri (pool una tantum, vedi lib/billing/referral-bonus.ts).
+   */
+  const copyInviteLink = useCallback(() => {
+    if (!dailyLimit || dailyLimit.unlimited || !dailyLimit.inviteCode) return;
+    const url = `${window.location.origin}/signup?ref=${encodeURIComponent(dailyLimit.inviteCode)}`;
+    const done = () => {
+      setInviteCopied(true);
+      window.setTimeout(() => setInviteCopied(false), 2000);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => {});
+      return;
+    }
+    // Fallback dove la Clipboard API non c'è (context non secure, webview):
+    // select + execCommand, stessa procedura dei link di condivisione.
+    const ta = document.createElement("textarea");
+    ta.value = url;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      done();
+    } catch {
+      // Il link resta visibile nel banner: l'utente può copiarlo a mano.
+    }
+    document.body.removeChild(ta);
+  }, [dailyLimit]);
   // Id dell'ultimo messaggio utente inviato: la sua bolla entra con
   // l'animazione `animate-msg-send` (si azzera da sola dopo l'animazione).
   const [justSentId, setJustSentId] = useState<string | null>(null);
@@ -4751,16 +4803,51 @@ export default function ChatInterface({
               </p>
             )}
             {paywallSlug && (
-              <div className="mb-3 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
-                <p className="text-xs font-semibold text-amber-300">
-                  {dict.paywallModal.limitReached} — 5/5
-                </p>
-                <button
-                  onClick={() => setPaywallSlug(paywallSlug)}
-                  className="rounded-full bg-amber-500 px-3 py-1 text-xs font-bold text-white hover:bg-amber-400"
-                >
-                  {dict.paywallModal.subscribe}
-                </button>
+              <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold text-amber-300">
+                    {dict.paywallModal.limitReached}
+                    {/* Il "5/5" non è più fisso: con crediti da referral il
+                        massimo del giorno sale (es. 8/8). */}
+                    {dailyLimit && !dailyLimit.unlimited
+                      ? ` — ${dailyLimit.remaining}/${dailyLimit.limit}`
+                      : ""}
+                  </p>
+                  <button
+                    onClick={() => setPaywallSlug(paywallSlug)}
+                    className="shrink-0 rounded-full bg-amber-500 px-3 py-1 text-xs font-bold text-white hover:bg-amber-400"
+                  >
+                    {dict.paywallModal.subscribe}
+                  </button>
+                </div>
+                {/* Invita amici: solo per chi ha un account (il bonus si
+                    accumula sul profilo) e un codice invito. */}
+                {dailyLimit &&
+                  !dailyLimit.unlimited &&
+                  dailyLimit.inviteCode &&
+                  accountEmail && (
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-amber-500/20 pt-2">
+                      <p className="min-w-0 flex-1 break-words text-[11px] leading-snug text-amber-200/90">
+                        {t(dict.chat.referral.banner, {
+                          count: dailyLimit.bonusPerReferral,
+                        })}
+                        {dailyLimit.bonusEarned > 0
+                          ? ` · ${t(dict.chat.referral.earned, {
+                              count: dailyLimit.bonusEarned,
+                            })}`
+                          : ""}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={copyInviteLink}
+                        className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-amber-100 transition-colors hover:bg-white/20"
+                      >
+                        {inviteCopied
+                          ? dict.chat.referral.copied
+                          : dict.chat.referral.copy}
+                      </button>
+                    </div>
+                  )}
               </div>
             )}
             {pendingApproval && pendingApproval.convId === activeId && (

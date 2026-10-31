@@ -749,6 +749,12 @@ chat: {
       trial: "Prova gratuita: {remaining}/{limit} messaggi oggi · si resetta alle {time}",
       cta: "Abbonati",
     },
+    referral: {
+      banner: "Invita amici: +{count} messaggi extra per ognuno che si registra dal tuo link",
+      earned: "{count} messaggi extra già guadagnati",
+      copy: "Copia link",
+      copied: "Link copiato!",
+    },
     tokenBudget:
       "Budget: {used} / {limit} token · si rinnova il {date}",
     tokenBudgetExhausted:
@@ -3394,6 +3400,12 @@ chat: {
       trial: "Free trial: {remaining}/{limit} messages today · resets at {time}",
       cta: "Subscribe",
     },
+    referral: {
+      banner: "Invite friends: +{count} extra messages for each one who signs up from your link",
+      earned: "{count} extra messages already earned",
+      copy: "Copy link",
+      copied: "Link copied!",
+    },
     tokenBudget:
       "Budget: {used} / {limit} tokens · renews on {date}",
     tokenBudgetExhausted:
@@ -6034,6 +6046,12 @@ chat: {
       trial: "Prueba gratis: {remaining}/{limit} mensajes hoy · se reinicia a las {time}",
       cta: "Suscríbete",
     },
+    referral: {
+      banner: "Invita amigos: +{count} mensajes extra por cada uno que se registre desde tu enlace",
+      earned: "{count} mensajes extra ya ganados",
+      copy: "Copiar enlace",
+      copied: "¡Enlace copiado!",
+    },
     tokenBudget:
       "Presupuesto: {used} / {limit} tokens · se renueva el {date}",
     tokenBudgetExhausted:
@@ -8672,6 +8690,12 @@ chat: {
       trial: "Gratis-Test: {remaining}/{limit} Nachrichten heute · Reset um {time}",
       cta: "Abonnieren",
     },
+    referral: {
+      banner: "Freunde einladen: +{count} Extra-Nachrichten pro Person, die sich über deinen Link registriert",
+      earned: "{count} Extra-Nachrichten schon verdient",
+      copy: "Link kopieren",
+      copied: "Link kopiert!",
+    },
     tokenBudget:
       "Budget: {used} / {limit} Token · erneuert sich am {date}",
     tokenBudgetExhausted:
@@ -11309,6 +11333,12 @@ browseMarketplace: "Parcourir la marketplace",
     subscribeCard: {
       trial: "Essai gratuit : {remaining}/{limit} messages aujourd'hui · réinitialisation à {time}",
       cta: "S'abonner",
+    },
+    referral: {
+      banner: "Invitez vos amis : +{count} messages supplémentaires pour chacun qui s'inscrit depuis votre lien",
+      earned: "{count} messages supplémentaires déjà gagnés",
+      copy: "Copier le lien",
+      copied: "Lien copié !",
     },
     tokenBudget:
       "Budget : {used} / {limit} tokens · renouvelé le {date}",

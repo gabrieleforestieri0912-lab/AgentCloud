@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Home, Loader2, Mail, User } from "lucide-react";
@@ -21,6 +21,17 @@ import {
 // Pagina di registrazione (client): come il login, applica in sequenza
 // honeypot anti-bot, throttling anti-spam e validazioni preventive prima di
 // creare l'utente su Supabase Auth.
+
+/**
+ * Codice referral della persona che ha inviato il link (/signup?ref=…), o
+ * null. Stessa forma del codice generato nel DB (8 hex): un ref malformato
+ * non viene propagato. Da chiamare solo in browser (window.location).
+ */
+function readReferralCode(): string | null {
+  const raw = new URLSearchParams(window.location.search).get("ref");
+  return raw && /^[a-z0-9]{1,16}$/i.test(raw) ? raw.toLowerCase() : null;
+}
+
 export default function SignupPage() {
   const { dict } = useLanguage();
   const router = useRouter();
@@ -32,6 +43,17 @@ export default function SignupPage() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Il referral (?ref=…) non è stato React state: serve al submit e al
+  // passaggio Google, ed è una lettura dell'URL, non uno stato da renderizzare.
+  // Al mount viene solo specchiato nel cookie `ac_ref`, perché il percorso
+  // Google OAuth esce da qui e rientra da /auth/callback senza query param.
+  useEffect(() => {
+    const clean = readReferralCode();
+    if (clean) {
+      document.cookie = `ac_ref=${encodeURIComponent(clean)}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+    }
+  }, []);
 
   const a = dict.auth;
 
@@ -121,10 +143,32 @@ export default function SignupPage() {
             document.cookie = "waitlist_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           }
         }
-        // Set auth_method_completed = true (signup = full auth)
+        // Referral: prima del flip di auth_method_completed si registra il
+        // referrer sul profilo (best-effort). L'ORDINE CONTA: è il passaggio a
+        // completed=true che accredita i 3 messaggi extra al referrer (trigger
+        // nel DB), quindi referred_by deve essere già scritto. Se la colonna
+        // non esiste ancora (migrazione non applicata) questo primo PATCH
+        // fallisce in silenzio e la registrazione resta identica a prima.
         try {
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
           const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+          const refCode = readReferralCode();
+          if (refCode && data.session.user?.id) {
+            await fetch(
+              `${supabaseUrl}/rest/v1/profiles?id=eq.${data.session.user.id}&referred_by=is.null`,
+              {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${data.session.access_token}`,
+                  "apikey": anonKey,
+                  "Prefer": "return=minimal",
+                },
+                body: JSON.stringify({ referred_by: refCode }),
+              },
+            );
+          }
+          // Set auth_method_completed = true (signup = full auth)
           await fetch(`${supabaseUrl}/rest/v1/profiles?auth_method_completed=eq.false`, {
             method: "PATCH",
             headers: {

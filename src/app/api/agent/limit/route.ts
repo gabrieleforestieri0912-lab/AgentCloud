@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { assertRunAllowed } from "@/lib/billing/usage-tracking";
 import { getTokenPoolForAgent, getTokenPoolsForUser, poolWarningLevel } from "@/lib/billing/token-pool";
-import {
-  FREE_MESSAGES_PER_DAY,
-  getFreeMessagesUsed,
-  getNextResetAt,
-} from "@/lib/billing/free-limit";
+import { getNextResetAt } from "@/lib/billing/free-limit";
+import { checkFreeUsage } from "@/lib/billing/free-usage";
+import { REFERRAL_MESSAGES_PER_REFERRAL } from "@/lib/billing/referral-bonus";
 import { getClientIp } from "@/lib/request-ip";
 import { getSessionUser } from "@/lib/supabase/server";
 import { resolveIsAdmin } from "@/lib/admin-access";
@@ -97,16 +95,30 @@ export async function GET(req: Request) {
     );
   }
 
-  // Non abbonato: limite giornaliero dei 5 messaggi.
+  // Non abbonato: limite giornaliero, oggi 5 + eventuali crediti maturati con
+  // gli inviti (pool una tantum, vedi lib/billing/referral-bonus.ts). Si passa
+  // da checkFreeUsage perché è lo STESSO calcolo che decide l'402 sulle run:
+  // numero mostrato e numero enforced non possono discostarsi.
   const ip = getClientIp(req);
-  const used = await getFreeMessagesUsed(userId, ip ?? undefined);
+  const usage = await checkFreeUsage(userId, { ip: ip ?? undefined });
   return NextResponse.json(
     {
       unlimited: false,
-      used,
-      remaining: Math.max(0, FREE_MESSAGES_PER_DAY - used),
-      limit: FREE_MESSAGES_PER_DAY,
+      used: usage.used,
+      remaining: usage.remaining,
+      limit: usage.limit,
       resetAt: getNextResetAt().toISOString(),
+      // Bonus e codice invito servono al banner paywall della chat: senza
+      // inviti validi (o per gli ospiti) sono a zero/null e il banner non
+      // mostra nulla di diverso da prima.
+      bonus: {
+        available: usage.bonus.available,
+        earned: usage.bonus.earned,
+        spent: usage.bonus.spent,
+        referrals: usage.bonus.referrals,
+        perReferral: REFERRAL_MESSAGES_PER_REFERRAL,
+      },
+      inviteCode: usage.bonus.code,
     },
     { headers: { "Cache-Control": "no-store" } },
   );
