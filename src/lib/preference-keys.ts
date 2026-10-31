@@ -20,6 +20,11 @@ export type PreferenceKey = (typeof PREFERENCE_KEYS)[number];
 
 export type PreferenceValue = string | number | boolean;
 
+/** Chiave dell'agente predefinito delle chat. È la STESSA stringa usata da
+ *  `chat-settings.ts` (client); la costante qui serve alle API server che non
+ *  possono importare un modulo `"use client"`. */
+export const PREFERENCE_CHAT_DEFAULT_AGENT = "agentcloud_chat_default_agent" as const satisfies PreferenceKey;
+
 export function isPreferenceKey(key: unknown): key is PreferenceKey {
   return typeof key === "string" && (PREFERENCE_KEYS as readonly string[]).includes(key);
 }
