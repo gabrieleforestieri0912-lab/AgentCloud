@@ -86,6 +86,7 @@ import { AGENT_RUNTIME } from "@/lib/agents/registry";
 import { createClient } from "@/lib/supabase/client";
 import BrandLogo from "./BrandLogo";
 import AgentAvatar from "./AgentAvatar";
+import AgentSubscribeCard from "./AgentSubscribeCard";
 import TypingDots from "./TypingDots";
 import { avatarThumbnail } from "@/lib/avatar";
 import type { AccountIdentity } from "@/lib/account-identity";
@@ -4291,6 +4292,21 @@ export default function ChatInterface({
               transition={{ duration: 0.25, ease: "easeOut" }}
               className="relative flex-1 flex flex-col px-4"
             >
+              {/* Abbonamento all'agente della chat: in alto al centro, solo
+                  se c'è un agente e il piano è ancora freemium. `pt-16` serve
+                  a stare sotto l'AppHeader (sticky h-14 con -mb-14: occupa i
+                  primi 56px senza prendere spazio, come la lista messaggi). */}
+              {activeAgent && limitSlug && dailyLimit && !dailyLimit.unlimited && (
+                <div className="flex justify-center pt-16">
+                  <AgentSubscribeCard
+                    agent={activeAgent}
+                    slug={limitSlug}
+                    remaining={dailyLimit.remaining}
+                    limit={dailyLimit.limit}
+                    resetAt={dailyLimit.resetAt}
+                  />
+                </div>
+              )}
               {/* Contenuto spinto un po' più in basso rispetto al centro:
                   il padding top asimmetrico abbassa input, chip e titolo. */}
               <div className="flex flex-1 flex-col items-center justify-center py-4 pt-16">

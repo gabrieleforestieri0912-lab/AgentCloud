@@ -745,6 +745,10 @@ chat: {
     assistantName: "Assistente personale",
     multiAgents: "{count} agenti",
     dailyLimit: "{remaining}/{limit} gratuiti rimasti oggi · nuovi messaggi alle {time}",
+    subscribeCard: {
+      trial: "Prova gratuita: {remaining}/{limit} messaggi oggi · si resetta alle {time}",
+      cta: "Abbonati",
+    },
     tokenBudget:
       "Budget: {used} / {limit} token · si rinnova il {date}",
     tokenBudgetExhausted:
@@ -3386,6 +3390,10 @@ chat: {
     assistantName: "Personal assistant",
     multiAgents: "{count} agents",
     dailyLimit: "{remaining}/{limit} free left today · new messages at {time}",
+    subscribeCard: {
+      trial: "Free trial: {remaining}/{limit} messages today · resets at {time}",
+      cta: "Subscribe",
+    },
     tokenBudget:
       "Budget: {used} / {limit} tokens · renews on {date}",
     tokenBudgetExhausted:
@@ -6022,6 +6030,10 @@ chat: {
     assistantName: "Asistente personal",
     multiAgents: "{count} agentes",
     dailyLimit: "{remaining}/{limit} gratis restantes hoy · nuevos mensajes a las {time}",
+    subscribeCard: {
+      trial: "Prueba gratis: {remaining}/{limit} mensajes hoy · se reinicia a las {time}",
+      cta: "Suscríbete",
+    },
     tokenBudget:
       "Presupuesto: {used} / {limit} tokens · se renueva el {date}",
     tokenBudgetExhausted:
@@ -8656,6 +8668,10 @@ chat: {
     assistantName: "Persönlicher Assistent",
     multiAgents: "{count} Agenten",
     dailyLimit: "{remaining}/{limit} heute noch gratis · neue Nachrichten um {time}",
+    subscribeCard: {
+      trial: "Gratis-Test: {remaining}/{limit} Nachrichten heute · Reset um {time}",
+      cta: "Abonnieren",
+    },
     tokenBudget:
       "Budget: {used} / {limit} Token · erneuert sich am {date}",
     tokenBudgetExhausted:
@@ -11290,6 +11306,10 @@ browseMarketplace: "Parcourir la marketplace",
     assistantName: "Assistant personnel",
     multiAgents: "{count} agents",
     dailyLimit: "{remaining}/{limit} gratuits restants aujourd'hui · nouveaux messages à {time}",
+    subscribeCard: {
+      trial: "Essai gratuit : {remaining}/{limit} messages aujourd'hui · réinitialisation à {time}",
+      cta: "S'abonner",
+    },
     tokenBudget:
       "Budget : {used} / {limit} tokens · renouvelé le {date}",
     tokenBudgetExhausted:
