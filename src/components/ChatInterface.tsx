@@ -47,6 +47,8 @@ import {
   Check,
   Ghost,
   Settings,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import Image from "next/image";
 import { PUBLIC_SUPPORT_EMAIL } from "@/lib/email-config";
@@ -225,6 +227,30 @@ function formatTime(dateStr: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/**
+ * Tempo relativo per il piè di pagina dei messaggi AI ("30 minuti fa").
+ * Dopo una settimana torna all'ora esatta: "12 giorni fa" non dice nulla di
+ * utile. Intl.RelativeTimeFormat usa la lingua dell'interfaccia, quindi le
+ * stesse parole dell'esempio ("30 minuti fa") senza dizionari ad hoc.
+ */
+function formatRelativeTime(dateStr: string, loc: string) {
+  const then = new Date(dateStr).getTime();
+  if (!Number.isFinite(then)) return formatTime(dateStr);
+  const minutes = Math.floor((Date.now() - then) / 60000);
+  try {
+    const rtf = new Intl.RelativeTimeFormat(loc, { numeric: "auto" });
+    if (minutes < 1) return rtf.format(0, "minute");
+    if (minutes < 60) return rtf.format(-minutes, "minute");
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return rtf.format(-hours, "hour");
+    const days = Math.floor(hours / 24);
+    if (days < 7) return rtf.format(-days, "day");
+  } catch {
+    // Locale non supportato dal runtime: sotto si ricade sull'ora esatta.
+  }
+  return formatTime(dateStr);
 }
 
 function extractConnectProviders(text: string): string[] {
@@ -588,6 +614,21 @@ export default function ChatInterface({
   // row della lista passano da sostituire a AGGIUNGERE, così si lavora con
   // più agenti nella stessa chat (collaborazione multi-agente).
   const [addingAgent, setAddingAgent] = useState(false);
+  // Azioni sotto la risposta AI: "copiato" è un feedback temporaneo, il pollice
+  // su/giù è una preferenza locale della conversazione (nessuna API di feedback
+  // oggi: non inventiamo una chiamata che non esiste).
+  const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+  const [msgFeedback, setMsgFeedback] = useState<Record<string, "up" | "down">>({});
+  // Preferenze pollice su/giù ripristinate al mount: sopravvivono al reload
+  // senza bisogno di un backend (vedi commento sopra).
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("agentcloud-msg-feedback");
+      if (raw) setMsgFeedback(JSON.parse(raw));
+    } catch {
+      // localStorage non disponibile: si parte senza feedback.
+    }
+  }, []);
   const agentDropdownRef = useRef<HTMLDivElement>(null);
   const agentSearchRef = useRef<HTMLInputElement>(null);
   // Freemium giornaliero: il blocco autoritativo arriva dal server (402) — vedi banner limite sopra l'input
@@ -2393,6 +2434,64 @@ export default function ChatInterface({
     setRenameValue("");
   }
 
+  /** Copia il testo della risposta: il feedback "Copiato" dura un attimo e si
+      spegne da solo (stesso pattern dei pulsanti copia del resto della UI). */
+  async function copyMessageContent(msg: LocalMessage) {
+    try {
+      await navigator.clipboard.writeText(msg.content);
+      setCopiedMsgId(msg.id);
+      window.setTimeout(() => {
+        setCopiedMsgId((cur) => (cur === msg.id ? null : cur));
+      }, 1600);
+    } catch {
+      // Clipboard negata dal browser: nessun feedback falso, il testo resta
+      // selezionabile a mano.
+    }
+  }
+
+  /** Pollice su/giù: una sola preferenza per messaggio, riclicco per togliere.
+      Vive in localStorage perché non esiste ancora un endpoint di feedback. */
+  function toggleMessageFeedback(id: string, value: "up" | "down") {
+    setMsgFeedback((prev) => {
+      const next = { ...prev };
+      if (next[id] === value) delete next[id];
+      else next[id] = value;
+      try {
+        localStorage.setItem("agentcloud-msg-feedback", JSON.stringify(next));
+      } catch {
+        // Quota o storage negato: la preferenza resta solo in memoria.
+      }
+      return next;
+    });
+  }
+
+  /** Rigenera l'ULTIMA risposta: la bolla viene tolta e la richiesta utente
+      che l'ha generata viene rinviata, così non nasce un doppione. Solo
+      l'ultimo messaggio è rigenerabile: su uno vecchio servirebbe scartare
+      tutto quello che è venuto dopo. */
+  function regenerateMessage(msg: LocalMessage) {
+    if (!activeId || isTyping) return;
+    const conv = conversationsRef.current.find((c) => c.id === activeId);
+    if (!conv) return;
+    const index = conv.messages.findIndex((m) => m.id === msg.id);
+    if (index < 0) return;
+    if (conv.messages.slice(index + 1).some((m) => m.role !== "system")) return;
+    const previousUser = [...conv.messages.slice(0, index)]
+      .reverse()
+      .find((m) => m.role === "user");
+    if (!previousUser) return;
+    const nextMessages = conv.messages.filter((m) => m.id !== msg.id);
+    // Il ref va aggiornato subito: sendMessage costruisce la cronologia da lì
+    // e l'effect che lo sincronizza girerebbe dopo, con la bolla ancora dentro.
+    conversationsRef.current = conversationsRef.current.map((c) =>
+      c.id === conv.id ? { ...c, messages: nextMessages } : c,
+    );
+    setConversations((prev) =>
+      prev.map((c) => (c.id === conv.id ? { ...c, messages: nextMessages } : c)),
+    );
+    void sendMessage(previousUser.content, conv.id, [], previousUser.id);
+  }
+
   async function handleSendWithText(text: string, convId: string) {
     if (!text.trim() || !convId) return;
     await sendMessage(text, convId, []);
@@ -3396,17 +3495,6 @@ export default function ChatInterface({
       {/* Chat onboarding tour */}
       {showOnboarding && (
         <ChatOnboarding onComplete={() => setShowOnboarding(false)} />
-      )}
-
-      {/* Default non più valido: avviso discreto e dismissibile, senza errori */}
-      {defaultAgentFallback && (
-        <DefaultAgentFallbackNotice
-          agentName={(() => {
-            const catalog = AGENTS.find((a) => a.slug === defaultAgentFallback);
-            return catalog ? localizeAgent(catalog, locale).name : defaultAgentFallback;
-          })()}
-          onDismiss={() => setDefaultAgentFallback(null)}
-        />
       )}
 
       {/* Overlay sidebar mobile */}
@@ -4457,13 +4545,88 @@ export default function ChatInterface({
                       </>
                     )}
                   </div>
-                  <p
-                    className={`text-[10px] text-neutral-600 mt-1 ${
-                      msg.role === "user" ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {formatTime(msg.created_at)}
-                  </p>
+                  {msg.role === "assistant" && !msg.error ? (
+                    (() => {
+                      // Mentre il messaggio sta ancora crescendo niente azioni:
+                      // copiare/rigenerare un testo a metà non ha senso.
+                      const msgIsStreaming =
+                        isTyping && msgIndex === messages.length - 1;
+                      const canRegenerate =
+                        !msgIsStreaming &&
+                        !messages.slice(msgIndex + 1).some((m) => m.role !== "system");
+                      const feedback = msgFeedback[msg.id];
+                      if (msgIsStreaming) {
+                        return (
+                          <p className="mt-1 text-[10px] text-neutral-600 text-left">
+                            {formatTime(msg.created_at)}
+                          </p>
+                        );
+                      }
+                      return (
+                        <div className="mt-1 flex items-center gap-0.5 text-neutral-500">
+                          <button
+                            type="button"
+                            onClick={() => void copyMessageContent(msg)}
+                            title={copiedMsgId === msg.id ? dict.chat.copied : dict.chat.copyMessage}
+                            aria-label={dict.chat.copyMessage}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-white/10 hover:text-white"
+                          >
+                            {copiedMsgId === msg.id ? (
+                              <Check size={14} className="text-emerald-400" />
+                            ) : (
+                              <Copy size={14} />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleMessageFeedback(msg.id, "up")}
+                            aria-pressed={feedback === "up"}
+                            aria-label={dict.chat.goodAnswer}
+                            title={dict.chat.goodAnswer}
+                            className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-white/10 hover:text-white ${
+                              feedback === "up" ? "text-emerald-400" : ""
+                            }`}
+                          >
+                            <ThumbsUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleMessageFeedback(msg.id, "down")}
+                            aria-pressed={feedback === "down"}
+                            aria-label={dict.chat.badAnswer}
+                            title={dict.chat.badAnswer}
+                            className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-white/10 hover:text-white ${
+                              feedback === "down" ? "text-amber-400" : ""
+                            }`}
+                          >
+                            <ThumbsDown size={14} />
+                          </button>
+                          {canRegenerate && (
+                            <button
+                              type="button"
+                              onClick={() => regenerateMessage(msg)}
+                              aria-label={dict.chat.regenerate}
+                              title={dict.chat.regenerate}
+                              className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-white/10 hover:text-white"
+                            >
+                              <RotateCcw size={14} />
+                            </button>
+                          )}
+                          <span className="ml-1.5 text-[10px] text-neutral-600">
+                            {formatRelativeTime(msg.created_at, locale)}
+                          </span>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <p
+                      className={`text-[10px] text-neutral-600 mt-1 ${
+                        msg.role === "user" ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {formatTime(msg.created_at)}
+                    </p>
+                  )}
                 </div>
                 {msg.role === "user" && (
                   <div
